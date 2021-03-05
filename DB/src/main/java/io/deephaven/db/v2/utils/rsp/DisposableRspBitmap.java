@@ -5,7 +5,7 @@ import io.deephaven.db.v2.utils.rsp.container.Container;
 /**
  * "Disposable" version of {@link RspBitmap}, which allows other instances of {@link RspBitmap} to steal its containers.
  */
-public class DisposableRspBitmap extends RspBitmap {
+public final class DisposableRspBitmap extends RspBitmap {
 
     public DisposableRspBitmap() {
     }
@@ -15,7 +15,7 @@ public class DisposableRspBitmap extends RspBitmap {
     }
 
     @Override
-    Container shareContainer(Container c) {
-        return c;
+    protected boolean shareContainers() {
+        return false;
     }
 }

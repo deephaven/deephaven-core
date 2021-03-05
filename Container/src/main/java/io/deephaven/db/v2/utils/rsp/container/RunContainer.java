@@ -907,7 +907,7 @@ public final class RunContainer extends Container {
 
     @Override
     public RunContainer cowRef() {
-        shared = true;
+        setCopyOnWrite();
         return this;
     }
 

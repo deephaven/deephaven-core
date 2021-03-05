@@ -36,6 +36,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_SIZE;
+import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_LAST;
 
 @Category(OutOfBandTest.class)
 public class TreeIndexTest extends SortedIndexTestBase {
@@ -1200,7 +1201,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final Index e = Index.FACTORY.getEmptyIndex();
         assertEquals(1, e.getAverageRunLengthEstimate());
         final Index r1 = singleRangeIndex(0, 65535);
-        assertEquals(65536, r1.getAverageRunLengthEstimate());
+        assertEquals(BLOCK_SIZE, r1.getAverageRunLengthEstimate());
         final Index r2 = Index.FACTORY.getEmptyIndex();
         r2.insert(1);
         r2.insert(3);
@@ -1393,14 +1394,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testSubindexByPosRegreesion0() {
         final Index ix = Index.FACTORY.getEmptyIndex();
-        ix.insertRange(0, 95 * 65536L);
-        final long s1 = 0x1000000 * 65536L;
+        ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
+        final long s1 = 0x1000000 * ((long) BLOCK_SIZE);
         ix.insertRange(s1, s1 + 95 * 65536);
         final long s2 = s1 + 0x5F * 65535L;
         ix.insertRange(s2, s2 + 1);
-        final long s3 = 0x2000000 * 65536L;
-        ix.insertRange(s3, s3 + 95 * 65536L);
-        final long s4 = s3 + 0x5F * 65536L;
+        final long s3 = 0x2000000 * ((long) BLOCK_SIZE);
+        ix.insertRange(s3, s3 + 95 * ((long) BLOCK_SIZE));
+        final long s4 = s3 + 0x5F * ((long) BLOCK_SIZE);
         ix.insertRange(s4, s4 + 1);
         final Index ix2 = ix.subindexByPos(0L, 9_999_999L);
         ix2.validate();
@@ -1415,8 +1416,6 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testContainsRange() {
         final Index ix = Index.FACTORY.getEmptyIndex();
-        final long BLOCK_LAST = 65535;
-        final long BLOCK_SIZE = 65536;
         ix.insertRange(1,3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2*BLOCK_SIZE, 2*BLOCK_SIZE + 1);
@@ -1453,8 +1452,6 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testOverlapsRange() {
         final Index ix = Index.FACTORY.getEmptyIndex();
-        final long BLOCK_LAST = 65535;
-        final long BLOCK_SIZE = 65536;
         ix.insertRange(3,5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2*BLOCK_SIZE, 2*BLOCK_SIZE + 1);
@@ -1668,7 +1665,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testReverseIteratorAdvanceRegression6() {
         Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
-        final int key = 65536;
+        final int key = BLOCK_SIZE;
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
         Index index = builder.getIndex();
@@ -2059,14 +2056,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testRemoveSrFromRspFullBlockRegression() {
-        final long offset = 3*65536 + 52546;  // 249154
+        final long offset = 3*BLOCK_SIZE + 52546;  // 249154
         SortedRanges sr = new SortedRangesInt(8, offset);
         sr = sr.addRange(offset + 0, offset + 1);
         sr = sr.addRange(offset + 12, offset + 13);
         sr = sr.add(offset + 16);
         sr = sr.add(offset + 22);
         sr = sr.addRange(offset + 25, offset + 27);
-        final long card = 5 * 65536;
+        final long card = 5 * BLOCK_SIZE;
         final RspBitmap rb = new RspBitmap(0, card - 1);
         assertEquals(card, rb.getCardinality());
         final TreeIndexImpl result = rb.ixRemove(sr);
@@ -2159,5 +2156,26 @@ public class TreeIndexTest extends SortedIndexTestBase {
             TreeIndexImpl tix = builder.getTreeIndexImpl();
             assertTrue((j == 0) ? tix instanceof SortedRanges : tix instanceof RspBitmap);
         }
+    }
+
+    public void testRemoveSrFromRspFullBlockRegression2() {
+        // try to prime the work data to be only a single thing
+        final RspBitmap rb1 = new RspBitmap(0, 1<<17 - 1);
+        rb1.ixCompact();
+        final RspBitmap rb2 = new RspBitmap(0, 1<<16 - 1);
+        rb2.ixCompact();
+        rb2.andEqualsUnsafe(rb1);
+        final long offset = 3*BLOCK_SIZE + 52546;  // 249154
+        SortedRanges sr = new SortedRangesInt(8, offset);
+        sr = sr.addRange(offset + 0, offset + 1);
+        sr = sr.addRange(offset + 12, offset + 13);
+        sr = sr.add(offset + 16);
+        sr = sr.add(offset + 22);
+        sr = sr.addRange(offset + 25, offset + 27);
+        final long card = 5 * BLOCK_SIZE;
+        final RspBitmap rb = new RspBitmap(0, card - 1);
+        assertEquals(card, rb.getCardinality());
+        final TreeIndexImpl result = rb.ixRemove(sr);
+        assertEquals(card - sr.getCardinality(), result.ixCardinality());
     }
 }
