@@ -338,61 +338,122 @@ message FilterTableRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
 
-  repeated FilterDescription filters = 3;
+  repeated Condition filters = 3;
 }
 
-message FilterDescription {
-  Operation filter_op = 1;
-  repeated FilterDescription children = 2;
+message Reference {
+  string columnName = 1;
+}
+
+message Literal {
   oneof value {
-    string string_value = 3;
-    double double_value = 4;
-    bool bool_value = 5;
-    sint64 long_value = 6;
-    sint64 nano_time_value = 7; // nanos since the epoch
+    string stringValue = 1;
+    double doubleValue = 2;
+    bool boolValue = 3;
+    sint64 longValue = 4;
+    sint64 nanoTimeValue = 5; // nanos since the epoch
   }
-
-  enum Operation {
-    UNKNOWN = 0;
-    // 2+ children
-    AND = 1;
-    OR = 2;
-
-    // 1 child
-    NOT = 3;
-
-    // 2 children are values
-    LT = 4;
-    GT = 5;
-    LTE = 6;
-    GTE = 7;
-    EQ = 8;
-    EQ_ICASE = 9;
-    NEQ = 10;
-    NEQ_ICASE = 11;
-
-    // 2+ children are values
-    IN = 12;
-    IN_ICASE = 13;
-    NOT_IN = 14;
-    NOT_IN_ICASE = 15;
-
-    // 1 child is anything (probably just value)
-    IS_NULL = 16;
-    // 0+ children are anything
-    INVOKE = 17;
-
-    // 0 children
-    LITERAL = 18;
-    REFERENCE = 19;
-
-    CONTAINS = 20;
-    CONTAINS_ICASE = 21;
-    MATCHES = 22;
-    MATCHES_ICASE = 23;
-
-    SEARCH = 24;
+}
+// could also inline this to each place that uses it
+message Value {
+  oneof data {
+    Reference reference = 1;
+    Literal literal = 2;
   }
+}
+
+message Condition {
+  oneof data {
+    AndCondition and = 1;
+    OrCondition or = 2;
+    NotCondition not = 3;
+
+    CompareCondition compare = 4;
+
+    InCondition in = 5;
+
+    InvokeCondition invoke = 6;
+
+    IsNullCondition isNull = 7;
+
+    MatchesCondition matches = 8;
+    ContainsCondition contains = 9;
+
+    SearchCondition search = 10;
+  }
+}
+
+// merge AND and OR into one and give them an "operation"?
+message AndCondition {
+  repeated Condition filters = 1;
+}
+message OrCondition {
+  repeated Condition filters = 1;
+}
+message NotCondition {
+  Condition filter = 1;
+}
+
+message CompareCondition {
+  enum CompareOperation {
+    LESS_THAN = 0;
+    LESS_THAN_OR_EQUAL = 1;
+    GREATER_THAN = 2;
+    GREATER_THAN_OR_EQUAL = 3;
+    EQUALS = 4;
+    NOT_EQUALS = 5;
+  }
+  CompareOperation operation = 1;
+  Value lhs = 2;
+  Value rhs = 3;
+}
+
+enum CaseSensitivity {
+  MATCH_CASE = 0;
+  IGNORE_CASE = 1;
+}
+enum MatchType {
+  REGULAR = 0;
+  INVERTED = 1;
+}
+
+message InCondition {
+  Value target = 1;
+  repeated Value candidates = 2;
+
+  CaseSensitivity caseSensitivity = 3;
+  MatchType matchType = 4;
+}
+
+message InvokeCondition {
+  string method = 1;
+  Value target = 2;
+  repeated Value arguments = 3;
+}
+message IsNullCondition {
+  Reference reference = 1;
+}
+
+message MatchesCondition {
+  Reference reference = 1;
+  string regex = 2;
+
+  CaseSensitivity caseSensitivity = 3;
+  MatchType matchType = 4;
+}
+
+message ContainsCondition {
+  Reference reference = 1;
+  string searchString = 2;
+
+  CaseSensitivity caseSensitivity = 3;
+  MatchType matchType = 4;
+}
+
+// search
+message SearchCondition {
+  string searchString = 1;
+  repeated Reference optionalReferences = 2;
 }
 
 message FlattenRequest {
