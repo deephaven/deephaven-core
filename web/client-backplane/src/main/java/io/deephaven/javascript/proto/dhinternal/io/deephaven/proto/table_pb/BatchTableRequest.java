@@ -305,6 +305,368 @@ public class BatchTableRequest {
       public interface FilterFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface FiltersListFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface AndFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.AndFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getFiltersList();
+
+            @JsProperty
+            void setFiltersList(JsArray<Object> filtersList);
+
+            @JsOverlay
+            default void setFiltersList(Object[] filtersList) {
+              setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+            }
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface CompareFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LhsFieldType {
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface LiteralFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDoublevalue();
+
+                @JsProperty
+                double getLongvalue();
+
+                @JsProperty
+                double getNanotimevalue();
+
+                @JsProperty
+                String getStringvalue();
+
+                @JsProperty
+                boolean isBoolvalue();
+
+                @JsProperty
+                void setBoolvalue(boolean boolvalue);
+
+                @JsProperty
+                void setDoublevalue(double doublevalue);
+
+                @JsProperty
+                void setLongvalue(double longvalue);
+
+                @JsProperty
+                void setNanotimevalue(double nanotimevalue);
+
+                @JsProperty
+                void setStringvalue(String stringvalue);
+              }
+
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface ReferenceFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getColumnname();
+
+                @JsProperty
+                void setColumnname(String columnname);
+              }
+
+              @JsOverlay
+              static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                  getLiteral();
+
+              @JsProperty
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                  getReference();
+
+              @JsProperty
+              void setLiteral(
+                  BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                          .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                      literal);
+
+              @JsProperty
+              void setReference(
+                  BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                          .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                      reference);
+            }
+
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.CompareFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.CompareFieldType.LhsFieldType
+                getLhs();
+
+            @JsProperty
+            double getOperation();
+
+            @JsProperty
+            Object getRhs();
+
+            @JsProperty
+            void setLhs(
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType
+                    lhs);
+
+            @JsProperty
+            void setOperation(double operation);
+
+            @JsProperty
+            void setRhs(Object rhs);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface ContainsFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.ContainsFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            String getSearchstring();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setReference(Object reference);
+
+            @JsProperty
+            void setSearchstring(String searchstring);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface InvokeFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.InvokeFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getArgumentsList();
+
+            @JsProperty
+            String getMethod();
+
+            @JsProperty
+            Object getTarget();
+
+            @JsProperty
+            void setArgumentsList(JsArray<Object> argumentsList);
+
+            @JsOverlay
+            default void setArgumentsList(Object[] argumentsList) {
+              setArgumentsList(Js.<JsArray<Object>>uncheckedCast(argumentsList));
+            }
+
+            @JsProperty
+            void setMethod(String method);
+
+            @JsProperty
+            void setTarget(Object target);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface IsnullFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.IsnullFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            void setReference(Object reference);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface MatchesFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.MatchesFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            String getRegex();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setReference(Object reference);
+
+            @JsProperty
+            void setRegex(String regex);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface NotFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.NotFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getFilter();
+
+            @JsProperty
+            void setFilter(Object filter);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface OrFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.OrFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getFiltersList();
+
+            @JsProperty
+            void setFiltersList(JsArray<Object> filtersList);
+
+            @JsOverlay
+            default void setFiltersList(Object[] filtersList) {
+              setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+            }
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface Pb_inFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.Pb_inFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getCandidatesList();
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getTarget();
+
+            @JsProperty
+            void setCandidatesList(JsArray<Object> candidatesList);
+
+            @JsOverlay
+            default void setCandidatesList(Object[] candidatesList) {
+              setCandidatesList(Js.<JsArray<Object>>uncheckedCast(candidatesList));
+            }
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setTarget(Object target);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface SearchFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.SearchFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getOptionalreferencesList();
+
+            @JsProperty
+            String getSearchstring();
+
+            @JsProperty
+            void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+
+            @JsOverlay
+            default void setOptionalreferencesList(Object[] optionalreferencesList) {
+              setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+            }
+
+            @JsProperty
+            void setSearchstring(String searchstring);
+          }
+
           @JsOverlay
           static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                   .FiltersListFieldType
@@ -313,51 +675,114 @@ public class BatchTableRequest {
           }
 
           @JsProperty
-          JsArray<Object> getChildrenList();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .AndFieldType
+              getAnd();
 
           @JsProperty
-          double getDoubleValue();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .CompareFieldType
+              getCompare();
 
           @JsProperty
-          double getFilterOp();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .ContainsFieldType
+              getContains();
 
           @JsProperty
-          double getLongValue();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .InvokeFieldType
+              getInvoke();
 
           @JsProperty
-          double getNanoTimeValue();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .IsnullFieldType
+              getIsnull();
 
           @JsProperty
-          String getStringValue();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .MatchesFieldType
+              getMatches();
 
           @JsProperty
-          boolean isBoolValue();
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .NotFieldType
+              getNot();
 
           @JsProperty
-          void setBoolValue(boolean boolValue);
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .OrFieldType
+              getOr();
 
           @JsProperty
-          void setChildrenList(JsArray<Object> childrenList);
-
-          @JsOverlay
-          default void setChildrenList(Object[] childrenList) {
-            setChildrenList(Js.<JsArray<Object>>uncheckedCast(childrenList));
-          }
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .Pb_inFieldType
+              getPb_in();
 
           @JsProperty
-          void setDoubleValue(double doubleValue);
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
+                  .SearchFieldType
+              getSearch();
 
           @JsProperty
-          void setFilterOp(double filterOp);
+          void setAnd(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.AndFieldType
+                  and);
 
           @JsProperty
-          void setLongValue(double longValue);
+          void setCompare(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType
+                  compare);
 
           @JsProperty
-          void setNanoTimeValue(double nanoTimeValue);
+          void setContains(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.ContainsFieldType
+                  contains);
 
           @JsProperty
-          void setStringValue(String stringValue);
+          void setInvoke(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.InvokeFieldType
+                  invoke);
+
+          @JsProperty
+          void setIsnull(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.IsnullFieldType
+                  isnull);
+
+          @JsProperty
+          void setMatches(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.MatchesFieldType
+                  matches);
+
+          @JsProperty
+          void setNot(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.NotFieldType
+                  not);
+
+          @JsProperty
+          void setOr(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.OrFieldType
+                  or);
+
+          @JsProperty
+          void setPb_in(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.Pb_inFieldType
+                  pb_in);
+
+          @JsProperty
+          void setSearch(
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.SearchFieldType
+                  search);
         }
 
         @JsOverlay
@@ -1311,6 +1736,368 @@ public class BatchTableRequest {
       public interface FilterFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface FiltersListFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface AndFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.AndFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getFiltersList();
+
+            @JsProperty
+            void setFiltersList(JsArray<Object> filtersList);
+
+            @JsOverlay
+            default void setFiltersList(Object[] filtersList) {
+              setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+            }
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface CompareFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LhsFieldType {
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface LiteralFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDoublevalue();
+
+                @JsProperty
+                double getLongvalue();
+
+                @JsProperty
+                double getNanotimevalue();
+
+                @JsProperty
+                String getStringvalue();
+
+                @JsProperty
+                boolean isBoolvalue();
+
+                @JsProperty
+                void setBoolvalue(boolean boolvalue);
+
+                @JsProperty
+                void setDoublevalue(double doublevalue);
+
+                @JsProperty
+                void setLongvalue(double longvalue);
+
+                @JsProperty
+                void setNanotimevalue(double nanotimevalue);
+
+                @JsProperty
+                void setStringvalue(String stringvalue);
+              }
+
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface ReferenceFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getColumnname();
+
+                @JsProperty
+                void setColumnname(String columnname);
+              }
+
+              @JsOverlay
+              static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                  getLiteral();
+
+              @JsProperty
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                  getReference();
+
+              @JsProperty
+              void setLiteral(
+                  BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                          .FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType
+                      literal);
+
+              @JsProperty
+              void setReference(
+                  BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                          .FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType
+                      reference);
+            }
+
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.CompareFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.CompareFieldType.LhsFieldType
+                getLhs();
+
+            @JsProperty
+            double getOperation();
+
+            @JsProperty
+            Object getRhs();
+
+            @JsProperty
+            void setLhs(
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                        .FiltersListFieldType.CompareFieldType.LhsFieldType
+                    lhs);
+
+            @JsProperty
+            void setOperation(double operation);
+
+            @JsProperty
+            void setRhs(Object rhs);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface ContainsFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.ContainsFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            String getSearchstring();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setReference(Object reference);
+
+            @JsProperty
+            void setSearchstring(String searchstring);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface InvokeFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.InvokeFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getArgumentsList();
+
+            @JsProperty
+            String getMethod();
+
+            @JsProperty
+            Object getTarget();
+
+            @JsProperty
+            void setArgumentsList(JsArray<Object> argumentsList);
+
+            @JsOverlay
+            default void setArgumentsList(Object[] argumentsList) {
+              setArgumentsList(Js.<JsArray<Object>>uncheckedCast(argumentsList));
+            }
+
+            @JsProperty
+            void setMethod(String method);
+
+            @JsProperty
+            void setTarget(Object target);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface IsnullFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.IsnullFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            void setReference(Object reference);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface MatchesFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.MatchesFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getReference();
+
+            @JsProperty
+            String getRegex();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setReference(Object reference);
+
+            @JsProperty
+            void setRegex(String regex);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface NotFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.NotFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getFilter();
+
+            @JsProperty
+            void setFilter(Object filter);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface OrFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.OrFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getFiltersList();
+
+            @JsProperty
+            void setFiltersList(JsArray<Object> filtersList);
+
+            @JsOverlay
+            default void setFiltersList(Object[] filtersList) {
+              setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+            }
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface Pb_inFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.Pb_inFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getCandidatesList();
+
+            @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
+            double getMatchtype();
+
+            @JsProperty
+            Object getTarget();
+
+            @JsProperty
+            void setCandidatesList(JsArray<Object> candidatesList);
+
+            @JsOverlay
+            default void setCandidatesList(Object[] candidatesList) {
+              setCandidatesList(Js.<JsArray<Object>>uncheckedCast(candidatesList));
+            }
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
+
+            @JsProperty
+            void setMatchtype(double matchtype);
+
+            @JsProperty
+            void setTarget(Object target);
+          }
+
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface SearchFieldType {
+            @JsOverlay
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                    .FiltersListFieldType.SearchFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getOptionalreferencesList();
+
+            @JsProperty
+            String getSearchstring();
+
+            @JsProperty
+            void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+
+            @JsOverlay
+            default void setOptionalreferencesList(Object[] optionalreferencesList) {
+              setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+            }
+
+            @JsProperty
+            void setSearchstring(String searchstring);
+          }
+
           @JsOverlay
           static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                   .FiltersListFieldType
@@ -1319,51 +2106,114 @@ public class BatchTableRequest {
           }
 
           @JsProperty
-          JsArray<Object> getChildrenList();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.AndFieldType
+              getAnd();
 
           @JsProperty
-          double getDoubleValue();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.CompareFieldType
+              getCompare();
 
           @JsProperty
-          double getFilterOp();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.ContainsFieldType
+              getContains();
 
           @JsProperty
-          double getLongValue();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.InvokeFieldType
+              getInvoke();
 
           @JsProperty
-          double getNanoTimeValue();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.IsnullFieldType
+              getIsnull();
 
           @JsProperty
-          String getStringValue();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.MatchesFieldType
+              getMatches();
 
           @JsProperty
-          boolean isBoolValue();
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.NotFieldType
+              getNot();
 
           @JsProperty
-          void setBoolValue(boolean boolValue);
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.OrFieldType
+              getOr();
 
           @JsProperty
-          void setChildrenList(JsArray<Object> childrenList);
-
-          @JsOverlay
-          default void setChildrenList(Object[] childrenList) {
-            setChildrenList(Js.<JsArray<Object>>uncheckedCast(childrenList));
-          }
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.Pb_inFieldType
+              getPb_in();
 
           @JsProperty
-          void setDoubleValue(double doubleValue);
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                  .FiltersListFieldType.SearchFieldType
+              getSearch();
 
           @JsProperty
-          void setFilterOp(double filterOp);
+          void setAnd(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.AndFieldType
+                  and);
 
           @JsProperty
-          void setLongValue(double longValue);
+          void setCompare(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.CompareFieldType
+                  compare);
 
           @JsProperty
-          void setNanoTimeValue(double nanoTimeValue);
+          void setContains(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.ContainsFieldType
+                  contains);
 
           @JsProperty
-          void setStringValue(String stringValue);
+          void setInvoke(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.InvokeFieldType
+                  invoke);
+
+          @JsProperty
+          void setIsnull(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.IsnullFieldType
+                  isnull);
+
+          @JsProperty
+          void setMatches(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.MatchesFieldType
+                  matches);
+
+          @JsProperty
+          void setNot(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.NotFieldType
+                  not);
+
+          @JsProperty
+          void setOr(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.OrFieldType
+                  or);
+
+          @JsProperty
+          void setPb_in(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.Pb_inFieldType
+                  pb_in);
+
+          @JsProperty
+          void setSearch(
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
+                      .FiltersListFieldType.SearchFieldType
+                  search);
         }
 
         @JsOverlay
