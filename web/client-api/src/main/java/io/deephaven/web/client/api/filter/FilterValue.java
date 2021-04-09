@@ -1,15 +1,19 @@
 package io.deephaven.web.client.api.filter;
 
-import elemental2.core.Global;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CompareCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ContainsCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.InCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.InvokeCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.IsNullCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MatchesCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Reference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Value;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
-import io.deephaven.web.shared.ast.FilterPrinter;
-import io.deephaven.web.shared.data.FilterDescriptor;
-import io.deephaven.web.shared.data.FilterDescriptor.FilterOperation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comparecondition.CompareOperationMap;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
@@ -48,7 +52,7 @@ public class FilterValue {
             return new FilterValue(lit);
         } else if (Js.typeof(input).equals("number")) {
             Literal lit = new Literal();
-            lit.setDoublevalue(input.toString());
+            lit.setDoublevalue(Js.asDouble(input));
             return new FilterValue(lit);
         } else {
             //not sure what the input is, try to toString(), then parse to Double, and use that
@@ -104,15 +108,13 @@ public class FilterValue {
     }
 
     public FilterCondition eqIgnoreCase(FilterValue term) {
-        //TODO this doesn't work, needs to be an IN, or need to make a way to do this
-        return makeCompare(term, CompareCondition.CompareOperation.getEQUALS());
+        return inIgnoreCase(new FilterValue[] {term});
     }
     public FilterCondition notEq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
     }
     public FilterCondition notEqIgnoreCase(FilterValue term) {
-        //TODO this doesn't work, needs to be an IN, or need to make a way to do this
-        return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
+        return notInIgnoreCase(new FilterValue[] {term});
     }
 
     public FilterCondition greaterThan(FilterValue term) {
@@ -128,13 +130,10 @@ public class FilterValue {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN_OR_EQUAL());
     }
     public FilterCondition in(FilterValue[] terms) {
-        double matchType = Table_pb.MatchType.getREGULAR();
-        double casesensitivity = Table_pb.CaseSensitivity.getMATCH_CASE();
-
-        return makeIn(terms, matchType, casesensitivity);
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
-    public FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
+    private FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
         InCondition value = new InCondition();
         value.setTarget(descriptor);
         value.setMatchtype(matchType);
@@ -143,92 +142,87 @@ public class FilterValue {
 
         Condition c = new Condition();
         c.setIn(value);
-
         return FilterCondition.createAndValidate(c);
     }
 
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.IN_ICASE);
-        descriptor.setChildren(buildDescriptors(this.descriptor, terms));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     public FilterCondition notIn(FilterValue[] terms) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.NOT_IN);
-        descriptor.setChildren(buildDescriptors(this.descriptor, terms));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.NOT_IN_ICASE);
-        descriptor.setChildren(buildDescriptors(this.descriptor, terms));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
+
     public FilterCondition contains(FilterValue term) {
-
-
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.CONTAINS);
-        descriptor.setChildren(buildDescriptors(this.descriptor, term));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeContains(term, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
+
     public FilterCondition containsIgnoreCase(FilterValue term) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.CONTAINS_ICASE);
-        descriptor.setChildren(buildDescriptors(this.descriptor, term));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeContains(term, Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
+
+    private FilterCondition makeContains(FilterValue term, double casesensitivity) {
+        ContainsCondition contains = new ContainsCondition();
+        contains.setSearchstring(term.descriptor.getLiteral().getStringvalue());
+        contains.setCasesensitivity(casesensitivity);
+
+        Condition c = new Condition();
+        c.setContains(contains);
+        return FilterCondition.createAndValidate(c);
+    }
+
     public FilterCondition matches(FilterValue pattern) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.MATCHES);
-        descriptor.setChildren(buildDescriptors(this.descriptor, pattern));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeMatches(pattern, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
     public FilterCondition matchesIgnoreCase(FilterValue pattern) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.MATCHES_ICASE);
-        descriptor.setChildren(buildDescriptors(this.descriptor, pattern));
-        return FilterCondition.createAndValidate(descriptor);
+        return makeMatches(pattern, Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
+
+    private FilterCondition makeMatches(FilterValue term, double casesensitivity) {
+        MatchesCondition contains = new MatchesCondition();
+
+        contains.setReference(this.descriptor.getReference());
+        contains.setRegex(term.descriptor.getLiteral().getStringvalue());
+        contains.setCasesensitivity(casesensitivity);
+
+        Condition c = new Condition();
+        c.setMatches(contains);
+        return FilterCondition.createAndValidate(c);
+    }
+
     public FilterCondition isTrue() {
         return eq(FilterValue.ofBoolean(true));
     }
+
     public FilterCondition isFalse() {
         return eq(FilterValue.ofBoolean(false));
     }
+
     public FilterCondition isNull() {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.IS_NULL);
-        descriptor.setChildren(new FilterDescriptor[] { this.descriptor });
-        return FilterCondition.createAndValidate(descriptor);
+        IsNullCondition isNull = new IsNullCondition();
+        isNull.setReference(this.descriptor.getReference());
+
+        Condition c = new Condition();
+        c.setIsnull(isNull);
+        return FilterCondition.createAndValidate(c);
     }
 
     public FilterCondition invoke(String method, FilterValue... args) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.INVOKE);
-        descriptor.setValue(method);
-        descriptor.setChildren(buildDescriptors(this.descriptor, args));
-        return FilterCondition.createAndValidate(descriptor);
-    }
+        InvokeCondition invoke = new InvokeCondition();
+        invoke.setMethod(method);
+        invoke.setTarget(descriptor);
+        invoke.setArgumentsList(Arrays.stream(args).map(v -> v.descriptor).toArray(Value[]::new));
 
-    @JsIgnore
-    private static FilterDescriptor[] buildDescriptors(FilterDescriptor one, FilterValue two) {
-        return new FilterDescriptor[]{one, two.descriptor};
-    }
-    @JsIgnore
-    protected static FilterDescriptor[] buildDescriptors(FilterDescriptor one, FilterValue... more) {
-        FilterDescriptor[] descriptors = new FilterDescriptor[1];
-        descriptors[0] = one;
-        for (int i = 0; i < more.length; i++) {
-            descriptors[i + 1] = more[i].descriptor;
-        }
-        return descriptors;
+        Condition c = new Condition();
+        c.setInvoke(invoke);
+        return FilterCondition.createAndValidate(c);
     }
 
     @Override
     public String toString() {
-        return new FilterPrinter(Global.JSON::stringify).print(descriptor);
+        return descriptor.toString();
     }
 }

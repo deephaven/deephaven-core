@@ -277,8 +277,7 @@ public class BatchBuilder {
         FilterTableRequest value = new FilterTableRequest();
         for (FilterCondition filter : op.getFilters()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasFilter(filter)) {
-                //TODO core#78 implement this
-//                value.addFilters(op.makeDescriptor());
+                value.addFilters(filter.makeDescriptor());
             }
         }
         if (value.getFiltersList().length == 0) {
