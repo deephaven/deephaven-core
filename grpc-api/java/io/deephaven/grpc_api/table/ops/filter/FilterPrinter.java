@@ -2,6 +2,7 @@ package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.*;
 
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -16,6 +17,12 @@ public class FilterPrinter implements FilterVisitor {
     public String print(Condition condition) {
         assert sb.length() == 0 : "sb.length() == 0";
         FilterVisitor.accept(condition, this);
+
+        return sb.toString();
+    }
+    public String print(Literal literal) {
+        assert sb.length() == 0 : "sb.length() == 0";
+        onLiteral(literal);
 
         return sb.toString();
     }
@@ -209,7 +216,10 @@ public class FilterPrinter implements FilterVisitor {
                 sb.append(stringEscape.apply(literal.getStringValue()));
                 break;
             case DOUBLEVALUE:
-                sb.append(literal.getDoubleValue());
+                DecimalFormat format = new DecimalFormat("##0");
+                format.setDecimalSeparatorAlwaysShown(false);
+                format.setGroupingUsed(false);
+                sb.append(format.format(literal.getDoubleValue()));
                 break;
             case BOOLVALUE:
                 sb.append(literal.getBoolValue());

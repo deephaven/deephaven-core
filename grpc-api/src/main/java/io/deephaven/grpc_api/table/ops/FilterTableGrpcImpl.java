@@ -3,6 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.table.ops.filter.FilterFactory;
 import io.deephaven.grpc_api.table.ops.filter.FilterPrinter;
 import io.deephaven.grpc_api.table.ops.filter.NormalizeNots;
 import io.deephaven.proto.backplane.grpc.*;
@@ -10,6 +11,7 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
 import java.util.List;
 
 @Singleton
@@ -73,11 +75,11 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
 
         // get a top array of filters to convert into SelectFilters
         //TODO
+        List<Condition> finishedConditions = Collections.singletonList(filter);
 
         // build SelectFilter[] to pass to the table
-        //TODO
         System.out.println(new FilterPrinter(str -> "\"" + StringEscapeUtils.escapeJava(str) + "\"").print(filter));
-        SelectFilter[] selectFilters = new SelectFilter[0];
+        SelectFilter[] selectFilters = finishedConditions.stream().map(f -> new FilterFactory(sourceTable).makeFilter(f)).toArray(SelectFilter[]::new);
 
         // execute the filters
         return sourceTable.where(selectFilters);
