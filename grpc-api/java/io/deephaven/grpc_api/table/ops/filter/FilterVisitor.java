@@ -4,116 +4,49 @@ import io.deephaven.proto.backplane.grpc.*;
 
 import java.util.List;
 
-public interface FilterVisitor {
-    void onAnd(List<Condition> filtersList);
-    void onOr(List<Condition> filtersList);
-    void onNot(Condition filter);
+public interface FilterVisitor<R> {
+    R onAnd(List<Condition> filtersList);
+    R onOr(List<Condition> filtersList);
+    R onNot(Condition filter);
 
-    void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs);
+    R onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs);
 
-    void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType);
+    R onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType);
 
-    void onIsNull(Reference reference);
+    R onIsNull(Reference reference);
 
-    void onInvoke(String method, Value target, List<Value> argumentsList);
+    R onInvoke(String method, Value target, List<Value> argumentsList);
 
-    void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType);
-    void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType);
+    R onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType);
+    R onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType);
 
-    void onSearch(String searchString, List<Reference> optionalReferencesList);
+    R onSearch(String searchString, List<Reference> optionalReferencesList);
 
-    static void accept(Condition condition, FilterVisitor visitor) {
+    static <R> R accept(Condition condition, FilterVisitor<R> visitor) {
         switch (condition.getDataCase()) {
             case AND:
-                visitor.onAnd(condition.getAnd().getFiltersList());
-                break;
+                return visitor.onAnd(condition.getAnd().getFiltersList());
             case OR:
-                visitor.onOr(condition.getAnd().getFiltersList());
-                break;
+                return visitor.onOr(condition.getAnd().getFiltersList());
             case NOT:
-                visitor.onNot(condition.getNot().getFilter());
-                break;
+                return visitor.onNot(condition.getNot().getFilter());
             case COMPARE:
-                visitor.onComparison(condition.getCompare().getOperation(), condition.getCompare().getLhs(), condition.getCompare().getRhs());
-                break;
+                return visitor.onComparison(condition.getCompare().getOperation(), condition.getCompare().getLhs(), condition.getCompare().getRhs());
             case IN:
-                visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(), condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
-                break;
+                return visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(), condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
             case INVOKE:
-                visitor.onInvoke(condition.getInvoke().getMethod(), condition.getInvoke().getTarget(), condition.getInvoke().getArgumentsList());
-                break;
+                return visitor.onInvoke(condition.getInvoke().getMethod(), condition.getInvoke().getTarget(), condition.getInvoke().getArgumentsList());
             case ISNULL:
-                visitor.onIsNull(condition.getIsNull().getReference());
-                break;
+                return visitor.onIsNull(condition.getIsNull().getReference());
             case MATCHES:
-                visitor.onMatches(condition.getMatches().getReference(), condition.getMatches().getRegex(), condition.getMatches().getCaseSensitivity(), condition.getMatches().getMatchType());
-                break;
+                return visitor.onMatches(condition.getMatches().getReference(), condition.getMatches().getRegex(), condition.getMatches().getCaseSensitivity(), condition.getMatches().getMatchType());
             case CONTAINS:
-                visitor.onContains(condition.getContains().getReference(), condition.getContains().getSearchString(), condition.getContains().getCaseSensitivity(), condition.getContains().getMatchType());
-                break;
+                return visitor.onContains(condition.getContains().getReference(), condition.getContains().getSearchString(), condition.getContains().getCaseSensitivity(), condition.getContains().getMatchType());
             case SEARCH:
-                visitor.onSearch(condition.getSearch().getSearchString(), condition.getSearch().getOptionalReferencesList());
-                break;
+                return visitor.onSearch(condition.getSearch().getSearchString(), condition.getSearch().getOptionalReferencesList());
             case DATA_NOT_SET:
             default:
                 throw new IllegalStateException("Unsupported condition " + condition);
-        }
-    }
-
-    abstract class AbstractFilterVisitor implements FilterVisitor {
-        protected void visitChildren(List<Condition> filtersList) {
-            for (Condition condition : filtersList) {
-                accept(condition, this);
-            }
-        }
-        @Override
-        public void onAnd(List<Condition> filtersList) {
-            visitChildren(filtersList);
-        }
-
-        @Override
-        public void onOr(List<Condition> filtersList) {
-            visitChildren(filtersList);
-        }
-
-        @Override
-        public void onNot(Condition filter) {
-            FilterVisitor.accept(filter, this);
-        }
-
-        @Override
-        public void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
-
-        }
-
-        @Override
-        public void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
-
-        }
-
-        @Override
-        public void onIsNull(Reference reference) {
-
-        }
-
-        @Override
-        public void onInvoke(String method, Value target, List<Value> argumentsList) {
-
-        }
-
-        @Override
-        public void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
-
-        }
-
-        @Override
-        public void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
-
-        }
-
-        @Override
-        public void onSearch(String searchString, List<Reference> optionalReferencesList) {
-
         }
     }
 }

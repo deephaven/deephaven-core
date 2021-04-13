@@ -6,7 +6,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public class FilterPrinter implements FilterVisitor {
+public class FilterPrinter implements FilterVisitor<Void> {
     private final StringBuilder sb = new StringBuilder();
     private final UnaryOperator<String> stringEscape;
 
@@ -28,13 +28,13 @@ public class FilterPrinter implements FilterVisitor {
     }
 
     @Override
-    public void onAnd(List<Condition> filtersList) {
+    public Void onAnd(List<Condition> filtersList) {
         if (filtersList.isEmpty()) {
-            return;//should be pruned earlier
+            return null;//should be pruned earlier
         }
         if (filtersList.size() == 1) {
             FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
-            return;
+            return null;
         }
         sb.append("(");
 
@@ -46,16 +46,17 @@ public class FilterPrinter implements FilterVisitor {
         });
 
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onOr(List<Condition> filtersList) {
+    public Void onOr(List<Condition> filtersList) {
         if (filtersList.isEmpty()) {
-            return;//should be pruned earlier
+            return null;//should be pruned earlier
         }
         if (filtersList.size() == 1) {
             FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
-            return;
+            return null;
         }
         sb.append("(");
 
@@ -67,17 +68,19 @@ public class FilterPrinter implements FilterVisitor {
         });
 
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onNot(Condition filter) {
+    public Void onNot(Condition filter) {
         sb.append("!(");
         FilterVisitor.accept(filter, this);
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    public Void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
         accept(lhs);
         switch (operation) {
             case LESS_THAN:
@@ -103,12 +106,13 @@ public class FilterPrinter implements FilterVisitor {
                 throw new UnsupportedOperationException("Unknown operation " + operation);
         }
         accept(rhs);
+        return null;
     }
 
     @Override
-    public void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (candidatesList.isEmpty()) {
-            return;// should have already been pruned
+            return null;// should have already been pruned
         }
         accept(target);
         if (caseSensitivity == CaseSensitivity.IGNORE_CASE) {
@@ -123,17 +127,19 @@ public class FilterPrinter implements FilterVisitor {
             sb.append(", ");
             accept(candidatesList.get(i));
         }
+        return null;
     }
 
     @Override
-    public void onIsNull(Reference reference) {
+    public Void onIsNull(Reference reference) {
         sb.append("isNull(");
         onReference(reference);
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onInvoke(String method, Value target, List<Value> argumentsList) {
+    public Void onInvoke(String method, Value target, List<Value> argumentsList) {
         if (target != null) {
             accept(target);
             sb.append(".");
@@ -146,11 +152,11 @@ public class FilterPrinter implements FilterVisitor {
             accept(argumentsList.get(i));
         }
         sb.append(")");
-
+        return null;
     }
 
     @Override
-    public void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (matchType == MatchType.INVERTED) {
             sb.append("!");
         }
@@ -163,10 +169,11 @@ public class FilterPrinter implements FilterVisitor {
         sb.append(",");
         sb.append(stringEscape.apply(searchString));
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (matchType == MatchType.INVERTED) {
             sb.append("!");
         }
@@ -179,10 +186,11 @@ public class FilterPrinter implements FilterVisitor {
         sb.append(",");
         sb.append(stringEscape.apply(regex));
         sb.append(")");
+        return null;
     }
 
     @Override
-    public void onSearch(String searchString, List<Reference> optionalReferencesList) {
+    public Void onSearch(String searchString, List<Reference> optionalReferencesList) {
         sb.append("searchTableColumns(");
         sb.append(stringEscape.apply(searchString));
         for (Reference reference : optionalReferencesList) {
@@ -190,9 +198,10 @@ public class FilterPrinter implements FilterVisitor {
             onReference(reference);
         }
         sb.append(")");
+        return null;
     }
 
-    private void accept(Value value) {
+    private Void accept(Value value) {
         switch (value.getDataCase()) {
             case REFERENCE:
                 onReference(value.getReference());
@@ -204,10 +213,12 @@ public class FilterPrinter implements FilterVisitor {
             default:
                 throw new UnsupportedOperationException("Unknown value " + value);
         }
+        return null;
     }
 
-    private void onReference(Reference reference) {
+    private Void onReference(Reference reference) {
         sb.append(reference.getColumnName());
+        return null;
     }
 
     private void onLiteral(Literal literal) {

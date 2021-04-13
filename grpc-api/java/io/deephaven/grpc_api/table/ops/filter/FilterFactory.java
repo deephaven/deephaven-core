@@ -30,8 +30,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class FilterFactory implements FilterVisitor {
-    private final Stack<List<SelectFilter>> stack = new Stack<>();
+public class FilterFactory implements FilterVisitor<SelectFilter> {
     private final Table table;
 
     public FilterFactory(Table table) {
@@ -39,40 +38,28 @@ public class FilterFactory implements FilterVisitor {
     }
 
     public SelectFilter makeFilter(Condition condition) {
-        ArrayList<SelectFilter> topLevel = new ArrayList<>();
-        stack.push(topLevel);
-        FilterVisitor.accept(condition, this);
-        assert topLevel.size() == 1;
-        return topLevel.get(0);
+        return FilterVisitor.accept(condition, this);
     }
 
     @Override
-    public void onAnd(List<Condition> filtersList) {
-        stack.push(new ArrayList<>());
-
-        for (Condition condition : filtersList) {
-            FilterVisitor.accept(condition, this);
-        }
-
-        SelectFilter conjunctiveFilter = ConjunctiveFilter.makeConjunctiveFilter(stack.pop().toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
-        stack.peek().add(conjunctiveFilter);
+    public SelectFilter onAnd(List<Condition> filtersList) {
+        final SelectFilter[] items = filtersList.stream()
+                .map(cond -> FilterVisitor.accept(cond, this))
+                .toArray(SelectFilter[]::new);
+        return ConjunctiveFilter.makeConjunctiveFilter(items);
     }
 
     @Override
-    public void onOr(List<Condition> filtersList) {
-        stack.push(new ArrayList<>());
-
-        for (Condition condition : filtersList) {
-            FilterVisitor.accept(condition, this);
-        }
-
-        SelectFilter disjunctiveFilter = DisjunctiveFilter.makeDisjunctiveFilter(stack.pop().toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
-        stack.peek().add(disjunctiveFilter);
+    public SelectFilter onOr(List<Condition> filtersList) {
+        final SelectFilter[] items = filtersList.stream()
+                .map(cond -> FilterVisitor.accept(cond, this))
+                .toArray(SelectFilter[]::new);
+        return DisjunctiveFilter.makeDisjunctiveFilter(items);
     }
 
-    private void generateConditionFilter(Condition filter) {
+    private SelectFilter generateConditionFilter(Condition filter) {
         FilterPrinter printer = makePrinter();
-        stack.peek().add(SelectFilterFactory.getExpression(printer.print(filter)));
+        return SelectFilterFactory.getExpression(printer.print(filter));
     }
 
     @NotNull
@@ -85,33 +72,31 @@ public class FilterFactory implements FilterVisitor {
     }
 
     @Override
-    public void onNot(Condition filter) {
+    public SelectFilter onNot(Condition filter) {
         // already must have optimized out any nested operations that we can flatten this into
-        generateConditionFilter(Condition.newBuilder().setNot(NotCondition.newBuilder()
+        return generateConditionFilter(Condition.newBuilder().setNot(NotCondition.newBuilder()
                 .setFilter(filter)
                 .build()).build());
     }
 
     @Override
-    public void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    public SelectFilter onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
         switch (operation) {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL:
-                generateNumericConditionFilter(operation, lhs, rhs);
-                break;
+                return generateNumericConditionFilter(operation, lhs, rhs);
             case EQUALS:
             case NOT_EQUALS:
-                // probably not possible here, needs to be converted to an IN before this point
-                break;
+                throw new IllegalStateException("probably not possible here, needs to be converted to an IN before this point");
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare operation " + operation);
         }
     }
 
-    private void generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    private SelectFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
         boolean invert;
         String columName;
         Literal value;
@@ -125,12 +110,11 @@ public class FilterFactory implements FilterVisitor {
             value = rhs.getLiteral();
         } else {
             // both are references or literals, handle as a condition filter, not range
-            generateConditionFilter(Condition.newBuilder().setCompare(CompareCondition.newBuilder()
+            return generateConditionFilter(Condition.newBuilder().setCompare(CompareCondition.newBuilder()
                     .setOperation(operation)
                     .setLhs(lhs)
                     .setRhs(rhs)
                     .build()).build());
-            return;
         }
         String valueString;
         switch (value.getValueCase()) {
@@ -156,7 +140,8 @@ public class FilterFactory implements FilterVisitor {
             default:
                 throw new IllegalStateException("Range filter can't handle literal type " + value.getValueCase());
         }
-        stack.peek().add(new RangeConditionFilter(columName, rangeCondition(operation, invert), valueString, null, FormulaParserConfiguration.parser));
+        return new RangeConditionFilter(columName, rangeCondition(operation, invert), valueString, null,
+                FormulaParserConfiguration.parser);
     }
 
     private com.illumon.iris.gui.table.filters.Condition rangeCondition(CompareCondition.CompareOperation operation, boolean invert) {
@@ -178,7 +163,7 @@ public class FilterFactory implements FilterVisitor {
     }
 
     @Override
-    public void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public SelectFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -194,9 +179,7 @@ public class FilterFactory implements FilterVisitor {
                 values[i - 1] = printer.print(literal);
             }
         }
-
-        stack.peek().add(new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), values));
-
+        return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), values);
     }
 
     private MatchFilter.CaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
@@ -224,15 +207,15 @@ public class FilterFactory implements FilterVisitor {
     }
 
     @Override
-    public void onIsNull(Reference reference) {
-        generateConditionFilter(Condition.newBuilder().setIsNull(IsNullCondition.newBuilder()
+    public SelectFilter onIsNull(Reference reference) {
+        return generateConditionFilter(Condition.newBuilder().setIsNull(IsNullCondition.newBuilder()
                 .setReference(reference)
                 .build()).build());
     }
 
     @Override
-    public void onInvoke(String method, Value target, List<Value> argumentsList) {
-        generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+    public SelectFilter onInvoke(String method, Value target, List<Value> argumentsList) {
+        return generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
                 .setMethod(method)
                 .setTarget(target)
                 .addAllArguments(argumentsList)
@@ -240,23 +223,22 @@ public class FilterFactory implements FilterVisitor {
     }
 
     @Override
-    public void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
-        stack.peek().add(new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), searchString));
+    public SelectFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+        return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), searchString);
     }
 
     @Override
-    public void onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
-        stack.peek().add(new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), regex));
+    public SelectFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
+        return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), regex);
     }
 
     @Override
-    public void onSearch(String searchString, List<Reference> optionalReferencesList) {
+    public SelectFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
         final Set<String> columnNames = optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
         SelectFilter[] selectFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
         if (selectFilters == null || selectFilters.length == 0) {
-            stack.peek().add(SelectNoneFilter.INSTANCE);
-            return;
+            return SelectNoneFilter.INSTANCE;
         }
-        stack.peek().add(DisjunctiveFilter.makeDisjunctiveFilter(selectFilters));
+        return DisjunctiveFilter.makeDisjunctiveFilter(selectFilters);
     }
 }
