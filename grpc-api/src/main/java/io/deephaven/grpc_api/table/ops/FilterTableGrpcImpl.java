@@ -5,7 +5,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.ops.filter.FilterFactory;
 import io.deephaven.grpc_api.table.ops.filter.FilterPrinter;
-import io.deephaven.grpc_api.table.ops.filter.NormalizeNots;
+import io.deephaven.grpc_api.table.ops.filter.NormalizeFilters;
 import io.deephaven.proto.backplane.grpc.*;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -49,7 +49,7 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         //TODO
 
         // rewrite unnecessary NOT expressions away
-        filter = NormalizeNots.exec(filter);
+        filter = NormalizeFilters.exec(filter);
 
         // if a "in" expression has a non-reference on the left or reference on the right, flip it, and split
         // up values so these can be left as INs or remade into EQs, and join them together with OR/ANDs.
