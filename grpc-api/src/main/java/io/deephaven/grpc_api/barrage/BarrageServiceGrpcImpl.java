@@ -6,6 +6,7 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.deephaven.db.backplane.util.BarrageProtoUtil;
 import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.db.util.liveness.SingletonLivenessManager;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.grpc_api.session.SessionService;

@@ -148,6 +148,7 @@ public class SessionService extends LivenessArtifact {
             return;
         }
         unmanage(session);
+        session.onExpired();
     }
 
     public void closeAllSessions() {

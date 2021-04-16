@@ -108,7 +108,7 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
                         export.dropReference();
                     }
                 }
-            } else if (SessionState.isExportStateFinal(state)) {
+            } else if (SessionState.isExportStateTerminal(state)) {
                 final ListenerImpl listener = updateListenerMap.remove(exportId);
                 if (listener != null) {
                     tryUnmanage(listener);

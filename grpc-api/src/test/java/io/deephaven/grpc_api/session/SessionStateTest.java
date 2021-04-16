@@ -4,19 +4,26 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.db.util.liveness.LivenessStateException;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +65,636 @@ public class SessionStateTest {
         livenessScope = null;
         scheduler = null;
         session = null;
+    }
+
+    @Test
+    public void testDestroyOnExportRelease() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            exportObj = session.newExport(nextExportId++).submit(() -> export);
+        }
+
+        // no ref counts yet
+        Assert.eq(export.refCount, "export.refCount", 0);
+
+        // export the object; should inc ref count
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(export.refCount, "export.refCount", 1);
+
+        // assert lookup is same object
+        Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
+        Assert.eq(exportObj.getExportId(), "exportObj.getExportId()", nextExportId - 1, "nextExportId - 1");
+
+        // release
+        exportObj.release();
+        Assert.eq(export.refCount, "export.refCount", 0);
+    }
+
+    @Test
+    public void testServerExportDestroyOnExportRelease() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            exportObj = session.newServerSideExport(export);
+        }
+
+        // better have ref count
+        Assert.eq(export.refCount, "export.refCount", 1);
+
+        // assert lookup is same object
+        Assert.eq(session.getExport(exportObj.getExportId()), "session.getExport(exportObj.getExportId())", exportObj, "exportObj");
+
+        // release
+        exportObj.release();
+        Assert.eq(export.refCount, "export.refCount", 0);
+    }
+
+    @Test
+    public void testDestroyOnSessionRelease() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            exportObj = session.newExport(nextExportId++).submit(() -> export);
+        }
+
+        // no ref counts yet
+        Assert.eq(export.refCount, "export.refCount", 0);
+
+        // export the object; should inc ref count
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(export.refCount, "export.refCount", 1);
+
+        // assert lookup is same object
+        Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
+        Assert.eq(exportObj.getExportId(), "exportObj.getExportId()", nextExportId - 1, "nextExportId - 1");
+
+        // release
+        session.onExpired();
+        Assert.eq(export.refCount, "export.refCount", 0);
+    }
+
+    @Test
+    public void testServerExportDestroyOnSessionRelease() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            exportObj = session.newServerSideExport(export);
+        }
+
+        // better have ref count
+        Assert.eq(export.refCount, "export.refCount", 1);
+
+        // assert lookup is same object
+        Assert.eq(session.getExport(exportObj.getExportId()), "session.getExport(exportObj.getExportId())", exportObj, "exportObj");
+
+        // release
+        session.onExpired();
+        Assert.eq(export.refCount, "export.refCount", 0);
+    }
+
+    @Test
+    public void testWorkItemNoDependencies() {
+        final Object export = new Object();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++).submit(() -> export);
+        expectException(IllegalStateException.class, exportObj::get);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.get(), "exportObj.get()", export, "export");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+    }
+
+    @Test
+    public void testThrowInExportMain() {
+        final MutableBoolean errored = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onError(err -> errored.setTrue())
+                .submit(() -> { throw new RuntimeException("submit exception"); });
+        Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        scheduler.runUntilQueueEmpty();
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.FAILED);
+    }
+
+    @Test
+    public void testThrowInErrorHandler() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .onError(err -> { throw new RuntimeException("error handler exception"); })
+                .submit(() -> {
+                    submitted.setTrue();
+                    throw new RuntimeException("submit exception");
+                });
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        scheduler.runUntilQueueEmpty();
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.FAILED);
+    }
+
+    @Test
+    public void testCancelBeforeDefined() {
+        final SessionState.ExportObject<Object> exportObj = session.getExport(nextExportId);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.UNKNOWN);
+
+        exportObj.cancel();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> submitObj = session.newExport(nextExportId++).submit(submitted::setTrue);
+        Assert.eq(submitObj, "submitObj", exportObj, "exportObj");
+        scheduler.runUntilQueueEmpty();
+
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testCancelBeforeExport() {
+        final SessionState.ExportObject<?> d1 = session.getExport(nextExportId++);
+
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .require(d1)
+                .submit(submitted::setTrue);
+
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.PENDING);
+        exportObj.cancel();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        scheduler.runUntilQueueEmpty();
+
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testCancelDuringExport() {
+        final MutableObject<LivenessArtifact> export = new MutableObject<>();
+        final SessionState.ExportObject<Object> exportObj =
+                session.newExport(nextExportId++).submit(() -> {
+                    session.getExport(nextExportId - 1).cancel();
+                    export.setValue(new PublicLivenessArtifact());
+                    return export;
+                });
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+
+        if (export.getValue().tryRetainReference()) {
+            throw new IllegalStateException("this should be destroyed");
+        }
+    }
+
+    @Test
+    public void testCancelPostExport() {
+        final MutableObject<LivenessArtifact> export = new MutableObject<>();
+        final SessionState.ExportObject<Object> exportObj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            exportObj = session.newExport(nextExportId++).submit(() -> {
+                export.setValue(new PublicLivenessArtifact());
+                return export.getValue();
+            });
+        }
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+
+        if (!export.getValue().tryRetainReference()) {
+            throw new IllegalStateException("this should be live");
+        }
+        export.getValue().dropReference();
+
+        exportObj.cancel();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.RELEASED);
+        if (export.getValue().tryRetainReference()) {
+            throw new IllegalStateException("this should be destroyed");
+        }
+    }
+
+    @Test
+    public void testCancelPropagates() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .require(d1)
+                .submit(submitted::setTrue);
+
+        d1.cancel();
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testErrorPropagatesNotYetFailed() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .require(d1)
+                .submit(submitted::setTrue);
+
+        session.newExport(d1.getExportId())
+                .submit(() -> { throw new RuntimeException("I fail."); });
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testErrorPropagatesAlreadyFailed() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> d1 = session.newExport(nextExportId++)
+                .submit(() -> { throw new RuntimeException("I fail."); });
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(d1.getState(), "d1.getState()", SessionState.ExportState.FAILED);
+
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .require(d1)
+                .submit(submitted::setTrue);
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testWorkItemOutOfOrderDependency() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> d1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
+                .require(d1)
+                .submit(submitted::setTrue);
+
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.PENDING);
+
+        session.newExport(d1.getExportId())
+                .submit(() -> {});
+        scheduler.runOne(); // d1
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+
+        scheduler.runOne(); // d1
+        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+    }
+
+    @Test
+    public void testWorkItemDeepDependency() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++)
+                .submit(() -> {});
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        final SessionState.ExportObject<Object> e3 = session.newExport(nextExportId++)
+                .require(e2)
+                .submit(submitted::setTrue);
+
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.PENDING);
+        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.PENDING);
+        scheduler.runOne();
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.PENDING);
+        scheduler.runOne();
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.QUEUED);
+        scheduler.runOne();
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.EXPORTED);
+    }
+
+    @Test
+    public void testDependencyNotReleasedEarly() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+
+        final SessionState.ExportObject<CountingLivenessReferent> e1;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
+                    .submit(() -> export);
+        }
+
+        scheduler.runOne();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
+        Assert.eq(e2.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
+
+        e1.release();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+
+        Assert.gt(export.refCount, "e1.get().refCount", 0);
+        scheduler.runOne();
+        Assert.eq(export.refCount, "e1.get().refCount", 0);
+    }
+
+    @Test
+    public void testLateDependencyAlreadyReleasedFails() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+
+        final SessionState.ExportObject<CountingLivenessReferent> e1;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
+                    .submit(() -> export);
+        }
+
+        scheduler.runOne();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+        e1.release();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+
+        final MutableBoolean errored = new MutableBoolean();
+        expectException(LivenessStateException.class, () -> {
+            final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                    .require(e1)
+                    .onError(err -> errored.setTrue())
+                    .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
+        });
+    }
+
+    @Test
+    public void testNewExportRequiresPositiveId() {
+        expectException(IllegalArgumentException.class, () -> session.newExport(0));
+        expectException(IllegalArgumentException.class, () -> session.newExport(-1));
+    }
+
+    @Test
+    public void testDependencyAlreadyReleased() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {});
+        scheduler.runUntilQueueEmpty();
+        e1.release();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {});
+        Assert.eq(e2.getState(), "e1.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+    }
+
+    @Test
+    public void testExpiredNewExport() {
+        final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++).submit(Object::new);
+        scheduler.runUntilQueueEmpty();
+        session.onExpired();
+        expectException(StatusRuntimeException.class, exportObj::get);
+    }
+
+    @Test
+    public void testExpiredNewNonExport() {
+        final SessionState.ExportObject<Object> exportObj = session.nonExport().submit(Object::new);
+        scheduler.runUntilQueueEmpty();
+        session.onExpired();
+        expectException(StatusRuntimeException.class, exportObj::get);
+    }
+
+    @Test
+    public void testExpiredServerSideExport() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> exportObj = session.newServerSideExport(export);
+        session.onExpired();
+        expectException(StatusRuntimeException.class, exportObj::get);
+    }
+
+    @Test
+    public void testExpiresBeforeExport() {
+        session.onExpired();
+        expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
+        expectException(StatusRuntimeException.class, () -> session.nonExport());
+        expectException(StatusRuntimeException.class, () -> session.newExport(nextExportId++));
+        expectException(StatusRuntimeException.class, () -> session.getExport(nextExportId++));
+    }
+
+    @Test
+    public void testExpireBeforeNonExportSubmit() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportBuilder<Object> exportBuilder = session.nonExport();
+        session.onExpired();
+        exportBuilder.submit(submitted::setTrue);
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testExpireBeforeExportSubmit() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportBuilder<Object> exportBuilder = session.newExport(nextExportId++);
+        session.onExpired();
+        exportBuilder.submit(submitted::setTrue);
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test
+    public void testExpireDuringExport() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        session.newExport(nextExportId++)
+                .submit(() -> {
+                    session.onExpired();
+                    return export;
+                });
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(export.refCount, "export.refCount", 0);
+    }
+
+    @Test
+    public void testDependencyFailed() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        session.newExport(e1.getExportId()).submit(() -> { throw new RuntimeException(); });
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+    }
+
+    @Test
+    public void testDependencyCanceled() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        session.newExport(e1.getExportId()).submit(() -> {});
+        e1.cancel();
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED); // cancels propagate
+    }
+
+    @Test
+    public void testDependencyAlreadyFailed() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> { throw new RuntimeException(); });
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
+        expectException(IllegalStateException.class, e1::get);
+
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        expectException(IllegalStateException.class, e2::get);
+    }
+
+    @Test
+    public void testDependencyAlreadyCanceled() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        e1.cancel();
+        scheduler.runUntilQueueEmpty();
+
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED); // cancels propagate
+        expectException(IllegalStateException.class, e2::get);
+    }
+
+    @Test
+    public void testDependencyAlreadyExported() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {});
+        scheduler.runUntilQueueEmpty();
+
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .submit(() -> {});
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.QUEUED);
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
+    }
+
+    @Test
+    public void testDependencyReleasedBeforeExport() {
+        final CountingLivenessReferent e1 = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> e1obj;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            e1obj = session.newExport(nextExportId++).submit(() -> e1);
+        }
+        scheduler.runUntilQueueEmpty();
+
+        final SessionState.ExportObject<Object> e2obj = session.newExport(nextExportId++)
+                .require(e1obj)
+                .submit(() -> {
+                    Assert.neqNull(e1obj.get(), "e1obj.get()");
+                    Assert.gt(e1.refCount, "e1.refCount", 0);
+                });
+
+        e1obj.release();
+        Assert.eq(e1obj.getState(), "e1obj.getState()", SessionState.ExportState.RELEASED);
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e1.refCount, "e1.refCount", 0);
+        Assert.eq(e2obj.getState(), "e2obj.getState()", SessionState.ExportState.EXPORTED);
+    }
+
+    @Test
+    public void testChildCancelledFirst() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {});
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {});
+        e2.cancel();
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED);
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e1.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED);
+    }
+
+    @Test
+    public void testCannotOutOfOrderServerExports() {
+        // server-side exports must already exist
+        expectException(StatusRuntimeException.class, () -> session.getExport(-1));
+    }
+
+    @Test
+    public void testVerifyExpirationSession() {
+        final SessionState session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
+        final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session);
+        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration));
+    }
+
+    @Test
+    public void testGetExpiration() {
+        final SessionService.TokenExpiration expiration = session.getExpiration();
+        Assert.eq(expiration.session, "expiration.session", session, "session");
+        session.onExpired();
+        Assert.eqNull(session.getExpiration(), "session.getExpiration()");
+    }
+
+    @Test
+    public void testExpiredByTime() {
+        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session));
+        Assert.eqNull(session.getExpiration(), "session.getExpiration()"); // already expired
+        expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
+        expectException(StatusRuntimeException.class, () -> session.nonExport());
+        expectException(StatusRuntimeException.class, () -> session.newExport(nextExportId++));
+        expectException(StatusRuntimeException.class, () -> session.getExport(nextExportId++));
+    }
+
+    @Test
+    public void testGetAuthContext() {
+        Assert.eq(session.getAuthContext(), "session.getAuthContext()", AUTH_CONTEXT, "AUTH_CONTEXT");
+    }
+
+    @Test
+    public void testReleaseIsNotProactive() {
+        final MutableBoolean submitted = new MutableBoolean();
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(submitted::setTrue);
+        e1.release();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
+        Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
+    }
+
+    @Test @Ignore // TODO (core#33)
+    public void testWorkItemDirectCycle() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
+        session.newExport(e1.getExportId()).require(e2).submit(() -> {});
+        session.newExport(e2.getExportId()).require(e1).submit(() -> {});
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
+    }
+
+    @Test @Ignore // TODO (core#33)
+    public void testWorkItemNonTrivialCycle() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e3 = session.getExport(nextExportId++);
+        session.newExport(e1.getExportId()).require(e2).submit(() -> {});
+        session.newExport(e2.getExportId()).require(e3).submit(() -> {});
+        session.newExport(e3.getExportId()).require(e1).submit(() -> {});
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.FAILED);
+    }
+
+    @Test @Ignore // TODO (core#33)
+    public void testCycleErrorPropagates() {
+        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
+        final SessionState.ExportObject<Object> e3 = session.newExport(nextExportId++).require(e1, e2).submit(() -> {});
+        session.newExport(e1.getExportId()).require(e2).submit(() -> {});
+        session.newExport(e2.getExportId()).require(e1).submit(() -> {});
+        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e3.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+    }
+
+    @Test @Ignore // TODO (core#33)
+    public void testNonExportCycle() {
+        final SessionState.ExportBuilder<Object> b1 = session.nonExport();
+        final SessionState.ExportBuilder<Object> b2 = session.nonExport();
+        final SessionState.ExportBuilder<Object> b3 = session.nonExport();
+        b1.require(b2.getExport()).submit(() -> {});
+        b2.require(b3.getExport()).submit(() -> {});
+        b3.require(b1.getExport()).submit(() -> {});
+        Assert.eq(b1.getExport().getState(), "b1.getExport().getState()", SessionState.ExportState.FAILED);
+        Assert.eq(b2.getExport().getState(), "b2.getExport().getState()", SessionState.ExportState.FAILED);
+        Assert.eq(b3.getExport().getState(), "b3.getExport().getState()", SessionState.ExportState.FAILED);
     }
 
     @Test
@@ -568,4 +1205,49 @@ public class SessionStateTest {
             }
         }
     }
+
+    /**
+     * Throw an exception if lambda either does not throw, or throws an exception that is not assignable to
+     * expectedExceptionType
+     */
+    private static <T extends Exception> void expectException(Class<T> expectedExceptionType, Runnable lambda) {
+        String nameOfCaughtException = "(no exception)";
+        try {
+            lambda.run();
+        } catch (Exception actual) {
+            if (expectedExceptionType.isAssignableFrom(actual.getClass())) {
+                return;
+            }
+            nameOfCaughtException = actual.getClass().getSimpleName();
+        }
+        throw new RuntimeException(String.format("Expected exception %s, got %s",
+                expectedExceptionType.getSimpleName(), nameOfCaughtException));
+    }
+
+    // LivenessArtifact's constructor is private
+    private static class PublicLivenessArtifact extends LivenessArtifact {
+        public PublicLivenessArtifact() {}
+    }
+
+    private static class CountingLivenessReferent implements LivenessReferent {
+        long refCount = 0;
+        boolean everRetained = false;
+
+        @Override
+        public boolean tryRetainReference() {
+            ++refCount;
+            everRetained = true;
+            return true;
+        }
+
+        @Override
+        public void dropReference() {
+            --refCount;
+        }
+
+        @Override
+        public WeakReference<? extends LivenessReferent> getWeakReference() {
+            return new WeakReference<>(this);
+        }
+    };
 }
