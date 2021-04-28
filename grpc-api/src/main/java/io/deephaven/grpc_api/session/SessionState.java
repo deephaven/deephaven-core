@@ -35,10 +35,12 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -139,6 +141,7 @@ public class SessionState extends LivenessArtifact {
         if (expiration.session != this) {
             throw new IllegalArgumentException("mismatched session for expiration token");
         }
+        // AtomicReference
         this.expiration = expiration;
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
@@ -288,8 +291,11 @@ public class SessionState extends LivenessArtifact {
         }
 
         log.info().append(logPrefix).append("releasing outstanding exports").endl();
-        exportMap.forEach(ExportObject::cancel);
+        synchronized (exportMap) {
+            exportMap.forEach(ExportObject::cancel);
+        }
         exportMap.clear();
+
         log.info().append(logPrefix).append("outstanding exports released").endl();
         // note that export listeners are never published beyond this class; thus unmanaging them is sufficient
         exportListeners.forEach(this::tryUnmanage);
@@ -678,19 +684,22 @@ public class SessionState extends LivenessArtifact {
                     final QueryPerformanceNugget nugget = Require.neqNull(
                             queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
                             "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
+
+                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized(qplLogger) {
                         qplLogger.log(evaluationNumber,
                                 queryProcessingResults,
                                 nugget);
                     }
                     final List<QueryPerformanceNugget> nuggets = queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
+                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized(qoplLogger) {
                         int opNo = 0;
                         for (QueryPerformanceNugget n : nuggets) {
                             qoplLogger.log(opNo++, n);
                         }
                     }
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     log.error().append("Failed to log query performance data: ").append(e).endl();
                 }
             }
@@ -786,8 +795,11 @@ public class SessionState extends LivenessArtifact {
     public void addExportListener(final StreamObserver<ExportNotification> observer) {
         final ExportListener listener = new ExportListener(observer);
         manage(listener);
-        exportListeners.add(listener);
-        listener.refresh();
+        synchronized (exportListeners) {
+            // throw exception if expired
+            exportListeners.add(listener);
+        }
+        listener.initialize();
     }
 
     public void removeExportListener(final StreamObserver<ExportNotification> observer) {
@@ -801,12 +813,12 @@ public class SessionState extends LivenessArtifact {
 
     private class ExportListener extends LivenessArtifact {
         private boolean refreshing = true;
-        private volatile long refreshSequence = -1;
-        private volatile boolean recheckExport = false;
+        private long refreshSequence = -1;
+        private boolean recheckExport = false;
         private volatile boolean isClosed = false;
 
         private final StreamObserver<ExportNotification> listener;
-        private ConcurrentLinkedQueue<ExportNotification> pendingNotifications;
+        private List<ExportNotification> pendingNotifications;
 
         private ExportListener(final StreamObserver<ExportNotification> listener) {
             this.listener = listener;
@@ -827,7 +839,7 @@ public class SessionState extends LivenessArtifact {
             if (refreshing) {
                 if (exportSequence < refreshSequence) {
                     if (pendingNotifications == null) {
-                        pendingNotifications = new ConcurrentLinkedQueue<>();
+                        pendingNotifications = new ArrayList<>();
                     }
                     pendingNotifications.add(notification);
                 } else if (exportSequence == refreshSequence) {
@@ -849,7 +861,7 @@ public class SessionState extends LivenessArtifact {
                 return;
             }
 
-            try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 synchronized (listener) {
                     listener.onNext(notification);
                 }
@@ -862,7 +874,7 @@ public class SessionState extends LivenessArtifact {
         /**
          * Perform the refresh and send initial export state to the listener.
          */
-        private void refresh() {
+        private void initialize() {
             final String id = Integer.toHexString(System.identityHashCode(this));
             log.info().append(logPrefix).append("refreshing listener ").append(id).endl();
 
@@ -880,14 +892,14 @@ public class SessionState extends LivenessArtifact {
                         } else {
                             currNode = currNode.next;
                         }
-                    }
 
-                    if (currNode == null) {
-                        refreshSequence = Long.MAX_VALUE;
-                        break;
-                    }
+                        if (currNode == null) {
+                            refreshSequence = Long.MAX_VALUE;
+                            break;
+                        }
 
-                    refreshSequence = currNode.internalSequence;
+                        refreshSequence = currNode.internalSequence;
+                    }
                 }
 
                 final ExportNotification notification;
