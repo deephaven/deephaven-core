@@ -96,7 +96,10 @@ task deephavenPythonDockerfile(type: Dockerfile) {
                   ''')
 }
 task buildDeephavenPython(type: DockerBuildImage) {
-    //
+    def dhJpyTasks = project(':deephaven-jpy').tasks
+    dependsOn dhJpyTasks.getByName('buildDockerForRuntime'),
+            dhJpyTasks.getByName('buildDockerForWheel'),
+            buildDockerForWheel
     inputs.files deephavenPythonDockerfile.outputs.files
     inputDir.set layout.buildDirectory.dir("$buildDir/deephaven-python-docker")
 
