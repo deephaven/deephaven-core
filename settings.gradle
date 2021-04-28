@@ -97,9 +97,6 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-base')
-project(':grpc-api-base').projectDir = file('grpc-api/base')
-
 include(':grpc-api-server-docker')
 project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
 

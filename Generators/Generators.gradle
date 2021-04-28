@@ -1,3 +1,5 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
 }
@@ -160,7 +162,6 @@ if (PyEnv.pythonEnabled(project)) {
 } else {
     TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generatePyDoc") {
         copyIn {
-            from 'docker'
             from('python') {
                 into 'python'
             }
@@ -180,6 +181,19 @@ if (PyEnv.pythonEnabled(project)) {
                 // input for javadocExtraction.py
                 into 'javadoc'
             }
+        }
+
+        dockerfile {
+            from 'docker.io/library/python:3.7.10'
+
+            runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
+
+            copyFile('.', '.')
+
+            runCommand '''set -eux; \\
+                          python3 /python/javadocExtraction.py / false; \\
+                          python3 /python/manualDocstrings.py / false
+                          '''
         }
 
         parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python

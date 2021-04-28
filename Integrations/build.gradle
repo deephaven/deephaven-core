@@ -90,10 +90,10 @@ task deephavenPythonDockerfile(type: Dockerfile) {
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
 
     runCommand('''set -eux;\\
-  pip3 install setuptools wheel; \\
-  pip3 install *.whl; \\
-  rm *.whl
-''')
+                  pip3 install setuptools wheel; \\
+                  pip3 install *.whl; \\
+                  rm *.whl
+                  ''')
 }
 task buildDeephavenPython(type: DockerBuildImage) {
     //
@@ -148,7 +148,7 @@ if (PyEnv.pythonEnabled(project)) {
         parentContainers = [tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
 
         dockerfile {
-            // 'set up the container, env vars - things that aren\'t likely to change'
+            // set up the container, env vars - things that aren't likely to change
             from 'deephaven/runtime-base'
             runCommand 'pip3 install unittest-xml-reporting==3.0.4'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
@@ -159,11 +159,11 @@ if (PyEnv.pythonEnabled(project)) {
             environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
-            // 'copy in the contents that we do expect to change as the project updates'
+            // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
 
-            // 'run the tests and report results, status code'
+            // run the tests and report results, status code
             runCommand '''set -eux;\\
                           mkdir -p /out/report; \\
                           mkdir -p /workspace/cache/classes; \\

@@ -3,7 +3,7 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-evaluationDependsOn ':grpc-api-base'
+evaluationDependsOn ':Integrations'
 
 boolean java8 = JavaVersion.current().isJava8()
 List<Object> dependsList
