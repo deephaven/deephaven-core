@@ -1,11 +1,15 @@
 import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerWaitContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.CopySpec
@@ -83,6 +87,12 @@ class Docker {
          * List of any containers, the tasks that create them
          */
         List<Task> parentContainers = []
+
+        /**
+         * Optional command to run whenever the task is invoked, otherwise the image's contents will be used
+         * as-is.
+         */
+        List<String> command;
     }
 
     /**
@@ -185,6 +195,12 @@ class Docker {
                 // this could probably be simplified to a dependsOn, since we already use its imageId as an input
                 inputs.files makeImage.get().outputs.files
 
+                if (cfg.command) {
+                    // if provided, set a run command that we'll use each time it starts
+                    entrypoint.set(cfg.command)
+
+                }
+
                 targetImageId makeImage.get().getImageId()
                 containerName.set(dockerContainerName)
             }
@@ -203,10 +219,40 @@ class Docker {
             }
         }
 
+        // Optionally lets us run the container each invocation with a command (such as for tests). This will
+        // only be used if cfg.command is set
+        TaskProvider<DockerStartContainer> startContainer = project.tasks.register("${taskName}StartContainer", DockerStartContainer) { startContainer ->
+            startContainer.with {
+                startContainer.dependsOn createContainer
+                containerId.set(dockerContainerName)
+            }
+        }
+        TaskProvider<DockerWaitContainer> containerFinished = project.tasks.register("${taskName}WaitContainer", DockerWaitContainer) { waitContainer ->
+            waitContainer.with {
+                dependsOn startContainer
+                containerId.set(dockerContainerName)
+            }
+        }
+        TaskProvider<DockerLogsContainer> containerLogs = project.tasks.register("${taskName}LogsContainer", DockerLogsContainer) { logsContainer ->
+            logsContainer.with {
+                containerId.set(dockerContainerName)
+                onlyIf {
+                    cfg.command && containerFinished.get().exitCode != 0
+                }
+            }
+        }
+        containerFinished.configure { waitCommand -> waitCommand.finalizedBy(containerLogs) }
+
         // Copy the results from the build out of the container, so the sync task can make it available
         TaskProvider<DockerCopyFileFromContainer> copyGenerated = project.tasks.register("${taskName}CopyGeneratedOutput", DockerCopyFileFromContainer) { copy ->
             copy.with {
-                dependsOn createContainer
+                if (cfg.command) {
+                    dependsOn containerFinished
+                } else {
+                    dependsOn createContainer
+                }
+
+                // once we're done copying output, delete the container
                 finalizedBy removeContainer
 
                 // specify that we don't need to re-run if the imageid didn't change
@@ -221,6 +267,10 @@ class Docker {
                 doFirst {
                     // we must manually delete this first, since docker cp will error if trying to overwrite
                     project.delete(dockerCopyLocation)
+
+                    if (cfg.command && containerFinished.get().exitCode != 0) {
+                        throw new GradleException("Command '${cfg.command.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
+                    }
                 }
             }
         }
