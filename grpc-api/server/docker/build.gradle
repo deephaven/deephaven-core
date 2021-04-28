@@ -74,8 +74,8 @@ docker {
 }
 
 
-// deephaven/grpc-api-base
-def grpcApiBase = project(':grpc-api-base').tasks.findByName('buildDocker')
+// deephaven/runtime-base
+def grpcApiBase = project(':Integrations').tasks.findByName('buildDeephavenPython')
 dockerBuildImage.dependsOn grpcApiBase
 dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
 // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to

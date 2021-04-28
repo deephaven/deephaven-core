@@ -26,7 +26,7 @@ if (!PyEnv.pythonEnabled(project)) {
             }
         }
 //        dockerfile = project.file('Dockerfile') // not needed with the above from 'docker'
-        parentContainers = [project(':grpc-api-base').tasks.findByName('buildDocker')] // deephaven/grpc-api-base
+        parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
         imageName = 'deephaven/sphinx'
         containerOutPath = '/build'
         copyOut {
@@ -37,7 +37,7 @@ if (!PyEnv.pythonEnabled(project)) {
 //TODO core#430 remove this path entirely
 if (java8 && PyEnv.pythonEnabled(project)) {
 
-    PyEnv env = PyEnv.getEnvs(project)
+    PyEnv env = PyEnv.getEnv(project)
     /**
      * This task converts the already-expanded README file into the notebook format
      */
