@@ -17,10 +17,10 @@ dependencies {
 GwtTools.gwtCompile project, 'io.deephaven.ide.DeephavenIde', 'Create a jar of javascript for web IDE'
 
 // deephaven/iriside
-Task iriside = project(':web-client-ui').tasks.findByName('dockerBuild')
+Task iriside = project(':web-client-ui').tasks.findByName('ideClientMakeImage')
 
 // deephaven/js-out
-Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('buildDocker')
+Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('webpackSourcesMakeImage')
 
 Task gwtc = tasks.getByName('gwtCompile')
 
@@ -41,10 +41,7 @@ task prepareDocker(type: Sync) {
 }
 
 task buildDocker(type: DockerBuildImage) {
-    dependsOn prepareDocker
-    dependsOn iriside
-    dependsOn jsOut
-    inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files.singleFile })
+    inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files })
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web')
 }

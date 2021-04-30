@@ -1,4 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
@@ -91,6 +92,28 @@ if (PyEnv.pythonEnabled(project)) {
         venvTest.pythonTest(project, "test-${pv.name}")
     }
 
+} else {
+//    Configuration cp = project.configurations.getByName(classpathConfiguration)
+//    def pyTest = Docker.registerDockerTask(project, "test-py-37") {
+//        copyIn {
+//            from('python') {
+//                into 'python'
+//            }
+//        }
+//        parentContainers = [project(':grpc-api-base').tasks.findByName('buildDocker')] // deephaven/grpc-api-base
+//
+//        Dockerfile d = task("dockerfile", type:Dockerfile) {
+//            from "deephaven/grpc-api-base"
+//            copyFile 'python', '/python'
+//            runCommand '''set -eux;\\
+//mkdir /report; \\
+//cd /python; \\
+//python3 -m xmlrunner discover -v -o /report'''
+//        }
+//    }
+//    pyTest.configure({t ->
+//
+//    })
 }
 
 task prepareDockerForWheel(type: Sync) {

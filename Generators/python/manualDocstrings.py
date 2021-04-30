@@ -161,8 +161,8 @@ if __name__ == '__main__':
               "           **NO ACTUAL GENERATION HERE**")
 
     # Parse the arguments
-    devRoot = sys.argv[1]  # devRoot = '/Users/thomasmccullough/workspace/iris'
-    outDir = os.path.join(devRoot, 'Integrations', 'python', 'deephaven', 'docCustom')
+    devRoot = sys.argv[1]
+    outDir = os.path.join(devRoot, 'out', 'docCustom')
 
     assertNoChange = False
     if len(sys.argv) > 2:

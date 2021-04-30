@@ -2,89 +2,33 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
-import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
-import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
-
 evaluationDependsOn ':proto'
 evaluationDependsOn ':proto:proto-backplane-grpc'
 
 def backplaneProject = project(':proto:proto-backplane-grpc')
 
-task prepareDocker(type: Sync) {
-    dependsOn(backplaneProject.tasks.findByName('syncGenerated')) // for js-src
+Docker.registerDockerTask(project, 'webpackSources') {
+    copyIn {
+        from(backplaneProject.tasks.findByName('generateProtobuf').outputs.files) {
+            // note: we are only copying the JS and not TS files.
+            include '**/*.js'
+            into 'raw-js-openapi/build/js-src'
+        }
 
-    // todo: reference this backplaneProject directory with stronger link
-    from("${backplaneProject.buildDir}/generated/source/proto/main/js") {
-        // note: we are only copying the JS and not TS files.
-        include '**/*.js'
-        into 'raw-js-openapi/build/js-src'
+        from('src') {
+            into 'raw-js-openapi/src'
+        }
+
+        from ('webpack.config.js') {
+            into 'raw-js-openapi/'
+        }
+        from ('Dockerfile')
+        from ('../package.json')
+        from ('../package-lock.json')
+
     }
-
-    from('src') {
-        into 'raw-js-openapi/src'
+    imageName = 'deephaven/js-out'
+    copyOut {
+        into(webpackSourcesLocation)
     }
-
-    from ('webpack.config.js') {
-        into 'raw-js-openapi/'
-    }
-    from ('Dockerfile')
-    from ('../package.json')
-    from ('../package-lock.json')
-
-    into 'build/docker'
-}
-
-task buildDocker(type: DockerBuildImage) {
-    dependsOn prepareDocker
-    def grpcOut = backplaneProject.tasks.findByName('buildDocker') // deephaven/proto-backplane-grpc
-
-    dependsOn grpcOut
-    inputs.file grpcOut.outputs.files.singleFile
-
-    //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/js-out')
-    target.set('build')
-}
-
-def dockerContainerName = "raw-js-openapi-container-${UUID.randomUUID()}"
-def dockerCopyLocation = "${buildDir}/docker-copy"
-def webpackSourcesLocation = "${buildDir}/irisapi"
-
-
-task dockerCreateContainer(type: DockerCreateContainer) {
-    dependsOn buildDocker
-    targetImageId buildDocker.getImageId()
-    containerName.set(dockerContainerName)
-}
-
-task dockerRemoveContainer(type: DockerRemoveContainer) {
-    dependsOn dockerCreateContainer
-    targetContainerId dockerCreateContainer.getContainerId()
-}
-
-task dockerCopy(type: DockerCopyFileFromContainer) {
-    // note: we could try to be smarter and cache these create/remove tasks
-    dependsOn dockerCreateContainer
-    finalizedBy dockerRemoveContainer
-
-    inputs.property("imageId", buildDocker.imageId)
-    outputs.dir(dockerCopyLocation)
-
-    targetContainerId dockerCreateContainer.getContainerId()
-
-    remotePath.set('/usr/src/app/raw-js-openapi/build/js-out')
-    hostPath.set(dockerCopyLocation)
-
-    doFirst {
-        // we must manually delete this first, since docker cp will error if trying to overwrite
-        delete(dockerCopyLocation)
-    }
-}
-
-task webpackSources(type: Sync) {
-    dependsOn dockerCopy
-    from(dockerCopyLocation)
-    into(webpackSourcesLocation)
 }
