@@ -6,6 +6,7 @@ evaluationDependsOn ':proto'
 evaluationDependsOn ':proto:proto-backplane-grpc'
 
 def backplaneProject = project(':proto:proto-backplane-grpc')
+def webpackSourcesLocation = "${buildDir}/irisapi"
 
 Docker.registerDockerTask(project, 'webpackSources') {
     copyIn {
