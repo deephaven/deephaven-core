@@ -1,4 +1,3 @@
-
 FROM docker.io/library/node:14.16.0 AS node
 WORKDIR /usr/src/app
 

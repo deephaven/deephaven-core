@@ -4,17 +4,7 @@ plugins {
 
 Docker.registerDockerTask(project, 'ideClient') {
     copyIn {
-        from "${projectDir}"
-        // Note: we are explicitly choosing to sync the clean sources into a build directory to ensure
-        // that the context we use for caching the dockerBuild task is correct and has as minimal
-        // surface area as possible. Otherwise, web devs who like to build using npm locally will be
-        // creating a lot of extra noise that will cause dockerBuild task to run much slower than it
-        // could otherwise.
-
-        // Unfortunately, there doesn't seem to be a good / universal way to exclude the patterns from
-        // our existing .dockerignore.
-        exclude "**/dist"
-        exclude "**/build"
+        from file('Dockerfile')
     }
     containerOutPath = '/usr/src/app/package/build'
     imageName = 'deephaven/iriside'
