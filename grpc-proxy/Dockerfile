@@ -1,15 +1,23 @@
-# Simple dockerfile for the improbable-eng grpc to grpc-web/websocket proxy
+FROM docker.io/library/alpine:3.13
 
-# in theory we can use scratch, but we need the sh -c syntax to include envs vars, or hardcode the backend addr
-FROM alpine
+COPY contents/ .
 
-ADD https://github.com/improbable-eng/grpc-web/releases/download/v0.13.0/grpcwebproxy-v0.13.0-linux-x86_64.zip /grpcwebproxy.zip
+ENV GRPCWEBPROXY_VERSION=v0.13.0
+
 RUN set -eux; \
-    unzip /grpcwebproxy.zip; \
-    mv dist/grpcwebproxy* /grpcwebproxy
+    apk add --no-cache tini; \
+    wget -q "https://github.com/improbable-eng/grpc-web/releases/download/${GRPCWEBPROXY_VERSION}/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \
+    sha256sum -c checksums.txt; \
+    unzip -d /app "grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \
+    rm "grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \
+    mv "/app/dist/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64" /app/dist/grpcwebproxy
 
 EXPOSE 8080 8443
 
-ENV BACKEND_ADDR=""
+ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
 
-ENTRYPOINT /grpcwebproxy --run_tls_server=false --backend_addr=$BACKEND_ADDR --backend_tls=false --allow_all_origins --use_websockets --backend_max_call_recv_msg_size=104857600
+LABEL org.opencontainers.image.vendor="Deephaven Data Labs" \
+  org.opencontainers.image.title="Deephaven gRPC web proxy" \
+  org.opencontainers.image.description="Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy" \
+  org.opencontainers.image.source="https://github.com/deephaven/deephaven-core" \
+  org.opencontainers.image.licenses="Apache-2.0"

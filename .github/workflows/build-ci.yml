@@ -103,6 +103,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
       - name: Docker meta
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v1
@@ -111,9 +117,6 @@ jobs:
           tag-semver: |
             {{version}}
             {{major}}.{{minor}}
-          label-custom: |
-            org.opencontainers.image.title=deephaven/grpc-proxy
-            org.opencontainers.image.description=Deephaven grpc-proxy
 
       - name: Set up Docker Buildx
         id: buildx
@@ -129,13 +132,26 @@ jobs:
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_PAT }}
 
+      - name: Setup gradle properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+
+      - name: Create Dockerfile and context
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: build-grpc-proxy
+          arguments: --scan grpc-proxy:prepareDocker
+          gradle-version: wrapper
+
       - name: Docker build
         uses: docker/build-push-action@v2
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./grpc-proxy/
+          context: ./grpc-proxy/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
 
   envoy:

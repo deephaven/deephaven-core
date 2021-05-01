@@ -53,13 +53,9 @@ services:
           cpus: '1'
           memory: 256M
 
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
   grpc-proxy:
-    # The (alpha-quality, see https://github.com/improbable-eng/grpc-web#status)
-    # grpc -> grpc-web+websocket proxy from improbably-eng. No docker image is
-    # presently available for this, so we have our own Dockerfile - refer to it
-    # for how we have it configured.
-    build: grpc-proxy/
-    image: "${REPO}deephaven/grpc-proxy:${TAG}"
+    image: deephaven/grpc-proxy
     environment:
       - BACKEND_ADDR=grpc-api:8080
     depends_on:

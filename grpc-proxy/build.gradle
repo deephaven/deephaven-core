@@ -1,0 +1,19 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+  id 'com.bmuschko.docker-remote-api'
+}
+
+task prepareDocker(type: Sync) {
+  from 'Dockerfile'
+  from ('contents') {
+    into 'contents'
+  }
+  // TODO: include license stuff once core#486 gets merged in
+  into 'build/docker'
+}
+
+task buildDocker(type: DockerBuildImage) {
+  dependsOn prepareDocker
+  images.add('deephaven/grpc-proxy')
+}
