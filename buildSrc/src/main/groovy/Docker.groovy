@@ -138,7 +138,7 @@ class Docker {
          * Optional command to run whenever the task is invoked, otherwise the image's contents will be used
          * as-is.
          */
-        List<String> command;
+        List<String> entrypoint;
     }
 
     /**
@@ -229,9 +229,9 @@ class Docker {
                 // this could probably be simplified to a dependsOn, since we already use its imageId as an input
                 inputs.files makeImage.get().outputs.files
 
-                if (cfg.command) {
+                if (cfg.entrypoint) {
                     // if provided, set a run command that we'll use each time it starts
-                    entrypoint.set(cfg.command)
+                    entrypoint.set(cfg.entrypoint)
                 }
 
                 targetImageId makeImage.get().getImageId()
@@ -270,7 +270,7 @@ class Docker {
             logsContainer.with {
                 containerId.set(dockerContainerName)
                 onlyIf {
-                    cfg.command && containerFinished.get().exitCode != 0
+                    cfg.entrypoint && containerFinished.get().exitCode != 0
                 }
             }
         }
@@ -279,7 +279,7 @@ class Docker {
         // Copy the results from the build out of the container, so the sync task can make it available
         TaskProvider<DockerCopyFileFromContainer> copyGenerated = project.tasks.register("${taskName}CopyGeneratedOutput", DockerCopyFileFromContainer) { copy ->
             copy.with {
-                if (cfg.command) {
+                if (cfg.entrypoint) {
                     dependsOn containerFinished
                 } else {
                     dependsOn createContainer
@@ -301,8 +301,8 @@ class Docker {
                     // we must manually delete this first, since docker cp will error if trying to overwrite
                     project.delete(dockerCopyLocation)
 
-                    if (cfg.command && containerFinished.get().exitCode != 0) {
-                        throw new GradleException("Command '${cfg.command.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
+                    if (cfg.entrypoint && containerFinished.get().exitCode != 0) {
+                        throw new GradleException("Command '${cfg.entrypoint.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
                     }
                 }
             }

@@ -66,7 +66,7 @@ idea {
 
 task prepareDockerForWheel(type: Sync) {
     from 'python'
-    into "${buildDir}/docker"
+    into layout.buildDirectory.dir('docker')
 }
 def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWheel') {
     dependsOn prepareDockerForWheel
@@ -79,7 +79,7 @@ def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWhe
  * Produce a docker image with the prereqs to run and use deephaven python
  */
 task deephavenPythonDockerfile(type: Dockerfile) {
-    destFile.set layout.buildDirectory.file("$buildDir/deephaven-python-docker/Dockerfile")
+    destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
     from new Dockerfile.From('deephaven/deephaven-jpy-wheel').withStage('deephaven-jpy-wheel')
     from new Dockerfile.From('deephaven/deephaven-wheel').withStage('deephaven-wheel')
     from new Dockerfile.From('deephaven/java-and-python')
@@ -95,11 +95,12 @@ task deephavenPythonDockerfile(type: Dockerfile) {
 }
 Docker.registerDockerImage(project, 'buildDeephavenPython') {
     def dhJpyTasks = project(':deephaven-jpy').tasks
-    dependsOn dhJpyTasks.getByName('buildDockerForRuntime'),
-            dhJpyTasks.getByName('buildDockerForWheel'),
-            buildDockerForWheel
-    inputs.files deephavenPythonDockerfile.outputs.files
-    inputDir.set layout.buildDirectory.dir("$buildDir/deephaven-python-docker")
+    inputs.files dhJpyTasks.getByName('buildDockerForRuntime').outputs.files,
+            dhJpyTasks.getByName('buildDockerForWheel').outputs.files,
+            buildDockerForWheel.get().outputs.files,
+            deephavenPythonDockerfile.outputs.files
+
+    inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
 
     images.add('deephaven/runtime-base')
 }
@@ -169,10 +170,10 @@ if (PyEnv.pythonEnabled(project)) {
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
         }
-        command = ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report']
+        entrypoint = ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report']
 
         copyOut {
-            into "$buildDir/test-results"
+            into layout.buildDirectory.dir('test-results')
         }
     }
     pyTest.configure({

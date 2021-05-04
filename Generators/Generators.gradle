@@ -212,10 +212,14 @@ if (PyEnv.pythonEnabled(project)) {
         dependsOn generatePyDoc
     }
     tasks.register("generateManPyDocAssert") {
-        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+        doLast {
+            logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+        }
     }
     tasks.register("generatePyDocAssert") {
-        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+        doLast {
+            logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+        }
     }
 }
 
