@@ -482,6 +482,7 @@ This task will dependsOn other tasks which actually perform testing.'''
 
     }
 
+    //TODO core#430 delete when this task is closed out
     Exec pythonExec(Project project,
                     CharSequence taskName,
                     List<String> arguments,
@@ -544,6 +545,7 @@ This task will dependsOn other tasks which actually perform testing.'''
      * @param workingDir The working directory in which to execute the task; should be the directory root of python sources.
      * @return An Exec task which will run the tests.
      */
+    //TODO core#430 delete when this task is closed out
     Exec pythonTest(Project project,
                     CharSequence taskName = 'testPythonWithJava',
                     Object dependOn = installDhAndDhJpyWheels(),
@@ -572,6 +574,7 @@ This task will dependsOn other tasks which actually perform testing.'''
         return e
     }
 
+    //TODO core#430 delete when this task is closed out
     void handleFailure(Project project, Exec e, File reportDir) {
         Gradle gradle = project.gradle
         boolean allowFailure = TestTools.allowFailure(gradle.rootProject)
