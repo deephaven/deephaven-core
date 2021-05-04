@@ -7,6 +7,7 @@ import com.bmuschko.gradle.docker.tasks.container.DockerWaitContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.github.dockerjava.api.exception.DockerException
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.GradleException
@@ -17,8 +18,52 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.util.ConfigureUtil
 
+/**
+ * Tools to make some common tasks in docker easier to use in gradle
+ */
 @CompileStatic
 class Docker {
+    /**
+     * Helper method to make sure we rebuild the image if it is out of date. At
+     * present, is only applicable if there are tags to set on the image
+     * Usage:
+     * <pre>
+     *     DockerBuildImage myTask = ...
+     *     task.upToDateWhen { Docker.isImageUpToDate(myTask) }
+     * </pre>
+     *
+     * @link https://github.com/bmuschko/gradle-docker-plugin/issues/1008
+     * @param t the docker build image task to check
+     * @return
+     */
+    static boolean isImageUpToDate(DockerBuildImage t) {
+        File file = t.imageIdFile.get().asFile
+        if (file.exists()) {
+            try {
+                // get the last imageId we used
+                def fileImageId = file.text
+                // check if that image still exists
+                for (String image : t.images.get()) {
+                    def inspect = t.getDockerClient().inspectImageCmd(image).exec();
+                    // see if that image is tagged the way we expectif not, re-run
+                    def sha = inspect.id.substring("sha:256".length());
+                    if (sha != fileImageId && !sha.startsWith(fileImageId)) {
+                        return false;
+                    }
+                }
+                return true;
+            } catch (DockerException e) {
+                // if we fail, it must not have existed, re-run the task
+                return false
+            }
+        }
+        // the imageIdFile didn't exist, so we definitely need to build
+        return false
+    }
+
+    /**
+     * DSL object to describe a docker task
+     */
     static class DockerTaskConfig {
         private Action<? super CopySpec> copyIn;
         private Action<? super Sync> copyOut;
@@ -40,14 +85,14 @@ class Docker {
         }
 
         /**
-         * Resulting files to copy out from the containerOutPath
+         * Resulting files to copy out from the containerOutPath.
          */
         DockerTaskConfig copyOut(Action<? super Sync> action) {
             copyOut = action;
             return this;
         }
         /**
-         * Resulting files to copy out from the containerOutPath
+         * Resulting files to copy out from the containerOutPath.
          */
         DockerTaskConfig copyOut(Closure closure) {
             return copyOut(ConfigureUtil.configureUsing(closure))
@@ -74,17 +119,18 @@ class Docker {
             dockerfile(ConfigureUtil.configureUsing(closure));
         }
 
-
         /**
          * Tag to apply to the created image. Defaults to "deephaven/" followed by the task name.
          */
         String imageName;
+
         /**
          * Path inside the created docker container that contains the output to be copied out as part of this task
          */
         String containerOutPath = '/out'
+
         /**
-         * List of any containers, the tasks that create them
+         * List of any containers, the tasks that create them.
          */
         List<Task> parentContainers = []
 
@@ -168,10 +214,18 @@ class Docker {
                 inputs.files prepareDocker.get().outputs.files
 
                 // specify that we rely on any parent container's outputs
+                // this is superior to using dependsOn, since it means we will re-run correctly when the upstream image
+                // is updated
                 inputs.files cfg.parentContainers.each { t -> t.outputs.files }
 
-                // specify tag
-                images.add(cfg.imageName)
+                // specify tag, if provided
+                if (cfg.imageName) {
+                    images.add(cfg.imageName)
+                    // apply fix, since tags don't work properly
+                    outputs.upToDateWhen {
+                        isImageUpToDate(buildImage)
+                    }
+                }
             }
         }
 

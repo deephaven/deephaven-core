@@ -73,6 +73,7 @@ project(':deephaven-jpy') {
     dependsOn prepareDocker
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/java-and-python')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
     target.set('runtime_reqs')
   }
 
@@ -80,6 +81,7 @@ project(':deephaven-jpy') {
     dependsOn prepareDocker
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/deephaven-jpy-wheel')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
     target.set('build')
   }
 }

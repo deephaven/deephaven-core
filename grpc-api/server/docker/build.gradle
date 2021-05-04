@@ -85,3 +85,4 @@ dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
 dockerCreateDockerfile.dependsOn grpcApiBase
 
 assemble.dependsOn dockerBuildImage
+dockerBuildImage.outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }

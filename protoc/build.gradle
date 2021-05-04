@@ -15,4 +15,5 @@ task prepareDocker(type: Sync) {
 task buildDocker(type: DockerBuildImage) {
     dependsOn prepareDocker
     images.add('deephaven/protoc')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
 }

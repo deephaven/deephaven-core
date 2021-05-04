@@ -74,6 +74,7 @@ task buildDockerForWheel(type: DockerBuildImage) {
     dependsOn prepareDockerForWheel
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/deephaven-wheel')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
     target.set('build')
 }
 
@@ -104,6 +105,7 @@ task buildDeephavenPython(type: DockerBuildImage) {
     inputDir.set layout.buildDirectory.dir("$buildDir/deephaven-python-docker")
 
     images.add('deephaven/runtime-base')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
 }
 
 /**

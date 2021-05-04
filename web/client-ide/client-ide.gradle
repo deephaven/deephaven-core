@@ -44,5 +44,6 @@ task buildDocker(type: DockerBuildImage) {
     inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files })
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web')
+    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
 }
 
