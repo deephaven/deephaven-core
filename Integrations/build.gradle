@@ -158,7 +158,7 @@ if (PyEnv.pythonEnabled(project)) {
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
-            environmentVariable 'DEEPHAVEN_PROPFILE', 'iris-defaults.prop'
+            environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
             environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
             environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
