@@ -175,8 +175,6 @@ class Docker {
         // be explicit and scoped to this task
         File dockerWorkspaceContents = project.file("${project.buildDir}/$taskName-docker");
 
-        def clean = project.tasks.findByName('clean');
-
         // If needed, make a Dockerfile from config
         TaskProvider<Dockerfile> dockerfileTask
 
@@ -205,8 +203,7 @@ class Docker {
             }
         }
 
-        // Produce a docker image from the copied inputs and provided dockerfile, and tag it
-        TaskProvider<DockerBuildImage> makeImage = project.tasks.register("${taskName}MakeImage", DockerBuildImage) { buildImage ->
+        TaskProvider<DockerBuildImage> makeImage = registerDockerImage(project, "${taskName}MakeImage") { DockerBuildImage buildImage ->
             buildImage.with {
                 // assign our own workspace dir
                 inputDir.set dockerWorkspaceContents
@@ -221,26 +218,9 @@ class Docker {
                 // specify tag, if provided
                 if (cfg.imageName) {
                     images.add(cfg.imageName)
-                    // apply fix, since tags don't work properly
-                    outputs.upToDateWhen {
-                        isImageUpToDate(buildImage)
-                    }
                 }
             }
         }
-
-        // Enabling removing the image as part of clean task
-        TaskProvider<DockerRemoveImage> removeImage = project.tasks.register("${taskName}DeleteImage", DockerRemoveImage) { removeImage ->
-            removeImage.with {
-                //TODO wire this up to not even run if the image doesn't exist
-                // we use imageName
-                targetImageId cfg.imageName
-                onError { t ->
-                    // ignore, the image might not exist
-                }
-            }
-        }
-        clean.dependsOn removeImage
 
         // Create a new container from the image above, as a workaround to extract the output from the dockerfile's
         // build steps
@@ -341,5 +321,41 @@ class Docker {
                 from dockerCopyLocation
             }
         }
+    }
+
+    static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Closure closure) {
+        return registerDockerImage(project, taskName, ConfigureUtil.configureUsing(closure))
+    }
+    static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Action<? super DockerBuildImage> action) {
+        // Produce a docker image from the copied inputs and provided dockerfile, and tag it
+        TaskProvider<DockerBuildImage> makeImage = project.tasks.register(taskName, DockerBuildImage) { buildImage ->
+            action.execute(buildImage)
+            if (buildImage.images) {
+                // apply fix, since tags don't work properly
+                buildImage.outputs.upToDateWhen {
+                    isImageUpToDate(buildImage)
+                }
+            }
+        }
+
+        // Enabling removing the image as part of clean task
+        TaskProvider<DockerRemoveImage> removeImage = project.tasks.register("${taskName}Clean", DockerRemoveImage) { removeImage ->
+            removeImage.with {
+                Set<String> images = makeImage.get().images.get();
+                if (images.isEmpty()) {
+                    // don't bother to run if no tag was set, it'll get gc'd automatically at some point
+                    onlyIf { false }
+                } else {
+                    // We assume exactly one tag set
+                    targetImageId images.iterator().next()
+                    onError { t ->
+                        // ignore, the image might not exist
+                    }
+                }
+            }
+        }
+        project.tasks.findByName('clean').dependsOn removeImage
+
+        return makeImage;
     }
 }

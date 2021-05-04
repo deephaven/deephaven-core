@@ -1,5 +1,3 @@
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
 }
@@ -40,10 +38,9 @@ task prepareDocker(type: Sync) {
     from 'nginx/default.conf'
 }
 
-task buildDocker(type: DockerBuildImage) {
+Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files })
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web')
-    outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
 }
 

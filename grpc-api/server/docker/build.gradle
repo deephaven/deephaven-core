@@ -3,6 +3,8 @@ plugins {
   id 'com.bmuschko.docker-java-application'
 }
 
+evaluationDependsOn(":Integrations")
+
 dependencies {
   implementation(project(':grpc-api')) {
     // way too many dependencies right now
