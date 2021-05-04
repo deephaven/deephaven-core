@@ -211,11 +211,11 @@ if (PyEnv.pythonEnabled(project)) {
         // for now, this task just makes sure that the main task ran
         dependsOn generatePyDoc
     }
-    // TODO complete these
     tasks.register("generateManPyDocAssert") {
+        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
     }
     tasks.register("generatePyDocAssert") {
-
+        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
     }
 }
 

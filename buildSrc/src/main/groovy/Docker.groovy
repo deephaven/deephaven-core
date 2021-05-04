@@ -232,7 +232,6 @@ class Docker {
                 if (cfg.command) {
                     // if provided, set a run command that we'll use each time it starts
                     entrypoint.set(cfg.command)
-
                 }
 
                 targetImageId makeImage.get().getImageId()
