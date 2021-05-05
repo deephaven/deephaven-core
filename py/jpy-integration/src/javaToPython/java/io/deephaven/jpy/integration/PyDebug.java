@@ -17,8 +17,10 @@ public class PyDebug {
 
   public static void main(String[] args) {
 
+    JpyConfigExt jpyConfigExt = new JpyConfigExt(SysProps.INSTANCE.asJpyConfig());
+    jpyConfigExt.initPython();
     debug("Calling JpyConfig.startPython()...");
-    new JpyConfigExt(SysProps.INSTANCE.asJpyConfig()).startPython();
+    jpyConfigExt.startPython();
     debug("Called JpyConfig.startPython()");
 
     debug("Called PyLib.isPythonRunning() = " + PyLib.isPythonRunning());

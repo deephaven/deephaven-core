@@ -3,6 +3,7 @@ import org.gradle.internal.jvm.Jvm
 plugins {
   id 'java'
   id 'idea'
+  id 'com.bmuschko.docker-remote-api'
 }
 
 evaluationDependsOn ':deephaven-jpy'
@@ -82,53 +83,130 @@ idea {
   }
 }
 
-// only enable this if py building is enabled
-if (PyEnv.pythonEnabled(project)) {
+Task testJavaToPython = tasks.create 'testJavaToPython', {
+  Task t ->
+    t.group = 'python'
+    t.description = 'Run the java test suite that depends on deephaven-jpy (org.jpy.PyLib, etc)'
+    check.dependsOn t
+}
 
-  PyEnv env = PyEnv.getEnv(project)
+tasks.create 'debugJavaToPython', {
+  Task t ->
+    t.group = 'python'
+    t.description = 'Run the java exec io.deephaven.jpy.integration.PyDebug which is a sanity test for all JavaExec tasks'
+}
 
-  List<Task> pythonTests = []
-  Task testJavaToPython = tasks.create 'testJavaToPython', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run the java test suite that depends on deephaven-jpy (org.jpy.PyLib, etc)'
-      check.dependsOn t
-      pythonTests += t
+tasks.create 'pathJavaToPython', {
+  Task t ->
+    t.group = 'python'
+    t.description = 'Run the java exec io.deephaven.jpy.integration.PySysPath which prints java properties and python paths'
+}
+
+Task pythonToJava = tasks.create 'unittestPythonToJava', {
+  Task t ->
+    t.group = 'python'
+    t.description = 'Run "python -m xmlrunner discover" in src/python-to-java/python'
+    check.dependsOn t
+}
+
+if (!PyEnv.pythonEnabled(project)) {
+//  Task testTask = venvTest.javaTest(project, "java-to-python-test-${pv.name}", installWheels, sourceSets.javaToPython)
+//  testJavaToPython.dependsOn testTask
+
+  Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMain, SourceSet sourceSet, List<String> jvmArgs = [] ->
+    return Docker.registerDockerTask(project, taskName) {
+      copyIn {
+        from(sourceSet.runtimeClasspath) {
+          into 'classpath'
+        }
+      }
+      parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+      imageName = 'deephaven/jpy-integration-java-to-python-tests'
+      dockerfile {
+        from 'deephaven/runtime-base'
+
+        copyFile 'classpath', '/classpath'
+      }
+      entrypoint = ['java', '-cp', '/classpath:/classpath/*',
+                    '-Djpy.jpyLib=/usr/local/lib/python3.7/dist-packages/jpy.cpython-37m-x86_64-linux-gnu.so',
+                    '-Djpy.jdlLib=/usr/local/lib/python3.7/dist-packages/jdl.cpython-37m-x86_64-linux-gnu.so',
+                    '-Djpy.pythonLib=/usr/lib/x86_64-linux-gnu/libpython3.7m.so.1.0'
+      ] + jvmArgs + javaMain
+
+      showLogsOnSuccess = true
+    }
   }
 
-  tasks.create 'debugJavaToPython', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run the java exec io.deephaven.jpy.integration.PyDebug which is a sanity test for all JavaExec tasks'
+  debugJavaToPython.dependsOn javaMainInDocker('java-to-python-debug', 'io.deephaven.jpy.integration.PyDebug', sourceSets.javaToPython, ["-Djpy.debug=true"])
+
+  pathJavaToPython.dependsOn javaMainInDocker('java-to-python-path', 'io.deephaven.jpy.integration.PySysPath', sourceSets.javaToPython)
+
+
+  Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
+    // if the classpath changes, we need to rebuild this
+    inputs.files sourceSets.pythonToJava.runtimeClasspath
+    from('src/pythonToJava/jpyconfig.py.template')
+    into "${buildDir}/jpyConfig"
+    rename { file -> 'jpyconfig.py' }
+    doFirst {
+      expand(
+              javaHome:'/opt/java/openjdk',
+              jvmMaxMem:'32m',
+              jvmClasspath:'/classpath:' + sourceSets.pythonToJava.runtimeClasspath.asList().collect { '/classpath/' + it.name }.join(':')
+      )
+    }
   }
 
-  tasks.create 'pathJavaToPython', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run the java exec io.deephaven.jpy.integration.PySysPath which prints java properties and python paths'
+  Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, boolean showLogs = false ->
+    File reportDir = project.file("${buildDir}/test-results/${taskName}")
+    return Docker.registerDockerTask(project, taskName) {
+      copyIn {
+        from ('src/pythonToJava/python') {
+          into 'python'
+        }
+        from (sourceSets.pythonToJava.runtimeClasspath) {
+          into 'classpath'
+        }
+        from(jpyConfigTask.outputs.files) {
+          into 'python'
+        }
+      }
+      parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+      imageName = 'deephaven/jpy-integration-python-to-java-tests'
+      dockerfile {
+        // set up the container, env vars - things that aren't likely to change
+        from 'deephaven/runtime-base'
+        runCommand '''set -eux; \\
+                        pip3 install unittest-xml-reporting==3.0.4;\\
+                        mkdir /out;'''
+        environmentVariable 'JDK_HOME', '/opt/java/openjdk'
+        environmentVariable 'JAVA_VERSION', '1.8'
+        environmentVariable 'JPY_PY_CONFIG', '/python/jpyconfig.py'
+
+        workingDir '/python'
+
+        // copy in the contents that we do expect to change as the project updates
+        copyFile 'python', '/python'
+        copyFile 'classpath', '/classpath'
+      }
+      entrypoint = command
+
+      copyOut {
+        into reportDir
+      }
+      showLogsOnSuccess = showLogs
+    }
   }
 
-  tasks.create 'debugPythonToJava', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run the python exec python/java_debug.py which is a sanity test for all python Exec tasks in this project'
-  }
+  pythonToJava.dependsOn pyExec('unittest-python-to-java', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/'])
 
-  Task pythonToJava = tasks.create 'unittestPythonToJava', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run "python -m xmlrunner discover" in src/python-to-java/python'
-      check.dependsOn t
-      pythonTests += t
-  }
+  // These tests need to run in their own process, since jpy can only start up a jvm once per process.
+  pythonToJava.dependsOn pyExec('unittest-single-jpy-python-to-java', ['python3', '-m', 'xmlrunner', '-v', '-o', '/out/', 'test.main_single_jpy_create_destroy_jvm'])
+  pythonToJava.dependsOn pyExec('unittest-multiple-jpy-python-to-java', ['python3', '-m', 'xmlrunner', '-v', '-o', '/out/', 'test.main_multiple_jpy_create_destroy_jvm'])
 
-  tasks.create 'testPython', {
-    Task t ->
-      t.group = 'python'
-      t.description = 'Run all python-related tests in the jpy-integration module'
-      check.dependsOn t
-      t.dependsOn(pythonTests)
-  }
+  pythonToJava.dependsOn pyExec('debugPythonToJava', ['python3', 'java_debug.py'], true)
+} else {
+  // only enable this if py building is enabled
 
   File genConfig = file("$buildDir/pyGen/jpyconfig.py")
   Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
@@ -153,6 +231,7 @@ if (PyEnv.pythonEnabled(project)) {
       }
   }
 
+  PyEnv env = PyEnv.getEnv(project)
   for (pv in [PythonVersion.PY_37]) {
     Venv venvTest = env.getVenv(pv, VenvType.TEST_JPY)
 
