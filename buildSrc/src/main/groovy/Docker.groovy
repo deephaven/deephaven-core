@@ -281,6 +281,13 @@ class Docker {
             copy.with {
                 if (cfg.entrypoint) {
                     dependsOn containerFinished
+                    doLast {
+                        // there was an entrypoint specified, if the command was not successful kill the build once
+                        // we're done copying output
+                        if (containerFinished.get().exitCode != 0) {
+                            throw new GradleException("Command '${cfg.entrypoint.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
+                        }
+                    }
                 } else {
                     dependsOn createContainer
                 }
@@ -300,10 +307,6 @@ class Docker {
                 doFirst {
                     // we must manually delete this first, since docker cp will error if trying to overwrite
                     project.delete(dockerCopyLocation)
-
-                    if (cfg.entrypoint && containerFinished.get().exitCode != 0) {
-                        throw new GradleException("Command '${cfg.entrypoint.join(' ')}' failed with exit code ${containerFinished.get().exitCode}, check logs for details")
-                    }
                 }
             }
         }
