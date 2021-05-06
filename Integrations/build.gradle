@@ -154,7 +154,7 @@ if (PyEnv.pythonEnabled(project)) {
             from 'deephaven/runtime-base'
             runCommand '''set -eux; \\
                           pip3 install unittest-xml-reporting==3.0.4;\\
-                          mkdir -p /out/test;\\
+                          mkdir -p /out/report;\\
                           mkdir -p /workspace/cache/classes'''
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
@@ -170,7 +170,7 @@ if (PyEnv.pythonEnabled(project)) {
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
         }
-        entrypoint = ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/test']
+        entrypoint = ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report']
 
         copyOut {
             into layout.buildDirectory.dir('test-results')
