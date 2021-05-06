@@ -27,8 +27,7 @@ task prepareDocker(type: Sync) {
     // a native GH action. As such, we need to make sure that the prepare also invokes the
     // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
     // can remove these dependencies.
-    dependsOn iriside
-    dependsOn jsOut
+    inputs.files([iriside, jsOut].each { t -> t.outputs.files })
 
     into "${buildDir}/docker"
     from(gwtc.outputs.files) {

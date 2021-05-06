@@ -29,6 +29,7 @@ Docker.registerDockerTask(project, 'webpackSources') {
 
     }
     imageName = 'deephaven/js-out'
+    containerOutPath = '/usr/src/app/raw-js-openapi/build/js-out'
     copyOut {
         into(webpackSourcesLocation)
     }
