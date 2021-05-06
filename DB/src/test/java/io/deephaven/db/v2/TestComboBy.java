@@ -37,6 +37,7 @@ import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
 public class TestComboBy extends LiveTableTestCase {
+
     private boolean oldLogEnabled;
     private boolean oldCheckLtm;
 
@@ -51,10 +52,12 @@ public class TestComboBy extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        CompilerTools.setLogEnabled(oldLogEnabled);
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        try {
+            super.tearDown();
+        } finally {
+            CompilerTools.setLogEnabled(oldLogEnabled);
+            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        }
     }
 
     public void testBy() {

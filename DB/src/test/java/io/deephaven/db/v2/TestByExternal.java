@@ -45,20 +45,6 @@ public class TestByExternal extends QueryTableTestBase {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
     }
 
-    private boolean oldCheckLtm;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-    }
-
     class TableMapNugget implements EvalNuggetInterface {
         Table originalTable;
         private final String[] groupByColumns;

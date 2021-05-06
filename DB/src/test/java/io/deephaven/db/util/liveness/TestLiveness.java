@@ -23,6 +23,7 @@ public class TestLiveness extends TestCase {
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests();
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
     }
 

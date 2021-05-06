@@ -28,6 +28,7 @@ import static io.deephaven.db.v2.TstUtils.c;
 import static io.deephaven.db.v2.TstUtils.i;
 
 public class TableMapTest extends LiveTableTestCase {
+
     private boolean oldCheckLtm;
 
     @Override
@@ -42,8 +43,11 @@ public class TableMapTest extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        try {
+            super.tearDown();
+        } finally {
+            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        }
     }
 
     public void testMergeSimple() {

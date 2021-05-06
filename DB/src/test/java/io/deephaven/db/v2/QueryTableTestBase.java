@@ -4,6 +4,7 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableDiff;
+import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -17,6 +18,7 @@ import static io.deephaven.db.tables.utils.TableTools.diff;
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
  */
 public abstract class QueryTableTestBase extends LiveTableTestCase {
+
     protected final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
     private boolean oldLogEnabled;
@@ -33,17 +35,20 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         oldLogEnabled = CompilerTools.setLogEnabled(true);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
+        ChunkPoolReleaseTracking.enableStrict();
     }
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        CompilerTools.setLogEnabled(oldLogEnabled);
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        try {
+            super.tearDown();
+        } finally {
+            CompilerTools.setLogEnabled(oldLogEnabled);
+            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+            ChunkPoolReleaseTracking.checkAndDisable();
+        }
     }
 
     final JoinIncrement leftStep = new JoinIncrement() {

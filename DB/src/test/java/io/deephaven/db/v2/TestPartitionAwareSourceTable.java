@@ -87,9 +87,6 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
         columnSource = mock(ColumnSource.class);
@@ -132,10 +129,13 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @After
     @Override
     public void tearDown() throws Exception {
-        super.tearDown();
-        if (coalesced != null) {
-            coalesced.dropReference();
-            coalesced = null;
+        try {
+            super.tearDown();
+        } finally {
+            if (coalesced != null) {
+                coalesced.dropReference();
+                coalesced = null;
+            }
         }
     }
 

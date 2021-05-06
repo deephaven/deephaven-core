@@ -30,17 +30,6 @@ import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 
 public class QueryTableSortTest extends QueryTableTestBase {
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        ChunkPoolReleaseTracking.checkAndDisable();
-        super.tearDown();
-    }
 
     public void testSort() {
         final Table result0 = newTable(c("Unsorted", 3.0, null, 2.0), c("DataToSort", "c", "a", "b"));

@@ -14,17 +14,6 @@ import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.*;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        ChunkPoolReleaseTracking.checkAndDisable();
-        super.tearDown();
-    }
 
     public void testMatch() {
         final QueryTable t1 = testRefreshingTable(
