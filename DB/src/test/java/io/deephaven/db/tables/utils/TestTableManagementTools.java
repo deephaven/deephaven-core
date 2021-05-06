@@ -88,7 +88,7 @@ public class TestTableManagementTools {
     @Before
     public void setUp() {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
 
         testRootFile.mkdirs();
     }
@@ -111,7 +111,7 @@ public class TestTableManagementTools {
                 TestCase.assertTrue(success);
             }
         } finally {
-            LiveTableMonitor.DEFAULT.resetForUnitTests();
+            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
         }
     }
 

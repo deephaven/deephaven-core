@@ -12,12 +12,12 @@ public class TreeIndexPrevTest {
     @Before
     public void setUp() throws Exception {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test

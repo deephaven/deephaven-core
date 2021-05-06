@@ -223,7 +223,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testTransformTableMapThenMerge() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true, 0, 4, 10, 5);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1), intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
@@ -415,7 +415,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testCrossDependencies() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true, 0, 2, 0, 0);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2),
                 c("USym", "aa", "bb"),
@@ -500,7 +500,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testCrossDependencies2() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true, 0, 2, 0, 0);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2),
                 c("USym", "aa", "bb"),

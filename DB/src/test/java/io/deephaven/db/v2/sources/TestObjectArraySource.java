@@ -46,11 +46,12 @@ public class TestObjectArraySource {
     @Before
     public void setUp() throws Exception {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, Index index) {

@@ -23,7 +23,7 @@ public class TestLiveness extends TestCase {
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
     }
 
@@ -33,7 +33,7 @@ public class TestLiveness extends TestCase {
         LivenessScopeStack.pop(scope);
         scope.release();
         LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")

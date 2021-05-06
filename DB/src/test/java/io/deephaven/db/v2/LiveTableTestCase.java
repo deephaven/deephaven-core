@@ -37,7 +37,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     protected void setUp() throws Exception {
         super.setUp();
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -47,7 +47,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
         QueryTable.setMemoizeResults(oldMemoize);
         AsyncClientErrorNotifier.setReporter(oldReporter);
     }

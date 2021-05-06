@@ -47,11 +47,12 @@ public class TestIntegerArraySource {
     @Before
     public void setUp() throws Exception {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     private void testGetChunkGeneric(int[] values, int[] newValues, int chunkSize, Index index) {

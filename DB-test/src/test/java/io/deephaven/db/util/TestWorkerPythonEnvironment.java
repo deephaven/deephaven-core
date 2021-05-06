@@ -29,13 +29,13 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), TestWorkerPythonEnvironment.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testNumpyImport() {

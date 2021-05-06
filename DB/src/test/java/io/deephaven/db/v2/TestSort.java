@@ -33,14 +33,16 @@ public class TestSort extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
         QueryTable.setMemoizeResults(lastMemoize);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     @FunctionalInterface
