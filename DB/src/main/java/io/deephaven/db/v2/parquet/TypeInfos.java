@@ -59,7 +59,7 @@ class TypeInfos {
     }
 
     private static TypeInfo lookupTypeInfo(ColumnDefinition column) {
-        if (column.getComponentType() != null) {
+        if (column.getComponentType() != null && column.getObjectCodecType() == ColumnDefinition.ObjectCodecType.DEFAULT) {
             return lookupTypeInfo(column.getComponentType()).orElseGet(() -> new CodecType());
         }
         if (StringSet.class.isAssignableFrom(column.getDataType())) {

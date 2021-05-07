@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Unit tests for ObjectCodec ColumnSource and AppendableColumn implementations.
@@ -28,12 +27,12 @@ public class TestCodecColumns {
 
     private static final ColumnDefinition<byte[]> VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
     static {
-        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBA", byte[].class, ByteArrayCodec.class.getName());
+        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBA", byte[].class, byte.class, ByteArrayCodec.class.getName());
     }
 
     private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
     static {
-        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, ByteArrayCodec.class.getName(), "9,notnull", 9);
+        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, byte.class, ByteArrayCodec.class.getName(), "9,notnull", 9);
     }
 
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
@@ -56,26 +55,24 @@ public class TestCodecColumns {
             FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION);
 
-    private static final Table TABLE;
-    static {
-        final Table table = TableTools.newTable(
-                TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
-                TableTools.col("FWBA", new byte[]{7,8,9,10,11,12,13,14,15}, new byte[]{16,17,18,19,20,21,22,23,24}, new byte[]{0,0,0,0,0,0,0,0,0}),
-                TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null)
-        );
-        table.getDefinition().copyValues(TABLE_DEFINITION);
-        TABLE = table;
-    }
+    private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
+            TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
+            TableTools.col("FWBA", new byte[]{7,8,9,10,11,12,13,14,15}, new byte[]{16,17,18,19,20,21,22,23,24}, new byte[]{0,0,0,0,0,0,0,0,0}),
+            TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null)
+    );
 
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
-        TableManagementTools.writeTable(TABLE, dir, storageFormat);
-        final Table result = TableManagementTools.readTable(dir, TABLE_DEFINITION);
-        TableTools.show(result);
-        TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
-        TestCase.assertEquals("", TableTools.diff(result, TABLE, Math.max(result.size(), TABLE.size())));
-        FileUtils.deleteRecursively(dir);
+        try {
+            TableManagementTools.writeTable(TABLE, dir, storageFormat);
+            final Table result = TableManagementTools.readTable(dir, TABLE_DEFINITION);
+            TableTools.show(result);
+            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+            TstUtils.assertTableEquals(TABLE, result);
+        } finally {
+            FileUtils.deleteRecursively(dir);
+        }
     }
 
     @Test
