@@ -25,6 +25,9 @@ public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext imp
     public void close() {
         super.close();
         lengthCopy.close();
+        countCopy.close();
+        countResettable.close();
+        starts.close();
         valueResettable.close();
         ssmsToMaybeClear.close();
     }
