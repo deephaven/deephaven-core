@@ -313,8 +313,9 @@ public class SparseSelect {
         final ChunkSource.FillContext [] fcs = new ChunkSource.FillContext[outputSources.length];
         final WritableChunkSink.FillFromContext [] ffcs = new WritableChunkSink.FillFromContext[outputSources.length];
 
-        try (final SafeCloseableArray<ChunkSource.FillContext> ignored = new SafeCloseableArray<>(fcs);
-             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
+        try (final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(values);
+             final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
+             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
              final SharedContext sharedContext = SharedContext.makeSharedContext();
              final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
              final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator()) {
