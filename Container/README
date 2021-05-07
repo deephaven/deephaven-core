@@ -1,0 +1,12 @@
+Part of the code in this module traces back to the RoaringBitmap library.
+
+Specifically the files:
+
+ArrayContainer.java
+BitmapContainer.java
+Container.java
+ContainerUtil.java
+RunContainer.java
+ShortIterator.java
+
+Please see https://roaringbitmap.org.

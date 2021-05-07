@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.ResettableLongChunk",
+ "methods": {
+  "clear": "Reset this chunk to empty storage.\n\nNote: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n\n:return: io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>",
+  "makeResettableChunk": "Note: Java generics information - <ATTR_BASE extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.chunk.ResettableLongChunk<ATTR_BASE>",
+  "makeResettableChunkForPool": "Note: Java generics information - <ATTR_BASE extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.chunk.ResettableLongChunk<ATTR_BASE>",
+  "resetFromArray": "**Incompatible overloads text - text from the first overload:**\n\nReset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n*Overload 1*  \n  Note: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n  \n  :param array: java.lang.Object\n  :param offset: int\n  :param capacity: int\n  :return: (io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>) this\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n  \n  :param array: java.lang.Object\n  :return: (io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>) this",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified Chunk.\n\nNote: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n\n:param other: io.deephaven.db.v2.sources.chunk.Chunk<? extends ATTR>\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>",
+  "resetFromTypedArray": "Note: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n\n:param data: long[]\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>",
+  "resetFromTypedChunk": "Note: Java generics information - <ATTR extends ResettableLongChunk.ATTR_UPPER>\n\n:param other: io.deephaven.db.v2.sources.chunk.LongChunk<? extends ATTR>\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.LongChunk<ATTR>",
+  "slice": "Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a\n subrange of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).\n\n:param offset: int\n:param capacity: int\n:return: (io.deephaven.db.v2.sources.chunk.ResettableLongChunk) The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view."
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.ResettableLongChunk",
+ "text": "ResettableReadOnlyChunk implementation for long data.",
+ "typeName": "class"
+}

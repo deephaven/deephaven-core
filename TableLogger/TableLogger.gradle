@@ -1,0 +1,14 @@
+configurations {
+    compile.extendsFrom fishUtil, fishData
+    testCompile.extendsFrom fishDataTest
+}
+
+dependencies {
+    compile project(':Util')
+    testRuntime project(path: ':configs'), project(path: ':test-configs')
+
+    runtimeOnly project(path: ':configs')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}

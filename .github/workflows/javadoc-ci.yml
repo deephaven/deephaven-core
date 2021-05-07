@@ -1,0 +1,35 @@
+name: Javadoc CI
+
+on:
+  pull_request:
+    branches: [ main, workflow ]
+  push:
+    branches: [ 'main', 'javadoc/**' ]
+    tags: [ 'v*' ]
+
+jobs:
+  javadoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+
+      - name: All Javadoc
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: allJavadoc
+          # todo: eventually expand to more
+          arguments: --scan allJavadoc
+          gradle-version: wrapper

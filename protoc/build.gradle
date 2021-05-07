@@ -1,0 +1,18 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+task prepareDocker(type: Sync) {
+    from(project.projectDir) {
+        exclude 'build'
+        exclude 'build.gradle'
+    }
+    into 'build/docker'
+}
+
+task buildDocker(type: DockerBuildImage) {
+    dependsOn prepareDocker
+    images.add('deephaven/protoc')
+}

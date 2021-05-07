@@ -1,0 +1,16 @@
+plugins {
+	id 'java'
+	id 'application'
+}
+
+dependencies {
+	implementation project(':log-example-base')
+
+	runtimeOnly project(':log-to-slf4j')
+	runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+}
+
+application {
+	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	// see logback.xml for config
+}

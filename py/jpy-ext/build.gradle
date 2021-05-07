@@ -1,0 +1,20 @@
+/**
+ * deephaven-jpy-ext is our extension code for jpy. This code arguably could live in the
+ * jpy repo itself - but the update and release process around jpy is much more complicated than
+ * adding code here.
+ *
+ * As such, deephaven-jpy-ext has a minimal set of dependencies. It depends on fishlib io for now,
+ * so we can have nice formatted output, ala LogOutputAppendable, but it's not a strict requirement.
+ *
+ * We shouldn't be adding any additional dependencies here, and should strive to keep the surface
+ * area as minimal as possible.
+ */
+
+configurations {
+  compile.extendsFrom fishBase
+}
+
+dependencies {
+  compile project(':deephaven-jpy')
+  compile project(':deephaven-jpy-config')
+}

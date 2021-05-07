@@ -1,0 +1,36 @@
+configurations {
+    compile.extendsFrom irisBenchmarkSupport
+
+    testCompile.extendsFrom irisDbTest, fishIoTest
+
+    testRuntime.extendsFrom fishDataGenerator
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+
+    test {
+        resources {
+            srcDir 'test'
+            include 'test-schema/**'
+            include '*.yml'
+        }
+    }
+}
+
+dependencies {
+    compile project(':DB'),
+            'org.openjdk.jmh:jmh-core:1.20'
+
+    testCompile TestTools.projectDependency(project, 'Util'),
+                TestTools.projectDependency(project, 'DB')
+
+    testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}

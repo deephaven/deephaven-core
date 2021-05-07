@@ -1,0 +1,926 @@
+########################################################################################################################
+# Default properties for Deephaven installations
+########################################################################################################################
+
+# Used to describe the system. Used in the UI to differentiate between multiple instances
+# system.name: Any valid string
+# system.type: PROD (production), QA (Quality Assurance), DEV (development), SIM (simulator), or any string.
+system.name=Deephaven
+system.type=PROD
+# Optional param to set the color displayed on the System Information Bar and Badge
+# Any html support color can be set, but it is recommended to use Deephaven colors (e.g. var(--info))
+# Deephaven colors are: primary, primary-dark, primary-light, secondary, success, info, warning, danger, light, mid, and dark
+#system.color=var(--info)
+
+importermode=false
+
+email=
+critEmail=
+smtp.mx.domain=illumon.com
+componentStatusEmailGenerator.enabled=false
+
+HeapDumpHelper.enable=false
+HeapDumpHelper.port=7070
+
+TimedBufferedWriter.flushTime=3000
+TimedBufferedWriter.allowFlush=false
+
+ioWritetimeout=10000
+
+default.serverWriteBlock = 500
+
+default.serverFlushInterval=10
+
+minimumWorkerHeapSizeMB=512
+
+###### Cache/Log/Data Options ######
+persistenthashtable.baseDirectory=<dbroot>/PersistentQueries
+persistenthashtable.checkpoint.idfile=ckpt.id
+persistenthashtable.checkpoint.updateversionfile=update.version
+persistenthashtable.subscription.blocksize=4000
+cacheDir=cache
+log.dir=../logs/
+
+LoggerFactory.teeOutput=false
+
+# Business Calendar directory
+Calendar.default=USNYSE
+# The etc path is where things are installed on a server, the configs path is
+# for development. This needs to be overridden for a console from a launcher.
+Calendar.internalPath=<devroot>/etc/calendar;<devroot>/configs/calendar;/etc/sysconfig/illumon.d/calendars
+
+# Plot Themes
+Plot.theme.default=LIGHT
+Plot.theme.internalPath=<devroot>/etc/chartthemes;<devroot>/configs/chartthemes;/etc/sysconfig/illumon.d/chartthemes
+Plot.chartTitle.maxRowsInTitle=0
+
+###### Comm Options ######
+# Heartbeats for client/server, 0 turns them off
+commclient.heartbeatrate=0
+commserver.heartbeatrate=0
+
+# Servers should use their external hostname so that the reported IP address to clients is not localhost
+# Clients in multicast discovery mode don't need this information, but it is harmless if you want to share
+#  a properties file, the client just will ignore these settings and rely on multicast to find the PDS
+anomalygateway.port=9020
+
+threadstatus.signal.deadlock.anomaly=true
+
+###### Server's timezone #####
+server.timezone=America/New_York
+
+###### Measurement Options ######
+statsdriver.enabled=true
+allocation.stats.enabled=false
+measurement.comm_layer_timing=false
+measurement.partitioned_distributed_hashtables=false
+measurement.per_thread_cpu=false
+measurement.log_and_reset=false
+
+###### Should we run offline tests (these usually have external dependencies, etc so don't run as part of the normal build ######
+runOfflineTests=false
+
+mailPl0Bugs=true
+
+cache.simulation.files=false
+
+#
+# NIO driver thread pool
+#
+# TODO: if we reach the maximum thread count, the driver will crash the process if it comes
+# TODO: to a handoff and there is no thread waiting to become the leader.  The most likely reason
+# TODO: for this to happen is a deadlock, but another possibility is a temporary situation in
+# TODO: all of the created threads are waiting on RPCs or locks.
+#
+NIO.driver.workTimeout=100
+NIO.driver.initialThreadCount=2
+NIO.driver.maxThreadCount=400
+NIO.driver.useFast=true
+
+#
+# NIO default buffer size parameters
+#
+# TODO: the server-side maxWriteQueue and client-side maxReadBuffer values have to be so
+# TODO: large because we have to deal with the monster messages which can potentially be
+# TODO: delivered in response to a PDH subscription.
+#
+NIO.default.server.initialReadBuffer=4096
+NIO.default.server.keepReadBuffer=4194304
+NIO.default.server.maxReadBuffer=500000000
+NIO.default.server.maxWriteQueue=500000000
+
+NIO.default.client.initialReadBuffer=4096
+NIO.default.client.keepReadBuffer=4194304
+NIO.default.client.maxReadBuffer=500000000
+NIO.default.client.maxWriteQueue=500000000
+
+NIO.default.client.maxAllowableDelay=1500
+NIO.long.client.maxAllowableDelay=15000
+
+#
+# NIO buffer pool sizes
+#
+NIO.messagePool.4k.maxSize=32768
+NIO.messagePool.256b.maxSize=32768
+
+#
+# NIO RPC client timeout
+#
+NIO.RPC.timeout=60000
+
+#
+# NIO wire-lag clock
+#
+NIO.wireLagClock.native=false
+
+#
+# Default envelope handler for WClient instances
+#
+Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
+session.id.provider.simulationClass=io.deephaven.util.session.SessionIdProvider.NullSessionIdProvider
+
+#
+# The ConnectionMonitor sends a heartbeat after a socket has been idle in one direction or the other, and
+# notifies it's listeners of a problem if the response is not received within the specified heartbeat time.
+# It is disabled by default; to enable just override the ConnectionMonitor.enabled prop in the
+# environment-specific prop file.
+#
+ConnectionMonitor.enabled=true
+ConnectionMonitor.maxReadIdle=10000
+ConnectionMonitor.maxWriteIdle=10000
+ConnectionMonitor.heartbeatTriggerMillis=300000
+ConnectionMonitor.heartbeatFatalMillis=300000
+ConnectionMonitor.logActivity=false
+
+WAuthenticationClient.connectionMonitor.maxReadIdle=10000
+WAuthenticationClient.connectionMonitor.maxWriteIdle=10000
+WAuthenticationClient.connectionMonitor.heartbeatTriggerMillis=120000
+
+WAuthenticationServer.connectionMonitor.maxReadIdle=13000
+WAuthenticationServer.connectionMonitor.maxWriteIdle=13000
+WAuthenticationServer.connectionMonitor.heartbeatTriggerMillis=120000
+
+performance.configuration.file=performance.4.prop
+performance.warningPercentage=0.95
+performance.dailyVariation=1.15
+performance.cpuCount=4
+
+enableUnsafeTestMode=false
+
+##### CompilerTools Settings #####
+
+CompilerTools.logEnabledDefault=false
+
+########## Deephaven DB RemoteQueryClient defaults ##########
+
+#How much heap (in MB) to request per query by default
+RemoteProcessingRequest.defaultQueryHeapMB=4096
+
+#How long (in ms) to wait before timing out each query by default
+RemoteProcessingRequest.defaultQueryTimeoutMS=3600000
+
+RemoteQueryClient.defaultClassPushList=db_rqc_default_class_push_list.txt
+
+QueryLibrary.defaultPackageImportList=default_package_imports.txt
+QueryLibrary.defaultClassImportList=default_class_imports.txt
+QueryLibrary.defaultStaticImportList=default_static_imports.txt
+
+QueryDispatcherConnectionImpl.cancelRequestTimeoutMS=60000
+
+RemoteQueryClient.remoteDatabaseRequestTimeoutMS=600000
+
+########## Deephaven DB RemoteQueryDispatcher settings ##########
+
+RemoteQueryUtils.hostnameSuffixesToTruncateForDisplay=
+
+RemoteQueryDispatcherParameters.name=default
+RemoteQueryDispatcherParameters.host=localhost
+RemoteQueryDispatcherParameters.queryPort=22013
+RemoteQueryDispatcher.workerPort=22012
+RemoteQueryDispatcher.workerServerPorts=23000-23999
+RemoteQueryDispatcher.workerServerWebsocketPorts=24000-24999
+RemoteQueryDispatcher.websocket.enabled=false
+
+# RemoteQuery Dispatcher webserver
+RemoteQueryDispatcher.webserver.enabled=false
+RemoteQueryDispatcher.webserver.authenticationRequired=true
+RemoteQueryDispatcher.webserver.sslRequired=true
+RemoteQueryDispatcher.webserver.port=8084
+
+RemoteQueryDispatcher.allowedGroups=*
+RemoteQueryDispatcher.pushClassGroups=*
+RemoteQueryDispatcher.adminGroups=iris-superusers
+
+#Maximum concurrently running query processors
+RemoteQueryDispatcher.maxConcurrentQueries=20
+
+#Maximum concurrently starting query processors
+RemoteQueryDispatcher.maxConcurrentStartups=10
+
+#Maximum total heap for the dispatcher to assign
+RemoteQueryDispatcher.maxTotalQueryProcessorHeapMB=354304
+
+#Maximum total heap for the dispatcher to assign to active (non-interactive) jobs
+# This defaults to the value from RemoteQueryDispatcher.maxTotalQueryProcessorHeapMB if not defined
+#RemoteQueryDispatcher.maxActiveQueryProcessorHeapMB=92160
+
+#Whether logging to the QueryPerformanceLog table is enabled
+RemoteQueryDispatcher.logQueryPerformance=true
+
+#Time interval between passes through the job scheduler
+RemoteQueryDispatcher.schedulingIntervalMS=1000
+
+#Time interval used in per-client (host) usage EMA
+RemoteQueryDispatcher.usageFunctionIntervalMS=3600000
+
+#Assumed paging rate in MB/s, used to determine rate of new job scheduling
+RemoteQueryDispatcher.pagingRateMBPS=0
+
+RemoteQueryDispatcher.useNativeSignals=false
+
+# If the following is true, the worker output and error streams will be combined into one, which will reduce overhead
+# but eliminate the distinction between the two in the process event log
+RemoteQueryDispatcher.combineProcessOutputStreams=false
+
+# Number of lines from syserr that the dispatcher should track for each worker
+RemoteQueryDispatcher.workerErrorLines=5
+
+# Thread pool to handle unexpected worker terminations
+RemoteQueryDispatcher.queryTerminationThreadPoolCoreSize=20
+RemoteQueryDispatcher.queryTerminationThreadPoolKeepAliveMinutes=10
+
+########## Deephaven DB RemoteQueryProcessor settings #########
+
+#TCP send buffer overrides for processor->client connections - format is networkAddress/width=bufferSizeInKB(,...)
+RemoteQueryProcessor.sendBufferOverrides=
+
+#Number of database threads each processor is allowed to use for queries
+
+#Whether new processors start a StatsDriver, or not.
+RemoteQueryProcessor.statsLoggingEnabled=true
+
+# Whether processors implicitly reload db metadata (namespace lists, table definition caches) between every query or console command.
+RemoteQueryProcessor.implicitReloadEnabled=true
+
+# If the following is false, don't send worker log output to stdout
+RemoteQueryProcessor.sendLogsToSystemOut=false
+
+# If the following is true and worker logs are turned on, dump the properties to the log on worker startup
+RemoteQueryProcessor.logProperties=true
+
+# If the following is true and worker logs are turned on, all commands are logged
+RemoteQueryProcessor.logCommands=false
+
+# If the following is not true, performance data won't be logged
+RemoteQueryProcessor.logPerformanceData=true
+
+########## Deephaven DB Console and Groovy Session defaults ##########
+
+GroovyDeephavenSession.defaultScriptPath=<devroot>
+GroovyDeephavenSession.initScripts=core/illumon_core_utils.groovy
+
+PythonDeephavenSession.defaultScriptPath=<devroot>
+PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
+
+WorkerPythonEnvironment.defaultScriptPath=<devroot>
+
+# NB: List repos in order of decreasing relative priority.  The shared repo should probably always be last.
+iris.scripts.repos=
+
+##########
+
+ClassicDbConsole.icon=/images/dbconsole_icon.gif
+IrisConsole.icon=/images/IrisIcon.png
+IrisConsole.helpUrl=https://deephaven.io/help/
+IrisConsole.defaultConfigurationType=Script
+
+PracticalExampleRepoURL=https://github.com/illumon-public/Practical-Examples.git
+
+#The root directory for the database
+OnDiskDatabase.rootDirectory=/db
+
+Importer.recordLocal=false
+Importer.suppressImportDetails=false
+LocalRecorder.storageRoot=/tmp
+
+iris.concurrentWriteThreads=1
+
+# This forces no String caching for imports or table writing code (outside of the DIS).
+# Change to -1 to cache everything and have minimal symbol tables.
+# Change to a positive value for bounded caching.
+#
+# When there is no caching, or bounded caching, the FIFO "window" for symbol managers (before a value will be re-mapped)
+# is controlled by LocalAppendableTableComponentFactory.boundedSymbolManagerSize, which defaults to 10000. Bounded
+# symbol tables that contain more than this number of unique values will contain more than one mapping per unique value.
+StringCacheProvider.defaultStringCacheSize=0
+
+iris.defaultInternalPartitionNamingFunction=return "0"
+iris.defaultColumnPartitionColumnName=Date
+iris.defaultColumnPartitionNamingFunction=return io.deephaven.db.tables.utils.DBTimeUtils.currentDateNy()
+
+
+########## Start Global DIS Cache Hints ##########
+#
+# Table name and column name exact match:
+#
+# Column name exact match:
+#
+# Column name contains:
+#
+# Table name starts with:
+#
+# Everything else:
+DataImportServer.StringCacheHint.default=AlwaysCreateStringCache,String
+#
+########## End global DIS Cache Hints ##########
+
+########## Deephaven DB UpdatePerformanceTracker Properties ##########
+UpdatePerformanceTracker.reportingMode=LISTENER_ONLY
+UpdatePerformanceTracker.reportIntervalMillis=60000
+
+########## Deephaven DB QueryPerformanceRecorder Properties ##########
+QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
+
+########## Deephaven DB Global Remote-Intraday-Data Properties ##########
+TableDataRefreshService.tableLocationsRefreshMillis=10000
+TableDataRefreshService.tableSizeRefreshMillis=1000
+
+########## End Deephaven DB Properties ##########
+
+# Jabber chat-room to system status gateway
+IM.jabberSystemStatus=false
+IM.isDefaultSystem=false
+IM.jabberSystemName=EquitySystem
+IM.resolveIps=true
+
+#
+# Deephaven Controller
+#
+PersistentQuery.debugWorkers=false
+PersistentQueryController.port=20126
+PersistentQueryController.updateCheckpointInline=false
+PersistentQueryController.resetGitLockFiles=true
+
+iris.controller.configurationTypesXml.deephaven=PersistentQueryConfigurationTypes.xml
+
+# This thread pool will expand based on the number of persistent queries
+PersistentQueryController.queryStartThreadPoolCoreSize=20
+PersistentQueryController.queryStartThreadPoolKeepAliveMinutes=10
+
+SimConnectivityServer.port=7766
+iris.db.nservers=0
+
+# Unless specified otherwise, servers will be of class Query
+iris.db.defaultServerClass=Query
+
+open.gui.port = 20235
+open.gui.display=0:1.0
+open.gui.host = localhost
+
+log.tailer.defaultFileManager=io.deephaven.logfilemanager.DateBinaryLogFileManager
+log.tailer.configs=tailerConfigDbInternal.xml
+log.tailer.logDetailedFileInfo=false
+log.tailer.logBytesSent=true
+log.tailer.defaultIdleTime=01:10
+log.tailer.defaultDirectories=<logroot>/binlogs,<logroot>/binlogs/pel,<logroot>/binlogs/perflogs
+[service.name=tailer1|tailer1_query|tailer1_merge] {
+    log.tailer.enabled.1=true
+    log.tailer.processes=db_internal
+    log.tailer.configs=tailerConfigDbInternal.xml
+    log.tailer.defaultFileManager=io.deephaven.logfilemanager.StandardBinaryLogFileManager
+}
+
+
+session.id.provider=Null
+
+InputTableSnapshotter.daysSinceLastSnapshotThreshold=7
+InputTableSnapshotter.changesToSnapshotSizeRatioThreshold=0.2
+InputTableSnapshotter.snapshotTasksFile=input_table_snapshotter_tasks.txt
+TableInputHandler.useSnapshotTables=true
+
+IrisConsole.deployCheckPeriodMs=600000
+IrisConsole.showOvernightConfirmationDialog=true
+
+#
+# Properties to pickup the iris DB schema changes
+#
+SchemaConfig.resourcePath.irisInternal=<devroot>/etc/dbinternal;<devroot>/configs/dbinternal
+SchemaConfig.internalNamespaces=DbInternal
+SchemaConfig.suffix=.schema
+SchemaConfig.classPrefix=io.deephaven.
+SchemaConfig.defaultListenerPackagePrefix=io.deephaven.intraday.gen.
+# Used by controller and workers
+SchemaConfig.resourcePath.customer=/etc/sysconfig/illumon.d/schema
+SchemaConfig.resourcePath.plugins=/usr/illumon/plugins/*/schema/;/etc/sysconfig/illumon.d/plugins/*/schema/
+# This path is only needed for an initial import of schemas into etcd.
+SchemaConfig.resourcePath.migrations=/etc/sysconfig/deephaven/plugins/*/schema/
+
+
+# Authentication Server/Client
+tls.truststore=/etc/sysconfig/illumon.d/resources/truststore-iris.p12
+tls.truststore.passphrase.file=/etc/sysconfig/illumon.d/resources/truststore_passphrase
+[service.name=iris_console|interactive_console] {
+    # For clients, we'll use a relative path to allow lookup from classloader.
+    tls.truststore=truststore-iris.p12
+    tls.truststore.passphrase.file=truststore_passphrase
+}
+authentication.server.list=localhost
+authentication.server.ssl=true
+# the following two properties are also required by the WebServer:
+authentication.server.reconnection.period=600000
+authentication.server.reconnection.keyfile=/etc/sysconfig/illumon.d/auth/priv-authreconnect.base64.txt
+
+[service.name=authentication_server] {
+    authentication.server.ldap.enabled=false
+    authentication.server.localusers.enabled=true
+    authentication.server.localusers.file=authusers.txt
+    authentication.server.localsuperusers.enabled=true
+    authentication.server.localsuperusers.file=superusers.txt
+    authentication.server.authorizedkeys.enabled=true
+    authentication.server.authorizedkeys.file=dsakeys.txt
+    authentication.server.acceptssl=true
+}
+
+[service.name=db_acl_write_server|authentication_server] {
+    tls.keystore=/etc/sysconfig/illumon.d/auth/keystore.authserver.p12
+    tls.passphrase.file=/db/TempFiles/irisadmin/.auth_passphrase
+}
+
+iris.authentication.keyfile=/etc/sysconfig/illumon.d/auth/priv-iris.base64.txt
+iris.controller.configurationTypesXml=/PersistentQueryConfigurationTypes.xml
+
+# Defines the directory for pidfiles used by monit
+pidFileDirectory=/etc/deephaven/run
+
+# default csv export behavior
+CsvExport.useFileSelectionDialog=false
+#CsvExport.defaultLocation=
+CsvExport.launchAutomatically=true
+CsvExport.defaultFilenamePrefix=iris
+
+default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
+
+instrumentation.enable=false
+
+portdiscovery.server.host=localhost
+#portdiscovery.server.port=20000
+
+wallnet.enabled=false
+
+simulationmode=false
+simulation.speedfactor=1
+
+# Used in queries as they're sent between the console and query workers
+columnsFile=DeephavenColumns.xml
+default.processEnvironmentHooksFactory=io.deephaven.util.process.DefaultProcessEnvironmentHooks$Factory
+WColumnSetManager.defaultcolumntype=io.deephaven.gui.table.AbstractDataColumn
+
+
+########## Deephaven DB V2 Settings #########
+
+TrackedFileHandleFactory.maxOpenFiles=4096
+StringUtils.cacheSize=65536
+
+########## ACL Settings ########
+
+## MySQL server used for DB ACLs:
+MysqlDbAclProvider.host=localhost
+MysqlDbAclProvider.db=dbacl_iris
+MysqlDbAclProvider.ssl=false
+
+## Default is to use login with read-only access to the ACL DB (used by Iris controller and query workers):
+MysqlDbAclProvider.user=irisro
+MysqlDbAclProvider.passwordFile=db_acl_ro_passphrase.txt
+
+# Invoked by db_acl_write_server, iris_db_user_mod, query replacement tool, query grep, and connectivity test
+[service.name=db_acl_write_server|iris_db_user_mod] {
+    # Override the standard credentials and use a login with write permissions
+    MysqlDbAclProvider.user=irisrw
+    MysqlDbAclProvider.passwordFile=db_acl_write_server_passphrase.txt
+    # No properties to be overridden
+}
+
+## ACL Write Server (all changes to the ACL DB are proxied through this process)
+dbaclwriter.port=9040
+dbaclwriter.usessl=false
+dbaclwriter.ssl.port=9041
+dbaclwriter.acceptplaintext=true
+dbaclwriter.acceptssl=false
+
+
+iris.defaultTableApiVersion=2
+
+
+########## Revert Helper Settings ##########
+revertHelper.queryOwner=iris
+revertHelper.queryName=RevertHelperQuery
+revertHelper.lookbackDays=180
+revertHelper.dbServer=Query_1
+revertHelper.heapSize=1
+revertHelper.waitQuerySeconds=30
+
+########## Import Helper Settings ##########
+importHelper.queryOwner=iris
+importHelper.queryName=ImportHelperQuery
+importHelper.dbServer=Merge_1
+importHelper.heapSize=1
+importHelper.queryOwner=iris
+
+########## Web Client Data Settings ##########
+webClientData.queryOwner=iris
+webClientData.queryName=WebClientData
+webClientData.dbServer=Query_1
+webClientData.heapSize=1
+
+########## JDBC Import Settings ##########
+# note, if these ever share the same offset, it is undetermined which will be inferred at import time
+# London and UTC are ambiguous half the year so we exclude London, assuming UTC is a more common setting
+jdbcImport.sqlServerTimeZones=UTC,US/Eastern,US/Central,US/Mountain,US/Pacific,Australia/Sydney,Asia/Tokyo,Europe/Paris
+
+########## Query Scheduler Settings ##########
+# 1827 days is 365 x 5 + 2 (to account for leap years)
+queryScheduler.lookForwardDays=1827
+
+# The following defines the default query scheduling parameters for old queries without a scheduling definition,
+# and new query definitions
+queryScheduler.ndefaults=8
+queryScheduler.default1=SchedulerType=io.deephaven.controller.IrisQuerySchedulerDaily
+queryScheduler.default2=StartTime=07:55:00
+queryScheduler.default3=StopTime=23:55:00
+queryScheduler.default4=TimeZone=America/New_York
+queryScheduler.default5=SchedulingDisabled=false
+queryScheduler.default6=Calendar=USNYSE
+queryScheduler.default7=BusinessDays=false
+# Days are Monday through Sunday, true means run on that day
+queryScheduler.default8=Days=true=true=true=true=true=true=true
+
+anomalygateway.enabled=false
+
+WTableHeaderPopup.enabledOneClickListColumns=USym,Sym
+IrisConsole.tableDoubleClickHandler.USym=io.deephaven.console.utils.DefaultTableDoubleClickHandler
+IrisConsole.tableDoubleClickHandler.Sym=io.deephaven.console.utils.GlobalOneClickSymHandler
+IrisConsole.tableGlobalRightClickHandler=io.deephaven.console.events.HideItemsPopupProvider
+
+IrisConsole.HideableItemColumnGroups=USym;USym,Expiry
+
+scriptSessionProviders=Groovy,Python
+scriptSessionExtension.groovy=Groovy
+scriptSessionExtension.py=Python
+scriptSessionProvider.Groovy=io.deephaven.db.util.GroovyDeephavenSession
+scriptSessionProvider.Python=io.deephaven.db.util.PythonDeephavenSession
+
+# Scala has not been extensively tested, and is experimental.  If you have obfuscated Jars in your classpath, the
+# session may not start.
+scriptSessionProvider.Scala=io.deephaven.db.util.ScalaDeephavenSession
+
+# Remote query processing profiles
+RemoteProcessingRequestProfile.class.1=io.deephaven.db.tables.remotequery.RemoteProcessingProfileDefault
+RemoteProcessingRequestProfile.class.2=io.deephaven.db.tables.remotequery.RemoteProcessingProfileNone
+RemoteProcessingRequestProfile.class.3=io.deephaven.db.tables.remotequery.RemoteProcessingProfileClassic
+RemoteProcessingRequestProfile.class.4=io.deephaven.db.tables.remotequery.RemoteProcessingProfileG1
+
+RemoteProcessingRequestProfile.defaultProfile=Default
+RemoteProcessingRequestProfile.noneProfile=None
+RemoteProcessingRequestProfile.customProfileClass=io.deephaven.db.tables.remotequery.RemoteProcessingProfileCustom
+
+# For G1 garbage collection with large MarkStackSize values
+RemoteProcessingRequestProfile.custom.G1 MarkStackSize 128M.include.1=G1 GC
+RemoteProcessingRequestProfile.custom.G1 MarkStackSize 128M.jvmParameter.1=-XX:MarkStackSize=128M
+RemoteProcessingRequestProfile.custom.G1 MarkStackSize 128M.jvmParameter.2=-XX:MarkStackSizeMax=256M
+
+binarystore.defaultversion=2
+
+NullImporter.nPropTranslations=0
+NullImporter.nDetailNumberTranslations=1
+NullImporter.detailNumberTranslation.1=nRows
+
+columnsetmanager.defaultColumnClass=io.deephaven.gui.table.AbstractDataColumn
+
+########## Default Port Settings, override in customer configurations if necessary ##########
+
+PersistentQueryController.temporaryQueryQueue.DefaultTemporaryQueue.maxConcurrentQueries=1
+PersistentQueryController.temporaryQueryQueue.DefaultTemporaryQueue.maxHeapMB=2048
+
+PersistentQueryController.defaultTemporaryQueryQueue=DefaultTemporaryQueue
+
+#
+# Validation configuration
+#
+
+Validation.NullValidator.AscendingTimestampColumns=Timestamp,InsertTime
+Validation.TableRowsToLogOnAssertionFailure=100
+BaseValidators.internalPath=<devroot>/configs/validators;<devroot>/etc/validators
+
+# Default values for log creation
+IrisLogDefaults.useMainClassNameForLogs=true
+IrisLogDefaults.logLevel=INFO
+IrisLogDefaults.logType=STANDARD_LOG_CREATOR
+IrisLogDefaults.writeDatabaseProcessLogs=false
+IrisLogDefaults.writeDatabaseAuditLogs=false
+IrisLogDefaults.writeDatabaseProcessInfo=true
+IrisLogDefaults.writeDatabaseProcessMetrics=true
+IrisLogDefaults.captureLog4j=true
+IrisLogDefaults.captureSysout=false
+IrisLogDefaults.captureSyserr=false
+IrisLogDefaults.useLogAggregatorService=false
+IrisLogDefaults.useDynamicPartitions=false
+IrisLogDefaults.aliveMessageSeconds=0
+IrisLogDefaults.shutdownWaitMillis=10000
+IrisLogDefaults.binaryLogTimeZone=
+
+#Overrides for the log creation classes
+
+# ProcessInfo does not make sense with dynamic partitions
+ProcessInfoFormat1Logger.useDynamicPartitions=false
+# allow the PEL thread to overflow to avoid deadlocks
+ProcessEventLogFormat1Logger.overflowThrottleMillis=100
+
+PersistentQueryController.writeDatabaseAuditLogs=true
+PersistentQueryController.useLogAggregatorService=false
+PersistentQueryController.useDynamicPartitions=true
+
+AuthenticationServer.writeDatabaseAuditLogs=true
+AuthenticationServer.useLogAggregatorService=false
+
+DbAclWriteServer.writeDatabaseAuditLogs=true
+DbAclWriteServer.useLogAggregatorService=false
+
+DataImportServer.captureSysout=true
+DataImportServer.captureSyserr=true
+
+# Worker overrides must be by the class name, not process name
+RemoteQueryProcessor.writeDatabaseProcessLogs=true
+RemoteQueryProcessor.writeDatabaseAuditLogs=true
+RemoteQueryProcessor.captureSysout=true
+RemoteQueryProcessor.captureSyserr=true
+RemoteQueryProcessor.useLogAggregatorService=true
+RemoteQueryProcessor.useDynamicPartitions=true
+
+RemoteQueryDispatcher.useMainClassNameForLogs=false
+RemoteQueryDispatcher.writeDatabaseProcessLogs=true
+RemoteQueryDispatcher.writeDatabaseAuditLogs=true
+RemoteQueryDispatcher.useLogAggregatorService=false
+RemoteQueryDispatcher.useDynamicPartitions=true
+
+UpdatePerformanceTracker.useLogAggregatorService=true
+UpdatePerformanceTracker.useDynamicPartitions=true
+
+UpdateUserTable.useLogAggregatorService=true
+UpdateUserTable.useDynamicPartitions=true
+
+# The validator which shows up as in a new query's Validate Settings tab
+Validation.defaultValidator=
+
+# The validator which shows up when a query's Validate Settings tab's "Schema Validation" button is clicked
+Validation.schemaValidator=io.deephaven.validation.dynamic.DynamicValidator
+
+# The default validation type in a query's Validate Settings tab
+Validation.defaultValidationType=LOCAL_FULL
+
+#
+# Web API Server configuration
+#
+Webapi.server.port=8123
+# Full path to an image for Web Login Splash and Settings Logo
+# Recommended 350x350 or smaller
+# Supports png, jpg, and svg
+# Set permissions to 755
+#Webapi.logo.splash=/full/path/logo.png
+#Webapi.logo.settings=/full/path/logo.jpg
+#Webapi.support.contact=test@domain.com
+#Webapi.support.documentation=https://test.domain.com
+# Default heap sizes in GB
+Webapi.console.heap.default=4
+Webapi.persistentquery.heap.default=4
+# A full path to a directory containing JavaScript Plugins
+#Webapi.plugins=/full/path/plugins
+# A comma separate list of names for an App level JavaScript Plugins
+#Webapi.app.plugins=AppPluginName1,AppPluginName2
+# Set to true to display system badge
+#Webapi.user.defaults.systemBadge=false
+
+OneClick.allowedPattern.USym=^[A-Za-z0-9/.]+$
+OneClick.enforceUpperCaseColumns=USym
+
+SchemaEditor.serverClasses=Merge
+
+deephaven.access.fullaccess.group=allusers
+deephaven.access.queryviewonly.group=deephaven-queryviewonly
+deephaven.access.noninteractive.group=deephaven-noninteractive
+
+LiveTableMonitor.checkTableOperations=true
+
+# Note: Our bin/iris script depends on these log properties being in this file, and to not be
+# overridden in other customer prop files. Eventually, we can move these properties to a more
+# appropriate location.
+logroot=/var/log/deephaven
+
+binaryLogDir=<logroot>/binlogs
+binaryLogDir.DbInternal.ProcessEventLog=<logroot>/binlogs/pel
+binaryLogDir.DbInternal.QueryOperationPerformanceLog=<logroot>/binlogs/perflogs
+binaryLogDir.DbInternal.QueryPerformanceLog=<logroot>/binlogs/perflogs
+binaryLogDir.DbInternal.UpdatePerformanceLog=<logroot>/binlogs/perflogs
+
+defaultLogDir=<logroot>/misc
+logDir.tailer=<logroot>/tailer
+logDir.log_aggregator_service=<logroot>/las
+logDir.iris_controller=<logroot>/iris_controller
+logDir.db_tdcp=<logroot>/tdcp
+logDir.db_query_server=<logroot>/query_server
+logDir.db_merge_server=<logroot>/merge_server
+logDir.db_ltds=<logroot>/ltds
+logDir.db_dis=<logroot>/dis
+logDir.db_acl_write_server=<logroot>/acl_write_server
+logDir.authentication_server=<logroot>/authentication_server
+logDir.deploy_schema=<logroot>/deploy_schema
+logDir.validate_schema=<logroot>/validate_schema
+logDir.web_api_service=<logroot>/web_api_service
+logDir.configuration_server=<logroot>/configuration_server
+
+# In-worker service details
+InWorkerService.dis.name=Data Import Server
+InWorkerService.dis.routingServiceType=dis
+InWorkerService.dis.routingServiceExcludeTags=dis_script
+InWorkerService.dis.hasScript=false
+InWorkerService.dis.context=service.name=db_dis_merge
+InWorkerService.dis.dbServerClasses=Merge
+InWorkerService.dis.allowedGroups=iris-superusers
+
+InWorkerService.disScript.name=Data Import Server with Script
+InWorkerService.disScript.routingServiceType=dis
+InWorkerService.disScript.routingServiceTag=dis_script
+InWorkerService.disScript.hasScript=true
+InWorkerService.disScript.scriptUpdateClass=io.deephaven.console.events.LastByDisScriptUpdate
+InWorkerService.disScript.scriptSetupClass=io.deephaven.controller.LastByDISInWorkerServiceScriptSetup
+InWorkerService.disScript.context=service.name=db_dis_merge
+InWorkerService.disScript.dbServerClasses=Merge
+InWorkerService.disScript.allowedGroups=iris-datamanagers,iris-dataimporters
+
+InWorkerService.ltds.name=Local Table Data Service
+InWorkerService.ltds.routingServiceType=tds
+InWorkerService.ltds.hasScript=false
+InWorkerService.ltds.context=service.name=db_ltds_query
+InWorkerService.ltds.dbServerClasses=Query,Merge
+InWorkerService.ltds.allowedGroups=iris-superusers
+
+InWorkerService.tdcp.name=Table Data Cache Proxy
+InWorkerService.tdcp.routingServiceType=tds
+InWorkerService.tdcp.hasScript=false
+InWorkerService.tdcp.context=service.name=db_tdcp_query
+InWorkerService.tdcp.dbServerClasses=Query,Merge
+InWorkerService.tdcp.allowedGroups=iris-superusers
+
+InWorkerService.tailer.name=Log Tailer
+InWorkerService.tailer.routingServiceType=none
+InWorkerService.tailer.hasScript=false
+InWorkerService.tailer.context.query=service.name=tailer1_query
+InWorkerService.tailer.context.merge=service.name=tailer1_merge
+InWorkerService.tailer.dbServerClasses=Query,Merge
+InWorkerService.tailer.allowedGroups=iris-superusers
+InWorkerService.tailer.customFieldName=Tailer ID
+InWorkerService.tailer.customFieldEditable=true
+InWorkerService.tailer.customFieldValue.1=1
+
+InWorkerService.las.name=Log Aggregator Service
+InWorkerService.las.routingServiceType=las
+InWorkerService.las.hasScript=false
+InWorkerService.las.context.query=service.name=log_aggregator_service_query
+InWorkerService.las.context.merge=service.name=log_aggregator_service_merge
+InWorkerService.las.dbServerClasses=Query,Merge
+InWorkerService.las.allowedGroups=iris-superusers
+
+# DbTypes default impls
+DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
+DbTypes.DbImage.impl=io.deephaven.dbtypes.DbImageImpl$Factory
+
+PqStorage.Class=io.deephaven.controller.pqstorage.PqStorageEtcdImpl
+
+# Autofilter default parameters
+AutoFilterSelectionPanel.defaultInitialFetchSize=1000
+AutoFilterSelectionPanel.maxAutoFilterItems=1000000
+
+# Restricts what Parquet codecs are visible in the GUI
+Parquet.supportedCodecs=UNCOMPRESSED,SNAPPY
+
+WSCommServer.tls.keystore=/etc/sysconfig/illumon.d/auth/webServices-keystore.p12
+WSCommServer.tls.passphrase.file=/db/TempFiles/irisadmin/.webapi_passphrase
+
+LastByTableFactory.xmlConfig=/LastByTableFactory-empty.xml
+
+TableDataServiceExporter.useSmallMessages=true
+RemoteTableDataService.useSmallMessages=true
+
+# JPY configuration
+jpy.pythonLib=/usr/lib64/libpython2.7.so.1.0
+jpy.jpyLib=/usr/lib64/python2.7/site-packages/jpy.so
+jpy.jdlLib=/usr/lib64/python2.7/site-packages/jdl.so
+
+[jpy.env=python27] {
+    jpy.programName=/db/VEnvs/python27/bin/python2.7
+    jpy.pythonLib=/usr/lib64/libpython2.7.so.1.0
+    jpy.jpyLib=/db/VEnvs/python27/lib/python2.7/site-packages/jpy.so
+    jpy.jdlLib=/db/VEnvs/python27/lib/python2.7/site-packages/jdl.so
+}
+
+[jpy.env=python36] {
+    jpy.programName=/db/VEnvs/python36/bin/python3.6
+    jpy.pythonLib=/usr/lib64/libpython3.6m.so.1.0
+    jpy.jpyLib=/db/VEnvs/python36/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
+    jpy.jdlLib=/db/VEnvs/python36/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
+}
+
+[jpy.env=jupyter] {
+    jpy.programName=/db/VEnvs/jupyter/bin/python3.6
+    jpy.pythonLib=/usr/lib64/libpython3.6m.so.1.0
+    jpy.jpyLib=/db/VEnvs/jupyter/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
+    jpy.jdlLib=/db/VEnvs/jupyter/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
+}
+
+configuration.server.port=22023
+configuration.server.cacertfile=/etc/sysconfig/illumon.d/resources/truststore-iris.pem
+[service.name=configuration_server] {
+    configuration.server.ssl=true
+    configuration.server.keyfile=/etc/sysconfig/illumon.d/auth/keystore.configuration_server.p12
+    configuration.server.passphrase.file=/db/TempFiles/irisadmin/.configuration_server_passphrase
+}
+
+# For merge workers
+[service.name=dbmerge|db_dis_merge|tailer1_merge] {
+    RemoteQueryDispatcherParameters.queryPort=30002
+    RemoteQueryDispatcher.workerPort=30003
+    RemoteQueryDispatcher.workerServerPorts=32000-32999
+    RemoteQueryDispatcher.webserver.port=8085
+    RemoteQueryDispatcher.useMainClassNameForLogs=false
+    RemoteQueryDispatcherParameters.name=mergedispatcher
+    RemoteQueryDispatcher.allowedGroups=iris-schemamanagers
+
+    # If the merge server has websockets enabled, it must have a separate port range
+    # if the merge server and query server are on the same system.
+    RemoteQueryDispatcher.workerServerWebsocketPorts=25000-25999
+
+    # Support lower memory consumption for queries that create many small indices,
+    # at some risk of making some other queries a tad slower.
+    SortedRanges.longMaxCapacity=4096
+}
+
+# For iris_controller or controller_tool
+[service.name=iris_controller|controller_tool] {
+    # May override these if the controller has a different keyfile for some reason
+    # iris.authentication.keyfile=/etc/sysconfig/illumon.d/auth/priv-iris.base64.txt
+    # iris.controller.configurationTypesXml=/PersistentQueryConfigurationTypes.xml
+
+    PersistentQueryController.useLocalGit=true
+
+    # Make sure dir exists: /db/TempFiles/irisadmin/git/irisrepo/groovy/
+    iris.scripts.repos=irisrepo
+    iris.scripts.repo.irisrepo.users=*
+    iris.scripts.repo.irisrepo.groups=*
+    iris.scripts.repo.irisrepo.updateEnabled=true
+    iris.scripts.repo.irisrepo.prefixDisplayPathsWithRepoName=false
+    iris.scripts.repo.irisrepo.root=../git/irisrepo
+    iris.scripts.repo.irisrepo.paths=groovy
+    iris.scripts.repo.irisrepo.uri=placeholder
+
+}
+
+[service.name=web_api_service|dbquery|dbmerge|db_dis_merge|db_tdcp_query|db_ltds_query|tailer1_query|tailer1_merge] {
+    WebServer.tls.keystore=/etc/sysconfig/illumon.d/auth/webServices-keystore.p12
+    WebServer.tls.passphrase.file=/db/TempFiles/irisadmin/.webapi_passphrase
+}
+
+[service.name=iris_console|interactive_console] {
+    # We need to search for Calendars and Themes from our Configs.jar.
+    Calendar.internalPath=<devroot>/java_lib;<devroot>/calendars
+    Plot.theme.internalPath=<devroot>/java_lib;<devroot>/chartthemes
+    SchemaConfig.resourcePath.irisInternal=<devroot>/java_lib
+    SchemaConfig.resourcePath=<devroot>/java_lib
+    CsvExport.useFileSelectionDialog=true
+    #The following entry defaults to java.io.tmpdir/exports-<username>
+    #CsvExport.defaultLocation=
+    CsvExport.launchAutomatically=false
+    #The following entry defaults to to CsvExport
+    #CsvExport.defaultFilenamePrefix=
+    DbAclEditor.accountSystemNamespaces=
+    DbAclEditor.showAccountTab=false
+    DbAclEditor.controllerConnectionWaitSeconds=10
+    # Set this ONLY for local running consoles in the hostconfig; otherwise
+    # it breaks the launcher.
+    #EmbeddedDbConsole.csvUploadDirectory=/db/TempFiles/uploads
+}
+
+[service.name=import_bin_files] {
+    NullImporter.nPropTranslations=0
+    NullImporter.nDetailNumberTranslations=0
+}
+
+# For all db_dis processes
+[service.name=db_dis|db_dis_merge] {
+    # Cap max open files in the DIS at a fairly low value. This should almost always change (along with ulimit -n) for production installs.
+    TrackedFileHandleFactory.maxOpenFiles=512
+    # No properties to be overridden
+}
+
+# for all workers
+[service.name=dbquery|dbmerge] {
+    ShutdownManager.shutdownTimeoutMillis=60000
+}

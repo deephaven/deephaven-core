@@ -1,0 +1,76 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+  id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn ':protoc'
+
+task prepareDocker(type: Sync) {
+  from(project.projectDir) {
+    exclude 'build'
+    exclude 'build.gradle'
+  }
+  into 'build/docker'
+}
+
+task buildDocker(type: DockerBuildImage) {
+  dependsOn prepareDocker
+  def protoc = project(':protoc').tasks.findByName('buildDocker') // deephaven/protoc
+  dependsOn protoc
+  inputs.file protoc.outputs.files.singleFile
+  images.add('deephaven/proto-backplane-grpc')
+}
+
+def dockerContainerName = "proto-backplane-grpc-${UUID.randomUUID()}"
+def dockerCopyLocation = "${buildDir}/docker-tmp-copy"
+
+task createDockerContainer(type: DockerCreateContainer) {
+  dependsOn buildDocker
+  targetImageId buildDocker.getImageId()
+  containerName.set(dockerContainerName)
+}
+
+task removeDockerContainer(type: DockerRemoveContainer) {
+  dependsOn createDockerContainer
+  targetContainerId createDockerContainer.getContainerId()
+}
+
+task copyGenerated(type: DockerCopyFileFromContainer) {
+  // note: we could try to be smarter and cache these create/remove tasks
+  dependsOn createDockerContainer
+  finalizedBy removeDockerContainer
+
+  inputs.property("imageId", buildDocker.imageId)
+  outputs.dir(dockerCopyLocation)
+
+  targetContainerId createDockerContainer.getContainerId()
+
+  remotePath.set('/generated')
+  hostPath.set(dockerCopyLocation)
+
+  doFirst {
+    // we must manually delete this first, since docker cp will error if trying to overwrite
+    delete(dockerCopyLocation)
+  }
+}
+
+task syncGenerated(type: Sync) {
+  dependsOn copyGenerated
+  from(dockerCopyLocation)
+  into('build/generated/source/proto/main')
+}
+
+compileJava.dependsOn syncGenerated
+
+sourceSets {
+  main {
+    java {
+      srcDir 'build/generated/source/proto/main/grpc'
+      srcDir 'build/generated/source/proto/main/java'
+    }
+  }
+}

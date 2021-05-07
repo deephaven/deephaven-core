@@ -1,0 +1,98 @@
+# Simple draft docker-compose that works with the existing enterprise codebase
+# to demonstrate how this could eventually look in OSS. Note that as of this
+# commit, the JS doesn't actually work, so we while we can't connect, you can
+# still make demo calls to see if they function.
+#
+# The purpose of this file is to showcase how localhost deployments probably
+# will work in lieu of the user installing a self-signed cert into their
+# browser - a websocket will be used in place of each http/2 stream, with a
+# proxy to provide this (one needed per worker) and an envoy instance to
+# reverse proxy to both a simple http server and the websocket proxy. There
+# is probably no need to use envoy here (nginx could suffice), but there are
+# probably benefits to always using envoy as our user-facing proxy.
+
+version: "3.8"
+
+services:
+  grpc-api:
+    # The worker itself - defaults to exposing port 8080. See the dockerfile
+    # for more details.
+    # Before this can be built, the :grpc-api-server:docker:dockerCreateDockerfile command must be run
+    build: grpc-api/server/docker/build/docker
+    image: "${REPO}deephaven/grpc-api:${TAG}"
+
+    environment:
+      # https://bugs.openjdk.java.net/browse/JDK-8230305
+      # cgroups v2 resource reservations only work w/ java 15+ ATM, so it's best for our java processes to be explicit
+      # with max memory.
+      - JAVA_TOOL_OPTIONS=-Xmx700m
+#      - JAVA_TOOL_OPTIONS=-Dlogback.configurationFile=logback-debug.xml
+#      - JAVA_TOOL_OPTIONS=-Dlogback.configurationFile=logback-minimal.xml
+    expose:
+      - '8080'
+#    ports:
+#      - '5005:5005'        # For remote debugging (change if using different port)
+
+    # Note: using old-style volume mounts, so that the directories get created if they don't exist
+    # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
+    volumes:
+      - ./docker/core/data:/data
+      - ./docker/core/cache:/cache
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 1G
+        reservations:
+          memory: 1G
+
+  web:
+    # The web API and UI. Before this can be served, :web-client-ide:prepareDocker
+    # must be up to date.
+    build : web/client-ide/build/docker
+    image: "${REPO}deephaven/web:${TAG}"
+    expose:
+      - "80"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+  grpc-proxy:
+    # The (alpha-quality, see https://github.com/improbable-eng/grpc-web#status)
+    # grpc -> grpc-web+websocket proxy from improbably-eng. No docker image is
+    # presently available for this, so we have our own Dockerfile - refer to it
+    # for how we have it configured.
+    build: grpc-proxy/
+    image: "${REPO}deephaven/grpc-proxy:${TAG}"
+    environment:
+      - BACKEND_ADDR=grpc-api:8080
+    depends_on:
+      - grpc-api
+    expose:
+      - '8080'
+#      - '8443' #unused
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+  envoy:
+    # A reverse proxy configured for no SSL on localhost. It fronts the requests
+    # for the static content and the websocket proxy.
+    image: deephaven/envoy
+    depends_on:
+      - web
+      - grpc-proxy
+      - grpc-api
+    ports:
+      - "${PORT}:10000"
+#      - '9090:9090' #envoy admin
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M

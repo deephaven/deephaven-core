@@ -1,0 +1,19 @@
+plugins {
+  id 'java-library'
+  id 'com.diffplug.spotless'
+}
+
+configurations {
+  compileOnly.extendsFrom fishIo
+}
+
+dependencies {
+  // consumer still needs to provide dependency
+  compileOnly 'ch.qos.logback:logback-classic:1.2.3'
+}
+
+spotless {
+  java {
+    eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+  }
+}

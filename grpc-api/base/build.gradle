@@ -1,0 +1,27 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+task prepareDocker(type: Sync) {
+    from(project.projectDir) {
+        exclude 'build'
+        exclude 'build.gradle'
+    }
+    into 'build/docker'
+}
+
+task buildDocker(type: DockerBuildImage) {
+    dependsOn prepareDocker
+    // deephaven/runtime
+    def jpyRuntime = project(':deephaven-jpy').tasks.findByName('buildDockerForRuntime')
+    // deephaven/deephaven-jpy-wheel
+    def jpyWheel = project(':deephaven-jpy').tasks.findByName('buildDockerForWheel')
+    // deephaven/deephaven-wheel
+    def dhWheel = project(':Integrations').tasks.findByName('buildDockerForWheel')
+    dependsOn jpyRuntime, jpyWheel, dhWheel
+    inputs.files( [jpyRuntime, jpyWheel, dhWheel].each { t -> t.outputs.files.singleFile })
+
+    images.add('deephaven/grpc-api-base')
+}

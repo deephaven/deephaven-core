@@ -1,0 +1,10 @@
+evaluationDependsOn ':proto'
+evaluationDependsOn ':proto:proto-backplane-grpc'
+
+apply from: "$rootDir/gradle/web-common.gradle"
+
+GwtTools.gwtLib project
+Classpaths.inheritJsInterop project
+Classpaths.inheritJsInterop project, 'jsinterop-annotations'
+Classpaths.inheritElemental project
+Classpaths.inheritElemental project, 'elemental2-promise'

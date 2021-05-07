@@ -1,0 +1,9 @@
+# suppress inspection "Annotator" for whole file
+# suppress inspection "UnusedProperty" for whole file
+xyzzy = dizzy
+# Since 'includefiles' is not on the first line, this should cause an error and make all of the subsequent declarations not process.
+includefiles=resources/test1.prop,resources/test2.prop
+includetest=foo
+final beforetest
+final finaltest = foo
+final aftertest = plugh

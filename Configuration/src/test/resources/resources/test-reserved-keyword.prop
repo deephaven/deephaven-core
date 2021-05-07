@@ -1,0 +1,2 @@
+# suppress inspection "WrongPropertyKeyValueDelimiter" for whole file
+final final = foo

@@ -1,0 +1,405 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Iris Web API table filter api</title>
+    <script src="dh-internal.js" type="text/javascript"></script>
+    <script src="dh-core.js" type="text/javascript"></script>
+    <link href="basic.css" rel="stylesheet" type="text/css" />
+    <style>
+        li.open ul { display:block; }
+        li.closed ul { display:none; }
+        .selected { font-weight: bold; }
+
+        table { border-spacing: 0; }
+        thead td { font-weight: bold; border-bottom: 1px solid black; }
+        tbody td { border-bottom: 1px solid gray; padding: 4px; }
+
+        #topMenu {
+            display:none;
+            position:absolute;
+            z-index:100;
+            border: 1px solid gray;
+            background: lightgray;
+        }
+        #topMenu li {
+            list-style: none;
+            padding: 3px 3px 0 3px;
+        }
+        #topMenu li:hover {
+            background-color: gray;
+        }
+        #topMenu ul {
+            padding:0;
+            margin:0;
+        }
+    </style>
+</head>
+<body>
+<h3>Persistent Query Configurations</h3>
+<ul id="queries">
+
+</ul>
+<h3>Selected table data (right-click cells to start a filter with that value)</h3>
+<table id="simplePagingTable">
+
+</table>
+
+<h3>Filter Details</h3>
+<ul id="activeFilters"></ul>
+
+<button id="clear">Clear Filters</button>
+
+<div id="topMenu">
+</div>
+
+<script>
+
+  var filterSetup = {
+    "Equals..." : {
+      build : (column, value) => column.filter().eq(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Equals Ignore Case..." : {
+      build : (column, value) => column.filter().eqIgnoreCase(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Not Equals..." : {
+      build : (column, value) => column.filter().notEq(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Not Equals Ignore Case..." : {
+      build : (column, value) => column.filter().notEqIgnoreCase(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Greater Than..." : {
+      build : (column, value) => column.filter().greaterThan(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Greater Than Or Equal To..." : {
+      build : (column, value) => column.filter().greaterThanOrEqualTo(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Less Than..." : {
+      build : (column, value) => column.filter().lessThan(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Less Than Or Equal To..." : {
+      build : (column, value) => column.filter().lessThanOrEqualTo(value),
+      value: 'MATCH_COLUMN'
+    },
+    "In..." : {
+      build : (column, value) => column.filter().in(value),
+      value: 'MATCH_COLUMN_LIST'
+    },
+    "Not In..." : {
+      build : (column, value) => column.filter().notIn(value),
+      value: 'MATCH_COLUMN_LIST'
+    },
+    "In Ignore Case..." : {
+      build : (column, value) => column.filter().inIgnoreCase(value),
+      value: 'MATCH_COLUMN_LIST'
+    },
+    "Not In Ignore Case..." : {
+      build : (column, value) => column.filter().notInIgnoreCase(value),
+      value: 'MATCH_COLUMN_LIST'
+    },
+    "Is True" : {
+      build : (column, value) => column.filter().isTrue(),
+      value: 'NONE'
+    },
+    "Is False" : {
+      build : (column, value) => column.filter().isFalse(),
+      value: 'NONE'
+    },
+    "Is Null" : {
+      build : (column, value) => column.filter().isNull(),
+      value: 'NONE'
+    },
+    "Starts With..." : {
+      build : (column, value) => column.filter().invoke("startsWith", value),
+      value: 'MATCH_COLUMN'
+    },
+    "Ends With..." : {
+      build : (column, value) => column.filter().invoke("endsWith", value),
+      value: 'MATCH_COLUMN'
+    },
+    "Matches..." : {
+      build : (column, value) => column.filter().matches(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Matches Ignore Case..." : {
+      build : (column, value) => column.filter().matchesIgnoreCase(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Contains..." : {
+      build : (column, value) => column.filter().contains(value),
+      value: 'MATCH_COLUMN'
+    },
+    "Contains Ignore Case..." : {
+      build : (column, value) => column.filter().containsIgnoreCase(value),
+      value: 'MATCH_COLUMN'
+    },
+
+  };
+
+  var url = new URL('/socket', window.location);
+  if (url.protocol === 'http:') {
+    url.protocol = 'ws:';
+  } else {
+    url.protocol = 'wss:';
+  }
+
+  window.c = new iris.Client(url.href);
+  c.addEventListener(iris.Client.EVENT_CONNECT, () => {
+    connected();
+    c.login({username:'iris',token:'iris',type:'password'}).then(result => {
+      console.log("login successful");
+    });
+  });
+
+  var queries = document.getElementById('queries');
+  var configs = Object.create(null);
+
+  var activeFilters = document.getElementById('activeFilters');
+  
+  var topMenu = document.getElementById('topMenu');
+
+  function connected() {
+    c.addEventListener(iris.Client.EVENT_CONFIG_REMOVED, event => {
+      removeQuery(event.detail);
+    });
+    c.addEventListener(iris.Client.EVENT_CONFIG_UPDATED, event => {
+      removeQuery(event.detail);
+      addQuery(event.detail);
+    });
+    c.addEventListener(iris.Client.EVENT_CONFIG_ADDED, event => {
+      addQuery(event.detail);
+    });
+    function removeQuery(queryInfo) {
+      var old = configs[queryInfo.serial];
+      if (old) {
+        var queryElt = old.elt;
+        queryElt.parentNode.removeChild(queryElt);
+        delete configs[queryInfo.serial];
+      }
+    }
+    function addQuery(queryInfo) {
+      console.log("config added: " + queryInfo.name);
+
+      var queryElt = document.createElement('li');
+      configs[queryInfo.serial] = {info:queryInfo, elt:queryElt};
+      queryElt.innerText = queryInfo.name + ' [' + queryInfo.status + ']';
+      queryElt.classList.add('closed');
+      var open = false;
+      queryElt.onclick = () => {
+        open = !open;
+        queryElt.className = open ? 'open' : 'closed';
+        queryInfo.addEventListener(iris.QueryInfo.EVENT_TABLE_METRICS, event => {
+          if (event.detail.nanos === -1) {
+            console.log(event.detail.type);
+          } else {
+            console.log(`Metrics: ${event.detail.type} in ${event.detail.formatted}`);
+          }
+        });
+      };
+      var tables = document.createElement('ul');
+      queryElt.appendChild(tables);
+      queryInfo.tables.forEach(t => {
+        var tableElt = document.createElement('li');
+        tableElt.innerText = t;
+        tables.appendChild(tableElt);
+        tableElt.onclick = e => {
+          e.stopPropagation();
+          queryInfo.getTable(t).then(table => openTable(table));
+          document.querySelectorAll('.selected').forEach(elt => {
+            elt.classList.remove('selected');
+          });
+          e.target.classList.add('selected');
+        };
+      });
+      queries.appendChild(queryElt);
+    }
+  }
+  var currentTable;
+  var oldTableHandlerCleanup;
+  var simplePagingTable = document.getElementById('simplePagingTable');
+  function openTable(table) {
+    // correctly disconnect from the old table, if any
+    oldTableHandlerCleanup && oldTableHandlerCleanup();
+    currentTable && currentTable.close();
+    currentTable = table;
+    //build a simple table in the dom after removing the old one
+    while (simplePagingTable.hasChildNodes()) {
+      simplePagingTable.removeChild(simplePagingTable.lastChild);
+    }
+    var header = document.createElement('thead');
+    var headerRow = document.createElement('tr');
+    table.columns.forEach(columnDef => {
+      // build a very simple header
+      var td = document.createElement('td');
+      td.innerText = columnDef.name;
+      
+      headerRow.appendChild(td);
+    });
+    header.appendChild(headerRow);
+    simplePagingTable.appendChild(header);
+
+    // listen for items to be added, populate the table body
+    oldTableHandlerCleanup = table.addEventListener(iris.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+      console.log("update event received, time to redraw data");
+      // rebuild the current tbody from scratch
+      var tbody = simplePagingTable.querySelector('tbody');
+      tbody && simplePagingTable.removeChild(tbody);
+      tbody = document.createElement('tbody');
+
+      var viewportData = event.detail;
+      var rows = viewportData.rows;
+      for (var i = 0; i < rows.length; i++) {
+        var tr = document.createElement('tr');
+        for (var j = 0; j < table.columns.length; j++) {
+          var td = document.createElement('td');
+          var value = rows[i].get(table.columns[j]);
+          td.textContent = value;
+          td.internalValue = value;
+          var format = rows[i].getFormat(table.columns[j]);
+          td.style.backgroundColor = format.backgroundColor;
+          td.style.color = format.color;
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      tbody.oncontextmenu = e => showFilterMenu(e);
+      simplePagingTable.appendChild(tbody);
+    });
+
+    // load some data
+    currentTable.setViewport(0, 49);
+  }
+
+  // Replace all current filters with this new set, update the UI list of filters, and set the viewport
+  function updateFilters(newFilters) {
+    currentTable.applyFilter(newFilters);
+    currentTable.setViewport(0, 49);
+    while (activeFilters.hasChildNodes()) {
+      activeFilters.removeChild(activeFilters.lastChild);
+    }
+    newFilters.forEach(filter => {
+      var li = document.createElement('li');
+      li.textContent = filter.toString();
+      activeFilters.appendChild(li);
+    });
+  }
+
+  // Clear button should remove all filters
+  document.getElementById('clear').onclick = e => {
+    updateFilters([]);
+  };
+
+  // When a user right-clicks a cell, offer filters based on that cell's data
+  function showFilterMenu(event) {
+    var target = event.target;
+    var row = target.parentElement;
+    if (target.tagName !== 'TD') {
+      return;
+    }
+    // track the Column we are in, and the value of the current cell
+    var column = currentTable.columns[Array.prototype.indexOf.call(row.children, target)];
+
+    // show a new menu here, with an item for each filter
+    var ul = document.createElement("ul");
+    Object.entries(filterSetup).forEach((entry) => {
+      var li = document.createElement("li");
+      li.textContent = entry[0];
+      var buildFilter = entry[1].build;
+      var valueOptions = entry[1].value;
+      li.onclick = event => {
+        // when this item is clicked, check the options for the value
+        var current = currentTable.filter;
+        if (valueOptions === 'NONE') {
+          // if NONE, just create the filter
+          current.push(buildFilter(column));
+          updateFilters(current);
+          hideMenu();
+        } else if (valueOptions === 'MATCH_COLUMN') {
+          // if MATCH_COLUMN, start from the cell value, let the user edit, assume the same type as column
+          //TODO convert value more completely
+          var value = target.internalValue;
+          if (typeof value === 'string') {
+            value = iris.FilterValue.ofString(value);
+          } else /*if (typeof value === 'number')*/ {
+            //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
+            value = iris.FilterValue.ofNumber(value);
+          }
+          //TODO make editable
+          current.push(buildFilter(column, value));
+          updateFilters(current);
+          hideMenu();
+        } else if (valueOptions === 'MATCH_COLUMN_LIST') {
+          // if MATCH_COLUMN_LIST, same as MATCH_COLUMN except support a list
+          //TODO convert value more completely
+          var value = target.internalValue;
+          if (typeof value === 'string') {
+            value = iris.FilterValue.ofString(value);
+          } else /*if (typeof value === 'number')*/ {
+            //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
+            value = iris.FilterValue.ofNumber(value);
+          }
+
+          //TODO make editable
+          current.push(buildFilter(column, [value]));
+          updateFilters(current);
+          hideMenu();
+        }
+
+      };
+      ul.appendChild(li);
+    });
+    showMenu(event.pageX, event.pageY, ul);
+
+    // cancel the current right-click to avoid browser context menu
+    event.preventDefault();
+  }
+
+  /*
+     Super-simple menu bookkeeping functions, allowing only one visible at a time,
+     and hidden if a user clicks on another dom element.
+   */
+  function hideOnClickOutOfMenu(event) {
+    var target = event.target;
+    while (target != null) {
+      if (target === topMenu) {
+        return;
+      }
+      target = target.parentElement;
+    }
+    //event.preventDefault();
+    hideMenu();
+  }
+  function hideMenu() {
+    topMenu.parentElement.removeChild(topMenu);
+    document.body.removeEventListener("mousedown", hideOnClickOutOfMenu, true);
+  }
+  function showMenu(x, y, children) {
+    // remove before starting updates
+    topMenu.parentElement && topMenu.parentElement.removeChild(topMenu);
+    // update the menu with the new options
+    while (topMenu.hasChildNodes()) {
+      topMenu.removeChild(topMenu.lastChild);
+    }
+    topMenu.appendChild(children);
+
+    // move the "menu" of options to here
+    topMenu.style.display = 'block';
+    topMenu.style.top = y + 'px';
+    topMenu.style.left = x + 'px';
+
+    //append to dom again
+    document.body.appendChild(topMenu);
+
+    // watch for any other clicks
+    document.body.addEventListener("mousedown", hideOnClickOutOfMenu, true);
+  }
+</script>
+</body>
+</html>

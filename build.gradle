@@ -1,0 +1,454 @@
+// buildscript must (should) go first!
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
+    }
+
+}
+
+plugins {
+  id "com.github.hierynomus.license" version "0.14.0" apply false
+  id "com.google.protobuf" version "0.8.10" apply false
+  id 'com.diffplug.spotless' version '5.10.2' apply false
+}
+
+import io.deephaven.tools.Java
+import io.deephaven.tools.License
+
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+apply plugin: 'base'
+apply plugin: 'idea'
+
+idea {
+    project {
+        //if you want to set specific jdk and language level
+        jdkName = '1.8'
+        languageLevel = '1.8'
+
+        //you can configure the VCS used by the project
+        vcs = 'Git'
+
+    }
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+        contentRoot = file("$rootDir")
+        excludeDirs = files(
+                'lib/thirdparty', 'lib/external', // jars we copy around
+                'py/venvs', 'py/installs',  // generated python installs / venvs
+                'web/.cache', // generated web files
+                'build'
+        ) as Set
+    }
+}
+
+ext.versionSource = versionSource
+ext.globalVersion = "0.1.0"
+
+// To set fishlibVersion, go to project-local gradle.properties file
+// (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
+// If you have fishlib open in IDE, also set includeFish=true to get the
+// intellij projects wired up across repositories.
+
+Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs']}
+Set<Project> modsRegular = subprojects - modsAreBin
+
+allprojects {
+
+    apply plugin: 'jacoco'
+    apply plugin: 'idea'
+    apply plugin: 'license'
+
+    jacoco {
+      toolVersion = "0.8.4"
+    }
+
+    license {
+        header rootProject.file('license-header')
+        include "**/*.java"
+        strictCheck true
+        useDefaultMappings true
+        ignoreFailures true
+    }
+
+    // we apply the classpaths build to share it across all modules.
+    // this is technically excessive, as non-java modules should not care...
+    apply from: "$rootDir/classpaths.gradle"
+    configurations.all({ c ->
+        // Make dynamic versions illegal.
+        c.dependencies.all({
+            Dependency dep ->
+                if (dep.version && dep.version.endsWith('+')) {
+                    throw new GradleException("Dynamic versions not allowed ($dep found in $path)")
+                }
+        })
+        c.resolutionStrategy {
+            // by default, we don't use any changing modules.
+            // however, if a developer is working on something where jars
+            // are published to a local filesystem (like mavenLocal()),
+            // they can use `api group: 'com.foo', name: 'blah', version: '1', changing: true`,
+            // and gradle will happily recheck the filesystem for changes.
+            cacheChangingModulesFor 0, 'seconds'
+        }
+        if (includeFish) {
+            c.resolutionStrategy.preferProjectModules()
+        }
+    })
+
+}
+
+allprojects*.tasks*.withType(JavaCompile)*.configureEach {
+    JavaCompile javac ->
+        javac.options.forkOptions.memoryMaximumSize = "2G"
+        javac.options.fork = true
+        javac.options.compilerArgs << '-parameters'
+}
+
+subprojects {
+    Project p ->
+    p.group = 'iris'
+    p.version = globalVersion
+    p.plugins.apply('io.deephaven.java-conventions')
+    License.createFrom(p).register(p)
+}
+
+
+// setup standard sourceSets for non-bin modules
+configure modsRegular,
+{ Project p ->
+
+    p.tasks.jacocoTestReport {
+        reports {
+            xml.enabled true
+            csv.enabled true
+            html.enabled true
+//            html.destination "${buildDir}/jacocoHtml"
+        }
+    }
+
+    p.tasks.create 'sourceJar', Jar, {
+        Jar j ->
+            j.classifier = 'sources'
+            j.from Java.sourceSet(p).allJava
+    }
+
+    p.tasks.create 'javadocJar', Jar, {
+        Jar j ->
+            j.dependsOn p.tasks.javadoc
+            j.classifier = 'javadoc'
+            j.from p.tasks.withType(Javadoc)*.destinationDir
+    }
+
+    p.tasks.create('listCompileDeps').doLast {
+        println "$p.path compile dependencies:"
+        p.configurations.compile.each { File file -> println file.name }
+    }
+
+    p.artifacts {
+        archives p.tasks.sourceJar
+//        archives p.tasks.javadocJar
+    }
+
+    p.tasks.create 'testJar', Jar, {
+        Jar jar ->
+            jar.from Java.sourceSet(p, 'test').output
+            jar.classifier = 'test'
+    }
+
+    artifacts {
+        testOutput p.tasks.testJar
+        archives p.tasks.testJar
+    }
+
+    p.tasks.withType(Test).all { Test t -> t.with {
+        t.defaultCharacterEncoding = 'UTF-8'
+
+        onlyIf { TestTools.shouldRunTests(project) }
+
+        useJUnit()
+
+        workingDir = "$rootDir/.."
+
+        new File("$rootDir/tmp/workspace".toString()).mkdirs()
+        new File("$rootDir/tmp/logs".toString()).mkdirs()
+
+        // TODO fix / move flaky tests so we can make ignoreFailures false again
+        ignoreFailures = TestTools.allowFailure project
+        if (ignoreFailures) {
+            // begin dirty trick to ensure you can re-run failed tests.
+            // Note that this workaround is only needed because of the ignoreTestFailures=true "footgun" above.
+            File cacheBust = new File(p.buildDir, "testState/${path.replaceAll(":", "_")}".toString())
+            if (!cacheBust.exists()) {
+                cacheBust.parentFile.mkdirs()
+                cacheBust.createNewFile()
+            }
+            if (cacheBust.text != 'passed') {
+                // If the cacheBust file exists and it did not pass on last run, fill it w/ a unique value to force the task to rerun
+                cacheBust.text = "rerun-${UUID.randomUUID()}"
+            }
+            outputs.file(cacheBust)
+            // outputs.file(cacheBust) tells gradle "we have an output file which we'll use to store some state about the test task."
+            // when the cacheBust file changes, gradle will forcibly rerun the task.  This is needed when iterating on
+            // a failed test; when ignoreFailures=true and a test fails, it won't naturally be rerun w/out this hackery
+
+            def failed = 0
+            t.afterTest {
+                TestDescriptor descriptor, TestResult result ->
+                    if (result.resultType == TestResult.ResultType.FAILURE) {
+                        failed++
+                    }
+            }
+            doLast {
+                // After the test task completes, update the cacheBust file with our task state. This allows rerunning failed tests when ignoreFailures=true
+                cacheBust.text = "${state.executed ? failed ? 'failed' : 'passed' : 'skipped'}"
+                if (failed) {
+                    gradle.buildFinished {
+                        logger.error "\n$path $failed tests failed;\nsee ${t.reports.html.entryPoint.toURI()}"
+                    }
+                }
+            }
+        }
+
+        // pass -PforceTest=true to run test again after they've passed once,
+        // and input source has not changed (i.e. invalidate caching)
+        if (findProperty('forceTest') == 'true') {
+            // not gonna stay uptodate very well like this: :-)
+            inputs.property("forceTest", UUID.randomUUID().toString())
+        }
+
+        enableAssertions = true
+        if (!maxHeapSize) {
+            maxHeapSize = '3g'
+        }
+
+        if (!maxParallelForks) {
+            maxParallelForks = 4
+        }
+
+        if (!forkEvery) {
+            // throw away jvms after 32 tests have run on them.
+            // this is sadly needed as :DB:test seems to have a leak;
+            // tests which can pass locally in IDE on 2g can't survive in CI w/ 3g
+            forkEvery = 32
+        }
+
+        systemProperty 'Configuration.rootFile', 'dh-tests.prop'
+        systemProperty 'devroot', "$rootDir"
+        systemProperty 'workspace', "$rootDir/tmp/workspace"
+        systemProperty 'log4j.configuration', 'log4j.teamcity.xml'
+        systemProperty 'disable.pdsport.rotate', 'true'
+        systemProperty 'configuration.quiet', 'true'
+        systemProperty 'java.awt.headless', 'true'
+
+        //testLogging {
+        //showStandardStreams = true
+        //}
+
+        if (findProperty('debugCITests') == 'true') {
+            Map<CharSequence, Long> times = [:]
+            // TODO IDO-605: consider discovering the pid of the test executor, so we can also monitor / print RAM usage,
+            //   in order to detect which tests are leaking RAM
+            t.beforeTest {
+                TestDescriptor d ->
+                    String key = "$t.path:$d.className.$d.name".toString()
+                    times[key] = System.currentTimeMillis()
+                    println "Starting $key"
+            }
+            t.afterTest {
+                TestDescriptor d ->
+                    String key = "$t.path:$d.className.$d.name".toString()
+                    long diff = System.currentTimeMillis() - times[key]
+                    println "$diff ms spent on $key"
+            }
+        }
+
+        exclude 'io/deephaven/**/NoTest*'
+
+        finalizedBy jacocoTestReport
+    } }
+}
+
+(tasks.clean as Delete).delete(
+        // Only the build rpm task outputs to the $rootDir/target directory.  Add it to the clean task.
+        'target',
+        'buildSrc/out',
+        // Some tests pollute the root directory; add them to clean
+        "$rootDir/tmp",
+        "$rootDir/test",
+        "$rootDir/test.*",
+        // TODO: find the tests polluting root directory and fix them
+)
+
+clean.doLast {
+    delete "$rootDir/test"
+    delete "$rootDir/test.*"
+    // TODO: find the tests polluting root directory and fix them
+}
+
+def configureBin = {
+    Project b ->
+        // our "bin" projects are a little special; the resources that go into the jar
+        // are in the same directory as the project root, which is not supported by
+        // IntelliJ when using Separate Modules Per SourceSet option.
+        // To workaround this, we create arbitrary directories, $rootDir/projects/bin,
+        // which act as the project root, and then we hook up the existing source in $rootDir/bin
+        // as the sourceset directory.  This works correctly in both IntelliJ and Gradle CLI.
+
+        // The projectDir is $rootDir/projects/$b.name, so we avoid using any relative files.
+        String resources = "$rootDir/$b.name".toString()
+        // Set the sourceSet resources directory.
+        b.sourceSets.main.resources.srcDirs = [resources]
+        b.sourceSets.main.java.srcDirs = [] // no java source for these modules.
+        // This is technically superfluous, but we'll leave it just in case
+        (b.tasks.jar as Jar).exclude 'build', 'out', 'build.gradle'
+
+        // This is a one-time cleanup; it works better than trying to tell IntelliJ / gradle to ignore the files.
+        // We'll leave it in case developers switch to release branches then back to develop.
+        // We really _shouldn't_ do file deletion during configuration phase, but this should be very fast once already clean.
+        files("$resources/build", "$resources/out").files*.deleteDir()
+
+}
+modsAreBin.each(configureBin)
+
+// Note: We are applying the java conventions to the root project so that allJavadoc can pick up the
+// correct toolchain. It may make sense to isolate allJavadoc in the future to its own module.
+apply plugin: 'io.deephaven.java-conventions'
+String javaDocOverviewLocation = 'build/docs/overview.html'
+tasks.register 'allJavadoc', Javadoc, {
+    Javadoc jdoc ->
+        jdoc.inputs.file javaDocOverviewLocation
+        jdoc.options.encoding = 'UTF-8'
+        jdoc.options.docletpath = [new File("$rootDir/buildSrc/build/classes/java/compat")]
+        jdoc.options.doclet = 'io.deephaven.javadoc.IncludeDoclet'
+        jdoc.options.tags = ['Include:a:', 'Exclude:a:', 'IncludeAll:a:', 'apiNote', 'implNote']
+        // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
+        jdoc.options.overview = new File("$rootDir", javaDocOverviewLocation)
+        jdoc.options.links = ['https://docs.oracle.com/javase/8/docs/api/']
+
+        //add to as javadoc gets completed
+        String [] exportedProjects = [
+                ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api'
+        ]
+        jdoc.source = exportedProjects.collect { Java.sourceSet(project(it)).allJava }
+        jdoc.classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })
+        jdoc.destinationDir = file("${buildDir}/docs/javadoc")
+        jdoc.dependsOn(':writeJavadocVersion')
+}
+
+def gitHash
+gitHash = "${-> gitHash = 'git rev-list --max-count=1 HEAD'.execute([], rootDir).text.trim()}"
+tasks.register 'writeJavadocVersion', {
+    Task t ->
+        t.description "Write $globalVersion to $javaDocOverviewLocation"
+        File versionFile = file(javaDocOverviewLocation)
+        t.inputs.property('globalVersion2', globalVersion)
+        t.inputs.property('gitHash', gitHash)
+        t.outputs.file(versionFile)
+        t.doLast {
+            versionFile.text = '<body>Deephaven Javadoc for ' + globalVersion + '\n<!-- VCS hash: ' + gitHash + ' --></body>\n'
+        }
+}
+
+project(':test-configs') {
+    dependencies {
+        // For unit-tests that explicitly (or transitively) depend on Configuration.getInstance(),
+        // we want to make sure that they continue working without having to spin up an etcd backed
+        // store that just contains the same data as we have on the classpath
+        runtimeOnly project(':fishconfig-local')
+    }
+}
+
+apply from: 'gradle/deephaven-jpy.gradle'
+
+tasks.register('nightly') {
+    it.group 'Deephaven lifecycle'
+    it.description 'A lifecycle task that defines the nightly tasks to be run in CI, see .github/workflows/nighty-check-ci.yml'
+    it.dependsOn allprojects.collect {
+        allprojects.collect { it.tasks.matching { it.name == LifecycleBasePlugin.CHECK_TASK_NAME } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'testOutOfBand' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'testSerial' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'testParallel' } }
+    }
+}
+
+tasks.register('quick') {
+    it.group 'Deephaven lifecycle'
+    it.description 'A lifecycle task that defines the simple check tasks to be run in CI, see .github/workflows/check-ci.yml'
+    it.dependsOn allprojects.collect {
+        allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } }
+    }
+    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+    it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+}
+
+tasks.register('prepareCompose') {
+    it.group 'Deephaven lifecycle'
+    it.description 'A lifecycle task that prepares prequisites for local docker-compose builds'
+    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile'),
+            project(':web-client-ide').tasks.findByName('prepareDocker'),
+            project(':envoy').tasks.findByName('buildDocker')
+}
+
+tasks.register('smoke') {
+    it.group 'Deephaven lifecycle'
+    it.description 'A lifecycle task for a local-development workflow to make sure things are looking "OK"'
+    it.dependsOn allprojects.collect {
+        allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } }
+    }
+    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile')
+    it.dependsOn project(':web-client-ide').tasks.findByName('prepareDocker')
+    it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+}
+
+ext {
+    // expose this so illumon-db can read it in easily
+    depAnnotations = 'com.intellij:annotations:5.1'
+    depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
+    depAnt = 'ant:ant:1.6.5'
+    depCommonsCodec = 'commons-codec:commons-codec:1.9'
+    depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
+    depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
+    depCommonsNet = 'commons-net:commons-net:3.2'
+    depCommonsEmail = 'org.apache.commons:commons-email:1.4'
+    depCommonsIo = 'commons-io:commons-io:2.5'
+    depFormsRt = 'com.intellij:forms_rt:6.0.3'
+    depJdom2 = 'org.jdom:jdom2:2.0.6'
+    depLog4j = 'log4j:log4j:1.2.16'
+    depPacker = 'packer:packer:1.0'
+    depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
+    depJanino = 'janino:janino:2.5.10'
+    //openJdkInternalMiscExt = openJdkInternalMisc
+    //openJdkInternalAccessExt = openJdkInternalAccess
+}
+
+tasks.wrapper {
+    Wrapper w ->
+        w.gradleVersion = '6.2.2'
+        w.distributionType = 'ALL'
+}
+
+if (findProperty('debugCI') == 'true') {
+    gradle.buildFinished {
+      BuildResult result ->
+        if (result.failure) {
+            result.failure.printStackTrace()
+            println "Pausing the build so errors can be diagnosed"
+            Thread.sleep(TimeUnit.HOURS.toMillis(3))
+        }
+    }
+}

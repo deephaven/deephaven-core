@@ -1,0 +1,5 @@
+# build.command: ${build.command}
+# build.time: ${build.time}
+# project.version: ${project.version}
+deephaven-jpy==${project.version}
+numpy==1.18.1

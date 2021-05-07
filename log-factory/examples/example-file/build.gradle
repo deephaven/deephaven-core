@@ -1,0 +1,20 @@
+plugins {
+	id 'java'
+	id 'application'
+}
+
+dependencies {
+	implementation project(':log-example-base')
+
+	runtimeOnly project(':slf4j-to-log')
+	runtimeOnly project(':log-to-file')
+}
+
+application {
+	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	applicationDefaultJvmArgs = [
+		'-Dio.deephaven.internal.log.LoggerFactoryFile.path=/tmp/log-to-file-example.txt',
+		'-Dio.deephaven.internal.log.LoggerFactoryFile.level=DEBUG',
+		'-Dio.deephaven.internal.log.LoggerFactoryFile.append=false',
+	]
+}

@@ -1,0 +1,116 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+boolean java8 = JavaVersion.current().isJava8()
+List<Object> dependsList
+dependsList = [':Generators:generateFigureImmutable',
+                          ':Generators:generatePythonFigureWrapper',
+                          ':Generators:generatePythonIntegrationStaticMethods',
+]
+def sourceDir = "$projectDir/source"
+def docBuildDir = "$buildDir/docs"
+
+TaskProvider<? extends Task> pyDoc
+
+// TODO core#430 remove this if, always follow this path
+if (!PyEnv.pythonEnabled(project)) {
+    def dockerContainerName = "sphinx-container-${UUID.randomUUID()}"
+    String dockerCopyLocation = "${buildDir}/docker-tmp-copy"
+    def prepareSphinxDocker = project.tasks.register('prepareSphinxDocker', Sync) {
+        from 'docker'
+        into 'build/docker'
+        from(sourceDir) {
+            into 'source'
+        }
+    }
+    def makeSphinxDockerImage = project.tasks.register('makeSphinxDockerImage', DockerBuildImage) {
+        dependsOn dependsList
+        dependsOn prepareSphinxDocker
+        def pythonAndJavaAndWheels = project(':grpc-api-base').tasks.findByName('buildDocker')
+        dependsOn pythonAndJavaAndWheels
+        inputs.file pythonAndJavaAndWheels.outputs.files.singleFile
+        images.add('deephaven/sphinx')
+    }
+    def createSphinxDockerContainer = project.tasks.register('createSphinxDockerContainer', DockerCreateContainer) {
+        dependsOn makeSphinxDockerImage
+        targetImageId makeSphinxDockerImage.get().getImageId()
+        containerName.set(dockerContainerName)
+    }
+    def removeSphinxContainer = project.tasks.register('removeSphinxContainer', DockerRemoveContainer) {
+        dependsOn createSphinxDockerContainer;
+        targetContainerId createSphinxDockerContainer.get().getContainerId()
+    }
+    def copyGeneratedHtml = project.tasks.register('copyGeneratedSphinxHtml', DockerCopyFileFromContainer) {
+        dependsOn createSphinxDockerContainer
+        finalizedBy removeSphinxContainer
+
+        inputs.property('imageId', makeSphinxDockerImage.get().getImageId())
+        outputs.dir(dockerCopyLocation)
+
+        targetContainerId createSphinxDockerContainer.get().getContainerId()
+
+        remotePath.set('/build')
+        hostPath.set(dockerCopyLocation)
+
+        doFirst {
+            delete(dockerCopyLocation)
+        }
+    }
+
+    pyDoc = project.tasks.register('pythonDocs', Sync) {
+        dependsOn copyGeneratedHtml
+        from dockerCopyLocation
+        into docBuildDir
+    }
+}
+//TODO core#430 remove this path entirely
+if (java8 && PyEnv.pythonEnabled(project)) {
+
+    PyEnv env = PyEnv.getEnvs(project)
+    /**
+     * This task converts the already-expanded README file into the notebook format
+     */
+    Venv venv = env.getVenv(PythonVersion.PY_37, VenvType.RUN_SPHINX)
+    dependsList += venv.installDhAndDhJpyWheels()
+    // uncomment below for faster iterations during development (skip rerunning :Generators:tasks)
+//    dependsList = [venv.installDhAndDhJpyWheels()] // DO NOT MERGE WITH THIS UNCOMMENTED
+
+    pyDoc = project.tasks.register 'pythonDocs', Exec, {
+        Exec pythonDocs ->
+
+            pythonDocs.commandLine("$venv.dir/bin/sphinx-build", '-b', 'html', sourceDir, docBuildDir)
+            pythonDocs.environment("LC_CTYPE", "en_US.UTF-8")
+
+            pythonDocs.dependsOn(dependsList)
+            pythonDocs.workingDir("$venv.dir/")
+            def saw_bz2 = false
+            pythonDocs.ignoreExitValue = true
+            pythonDocs.logging.addStandardErrorListener({ txt ->
+                if (txt.contains('_bz2')) {
+                    saw_bz2 = true
+                }
+            } as StandardOutputListener)
+            pythonDocs.doLast {
+                if (saw_bz2) {
+                    throw new GradleException("\n\nYou must install libbz2-dev / bzip2-devel on your OS and then rm -rf $venv.install.installRootDir/$venv.pv.name to run sphinx\n")
+                } else if (pythonDocs.state.failure) {
+                    throw pythonDocs.state.failure
+                } else if (pythonDocs?.execResult?.exitValue != 0) {
+                    throw new GradleException("Sphinx failed while generating docs; you may want to rm -rf $venv.dir.")
+                }
+            } as Action
+    }
+}
+
+project.tasks.register 'pythonDocsTar', Tar, {
+    Tar tar ->
+        tar.from(docBuildDir)
+        tar.dependsOn(pyDoc)
+        tar.archiveBaseName.set("dh-python-docs")
+}

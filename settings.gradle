@@ -1,0 +1,215 @@
+plugins {
+    id 'com.gradle.enterprise' version '3.5.2'
+}
+
+gradle.ext.buildStartTime = new Date()
+
+String[] bins = ['configs', 'test-configs' ]
+
+String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
+        'CompilerTools', 'Generators',
+        'Integrations', 'ModelFarm', 'ClientSupport',
+        'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
+        'KafkaIngester', 'grpc-api']
+
+        // new web projects; these modules are intended to form a complete, modular web application,
+        // with heavy dependency isolation that should enable very fast rebuilds.
+String[] webMods = [
+        'web-client-api', // compiled javascript api client
+        'web-client-ide', // IDE-only additions to open-api javascript client
+        'web-client-ui', // React IDE client app
+        'web-jupyter-grid', // React Jupyter grid client app
+        'web-shared-beans', // shared data types and common interfaces
+        'web-client-backplane', // shared data types and common interfaces
+        'open-api-lang-parser', // a javacc generated general-purpose language parser.
+        'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
+        'open-api-shared-fu', // general purpose tools and dtos for both client and server
+        'open-api-shared-rpc', // contains the open api rpc interfaces, and all relevant dependencies
+        'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
+]
+
+Map<String, String> pyMods = [
+        'deephaven-jpy' : 'py/jpy',
+        'deephaven-jpy-config': 'py/jpy-config',
+        'deephaven-jpy-ext': 'py/jpy-ext',
+        'jpy-integration': 'py/jpy-integration',
+        'py36': 'py/py36',
+        'py37': 'py/py37',
+        'sphinx': 'sphinx',
+]
+
+// Include our modules
+include bins
+include webMods
+include mods
+
+pyMods.each {
+    name, dir ->
+        include(name)
+        project(":$name").projectDir = file(dir)
+}
+
+// the name of the root project is the default groupId used for published artifacts.
+rootProject.name='iris'
+
+include 'fishconfig-local'
+include 'DHProcess'
+include 'proto:proto-backplane-grpc'
+include 'proto:raw-js-openapi'
+include 'protoc'
+
+// logger
+include 'log-factory'
+
+include(':log-to-slf4j')
+project(':log-to-slf4j').projectDir = file('log-factory/sinks/log-to-slf4j')
+
+include(':log-to-stream')
+project(':log-to-stream').projectDir = file('log-factory/sinks/log-to-stream')
+
+include(':log-to-file')
+project(':log-to-file').projectDir = file('log-factory/sinks/log-to-file')
+
+include(':log-to-logbuffer')
+project(':log-to-logbuffer').projectDir = file('log-factory/sinks/log-to-logbuffer')
+
+include(':logback-print-stream-globals')
+project(':logback-print-stream-globals').projectDir = file('log-factory/sinks/logback-print-stream-globals')
+
+include(':logback-logbuffer')
+project(':logback-logbuffer').projectDir = file('log-factory/sinks/logback-logbuffer')
+
+include(':slf4j-to-log')
+project(':slf4j-to-log').projectDir = file('log-factory/sources/slf4j-to-log')
+
+include(':log-example-base')
+project(':log-example-base').projectDir = file('log-factory/examples/example-base')
+
+include(':log-example-slf4j')
+project(':log-example-slf4j').projectDir = file('log-factory/examples/example-slf4j')
+
+include(':log-example-logback')
+project(':log-example-logback').projectDir = file('log-factory/examples/example-logback')
+
+include(':log-example-stream')
+project(':log-example-stream').projectDir = file('log-factory/examples/example-stream')
+
+include(':log-example-file')
+project(':log-example-file').projectDir = file('log-factory/examples/example-file')
+
+include(':grpc-api-base')
+project(':grpc-api-base').projectDir = file('grpc-api/base')
+
+include(':grpc-api-server-docker')
+project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
+
+include(':grpc-api-server-native')
+project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
+
+include(':grpc-api-client-simple')
+project(':grpc-api-client-simple').projectDir = file('grpc-api/client/simple')
+
+include(':grpc-api-client-console')
+project(':grpc-api-client-console').projectDir = file('grpc-api/client/console')
+
+include(':classgraph-extension')
+project(':classgraph-extension').projectDir = file('extensions/classgraph')
+
+include(':suanshu-extension')
+project(':suanshu-extension').projectDir = file('extensions/suanshu')
+
+include(':Internals')
+
+include(':Base')
+
+include(':SevenZip')
+
+include(':IO')
+
+include(':DataStructures')
+
+include(':Configuration')
+
+include(':FishUtil')
+
+include(':DataObjects')
+
+include(':Net')
+
+include(':Stats')
+
+include(':Container')
+
+include(':ParquetHadoop')
+
+include(':envoy')
+
+// Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
+File root = settings.rootDir
+mods.each {
+    String mod->
+    def source = project(":$mod")
+    File sourceDir = new File(root, mod)
+    String main = "${mod}.gradle".toString() // try for ModuleName.gradle file
+    if (new File(sourceDir, main).exists()) {
+        source.buildFileName = "$main"
+    } else {
+        main = "build.gradle"// if no vanity name, check for build.gradle
+        if (new File(sourceDir, main).exists()) {
+            source.buildFileName = "$main"
+        }
+    }
+    source.projectDir = sourceDir
+}
+
+// "bin modules" are projects with a single directory filled with static resources we put into jars.
+// In order to use "separate modules per sourceset" option in IntelliJ, we must give these projects
+// a different directory than their resource directory to use as the project root.
+// We'll use "$rootDir/projects/bin" for the project root of the :bin project,
+// with $rootDir/bin as the resource root, so IntelliJ doesn't blow up (a resource dir cannot contain project root dir).
+bins.each {
+    String mod->
+    def source = project(":$mod")
+    File sourceDir = new File(root, 'projects')
+    source.projectDir = new File(sourceDir, mod)
+    File buildscript = new File(source.projectDir, "${mod}.gradle".toString())
+    if (buildscript.file) {
+        source.buildFileName = buildscript.name
+    }
+}
+
+Closure configureWebModule = {
+    ProjectDescriptor p ->
+        p.projectDir = file(p.name.replace('web-', "web$File.separator").replace('open-api-', "open-api$File.separator"))
+        // trim out 'web-' or 'open-api-' prefixes
+        p.buildFileName = "${p.name - 'web-' - 'open-api-'}.gradle"
+}
+
+webMods.collect({ project(":$it")}).each configureWebModule
+
+Closure configurePyModule = {
+    ProjectDescriptor p, String path ->
+        File f = new File("$p.projectDir", "${p.name}.gradle")
+        if (f.exists()) {
+            p.buildFileName = "${p.name}.gradle".toString()
+        }
+}
+
+pyMods.forEach {String k, String v -> configurePyModule(project(":$k"), v) }
+
+buildCache {
+    local {
+        removeUnusedEntriesAfterDays = 4
+    }
+}
+
+def isCiServer = System.getenv('CI') == 'true'
+if (isCiServer) {
+    gradleEnterprise {
+        buildScan {
+            termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+            termsOfServiceAgree = 'yes'
+            tag('CI')
+        }
+    }
+}

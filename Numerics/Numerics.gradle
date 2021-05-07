@@ -1,0 +1,10 @@
+configurations {
+    compile.extendsFrom irisNumerics
+    testCompile.extendsFrom fishBaseTest
+}
+
+dependencies {
+    compile project(':DB')
+
+    testRuntime project(path: ':configs'), project(path: ':test-configs')
+}

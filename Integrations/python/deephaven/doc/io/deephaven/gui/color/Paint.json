@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.gui.color.Paint",
+ "methods": {},
+ "path": "io.deephaven.gui.color.Paint",
+ "text": "Color abstraction.",
+ "typeName": "interface"
+}

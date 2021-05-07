@@ -1,0 +1,40 @@
+plugins {
+  id 'java'
+}
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(8)
+  }
+}
+
+tasks.withType(JavaCompile).configureEach {
+  JavaCompile javac ->
+    javac.options.fork = true
+    javac.options.encoding = 'UTF-8'
+    javac.options.incremental = true
+    javac.options.compilerArgs << '-parameters'
+}
+
+tasks.withType(Jar).configureEach {
+  Jar jar ->
+    jar.preserveFileTimestamps = false
+    jar.reproducibleFileOrder = true
+}
+
+tasks.named(LifecycleBasePlugin.CLEAN_TASK_NAME) {
+  Delete d ->
+    d.delete('out')
+}
+
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'Deephaven Database',
+        'Implementation-Version': project.version,
+        'Provider': 'gradle'
+  }
+}
+
+configurations {
+  testOutput.extendsFrom testRuntime
+}

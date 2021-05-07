@@ -1,0 +1,51 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn ':web-client-ui'
+evaluationDependsOn ':proto:raw-js-openapi'
+
+apply from: "$rootDir/gradle/web-client.gradle"
+
+dependencies {
+    compile project(':web-client-api')
+    compile project(':open-api-lang-parser')
+}
+
+GwtTools.gwtCompile project, 'io.deephaven.ide.DeephavenIde', 'Create a jar of javascript for web IDE'
+
+// deephaven/iriside
+Task iriside = project(':web-client-ui').tasks.findByName('dockerBuild')
+
+// deephaven/js-out
+Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('buildDocker')
+
+Task gwtc = tasks.getByName('gwtCompile')
+
+task prepareDocker(type: Sync) {
+    // Note: GH actions currently prepares docker via gradle, but does its own building via
+    // a native GH action. As such, we need to make sure that the prepare also invokes the
+    // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
+    // can remove these dependencies.
+    dependsOn iriside
+    dependsOn jsOut
+
+    into "${buildDir}/docker"
+    from(gwtc.outputs.files) {
+        include("irisapi/**")
+    }
+    from 'docker/Dockerfile'
+    from 'nginx/default.conf'
+}
+
+task buildDocker(type: DockerBuildImage) {
+    dependsOn prepareDocker
+    dependsOn iriside
+    dependsOn jsOut
+    inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files.singleFile })
+    //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
+    images.add('deephaven/web')
+}
+

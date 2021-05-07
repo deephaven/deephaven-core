@@ -1,0 +1,229 @@
+import org.gradle.internal.jvm.Jvm
+
+plugins {
+  id 'java'
+  id 'idea'
+}
+
+evaluationDependsOn ':deephaven-jpy'
+
+sourceSets {
+  // All sourcesets here are used for testing; we'll inform the idea{} plugin, below
+  test {
+    java {
+      srcDirs = ['src/test/java']
+    }
+    resources {
+      srcDirs = ['src/test/python']
+    }
+  }
+
+  javaToPython {
+    java {
+      srcDirs = ['src/javaToPython/java']
+    }
+    resources {
+      srcDirs = ['src/javaToPython/python']
+    }
+  }
+
+  pythonToJava {
+    java {
+      srcDirs = ['src/pythonToJava/java']
+    }
+    resources {
+      srcDirs = ['src/pythonToJava/python']
+    }
+  }
+}
+
+configurations {
+  testCompile.extendsFrom junit
+
+  javaToPythonCompile.extendsFrom testCompile
+  pythonToJavaCompile.extendsFrom testCompile
+
+  javaToPythonRuntime.extendsFrom testRuntime
+  pythonToJavaRuntime.extendsFrom testRuntime
+}
+
+dependencies {
+  // todo: consider running tests where JPY is *not* on the classpath, which is a completely acceptable use case
+  testCompile project(':deephaven-jpy')
+  testCompile project(':deephaven-jpy-ext')
+  javaToPythonCompile sourceSets.test.output
+  pythonToJavaCompile sourceSets.test.output
+}
+
+test {
+  onlyIf { false } // don't run tests, we'll set up ones for each python env
+}
+
+// To be able to re-use some of the jpy-integration javaToPython code in other places,
+// we need to first create a publishable output (a jar)
+task javaToPythonJar(type: Jar) {
+  from sourceSets.javaToPython.output
+}
+
+// And then we need to attach it to the appropriate configuration
+artifacts {
+  javaToPythonRuntime tasks.javaToPythonJar
+}
+
+// must be explicit about marking these as test source directories in IntelliJ when not delegating builds to gradle
+idea {
+  module {
+    sourceDirs = []
+    resourceDirs = []
+    testSourceDirs += project.sourceSets.javaToPython.java.srcDirs
+    testSourceDirs += project.sourceSets.pythonToJava.java.srcDirs
+    testResourceDirs += project.sourceSets.javaToPython.resources.srcDirs
+    testResourceDirs += project.sourceSets.pythonToJava.resources.srcDirs
+  }
+}
+
+// only enable this if py building is enabled
+if (PyEnv.pythonEnabled(project)) {
+
+  PyEnv env = PyEnv.getEnv(project)
+
+  List<Task> pythonTests = []
+  Task testJavaToPython = tasks.create 'testJavaToPython', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run the java test suite that depends on deephaven-jpy (org.jpy.PyLib, etc)'
+      check.dependsOn t
+      pythonTests += t
+  }
+
+  tasks.create 'debugJavaToPython', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run the java exec io.deephaven.jpy.integration.PyDebug which is a sanity test for all JavaExec tasks'
+  }
+
+  tasks.create 'pathJavaToPython', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run the java exec io.deephaven.jpy.integration.PySysPath which prints java properties and python paths'
+  }
+
+  tasks.create 'debugPythonToJava', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run the python exec python/java_debug.py which is a sanity test for all python Exec tasks in this project'
+  }
+
+  Task pythonToJava = tasks.create 'unittestPythonToJava', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run "python -m xmlrunner discover" in src/python-to-java/python'
+      check.dependsOn t
+      pythonTests += t
+  }
+
+  tasks.create 'testPython', {
+    Task t ->
+      t.group = 'python'
+      t.description = 'Run all python-related tests in the jpy-integration module'
+      check.dependsOn t
+      t.dependsOn(pythonTests)
+  }
+
+  File genConfig = file("$buildDir/pyGen/jpyconfig.py")
+  Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
+    Sync s ->
+      s.from 'src/pythonToJava/jpyconfig.py.template'
+      s.destinationDir = genConfig.parentFile
+      s.rename { file -> 'jpyconfig.py' }
+      File jHome = Jvm.current().javaHome
+      s.doFirst {
+        s.expand(
+            // note: this is the gradle daemon java.home
+            // we can potentially parameterize this if we want to test across different java versions
+            javaHome: jHome,
+            jvmMaxMem: '32m',
+            jvmClasspath: sourceSets.pythonToJava.runtimeClasspath.asPath)
+
+      }
+      s.inputs.property('java.home', jHome.absolutePath)
+      s.inputs.files sourceSets.pythonToJava.runtimeClasspath
+      s.doLast {
+          println "Created $genConfig using $jHome"
+      }
+  }
+
+  for (pv in [PythonVersion.PY_37]) {
+    Venv venvTest = env.getVenv(pv, VenvType.TEST_JPY)
+
+    Exec installWheels = venvTest.installJpyWheel()
+    Task testTask = venvTest.javaTest(project, "java-to-python-test-${pv.name}", installWheels, sourceSets.javaToPython)
+    testJavaToPython.dependsOn testTask
+
+
+    venvTest.javaExecJpyOnly project,
+            "java-to-python-debug-${pv.name}", // task name
+            'io.deephaven.jpy.integration.PyDebug', // main class
+            sourceSets.javaToPython, // sourceset to use for classpath
+            {
+              Task debugTask -> // extra config we want to do
+                debugTask.systemProperties(['jpy.debug': 'true'])
+                debugJavaToPython.dependsOn debugTask
+            }
+
+    venvTest.javaExecJpyOnly project,
+            "java-to-python-path-${pv.name}", // task name
+            'io.deephaven.jpy.integration.PySysPath', // main class
+            sourceSets.javaToPython, // classpath
+            pathJavaToPython.&dependsOn // extra stuff to do: pathJavaToPython.dependsOn taskWeJustCreated
+
+    Task runJpyVenvTask = tasks.getByPath(venvTest.taskNameInstallWheel)
+    Closure<Exec> createPyExec = {
+      CharSequence name, File report = null, String ... commandLine ->
+        return tasks.create(name.toString(), Exec, {
+          Exec e ->
+            e.dependsOn runJpyVenvTask, jpyConfigTask, pythonToJavaClasses
+            e.inputs.files runJpyVenvTask.outputs.files
+            e.inputs.files compilePythonToJavaJava.outputs.files
+            e.inputs.property('version', version)
+            e.inputs.dir 'src/pythonToJava'
+            e.environment JPY_PY_CONFIG: genConfig
+            e.commandLine commandLine
+            e.workingDir file('src/pythonToJava/python').absoluteFile
+            venvTest.handleFailure(project, e, report)
+            if (report) {
+              e.doFirst {
+                // clean out the reporting directory before we run.
+                project.delete(report)
+              }
+            }
+            return
+        })
+    }
+
+    // IDO-367 "create a namer to encapsulate our task naming conventions"
+    String unitTestTask = "unittest-python-to-java-$pv.name".toString()
+    File reportDir = new File("$buildDir/test-results/$unitTestTask/".toString())
+    Task unittest = createPyExec unitTestTask, reportDir,
+            venvTest.python, '-m', 'xmlrunner', 'discover', '-v', '-o', reportDir.absolutePath
+    pythonToJava.dependsOn unittest
+
+    // These tests need to run in their own process, since jpy can only start up a jvm once per process.
+    unitTestTask = "unittest-single-jpy-python-to-java-$pv.name".toString()
+    reportDir = new File("$buildDir/test-results/$unitTestTask/".toString())
+    Task unittestSingleJpy = createPyExec unitTestTask, reportDir,
+            venvTest.python, '-m', 'xmlrunner', '-o', reportDir.absolutePath, 'test.main_single_jpy_create_destroy_jvm'
+    pythonToJava.dependsOn unittestSingleJpy
+
+    unitTestTask = "unittest-multiple-jpy-python-to-java-$pv.name".toString()
+    reportDir = new File("$buildDir/test-results/$unitTestTask/".toString())
+    Task unittestMultipleJpy = createPyExec unitTestTask, reportDir,
+            venvTest.python, '-m', 'xmlrunner', '-o', reportDir.absolutePath, 'test.main_multiple_jpy_create_destroy_jvm'
+    pythonToJava.dependsOn unittestMultipleJpy
+
+    Task dbg = createPyExec "debug-python-to-java-${pv.name}",
+            venvTest.python, 'java_debug.py'
+    pythonToJava.dependsOn dbg
+
+  }
+}

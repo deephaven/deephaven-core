@@ -1,0 +1,12 @@
+plugins {
+  id 'java-library'
+}
+
+dependencies {
+  compileOnly project(':DB')
+  compileOnly project(':Util')
+
+  compileOnly 'javax.inject:javax.inject:1'
+
+  api 'io.github.classgraph:classgraph:4.8.103'
+}

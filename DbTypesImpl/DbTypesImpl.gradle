@@ -1,0 +1,16 @@
+configurations {
+    compile.extendsFrom irisDbTypesImpl
+
+    testCompile.extendsFrom fishBaseTest, fishConfig
+}
+
+
+dependencies {
+    compile project(':DbTypes'), 
+            'com.sun.activation:javax.activation:1.2.0'
+
+    testRuntime project(':configs'), project(path: ':test-configs')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}

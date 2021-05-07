@@ -1,0 +1,31 @@
+dependencies {
+    compile project(':Base'), project(':SevenZip'), depCommonsCodec
+    testCompile project(path: ':Base', configuration: 'tests')
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/java' exclude '**/*.java'
+        }
+    }
+    test {
+        resources {
+            srcDir 'src/test/java' exclude '**/*.java'
+        }
+    }
+}
+
+// TODO (core#116): Gradle test fixtures
+task jarTests(type: Jar, dependsOn: testClasses) {
+    classifier = 'tests'
+    from sourceSets.test.output
+}
+configurations {
+    tests {
+        extendsFrom testRuntime
+    }
+}
+artifacts {
+    tests jarTests
+}

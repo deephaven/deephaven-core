@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.numerics.movingaverages.TradingHours",
+ "methods": {
+  "isOpen": ":param timestamp: long\n:return: boolean"
+ },
+ "path": "io.deephaven.numerics.movingaverages.TradingHours",
+ "text": "Interface for indicating when the market is open for trading.",
+ "typeName": "interface"
+}

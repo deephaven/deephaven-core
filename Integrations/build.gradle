@@ -1,0 +1,106 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn ':deephaven-jpy'
+
+configurations {
+    compile.extendsFrom irisIntegrations
+    testCompile.extendsFrom fishBaseTest
+}
+
+dependencies {
+
+    compile project(':DB'), project(':DbTypes')
+
+    // add configs, and some runtime dependencies to test classpaths
+    testRuntime project(':configs'), project(':test-configs'),
+            // need these projects so session default imports / generated type wrappers resolve correctly
+            project(':Numerics'), project(':Plot')
+
+            // it's not clear why this isn't automatically hooked up; there _is_ no test java sources,
+            // but the main java source output _should_ be automatically applied.
+            sourceSets.main.output
+
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+        // For gradle, we _probably_ do not want to put r into the jar,
+        // and definitely do not want to put in python, which is delivered as a wheel.
+        // This used to be `resources.srcDirs '.'` with inclusions for 'r' and 'python'
+        // We can't use srcDirs '.' and expect IntelliJ to like it, so we'll just remove
+        // the sourceSet resources entirely, and then manually staple r into the jar
+        // until we can verify that it is safe to remove (and then we'll just remove the jar {} block below)
+        resources.srcDirs = ['src/main/resources']
+    }
+    test {
+        java.srcDirs = []
+        // TODO: test doesn't compile
+        //java.srcDirs = ['src/test/java']
+        resources.srcDirs = ['test_python', 'src/test/resources']
+    }
+}
+
+// Even though we don't want gradle to treat these directories as resources (for jar packing),
+// we do want IntelliJ to treat them as resources in IDE.
+idea {
+    module {
+        resourceDirs += [file('r'), file('python')] 
+        testResourceDirs += [file('python/test')]
+    }
+}
+
+// This wiring is probably not needed.
+// It only exists to maintain legacy jar structure
+// (we changed the sourceSets.main.resources srcDirs,
+// which affects where files would normally be packed into the jar).
+// TODO: verify nobody pulls r from the Integrations jar, then delete this)
+(tasks.jar as Jar).configure {
+    Jar j ->
+        j.from('r') {
+            CopySpec c->
+                c.into 'r'
+        }
+}
+
+/**
+ * We are not yet enabling the building of jpy on all environments yet.
+ * It requires the ability of the running machine to build/install python:
+ *
+ * https://github.com/JetBrains/gradle-python-envs
+ * https://github.com/pyenv/pyenv/wiki/common-build-problems
+ * https://github.com/pyenv/pyenv/wiki
+ *
+ * TODO IDO-436: zip up working installations on each OS, and pull them from artifactory instead of building on developer machine
+ *
+ */
+if (PyEnv.pythonEnabled(project)) {
+    PyEnv env = PyEnv.getEnv(project)
+
+    Exec wheel = env.getTaskBuildDhWheel()
+
+    for (pv in [PythonVersion.PY_37]) {
+        PyInstall install = env.getInstall(pv)
+        Venv venvTest = install.getVenv(VenvType.TEST_DH)
+        venvTest.pythonTest(project, "test-${pv.name}")
+    }
+
+}
+
+task prepareDockerForWheel(type: Sync) {
+    from 'python'
+    into "${buildDir}/docker"
+}
+
+task buildDockerForWheel(type: DockerBuildImage) {
+    dependsOn prepareDockerForWheel
+    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
+    images.add('deephaven/deephaven-wheel')
+    target.set('build')
+}

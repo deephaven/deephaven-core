@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.ResettableBooleanChunk",
+ "methods": {
+  "clear": "Reset this chunk to empty storage.\n\nNote: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n\n:return: io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>",
+  "makeResettableChunk": "Note: Java generics information - <ATTR_BASE extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.chunk.ResettableBooleanChunk<ATTR_BASE>",
+  "makeResettableChunkForPool": "Note: Java generics information - <ATTR_BASE extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.chunk.ResettableBooleanChunk<ATTR_BASE>",
+  "resetFromArray": "**Incompatible overloads text - text from the first overload:**\n\nReset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n*Overload 1*  \n  Note: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n  \n  :param array: java.lang.Object\n  :param offset: int\n  :param capacity: int\n  :return: (io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>) this\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n  \n  :param array: java.lang.Object\n  :return: (io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>) this",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified Chunk.\n\nNote: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n\n:param other: io.deephaven.db.v2.sources.chunk.Chunk<? extends ATTR>\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>",
+  "resetFromTypedArray": "Note: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n\n:param data: boolean[]\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>",
+  "resetFromTypedChunk": "Note: Java generics information - <ATTR extends ResettableBooleanChunk.ATTR_UPPER>\n\n:param other: io.deephaven.db.v2.sources.chunk.BooleanChunk<? extends ATTR>\n:param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.BooleanChunk<ATTR>",
+  "slice": "Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a\n subrange of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).\n\n:param offset: int\n:param capacity: int\n:return: (io.deephaven.db.v2.sources.chunk.ResettableBooleanChunk) The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view."
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.ResettableBooleanChunk",
+ "text": "ResettableReadOnlyChunk implementation for boolean data.",
+ "typeName": "class"
+}

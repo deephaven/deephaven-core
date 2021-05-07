@@ -1,0 +1,265 @@
+configurations {
+    compile.extendsFrom fishConfig, jdom
+    testCompile.extendsFrom fishBaseTest
+}
+
+dependencies {
+
+    compile project(':DB'),
+            project(':Plot')
+
+    runtime project(path: ':configs'), project(path: ':test-configs')
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+
+    testRuntime project(path: ':configs'), project(path: ':test-configs')
+
+}
+
+def workspace = "$rootDir/tmp/workspace"
+def workDir = "$rootDir/.."
+String devRoot = rootDir.absolutePath
+
+task groovyStaticImportGenerator(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GroovyStaticImportGenerator'
+
+    main = 'io.deephaven.libs.GroovyStaticImportGenerator'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+}
+
+task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GroovyStaticImportGenerator to assert that the generated code has not changed'
+
+    main = 'io.deephaven.libs.GroovyStaticImportGenerator'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+
+}
+
+task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateAxesPlotMethods'
+
+    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
+task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateAxesPlotMethods to assert that the generated code has not changed'
+
+    main = 'io.deephaven.db.plot.util.GenerateAxesPlotMethods'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
+
+task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateMultiSeries'
+
+    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
+task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateMultiSeries to assert that the generated code has not changed'
+
+    main = 'io.deephaven.db.plot.util.GenerateMultiSeries'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
+
+task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateFigureImmutable'
+    dependsOn generateAxesPlotMethods, generateMultiSeries
+
+    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
+task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GenerateFigureImmutable to assert that the generated code has not changed'
+    dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert
+
+    main = 'io.deephaven.db.plot.util.GenerateFigureImmutable'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
+
+task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePlottingConvenience'
+    dependsOn generateFigureImmutable
+
+    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    args devRoot
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
+task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePlottingConvenience to assert that the generated code has not changed'
+    dependsOn generateFigureImmutableAssert
+
+    main = 'io.deephaven.db.plot.util.GeneratePlottingConvenience'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+}
+
+if (PyEnv.pythonEnabled(project)) {
+    PyInstall install = PythonVersion.PY_37.getInstall(project)
+    Venv venv = install.getVenv(VenvType.PY_DOCS)
+    venv.pythonExec(project, "generatePyDocAssert", ["javadocExtraction.py", devRoot, "true"], [":allJavadoc", venv.taskNameCreateVenv], "${project.projectDir}/python")
+    venv.pythonExec(project, "generatePyDoc", ["javadocExtraction.py", devRoot, "false"], [":allJavadoc", venv.taskNameCreateVenv], "${project.projectDir}/python")
+    venv.pythonExec(project, "generateManPyDocAssert", ["manualDocstrings.py", devRoot, "true"], venv.taskNameCreateVenv, "${project.projectDir}/python")
+    venv.pythonExec(project, "generateManPyDoc", ["manualDocstrings.py", devRoot, "false"], venv.taskNameCreateVenv, "${project.projectDir}/python")
+}
+
+
+def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
+                                    '/Integrations/python/deephaven/Calendars/__init__.py',
+                               'io.deephaven.db.tables.utils.DBTimeUtils',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DBTimeUtilsPreamble.txt',
+                                    '/Integrations/python/deephaven/DBTimeUtils/__init__.py',
+                               'io.deephaven.db.tables.select.QueryScope',
+                                    '/Integrations/python/deephaven/QueryScope/__init__.py',
+                               'io.deephaven.db.tables.utils.TableManagementTools',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/TableManagementToolsPreamble.txt',
+                                    '/Integrations/python/deephaven/TableManagementTools/__init__.py',
+                               'io.deephaven.db.tables.utils.TableTools',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
+                                    '/Integrations/python/deephaven/TableTools/__init__.py',
+                               'io.deephaven.db.v2.by.ComboAggregateFactory',
+                                    '/Integrations/python/deephaven/ComboAggregateFactory/__init__.py',
+                               'io.deephaven.db.plot.colors.ColorMaps',
+                                   '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
+                               'io.deephaven.db.tables.utils.WindowCheck',
+                                    '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
+                               'io.deephaven.db.v2.utils.TableLoggers',
+                                    '/Integrations/python/deephaven/TableLoggers/__init__.py',
+                               'io.deephaven.db.v2.utils.PerformanceQueries',
+                                    '/Integrations/python/deephaven/PerformanceQueries/__init__.py']
+
+task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonIntegrationStaticMethods'
+
+    main = 'io.deephaven.python.PythonStaticGenerator'
+    args ([devRoot, 'false'] + pythonStaticMethodsArgs) as String[]
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    if (PyEnv.pythonEnabled(project)) {
+        dependsOn ':Generators:generatePyDoc', ':Generators:generateManPyDoc'
+    }
+}
+
+task generatePythonIntegrationStaticMethodsAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonIntegrationStaticMethods'
+
+    main = 'io.deephaven.python.PythonStaticGenerator'
+    args ([devRoot, 'true'] + pythonStaticMethodsArgs) as String[]
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
+
+task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonFigureWrapper'
+    dependsOn generatePlottingConvenience
+
+    main = 'io.deephaven.python.PythonPlottingGenerator'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    if (PyEnv.pythonEnabled(project)) {
+        dependsOn ':Generators:generatePyDoc', ':Generators:generateManPyDoc', ':Generators:generateFigureImmutable'
+    }
+}
+
+task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonFigureWrapper'
+    dependsOn generatePlottingConvenienceAssert
+
+    main = 'io.deephaven.python.PythonPlottingGenerator'
+    args devRoot, 'true'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    onlyIf { System.getenv('NO_ASSERT') != 'true' }
+}
+
+tasks.register 'generateAllPython', {
+    Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethods',
+            ':Generators:generatePythonFigureWrapper'
+}
+
+
+tasks.register 'generateAllPythonAssert', {
+    Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethodsAssert',
+            ':Generators:generatePythonFigureWrapperAssert'
+}
+
+tasks.register 'generateAll', {
+    Task t -> t.dependsOn  ':Generators:groovyStaticImportGenerator',
+                           ':Generators:generateAxesPlotMethods',
+                           ':Generators:generateMultiSeries',
+                           ':Generators:generateFigureImmutable',
+                           ':Generators:generatePlottingConvenience',
+                           ':Generators:generateAllPython'
+    t.group = '~Deephaven'
+    t.description = 'Runs all code generators; you MUST pass -PwithPy=true and run on a system capable of building python wheels / venvs'
+}
+
+check.dependsOn groovyStaticImportGeneratorAssert,
+        generateAxesPlotMethodsAssert,
+        generateMultiSeriesAssert,
+        generateFigureImmutableAssert,
+        generatePlottingConvenienceAssert

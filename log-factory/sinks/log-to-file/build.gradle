@@ -1,0 +1,17 @@
+plugins {
+	id 'java-library'
+	id 'com.diffplug.spotless'
+}
+
+dependencies {
+	// While it might seem like we should re-expose this API since part of our interface returns the
+	// internal logger, that is in service of the ServiceLoader - and if consumers should not need
+	// access to the internal logger.
+	implementation project(':log-factory')
+}
+
+spotless {
+	java {
+		eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+	}
+}

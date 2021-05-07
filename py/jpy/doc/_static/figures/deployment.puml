@@ -1,0 +1,23 @@
+@startuml
+
+component JVM
+component Python
+
+artifact jdl.so
+artifact jpy.so
+artifact jpy.jar
+artifact jpyutil.py
+file jpyconfig.properties
+file jpyconfig.py
+
+jpy.jar  ..> jpy.so
+jpy.jar  ..> jdl.so
+jpy.jar  ..> jpyconfig.properties
+
+jpyutil.py ..> jpyconfig.py
+
+Python ..> jpy.so
+Python ..> jpyutil.py
+JVM ..> jpy.jar
+
+@enduml

@@ -1,0 +1,74 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    /*
+    Temporarily disabled due to bug between javacc plugin and jacoco plugin
+    id "ca.coglinc.javacc" version "2.4.0"
+    */
+}
+
+apply from: "$rootDir/gradle/web-common.gradle"
+
+dependencies {
+    compile project(':open-api-shared-ide')
+    compile project(':open-api-shared-fu')
+}
+Classpaths.inheritJsInterop project, 'jsinterop-annotations'
+Classpaths.inheritJavaParser project
+GwtTools.gwtLib project
+
+// All javacc plugin configuration disabled to avoid weird IntelliJ breakage
+// when we try to manually patch the plugin.  Will reinstate once upstream
+// merges and deploys our fix.
+
+// If you wish to update the BNF / language rules, you will want to uncomment
+// the line in plugins { } block above, all lines below, and then select
+// the "delegate build operations to Gradle" option in the gradle menu;
+// the checkbox you are looking for is:
+// Build, Execution, Deployment -> Build Tools -> Gradle -> Runner
+
+//compileJjtree {
+//    include '**/*.java'
+/*
+      arguments = [ multi: 'true' ]
+      outputDirectory = file('src/jjtree/java')
+}
+
+dependencies {
+    javacc 'net.java.dev.javacc:javacc:7.0.4'
+}
+
+compileJavacc {
+    outputDirectory = file('src/javacc/java')
+}
+
+
+jjdoc {
+    inputDirectory = file(project.buildDir.absolutePath + '/generated/jjtree')
+    outputDirectory = file(project.buildDir.absolutePath + '/generated/jjdoc')
+    arguments = [html: 'true']
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = [ 'src/main/java/', compileJavacc.outputDirectory, compileJjtree.outputDirectory ]
+        }
+        resources {
+            srcDirs = [ 'src/main/resources' ]
+        }
+    }
+}
+*/
+// If you uncomment the part above, you can delete this sourceSets section below:
+sourceSets {
+    main {
+        java {
+            srcDirs = [ 'src/main/java/', 'src/javacc/java', 'src/jjtree/java' ]
+        }
+        resources {
+            srcDirs = [ 'src/main/resources' ]
+        }
+    }
+}
+

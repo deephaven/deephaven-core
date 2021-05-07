@@ -1,0 +1,83 @@
+name: Nightly Benchmarks
+
+on:
+  push: # For testing
+    branches: ['benchmark-*']
+  schedule:
+    - cron: '0 7 * * *'
+
+jobs:
+  setup:
+    runs-on: [benchmark]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+
+      - name: Build
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: benchmark
+          arguments: build
+          gradle-version: wrapper
+
+  benchmarks:
+    needs: setup
+    runs-on: [benchmark]
+    steps:
+      - name: Benchmark - sumByBenchmark
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: benchmark
+          arguments: :DB:sumByBenchmark
+          gradle-version: wrapper
+
+      - name: Benchmark - PercentileByBenchmark
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: benchmark
+          arguments: :DB:PercentileByBenchmark 
+          gradle-version: wrapper
+
+  archive:
+    needs: benchmarks
+    runs-on: [benchmark]
+    steps:  
+      - name: Archive benchmark results
+        uses: actions/upload-artifact@v2
+        with:
+          name: Benchmark results
+          path: tmp/logs/*Benchmark*-*.csv
+          retention-days: 90
+
+  publish-metrics:
+    needs: benchmarks
+    runs-on: [benchmark]
+    steps:
+      - name: Setup python environment
+        uses: "actions/setup-python@v2"
+        with:
+          python-version: "3.9"
+      
+      - name: Install requirements
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip
+          python -m pip install --requirement .github/tools/metrics/requirements.txt
+
+      - name: Commit Metrics to GCP monitoring
+        run: "python .github/tools/metrics/benchmark_capture.py --template-path=.github/tools/metrics/templates/ tmp/logs/*Benchmark*-*.csv"

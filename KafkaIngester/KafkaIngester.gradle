@@ -1,0 +1,30 @@
+apply plugin: 'base'
+apply plugin: 'java'
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+configurations {
+    compile.extendsFrom irisKafkaIngester
+}
+
+dependencies {
+    compile project(':DB')
+    testCompile 'junit:junit:4.12'
+    testCompile project(path: ':DB', configuration: 'testOutput')
+    testRuntime project(path: ':configs'), project(path: ':test-configs')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}

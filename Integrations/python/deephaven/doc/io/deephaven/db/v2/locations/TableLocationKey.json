@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.db.v2.locations.TableLocationKey",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "areEqual": ":param key1: io.deephaven.db.v2.locations.TableLocationKey\n:param key2: io.deephaven.db.v2.locations.TableLocationKey\n:return: boolean",
+  "getColumnPartition": ":return: (java.lang.CharSequence) The column partition that encloses the identified table location, or null if none exists",
+  "getInternalPartition": ":return: (java.lang.CharSequence) The internal partition that encloses the identified table location, or null if none exists",
+  "getKeyedObjectKey": "Re-usable key object for TableLocationKeys that disregards the implementation class.\n\nNote: Java generics information - <VALUE_TYPE extends io.deephaven.db.v2.locations.TableLocationKey>\n\n:return: io.deephaven.hash.KeyedObjectKey<io.deephaven.db.v2.locations.TableLocationKey,VALUE_TYPE>",
+  "hash": ":param key: io.deephaven.db.v2.locations.TableLocationKey\n:return: int",
+  "toStringHelper": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.db.v2.locations.TableLocationKey",
+ "text": "Interface that specifies key fields for any TableLocation.",
+ "typeName": "interface"
+}

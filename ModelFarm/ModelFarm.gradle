@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+configurations {
+    testCompile.extendsFrom fishBaseTest
+}
+
+dependencies {
+    compile project(':DB')
+
+    runtime project(':configs')
+
+    testCompile project(path: ':DB', configuration: 'testOutput')
+    testRuntime project(':Numerics')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}

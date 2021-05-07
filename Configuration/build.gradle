@@ -1,0 +1,40 @@
+dependencies {
+    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':log-factory'), depCommonsLang3
+    testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
+
+    testCompile project(path: ':Base', configuration: 'tests')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/java' exclude '**/*.java'
+        }
+    }
+    test {
+        resources {
+            srcDir 'src/test/java' exclude '**/*.java'
+        }
+    }
+}
+
+test {
+    useJUnit()
+
+    workingDir = "$rootDir"
+    ignoreFailures = true
+    enableAssertions = true
+    maxHeapSize = '3g'
+
+    systemProperty 'Configuration.rootFile', 'fishlib-tests.prop'
+    systemProperty 'devroot', "$rootDir"
+    systemProperty 'workspace', "$rootDir/tmp/workspace"
+    systemProperty 'log4j.configuration', 'log4j.teamcity.xml'
+    systemProperty 'disable.pdsport.rotate', 'true'
+    systemProperty 'configuration.quiet', 'true'
+
+    exclude '**/NoTest*'
+}

@@ -1,0 +1,41 @@
+evaluationDependsOn ':deephaven-jpy' // deephaven-jpy wheel
+evaluationDependsOn ':Integrations' // deephaven wheel
+
+configurations {
+  //compile.extendsFrom irisDb
+  testCompile.extendsFrom irisDbTest, fishIoTest
+}
+
+test {
+  exclude "**/*" // make sure IntelliJ doesn't assume this test task is the one to use to run classes.
+  onlyIf { false } // don't run tests, we'll set up ones for each python env.
+}
+
+dependencies {
+  testCompile project(':DB'), TestTools.projectDependency(project, 'DB')
+
+  // This allows us to access jpy-integration javaToPython code around setting up python
+  // for testing purposes
+  testCompile project.dependencies.project([
+      path: ':jpy-integration',
+      configuration: 'javaToPythonRuntime'
+  ])
+
+  // needed for access to dh-tests.prop
+  testRuntime project(path: ':test-configs'),
+          project(path: ':configs'),
+          project(':Integrations'),
+          project(':DB')
+
+  // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
+  testRuntime project(':Numerics')
+  testRuntime project(':suanshu-extension')
+}
+
+if (PyEnv.pythonEnabled(project)) {
+  for (pv in PythonVersion.values()) {
+    PyInstall install = pv.getInstall(project)
+    Venv venvTest = install.getVenv(VenvType.TEST_DH)
+    venvTest.javaTest(project, "test-${pv.name}").maxHeapSize = '4G'
+  }
+}
