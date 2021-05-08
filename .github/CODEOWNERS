@@ -1,0 +1,12 @@
+# Note: there seems to be a lot of contention about the usefulness of CODEOWNERS.
+# We should make sure to have a discussion before making code owners more widespread, as it
+# potentially causes a lot of extra noise for developers.
+#
+# See https://about.sourcegraph.com/blog/a-different-way-to-think-about-code-ownership/
+# See https://bionic.fullstory.com/taming-github-codeowners-with-bots/
+
+# We want to make sure any changes to workflows are closely monitored, as they may have non-obvious
+# security implications.
+#
+# See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+/.github/workflows/ @devinrsmith
