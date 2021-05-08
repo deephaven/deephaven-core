@@ -34,12 +34,9 @@ jobs:
           arguments: --scan --continue check
           gradle-version: wrapper
 
-      - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
         if: always()
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: long-check-ci test report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          name: long-check-ci-results
+          path: '**/build/test-results/test/TEST-*.xml'
