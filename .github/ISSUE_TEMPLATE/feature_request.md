@@ -5,7 +5,7 @@ labels: feature request, triage
 
 ---
 
-<!-- Please read our Code of Conduct: https://github.com/deephaven/core/blob/main/CODE_OF_CONDUCT.md -->
+<!-- Please read our Code of Conduct: https://github.com/deephaven/deephaven-core/blob/main/CODE_OF_CONDUCT.md -->
 <!-- Please search existing issues to avoid creating duplicates. -->
 
 <!-- Describe the feature you'd like. -->

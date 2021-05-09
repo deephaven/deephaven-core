@@ -103,7 +103,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * Queries whether this MutableInputTable is editable in the current context.
      *
      * @return true if this MutableInputTable may be edited, false otherwise
-     * TODO (deephaven/core/issues/255): Add AuthContext and whatever else is appropriate
+     * TODO (deephaven/deephaven-core/issues/255): Add AuthContext and whatever else is appropriate
      */
     boolean canEdit();
 }

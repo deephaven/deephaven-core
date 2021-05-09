@@ -199,7 +199,7 @@ public class TestTableManagementTools {
 
     @Test
     public void testWriteTableMissingColumns() {
-        // TODO (deephaven/core/issues/321): Fix the apparent bug in the parquet table writer.
+        // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
 //        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
 //                "B    = NULL_BYTE",
 //                "C    = NULL_CHAR",

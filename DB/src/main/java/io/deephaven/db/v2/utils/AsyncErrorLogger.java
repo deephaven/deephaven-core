@@ -44,7 +44,7 @@ public class AsyncErrorLogger {
             failingOperationNumberSetter.setInt(sourceEntry.getOperationNumber());
             failingDescriptionSetter.set(sourceEntry.getDescription());
         }
-        // TODO (deephaven/core/issues/159): Do we continue supporting this? If so, we should consider fixing host name and worker name.
+        // TODO (deephaven/deephaven-core/issues/159): Do we continue supporting this? If so, we should consider fixing host name and worker name.
         workerNameSetter.set(null);
         hostNameSetter.set(null);
         causeSetter.set(originalException);

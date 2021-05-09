@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * A color.
  * @IncludeAll
- * TODO (deephaven/core/issues/175): Move this to a new module and package
+ * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 @SuppressWarnings("WeakerAccess")
 public class Color implements Paint, Serializable {

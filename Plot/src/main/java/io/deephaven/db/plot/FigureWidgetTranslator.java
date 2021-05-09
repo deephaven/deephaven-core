@@ -77,7 +77,7 @@ public class FigureWidgetTranslator {
 
         clientFigure.setUpdateInterval(figure.getUpdateInterval());
 
-        // TODO (deephaven/core/41): Update this to match new DisplayableFigureDescriptor and whatever the JS plotting API needs post-GRPC.
+        // TODO (deephaven/deephaven-core/41): Update this to match new DisplayableFigureDescriptor and whatever the JS plotting API needs post-GRPC.
 //        final int[] tableHandleIds = new int[descriptor.getDeflatedTables().size()];
 //        for (int i = 0; i < descriptor.getDeflatedTables().size(); i++) {
 //            final ExportedTableDescriptorMessage t = (ExportedTableDescriptorMessage) descriptor.getDeflatedTables().get(i);

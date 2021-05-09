@@ -156,7 +156,7 @@ public class TestGroupingProviders {
                         .mapToObj(pcv -> new File(dataDirectory, "IP" + File.separator + String.format("%04d", pcv) + File.separator + tableKey.getTableName()))
                         .toArray(File[]::new)
         );
-        // TODO (deephaven/core/issues/321): Re-add this part of the test when the parquet bug is fixed
+        // TODO (deephaven/deephaven-core/issues/321): Re-add this part of the test when the parquet bug is fixed
 //        TableManagementTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
 //                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
 
