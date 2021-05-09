@@ -45,4 +45,5 @@ jobs:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           check_name: long-check-ci test report
+          commit: ${{ github.event.workflow_run.head_sha }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
