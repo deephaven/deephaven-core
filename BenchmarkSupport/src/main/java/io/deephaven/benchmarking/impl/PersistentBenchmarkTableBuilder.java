@@ -59,7 +59,7 @@ public class PersistentBenchmarkTableBuilder extends AbstractBenchmarkTableBuild
             throw new IllegalStateException("Grouping requested on the following nonexistant columns " + StringUtils.joinStrings(missingGroupingColumns,", "));
         }
 
-        // TODO (deephaven/core/issues/147): Replace this with a Parquet-backed table, or delete this entirely and use in-memory always
+        // TODO (deephaven/deephaven-core/issues/147): Replace this with a Parquet-backed table, or delete this entirely and use in-memory always
         return new InMemoryBenchmarkTable(name, size, rngSeed, getColumnGenerators());
     }
 }

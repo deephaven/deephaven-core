@@ -8,7 +8,7 @@ set -e
 ########################################
 
 GH_RUNNER_VERSION=${GH_RUNNER_VERSION:="2.277.1"}
-GH_RUNNER_REPO_URL=${GH_RUNNER_REPO_URL:="https://github.com/deephaven/core"}
+GH_RUNNER_REPO_URL=${GH_RUNNER_REPO_URL:="https://github.com/deephaven/deephaven-core"}
 GH_RUNNER_TOKEN=${GH_RUNNER_TOKEN:?""}
 GH_RUNNER_NAME=${GH_RUNNER_NAME:=$HOSTNAME}
 GH_RUNNER_LABELS=${GH_RUNNER_LABELS:="gce-runner,benchmark"}

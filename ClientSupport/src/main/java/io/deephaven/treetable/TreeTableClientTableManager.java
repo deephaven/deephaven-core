@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 public enum TreeTableClientTableManager {
     DEFAULT;
 
-    // TODO (deephaven/core/issues/37): Refine this type into something useful, or refactor entirely.
+    // TODO (deephaven/deephaven-core/issues/37): Refine this type into something useful, or refactor entirely.
     public interface Client<CLIENT_TYPE extends Client<CLIENT_TYPE>> {
         void addDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);
         void removeDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);

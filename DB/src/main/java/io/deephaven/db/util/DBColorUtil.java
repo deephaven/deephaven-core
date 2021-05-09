@@ -18,7 +18,7 @@ import io.deephaven.gui.color.Color;
  * For foreground colors, one of the remaining 7 bits denotes
  * no foreground color overriding when the cell is highlighted in the table.
  * This means the foreground color will stay the same when the cell is highlighted.
- * TODO (deephaven/core/issues/175): Move this to a new module and package
+ * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 @SuppressWarnings({"UnusedDeclaration", "WeakerAccess"})
 public class DBColorUtil extends DBColorUtilImpl {

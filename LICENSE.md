@@ -24,7 +24,7 @@ Deephaven Community License Agreement (the "Agreement").
 Software provided to the original licensee with this Agreement. The Software may
 include third party owned code. Each third party module is subject to the terms
 of its respective license; the details of which can be found in the notices
-served at [https://github.com/deephaven/core](https://github.com/deephaven/core).
+served at [https://github.com/deephaven/deephaven-core](https://github.com/deephaven/deephaven-core).
 Since licensees may contribute back to the Software as provided for in Section
 3(b), the Software may include any such contributions.
 

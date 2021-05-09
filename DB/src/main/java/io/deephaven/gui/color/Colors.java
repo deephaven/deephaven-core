@@ -13,7 +13,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * Methods and colors moved from DBColorUtil to here. They are left in DBColorUtil
  * for backward compatibility.
- * TODO (deephaven/core/issues/175): Move this to a new module and package
+ * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 public enum Colors {
     //color constants from https://www.w3schools.com/colors/colorsnames.asp

@@ -15,7 +15,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * without importing the color fields.
  * TODO: remove once {@link DBColorUtil} field and {@link Color} field conflicts are resolved.
  * TODO: This class won't be necessary once we can import DBColorUtil as static again.
- * TODO (deephaven/core/issues/175): Move this to a new module and package
+ * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 public class DBColorUtilImpl {
     public static final long COLOR_SET_BIT = 0x01;

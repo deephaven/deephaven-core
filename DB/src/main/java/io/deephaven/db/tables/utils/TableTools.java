@@ -1414,7 +1414,7 @@ public class TableTools {
      */
     public static Table merge(Table... tables) {
         return QueryPerformanceRecorder.withNugget("merge", () -> {
-            // TODO (deephaven/core/issues/257): When we have a new Table proxy implementation, we should reintroduce remote merge for proxies.
+            // TODO (deephaven/deephaven-core/issues/257): When we have a new Table proxy implementation, we should reintroduce remote merge for proxies.
             // If all of the tables are proxies, then we should ship this request over rather than trying to do it locally.
             //            Table proxyMerge = io.deephaven.db.tables.utils.TableTools.mergeByProxy(tables);
             //            if (proxyMerge != null) {
