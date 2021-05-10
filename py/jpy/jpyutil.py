@@ -109,7 +109,7 @@ def _get_module_path(name, fail=False, install_path=None):
             if fail:
                 raise e
     else:
-        import importlib
+        import importlib.util
         try:
             details = importlib.util.find_spec(name)  # this should raise an ImportError if module is not found
             if hasattr(details, 'has_location') and details.has_location:
