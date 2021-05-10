@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -17,6 +18,7 @@ import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.locations.TableLocationSubscriptionBuffer;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
@@ -68,7 +70,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     private SourceTableComponentFactory componentFactory;
     private ColumnSourceManager columnSourceManager;
 
-    private ColumnSource columnSource;
+    private DeferredGroupingColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
     private TableLocation[] tableLocations;
@@ -87,12 +89,18 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
-        columnSource = mock(ColumnSource.class);
+        columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
+            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
+            checking(new Expectations() {{
+                allowing(mocked).getType();
+                will(returnValue(cd.getDataType()));
+                allowing(mocked).getComponentType();
+                will(returnValue(cd.getComponentType()));
+            }});
+            return mocked;
+        }).toArray(DeferredGroupingColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
         tableLocations = new TableLocation[]{
                 mock(TableLocation.class, "TL0"),
@@ -132,11 +140,31 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @After
     @Override
     public void tearDown() throws Exception {
-        super.tearDown();
-        if (coalesced != null) {
-            coalesced.dropReference();
-            coalesced = null;
+        try {
+            super.tearDown();
+        } finally {
+            if (coalesced != null) {
+                coalesced.dropReference();
+                coalesced = null;
+            }
         }
+    }
+
+    private static ColumnDefinition<?>[] getIncludedColumnDefs(final int... indices) {
+        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci]).toArray(ColumnDefinition[]::new);
+    }
+
+    private static String[] getIncludedColumnNames(final int... indices) {
+        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).toArray(String[]::new);
+    }
+
+    private static String[] getExcludedColumnNames(final TableDefinition currentDef, final int... indices) {
+        final Set<String> includedNames = IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).collect(Collectors.toSet());
+        return currentDef.getColumnStream().map(ColumnDefinition::getName).filter(n -> !includedNames.contains(n)).toArray(String[]::new);
+    }
+
+    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
+        return IntStream.of(indices).mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci])).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
     }
 
     private TableLocation[] locationsSlice(final int... indexes) {
@@ -214,7 +242,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             } else {
                 will(returnValue(toAdd));
                 oneOf(columnSourceManager).getColumnSources();
-                will(returnValue(TABLE_DEFINITION.getColumnStream().collect(Collectors.toMap(DefaultColumnDefinition::getName, cd -> columnSource, Assert::neverInvoked, LinkedHashMap::new))));
+                will(returnValue(getIncludedColumnsMap(0, 1, 2, 3, 4)));
             }
         }});
         expectPassFilters.forEach(tl ->
@@ -556,20 +584,16 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     public void testWhereSize() {
         doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
         checking(new Expectations() {{
-            allowing(columnSource).getType();
-            will(returnValue(INTEGER_COLUMN_DEFINITION.getDataType()));
-            allowing(columnSource).getComponentType();
-            will(returnValue(INTEGER_COLUMN_DEFINITION.getDataType()));
-            allowing(columnSource).getInt(with(any(long.class)));
+            allowing(columnSources[3]).getInt(with(any(long.class)));
             will(returnValue(1));
-            allowing(columnSource).makeGetContext(with(any(Integer.class)));
+            allowing(columnSources[3]).makeGetContext(with(any(Integer.class)));
             will(new CustomAction("Make dummy context") {
                 @Override
                 public Object invoke(@NotNull final Invocation invocation) {
                     return new DummyContext(int.class, (int) invocation.getParameter(0));
                 }
             });
-            allowing(columnSource).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
+            allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
             will(new CustomAction("Fill dummy chunk") {
                 @Override
                 public Object invoke(@NotNull final Invocation invocation) {
@@ -592,20 +616,16 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             oneOf(componentFactory).createColumnSourceManager(true, TABLE_DEFINITION.getColumns());
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
-            allowing(columnSource).getType();
-            will(returnValue(INTEGER_COLUMN_DEFINITION.getDataType()));
-            allowing(columnSource).getComponentType();
-            will(returnValue(INTEGER_COLUMN_DEFINITION.getDataType()));
-            allowing(columnSource).getInt(with(any(long.class)));
+            allowing(columnSources[3]).getInt(with(any(long.class)));
             will(returnValue(1));
-            allowing(columnSource).makeGetContext(with(any(Integer.class)));
+            allowing(columnSources[3]).makeGetContext(with(any(Integer.class)));
             will(new CustomAction("Make dummy context") {
                 @Override
                 public Object invoke(@NotNull final Invocation invocation) {
                     return new DummyContext(int.class, (int) invocation.getParameter(0));
                 }
             });
-            allowing(columnSource).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
+            allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
             will(new CustomAction("Fill dummy chunk") {
                 @Override
                 public Object invoke(@NotNull final Invocation invocation) {

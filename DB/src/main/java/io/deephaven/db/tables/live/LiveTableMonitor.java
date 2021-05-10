@@ -590,22 +590,29 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * {@link DynamicNode#setRefreshing(boolean) refreshing}.  Additionally {@link #start()} may not be called.</p>
      */
     public void enableUnitTestMode() {
+        if (unitTestMode) {
+            return;
+        }
         if (!allowUnitTestMode) {
             throw new IllegalStateException("LiveTableMonitor.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
             throw new IllegalStateException("LiveTableMonitor.refreshThread is executing!");
         }
-        if (!LiveTableMonitor.DEFAULT.exclusiveLock().tryLock()) {
-            log.error().append("Lock is held when enabling unit test mode, with previous holder: ").append(unitTestModeHolder).endl();
-            ThreadDump.threadDump(System.err);
-            LiveTableMonitorLock.DebugAwareFunctionalLock lock = (LiveTableMonitorLock.DebugAwareFunctionalLock) LiveTableMonitor.DEFAULT.exclusiveLock();
-            throw new IllegalStateException("Lock is held when enabling unit test mode, with previous holder: " + lock.getDebugMessage());
-        }
-        LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
+        assertLockAvailable("enabling unit test mode");
         unitTestMode = true;
         unitTestModeHolder = ExceptionUtils.getStackTrace(new Exception());
-        unitTestRefreshThreadPool = Executors.newFixedThreadPool(1, new UnitTestRefreshThreadFactory());
+        unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
+    }
+
+    private void assertLockAvailable(@NotNull final String action) {
+        if (!LiveTableMonitor.DEFAULT.exclusiveLock().tryLock()) {
+            log.error().append("Lock is held when ").append(action).append(", with previous holder: ").append(unitTestModeHolder).endl();
+            ThreadDump.threadDump(System.err);
+            LiveTableMonitorLock.DebugAwareFunctionalLock lock = (LiveTableMonitorLock.DebugAwareFunctionalLock) LiveTableMonitor.DEFAULT.exclusiveLock();
+            throw new IllegalStateException("Lock is held when " + action + ", with previous holder: " + lock.getDebugMessage());
+        }
+        LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
     }
 
     /**
@@ -857,13 +864,16 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
+     * @param after Whether this is *after* a unit test completed, and hence whether held locks should result in an exception
      */
     @TestUseOnly
-    public void resetForUnitTests() {
-        resetForUnitTests(false, 0, 0, 0, 0);
+    public void resetForUnitTests(final boolean after) {
+        resetForUnitTests(after, false, 0, 0, 0, 0);
     }
 
-    public void resetForUnitTests(boolean randomizedNotifications, int seed, int maxRandomizedThreadCount, int notificationStartDelay, int notificationAdditionDelay) {
+    public void resetForUnitTests(boolean after,
+                                  final boolean randomizedNotifications, final int seed, final int maxRandomizedThreadCount,
+                                  final int notificationStartDelay, final int notificationAdditionDelay) {
         final List<String> errors = new ArrayList<>();
         this.notificationRandomizer = new Random(seed);
         this.notificationAdditionDelay = notificationAdditionDelay;
@@ -912,13 +922,17 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         } catch (InterruptedException e) {
             errors.add("Interrupted while trying to cleanup jobs in unit test refresh thread pool");
         }
-        unitTestRefreshThreadPool = Executors.newFixedThreadPool(1, new UnitTestRefreshThreadFactory());
+        unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
 
         if (!errors.isEmpty()) {
             final String message = "LTM reset for unit tests reported errors:\n\t" + String.join("\n\t", errors);
             System.err.println(message);
-            throw new IllegalStateException(message);
+            if (after) {
+                throw new IllegalStateException(message);
+            }
         }
+
+        assertLockAvailable("resetting for unit tests");
     }
 
     /**
@@ -1826,6 +1840,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
                 sharedLock().unlock();
             }
         }
+    }
+
+    private ExecutorService makeUnitTestRefreshExecutor() {
+        return Executors.newFixedThreadPool(1, new UnitTestRefreshThreadFactory());
     }
 
     @TestUseOnly

@@ -69,6 +69,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
         oldLogEnabled = CompilerTools.setLogEnabled(true);
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
@@ -105,22 +106,25 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         scope.release();
         CompilerTools.setLogEnabled(oldLogEnabled);
         LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
         AsyncClientErrorNotifier.setReporter(oldReporter);
 
-        if (TEST_ROOT_FILE.exists()) {
-            int tries = 0;
-            boolean success = false;
-            do {
-                try {
-                    FileUtils.deleteRecursively(TEST_ROOT_FILE);
-                    success = true;
-                } catch (Exception e) {
-                    System.gc();
-                    tries++;
-                }
-            } while (!success && tries < 10);
-            TestCase.assertTrue(success);
+        try {
+            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        } finally {
+            if (TEST_ROOT_FILE.exists()) {
+                int tries = 0;
+                boolean success = false;
+                do {
+                    try {
+                        FileUtils.deleteRecursively(TEST_ROOT_FILE);
+                        success = true;
+                    } catch (Exception e) {
+                        System.gc();
+                        tries++;
+                    }
+                } while (!success && tries < 10);
+                TestCase.assertTrue(success);
+            }
         }
     }
 

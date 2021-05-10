@@ -45,11 +45,13 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        CompilerTools.setLogEnabled(oldLogEnabled);
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
-        ChunkPoolReleaseTracking.checkAndDisable();
+        try {
+            super.tearDown();
+        } finally {
+            CompilerTools.setLogEnabled(oldLogEnabled);
+            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+            ChunkPoolReleaseTracking.checkAndDisable();
+        }
     }
 
     public void testSortedFirstOrLastBy() {

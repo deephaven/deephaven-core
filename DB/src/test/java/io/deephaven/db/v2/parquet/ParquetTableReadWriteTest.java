@@ -169,8 +169,8 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.ofLong("someLong").withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3").by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test");
-        TableManagementTools.writeTable(testTable, definition, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest, definition);
+        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
+        final Table fromDisk = TableManagementTools.readTable(dest, testTable.getDefinition());
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someLong").getGroupToRange());
     }
@@ -182,8 +182,8 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.ofString("someString").withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`").where("i % 2 == 0").by("someString").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test");
-        TableManagementTools.writeTable(testTable, definition, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest, definition);
+        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
+        final Table fromDisk = TableManagementTools.readTable(dest, testTable.getDefinition());
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someString").getGroupToRange());
     }
@@ -196,8 +196,8 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0").by("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test");
-        TableManagementTools.writeTable(testTable, definition, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest, definition);
+        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
+        final Table fromDisk = TableManagementTools.readTable(dest, testTable.getDefinition());
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
     }

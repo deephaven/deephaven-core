@@ -26,13 +26,13 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     public void setUp() throws Exception {
         super.setUp();
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testScatterPlotMatrix() {

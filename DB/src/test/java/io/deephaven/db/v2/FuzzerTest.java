@@ -208,7 +208,7 @@ public class FuzzerTest {
         final long seed1 = DBDateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
-                LiveTableMonitor.DEFAULT.resetForUnitTests();
+                LiveTableMonitor.DEFAULT.resetForUnitTests(true);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;

@@ -33,17 +33,6 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Arrays.asList;
 
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        ChunkPoolReleaseTracking.checkAndDisable();
-    }
 
     public void testNaturalJoinRehash() {
         setExpectError(false);

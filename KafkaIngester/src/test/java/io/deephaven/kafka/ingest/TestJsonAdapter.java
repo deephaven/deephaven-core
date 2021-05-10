@@ -30,11 +30,12 @@ public class TestJsonAdapter {
     @BeforeClass
     static public void setup() {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
     }
 
     @Before
     public void reset() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test

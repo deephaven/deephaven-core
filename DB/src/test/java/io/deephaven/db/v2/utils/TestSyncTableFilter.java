@@ -419,7 +419,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     private void testTableMapRandomized(int seed) {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true, seed, 4, 10, 5);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, seed, 4, 10, 5);
 
         final Random random = new Random(seed);
         final ColumnInfo[] columnInfo1;

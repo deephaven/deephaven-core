@@ -5,9 +5,9 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.TstUtils;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.TearDown;
 
 /**
  * Unit tests for liveness code.
@@ -17,22 +17,25 @@ public class TestLiveness extends TestCase {
     private boolean oldCheckLtm;
     private LivenessScope scope;
 
-    @Setup
+    @Before
+    @Override
     public void setUp() throws Exception {
         super.setUp();
+        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
     }
 
-    @TearDown
+    @After
+    @Override
     public void tearDown() throws Exception {
         super.tearDown();
         LivenessScopeStack.pop(scope);
         scope.release();
         LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")

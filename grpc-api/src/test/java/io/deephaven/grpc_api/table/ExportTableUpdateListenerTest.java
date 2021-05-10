@@ -17,7 +17,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
@@ -46,7 +45,7 @@ public class ExportTableUpdateListenerTest {
     @Before
     public void setup() {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
 
         scheduler = new TestControlledScheduler();
@@ -56,7 +55,7 @@ public class ExportTableUpdateListenerTest {
 
     @After
     public void tearDown() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
 
         scheduler = null;
         session = null;

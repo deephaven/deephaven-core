@@ -451,7 +451,11 @@ public class ParquetTableWriter {
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), nullValue);
                             repeatCount.clear();
                         } else if (supportNulls) {
-                            columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
+                            try {
+                                columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
+                            } catch (Exception e) {
+                                throw e;
+                            }
                         } else {
                             columnWriter.addPageNoNulls(bufferToWrite, transferObject.rowCount());
                         }

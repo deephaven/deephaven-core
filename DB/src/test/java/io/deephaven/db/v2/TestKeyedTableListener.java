@@ -26,6 +26,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     @Override
     public void setUp() {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2),
                 TstUtils.c("Key1", "A", "B", "C"),
@@ -42,7 +43,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testGetRow() {

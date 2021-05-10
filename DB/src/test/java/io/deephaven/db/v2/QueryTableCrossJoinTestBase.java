@@ -29,21 +29,10 @@ import static io.deephaven.db.tables.utils.TableTools.longCol;
 import static io.deephaven.db.v2.TstUtils.*;
 
 public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
+
     private final int numRightBitsToReserve;
     public QueryTableCrossJoinTestBase(int numRightBitsToReserve) {
         this.numRightBitsToReserve = numRightBitsToReserve;
-    }
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        ChunkPoolReleaseTracking.checkAndDisable();
     }
 
     private TstUtils.ColumnInfo[] getIncrementalColumnInfo(final String prefix, int numGroups) {

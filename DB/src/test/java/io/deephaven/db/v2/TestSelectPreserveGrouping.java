@@ -2,7 +2,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -17,9 +16,7 @@ import org.junit.After;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static io.deephaven.db.tables.utils.TableTools.intCol;
@@ -29,11 +26,12 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     private static final String ROOT = "TestSelectPreserveGrouping_Root";
 
     @After
-    public void cleanup() {
+    @Override
+    public void tearDown() throws Exception {
         try {
-            cleanupPersistence(ROOT);
+            super.tearDown();
         } finally {
-            LiveTableMonitor.DEFAULT.resetForUnitTests();
+            cleanupPersistence(ROOT);
         }
     }
 
