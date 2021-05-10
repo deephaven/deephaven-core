@@ -34,6 +34,10 @@ jobs:
           arguments: --scan --continue check
           gradle-version: wrapper
 
+      - name: Check for xml failures
+        run: |
+          ./.github/scripts/fail-on-xml-failures.sh
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: always()
