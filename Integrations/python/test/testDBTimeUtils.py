@@ -326,8 +326,6 @@ class TestDBTimeUtils(unittest.TestCase):
         with self.subTest(msg="overrideLastBusinessDateNyFromCurrentDateNy"):
             DBTimeUtils.overrideLastBusinessDateNyFromCurrentDateNy()
 
-        with self.subTest(msg="deliberate test failure"):
-            self.assertTrue(False)
     @unittest.skip("what to do?")
     def testDeprecated(self):
         """
