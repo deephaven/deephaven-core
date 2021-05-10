@@ -45,4 +45,4 @@ jobs:
         with:
           check_name: long-check-ci test report
           commit: ${{ github.event.workflow_run.head_sha }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          report_paths: '**/build/test-results/*/TEST-*.xml'
