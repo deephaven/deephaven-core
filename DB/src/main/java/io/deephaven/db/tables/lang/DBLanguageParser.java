@@ -576,6 +576,16 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
     }
 
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2) {
+
+        // var args (variable arity) methods always go after fixed arity methods when determining the proper overload
+        // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2
+        if (e1.isVarArgs() && !e2.isVarArgs()) {
+            return true;
+        }
+        if (e2.isVarArgs() && !e1.isVarArgs()) {
+            return false;
+        }
+
         final Class[] e1ParamTypes = e1.getParameterTypes();
         final Class[] e2ParamTypes = e2.getParameterTypes();
 
