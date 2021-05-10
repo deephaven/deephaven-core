@@ -39,4 +39,4 @@ jobs:
         if: always()
         with:
           name: long-check-ci-results
-          path: '**/build/test-results/test/TEST-*.xml'
+          path: '**/build/test-results/*/TEST-*.xml'

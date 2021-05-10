@@ -1,11 +1,9 @@
-import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
-import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
-import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
 }
+
+evaluationDependsOn ':Integrations'
 
 boolean java8 = JavaVersion.current().isJava8()
 List<Object> dependsList
@@ -20,59 +18,26 @@ TaskProvider<? extends Task> pyDoc
 
 // TODO core#430 remove this if, always follow this path
 if (!PyEnv.pythonEnabled(project)) {
-    def dockerContainerName = "sphinx-container-${UUID.randomUUID()}"
-    String dockerCopyLocation = "${buildDir}/docker-tmp-copy"
-    def prepareSphinxDocker = project.tasks.register('prepareSphinxDocker', Sync) {
-        from 'docker'
-        into 'build/docker'
-        from(sourceDir) {
-            into 'source'
+    pyDoc = Docker.registerDockerTask(project, "pythonDocs") {
+        copyIn {
+            from 'docker'
+            from(sourceDir) {
+                into 'source'
+            }
         }
-    }
-    def makeSphinxDockerImage = project.tasks.register('makeSphinxDockerImage', DockerBuildImage) {
-        dependsOn dependsList
-        dependsOn prepareSphinxDocker
-        def pythonAndJavaAndWheels = project(':grpc-api-base').tasks.findByName('buildDocker')
-        dependsOn pythonAndJavaAndWheels
-        inputs.file pythonAndJavaAndWheels.outputs.files.singleFile
-        images.add('deephaven/sphinx')
-    }
-    def createSphinxDockerContainer = project.tasks.register('createSphinxDockerContainer', DockerCreateContainer) {
-        dependsOn makeSphinxDockerImage
-        targetImageId makeSphinxDockerImage.get().getImageId()
-        containerName.set(dockerContainerName)
-    }
-    def removeSphinxContainer = project.tasks.register('removeSphinxContainer', DockerRemoveContainer) {
-        dependsOn createSphinxDockerContainer;
-        targetContainerId createSphinxDockerContainer.get().getContainerId()
-    }
-    def copyGeneratedHtml = project.tasks.register('copyGeneratedSphinxHtml', DockerCopyFileFromContainer) {
-        dependsOn createSphinxDockerContainer
-        finalizedBy removeSphinxContainer
-
-        inputs.property('imageId', makeSphinxDockerImage.get().getImageId())
-        outputs.dir(dockerCopyLocation)
-
-        targetContainerId createSphinxDockerContainer.get().getContainerId()
-
-        remotePath.set('/build')
-        hostPath.set(dockerCopyLocation)
-
-        doFirst {
-            delete(dockerCopyLocation)
+//        dockerfile = project.file('Dockerfile') // not needed with the above from 'docker'
+        parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+        imageName = 'deephaven/sphinx'
+        containerOutPath = '/build'
+        copyOut {
+            into docBuildDir
         }
-    }
-
-    pyDoc = project.tasks.register('pythonDocs', Sync) {
-        dependsOn copyGeneratedHtml
-        from dockerCopyLocation
-        into docBuildDir
     }
 }
 //TODO core#430 remove this path entirely
 if (java8 && PyEnv.pythonEnabled(project)) {
 
-    PyEnv env = PyEnv.getEnvs(project)
+    PyEnv env = PyEnv.getEnv(project)
     /**
      * This task converts the already-expanded README file into the notebook format
      */

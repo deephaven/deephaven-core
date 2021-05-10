@@ -707,8 +707,8 @@ if __name__ == '__main__':
         if assert_t in ['true', 't', '1']:
             assertNoChange = True
 
-    docRoot = os.path.join(devRoot, 'build', 'docs', 'javadoc')
-    outDir = os.path.join(devRoot, 'Integrations', 'python', 'deephaven', 'doc')
+    docRoot = os.path.join(devRoot, 'javadoc')
+    outDir = os.path.join(devRoot, 'out', 'doc')
 
     # junk any contents of outDir, if it exists - it's easier than trying to sync somehow
     if (not assertNoChange) and os.path.exists(outDir):
@@ -718,7 +718,7 @@ if __name__ == '__main__':
     currentDocs = populateCurrentDocs(outDir)
 
     # walk down the com directory of docRoot, and find all the html files
-    for root, dirs, files in os.walk(os.path.join(docRoot, 'com')):
+    for root, dirs, files in os.walk(os.path.join(docRoot, 'io')):
         for fil in files:
             fstem, fext = os.path.splitext(fil)
             if (fstem[0] == '.') or (fext != '.html') or (fstem.startswith('package-')):

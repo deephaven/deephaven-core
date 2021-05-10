@@ -1,5 +1,3 @@
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
-
 project(':deephaven-jpy') {
 
   apply plugin: 'com.bmuschko.docker-remote-api'
@@ -68,18 +66,18 @@ project(':deephaven-jpy') {
     }
     into 'build/docker'
   }
-
-  task buildDockerForRuntime(type: DockerBuildImage) {
+  Docker.registerDockerImage(project, 'buildDockerForRuntime') {
     dependsOn prepareDocker
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/java-and-python')
     target.set('runtime_reqs')
   }
 
-  task buildDockerForWheel(type: DockerBuildImage) {
+  Docker.registerDockerImage(project, 'buildDockerForWheel') {
     dependsOn prepareDocker
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/deephaven-jpy-wheel')
+
     target.set('build')
   }
 }
