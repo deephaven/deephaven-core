@@ -25,15 +25,17 @@ import java.nio.file.Paths;
 public class TestCodecColumns {
     private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
 
-    private static final ColumnDefinition<byte[]> VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
-    static {
-        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBA", byte[].class, byte.class, ByteArrayCodec.class.getName());
-    }
-
-    private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
-    static {
-        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, byte.class, ByteArrayCodec.class.getName(), "9,notnull", 9);
-    }
+    // TODO (deephaven/deephaven-core/issues/570): Fix component type handling and support for codec columns of primitive arrays
+//
+//    private static final ColumnDefinition<byte[]> VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
+//    static {
+//        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBA", byte[].class, byte.class, ByteArrayCodec.class.getName());
+//    }
+//
+//    private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
+//    static {
+//        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, byte.class, ByteArrayCodec.class.getName(), "9,notnull", 9);
+//    }
 
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
     static {
@@ -51,13 +53,13 @@ public class TestCodecColumns {
 //    }
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-            VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
-            FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
+//            VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
+//            FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION);
 
     private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
-            TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
-            TableTools.col("FWBA", new byte[]{7,8,9,10,11,12,13,14,15}, new byte[]{16,17,18,19,20,21,22,23,24}, new byte[]{0,0,0,0,0,0,0,0,0}),
+//            TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
+//            TableTools.col("FWBA", new byte[]{7,8,9,10,11,12,13,14,15}, new byte[]{16,17,18,19,20,21,22,23,24}, new byte[]{0,0,0,0,0,0,0,0,0}),
             TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null)
     );
 
