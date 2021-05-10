@@ -319,7 +319,7 @@ class TypeInfos {
         default Type createSchemaType(ColumnDefinition columnDefinition) {
             PrimitiveBuilder<PrimitiveType> builder;
             boolean isRepeating = true;
-            if (columnDefinition.getComponentType() != null) {
+            if (columnDefinition.getComponentType() != null && columnDefinition.getObjectCodecType() == ColumnDefinition.ObjectCodecType.DEFAULT) {
                 builder = getBuilder(isRequired(columnDefinition), false, columnDefinition.getComponentType());
             } else if (StringSet.class.isAssignableFrom(columnDefinition.getDataType())) {
                 builder = getBuilder(isRequired(columnDefinition), false, String.class);
