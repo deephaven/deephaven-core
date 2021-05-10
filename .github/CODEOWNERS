@@ -5,8 +5,18 @@
 # See https://about.sourcegraph.com/blog/a-different-way-to-think-about-code-ownership/
 # See https://bionic.fullstory.com/taming-github-codeowners-with-bots/
 
+# If no other code owner applies, default to our lead architect
+* @rcaudy
+
 # We want to make sure any changes to workflows are closely monitored, as they may have non-obvious
 # security implications.
 #
 # See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 /.github/workflows/ @devinrsmith
+
+/web/client-ui/ @mofojed
+/web/ @mofojed @niloc132
+
+/grpc-api/ @niloc132 @nbauernfeind
+/grpc-proxy/ @niloc132 @nbauernfeind
+/open-api/ @niloc132
