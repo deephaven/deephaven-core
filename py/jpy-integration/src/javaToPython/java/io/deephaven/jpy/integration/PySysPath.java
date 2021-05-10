@@ -14,6 +14,7 @@ public class PySysPath {
 
     System.out.println(jpyConfig);
 
+    jpyConfig.initPython();
     jpyConfig.startPython();
     List<String> path = getSysPath();
     System.out.println(path.stream().collect(Collectors.joining(System.lineSeparator())));
