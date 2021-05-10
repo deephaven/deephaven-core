@@ -6,6 +6,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.db.exceptions.OperationException;
 import io.deephaven.db.exceptions.QueryCancellationException;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.LiveWidget;
@@ -27,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
 
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
@@ -80,6 +83,10 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
                 runScript(script);
             }
         }
+
+        QueryLibrary.setCurrent(queryLibrary);
+        QueryLibrary.importClass(org.jpy.PyObject.class);
+
     }
 
     /**

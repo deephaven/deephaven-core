@@ -60,7 +60,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public static class CallableWrapper {
         private PyObject pyObject;
 
-        private CallableWrapper(PyObject pyObject) {
+        public CallableWrapper(PyObject pyObject) {
             this.pyObject = pyObject;
         }
 
