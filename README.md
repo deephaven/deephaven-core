@@ -123,7 +123,7 @@ docker run hello-world
 Once all of the required dependencies are installed and functioning, run:
 ```
     git clone git@github.com:deephaven/deephaven-core.git
-    cd core
+    cd deephaven-core
     ./gradlew prepareCompose
     docker-compose build
 ```
