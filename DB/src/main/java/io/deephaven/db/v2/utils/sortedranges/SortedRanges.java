@@ -4878,12 +4878,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return TreeIndexImpl.EMPTY;
         }
         if (keys instanceof SingleRange) {
-            return invertRangeOnNew(keys.ixFirstKey(), keys.ixLastKey(), maxPosition);
-        }
-        final Index.RangeIterator rit = keys.ixRangeIterator();
-        final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder();
-        if (invertOnNew(rit, builder, maxPosition)) {
-            return builder.getTreeIndexImpl();
+            final TreeIndexImpl r = invertRangeOnNew(keys.ixFirstKey(), keys.ixLastKey(), maxPosition);
+            if (r != null) {
+                return r;
+            }
+        } else {
+            final Index.RangeIterator rit = keys.ixRangeIterator();
+            final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder();
+            if (invertOnNew(rit, builder, maxPosition)) {
+                return builder.getTreeIndexImpl();
+            }
         }
         throw new IllegalArgumentException("keys argument has elements not in the index");
     }
