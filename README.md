@@ -123,17 +123,17 @@ docker run hello-world
 Once all of the required dependencies are installed and functioning, run:
 ```
     git clone git@github.com:deephaven/deephaven-core.git
-    cd core
+    cd deephaven-core
     ./gradlew prepareCompose
     docker-compose build
 ```
 These commands will create:
- 1. a `core` directory containing the source code.
+ 1. a `deephaven-core` directory containing the source code.
  2. Docker images containing everything needed to launch Deephaven.
  
 ### Run Deephaven Database
 
-From the `core` directory, run
+From the `deephaven-core` directory, run
 ```
     docker-compose up
 ```
@@ -186,7 +186,6 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 ## Resources
 * [deephaven.io](https://deephaven.io)
-* [docs.deephaven.io](https://docs.deephaven.io)
 
 
 ## Code Of Conduct
