@@ -33,3 +33,15 @@ jobs:
           # todo: eventually expand to more
           arguments: --scan allJavadoc
           gradle-version: wrapper
+
+      - name: Deploy Javadoc
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: build/docs/javadoc/
+          remote_path: deephaven-core/javadoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
