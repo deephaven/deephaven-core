@@ -1333,7 +1333,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         } else { // 'scope' was *not* a class; call accept() on it to print it and find its type.
             try {
                 // The incoming VisitArgs might have a "casting context", meaning that it wants us to cast to
-                // the proper type at the end. But we have a scope, and that scope needs to be evaluateid in
+                // the proper type at the end. But we have a scope, and that scope needs to be evaluated in
                 // a non-casting context. So we provide that here.
                 scopeType = scopeExpr.accept(this, printer.cloneWithCastingContext(null));
             } catch (RuntimeException e) {
