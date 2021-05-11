@@ -1,10 +1,10 @@
-name: Javadoc CI
+name: Docs CI
 
 on:
   pull_request:
-    branches: [ main, workflow ]
+    branches: [ main ]
   push:
-    branches: [ 'main', 'javadoc/**' ]
+    branches: [ main ]
     tags: [ 'v*' ]
 
 jobs:
@@ -41,6 +41,43 @@ jobs:
           switches: -avzr --delete
           path: build/docs/javadoc/
           remote_path: deephaven-core/javadoc/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+  pydoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+
+      - name: Generate Python Docs
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: pythonDocs
+          arguments: --scan sphinx:pythonDocs
+          gradle-version: wrapper
+
+      - name: Deploy Python Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/docs/
+          remote_path: deephaven-core/pydoc/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
