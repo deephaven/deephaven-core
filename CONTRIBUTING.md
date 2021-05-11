@@ -21,13 +21,25 @@ To get started quickly:
 Over time, forks will get out of sync with the upstream repository.  Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork) to stay up to date.
 
 ## Creating a Pull Request
-You can [create a pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork) from your pushed fork/branch using the GitHub UI. Alternative, you can use the [GitHub CLI](https://cli.github.com/manual/gh_pr_create) to create a PR from the command line. From within your own fork/branch on the command line, enter:
-```
-gh pr create -f -w
-```
-When prompted where the base repository should be, select `deephaven/deephaven-core`.
-When prompted where to push the branch, push to `<username>/deephaven-core`.
-Your changes should automatically get pushed, and then a new pull request with your changes should open up in your browser. Complete the information in the pull request and click `Create pull request`.
+Pull requests can be created through the GitHub website or through the GitHub CLI.
+
+### GitHub Web
+
+Follow the directions in [Creating A Pull Request From A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork).
+
+### GitHub CLI
+
+1) [Install GitHub command line tool](https://github.com/cli/cli).  
+2) On the command line, cd into your checked-out fork/branch.
+3) `gh pr create -f -w`
+    * Use `deephaven/deephaven-core` as the base repository.
+    * Use `<username>/deephaven-core` as the repository to push to.
+4) Your changes should automatically get pushed, and then a new pull request with your changes should open up in your browser. 
+5) Complete the information in the pull request and click `Create pull request`.
+
+For more information, see:
+* [gh pr create](https://cli.github.com/manual/gh_pr_create)
+* [CLI In Use](https://cli.github.com/manual/examples.html)
 
 ## Styleguide
 The [styleguide](style/README.md) is not global yet.
