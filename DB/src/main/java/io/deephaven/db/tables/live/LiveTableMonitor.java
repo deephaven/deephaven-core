@@ -209,7 +209,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     @NotNull
     private NotificationProcessor makeNotificationProcessor() {
-        log.info().append("LiveTableMonitor Update Threads: ").append(updateThreads).endl();
         if (updateThreads > 1) {
             final ThreadFactory threadFactory = new LiveTableMonitorThreadFactory(new ThreadGroup("LiveTableMonitor-updateExecutors"), "updateExecutor");
             return new ConcurrentNotificationProcessor(threadFactory, updateThreads);
@@ -539,6 +538,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
     public void start() {
+        log.info().append("LiveTableMonitor starting with ").append(updateThreads).append(" notification processing threads").endl();
         Assert.eqFalse(unitTestMode, "unitTestMode");
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {

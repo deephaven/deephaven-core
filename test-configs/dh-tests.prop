@@ -98,3 +98,7 @@ TreeIndexImplSequentialBuilder.check=true
 SortedRanges.debug=false
 
 SystemicObjectTracker.enabled=true
+
+# Disable some noise in test logs
+Liveness.countLogEnabled=false
+Liveness.cleanupLogEnabled=false
