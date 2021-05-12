@@ -186,6 +186,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 ## Resources
 * [deephaven.io](https://deephaven.io)
+* [Java docs](https://deephaven.io/core/javadoc/)
 
 
 ## Code Of Conduct
