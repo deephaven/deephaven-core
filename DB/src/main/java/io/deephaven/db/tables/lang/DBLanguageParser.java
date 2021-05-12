@@ -356,15 +356,16 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         final ArrayList<Method> acceptableMethods = new ArrayList<>();
 
         if (scope==null){
-            for (final Class classImport : staticImports){
-                for (Method method : classImport.getDeclaredMethods()){
+            for (final Class classImport : staticImports) {
+                for (Method method : classImport.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
                 }
             }
-            // for Python func call syntax without the explicit 'call' keyword, check if it is defined in Query scope
+            // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is defined in Query scope
             if (acceptableMethods.size() == 0) {
-                if ( variables.get(methodName) == PythonScopeJpyImpl.CallableWrapper.class) {
-                    for (Method method : PythonScopeJpyImpl.CallableWrapper.class.getDeclaredMethods()) {
+                Class methodCls = variables.get(methodName);
+                if (methodCls == PythonScopeJpyImpl.CallableWrapper.class || methodCls == groovy.lang.Closure.class) {
+                    for (Method method : methodCls.getDeclaredMethods()) {
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                     }
                 }
@@ -576,6 +577,16 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
     }
 
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2) {
+
+        // var args (variable arity) methods always go after fixed arity methods when determining the proper overload
+        // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2
+        if (e1.isVarArgs() && !e2.isVarArgs()) {
+            return true;
+        }
+        if (e2.isVarArgs() && !e1.isVarArgs()) {
+            return false;
+        }
+
         final Class[] e1ParamTypes = e1.getParameterTypes();
         final Class[] e2ParamTypes = e2.getParameterTypes();
 
@@ -1515,8 +1526,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
 
         expressions=convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
 
-        if (method.getDeclaringClass() == PythonScopeJpyImpl.CallableWrapper.class) {
-            if (scope == null) { // python func call
+        Class methodCls = method.getDeclaringClass();
+        if (methodCls == PythonScopeJpyImpl.CallableWrapper.class || methodCls == groovy.lang.Closure.class) {
+            if (scope == null) { // python func call or Groovy closure call
                /*  python func call
                     1. the func is defined at the main module level and already wrapped in CallableWrapper
                     2. the func will be called via CallableWrapper.call() method
