@@ -50,7 +50,7 @@ pyMods.each {
 }
 
 // the name of the root project is the default groupId used for published artifacts.
-rootProject.name='iris'
+rootProject.name='deephaven'
 
 include 'fishconfig-local'
 include 'DHProcess'
