@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
@@ -19,7 +20,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.db.tables.utils.TableTools.stringCol;
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
@@ -269,22 +270,31 @@ public class TestKeyedArrayBackedMutableTable {
 
     private void handleDelayedRefresh(final BaseArrayBackedMutableTable table, final FunctionalInterfaces.ThrowingRunnable<IOException> action) throws Exception {
         final Thread refreshThread;
-        final Semaphore gate = new Semaphore(0);
-        table.setOnPendingChange(gate::release);
+        final CountDownLatch gate = new CountDownLatch(1);
+
+        table.setOnPendingChange(gate::countDown);
         try {
             refreshThread = new Thread(() -> {
-                gate.acquireUninterruptibly();
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(table::refresh);
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                    try {
+                        gate.await();
+                    } catch (InterruptedException ignored) {
+                        // If this unexpected interruption happens, the test thread may hang in action.run()
+                        // indefinitely. Best to hope it's already queued the pending action and proceed with refresh.
+                    }
+                    table.refresh();
+                });
             });
+
             refreshThread.start();
             action.run();
-
         } finally {
             table.setOnPendingChange(null);
         }
         try {
             refreshThread.join();
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException e) {
+            throw new UncheckedDeephavenException("Interrupted unexpectedly while waiting for refresh cycle to complete", e);
         }
     }
 }
