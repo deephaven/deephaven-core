@@ -4,8 +4,6 @@
 
 package io.deephaven.db.tables.live;
 
-import io.deephaven.base.Function;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
@@ -308,152 +306,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     //endregion Accessors for the shared and exclusive locks
-
-    //region Deprecated Lock implementation, delegates to exclusive lock
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.lock().
-     */
-    @Deprecated
-    public final void lock() {
-        exclusiveLock().lock();
-    }
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.lockInterruptibly().
-     */
-    @Deprecated
-    public final void lockInterruptibly() throws InterruptedException {
-        exclusiveLock().lockInterruptibly();
-    }
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.tryLock().
-     */
-    @Deprecated
-    public final boolean tryLock() {
-        return exclusiveLock().tryLock();
-    }
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.tryLock().
-     */
-    @Deprecated
-    public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
-        return exclusiveLock().tryLock(time, unit);
-    }
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.unlock().
-     */
-    @Deprecated
-    public final void unlock() {
-        exclusiveLock().unlock();
-    }
-
-    /**
-     * @deprecated Prefer {{@link #exclusiveLock()}}.newCondition().
-     */
-    @Deprecated
-    public final Condition newCondition() {
-        return exclusiveLock().newCondition();
-    }
-
-    //endregion Deprecated Lock implementation, delegates to exclusive lock
-
-    //region Legacy/deprecated lock state accessors (See AwareLock for replacements)
-
-    /**
-     * Test if this thread holds the lock (exclusively).
-     *
-     * @return Whether the current thread holds the lock exclusively
-     * @deprecated See {@link #exclusiveLock()} and {@link io.deephaven.util.locks.AwareLock#isHeldByCurrentThread()}
-     */
-    @Deprecated
-    public final boolean isLockedByCurrentThread() {
-        return exclusiveLock().isHeldByCurrentThread();
-    }
-
-    //endregion Legacy/deprecated lock state accessors (See AwareLock for replacements)
-
-    //region Legacy/deprecated lock-protected runners for functional interfaces (see FunctionalLock for replacements)
-
-    /**
-     * Safely execute the supplied code while holding the lock.
-     *
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     * @deprecated See {@link #exclusiveLock()} and {@link io.deephaven.util.locks.FunctionalLock#computeLocked(io.deephaven.util.FunctionalInterfaces.ThrowingSupplier)}
-     */
-    @Deprecated
-    public final <T> T doLocked(@NotNull final Supplier<T> r) {
-        return exclusiveLock().computeLocked(r::get);
-    }
-
-    /**
-     * Safely execute the supplied code while holding the lock.
-     * Lock acquisition may be interrupted.
-     *
-     * @param r the stuff to run
-     * @return the result of the stuff to run
-     * @throws InterruptedException if the thread was interrupted attempting to acquire the lock
-     * @deprecated See {@link #exclusiveLock()} and
-     * {@link io.deephaven.util.locks.FunctionalLock#computeLockedInterruptibly(io.deephaven.util.FunctionalInterfaces.ThrowingSupplier)}
-     */
-    @Deprecated
-    public final <T> T doLockedInterruptible(@NotNull final Supplier<T> r) throws InterruptedException {
-        return exclusiveLock().computeLockedInterruptibly(r::get);
-    }
-
-    /**
-     * Safely execute the supplied code while holding the lock.
-     *
-     * @param r the stuff to run
-     * @deprecated See {@link #exclusiveLock()} and {@link io.deephaven.util.locks.FunctionalLock#doLocked(io.deephaven.util.FunctionalInterfaces.ThrowingRunnable)}
-     */
-    @Deprecated
-    public final void doLocked(@NotNull final Procedure.Nullary r) {
-        exclusiveLock().doLocked(r::call);
-    }
-
-    /**
-     * Safely execute the supplied function while holding the lock.
-     *
-     * @param r the function to run
-     * @return the return value of the function
-     * @deprecated See {@link #exclusiveLock()} and {@link io.deephaven.util.locks.FunctionalLock#computeLocked(io.deephaven.util.FunctionalInterfaces.ThrowingSupplier)}
-     */
-    @Deprecated
-    public final <R> R computeLocked(@NotNull final Function.Nullary<R> r) {
-        return exclusiveLock().computeLocked(r::call);
-    }
-
-    /**
-     * Safely execute the supplied code while holding the lock.
-     *
-     * @param r the stuff to run
-     * @deprecated See {@link #exclusiveLock()} and
-     * {@link io.deephaven.util.locks.FunctionalLock#doLockedInterruptibly(io.deephaven.util.FunctionalInterfaces.ThrowingRunnable)}
-     */
-    @Deprecated
-    public final void doLockedInterruptible(@NotNull final Procedure.Nullary r) throws InterruptedException {
-        exclusiveLock().doLockedInterruptibly(r::call);
-    }
-
-    /**
-     * Safely execute the supplied code while holding the lock.
-     *
-     * @param r the stuff to run
-     * @throws T exception of type T
-     * @deprecated See {@link #exclusiveLock()} and
-     * {@link io.deephaven.util.locks.FunctionalLock#doLocked(FunctionalInterfaces.ThrowingRunnable)}
-     */
-    @Deprecated
-    public final <T extends Exception> void doLockedThrowing(@NotNull final Procedure.ThrowingNullary<T> r) throws T {
-        exclusiveLock().doLocked(r::call);
-    }
-
-    //endregion Legacy/deprecated lock-protected runners for functional interfaces (see FunctionalLock for replacements)
 
     /**
      * Test if this thread is part of our refresh thread executor service.
@@ -903,14 +755,14 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
         CleanupReferenceProcessorInstance.resetAllForUnitTests();
 
-        ensureUnlocked(errors);
+        ensureUnlocked("unit test reset thread", errors);
 
         if (refreshThread.isAlive()) {
             errors.add("LTM refreshThread isAlive");
         }
 
         try {
-            unitTestRefreshThreadPool.submit(() -> ensureUnlocked(errors)).get();
+            unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test refresh pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
             errors.add("Failed to ensure LTM unlocked from unit test refresh thread pool: " + e.toString());
         }
@@ -1823,10 +1675,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     @TestUseOnly
-    private void ensureUnlocked(@Nullable final List<String> errors) {
+    private void ensureUnlocked(@NotNull final String callerDescription, @Nullable final List<String> errors) {
         if (exclusiveLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add("LTM exclusive lock is still held");
+                errors.add(callerDescription + ": LTM exclusive lock is still held");
             }
             while (exclusiveLock().isHeldByCurrentThread()) {
                 exclusiveLock().unlock();
@@ -1834,7 +1686,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         }
         if (sharedLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add("LTM shared lock is still held");
+                errors.add(callerDescription + ": LTM shared lock is still held");
             }
             while (sharedLock().isHeldByCurrentThread()) {
                 sharedLock().unlock();
@@ -1858,7 +1710,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
             final Thread thread = super.newThread(runnable);
             final Thread.UncaughtExceptionHandler existing = thread.getUncaughtExceptionHandler();
             thread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
-                ensureUnlocked(null);
+                ensureUnlocked("unit test refresh pool thread exception handler", null);
                 existing.uncaughtException(errorThread, throwable);
             });
             return thread;
