@@ -118,7 +118,7 @@ allprojects*.tasks*.withType(JavaCompile)*.configureEach {
 
 subprojects {
     Project p ->
-    p.group = 'io.deephaven'
+    p.group = 'iris'
     p.version = globalVersion
     p.plugins.apply('io.deephaven.java-conventions')
     License.createFrom(p).register(p)
