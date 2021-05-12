@@ -14,6 +14,7 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.UpdatableTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.shared.data.InputTableDefinition;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,13 +24,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 abstract class BaseArrayBackedMutableTable extends UpdatableTable {
+
     private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[]{true, false, null};
+
     protected final InputTableDefinition inputTableDefinition;
     private final List<PendingChange> pendingChanges = Collections.synchronizedList(new ArrayList<>());
     private final AtomicLong nextSequence = new AtomicLong(0);
     private final AtomicLong processedSequence = new AtomicLong(0);
     private final Map<String, Object[]> enumValues;
+
     private String description = getDefaultDescription();
+    private Runnable onPendingChange = () -> LiveTableMonitor.DEFAULT.requestRefresh(this);
 
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
@@ -78,6 +83,16 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
         this.description = newDescription;
         return this;
+    }
+
+    /**
+     * For unit test use only. Specify the function to invoke after enqueuing a pending change.
+     *
+     * @param onPendingChange The function to invoke after enqueuing a pending change, or null to restore the default behavior
+     */
+    @TestUseOnly
+    void setOnPendingChange(final Runnable onPendingChange) {
+        this.onPendingChange = onPendingChange == null ? () -> LiveTableMonitor.DEFAULT.requestRefresh(this) : onPendingChange;
     }
 
     private void processPending(IndexChangeRecorder indexChangeRecorder) {
@@ -187,7 +202,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             // during our LTM refresh
             final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
             pendingChanges.add(pendingChange);
-            LiveTableMonitor.DEFAULT.requestRefresh(BaseArrayBackedMutableTable.this);
+            onPendingChange.run();
             return pendingChange;
         }
 
@@ -210,7 +225,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             validateDelete(table.getDefinition());
             final PendingChange pendingChange = new PendingChange(doSnap(table, index), true, false);
             pendingChanges.add(pendingChange);
-            LiveTableMonitor.DEFAULT.requestRefresh(BaseArrayBackedMutableTable.this);
+            onPendingChange.run();
             waitForSequence(pendingChange.sequence);
         }
 
