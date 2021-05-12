@@ -156,8 +156,4 @@ By default only runs in CI; to run locally:
         // allow `-x test` to disable *all* test tasks, even if they aren't named test.
         return !('test' in (p.gradle.startParameter.excludedTaskNames))
     }
-
-    static boolean allowFailure(Project project) {
-        return project.findProperty('allowFailure') != 'false'
-    }
 }

@@ -32,13 +32,9 @@ jobs:
         with:
           job-id: checks
           # todo: eventually expand to more
-          arguments: --scan quick
+          arguments: --scan --continue quick
           gradle-version: wrapper
 
-      - name: Check for xml failures
-        run: |
-          ./.github/scripts/fail-on-xml-failures.sh
-        
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: always()
