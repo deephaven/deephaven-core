@@ -4,6 +4,8 @@ plugins {
 
 gradle.ext.buildStartTime = new Date()
 
+rootProject.name='Deephaven Community Core'
+
 String[] bins = ['configs', 'test-configs' ]
 
 String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
@@ -48,9 +50,6 @@ pyMods.each {
         include(name)
         project(":$name").projectDir = file(dir)
 }
-
-// the name of the root project is the default groupId used for published artifacts.
-rootProject.name='deephaven'
 
 include 'fishconfig-local'
 include 'DHProcess'
