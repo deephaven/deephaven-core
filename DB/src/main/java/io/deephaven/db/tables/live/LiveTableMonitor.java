@@ -903,14 +903,14 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
         CleanupReferenceProcessorInstance.resetAllForUnitTests();
 
-        ensureUnlocked(errors);
+        ensureUnlocked("unit test reset thread", errors);
 
         if (refreshThread.isAlive()) {
             errors.add("LTM refreshThread isAlive");
         }
 
         try {
-            unitTestRefreshThreadPool.submit(() -> ensureUnlocked(errors)).get();
+            unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test refresh pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
             errors.add("Failed to ensure LTM unlocked from unit test refresh thread pool: " + e.toString());
         }
@@ -1823,10 +1823,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     @TestUseOnly
-    private void ensureUnlocked(@Nullable final List<String> errors) {
+    private void ensureUnlocked(@NotNull final String callerDescription, @Nullable final List<String> errors) {
         if (exclusiveLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add("LTM exclusive lock is still held");
+                errors.add(callerDescription + ": LTM exclusive lock is still held");
             }
             while (exclusiveLock().isHeldByCurrentThread()) {
                 exclusiveLock().unlock();
@@ -1834,7 +1834,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         }
         if (sharedLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add("LTM shared lock is still held");
+                errors.add(callerDescription + ": LTM shared lock is still held");
             }
             while (sharedLock().isHeldByCurrentThread()) {
                 sharedLock().unlock();
@@ -1858,7 +1858,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
             final Thread thread = super.newThread(runnable);
             final Thread.UncaughtExceptionHandler existing = thread.getUncaughtExceptionHandler();
             thread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
-                ensureUnlocked(null);
+                ensureUnlocked("unit test refresh pool thread exception handler", null);
                 existing.uncaughtException(errorThread, throwable);
             });
             return thread;
