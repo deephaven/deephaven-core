@@ -13,7 +13,7 @@ import java.util.List;
  * Test suite for Configuration.
  *
  * Must provide a Configuration.rootFile property in the VM arguments when running from IntelliJ, even though we set that in most of the tests.
- * -ea -DConfiguration.rootFile=resources/util-tests.prop -Ddevroot=/ -Dworkspace=/ -DcacheDir=/cache
+ * -ea -DConfiguration.rootFile=resources/lib-tests.prop -Ddevroot=/ -Dworkspace=/ -DcacheDir=/cache
  */
 public class TestConfiguration extends TestCase {
     private final String FILENAME_PROPERTY = Configuration.getInstance().getConfFileProperty();
