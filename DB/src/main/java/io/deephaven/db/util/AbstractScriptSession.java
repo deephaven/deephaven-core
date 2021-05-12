@@ -66,6 +66,17 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
                 return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
             }
         };
+
+        //
+        // This is a temporary work around to other short comings related to {@link QueryScope},
+        // {@link io.deephaven.compilertools.CompilerTools.Context}, and {@link io.deephaven.db.tables.libs.QueryLibrary}
+        // not yet able to consistently support multiple-script-sessions.
+        //
+        if (!(this instanceof NoLanguageDeephavenSession)) {
+            CompilerTools.setDefaultContext(compilerContext);
+            QueryScope.setDefaultScope(getQueryScope());
+            QueryLibrary.setDefaultLibrary(queryLibrary);
+        }
     }
 
     @Override
@@ -73,24 +84,24 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         final Map<String, Object> existingScope = new HashMap<>(getVariables());
 
         // store pointers to exist query scope static variables
-        final QueryLibrary prevQueryLibrary = QueryLibrary.getCurrent();
+        final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
         final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
-        final QueryScope prevQueryScope = QueryScope.getDefaultInstance();
+        final QueryScope prevQueryScope = QueryScope.getScope();
 
         // retain any objects which are created in the executed code, we'll release them when the script session closes
         try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
             // point query scope static state to our session's state
-            QueryScope.setDefaultInstance(getQueryScope());
+            QueryScope.setScope(getQueryScope());
             CompilerTools.setContext(compilerContext);
-            QueryLibrary.setCurrent(queryLibrary);
+            QueryLibrary.setLibrary(queryLibrary);
 
             // actually evaluate the script
             evaluate(script, scriptName);
         } finally {
             // restore pointers to query scope static variables
-            QueryScope.setDefaultInstance(prevQueryScope);
+            QueryScope.setScope(prevQueryScope);
             CompilerTools.setContext(prevCompilerContext);
-            QueryLibrary.setCurrent(prevQueryLibrary);
+            QueryLibrary.setLibrary(prevQueryLibrary);
         }
 
         final Map<String, Object> newScope = new HashMap<>(getVariables());

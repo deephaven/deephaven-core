@@ -6,6 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.remote.preview.ColumnPreviewManager;
 import io.deephaven.db.util.ExportedObjectType;
+import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
@@ -21,7 +22,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.*;
-import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -36,7 +36,10 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
-    public static final boolean ALLOW_ADMIN_CONSOLE_ATTACHMENT = Configuration.getInstance().getBooleanWithDefault("ConsoleAttachment.allowAdmins", false);
+    public static final String WORKER_CONSOLE_TYPE = Configuration.getInstance().getStringWithDefault("io.deephaven.console", "python");
+
+    // There is a bit of work required to get multiple concurrent session to work without interfering with each other; for now we'll share one.
+    private final ScriptSession globalSession;
 
     private final Map<String, Provider<ScriptSession>> scriptTypes;
     private final SessionService sessionService;
@@ -49,6 +52,24 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
         this.liveTableMonitor = liveTableMonitor;
+
+        if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
+            throw new IllegalArgumentException("console type not found: " + WORKER_CONSOLE_TYPE);
+        }
+
+        globalSession = scriptTypes.get(WORKER_CONSOLE_TYPE).get();
+    }
+
+    @Override
+    public void getConsoleTypes(final GetConsoleTypesRequest request,
+                                final StreamObserver<GetConsoleTypesResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            // Multiple sessions are currently only partially supported; for now force global session per worker.
+            responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
+                    .addConsoleTypes(WORKER_CONSOLE_TYPE)
+                    .build());
+            responseObserver.onCompleted();
+        });
     }
 
     @Override
@@ -58,13 +79,24 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO auth hook, ensure the user can do this (owner of worker or admin)
 //            session.getAuthContext().requirePrivilege(CreateConsole);
 
+            // Multiple sessions are currently only partially supported; for now force global session per worker.
+            final String sessionType = request.getSessionType();
+            if (!scriptTypes.containsKey(sessionType)) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "session type '" + sessionType + "' is not supported");
+            }
+
             session.newExport(request.getResultId())
                     .onError(responseObserver::onError)
                     .submit(() -> {
-                        //ConsoleAttachmentQuery
-                        String sessionType = request.getSessionType();
 
-                        final ScriptSession scriptSession = scriptTypes.get(sessionType).get();
+                        final ScriptSession script;
+                        if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
+                            script = globalSession;
+                        } else {
+                            script = new NoLanguageDeephavenSession(sessionType);
+                            log.error().append("Session type '" + sessionType + "' is disabled. " +
+                                    "Use the More Actions icon to swap to session type '" + WORKER_CONSOLE_TYPE + "'.").endl();
+                        }
 
                         safelyExecute(() -> {
                             responseObserver.onNext(StartConsoleResponse.newBuilder()
@@ -72,7 +104,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                     .build());
                             responseObserver.onCompleted();
                         });
-                        return scriptSession;
+
+                        // Multiple sessions are currently only partially supported; for now force global session per worker.
+                        return script;
                     });
         });
     }
@@ -180,38 +214,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         return table;
                     }));
         });
-    }
-
-    // TODO fetch other object types
-    @Override
-    public void fetchPandasTable(FetchPandasTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        super.fetchPandasTable(request, responseObserver);
-    }
-    @Override
-    public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
-        super.fetchFigure(request, responseObserver);
-    }
-    @Override
-    public void fetchTableMap(FetchTableMapRequest request, StreamObserver<FetchTableMapResponse> responseObserver) {
-        super.fetchTableMap(request, responseObserver);
-    }
-
-    // TODO(core#101) autocomplete support
-    @Override
-    public void openDocument(OpenDocumentRequest request, StreamObserver<OpenDocumentResponse> responseObserver) {
-        super.openDocument(request, responseObserver);
-    }
-    @Override
-    public void changeDocument(ChangeDocumentRequest request, StreamObserver<ChangeDocumentResponse> responseObserver) {
-        super.changeDocument(request, responseObserver);
-    }
-    @Override
-    public void getCompletionItems(GetCompletionItemsRequest request, StreamObserver<GetCompletionItemsResponse> responseObserver) {
-        super.getCompletionItems(request, responseObserver);
-    }
-    @Override
-    public void closeDocument(CloseDocumentRequest request, StreamObserver<CloseDocumentResponse> responseObserver) {
-        super.closeDocument(request, responseObserver);
     }
 
     private class LogBufferStreamAdapter extends LivenessArtifact implements LogBufferRecordListener {

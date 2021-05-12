@@ -84,9 +84,13 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             }
         }
 
-        QueryLibrary.setCurrent(queryLibrary);
-        QueryLibrary.importClass(org.jpy.PyObject.class);
-
+        final QueryLibrary currLibrary = QueryLibrary.getLibrary();
+        try {
+            QueryLibrary.setLibrary(queryLibrary);
+            QueryLibrary.importClass(org.jpy.PyObject.class);
+        } finally {
+            QueryLibrary.setLibrary(currLibrary);
+        }
     }
 
     /**

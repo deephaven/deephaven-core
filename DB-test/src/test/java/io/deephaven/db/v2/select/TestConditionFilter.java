@@ -378,12 +378,12 @@ public class TestConditionFilter extends PythonTest {
             validate(expression, keepIndex, dropIndex, FormulaParserConfiguration.Deephaven);
         }
         if (testPython) {
-            QueryScope currentScope = QueryScope.getDefaultInstance();
+            QueryScope currentScope = QueryScope.getScope();
             try {
                 if (pythonScope == null) {
                     pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(
                             getMainGlobals().asDict())).getQueryScope();
-                    QueryScope.setDefaultInstance(pythonScope);
+                    QueryScope.setScope(pythonScope);
                 }
                 for (Param param : currentScope.getParams(currentScope.getParamNames())) {
                     pythonScope.putParam(param.getName(),param.getValue());
@@ -391,7 +391,7 @@ public class TestConditionFilter extends PythonTest {
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");
                 validate(expression, keepIndex, dropIndex, FormulaParserConfiguration.Numba);
             } finally {
-                QueryScope.setDefaultInstance(currentScope);
+                QueryScope.setScope(currentScope);
             }
         }
 

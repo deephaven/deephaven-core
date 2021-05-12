@@ -26,7 +26,7 @@ public class CompletionLookups {
     private final Map<String, TableDefinition> referencedTables;
 
     public CompletionLookups() {
-        ql = new Lazy<>(QueryLibrary::getCurrent);
+        ql = new Lazy<>(QueryLibrary::getLibrary);
         statics = new Lazy<>(()->{
             ql.get();
             return QueryLibrary.getStaticImports();

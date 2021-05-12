@@ -141,6 +141,15 @@ This will start the database.  The console will fill with status and logging out
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.  
 
+## Run Deephaven w/Groovy shell
+
+Make a copy of `.env`. Change the property `IO_DEEPHAVEN_CONSOLE` from `python` to `groovy`.
+
+From the `core` directory, run
+```
+    docker-compose --env-file path/to/local/copy up
+```
+
 ### Run Deephaven IDE
 
 Once Deephaven Database is running, you can launch a Deephaven IDE in your web browser.  Deephaven IDE allows you

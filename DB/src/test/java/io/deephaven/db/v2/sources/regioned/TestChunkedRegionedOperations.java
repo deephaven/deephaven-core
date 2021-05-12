@@ -134,16 +134,16 @@ public class TestChunkedRegionedOperations {
 
     @Before
     public void setUp() throws Exception {
-        originalScope = QueryScope.getDefaultInstance();
+        originalScope = QueryScope.getScope();
         final QueryScope queryScope = new QueryScope.StandaloneImpl();
         Arrays.stream(originalScope.getParams(originalScope.getParamNames())).forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
         queryScope.putParam("nowNanos", DBTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters", IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[]{(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new StringSetArrayWrapper());
         queryScope.putParam("stripeSize", STRIPE_SIZE);
-        QueryScope.setDefaultInstance(queryScope);
+        QueryScope.setScope(queryScope);
 
-        QueryLibrary.startQuery();
+        QueryLibrary.resetLibrary();
         QueryLibrary.importClass(BigInteger.class);
         QueryLibrary.importClass(StringSet.class);
         QueryLibrary.importClass(StringSetArrayWrapper.class);
@@ -304,8 +304,8 @@ public class TestChunkedRegionedOperations {
             actual.releaseCachedResources();
         }
 
-        QueryScope.setDefaultInstance(originalScope);
-        QueryLibrary.endQuery();
+        QueryScope.setScope(originalScope);
+        QueryLibrary.resetLibrary();
 
         if (dataDirectory.exists()) {
             TrackedFileHandleFactory.getInstance().closeAll();

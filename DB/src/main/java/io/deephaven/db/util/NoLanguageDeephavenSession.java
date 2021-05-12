@@ -17,10 +17,16 @@ import java.util.function.Supplier;
 public class NoLanguageDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final String SCRIPT_TYPE = "NoLanguage";
 
+    private final String scriptType;
     private final Map<String, Object> variables;
     private final QueryScope queryScope = new QueryScope.SynchronizedScriptSessionImpl(this);
 
     public NoLanguageDeephavenSession() {
+        this(SCRIPT_TYPE);
+    }
+
+    public NoLanguageDeephavenSession(final String scriptType) {
+        this.scriptType = scriptType;
         variables = new LinkedHashMap<>();
     }
 
@@ -50,6 +56,9 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     protected void evaluate(String command, @Nullable String scriptName) {
+        if (!scriptType.equals(SCRIPT_TYPE)) {
+            throw new UnsupportedOperationException(scriptType + " session mode is not enabled");
+        }
         throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support evaluate");
     }
 

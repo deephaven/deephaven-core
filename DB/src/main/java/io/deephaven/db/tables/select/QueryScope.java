@@ -28,17 +28,46 @@ public abstract class QueryScope implements LogOutputAppendable {
     // Singleton Management (ThreadLocal eliminated for the time being)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static volatile QueryScope defaultInstance = new StandaloneImpl();
+    private static volatile QueryScope defaultScope = null;
+    private static final ThreadLocal<QueryScope> currScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
+
+    private static QueryScope getDefaultScope() {
+        if (defaultScope == null) {
+            synchronized (QueryScope.class) {
+                if (defaultScope == null) {
+                    defaultScope = new StandaloneImpl();
+                }
+            }
+        }
+        return defaultScope;
+    }
+
+    /**
+     * This is a work around for incomplete support for multiple script sessions. For now there will be a global session
+     * for the worker.
+     *
+     * @param scope the script session's query scope
+     */
+    public static synchronized void setDefaultScope(final QueryScope scope) {
+        if (defaultScope != null) {
+            throw new IllegalStateException("it's too late to set default scope; it's already set");
+        }
+        defaultScope = scope;
+    }
 
     /**
      * Sets the default {@link QueryScope} to be used in the current context. By default there is a
      * {@link StandaloneImpl} created by the static initializer and set as the defaultInstance. The
      * method allows the use of a new or separate instance as the default instance for static methods.
      *
-     * @param queryScope {@link QueryScope} to set as the new default instance.
+     * @param queryScope {@link QueryScope} to set as the new default instance; null clears the scope.
      */
-    public static void setDefaultInstance(@NotNull final QueryScope queryScope) {
-        defaultInstance = queryScope;
+    public static synchronized void setScope(final QueryScope queryScope) {
+        if (queryScope == null) {
+            currScope.remove();
+        } else {
+            currScope.set(queryScope);
+        }
     }
 
     /**
@@ -46,8 +75,8 @@ public abstract class QueryScope implements LogOutputAppendable {
      *
      * @return {@link QueryScope}
      */
-    public static QueryScope getDefaultInstance() {
-        return defaultInstance;
+    public static QueryScope getScope() {
+        return currScope.get();
     }
 
     /**
@@ -59,7 +88,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param <T> type of the parameter/value.
      */
     public static <T> void addParam(final String name, final T value) {
-        getDefaultInstance().putParam(name, value);
+        getScope().putParam(name, value);
     }
 
     /**
@@ -68,7 +97,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param object object whose fields will be added.
      */
     public static void addObjectFields(final Object object) {
-        getDefaultInstance().putObjectFields(object);
+        getScope().putObjectFields(object);
     }
 
     /**
@@ -80,7 +109,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @throws MissingVariableException variable name is not defined.
      */
     public static <T> T getParamValue(final String name) throws MissingVariableException {
-        return getDefaultInstance().readParamValue(name);
+        return getScope().readParamValue(name);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

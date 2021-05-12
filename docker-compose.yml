@@ -20,6 +20,7 @@ services:
       # cgroups v2 resource reservations only work w/ java 15+ ATM, so it's best for our java processes to be explicit
       # with max memory.
       - JAVA_TOOL_OPTIONS=-Xmx700m
+      - JAVA_TOOL_OPTIONS=-Dio.deephaven.console=${IO_DEEPHAVEN_CONSOLE}
 #      - JAVA_TOOL_OPTIONS=-Dlogback.configurationFile=logback-debug.xml
 #      - JAVA_TOOL_OPTIONS=-Dlogback.configurationFile=logback-minimal.xml
     expose:

@@ -92,7 +92,7 @@ public class FuzzerTest {
 
     @After
     public void tearDown() throws Exception {
-        QueryScope.setDefaultInstance(new QueryScope.StandaloneImpl());
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
         cleanupPersistence();
         framework.tearDown();
     }
@@ -103,7 +103,7 @@ public class FuzzerTest {
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(RunScripts.serviceLoader());
-        QueryScope.setDefaultInstance(session.getQueryScope());
+        QueryScope.setScope(session.getQueryScope());
         return session;
     }
 

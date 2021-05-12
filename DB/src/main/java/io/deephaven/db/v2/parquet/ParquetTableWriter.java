@@ -897,7 +897,7 @@ public class ParquetTableWriter {
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         Map<?, Index> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
         RangeCollector collector;
-        QueryScope.getDefaultInstance().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
+        QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
         Table firstOfTheKey = tableToSave.view(columnName).where("__range_collector_" + columnName + "__.next(" + columnName + ")");
 
         Table contiguousOccurrences = firstOfTheKey.countBy("c", columnName).where("c != 1");

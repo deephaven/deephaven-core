@@ -27,7 +27,6 @@ import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
 
-import javax.inject.Inject;
 import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
@@ -697,6 +696,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
             List<String> paths = StreamSupport.stream(initScripts.spliterator(), false)
                 .sorted(Comparator.comparingInt(InitScript::priority))
                 .map(InitScript::getScriptPath)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
             return new RunScripts(paths);
         }
@@ -717,18 +717,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     public interface InitScript {
-
         String getScriptPath();
         int priority();
     }
 
     public static class Db implements InitScript {
-
-        @Inject
-        public Db() {
-
-        }
-
         @Override
         public String getScriptPath() {
             return "groovy/0-db.groovy";
@@ -741,12 +734,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     public static class PerformanceQueries implements InitScript {
-
-	    @Inject
-	    public PerformanceQueries() {
-
-	    }
-
 	    @Override
 	    public String getScriptPath() {
 	        return "groovy/1-performance.groovy";
@@ -762,7 +749,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     // present
     /*
     public static class Calendars implements InitScript {
-
         @Override
         public String getScriptPath() {
             return "groovy/2-calendars.groovy";
@@ -775,12 +761,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }*/
 
     public static class CountMetrics implements InitScript {
-
-        @Inject
-        public CountMetrics() {
-
-        }
-
         @Override
         public String getScriptPath() {
             return "groovy/4-count-metrics.groovy";

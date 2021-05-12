@@ -35,7 +35,7 @@ public class FormulaAnalyzer {
                                         final Map<String, ColumnDefinition> columnDefinitionMap,
                                         Map<String, Class> otherVariables) throws Exception {
         final Map<String, Param> possibleParams = new HashMap<>();
-        final QueryScope queryScope = QueryScope.getDefaultInstance();
+        final QueryScope queryScope = QueryScope.getScope();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
@@ -98,7 +98,7 @@ public class FormulaAnalyzer {
             }
         }
 
-        final QueryScope queryScope = QueryScope.getDefaultInstance();
+        final QueryScope queryScope = QueryScope.getScope();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             possibleVariables.put(param.getName(), param.getDeclaredType());
         }

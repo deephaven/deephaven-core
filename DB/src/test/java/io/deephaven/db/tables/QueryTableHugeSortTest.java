@@ -16,7 +16,6 @@ import java.util.Map;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.show;
-import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 
 @Category(OutOfBandTest.class)
@@ -103,6 +102,6 @@ public class QueryTableHugeSortTest {
 
     @After
     public void clearScope() {
-        QueryScope.setDefaultInstance(new QueryScope.StandaloneImpl());
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
     }
 }

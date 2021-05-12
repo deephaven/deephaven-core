@@ -97,7 +97,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     protected void applyUsedVariables(Map<String, ColumnDefinition> columnDefinitionMap, Set<String> variablesUsed) {
         final Map<String, Param> possibleParams = new HashMap<>();
-        final QueryScope queryScope = QueryScope.getDefaultInstance();
+        final QueryScope queryScope = QueryScope.getScope();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
