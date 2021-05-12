@@ -258,7 +258,7 @@ public class ScriptRepository implements ScriptPathLoader {
     }
 
     /**
-     * Get the name of this repository defined by the <b>iris.scripts.repos property</b>.
+     * Get the name of this repository defined by the <b>[prefix].scripts.repos property</b>.
      *
      * @return The name of this repo.
      */
@@ -267,7 +267,7 @@ public class ScriptRepository implements ScriptPathLoader {
     }
 
     /**
-     * Get the users allowed to access this repo, defined by the <b>iris.scripts.repo.[name].users</b> property.
+     * Get the users allowed to access this repo, defined by the <b>[prefix].scripts.repo.[name].users</b> property.
      *
      * @return The names of all users allowed to access the repo.
      */
@@ -311,7 +311,7 @@ public class ScriptRepository implements ScriptPathLoader {
 
     /**
      * <p>Scan all of the configured search paths for scripts and updates the current loader state.</p>
-     * <p>Search paths are configured via the <b>iris.scripts.repo.[name].paths</b> property.</p>
+     * <p>Search paths are configured via the <b>[prefix].scripts.repo.[name].paths</b> property.</p>
      *
      * @throws IOException If there was a problem scanning for script files.
      */

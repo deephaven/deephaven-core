@@ -217,10 +217,10 @@ def _getDefaultClasspath(devroot, workspace):
     else:  # is server
         # this construction should match the classpath specified in launch and launch_functions
         return _flatten(["{}/etc".format(workspace),
-                        "/etc/sysconfig/illumon.d/override",
-                        "/etc/sysconfig/illumon.d/resources",
-                        "/etc/sysconfig/illumon.d/java_lib/*",
-                        "/etc/sysconfig/illumon.d/hotfixes/*",
+                        "/etc/sysconfig/deephaven.d/override",
+                        "/etc/sysconfig/deephaven.d/resources",
+                        "/etc/sysconfig/deephaven.d/java_lib/*",
+                        "/etc/sysconfig/deephaven.d/hotfixes/*",
                          _addPluginClasspaths(),
                         "{}/etc".format(devroot),
                         "{}/java_lib/*".format(devroot)])
@@ -234,7 +234,7 @@ def _addPluginClasspaths():
     """
 
     new_list = []
-    _addGlobal(new_list, "/etc/sysconfig/illumon.d/plugins")
+    _addGlobal(new_list, "/etc/sysconfig/deephaven.d/plugins")
     _addGlobal(new_list, "/etc/illumon/plugins")
     return new_list
 

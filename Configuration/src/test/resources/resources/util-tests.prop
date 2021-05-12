@@ -1,4 +1,4 @@
-# Props for fishlib unit tests
+# Props for fishlutilib unit tests
 include=
 
 measurement.per_thread_cpu=false
