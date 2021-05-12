@@ -465,7 +465,6 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t2 = t.view("y=x && true");
         TableTools.merge(t1, t2);
         TableTools.merge(t2, t1);
-        CompilerTools.setLogEnabled(true);
         assertNull(t.updateView("nullD = NULL_DOUBLE + 0").getColumn("nullD").get(0));
 
         assertEquals(Arrays.asList(emptyTable(4).updateView("b1 = (i%2 = 0)?null:true").updateView("x = b1 == null?1:2").select("x").getColumn("x").get(0, 4)),

@@ -25,7 +25,7 @@ import static io.deephaven.db.v2.select.FormulaParserConfiguration.dh;
 import static io.deephaven.db.v2.select.FormulaParserConfiguration.nb;
 import static junit.framework.TestCase.assertEquals;
 
-@Ignore // todo: DON'T MERGE this
+@Ignore
 public class TestNumbaFormula extends PythonTest {
     static {
         if (ProcessEnvironment.tryGet() == null) {
@@ -33,13 +33,15 @@ public class TestNumbaFormula extends PythonTest {
         }
     }
 
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestNumbaFormula.class, "CompilerTools.logEnabled", false);
+
     private FormulaParserConfiguration prevParserSettings;
 
     private boolean compilerToolsLogEnabledInitial = false;
 
     @Before
     public void setUp() throws Exception {
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(true);
+        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
     }
 
 

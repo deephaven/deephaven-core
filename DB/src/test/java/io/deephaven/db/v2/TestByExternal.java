@@ -40,10 +40,6 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.Agg;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.AggCombo;
 
 public class TestByExternal extends QueryTableTestBase {
-    static {
-        CompilerTools.setLogEnabled(true);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-    }
 
     class TableMapNugget implements EvalNuggetInterface {
         Table originalTable;

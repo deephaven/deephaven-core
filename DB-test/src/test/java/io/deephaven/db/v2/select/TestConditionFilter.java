@@ -42,6 +42,8 @@ public class TestConditionFilter extends PythonTest {
         }
     }
 
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestConditionFilter.class, "CompilerTools.logEnabled", false);
+
     private final Table testDataTable;
     private boolean compilerToolsLogEnabledInitial = false;
 
@@ -57,7 +59,7 @@ public class TestConditionFilter extends PythonTest {
         if (ProcessEnvironment.tryGet() == null) {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(true);
+        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
     }
 
     @After

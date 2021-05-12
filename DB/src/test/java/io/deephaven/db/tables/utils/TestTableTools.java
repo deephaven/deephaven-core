@@ -47,6 +47,8 @@ import java.nio.charset.Charset;
  */
 public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
+
     private final static String TEST_ROOT = Configuration.getInstance().getWorkspacePath() + "TestTableTools";
     private final static File TEST_ROOT_FILE = new File(TEST_ROOT);
 
@@ -67,7 +69,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         super.setUp();
 
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-        oldLogEnabled = CompilerTools.setLogEnabled(true);
+        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();

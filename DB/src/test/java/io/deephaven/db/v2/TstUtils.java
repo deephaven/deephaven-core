@@ -38,7 +38,6 @@ import java.util.function.IntFunction;
 
 public class TstUtils {
 
-    // TODO: this is just laziness, make it go away
     public static <T> ColumnHolder c(String name, T... data) {
         return TableTools.col(name, data);
     }
