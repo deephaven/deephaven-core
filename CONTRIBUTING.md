@@ -18,7 +18,9 @@ To get started quickly:
 3) `git clone git@github.com:<username>/deephaven-core.git`
 4) Commit changes to your own branches in your forked repository.
 
-Over time, forks will get out of sync with the upstream repository.  Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork) to stay up to date.
+Over time, forks will get out of sync with the upstream repository.  To stay up to date, either:
+* Navigate to `https://github.com/<username>/deephaven-core` and click on `Fetch upstream`, or
+* Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
 
 ## Creating a Pull Request
 Pull requests can be created through the GitHub website or through the GitHub CLI.
