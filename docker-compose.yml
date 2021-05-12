@@ -48,10 +48,7 @@ services:
           memory: 1G
 
   web:
-    # The web API and UI. Before this can be served, :web-client-ide:prepareDocker
-    # must be up to date.
-    build : web/client-ide/build/docker
-    image: "${REPO}deephaven/web:${TAG}"
+    image: deephaven/web
     expose:
       - "80"
     deploy:
