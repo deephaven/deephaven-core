@@ -397,8 +397,8 @@ tasks.register('quick') {
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
     it.description 'A lifecycle task that prepares prequisites for local docker-compose builds'
-    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile'),
-            project(':web-client-ide').tasks.findByName('prepareDocker'),
+    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage'),
+            project(':web-client-ide').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker')
 }
 
