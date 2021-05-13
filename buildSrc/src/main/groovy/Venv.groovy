@@ -570,6 +570,39 @@ This task will dependsOn other tasks which actually perform testing.'''
             // clean out the reporting directory before we run.
             project.delete(reportDir)
         }
+        handleFailure(project, e, new File(reportDir))
         return e
+    }
+
+    //TODO core#430 delete when this task is closed out
+    void handleFailure(Project project, Exec e, File reportDir) {
+        Gradle gradle = project.gradle
+        boolean allowFailure = TestTools.allowFailure(gradle.rootProject)
+        if (gradle.startParameter.continueOnFailure) {
+            // no need for special wiring; --continue was passed, so we can just let the exec fail normally.
+            return
+        }
+        // --continue was not passed.  lets still defer breakage until after build has completed...
+        // this matches w/ the fact that our tests are, currently, allowed to fail by default.
+        e.ignoreExitValue = true
+        e.doLast {
+            if (e.execResult.exitValue != 0) {
+                gradle.buildFinished {
+                    String error = """\n$e.path failed w/ exit code $e.execResult.exitValue
+${reportDir ? "see ${reportDir.toURI()}" : ''}""".toString()
+                    if (allowFailure) {
+                        // log after build has finished, so it's easily noticeable.
+                        // this is default behavior which does not break the build (same as java tests w/ allowFailure=true)
+                        e.logger.error(error)
+                        File failureDir = new File(project.rootDir, 'jenkins/failures')
+                        failureDir.mkdirs()
+                        new File(failureDir, e.path).text = error
+                    } else {
+                        // if failures are not allowed, deliver the message as a fatal exception
+                        throw new GradleException(error)
+                    }
+                }
+            }
+        }
     }
 }
