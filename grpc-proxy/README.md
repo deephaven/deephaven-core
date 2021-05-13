@@ -1,10 +1,11 @@
 # grpc-proxy
 
-grpc-proxy is used to bridge the TLS/SSL gap to make non-production deployments easier.
+grpc-proxy is a proxy that exposes a gRPC service via websockets, allowing for the gRPC service to
+be consumed from browsers.
 
 ## Configuration
 
-The environment variable `BACKEND_ADDR` must be set as necessary.
+The environment variable `BACKEND_ADDR` must be set to the gRPC service to be proxied.
 See [Dockerfile](Dockerfile) for more details.
 
 ## Build

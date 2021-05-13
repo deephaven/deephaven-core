@@ -1,15 +1,13 @@
-# Simple draft docker-compose that works with the existing enterprise codebase
-# to demonstrate how this could eventually look in OSS. Note that as of this
-# commit, the JS doesn't actually work, so we while we can't connect, you can
-# still make demo calls to see if they function.
+# This is a development-oriented local docker compose file, meant to link together the components of
+# the Deephaven Community Core.
 #
-# The purpose of this file is to showcase how localhost deployments probably
-# will work in lieu of the user installing a self-signed cert into their
-# browser - a websocket will be used in place of each http/2 stream, with a
-# proxy to provide this (one needed per worker) and an envoy instance to
-# reverse proxy to both a simple http server and the websocket proxy. There
-# is probably no need to use envoy here (nginx could suffice), but there are
-# probably benefits to always using envoy as our user-facing proxy.
+# There are some simplifying assumptions:
+#
+# 1. Docker is running locally and has access to filesystem bind mounts
+# 2. The images are being built via ./gradlew prepareCompose
+# 3. The user is running a non-production system, and does not need to deal with TLS
+#
+# Please see README.md with more details on how to get started.
 
 version: "3.8"
 
