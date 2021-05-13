@@ -4,6 +4,7 @@ COPY contents/ .
 
 ENV GRPCWEBPROXY_VERSION=v0.13.0
 
+# Note(deephaven-core#599): Consider moving grpcwebproxy DL into gradle
 RUN set -eux; \
     apk add --no-cache tini; \
     wget -q "https://github.com/improbable-eng/grpc-web/releases/download/${GRPCWEBPROXY_VERSION}/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \

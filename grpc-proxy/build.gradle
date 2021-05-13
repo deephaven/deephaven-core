@@ -9,7 +9,7 @@ task prepareDocker(type: Sync) {
   from ('contents') {
     into 'contents'
   }
-  // TODO: include license stuff once core#486 gets merged in
+  // TODO(deephaven-core#518): Add license and notice to docker images
   into 'build/docker'
 }
 
