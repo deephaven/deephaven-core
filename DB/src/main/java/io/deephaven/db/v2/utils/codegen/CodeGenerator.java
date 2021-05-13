@@ -50,15 +50,6 @@ public abstract class CodeGenerator {
     /**
      * Same "tail wagging the dog" comment applies.
      */
-    public static CodeGenerator optionalOr(Object... args) {
-        final String tag = (String)args[0];
-        final String tag2 = (String)args[1];
-        return new OptionalOr(tag, tag2, CodeGenerator.createSlice(args, 2));
-    }
-
-    /**
-     * Same "tail wagging the dog" comment applies.
-     */
     public static CodeGenerator repeated(Object... args) {
         final String tag = (String)args[0];
         return new Repeated(tag, CodeGenerator.createSlice(args, 1));
@@ -371,7 +362,7 @@ final class Indent extends CodeGenerator {
     }
 }
 
-class Optional extends CodeGenerator {
+final class Optional extends CodeGenerator {
     private final String tag;
     private final CodeGenerator inner;
     private boolean active;
@@ -380,7 +371,7 @@ class Optional extends CodeGenerator {
         this(tag, inner, false);
     }
 
-    protected Optional(String tag, CodeGenerator inner, boolean active) {
+    private Optional(String tag, CodeGenerator inner, boolean active) {
         this.tag = tag;
         this.inner = inner;
         this.active = active;
@@ -431,42 +422,10 @@ class Optional extends CodeGenerator {
     public String tag() {
         return tag;
     }
-    protected CodeGenerator inner() {
-        return inner;
-    }
-    protected boolean active() {
-        return active;
-    }
 
     @Override
     public CodeGenerator freezeHelper() {
         return active ? inner : Container.EMPTY;
-    }
-}
-
-final class OptionalOr extends Optional {
-    private final String tag2;
-
-    OptionalOr(String tag1, String tag2, CodeGenerator inner) {
-        this(tag1, tag2, inner, false);
-    }
-
-    OptionalOr(String tag1, String tag2, CodeGenerator inner, boolean active) {
-        super(tag1, inner, active);
-        this.tag2 = tag2;
-    }
-
-    @Override
-    public CodeGenerator cloneMe() {
-        return new OptionalOr(tag(), tag2, inner().cloneMe(), active());
-    }
-
-    @Override
-    public void gatherOptionals(String tag, List<Optional> allOptionals) {
-        if (tag.equals(tag()) || tag.equals(tag2)) {
-            allOptionals.add(this);
-        }
-        inner().gatherOptionals(tag, allOptionals);
     }
 }
 
