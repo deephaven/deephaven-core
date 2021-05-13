@@ -3,6 +3,9 @@ include=
 
 measurement.per_thread_cpu=false
 
+# For TestConfiguration
+cacheDir=cache
+
 # NIO driver thread pool
 #
 # TODO: if we reach the maximum thread count, the driver will crash the process if it comes
