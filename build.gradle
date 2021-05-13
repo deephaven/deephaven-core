@@ -121,7 +121,7 @@ subprojects {
     p.group = 'dh'
     p.version = globalVersion
     p.plugins.apply('io.deephaven.java-conventions')
-    License.createFrom(p).register(p)
+    License.createFrom(p).register()
 }
 
 

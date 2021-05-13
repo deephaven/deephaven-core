@@ -1,15 +1,20 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import io.deephaven.tools.License
 
 plugins {
   id 'com.bmuschko.docker-remote-api'
 }
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 
 task prepareDocker(type: Sync) {
   from 'Dockerfile'
   from ('contents') {
     into 'contents'
   }
-  // TODO(deephaven-core#518): Add license and notice to docker images
+  from (dockerLicenses.outputs) {
+    into 'contents'
+  }
   into 'build/docker'
 }
 
