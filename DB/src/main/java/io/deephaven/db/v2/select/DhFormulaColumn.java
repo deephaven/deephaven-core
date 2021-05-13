@@ -322,8 +322,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "public [[RETURN_TYPE]] [[GETTER_NAME]](final long k)", CodeGenerator.block(
-                        CodeGenerator.optional("maybeCreateI", "final int i = __intSize(__index.find(k));"),
-                        CodeGenerator.optional("maybeCreateII", "final long ii = __index.find(k);"),
+                        CodeGenerator.optional("maybeCreateIorII",
+                                "final long findResult = __index." + (usePrev ? "getPrevIndex()." : "") + "find(k);"),
+                        CodeGenerator.optional("maybeCreateI",
+                                "final int i = __intSize(findResult);"),
+                        CodeGenerator.optional("maybeCreateII",
+                                "final long ii = findResult;"),
                         CodeGenerator.repeated("cacheColumnSourceGet", "final [[TYPE]] [[VAR]] = [[GET_EXPRESSION]];"),
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
                                 "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeSmartKey([[FORMULA_ARGS]]);",
@@ -345,6 +349,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         g.replace("RESULT_TYPE", resultTypeString);
         g.replace("GETTER_NAME", getterName);
 
+        if (usesI || usesII) {
+            g.activateOptional("maybeCreateIorII");
+        }
         if (usesI) {
             g.activateOptional("maybeCreateI");
         }
@@ -472,7 +479,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = this.[[COL_SOURCE_NAME]].[[GET_CURR_OR_PREV_CHUNK]](" +
                                         "__typedContext.__subContext[[COL_SOURCE_NAME]], __orderedKeys).[[AS_CHUNK_METHOD]]();"
                         ),
-                        "fillChunkHelper(__typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"
+                        "fillChunkHelper(" + Boolean.toString(usePrev) + ", __typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"
                 )
         );
 
@@ -497,16 +504,18 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     private CodeGenerator generateFillChunkHelper(TypeAnalyzer ta) {
         final CodeGenerator g = CodeGenerator.create(
-                "private void fillChunkHelper(final FormulaFillContext __context,", CodeGenerator.indent(
+                "private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,", CodeGenerator.indent(
                         "final WritableChunk<? super Attributes.Values> __destination,",
                         "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"), CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
+                        CodeGenerator.optional("maybeCreateIOrII",
+                                "final Index inverted = (__usePrev ? __index.getPrevIndex() : __index).invert(__orderedKeys.asIndex());"),
                         CodeGenerator.optional("maybeCreateI",
                                 "__context.__iChunk.setSize(0);",
-                                "__index.invert(__orderedKeys.asIndex()).forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
+                                "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
                         ),
                         CodeGenerator.optional("maybeCreateII",
-                                "__index.invert(__orderedKeys.asIndex()).fillKeyIndicesChunk(__context.__iiChunk);"
+                                "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
                         ),
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"
@@ -547,6 +556,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 null);
         final String additionalChunkArgs = chunkArgs.isEmpty() ? "" : ", " + makeCommaSeparatedList(chunkArgs);
         g.replace("ADDITIONAL_CHUNK_ARGS", additionalChunkArgs);
+        if (usesI || usesII) {
+            g.activateOptional("maybeCreateIOrII");
+        }
         if (usesI) {
             g.activateAllOptionals("maybeCreateI");
         }
