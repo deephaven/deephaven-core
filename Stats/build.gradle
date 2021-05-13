@@ -17,7 +17,7 @@ test {
     enableAssertions = true
     maxHeapSize = '3g'
 
-    systemProperty 'Configuration.rootFile', 'fishlib-tests.prop'
+    systemProperty 'Configuration.rootFile', 'lib-tests.prop'
     systemProperty 'devroot', "$rootDir"
     systemProperty 'workspace', "$rootDir/tmp/workspace"
     systemProperty 'log4j.configuration', 'log4j.teamcity.xml'

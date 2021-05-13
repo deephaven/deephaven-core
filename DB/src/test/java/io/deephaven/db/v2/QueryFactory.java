@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * You can use the along with the getTablePreamble() function to create queries.
  * <p>
  * <p>
- * To use on a remote server jar up this class and stick it in /etc/sysconfig/illumon.d/java_lib/ on all nodes.
+ * To use on a remote server jar up this class and stick it in /etc/sysconfig/deephaven.d/java_lib/ on all nodes.
  * <p>
  * Example:
  * <p>

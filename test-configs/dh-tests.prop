@@ -7,58 +7,6 @@ CompilerTools.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=NONE
 UpdatePerformanceTracker.reportIntervalMillis=60000
 
-RemoteQueryUtils.hostnameSuffixesToTruncateForDisplay=.illumon.com,.abc.xyz
-
-RemoteQueryDispatcherParameters.name=default
-RemoteQueryDispatcherParameters.host=localhost
-RemoteQueryDispatcherParameters.queryPort=30000
-RemoteQueryDispatcher.workerPort=30001
-RemoteQueryDispatcher.workerServerPorts=31000-31999
-RemoteQueryDispatcher.workerServerWebsocketPorts=24000-24999
-RemoteQueryDispatcher.websocket.enabled=false
-
-RemoteQueryDispatcher.allowedGroups=*
-RemoteQueryDispatcher.adminGroups=*
-RemoteQueryDispatcher.pushClassGroups=*
-RemoteQueryDispatcher.maxConcurrentQueries=12
-RemoteQueryDispatcher.maxConcurrentStartups=1
-
-RemoteQueryDispatcher.maxTotalQueryProcessorHeapMB=61440
-RemoteQueryDispatcher.desiredFreeHeapMB=0
-RemoteQueryDispatcher.maxActiveQueryProcessorHeapMB=49152
-RemoteQueryDispatcher.pagingRateMBPS=0
-
-#Time interval between passes through the job scheduler
-RemoteQueryDispatcher.schedulingIntervalMS=1000
-
-#Time interval used in per-client (host) usage EMA
-RemoteQueryDispatcher.usageFunctionIntervalMS=3600000
-
-#Assumed paging rate in MB/s, used to determine rate of new job scheduling
-RemoteQueryDispatcher.pagingRateMBPS=0
-
-RemoteQueryDispatcher.useNativeSignals=false
-
-RemoteQueryDispatcher.queryTerminationThreadPoolCoreSize=20
-RemoteQueryDispatcher.queryTerminationThreadPoolKeepAliveMinutes=10
-
-#How much heap (in MB) to request per query by default
-RemoteProcessingRequest.defaultQueryHeapMB=4096
-minimumWorkerHeapSizeMB=512
-
-#How long (in ms) to wait before timing out each query by default
-RemoteProcessingRequest.defaultQueryTimeoutMS=3600000
-
-#Whether logging to the QueryPerformanceLog table is enabled
-RemoteQueryDispatcher.logQueryPerformance=true
-
-# If the following is true, the worker output and error streams will be combined into one, which will reduce overhead
-# but eliminate the distinction between the two in the process event log
-RemoteQueryDispatcher.combineProcessOutputStreams=false
-
-# Number of lines from syserr that the dispatcher should track for each worker
-RemoteQueryDispatcher.workerErrorLines=5
-
 #
 # NIO driver thread pool
 #
@@ -72,23 +20,10 @@ NIO.driver.initialThreadCount=20
 NIO.driver.maxThreadCount=400
 NIO.driver.useFast=true
 
-ioWritetimeout=10000
-
-#TCP send buffer overrides for processor->client connections - format is networkAddress/width=bufferSizeInKB(,...)
-RemoteQueryProcessor.sendBufferOverrides=
-
-#Whether new processors start a StatsDriver, or not.
-RemoteQueryProcessor.statsLoggingEnabled=false
-
-# Whether processors implicitly reload db metadata (namespace lists, table definition caches) between every query or console command.
-RemoteQueryProcessor.implicitReloadEnabled=true
-
 #TreeIndex.useRspBitmapTreeIndexImpl=true
 TableUpdateValidator.aggressiveUpdateValidation=true
 
 RefCounted.debug=true
-
-RemoteQueryClient.defaultClassPushList=db_rqc_default_class_push_list.txt
 
 QueryLibrary.defaultPackageImportList=default_package_imports.txt
 QueryLibrary.defaultClassImportList=default_class_imports.txt
@@ -96,17 +31,10 @@ QueryLibrary.defaultStaticImportList=default_static_imports.txt
 
 GroovyDeephavenSession.defaultScriptPath=<devroot>
 
-iris.concurrentWriteThreads=1
 StringUtils.cacheSize=0
 
 TrackedFileHandleFactory.maxOpenFiles=1024
-StringCacheProvider.defaultStringCacheSize=0
 
-iris.defaultInternalPartitionNamingFunction=return "0"
-iris.defaultColumnPartitionColumnName=Date
-iris.defaultColumnPartitionNamingFunction=return io.deephaven.db.tables.utils.DBTimeUtils.currentDateNy()
-
-OnDiskDatabase.rootDirectory=/db
 TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
 
@@ -116,79 +44,35 @@ Calendar.internalPath=<devroot>/configs/calendar
 Plot.theme.default=LIGHT
 Plot.theme.internalPath=<devroot>/configs/chartthemes
 
-RemoteQueryProcessor.sendBufferOverrides= 10.200.0.0/21=128 ,192.168.1.0/24 =  64
-
 columnsFile=DeephavenColumns.xml
 
 NIO.wireLagClock.native=false
 
-logAggregatorService.port=22020
-logAggregatorService.host=localhost
-
-########## Query Scheduler Settings ##########
-# 1827 days is 365 x 5 + 2 (to account for leap years)
-queryScheduler.lookForwardDays=1827
-
-# The following defines the default query scheduling parameters for old queries without a scheduling definition,
-# and new query definitions
-queryScheduler.ndefaults=8
-queryScheduler.default1=SchedulerType=io.deephaven.controller.IrisQuerySchedulerDaily
-queryScheduler.default2=StartTime=07:55:00
-queryScheduler.default3=StopTime=23:55:00
-queryScheduler.default4=TimeZone=America/New_York
-queryScheduler.default5=SchedulingDisabled=false
-queryScheduler.default6=Calendar=USNYSE
-queryScheduler.default7=BusinessDays=false
-# Days are Monday through Sunday, true means run on that day
-queryScheduler.default8=Days=true=true=true=true=true=true=true
-
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
-IrisConsole.tableGlobalDoubleClickHandler=io.deephaven.console.events.TestUtil.TesterD
-IrisConsole.tableGlobalRightClickHandler=io.deephaven.console.events.TestUtil.TesterD,io.deephaven.console.events.TestUtil.TesterB
-IrisConsole.tableHeaderGlobalRightClickHandler=io.deephaven.console.events.TestUtil.TesterD
-
-IrisConsole.tableDoubleClickHandler.Opra=io.deephaven.console.events.TestUtil.TableEventHandlerTester
-IrisConsole.tableRightClickHandler.Test=io.deephaven.console.events.TestUtil.TesterB
-IrisConsole.tableHeaderRightClickHandler.Cards=io.deephaven.console.events.TestUtil.TesterC,io.deephaven.console.events.TestUtil.TableEventHandlerTester
-
-binarystore.defaultversion=2
-
-anomalygateway.enabled=false
-
-# Python configuration, blech
+# Python configuration
 jpy.pythonLib=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so,/System/Library/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib,/usr/lib64/libpython2.7.so
 jpy.jpyLib=/usr/local/lib/python2.7/dist-packages/jpy.so,/Library/Python/2.7/site-packages/jpy.so,/usr/lib64/python2.7/site-packages/jpy.so,~/.local/lib/python2.7/site-packages/jpy.so
 jpy.jdlLib=/usr/local/lib/python2.7/dist-packages/jdl.so,/Library/Python/2.7/site-packages/jdl.so,/usr/lib64/python2.7/site-packages/jdl.so,~/.local/lib/python2.7/site-packages/jpy.so
 WorkerPythonEnvironment.defaultScriptPath=<devroot>/DB/python
 
-# Validation
-BaseValidators.internalPath=<devroot>/configs/validators
-
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
-
-# Needed for TestControllerHashTable
-deephaven.access.fullaccess.group=allusers
-deephaven.access.noninteractive.group=deephaven-noninteractive
-deephaven.access.queryviewonly.group=deephaven-queryviewonly
 
 LiveTableMonitor.checkTableOperations=true
 LiveTableMonitor.allowUnitTestMode=true
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
-########## Deephaven DB Console and Groovy Session defaults ##########
+########## Deephaven Groovy and Python Session defaults ##########
 
 GroovyDeephavenSession.defaultScriptPath=<devroot>
-GroovyDeephavenSession.initScripts=core/illumon_core_utils.groovy
+GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
 PythonDeephavenSession.defaultScriptPath=<devroot>
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
 
 WorkerPythonEnvironment.defaultScriptPath=<devroot>
 
-# NB: List repos in order of decreasing relative priority.  The shared repo should probably always be last.
-iris.scripts.repos=
 ###### Server's timezone #####
 server.timezone=America/New_York
 
@@ -198,7 +82,6 @@ allocation.stats.enabled=false
 
 ###### RspSequentialBuilder
 RspSequentialBuilder.check=true
-
 
 # DbTypes default impls
 DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
@@ -216,4 +99,6 @@ SortedRanges.debug=false
 
 SystemicObjectTracker.enabled=true
 
-IntradayLoggerFactory.unitTestMode=true
+# Disable some noise in test logs
+Liveness.countLogEnabled=false
+Liveness.cleanupLogEnabled=false

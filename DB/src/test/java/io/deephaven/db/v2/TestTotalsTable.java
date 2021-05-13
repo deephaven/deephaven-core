@@ -1,6 +1,7 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.DbDoubleArrayDirect;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -8,6 +9,8 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;
+import org.junit.After;
+import org.junit.Before;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,10 +22,24 @@ import static io.deephaven.db.v2.TstUtils.getTable;
 import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
 public class TestTotalsTable extends LiveTableTestCase {
-    static {
-        CompilerTools.setLogEnabled(true);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestTotalsTable.class, "CompilerTools.logEnabled", false);
+
+    private boolean oldCompilerToolsLogEnabled;
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
+        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+    }
+
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
+        super.tearDown();
     }
 
     private long shortSum(short[] values) {

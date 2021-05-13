@@ -38,6 +38,9 @@ import static junit.framework.TestCase.*;
 @SuppressWarnings("SameParameterValue")
 @RunWith(Parameterized.class)
 public class TestFormulaColumn {
+
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestFormulaColumn.class, "CompilerTools.logEnabled", false);
+
     @Parameterized.Parameters(name = "useKernelFormulasProperty = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] { new Object[] { false }, new Object[] { true } });
@@ -63,7 +66,7 @@ public class TestFormulaColumn {
     public void setUp() throws Exception {
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(true);
+        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
 
         setUpQueryLibrary();
     }

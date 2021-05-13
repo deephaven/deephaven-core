@@ -44,7 +44,7 @@ public class ProcessInfoConfig {
      * The default {@link SplayedPath} root for {@link ProcessInfo#getHostPathInfo()}.
      */
     @SuppressWarnings("WeakerAccess")
-    public static final String HOST_PATH_INFO_DIR_DEFAULT = "/etc/sysconfig/illumon.d/host";
+    public static final String HOST_PATH_INFO_DIR_DEFAULT = "/etc/sysconfig/deephaven.d/host";
 
     private static final UUID STATIC_UUID = UUID.randomUUID();
     private static final boolean TRIM = true;

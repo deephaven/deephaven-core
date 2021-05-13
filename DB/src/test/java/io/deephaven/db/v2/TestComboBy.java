@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.DataColumn;
@@ -38,13 +39,15 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class TestComboBy extends LiveTableTestCase {
 
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestComboBy.class, "CompilerTools.logEnabled", false);
+
     private boolean oldLogEnabled;
     private boolean oldCheckLtm;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(true);
+        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();

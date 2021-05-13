@@ -1,4 +1,4 @@
-# Props for fishlib unit tests
+# Props for util and configuration unit tests
 include=
 
 measurement.per_thread_cpu=false
@@ -17,11 +17,6 @@ NIO.driver.workTimeout=100
 NIO.driver.initialThreadCount=20
 NIO.driver.maxThreadCount=400
 NIO.driver.useFast=true
-
-ioWritetimeout=10000
-tls.truststore=dummyroot.jks
-tls.keystore=Configuration/src/main/resources/dummyroot.jks
-tls.passphrase=stepdaughters wades wondermongering
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.base.ThrowRuntimeExceptionFatalErrorHandlerFactory
 NIO.wireLagClock.native=false

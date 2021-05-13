@@ -6,6 +6,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.db.NotSortableException;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
@@ -24,11 +25,11 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 public class TestSort extends BaseArrayTestCase {
+
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestSort.class, "CompilerTools.logEnabled", false);
+
     private boolean lastMemoize = false;
-    {
-        CompilerTools.setLogEnabled(true);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-    }
+    private boolean oldCompilerToolsLogEnabled;
 
     @Override
     protected void setUp() throws Exception {
@@ -36,11 +37,13 @@ public class TestSort extends BaseArrayTestCase {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
+        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
+        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
         QueryTable.setMemoizeResults(lastMemoize);
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }

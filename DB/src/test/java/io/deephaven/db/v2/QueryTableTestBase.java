@@ -1,6 +1,7 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableDiff;
@@ -19,6 +20,8 @@ import static io.deephaven.db.tables.utils.TableTools.diff;
  */
 public abstract class QueryTableTestBase extends LiveTableTestCase {
 
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(QueryTableTestBase.class, "CompilerTools.logEnabled", false);
+
     protected final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
     private boolean oldLogEnabled;
@@ -34,7 +37,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(true);
+        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         ChunkPoolReleaseTracking.enableStrict();

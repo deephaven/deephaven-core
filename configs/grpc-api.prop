@@ -5,16 +5,6 @@ measurement.per_thread_cpu=false
 allocation.stats.enabled=true
 statsdriver.enabled=true
 
-RemoteQueryDispatcherParameters.name=default
-RemoteQueryDispatcherParameters.host=localhost
-RemoteQueryDispatcherParameters.queryPort=30000
-
-#Whether new processors start a StatsDriver, or not.
-RemoteQueryProcessor.statsLoggingEnabled=false
-
-SchemaConfig.classPrefix=io.deephaven.
-SchemaConfig.defaultListenerPackagePrefix=io.deephaven.intraday.gen.
-
 #
 # NIO driver thread pool
 #
@@ -28,25 +18,19 @@ NIO.driver.initialThreadCount=4
 NIO.driver.maxThreadCount=16
 NIO.driver.useFast=true
 
-ioWritetimeout=10000
-
 QueryLibrary.defaultPackageImportList=default_package_imports.txt
 QueryLibrary.defaultClassImportList=default_class_imports.txt
 QueryLibrary.defaultStaticImportList=default_static_imports.txt
 
-iris.concurrentWriteThreads=1
 StringUtils.cacheSize=0
 
 TrackedFileHandleFactory.maxOpenFiles=1024
-StringCacheProvider.defaultStringCacheSize=0
 
 Calendar.default=USNYSE
 Calendar.internalPath=<devroot>/configs/calendar
 
 Plot.theme.default=LIGHT
 Plot.theme.internalPath=<devroot>/configs/chartthemes
-
-RemoteQueryProcessor.sendBufferOverrides= 10.200.0.0/21=128 ,192.168.1.0/24 =  64
 
 columnsFile=DeephavenColumns.xml
 
@@ -56,16 +40,14 @@ WorkerPythonEnvironment.defaultScriptPath=<devroot>
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
-########## Deephaven DB Console and Groovy Session defaults ##########
+########## Deephaven Groovy and Python Session defaults ##########
 
 GroovyDeephavenSession.defaultScriptPath=<devroot>
-GroovyDeephavenSession.initScripts=core/illumon_core_utils.groovy
+GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
 PythonDeephavenSession.defaultScriptPath=<devroot>
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
 
-# NB: List repos in order of decreasing relative priority.  The shared repo should probably always be last.
-iris.scripts.repos=
 ###### Server's timezone #####
 server.timezone=America/New_York
 
