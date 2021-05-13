@@ -1,15 +1,13 @@
-# Simple draft docker-compose that works with the existing enterprise codebase
-# to demonstrate how this could eventually look in OSS. Note that as of this
-# commit, the JS doesn't actually work, so we while we can't connect, you can
-# still make demo calls to see if they function.
+# This is a development-oriented local docker compose file, meant to link together the components of
+# the Deephaven Community Core.
 #
-# The purpose of this file is to showcase how localhost deployments probably
-# will work in lieu of the user installing a self-signed cert into their
-# browser - a websocket will be used in place of each http/2 stream, with a
-# proxy to provide this (one needed per worker) and an envoy instance to
-# reverse proxy to both a simple http server and the websocket proxy. There
-# is probably no need to use envoy here (nginx could suffice), but there are
-# probably benefits to always using envoy as our user-facing proxy.
+# There are some simplifying assumptions:
+#
+# 1. Docker is running locally and has access to filesystem bind mounts
+# 2. The images are being built via ./gradlew prepareCompose
+# 3. The user is running a non-production system, and does not want to deal with TLS
+#
+# Please see README.md with more details on how to get started.
 
 version: "3.8"
 
@@ -53,13 +51,9 @@ services:
           cpus: '1'
           memory: 256M
 
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
   grpc-proxy:
-    # The (alpha-quality, see https://github.com/improbable-eng/grpc-web#status)
-    # grpc -> grpc-web+websocket proxy from improbably-eng. No docker image is
-    # presently available for this, so we have our own Dockerfile - refer to it
-    # for how we have it configured.
-    build: grpc-proxy/
-    image: "${REPO}deephaven/grpc-proxy:${TAG}"
+    image: deephaven/grpc-proxy
     environment:
       - BACKEND_ADDR=grpc-api:8080
     depends_on:
