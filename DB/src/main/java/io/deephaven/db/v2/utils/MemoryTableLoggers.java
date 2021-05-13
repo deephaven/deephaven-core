@@ -1,12 +1,15 @@
 package io.deephaven.db.v2.utils;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tablelogger.ProcessInfoLogLogger;
+import io.deephaven.db.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stats.StatsIntradayLogger;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.iris.db.tablelogger.*;
 import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.process.ProcessInfoStoreDBImpl;

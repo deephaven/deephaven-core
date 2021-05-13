@@ -1,7 +1,7 @@
 package io.deephaven.process;
 
 import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.iris.db.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.db.tablelogger.ProcessMetricsLogLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;

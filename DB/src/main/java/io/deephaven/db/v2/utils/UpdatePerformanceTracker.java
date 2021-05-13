@@ -11,7 +11,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 
-import io.deephaven.iris.db.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.db.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.*;

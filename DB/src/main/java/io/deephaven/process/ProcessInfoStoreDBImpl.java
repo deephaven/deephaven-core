@@ -1,6 +1,6 @@
 package io.deephaven.process;
 
-import io.deephaven.iris.db.tablelogger.ProcessInfoLogLogger;
+import io.deephaven.db.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.properties.PropertyVisitorStringBase;
 import java.io.IOException;
 import java.io.UncheckedIOException;
