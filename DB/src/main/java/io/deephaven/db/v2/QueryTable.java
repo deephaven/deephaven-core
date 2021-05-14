@@ -704,10 +704,6 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table sumBy(SelectColumn... groupByColumns) {
-        // Remove after Genesis updates to 1.20200331 or later
-        if (Configuration.getInstance().getBooleanWithDefault("zeroEmptyFpSumBy", false)) {
-            throw new UnsupportedOperationException("zeroEmptyFpSumBy is not supported in Deephaven versions other than 1.20190607.");
-        }
         return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> by(new SumStateFactory(), groupByColumns));
     }
@@ -1823,8 +1819,8 @@ public class QueryTable extends BaseTable {
         // but we do only need to listen to one of them; however we are dependent on two of them
         checkInitiateOperation();
 
-        // There are no LazySnapshotTableProviders in the system currently, but at Genesis their multicast distribution
-        // system has tables that implement LazySnapshot provider.
+        // There are no LazySnapshotTableProviders in the system currently, but they may be used for multicast
+        // distribution systems and similar integrations.
 
         // If this table provides a lazy snapshot version, we should use that instead for the snapshot, this allows us
         // to refresh the table only immediately before the snapshot occurs.  Because we know that we are uninterested

@@ -88,7 +88,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     public Result initialize(boolean usePrev, long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
-        //TODO: (AB) Do I need a closer for getPrevIndex?  Some ops have it....
+        //TODO: Do I need a closer for getPrevIndex?  Some ops have it....
         try(final SafeCloseableList closer = new SafeCloseableList()) {
             final Index fullIndex = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
             final Index indexToUse = closer.add(fullIndex.clone());

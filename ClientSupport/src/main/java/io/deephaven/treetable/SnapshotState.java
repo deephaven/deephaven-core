@@ -255,8 +255,8 @@ class SnapshotState {
         childPresenceColumn = new BitSet(requestedViewportSize);
 
         if(includeConstituents) {
-            // TODO (AB): With a little bit of creativity we can re-use the existing column array if the original and rolldup
-            // TODO (AB): column types are the same.  I will do this in a second pass, after this one works.
+            // TODO: With a little bit of creativity we can re-use the existing column array if the original and rolldup
+            // TODO: column types are the same.  I will do this in a second pass, after this one works.
             final Table originalTable = baseTable.getSourceTable();
             constituentData.clear();
             originalTable.getDefinition().getColumnList()

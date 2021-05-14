@@ -65,10 +65,7 @@ def jvm_init(devroot=None,
         for val in ['USER', 'USERNAME']:
             if username is None:
                 username = os.environ.get(val, None)
-        userhome1 = "W:/home/{}/".format(username)  # addressed in IDS-759, and defunct except for Genesis...
-        if os.path.exists(userhome1):
-            userHome = userhome1
-        elif username is not None:
+        if username is not None:
             userHome = os.path.expanduser('~'+username)
         else:
             userHome = os.path.expanduser('~')
