@@ -6,11 +6,12 @@ on:
   schedule:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
+  push:
+    branches: [ 'fix-nightly-check' ]
 
 jobs:
   nightly:
     runs-on: ubuntu-20.04
-    timeout-minutes: 720
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -30,18 +31,21 @@ jobs:
 
       - name: Check
         uses: burrunan/gradle-cache-action@v1
-        timeout-minutes: 720
         with:
           job-id: nightly
           arguments: --scan --continue nightly
           gradle-version: wrapper
 
-      - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
         if: always()
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: nightly-check-ci test report
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/*/TEST-*.xml'
+          name: nightly-check-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-check-ci-reports
+          path: '**/build/reports/tests/**'
