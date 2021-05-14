@@ -29,7 +29,7 @@ public abstract class QueryScope implements LogOutputAppendable {
     // -----------------------------------------------------------------------------------------------------------------
 
     private static volatile QueryScope defaultScope = null;
-    private static final ThreadLocal<QueryScope> currScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
+    private static final ThreadLocal<QueryScope> currentScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
 
     private static QueryScope getDefaultScope() {
         if (defaultScope == null) {
@@ -43,6 +43,7 @@ public abstract class QueryScope implements LogOutputAppendable {
     }
 
     /**
+     *
      * This is a work around for incomplete support for multiple script sessions. For now there will be a global session
      * for the worker.
      *
@@ -50,7 +51,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      */
     public static synchronized void setDefaultScope(final QueryScope scope) {
         if (defaultScope != null) {
-            throw new IllegalStateException("it's too late to set default scope; it's already set");
+            throw new IllegalStateException("It's too late to set default scope; it's already set: " + scope);
         }
         defaultScope = scope;
     }
@@ -64,9 +65,9 @@ public abstract class QueryScope implements LogOutputAppendable {
      */
     public static synchronized void setScope(final QueryScope queryScope) {
         if (queryScope == null) {
-            currScope.remove();
+            currentScope.remove();
         } else {
-            currScope.set(queryScope);
+            currentScope.set(queryScope);
         }
     }
 
@@ -76,7 +77,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @return {@link QueryScope}
      */
     public static QueryScope getScope() {
-        return currScope.get();
+        return currentScope.get();
     }
 
     /**

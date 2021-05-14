@@ -54,7 +54,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         this.liveTableMonitor = liveTableMonitor;
 
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
-            throw new IllegalArgumentException("console type not found: " + WORKER_CONSOLE_TYPE);
+            throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
 
         globalSession = scriptTypes.get(WORKER_CONSOLE_TYPE).get();
@@ -89,11 +89,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver::onError)
                     .submit(() -> {
 
-                        final ScriptSession script;
+                        final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
-                            script = globalSession;
+                            scriptSession = globalSession;
                         } else {
-                            script = new NoLanguageDeephavenSession(sessionType);
+                            scriptSession = new NoLanguageDeephavenSession(sessionType);
                             log.error().append("Session type '" + sessionType + "' is disabled. " +
                                     "Use the More Actions icon to swap to session type '" + WORKER_CONSOLE_TYPE + "'.").endl();
                         }
@@ -106,7 +106,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         });
 
                         // Multiple sessions are currently only partially supported; for now force global session per worker.
-                        return script;
+                        return scriptSession;
                     });
         });
     }
