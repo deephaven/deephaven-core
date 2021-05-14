@@ -407,7 +407,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         return bestMethod;
     }
 
-    private boolean isPotentialImplicitCall(Class methodClass) {
+    private static boolean isPotentialImplicitCall(Class methodClass) {
         return methodClass == PythonScopeJpyImpl.CallableWrapper.class || methodClass == groovy.lang.Closure.class;
     }
 
