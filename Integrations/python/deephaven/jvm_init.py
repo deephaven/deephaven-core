@@ -54,11 +54,11 @@ def jvm_init(devroot=None,
             propfile = os.environ.get("{}_PROPFILE".format(stem), None)
 
     if not os.path.isdir(devroot):
-        raise Exception("idb.init: devroot={} does not exist.".format(devroot))
+        raise Exception("dh.init: devroot={} does not exist.".format(devroot))
     if not os.path.isdir(workspace):
         os.makedirs(workspace)
         if verbose:
-            print("idb.init: Creating workspace folder {}".format(workspace))
+            print("dh.init: Creating workspace folder {}".format(workspace))
 
     username = None
     if userHome is None:
@@ -79,14 +79,14 @@ def jvm_init(devroot=None,
     if (userHome is not None) and (userHome[-1] != '/'):
         userHome += "/"
     if verbose:
-        print("idb.init: userHome = {}".format(userHome))
+        print("dh.init: userHome = {}".format(userHome))
 
     if keyfile is None and username is not None:
         keyfile1 = os.path.join(userHome, 'priv-{}.base64.txt'.format(username))
         if os.path.exists(keyfile1):
             keyfile = keyfile1
     if not os.path.isfile(keyfile):
-        raise Exception("idb.init: keyfile={} does not exist.".format(keyfile))
+        raise Exception("dh.init: keyfile={} does not exist.".format(keyfile))
 
     if log4jconffile is None and userHome is not None:
         log4jconffile = os.path.join(userHome, "log4j.xml")

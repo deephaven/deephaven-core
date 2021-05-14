@@ -20,7 +20,7 @@ else:
 
 class TestCalendars(unittest.TestCase):
     """
-    Test cases for the illumon.iris.Calendars module (performed locally) -
+    Test cases for the deephaven.Calendars module (performed locally) -
     """
 
     def testCalendar(self):

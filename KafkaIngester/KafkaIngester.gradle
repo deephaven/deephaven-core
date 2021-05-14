@@ -16,7 +16,7 @@ sourceSets {
 }
 
 configurations {
-    compile.extendsFrom irisKafkaIngester
+    compile.extendsFrom dhKafkaIngester
 }
 
 dependencies {

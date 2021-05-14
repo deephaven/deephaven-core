@@ -9,7 +9,7 @@ import junit.framework.TestSuite;
 
 public class ApiTestSuite extends GWTTestSuite {
     public static Test suite() {
-        TestSuite suite = new TestSuite("Iris Web API Test Suite");
+        TestSuite suite = new TestSuite("Deephaven Web API Test Suite");
         suite.addTestSuite(FilterConditionTestGwt.class);
 
         suite.addTestSuite(JsDateTimeFormatTestGwt.class);

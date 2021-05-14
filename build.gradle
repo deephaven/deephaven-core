@@ -118,7 +118,7 @@ allprojects*.tasks*.withType(JavaCompile)*.configureEach {
 
 subprojects {
     Project p ->
-    p.group = 'iris'
+    p.group = 'dh'
     p.version = globalVersion
     p.plugins.apply('io.deephaven.java-conventions')
     License.createFrom(p).register(p)
@@ -417,7 +417,6 @@ tasks.register('smoke') {
 }
 
 ext {
-    // expose this so illumon-db can read it in easily
     depAnnotations = 'com.intellij:annotations:5.1'
     depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
     depAnt = 'ant:ant:1.6.5'

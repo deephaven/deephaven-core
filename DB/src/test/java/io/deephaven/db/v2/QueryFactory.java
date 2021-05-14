@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * <p>
  * Example:
  * <p>
- * cd iris/DB/build/classes/java/test/
+ * cd DB/build/classes/java/test/
  * jar cfv QueryFactory.jar io/deephaven/db/v2/QueryFactory*
  * <p>
  * This will get you a QueryFactory jar you can use on the remote servers.

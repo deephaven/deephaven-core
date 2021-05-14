@@ -1,7 +1,7 @@
 configurations {
-    compile.extendsFrom irisPlot
+    compile.extendsFrom dhPlot
 
-    testCompile.extendsFrom irisDbTest, fishIoTest
+    testCompile.extendsFrom dhDbTest, fishIoTest
 }
 
 dependencies {

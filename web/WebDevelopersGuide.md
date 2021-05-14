@@ -112,7 +112,7 @@ implementation details follows.
 ```
 class MyApp {
     constructor() {
-        this.client = new Client('https://myserver/iris');
+        this.client = new Client('https://myserver/dh');
 
         // the actual token here can be a password, or any other supported auth token
         const credentials = { username: 'bob', token: '$₪£€₽$€₡₪₽€', type: 'password' };
@@ -255,7 +255,7 @@ class TableView {
     // Given a table with columns: type(String), index(Number), created(Date), modified(Date),
     // setSort(columns.type.asc(), columns.created.desc())
     setSort() {
-        // all arguments should be iris.Sort objects.
+        // all arguments should be dh.Sort objects.
         this._sorts = Array.prototype.slice.apply(arguments);
         var promise = this._table.applySort(this._sorts);
         return promise;
@@ -338,16 +338,16 @@ use of Promises or events.
 
 ###JS API Docs
 
-#### The `iris` namespace
+#### The `dh` namespace
 The Deephaven Web API provides similar functionality as the client GUI. The following documentation details the available class types, methods, properties, and events. 
-"namespace" here refers to the fact that using any of these objects requires an "iris." prefix.
+"namespace" here refers to the fact that using any of these objects requires an "dh." prefix.
 
 ##### Class `Client`
 Simple client object used to connect to the Deephaven installation and interact with it.
 
 ###### Constructor
 
- * `new iris.Client(websocketUrl)` - Creates a connection to the given Deephaven webserver.
+ * `new dh.Client(websocketUrl)` - Creates a connection to the given Deephaven webserver.
  
 ###### Properties
  * `boolean connected` - Read-only. True if the client is currently connected.
@@ -529,7 +529,7 @@ and also will permit some changes not to inform the UI right away that they have
  Callers are responsible for ensuring that there are no duplicates - a match pair can be passed instead of a name to
  specify the new name for the column. Supported `joinType` values (consult Deephaven's "Joining Data from Multiple Tables
  for more detail):
-   * "Join" <!-- provide a link to https://docs.deephaven.io/latest/Content/writeQueries/tableOperations/joins.htm ? -->
+   * "Join" <!-- provide a link to https://docs.deephaven.io/latest/Content/writeQueries/tableOperations/joins.htm#Joining_Data_from_Multiple_Tables ? -->
    * "Natural"
    * "AJ"
    * "ReverseAJ"
@@ -610,8 +610,8 @@ instance.
 ###### Static factory methods
  * `ofString(?):FilterValue` - Constructs a string for the filter API from the given parameter.
  * `ofNumber(?):FilterValue` - Constructs a number for the filter API from the given parameter. Can also be used on the 
- values returned from `Row.get` for DateTime values. To create a filter with a date, use `iris.DateWrapper.ofJsDate` or
- `iris.i18n.DateTimeFormat.parse`. To create a filter with a 64-bit long integer, use `iris.LongWrapper.ofString`.
+ values returned from `Row.get` for DateTime values. To create a filter with a date, use `dh.DateWrapper.ofJsDate` or
+ `dh.i18n.DateTimeFormat.parse`. To create a filter with a 64-bit long integer, use `dh.LongWrapper.ofString`.
  * `ofBoolean(?):FilterValue` - Constructs a boolean for the filter API from the given parameter.
  
 ###### Methods
@@ -726,8 +726,8 @@ This object may be pooled internally or discarded and not updated. Do not retain
 ###### Properties 
  * `String color` - Color to apply to the text, in `#rrggbb` format.
  * `String backgroundColor` - Color to apply to the cell's background, in `#rrggbb` format.
- * `String formatString` - The format string to apply to the value of this cell (see https://docs.illumon.com/user/#User/writeQueries/formatTables.htm).
- * `String numberFormat` - DEPRECATED - use `formatString` instead. Number format string to apply to the value in this cell (see https://docs.illumon.com/user/#User/writeQueries/formatTables.htm).
+ * `String formatString` - The format string to apply to the value of this cell (see https://docs.deephaven.io/latest/Content/writeQueries/formatTables.htm#Formatting_Tables).
+ * `String numberFormat` - DEPRECATED - use `formatString` instead. Number format string to apply to the value in this cell (see https://docs.deephaven.io/latest/Content/writeQueries/formatTables.htm#Formatting_Tables).
 
 ##### Class `TableMap`
 Represents a set of Tables each corresponding to some key. The keys are available locally, but a call must be made to 
@@ -1090,7 +1090,7 @@ This enum describes the name of each supported operation/aggregation type when c
 ##### Class `Ide`
 
 ###### Constructor
- * `new iris.Ide(IrisClient client)` - creates a new instance, from which console connections can be made. 
+ * `new dh.Ide(DeephavenClient client)` - creates a new instance, from which console connections can be made. 
 
 ###### Methods
  * `createConsole(ConsoleConfig config):Promise<IdeConnection>` - creates a new worker
@@ -1169,7 +1169,7 @@ This enum describes the name of each supported operation/aggregation type when c
  * `String[] jvmArgs`
  * `String[][] envVars`
 
-#### The `iris.lsp` namespace:
+#### The `dh.lsp` namespace:
 
 ##### Class `DidChangeTextDocumentParams`
 
@@ -1265,7 +1265,7 @@ This enum describes the name of each supported operation/aggregation type when c
  * `VariableDefinition removed`
 -->
 
-#### The `iris.plot` namespace:
+#### The `dh.plot` namespace:
 
 ##### Class `Figure`
 Provides the details for a figure.
@@ -1277,7 +1277,7 @@ axis on the screen, and the range of values that are visible, and the server wil
 reduce the number of points sent to the client.
 
 Downsampling can also be controlled when calling either `Figure.subscribe()` or `Series.subscribe()` - both can be given
-an optional `iris.plot.DownsampleOptions` argument. Presently only two valid values exist, `DEFAULT`, and `DISABLE`, 
+an optional `dh.plot.DownsampleOptions` argument. Presently only two valid values exist, `DEFAULT`, and `DISABLE`, 
 and if no argument is specified, `DEFAULT` is assumed. If there are more than 30,000 rows in a table, downsampling will
 be encouraged - data will not load without calling `subscribe(DISABLE)` or enabling downsampling via `Axis.range(...)`.
 If there are more than 200,000 rows, data will refuse to load without downsampling and `subscribe(DISABLE)` would have
@@ -1523,14 +1523,14 @@ exact meaning of each source type will depend on the series that they are in.
  * `LABEL` - can be used in any series
  * `COLOR` - can be used in any series
  
-#### The `iris.i18n` namespace:
+#### The `dh.i18n` namespace:
  
 ##### Class `NumberFormat`
 Utility class to parse and format numbers, using the same format patterns as are supported by the standard Java
 implementation used in the Deephaven server and swing client.
 
 ###### Constructor
- * `new iris.i18n.NumberFormat(pattern)` - Creates a new number format instance. This generally should be avoided in favor
+ * `new dh.i18n.NumberFormat(pattern)` - Creates a new number format instance. This generally should be avoided in favor
  of the static `getFormat` function, which will create and cache an instance so that later calls share the same
  instance.
   
@@ -1564,7 +1564,7 @@ Caveats:
  as expected in the browser to emit the user's own timezone. 
 
 ###### Constructor
- * `new iris.i18n.DateTimeFormat(String pattern)` - Creates a new date/time format instance. This generally should be avoided in favor
+ * `new dh.i18n.DateTimeFormat(String pattern)` - Creates a new date/time format instance. This generally should be avoided in favor
  of the static `getFormat` function, which will create and cache an instance so that later calls share the same
  instance.
 
@@ -1680,7 +1680,7 @@ return the same details:
  * `String id` - the timezone code that represents this `TimeZone`, usually the same key as was use to create this instance.
  * `Number standardOffset` - returns the standard offset of this timezone, in minutes.
  
-#### The `iris.calendar` namespace:
+#### The `dh.calendar` namespace:
  
 ##### Class `BusinessCalendar`
 Defines a calendar with business hours and holidays.

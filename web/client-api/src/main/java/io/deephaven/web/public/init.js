@@ -5,10 +5,10 @@ if (url.protocol === 'http:') {
   url.protocol = 'wss:';
 }
 
-window.c = new iris.Client(url.href);
-c.addEventListener(iris.Client.EVENT_CONNECT, () => {
+window.c = new dh.Client(url.href);
+c.addEventListener(dh.Client.EVENT_CONNECT, () => {
   window.connected && window.connected();
-  c.login({username:'iris',token:'iris',type:'password'}).then(result => {
+  c.login({username:'dh',token:'dh',type:'password'}).then(result => {
     console.log("login successful");
     window.started && window.started();
   });

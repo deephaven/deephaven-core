@@ -10,15 +10,15 @@ configurations {
 // once we can hook up the rest of the integration testing framework.
 boolean manualGwt = findProperty('gwtMode') != 'auto'
 boolean testPort = findProperty('gwtTestPort')
-String testServer = findProperty('irisTestServer') ?: 'ws://localhost:8123/socket'
+String testServer = findProperty('dhTestServer') ?: 'ws://localhost:8123/socket'
 String testDir = "$buildDir/testGwt"
 task 'gwtTest', type: Test, {
     Test t ->
         t.inputs.files(sourceSets.test.output.files)
 //        t.classpath = configurations.testRuntime
-        t.systemProperties = [ 'gwt.args': "${manualGwt ? '-runStyle Manual:1' : ''} ${testPort ? /-port $testPort/ : ''} -war $testDir/war -setProperty irisTestServer=$testServer -ea -style PRETTY -generateJsInteropExports",
+        t.systemProperties = [ 'gwt.args': "${manualGwt ? '-runStyle Manual:1' : ''} ${testPort ? /-port $testPort/ : ''} -war $testDir/war -setProperty dhTestServer=$testServer -ea -style PRETTY -generateJsInteropExports",
                                'gwt.persistentunitcachedir': "$testDir/unitCache",
-                               'irisTestServer': testServer
+                               'dhTestServer': testServer
         ]
         t.include '**/*TestSuite.class'
         t.logging.level = 'INFO'

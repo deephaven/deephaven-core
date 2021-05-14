@@ -19,6 +19,6 @@
   "writeExternal": ":param out: java.io.ObjectOutput"
  },
  "path": "io.deephaven.db.tables.ColumnDefinition",
- "text": "Column definition for all Iris columns.\n Adds non-stateful functionality to DefaultColumnDefinition.",
+ "text": "Column definition for all Deephaven columns.\n Adds non-stateful functionality to DefaultColumnDefinition.",
  "typeName": "class"
 }

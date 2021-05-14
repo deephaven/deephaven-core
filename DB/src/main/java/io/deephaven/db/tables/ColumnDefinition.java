@@ -23,7 +23,7 @@ import static io.deephaven.db.tables.DataObjectUtils.readAdoString;
 import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
 
 /**
- * Column definition for all Iris columns.
+ * Column definition for all Deephaven columns.
  * Adds non-stateful functionality to DefaultColumnDefinition.
  *
  * @IncludeAll

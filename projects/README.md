@@ -16,4 +16,4 @@ Do not replicate this structure for future modules.
 Instead, prefer standard java module structure for new modules:
 src/main/java and src/main/resources (maven conventions, used by open api)
 or
-java and resources (legacy iris conventions)
+java and resources (legacy deephaven conventions)

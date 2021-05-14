@@ -246,7 +246,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         throw new OperationException("Can not convert pyOjbect=" + pyObject + " to a LiveWidget.");
     }
 
-    private static final String GET_TABLE_ATTRIBUTE = "get_iris_table";
+    private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
     private static boolean isTable(PyObject value) {
         if ((value != null && value.hasAttribute(GET_TABLE_ATTRIBUTE))) {
             try (final PyObject widget = value.callMethod(GET_TABLE_ATTRIBUTE)) {

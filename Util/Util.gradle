@@ -1,5 +1,5 @@
 configurations {
-    compile.extendsFrom configurations.irisUtil, commonsLang3
+    compile.extendsFrom configurations.dhUtil, commonsLang3
     testCompile.extendsFrom fishBaseTest
 }
 

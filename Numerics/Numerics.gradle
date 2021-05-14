@@ -1,5 +1,5 @@
 configurations {
-    compile.extendsFrom irisNumerics
+    compile.extendsFrom dhNumerics
     testCompile.extendsFrom fishBaseTest
 }
 

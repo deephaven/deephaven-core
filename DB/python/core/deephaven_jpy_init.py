@@ -28,8 +28,8 @@ import __main__
 
 ###############################################################################################
 
-# can't use IsWidget.get_iris_table or the data frame will be interpreted as a table instead of a widget?
-pandas.DataFrame.to_iris_table = lambda self: dataFrameToTable(self, True)
+# can't use IsWidget.get_dh_table or the data frame will be interpreted as a table instead of a widget?
+pandas.DataFrame.to_dh_table = lambda self: dataFrameToTable(self, True)
 
 
 ########################################################################################################

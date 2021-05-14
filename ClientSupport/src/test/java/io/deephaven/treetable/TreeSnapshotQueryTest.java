@@ -92,7 +92,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         final String hierarchicalColumn;
 
-        /** We also need to track expansions like IrisTreeTableModel, but much more simplistically */
+        /** We need to do simple expansion tracking. */
         Map<Object, TableDetails> expansionMap = new HashMap<>();
 
         EnumSet<TreeSnapshotQuery.Operation> ops = EnumSet.noneOf(TreeSnapshotQuery.Operation.class);

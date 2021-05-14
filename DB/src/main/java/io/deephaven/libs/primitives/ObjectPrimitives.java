@@ -57,10 +57,10 @@ public class ObjectPrimitives {
      * @return true if the value is null, and false otherwise.
      */
     static public <T> boolean isDBNull(T value) {
-        return isIrisNull(value);
+        return isDeephavenNull(value);
     }
 
-    static <T> boolean isIrisNull(final T value) {
+    static <T> boolean isDeephavenNull(final T value) {
         return (value == null || (Byte.class.isAssignableFrom(value.getClass()) && value.equals(NULL_BYTE))
                 || (Character.class.isAssignableFrom(value.getClass()) && value.equals(NULL_CHAR))
                 || (Short.class.isAssignableFrom(value.getClass()) && value.equals(NULL_SHORT))
@@ -385,7 +385,7 @@ public class ObjectPrimitives {
         for (int i = 0; i < values.length; i++) {
             final NUM num = values[i];
 
-            if (!isIrisNull(num) && !Double.isNaN(num.doubleValue())) {
+            if (!isDeephavenNull(num) && !Double.isNaN(num.doubleValue())) {
                 if (min == null) {
                     min = num;
                 } else {
@@ -415,7 +415,7 @@ public class ObjectPrimitives {
         for (int i = 0; i < values.length; i++) {
             final T t = values[i];
 
-            if (!(isIrisNull(t) || (t instanceof Double && Double.isNaN((Double) t)) || (t instanceof Float && Float.isNaN((Float) t)))) {
+            if (!(isDeephavenNull(t) || (t instanceof Double && Double.isNaN((Double) t)) || (t instanceof Float && Float.isNaN((Float) t)))) {
                 try {
                     if (min == null) {
                         min = t;
@@ -451,7 +451,7 @@ public class ObjectPrimitives {
         for (int i = 0; i < values.length; i++) {
             final NUM num = values[i];
 
-            if (!isIrisNull(num) && !Double.isNaN(num.doubleValue())) {
+            if (!isDeephavenNull(num) && !Double.isNaN(num.doubleValue())) {
                 if (max == null) {
                     max = num;
                 } else {
@@ -481,7 +481,7 @@ public class ObjectPrimitives {
         for (int i = 0; i < values.length; i++) {
             final T t = values[i];
 
-            if (!(isIrisNull(t) || (t instanceof Double && Double.isNaN((Double) t)) || (t instanceof Float && Float.isNaN((Float) t)))) {
+            if (!(isDeephavenNull(t) || (t instanceof Double && Double.isNaN((Double) t)) || (t instanceof Float && Float.isNaN((Float) t)))) {
                 try {
                     if (max == null) {
                         max = t;

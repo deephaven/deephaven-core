@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *<br> =====================================================================================================================
  *<br>
- *<br> Building block for Iris DB file-based tables, with helper methods for discovering locations and their sizes.
+ *<br> Building block for Deephaven file-based tables, with helper methods for discovering locations and their sizes.
  *<br>
  *<br> ================================================= INTERFACE =========================================================
  *<br>

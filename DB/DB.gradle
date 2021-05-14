@@ -3,9 +3,9 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.api.tasks.testing.logging.TestLogging
 
 configurations {
-    compile.extendsFrom irisDb
+    compile.extendsFrom dhDb
 
-    testCompile.extendsFrom irisDbTest, mxj, fishIoTest
+    testCompile.extendsFrom dhDbTest, mxj, fishIoTest
 
     testRuntime.extendsFrom fishDataGenerator
 
@@ -155,7 +155,7 @@ def createMainExecTask = {
     })
 }
 
-def createIrisTestExecTask = {
+def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
         new File("$rootDir/tmp/logs").mkdirs()
@@ -177,17 +177,17 @@ def createIrisTestExecTask = {
     })
 }
 
-createIrisTestExecTask('sortKernelBenchmark', 'io.deephaven.db.v2.sort.SortKernelBenchmark')
-createIrisTestExecTask('partitionKernelBenchmark', 'io.deephaven.db.v2.sort.PartitionKernelBenchmark')
-createIrisTestExecTask('columnSourceFillBenchmark', 'io.deephaven.db.v2.sources.ColumnSourceFillBenchmark')
-createIrisTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.db.NaturalJoinBenchmark')
-createIrisTestExecTask('ajBenchmark', 'io.deephaven.benchmark.db.AjBenchmark')
-createIrisTestExecTask('matchFilterBenchmark', 'io.deephaven.benchmark.db.MatchFilterBenchmark')
-createIrisTestExecTask('rcsBenchmark', 'io.deephaven.benchmark.db.RegionedColumnSourceBenchmark')
-createIrisTestExecTask('byBenchmark', 'io.deephaven.benchmark.db.ByBenchmark')
-createIrisTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.db.SumByBenchmark')
-createIrisTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.db.PercentileByBenchmark')
-createIrisTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.db.LastByBenchmark')
+createDeephavenTestExecTask('sortKernelBenchmark', 'io.deephaven.db.v2.sort.SortKernelBenchmark')
+createDeephavenTestExecTask('partitionKernelBenchmark', 'io.deephaven.db.v2.sort.PartitionKernelBenchmark')
+createDeephavenTestExecTask('columnSourceFillBenchmark', 'io.deephaven.db.v2.sources.ColumnSourceFillBenchmark')
+createDeephavenTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.db.NaturalJoinBenchmark')
+createDeephavenTestExecTask('ajBenchmark', 'io.deephaven.benchmark.db.AjBenchmark')
+createDeephavenTestExecTask('matchFilterBenchmark', 'io.deephaven.benchmark.db.MatchFilterBenchmark')
+createDeephavenTestExecTask('rcsBenchmark', 'io.deephaven.benchmark.db.RegionedColumnSourceBenchmark')
+createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.db.ByBenchmark')
+createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.db.SumByBenchmark')
+createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.db.PercentileByBenchmark')
+createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.db.LastByBenchmark')
 
 createTestExecTask('replicateTuples', 'io.deephaven.db.v2.tuples.TupleSourceCodeGenerator')
 createTestExecTask('replicateSortKernelTests', 'io.deephaven.db.v2.sort.timsort.ReplicateSortKernelTests')
@@ -199,7 +199,7 @@ createMainExecTask('replicateHashing', 'io.deephaven.db.v2.hashing.ReplicateHash
 createMainExecTask('replicateStampKernel', 'io.deephaven.db.v2.join.stamp.ReplicateStampKernel')
 createMainExecTask('replicateDupCompactKernel', 'io.deephaven.db.v2.join.dupcompact.ReplicateDupCompactKernel')
 createMainExecTask('replicateDupExpandKernel', 'io.deephaven.db.v2.join.dupexpand.ReplicateDupExpandKernel');
-createIrisTestExecTask('replicateHashTable', 'io.deephaven.db.v2.ReplicateHashTable')
+createDeephavenTestExecTask('replicateHashTable', 'io.deephaven.db.v2.ReplicateHashTable')
 createMainExecTask('replicateColumnChunkPageStores', 'io.deephaven.db.v2.locations.parquet.ReplicateColumnChunkPageStores')
 createMainExecTask('replicateReverseKernel', 'io.deephaven.db.v2.utils.reverse.ReplicateReverseKernel')
 createMainExecTask('replicateSegmentedSortedArray', 'io.deephaven.db.v2.ssa.ReplicateSegmentedSortedArray')

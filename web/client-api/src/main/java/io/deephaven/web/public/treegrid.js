@@ -5,7 +5,7 @@
 class TreeGrid {
   constructor(treeTable) {
     this.treeTable = treeTable;
-    this.treeTable.addEventListener(iris.Table.EVENT_UPDATED, e => this.repaint(e.detail));
+    this.treeTable.addEventListener(dh.Table.EVENT_UPDATED, e => this.repaint(e.detail));
 
     this.rootElement = document.createElement('table');
     this.rootElement.addEventListener('click', e => this.toggle(e));
@@ -176,10 +176,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = iris.FilterValue.ofString(value);
+            value = dh.FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = iris.FilterValue.ofNumber(value);
+            value = dh.FilterValue.ofNumber(value);
           }
           //TODO make editable
           current.push(buildFilter(column, value));
@@ -190,10 +190,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = iris.FilterValue.ofString(value);
+            value = dh.FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = iris.FilterValue.ofNumber(value);
+            value = dh.FilterValue.ofNumber(value);
           }
 
           //TODO make editable

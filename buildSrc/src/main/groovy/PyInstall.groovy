@@ -210,7 +210,7 @@ class PyInstall {
     File getInstallRootDir() {
         String configured = project.findProperty(PROP_INSTALL_ROOT)
         return configured ?
-                // if we supply -Ppy.install.root=some/dir, it will be parsed as a directory relative to iris repo root directory
+                // if we supply -Ppy.install.root=some/dir, it will be parsed as a directory relative to dh repo root directory
                 // absolute paths will be treated as absolute, so you can freely set py.install.root to any *existing* path on host machine
                 project.rootProject.file(configured) :
                 // default location is $rootDir/py/installs

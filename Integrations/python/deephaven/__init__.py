@@ -44,7 +44,7 @@ For ease of namespace population in a python console, consider::
 
 >>> from deephaven import *  # this will import the submodules into the main namespace
 >>> print(dir())  # this will display the contents of the main namespace
->>> help(plt)  # will display the help entry (doc strings) for the illumon.iris.plot module
+>>> help(plt)  # will display the help entry (doc strings) for the deephaven.plot module
 >>> help(columnToNumpyArray)  # will display the help entry for the columnToNumpyArray method
 """
 

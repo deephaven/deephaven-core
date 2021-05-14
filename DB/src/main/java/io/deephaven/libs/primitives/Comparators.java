@@ -8,7 +8,7 @@ package io.deephaven.libs.primitives;
 
 import java.util.Comparator;
 
-import static io.deephaven.libs.primitives.ObjectPrimitives.isIrisNull;
+import static io.deephaven.libs.primitives.ObjectPrimitives.isDeephavenNull;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -64,13 +64,13 @@ class Comparators {
     }
 
     static <T> int compare(final T o1, final T o2) {
-        final boolean irisNull1 = isIrisNull(o1);
-        final boolean irisNull2 = isIrisNull(o2);
-        if (irisNull1 && irisNull2) {
+        final boolean dhNull1 = isDeephavenNull(o1);
+        final boolean dhNull2 = isDeephavenNull(o2);
+        if (dhNull1 && dhNull2) {
             return 0;
-        } else if (irisNull1) {
+        } else if (dhNull1) {
             return -1;
-        } else if (irisNull2) {
+        } else if (dhNull2) {
             return 1;
         } else if (o1.getClass() == o2.getClass() && Comparable.class.isAssignableFrom(o1.getClass())) {
             return ((Comparable) o1).compareTo(o2);

@@ -135,9 +135,6 @@ OneClick.enforceUpperCaseColumns=USym
 
 LiveTableMonitor.checkTableOperations=true
 
-# Note: Our bin/iris script depends on these log properties being in this file, and to not be
-# overridden in other customer prop files. Eventually, we can move these properties to a more
-# appropriate location.
 logroot=/var/log/deephaven
 
 defaultLogDir=<logroot>/misc

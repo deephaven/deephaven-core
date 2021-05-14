@@ -24,7 +24,7 @@ else:
 
 class TestDBTimeUtils(unittest.TestCase):
     """
-    Test cases for the illumon.iris.DBTimeUtils module (performed locally) -
+    Test cases for the deephaven.DBTimeUtils module (performed locally) -
     """
 
     def testCurrent(self):
