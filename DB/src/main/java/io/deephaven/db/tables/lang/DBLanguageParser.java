@@ -363,9 +363,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
             }
             // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is defined in Query scope
             if (acceptableMethods.size() == 0) {
-                Class methodCls = variables.get(methodName);
-                if (methodCls == PythonScopeJpyImpl.CallableWrapper.class || methodCls == groovy.lang.Closure.class) {
-                    for (Method method : methodCls.getDeclaredMethods()) {
+                final Class methodClass = variables.get(methodName);
+                if (isPotentialImplicitCall(methodClass)) {
+                    for (Method method : methodClass.getDeclaredMethods()) {
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                     }
                 }
@@ -405,6 +405,10 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         }
 
         return bestMethod;
+    }
+
+    private static boolean isPotentialImplicitCall(Class methodClass) {
+        return methodClass == PythonScopeJpyImpl.CallableWrapper.class || methodClass == groovy.lang.Closure.class;
     }
 
     private Class getMethodReturnType(Class scope, String methodName, Class paramTypes[], Class parameterizedTypes[][]){
@@ -1526,8 +1530,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
 
         expressions=convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
 
-        Class methodCls = method.getDeclaringClass();
-        if (methodCls == PythonScopeJpyImpl.CallableWrapper.class || methodCls == groovy.lang.Closure.class) {
+        if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                /*  python func call
                     1. the func is defined at the main module level and already wrapped in CallableWrapper
