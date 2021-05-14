@@ -1,3 +1,5 @@
+import io.deephaven.tools.License
+
 plugins {
   id 'java'
   id 'com.bmuschko.docker-java-application'
@@ -17,6 +19,8 @@ dependencies {
   runtimeOnly project(':logback-logbuffer')
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 
 docker {
 
@@ -53,8 +57,16 @@ docker {
     ]
   }
 
+  dockerSyncBuildContext {
+    from(dockerLicenses.outputs) {
+      into 'licenses'
+    }
+  }
+
   dockerCreateDockerfile {
     //volume("/app/resources")
+
+    copyFile('licenses/', '/')
 
     volume("/data")
     volume("/cache")

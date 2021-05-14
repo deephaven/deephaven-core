@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 
 @CompileStatic
@@ -19,6 +20,7 @@ class License {
 
     static License deephavenCommunityLicense(Project project) {
         return new License(
+                project,
                 project.rootProject.file('licenses/DCL-license.md'),
                 project.rootProject.file('licenses/DCL-notice-template.md'))
     }
@@ -35,7 +37,7 @@ class License {
             if (!project.file(INPUT_NOTICE_NAME).exists()) {
                 throw new IllegalStateException("Project '${project.name}' provides ${INPUT_LICENSE_NAME}, but not ${INPUT_NOTICE_NAME}")
             }
-            return new License(project.file(INPUT_LICENSE_NAME), project.file(INPUT_NOTICE_NAME))
+            return new License(project, project.file(INPUT_LICENSE_NAME), project.file(INPUT_NOTICE_NAME))
         }
         if (project.file(INPUT_NOTICE_NAME).exists()) {
             throw new IllegalStateException("Project '${project.name}' provides ${INPUT_NOTICE_NAME}, but not ${INPUT_LICENSE_NAME}")
@@ -44,10 +46,12 @@ class License {
         return deephavenCommunityLicense(project)
     }
 
+    Project project
     File license
     File notice
 
-    private License(File license, File notice) {
+    private License(Project project, File license, File notice) {
+        this.project = project
         this.license = license
         this.notice = notice
     }
@@ -59,34 +63,10 @@ class License {
      *
      * @param project the project
      */
-    void register(Project project) {
+    void register() {
         def licenseSourceSetDir = "${project.buildDir}/license-source-set"
-        def licenseFilename = license.name
-        def noticeFilename = notice.name
-        def copyrightYear = '2021'
-        def projectName = project.name
 
-        def syncLicenseData = project.tasks.register('syncLicenseData', Sync) {
-            it.from(license)
-            it.from(notice)
-
-            it.into("${licenseSourceSetDir}/META-INF")
-
-            it.rename(licenseFilename, OUTPUT_LICENSE_NAME)
-            it.rename(noticeFilename, OUTPUT_NOTICE_NAME)
-
-            it.expand(copyrightYear: copyrightYear, projectName: project.name)
-
-            // Make sure we invalidate this task if the structure changes
-            it.inputs.property('OUTPUT_LICENSE_NAME', OUTPUT_LICENSE_NAME)
-            it.inputs.property('OUTPUT_NOTICE_NAME', OUTPUT_NOTICE_NAME)
-
-            it.inputs.property('licenseFilename', licenseFilename)
-            it.inputs.property('noticeFilename', noticeFilename)
-
-            it.inputs.property('copyrightYear', copyrightYear)
-            it.inputs.property('projectName', projectName)
-        }
+        def syncLicenseData = syncSourceSetLicense(licenseSourceSetDir)
 
         // If we need to add the license and notice to each directory, we can run a mass
         // ./gradlew copyLicenseDataToProject
@@ -110,5 +90,53 @@ class License {
         // Implicitly ensures that the jar task depends on the processLicenseResources task.
         Jar jar = project.tasks.findByName('jar') as Jar
         jar.from(processLicenseResourcesTask.outputs)
+    }
+
+    TaskProvider<Sync> syncSourceSetLicense(String licenseSourceSetDir) {
+        def copyrightYear = '2021'
+        syncLicensesProvider(
+                project,
+                'syncSourceSetLicense',
+                "${licenseSourceSetDir}/META-INF",
+                license.name,
+                notice.name,
+                copyrightYear,
+                project.name)
+    }
+
+    TaskProvider<Sync> syncDockerLicense() {
+        def copyrightYear = '2021'
+        syncLicensesProvider(
+                project,
+                'syncDockerLicense',
+                "${project.buildDir}/syncDockerLicense",
+                license.name,
+                notice.name,
+                copyrightYear,
+                project.name)
+    }
+
+    private TaskProvider<Sync> syncLicensesProvider(Project project, String taskName, String destDir, String licenseFilename, String noticeFilename, String copyrightYear, String projectName) {
+        project.tasks.register(taskName, Sync) {
+            it.from(license)
+            it.from(notice)
+
+            it.into(destDir)
+
+            it.rename(licenseFilename, OUTPUT_LICENSE_NAME)
+            it.rename(noticeFilename, OUTPUT_NOTICE_NAME)
+
+            it.expand(copyrightYear: copyrightYear, projectName: project.name)
+
+            // Make sure we invalidate this task if the structure changes
+            it.inputs.property('OUTPUT_LICENSE_NAME', OUTPUT_LICENSE_NAME)
+            it.inputs.property('OUTPUT_NOTICE_NAME', OUTPUT_NOTICE_NAME)
+
+            it.inputs.property('licenseFilename', licenseFilename)
+            it.inputs.property('noticeFilename', noticeFilename)
+
+            it.inputs.property('copyrightYear', copyrightYear)
+            it.inputs.property('projectName', projectName)
+        }
     }
 }
