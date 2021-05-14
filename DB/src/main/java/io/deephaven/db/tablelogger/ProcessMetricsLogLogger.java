@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.iris.db.tablelogger;
+package io.deephaven.db.tablelogger;
 
 import io.deephaven.tablelogger.*;
 

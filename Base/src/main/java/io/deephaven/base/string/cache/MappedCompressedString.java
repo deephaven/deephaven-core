@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
  *
  * Unfortunately, I haven't figured out a way to make this allow concurrent gets.
  *
- * The intended use is in Iris import code, for storing SymbolManager -> SymbolId mappings on the CompressedString
+ * The intended use is in Deephaven import code, for storing SymbolManager -> SymbolId mappings on the CompressedString
  * that represents the Symbol itself, typically inside of a (bounded) StringCache of MappedCompressedString instances.
  *
  * Note that this uses io.deephaven.base.reference.SimpleReference instead of java.lang.ref.Reference so that unit

@@ -64,7 +64,7 @@ test {
 
     def python = System.getenv 'PYTHONPATH'
     environment('PYTHONPATH', (python?"$python$File.pathSeparator":'') +
-            new File(project.rootDir, 'Integrations/python/illumon').absolutePath)
+            new File(project.rootDir, 'Integrations/python/deephaven').absolutePath)
 
     def pyProps = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
     systemProperties.putAll(pyProps)

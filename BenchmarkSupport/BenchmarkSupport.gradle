@@ -1,7 +1,7 @@
 configurations {
-    compile.extendsFrom irisBenchmarkSupport
+    compile.extendsFrom dhBenchmarkSupport
 
-    testCompile.extendsFrom irisDbTest, fishIoTest
+    testCompile.extendsFrom dhDbTest, fishIoTest
 
     testRuntime.extendsFrom fishDataGenerator
 }

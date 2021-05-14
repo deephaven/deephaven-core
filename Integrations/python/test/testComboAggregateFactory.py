@@ -20,7 +20,7 @@ else:
 
 class TestComboAggregateFactory(unittest.TestCase):
     """
-    Test cases for the illumon.iris.ComboAggregateFactory module (performed locally) -
+    Test cases for the deephaven.ComboAggregateFactory module (performed locally) -
     """
 
     def testAggMethods(self):

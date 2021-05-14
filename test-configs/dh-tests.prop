@@ -1,4 +1,4 @@
-# Props for iris unit tests
+# Properties for deephaven unit tests
 include=
 
 measurement.per_thread_cpu=false

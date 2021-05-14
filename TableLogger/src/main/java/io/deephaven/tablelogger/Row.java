@@ -64,7 +64,7 @@ public interface Row {
     /**
      *  Per-row transaction flags.
      *
-     *  In Iris, a transaction is a group of rows that must be made visible to applications entirely, or not at all.
+     *  In Deephaven, a transaction is a group of rows that must be made visible to applications entirely, or not at all.
      *
      *  @IncludeAll
      */

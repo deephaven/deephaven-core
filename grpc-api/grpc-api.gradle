@@ -3,8 +3,8 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom irisDb
-    testCompile.extendsFrom irisDbTest
+    compile.extendsFrom dhDb
+    testCompile.extendsFrom dhDbTest
 }
 
 dependencies {

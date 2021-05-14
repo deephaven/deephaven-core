@@ -50,7 +50,7 @@ public class DeephavenJsApiLinker extends AbstractLinker {
 
         // get the generated javascript
         String[] javaScript = result.getJavaScript();
-        out.print("self.dh = self.iris = {}");
+        out.print("self.dh = {}");
         out.newline();
         out.print("var $wnd = self, $doc, $entry, $moduleName, $moduleBase;");
         out.newline();

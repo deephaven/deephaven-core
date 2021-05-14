@@ -23,7 +23,7 @@ public class StringUtils implements Serializable {
     private static final int STRING_CACHE_SIZE = Configuration.getInstance().getInteger("StringUtils.cacheSize");
 
     //------------------------------------------------------------------------------------------------------------------
-    // A thread-safe (but not very concurrent) StringCache for use in Iris DB code that desires actual caching
+    // A thread-safe (but not very concurrent) StringCache for use in Deephaven code that desires actual caching
     //------------------------------------------------------------------------------------------------------------------
 
     public static final StringCache<String> STRING_CACHE =

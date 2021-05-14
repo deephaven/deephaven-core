@@ -1,5 +1,5 @@
 configurations {
-    compile.extendsFrom irisDbTypesImpl
+    compile.extendsFrom dhDbTypesImpl
 
     testCompile.extendsFrom fishBaseTest, fishConfig
 }

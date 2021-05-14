@@ -24,7 +24,7 @@ else:
 
 class TestFigureWrapper(unittest.TestCase):
     """
-    Test cases for the illumon.iris.Plot.figure_wrapper module
+    Test cases for the deephaven.Plot.figure_wrapper module
     """
 
     @classmethod

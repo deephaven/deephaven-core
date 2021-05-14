@@ -14,8 +14,8 @@ dependencies {
 
 GwtTools.gwtCompile project, 'io.deephaven.ide.DeephavenIde', 'Create a jar of javascript for web IDE'
 
-// deephaven/iriside
-Task iriside = project(':web-client-ui').tasks.findByName('ideClientMakeImage')
+// deephaven/dhide
+Task dhide = project(':web-client-ui').tasks.findByName('ideClientMakeImage')
 
 // deephaven/js-out
 Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('webpackSourcesMakeImage')
@@ -27,18 +27,18 @@ task prepareDocker(type: Sync) {
     // a native GH action. As such, we need to make sure that the prepare also invokes the
     // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
     // can remove these dependencies.
-    inputs.files([iriside, jsOut].each { t -> t.outputs.files })
+    inputs.files([dhide, jsOut].each { t -> t.outputs.files })
 
     into "${buildDir}/docker"
     from(gwtc.outputs.files) {
-        include("irisapi/**")
+        include("dhapi/**")
     }
     from 'docker/Dockerfile'
     from 'nginx/default.conf'
 }
 
 Docker.registerDockerImage(project, 'buildDocker') {
-    inputs.files([prepareDocker, iriside, jsOut].each { t -> t.outputs.files })
+    inputs.files([prepareDocker, dhide, jsOut].each { t -> t.outputs.files })
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web')
 }

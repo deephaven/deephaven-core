@@ -110,8 +110,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     String SORTED_COLUMNS_ATTRIBUTE = "SortedColumns";
     String SYSTEMIC_TABLE_ATTRIBUTE = "SystemicTable";
 
-    // TODO: (AB) Might be good to take a pass through these and see what we can condense into
-    // TODO: (AB) TreeTableInfo and RollupInfo to reduce the attribute noise.
+    // TODO: Might be good to take a pass through these and see what we can condense into
+    // TODO: TreeTableInfo and RollupInfo to reduce the attribute noise.
     String ROLLUP_LEAF_ATTRIBUTE = "RollupLeaf";
     String HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE = "HierarchicalChildrenTableMap";
     String HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable";

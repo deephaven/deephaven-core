@@ -23,8 +23,8 @@ import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.iris.db.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.iris.db.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 

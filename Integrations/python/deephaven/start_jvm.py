@@ -39,7 +39,7 @@ def start_jvm(devroot=None,
     and and Deephaven classes are brought into Python.
 
     :param devroot: the devroot parameter for Deephaven. Defaults to the ``ILLUMON_DEVROOT`` environment variable, or
-      ``/usr/illumon/latest``
+      ``/usr/deephaven/latest``
     :param workspace: the workspace parameter for Deephaven. Defaults to the ``ILLUMON_WORKSPACE`` environment variable
     :param propfile: the ``Configuration.rootFile`` parameter for Deephaven. Defaults to the ``ILLUMON_PROPFILE`` environment
       variable
@@ -64,7 +64,7 @@ def start_jvm(devroot=None,
 
     # setup defaults
 
-    for stem in ['DEEPHAVEN', 'ILLUMON']:
+    for stem in ['DEEPHAVEN']:
         if devroot is None:
             devroot = os.environ.get("{}_DEVROOT".format(stem), None)
         if workspace is None:
@@ -81,14 +81,14 @@ def start_jvm(devroot=None,
 
     # validate devroot & workspace
     if devroot is None:
-        raise IOError("idb.init: devroot is not specified.")
+        raise IOError("dh.init: devroot is not specified.")
     if not os.path.isdir(devroot):
-        raise IOError("idb.init: devroot={} does not exist.".format(devroot))
+        raise IOError("dh.init: devroot={} does not exist.".format(devroot))
 
     if workspace is None:
-        raise IOError("idb.init: workspace is not specified.")
+        raise IOError("dh.init: workspace is not specified.")
     if not os.path.isdir(workspace):
-        raise IOError("idb.init: workspace={} does not exist.".format(workspace))
+        raise IOError("dh.init: workspace={} does not exist.".format(workspace))
 
     dtemp = workspace
     for entry in ['', 'cache', 'classes']:
@@ -97,11 +97,11 @@ def start_jvm(devroot=None,
             if not (os.path.isdir(dtemp) and os.access(dtemp, os.W_OK | os.X_OK)):
                 # this is silly, but a directory must be both writable and executible by a user for a
                 # file to be written there - write without executible is delete only
-                raise IOError("idb.init: workspace directory={} does exists, but is "
+                raise IOError("dh.init: workspace directory={} does exists, but is "
                               "not writeable by your user.".format(dtemp))
         else:
             # Log potentially helpful warning - in case of failure.
-            warnings.warn("idb.init: workspace directory={} does not exist, and its absence may "
+            warnings.warn("dh.init: workspace directory={} does not exist, and its absence may "
                           "lead to an error. When required, it SHOULD get created with appropriate "
                           "permissions by the Deephaven class DynamicCompileUtils. If strange errors arise "
                           "from jpy about inability to find some java class, then check "
@@ -144,8 +144,8 @@ def start_jvm(devroot=None,
     if jvm_options is None:
         jvm_options=set()
 
-    if path.exists("/usr/illumon/latest/etc/JAVA_VERSION"):
-        java_version_file=open("/usr/illumon/latest/etc/JAVA_VERSION", "r")
+    if path.exists("/usr/deephaven/latest/etc/JAVA_VERSION"):
+        java_version_file=open("/usr/deephaven/latest/etc/JAVA_VERSION", "r")
         java_version=java_version_file.read()
         java_version_file.close()
     elif path.exists("{}/projects/configs/build/resources/main/JAVA_VERSION".format(devroot)):
@@ -197,7 +197,7 @@ def _getDefaultClasspath(devroot, workspace):
 
     # first determine whether this is client or server
     # clients have devroot/getdown.txt
-    # servers have devroot, typically the link /usr/illumon/latest expanded to an actual directory
+    # servers have devroot, typically the link /usr/deephaven/latest expanded to an actual directory
     # if neither seems to apply, fail
 
     isclient = None
@@ -235,7 +235,7 @@ def _addPluginClasspaths():
 
     new_list = []
     _addGlobal(new_list, "/etc/sysconfig/deephaven.d/plugins")
-    _addGlobal(new_list, "/etc/illumon/plugins")
+    _addGlobal(new_list, "/etc/deephaven/plugins")
     return new_list
 
 

@@ -44,7 +44,7 @@ class GwtTools {
     static void applyModuleSettings(Project p, GwtCompileTask gwtc, String mod, String description) {
         gwtc.onlyIf WebTools.&shouldRun
         boolean gwtDev = p.findProperty('gwtDev') == 'true'
-        String extras = new File(p.buildDir, "gwt/irisapi/extra").absolutePath
+        String extras = new File(p.buildDir, "gwt/dhapi/extra").absolutePath
 
         GwtExtension gwt = p.extensions.findByType(GwtExtension)
 
@@ -69,32 +69,32 @@ class GwtTools {
         }
 
         gwtDev && gwtc.doFirst {
-            gwtc.logger.quiet('Running in gwt dev mode; saving source to {}/iris/src', extras)
+            gwtc.logger.quiet('Running in gwt dev mode; saving source to {}/dh/src', extras)
         }
 
         // Add a jar task to create an artifact containing our compiled application
         p.tasks.register "jsJar", Jar, {
             Jar j ->
-                j.group = '~Iris'
+                j.group = '~Deephaven'
                 j.description = description
                 // make a task dependency, AND make sure we rebuild this jar if the gwtc task output files change.
                 j.inputs.files gwtc.outputs.files
-                j.from("$gwt.compile.war/irisapi") {
+                j.from("$gwt.compile.war/dhapi") {
                     CopySpec c->
                         c.exclude '**/extra' // don't put our source files in exported jar, thx
-                        c.into 'irisapi'
+                        c.into 'dhapi'
                 }
                 // let's also pull in the ide client's build output
                 TaskOutputs uiOutputs = p.project(':web-client-ui').tasks.getByName('ideClient').outputs
                 j.from(uiOutputs.files) {
                     CopySpec c ->
-                        c.into 'iriside'
+                        c.into 'dhide'
                 }
 
                 TaskOutputs internalOpenapiOutputs = p.project(':proto:raw-js-openapi').tasks.getByName('webpackSources').outputs
                 j.from(internalOpenapiOutputs.files) {
                     CopySpec c ->
-                        c.into 'irisapi'
+                        c.into 'dhapi'
                 }
 
                 j.classifier = 'js'

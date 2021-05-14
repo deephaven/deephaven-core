@@ -25,7 +25,7 @@ else:
 
 class TestPlot(unittest.TestCase):
     """
-    Test cases for the illumon.iris.Plot module
+    Test cases for the deephaven.Plot module
     """
 
     @classmethod

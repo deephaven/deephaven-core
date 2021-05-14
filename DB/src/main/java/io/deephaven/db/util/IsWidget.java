@@ -14,7 +14,7 @@ import org.jpy.PyObject;
 public class IsWidget {
     private static final String GET_WIDGET_ATTRIBUTE = "getWidget";
     private static final String GET_WIDGET_VISIBILITY_ATTRIBUTE = "getValidGroups";
-    private static final String GET_TABLE_ATTRIBUTE = "get_iris_table";
+    private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
 
     public static boolean isWidget(Object value) {
         if (value instanceof LiveWidget) {

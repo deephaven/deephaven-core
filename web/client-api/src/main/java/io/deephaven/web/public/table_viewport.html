@@ -83,7 +83,7 @@ function openTable(t) {
     simplePagingTable.appendChild(header);
 
     // listen for items to be added, populate the table body
-    oldTableHandlerCleanup = table.addEventListener(iris.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+    oldTableHandlerCleanup = table.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
         console.log("update event received, time to redraw data");
         // rebuild the current tbody from scratch
         var tbody = simplePagingTable.querySelector('tbody');

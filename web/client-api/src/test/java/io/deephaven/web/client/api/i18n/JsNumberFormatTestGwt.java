@@ -67,6 +67,6 @@ public class JsNumberFormatTestGwt extends GWTTestCase {
 
     @Override
     public String getModuleName() {
-        return "io.deephaven.web.IrisApiDev";
+        return "io.deephaven.web.DhApiDev";
     }
 }

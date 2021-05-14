@@ -716,6 +716,11 @@ def newTable(*args):
     *Overload 4*  
       :param columnHolders: (io.deephaven.db.v2.utils.ColumnHolder...) - a list of ColumnHolders from which to create the table
       :return: (io.deephaven.db.v2.DynamicTable) a Deephaven DynamicTable
+      
+    *Overload 5*  
+      :param definition: io.deephaven.db.tables.TableDefinition
+      :param columnHolders: io.deephaven.db.v2.utils.ColumnHolder...
+      :return: io.deephaven.db.v2.DynamicTable
     """
     
     return _custom_newTable(*args)

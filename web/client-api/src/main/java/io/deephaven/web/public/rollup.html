@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Iris Web API rollup table example</title>
+    <title>Deephaven Web API rollup table example</title>
     <script src="dh-internal.js" type="text/javascript"></script>
     <script src="dh-core.js" type="text/javascript"></script>
     <script src="treegrid.js" type="text/javascript"></script>
@@ -80,10 +80,10 @@
     url.protocol = 'wss:';
   }
 
-  window.c = new iris.Client(url.href);
-  c.addEventListener(iris.Client.EVENT_CONNECT, () => {
+  window.c = new dh.Client(url.href);
+  c.addEventListener(dh.Client.EVENT_CONNECT, () => {
     connected();
-    c.login({username:'iris',token:'iris',type:'password'}).then(result => {
+    c.login({username:'dh',token:'dh',type:'password'}).then(result => {
       console.log("login successful");
     });
   });
@@ -92,14 +92,14 @@
   var configs = Object.create(null);
 
   function connected() {
-    c.addEventListener(iris.Client.EVENT_CONFIG_REMOVED, event => {
+    c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
       removeQuery(event.detail);
     });
-    c.addEventListener(iris.Client.EVENT_CONFIG_UPDATED, event => {
+    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
       removeQuery(event.detail);
       addQuery(event.detail);
     });
-    c.addEventListener(iris.Client.EVENT_CONFIG_ADDED, event => {
+    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
       addQuery(event.detail);
     });
     function removeQuery(queryInfo) {
@@ -121,7 +121,7 @@
       queryElt.onclick = () => {
         open = !open;
         queryElt.className = open ? 'open' : 'closed';
-        queryInfo.addEventListener(iris.QueryInfo.EVENT_TABLE_METRICS, event => {
+        queryInfo.addEventListener(dh.QueryInfo.EVENT_TABLE_METRICS, event => {
           if (event.detail.nanos === -1) {
             console.log(event.detail.type);
           } else {

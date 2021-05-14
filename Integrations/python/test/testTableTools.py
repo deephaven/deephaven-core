@@ -23,7 +23,7 @@ else:
 
 class TestTableTools(unittest.TestCase):
     """
-    Test cases for the illumon.iris.TableTools module (performed locally) -
+    Test cases for the deephaven.TableTools module (performed locally) -
     """
 
     @classmethod

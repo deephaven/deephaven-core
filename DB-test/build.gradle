@@ -2,8 +2,8 @@ evaluationDependsOn ':deephaven-jpy' // deephaven-jpy wheel
 evaluationDependsOn ':Integrations' // deephaven wheel
 
 configurations {
-  //compile.extendsFrom irisDb
-  testCompile.extendsFrom irisDbTest, fishIoTest
+  //compile.extendsFrom dhDb
+  testCompile.extendsFrom dhDbTest, fishIoTest
 }
 
 test {

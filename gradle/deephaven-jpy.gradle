@@ -23,21 +23,6 @@ project(':deephaven-jpy') {
 
   // For OSS, we need to currently move fast, and will prefer to make edits directly in py/jpy.
   // These can be backported to jpy proper in the future if necessary.
-  //check.dependsOn checkSubtree
-
-  // TODO: it would be nice to have something like this to update the subtree
-  /*
-  task updateSubtree(branch) {
-    git diff --quiet --exit-code HEAD # make sure there aren't any changes
-    git remote add --fetch illumon-jpy https://github.com/illumon-public/illumon-jpy.git
-    git subtree pull --prefix py/jpy illumon-jpy branch --squash
-    git remote remove illumon-jpy
-    NEW_GOLDEN_COMMIT = FishDev.branchName
-    ... update gradle.properties file w/ NEW_GOLDEN_COMMIT
-    git add gradle.properties
-    git commit -m "updated deephavenJpyGoldenSha to ${NEW_GOLDEN_COMMIT}"
-  }
-  */
 
   /**
    * We don't want to enable the jpy building on all environments yet

@@ -49,39 +49,34 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+
 # Define all of our functionality, if currently possible
 try:
     _defineSymbols()
 except Exception as e:
     pass
 
-@_passThrough
-def queryPerformance(queryId):
-    """
-    Takes in a query id and returns a view for that query's performance data.
 
-    :param queryId: The queryId for the query of interest.
-    :return: a table.
-    """
-    return _java_type_.queryPerformance(queryId)
+@_passThrough
+def processInfo(processInfoId, type, key):
+    return _java_type_.processInfo(processInfoId, type, key)
 
 
 @_passThrough
-def queryOperationPerformance(queryId):
-    """
-    Takes in a query id and returns a view for that query's individual operations's performance data.
+def queryOperationPerformance(evaluationNumber):
+    return _java_type_.queryOperationPerformance(evaluationNumber)
 
-    :param queryId: The queryId for the query of interest.
-    :return: a table.
-    """
-    return _java_type_.queryOperationPerformance(queryId)
 
 @_passThrough
-def queryUpdatePerformance(queryId):
-    """
-    Takes in a query id and returns a view for that query's update performance data.
+def queryPerformance(evaluationNumber):
+    return _java_type_.queryPerformance(evaluationNumber)
 
-    :param queryId: The queryId for the query of interest.
-    :return: a table.
-    """
-    return _java_type_.queryUpdatePerformance(queryId)
+
+@_passThrough
+def queryUpdatePerformance(evaluationNumber):
+    return _java_type_.queryUpdatePerformance(evaluationNumber)
+
+
+@_passThrough
+def queryUpdatePerformanceMap(evaluationNumber):
+    return _java_type_.queryUpdatePerformanceMap(evaluationNumber)

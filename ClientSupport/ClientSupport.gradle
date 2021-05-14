@@ -1,5 +1,5 @@
 configurations {
-    compile.extendsFrom irisConsole
+    compile.extendsFrom dhConsole
 }
 
 dependencies {

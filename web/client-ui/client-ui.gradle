@@ -7,8 +7,8 @@ Docker.registerDockerTask(project, 'ideClient') {
         from file('Dockerfile')
     }
     containerOutPath = '/usr/src/app/package/build'
-    imageName = 'deephaven/iriside'
+    imageName = 'deephaven/dhide'
     copyOut {
-        into "${buildDir}/iriside"
+        into "${buildDir}/dhide"
     }
 }

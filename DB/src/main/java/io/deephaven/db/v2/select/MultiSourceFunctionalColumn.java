@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-// TODO (AB): Comment the heck out of this...
+// TODO: Comment the heck out of this...
 public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     private final List<String> sourceNames;
     private ColumnSource<?>[] sourceColumns;

@@ -7,7 +7,7 @@ import io.deephaven.db.tables.utils.TableTools;
 
 public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
-    final private String file = Configuration.getInstance().getDevRootPath() + "/Integrations/src/test/resources/io/deephaven/integrations/numpy/iris.jpg";
+    final private String file = Configuration.getInstance().getDevRootPath() + "/Integrations/src/test/resources/io/deephaven/integrations/numpy/dh.jpg";
     final private String q1 = Configuration.getInstance().getDevRootPath() + "/Integrations/src/test/resources/io/deephaven/integrations/numpy/quadrant1.jpg";
     final private String q2 = Configuration.getInstance().getDevRootPath() + "/Integrations/src/test/resources/io/deephaven/integrations/numpy/quadrant2.png";
 

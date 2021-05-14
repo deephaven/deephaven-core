@@ -161,7 +161,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
 
     private static void validateInvocations(String expression) {
         //copied, modified from DBLanguageParser.java
-        //before parsing, finish Iris-specific language features:
+        //before parsing, finish Deephaven-specific language features:
         expression = DBLanguageParser.convertBackticks(expression);
         expression = DBLanguageParser.convertSingleEquals(expression);
 

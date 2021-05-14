@@ -7,7 +7,7 @@ plugins {
 evaluationDependsOn ':deephaven-jpy'
 
 configurations {
-    compile.extendsFrom irisIntegrations
+    compile.extendsFrom dhIntegrations
     testCompile.extendsFrom fishBaseTest
 }
 
