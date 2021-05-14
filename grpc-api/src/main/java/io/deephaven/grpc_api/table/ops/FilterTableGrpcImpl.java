@@ -2,6 +2,7 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.ops.filter.FilterFactory;
 import io.deephaven.grpc_api.table.ops.filter.FilterPrinter;

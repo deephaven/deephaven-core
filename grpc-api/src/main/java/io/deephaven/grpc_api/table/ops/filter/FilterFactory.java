@@ -1,18 +1,10 @@
 package io.deephaven.grpc_api.table.ops.filter;
 
-import com.illumon.iris.db.tables.Table;
-import com.illumon.iris.db.tables.select.SelectFilterFactory;
-import com.illumon.iris.db.tables.utils.DBDateTime;
-import com.illumon.iris.db.tables.utils.DBTimeZone;
-import com.illumon.iris.db.v2.select.ConjunctiveFilter;
-import com.illumon.iris.db.v2.select.DisjunctiveFilter;
-import com.illumon.iris.db.v2.select.FormulaParserConfiguration;
-import com.illumon.iris.db.v2.select.MatchFilter;
-import com.illumon.iris.db.v2.select.RangeConditionFilter;
-import com.illumon.iris.db.v2.select.RegexFilter;
-import com.illumon.iris.db.v2.select.SelectFilter;
-import com.illumon.iris.db.v2.select.SelectNoneFilter;
-import com.illumon.iris.db.v2.select.StringContainsFilter;
+import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.select.SelectFilterFactory;
+import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.tables.utils.DBTimeZone;
+import io.deephaven.db.v2.select.*;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
@@ -144,16 +136,16 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
                 FormulaParserConfiguration.parser);
     }
 
-    private com.illumon.iris.gui.table.filters.Condition rangeCondition(CompareCondition.CompareOperation operation, boolean invert) {
+    private io.deephaven.gui.table.filters.Condition rangeCondition(CompareCondition.CompareOperation operation, boolean invert) {
         switch (operation) {
             case LESS_THAN:
-                return invert ? com.illumon.iris.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL : com.illumon.iris.gui.table.filters.Condition.LESS_THAN;
+                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL : io.deephaven.gui.table.filters.Condition.LESS_THAN;
             case LESS_THAN_OR_EQUAL:
-                return invert ? com.illumon.iris.gui.table.filters.Condition.GREATER_THAN : com.illumon.iris.gui.table.filters.Condition.LESS_THAN_OR_EQUAL;
+                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN : io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL;
             case GREATER_THAN:
-                return invert ? com.illumon.iris.gui.table.filters.Condition.LESS_THAN_OR_EQUAL : com.illumon.iris.gui.table.filters.Condition.GREATER_THAN;
+                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL : io.deephaven.gui.table.filters.Condition.GREATER_THAN;
             case GREATER_THAN_OR_EQUAL:
-                return invert ? com.illumon.iris.gui.table.filters.Condition.LESS_THAN : com.illumon.iris.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL;
+                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN : io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL;
             case EQUALS:
             case NOT_EQUALS:
             case UNRECOGNIZED:
