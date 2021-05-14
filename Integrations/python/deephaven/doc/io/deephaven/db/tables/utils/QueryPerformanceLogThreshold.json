@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.tables.utils.QueryPerformanceLogThreshold",
  "methods": {
-  "shouldLog": "Should this item be logged?\n\n:param duration: (long) - the duration (or usage) of the item\n:param repeatedReads: (long) - the number of repeated reads which occurred\n:param initialReads: (long) - the number of initial reads which occurred\n:return: (boolean) true if the item exceeds our logging threshold, and thus should be logged"
+  "shouldLog": "Should this item be logged?\n\n:param duration: (long) - the duration (or usage) of the item\n:return: (boolean) true if the item exceeds our logging threshold, and thus should be logged"
  },
  "path": "io.deephaven.db.tables.utils.QueryPerformanceLogThreshold",
  "text": "This class encapsulates the parameters that control whether a given item (nugget or entry interval) is logged to\n one of our three performance logs.",
