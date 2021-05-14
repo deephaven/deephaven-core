@@ -184,7 +184,7 @@ configure modsRegular,
         new File("$rootDir/tmp/workspace".toString()).mkdirs()
         new File("$rootDir/tmp/logs".toString()).mkdirs()
 
-        if (TestTools.allowFailure project) {
+        if (TestTools.allowFailure(project)) {
             // begin dirty trick to ensure you can re-run failed tests.
             // Note that this workaround is only needed because of the ignoreTestFailures=true "footgun" above.
             File cacheBust = new File(p.buildDir, "testState/${path.replaceAll(":", "_")}".toString())
