@@ -157,7 +157,9 @@ By default only runs in CI; to run locally:
         return !('test' in (p.gradle.startParameter.excludedTaskNames))
     }
 
+    // TODO (core#598): Remove allowFailure logic
+    @Deprecated
     static boolean allowFailure(Project project) {
-        return project.findProperty('allowFailure') != 'false'
+        return project.findProperty('allowFailure') == 'true'
     }
 }

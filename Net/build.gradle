@@ -12,7 +12,6 @@ test {
     useJUnit()
 
     workingDir = "$rootDir"
-    ignoreFailures = true
     enableAssertions = true
     maxHeapSize = '3g'
 
