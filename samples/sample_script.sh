@@ -7,15 +7,12 @@ function usage()
 {
   printf "usage: %s <command>\n" $(basename $0) >&2
   printf "\n" >&2
-  printf "    <command> is one of: download, remove\n" >&2
-  printf "    <sample_name> is one of: iris, gsod, metriccentury\n" >&2
-  printf "\n" >&2
   printf "    commands are:\n"
-  printf "        download [<version>] - downloads and mounts all sample data\n" >&2
+  printf "        download [<version>] - downloads and mounts all example data\n" >&2
   printf "                               gets latest version unless <version> supplied\n" >&2
-  printf "        remove - removes all sample data\n" >&2
+  printf "        remove - removes all example data\n" >&2
   printf "        version - show local version\n" >&2
-  printf "        versions - list available version\n" >&2
+  printf "        versions - list available versions\n" >&2
   exit 2
 }
 
@@ -29,11 +26,11 @@ function fail_out()
 
 
 # check that we have the expected enlistment directory; complain and fail if not
-function require_enlistment()
+function ensure_enlistment()
 {
   if [ ! -d $target_path/.git ]; then
-     printf "no samples collection at %s; use the download command first\n" $target_path >&2
-     fail_out
+     printf "no examples collection at %s; dowloading ..." $target_path >&2
+     do_download
   fi
 }
 
@@ -41,9 +38,13 @@ function require_enlistment()
 # clone the git repo, don't report progress but DO report errors
 function do_download()
 {
-  git clone --quiet $git_root_url $target_path || fail_out "Couldn't clone samples repository"
-  printf "samples downloaded to $target_path\n"
-  [ ! -z "$1" ] && do_version "$1"
+  if [ -d $target_path/.git ]; then
+    printf "examples collection already exists at %s\n" $target_path >&2
+  else
+    git clone --quiet $git_root_url $target_path || fail_out "Couldn't clone examples repository"
+    printf "examples downloaded to $target_path\n"
+  fi
+  [ ! -z "$1" ] && do_checkout_version "$1"
 }
 
 
@@ -60,13 +61,16 @@ function do_remove()
 function do_list_versions()
 {
   cd $target_path
+  printf "local versions follow:\n"
   git tag -n
+  printf "remote versions follow:\n"
+  git ls-remote --tags $git_root_url | grep -v "{}" | awk '{print $2}' | sed 's/refs\/tags\///'
   printf "Version listed\n"
 }
 
 
 # switch version to something different
-function do_version()
+function do_checkout_version()
 {
   cd $target_path
   git -c advice.detachedHead=false checkout "$1" || fail_out "Couldn't change versions"
@@ -77,7 +81,7 @@ function do_version()
 #####
 # set up the source and target info
 git_root_url="git://github.com/mikeblas/samples-junk.git"
-target_path="/data/samples"
+target_path="data/examples"
 
 # figure out command and dispatch ...
 case "$1" in
@@ -85,12 +89,12 @@ case "$1" in
     do_download "$2"
     ;;
   version)
-    require_enlistment
     [ -z "$2" ] && fail_out "need a version specification"
-    do_version "$2"
+    ensure_enlistment
+    do_checkout_version "$2"
     ;;
   versions)
-    require_enlistment
+    ensure_enlistment
     do_list_versions
     ;;
   remove)
