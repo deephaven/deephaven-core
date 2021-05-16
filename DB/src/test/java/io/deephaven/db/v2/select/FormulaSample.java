@@ -112,7 +112,10 @@ public class FormulaSample extends io.deephaven.db.v2.select.Formula {
 
     @Override
     public long getPrevLong(final long k) {
-        final long findResult = __index.getPrevIndex().find(k);
+        final long findResult;
+        try (final Index prev = __index.getPrevIndex()) {
+            findResult = prev.find(k);
+        }
         final int i = __intSize(findResult);
         final long ii = findResult;
         final long __temp0 = II.getPrevLong(k);
@@ -159,10 +162,13 @@ public class FormulaSample extends io.deephaven.db.v2.select.Formula {
             final WritableChunk<? super Attributes.Values> __destination,
             final OrderedKeys __orderedKeys, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
-        final Index inverted = (__usePrev ? __index.getPrevIndex() : __index).invert(__orderedKeys.asIndex());
-        __context.__iChunk.setSize(0);
-        inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
-        inverted.fillKeyIndicesChunk(__context.__iiChunk);
+        try (final Index prev = __usePrev ? __index.getPrevIndex() : null) {
+            try (final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex())) {
+                __context.__iChunk.setSize(0);
+                inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
+                inverted.fillKeyIndicesChunk(__context.__iiChunk);
+            }
+        }
         final int[] __chunkPosHolder = new int[] {0};
         if (__lazyResultCache != null) {
             __orderedKeys.forAllLongs(k -> {

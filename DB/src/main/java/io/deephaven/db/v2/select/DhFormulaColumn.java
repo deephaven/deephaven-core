@@ -322,8 +322,14 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "public [[RETURN_TYPE]] [[GETTER_NAME]](final long k)", CodeGenerator.block(
-                        CodeGenerator.optional("maybeCreateIorII",
-                                "final long findResult = __index." + (usePrev ? "getPrevIndex()." : "") + "find(k);"),
+                        (usePrev
+                            ? CodeGenerator.optional("maybeCreateIorII",
+                                  "final long findResult;",
+                                  "try (final Index prev = __index.getPrevIndex())", CodeGenerator.block(
+                                       "findResult = prev.find(k);"
+                                  ))
+                            : CodeGenerator.optional("maybeCreateIorII",
+                                "final long findResult = __index.find(k);")),
                         CodeGenerator.optional("maybeCreateI",
                                 "final int i = __intSize(findResult);"),
                         CodeGenerator.optional("maybeCreateII",
@@ -509,14 +515,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"), CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "final Index inverted = (__usePrev ? __index.getPrevIndex() : __index).invert(__orderedKeys.asIndex());"),
-                        CodeGenerator.optional("maybeCreateI",
-                                "__context.__iChunk.setSize(0);",
-                                "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
-                        ),
-                        CodeGenerator.optional("maybeCreateII",
-                                "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
-                        ),
+                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null)", CodeGenerator.block(
+                                        "try (final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))", CodeGenerator.block(
+                                                CodeGenerator.optional("maybeCreateI",
+                                                        "__context.__iChunk.setSize(0);",
+                                                        "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
+                                                ),
+                                                CodeGenerator.optional("maybeCreateII",
+                                                        "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
+                                                )
+                                        )
+                                )),
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"
                         ),
