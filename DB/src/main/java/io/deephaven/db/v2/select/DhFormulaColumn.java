@@ -515,17 +515,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"), CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null)", CodeGenerator.block(
-                                        "try (final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))", CodeGenerator.block(
-                                                CodeGenerator.optional("maybeCreateI",
-                                                        "__context.__iChunk.setSize(0);",
-                                                        "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
-                                                ),
-                                                CodeGenerator.optional("maybeCreateII",
-                                                        "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
-                                                )
+                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null;", CodeGenerator.indent(
+                                     "final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))"), CodeGenerator.block(
+                                            CodeGenerator.optional("maybeCreateI",
+                                                    "__context.__iChunk.setSize(0);",
+                                                    "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
+                                            ),
+                                            CodeGenerator.optional("maybeCreateII",
+                                                    "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
+                                            )
                                         )
-                                )),
+                                ),
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"
                         ),

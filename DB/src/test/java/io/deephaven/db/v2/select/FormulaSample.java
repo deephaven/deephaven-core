@@ -162,12 +162,11 @@ public class FormulaSample extends io.deephaven.db.v2.select.Formula {
             final WritableChunk<? super Attributes.Values> __destination,
             final OrderedKeys __orderedKeys, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
-        try (final Index prev = __usePrev ? __index.getPrevIndex() : null) {
-            try (final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex())) {
-                __context.__iChunk.setSize(0);
-                inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
-                inverted.fillKeyIndicesChunk(__context.__iiChunk);
-            }
+        try (final Index prev = __usePrev ? __index.getPrevIndex() : null;
+                final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex())) {
+            __context.__iChunk.setSize(0);
+            inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
+            inverted.fillKeyIndicesChunk(__context.__iiChunk);
         }
         final int[] __chunkPosHolder = new int[] {0};
         if (__lazyResultCache != null) {
