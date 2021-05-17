@@ -33,7 +33,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: nightly
-          arguments: --scan --continue DB:testSerial
+          arguments: --scan --continue DB:testParallel
           gradle-version: wrapper
 
       - name: Upload Test Results

@@ -79,6 +79,10 @@ By default only runs in CI; to run locally:
                 t.forkEvery = 1
             }
 
+            // hack it
+            t.maxParallelForks = 1
+            t.forkEvery = 1
+
             // wire up dependencies manually, since we don't get this for free in custom tasks
             // (it's usually assumed you will do a custom sourceSet for integration tests,
             // but we already use custom layouts which make "use separate sourcesets per module" in IntelliJ...troublesome).
