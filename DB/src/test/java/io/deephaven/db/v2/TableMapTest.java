@@ -6,6 +6,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -21,12 +22,14 @@ import junit.framework.TestCase;
 
 import java.util.*;
 import java.util.stream.IntStream;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.TstUtils.c;
 import static io.deephaven.db.v2.TstUtils.i;
 
+@Category(OutOfBandTest.class)
 public class TableMapTest extends LiveTableTestCase {
 
     private boolean oldCheckLtm;
@@ -222,6 +225,7 @@ public class TableMapTest extends LiveTableTestCase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testTransformTableMapThenMerge() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 

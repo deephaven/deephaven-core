@@ -6,15 +6,19 @@ import io.deephaven.db.v2.sources.IntegerSparseArraySource;
 import io.deephaven.db.v2.sources.regioned.SymbolTableSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class TestSymbolTableCombiner extends LiveTableTestCase {
+    @Category(OutOfBandTest.class)
     public void testSymbolTableCombiner() {
         for (int seed = 0; seed < 3; ++seed) {
             testSymbolTableCombiner(seed);

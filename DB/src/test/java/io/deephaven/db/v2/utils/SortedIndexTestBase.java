@@ -17,6 +17,7 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import io.deephaven.db.v2.utils.rsp.container.ArrayContainer;
@@ -26,10 +27,12 @@ import java.util.Random;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
+import org.junit.experimental.categories.Category;
 
 import static java.lang.Math.*;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
+@Category(OutOfBandTest.class)
 public abstract class SortedIndexTestBase extends TestCase {
 
     private final long[][] KEYS = new long[][]{
@@ -566,6 +569,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testMinusRandom() {
         final int maxSize = 128 * 1024;
         final boolean [] fullSet = new boolean[maxSize];
@@ -846,6 +850,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         });
     }
 
+    @Category(OutOfBandTest.class)
     public void testRandomInsertMinus() {
         final int printInterval = 100;
         final int maxRange = 20;

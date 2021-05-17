@@ -10,11 +10,14 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.TickSuppressor;
 import io.deephaven.db.v2.utils.IndexShiftData;
 
+import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.intCol;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class TickSuppressorTest extends QueryTableTestBase {
     public void testModifyToAddRemoves() {
         final Random random = new Random(0);
@@ -39,12 +42,14 @@ public class TickSuppressorTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testRemoveSpuriousModificationsIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 100, 100);
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testRemoveSpuriousModificationsLargeIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 32000, 5);

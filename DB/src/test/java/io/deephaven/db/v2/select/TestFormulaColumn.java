@@ -17,11 +17,13 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.v2.utils.codegen.TypeAnalyzer;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -37,6 +39,7 @@ import static junit.framework.TestCase.*;
  */
 @SuppressWarnings("SameParameterValue")
 @RunWith(Parameterized.class)
+@Category(OutOfBandTest.class)
 public class TestFormulaColumn {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestFormulaColumn.class, "CompilerTools.logEnabled", false);
@@ -393,6 +396,7 @@ public class TestFormulaColumn {
      * Test casts among all primitive types.
      */
     @Test
+    @Category(OutOfBandTest.class)
     public void testPrimitiveCasts() {
         final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
@@ -441,6 +445,7 @@ public class TestFormulaColumn {
      * Test unboxing conversions, including null pointers and boxed nulls
      */
     @Test
+    @Category(OutOfBandTest.class)
     public void testUnboxingCasts() {
         final List<Class> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);

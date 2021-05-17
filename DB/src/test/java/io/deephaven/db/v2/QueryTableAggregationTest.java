@@ -52,6 +52,7 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
     private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
@@ -125,6 +126,7 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testStaticByWithChunksAndAggressiveOverflow() {
         final AggregationControl control = new AggregationControl() {
             @Override
@@ -651,6 +653,7 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testFirstByLastByIncremental() {
         final Random random = new Random(0);
 
@@ -1183,6 +1186,7 @@ public class QueryTableAggregationTest {
 
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testSumByStatic() {
         final int[] sizes = {10, 100, 1000};
         for (final int size : sizes) {
@@ -1311,6 +1315,7 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testAvgByStatic() {
         final int[] sizes = {10, 100, 1000};
         for (final int size : sizes) {
@@ -2002,6 +2007,7 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testWeightedSumByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {
@@ -2084,6 +2090,7 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testMinMaxByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (final int size : sizes) {

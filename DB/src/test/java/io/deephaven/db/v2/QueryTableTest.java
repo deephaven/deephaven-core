@@ -33,6 +33,7 @@ import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
@@ -54,6 +55,7 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
@@ -68,6 +70,7 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
  * {@link QueryTableFlattenTest}, and {@link QueryTableSortTest}.
  */
+@Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
     public void testStupidCast(){
         QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6));
@@ -688,6 +691,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testStringContainsFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -767,6 +771,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(TableTools.newTable(intCol("IV", 1, 2, 4, 6)), geq1.dropColumns("LV"));
     }
 
+    @Category(OutOfBandTest.class)
     public void testDoubleRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -800,6 +805,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testDateTimeRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -2285,7 +2291,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-
+    @Category(OutOfBandTest.class)
     public void testUngroupIncremental() throws ParseException {
         testUngroupIncremental(100, false);
         testUngroupIncremental(100, true);

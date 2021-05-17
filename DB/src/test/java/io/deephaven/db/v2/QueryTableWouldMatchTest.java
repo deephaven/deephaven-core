@@ -5,14 +5,17 @@ import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.WouldMatchPair;
 import io.deephaven.db.v2.select.DynamicWhereFilter;
 import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
     public void testMatch() {
@@ -184,6 +187,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testMatchDynamicIterative() {
         final ColumnInfo[] symSetInfo;
         final ColumnInfo[] numSetInfo;

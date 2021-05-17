@@ -42,6 +42,7 @@ import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
+@Category(OutOfBandTest.class)
 public class QueryTableAjTest {
 
     private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
@@ -560,6 +561,7 @@ public class QueryTableAjTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testAjBothIncremental() {
         final int tableMultiplier = 10;
         final int initialTableSize = 10;

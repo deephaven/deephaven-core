@@ -23,6 +23,7 @@ import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.gui.table.QuickFilterMode;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -39,12 +40,14 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
+@Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService pool = Executors.newFixedThreadPool(1);
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
@@ -546,7 +549,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TestCase.assertEquals(LogicalClock.DEFAULT.currentStep(), rll3.getLastNotificationStep());
     }
 
-
+    @Category(OutOfBandTest.class)
     public void testIterative() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.updateView("i4=intCol * 4"));
@@ -558,6 +561,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testIterative(transformations, 0, new MutableInt(50));
     }
 
+    @Category(OutOfBandTest.class)
     public void testIterativeQuickFilter() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.where("boolCol2"));
