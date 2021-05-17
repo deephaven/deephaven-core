@@ -1,6 +1,8 @@
 # Properties for deephaven unit tests
 include=
 
+ReleaseTracker.captureStackTraces=true
+
 measurement.per_thread_cpu=false
 
 CompilerTools.logEnabledDefault=false
