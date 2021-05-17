@@ -6,6 +6,7 @@ package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.parquet.ParquetReaderUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -70,15 +71,33 @@ public class TableManagementTools {
     /**
      * Reads in a table from disk.
      *
-     * @param path table location
+     * @param sourceDir table location
      * @return table
      */
-    public static Table readTable(@NotNull final File path) {
-        final TableDefinition tableDefinition = TableDefinition.loadDefinition(path, path.getName());
+    public static Table readTable(@NotNull final String sourceDir) {
+        return readTable(new File(sourceDir));
+    }
+
+    /**
+     * Reads in a table from disk.
+     *
+     * @param sourceDir table location
+     * @return table
+     */
+    public static Table readTable(@NotNull final File sourceDir) {
+        TableDefinition tableDefinition = TableDefinition.loadDefinition(sourceDir, true);
         if (tableDefinition == null) {
-            throw new IllegalStateException(path + " doesn't have a loadable TableDefinition");
+            final ColumnsSpecHelper cols = new ColumnsSpecHelper();
+            try {
+                ParquetReaderUtil.readParquetSchema(sourceDir.getPath() + File.separator + "table.parquet", cols::add);
+            } catch (java.io.FileNotFoundException e) {
+                throw new IllegalArgumentException(sourceDir + " doesn't have a loadable TableDefinition");
+            } catch (java.io.IOException e) {
+                throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
+            }
+            tableDefinition = TableDefinition.tableDefinition(cols.getDbTypes(), cols.getColumnNames());
         }
-        return readTable(path, tableDefinition);
+        return readTable(sourceDir, tableDefinition);
     }
 
     /**
@@ -113,6 +132,7 @@ public class TableManagementTools {
     public static void writeTable(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
         if (storageFormat == StorageFormat.Parquet) {
             writeParquetTables(new Table[]{sourceTable}, definition, CompressionCodecName.SNAPPY, new File[]{destDir}, definition.getGroupingColumnNamesArray());
+            TableDefinition.persistDefinition(definition, destDir);
         } else {
             throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
         }
@@ -193,8 +213,8 @@ public class TableManagementTools {
             Table source = sources[i];
             try {
                 String path = destinations[i].getPath();
-                ParquetTableWriter.write(source, path + "/table.parquet", Collections.emptyMap(), codecName, tableDefinition.getWritable(),
-                        c -> path + "/" + ParquetTableWriter.defaultGroupingFileName.apply(c), groupingColumns);
+                ParquetTableWriter.write(source, path + File.separator + "table.parquet", Collections.emptyMap(), codecName, tableDefinition.getWritable(),
+                        c -> path + File.separator + ParquetTableWriter.defaultGroupingFileName.apply(c), groupingColumns);
             } catch (Exception e) {
                 log.error("Error in table writing, cleaning up potentially incomplete table destination path up to " +
                         destinations[i].getAbsolutePath(), e);

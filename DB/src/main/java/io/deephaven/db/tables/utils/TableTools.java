@@ -780,6 +780,16 @@ public class TableTools {
     }
     //endregion
 
+    @ScriptApi
+    public static Table readParquet(final String sourceDir) {
+        return TableManagementTools.readTable(sourceDir);
+    }
+
+    @ScriptApi
+    public static void writeParquet(final Table sourceTable, final String destDir) {
+        TableManagementTools.writeTable(sourceTable, destDir, TableManagementTools.StorageFormat.Parquet);
+    }
+
     /////////// Utilities for Creating Columns  ///////////
 
     /**

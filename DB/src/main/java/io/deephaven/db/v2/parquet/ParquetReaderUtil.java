@@ -9,6 +9,7 @@ import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -97,6 +99,62 @@ public class ParquetReaderUtil {
                     }
                 }
                 System.out.println((System.nanoTime() - start) * 1.0 / 1000000000);
+            }
+        }
+    }
+
+    public static void readParquetSchema(
+            final String filePath, final BiConsumer<String, Class<?>> colDefConsumer
+    ) throws IOException {
+        final ParquetFileReader pf = new ParquetFileReader(
+                filePath, getChannelsProvider(), 0);
+        final MessageType schema = pf.getSchema();
+        final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
+                return Optional.of(String.class);
+            }
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+                if (timestampLogicalType.isAdjustedToUTC() && timestampLogicalType.getUnit().equals(LogicalTypeAnnotation.TimeUnit.NANOS)) {
+                    return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
+                }
+                return Optional.empty();
+            }
+        };
+        int c = 0;
+        for (ColumnDescriptor column : schema.getColumns()) {
+            LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
+            final String colName = schema.getFieldName(c++);
+            if (logicalTypeAnnotation == null) {
+                switch (column.getPrimitiveType().getPrimitiveTypeName()) {
+                    case BOOLEAN:
+                        colDefConsumer.accept(colName, Boolean.class);
+                        break;
+                    case INT32:
+                        colDefConsumer.accept(colName, int.class);
+                        break;
+                    case INT64:
+                        colDefConsumer.accept(colName, long.class);
+                        break;
+                    case DOUBLE:
+                        colDefConsumer.accept(colName, double.class);
+                        break;
+                    case FLOAT:
+                        colDefConsumer.accept(colName, float.class);
+                        break;
+                    case BINARY:
+                    case FIXED_LEN_BYTE_ARRAY:
+                        // Do not directly map to String when the logical annotation is not present.
+                    default:
+                        throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
+                }
+            } else {
+                final Optional<Class<?>> optionalClass = logicalTypeAnnotation.accept(visitor);
+                if (!optionalClass.isPresent()) {
+                    throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath()) + ", no mappeable logical type annotation found.");
+                }
+                colDefConsumer.accept(colName, optionalClass.get());
             }
         }
     }

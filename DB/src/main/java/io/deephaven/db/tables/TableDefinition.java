@@ -577,20 +577,19 @@ public class TableDefinition extends DefaultTableDefinition {
      * Persist the supplied TableDefinition to the default file for the supplied directory and table name.
      * @param definition The definition
      * @param destinationDirectory The destination directory
-     * @param tableName The table name
      */
-    public static void persistDefinition(@NotNull final TableDefinition definition, @NotNull final File destinationDirectory, @NotNull final String tableName) {
+    public static void persistDefinition(@NotNull final TableDefinition definition, @NotNull final File destinationDirectory) {
         persistDefinitionImpl(definition, new File(destinationDirectory, DEFAULT_FILE_NAME));
     }
 
     /**
      * Load a TableDefinition from the supplied file.
-     * @param source The file to find the definition in
+     * @param sourceDirectory The directory to find the definition in
      * @return The TableDefinition object
      * @throws UncheckedIOException or other RuntimeException if the file is not found or read fails
      */
-    public static TableDefinition loadDefinition(@NotNull final File source) {
-        return loadDefinitionImpl(source, false);
+    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory) {
+        return loadDefinition(sourceDirectory, false);
     }
 
     /**
@@ -620,37 +619,21 @@ public class TableDefinition extends DefaultTableDefinition {
     /**
      * Load a TableDefinition from the default file for the supplied directory and table name.
      * @param sourceDirectory The directory to find the definition file in
-     * @param tableName The table name to use when determining the definition file name
-     * @return The TableDefinition object
-     * @throws UncheckedIOException or other RuntimeException if the file is not found or read fails
-     */
-    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory, @NotNull final String tableName) {
-        return loadDefinition(sourceDirectory, tableName, false);
-    }
-
-    /**
-     * Load a TableDefinition from the default file for the supplied directory and table name.
-     * @param sourceDirectory The directory to find the definition file in
-     * @param tableName The table name to use when determining the definition file name
      * @param allowMissing Whether to return null if the file is not found, rather than throwing an exception
      * @return The TableDefinition object, or null if not found and {@code allowMissing}
      * @throws UncheckedIOException or other RuntimeException if the file is not found and !allowMissing, or read fails
      */
     @Nullable
-    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory, @NotNull final String tableName, final boolean allowMissing) {
+    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory, final boolean allowMissing) {
         final File primaryFile = new File(sourceDirectory, DEFAULT_FILE_NAME);
         if (primaryFile.exists()) {
             return loadDefinitionImpl(primaryFile, allowMissing);
         }
-        final File secondaryFile = new File(sourceDirectory, tableName + DEFAULT_FILE_SUFFIX);
-        if (secondaryFile.exists()) {
-            return loadDefinitionImpl(secondaryFile, allowMissing);
-        }
         if (allowMissing) {
             return null;
         }
-        final String message = String.format("Failed to find table definition file for table %s as '%s' or '%s'",
-                tableName, primaryFile.getAbsolutePath(), secondaryFile.getAbsolutePath());
+        final String message = String.format("Failed to find table definition file for table as '%s'",
+                primaryFile.getAbsolutePath());
         throw new UncheckedIOException(message, new FileNotFoundException(message));
     }
 
