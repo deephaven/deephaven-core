@@ -24,9 +24,8 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Check
         uses: burrunan/gradle-cache-action@v1
