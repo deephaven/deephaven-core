@@ -9,7 +9,6 @@ import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
