@@ -33,7 +33,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: nightly
-          arguments: --scan --continue DB:testOutOfBand
+          arguments: --scan --continue nightly
           gradle-version: wrapper
 
       - name: Upload Test Results
