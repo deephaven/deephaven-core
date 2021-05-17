@@ -371,7 +371,7 @@ final class Optional extends CodeGenerator {
         this(tag, inner, false);
     }
 
-    Optional(String tag, CodeGenerator inner, boolean active) {
+    private Optional(String tag, CodeGenerator inner, boolean active) {
         this.tag = tag;
         this.inner = inner;
         this.active = active;

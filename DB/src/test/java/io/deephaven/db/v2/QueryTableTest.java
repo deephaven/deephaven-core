@@ -39,6 +39,7 @@ import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -2860,5 +2861,31 @@ public class QueryTableTest extends QueryTableTestBase {
         listener.close(); // we typically grab and ref-count this for testing
 
         Assert.assertNull(update.added);
+    }
+
+    public void testRegressionIssue544() {
+        // The expression that fails in the console is:
+        // x = merge(newTable(byteCol("Q", (byte)0)), timeTable("00:00:01").view("Q=(byte)(i%2)"))
+        //    .tail(1)
+        //    .view("Q=Q*i")
+        //    .sumBy()
+        //
+        // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has elements not in the index
+        //
+        final Table t0 = newTable(byteCol("Q", (byte) 0));
+        final QueryTable t1 = TstUtils.testRefreshingTable(i(), intCol("T"));
+        final Table t2 = t1.view("Q=(byte)(i%2)");
+        final Table result = merge(t0, t2).tail(1).view("Q=Q*i").sumBy();
+        int i = 1;
+        for (int step = 0; step < 2; ++step) {
+            final int key = i++;
+            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                final Index addIndex = i(key);
+                addToTable(t1, addIndex, intCol("T", key));
+                t1.notifyListeners(addIndex, i(), i());
+                TableTools.show(result);
+            });
+        }
+        assertEquals(0, getUpdateErrors().size());
     }
 }
