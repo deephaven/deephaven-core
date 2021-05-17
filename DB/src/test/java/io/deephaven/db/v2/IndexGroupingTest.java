@@ -16,6 +16,7 @@ import io.deephaven.db.v2.tuples.TupleSource;
 import io.deephaven.db.v2.tuples.TupleSourceFactory;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
@@ -23,11 +24,13 @@ import org.junit.Before;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.getTable;
 
 @SuppressWarnings("ClassInitializerMayBeStatic")
+@Category(OutOfBandTest.class)
 public class IndexGroupingTest extends LiveTableTestCase {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(IndexGroupingTest.class, "CompilerTools.logEnabled", false);

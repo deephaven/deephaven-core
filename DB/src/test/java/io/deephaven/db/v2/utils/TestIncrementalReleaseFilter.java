@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -11,10 +12,12 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.getTable;
 import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
+@Category(OutOfBandTest.class)
 public class TestIncrementalReleaseFilter extends LiveTableTestCase {
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
@@ -48,6 +51,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         return retVal;
     }
 
+    @Category(OutOfBandTest.class)
     public void testAutoTune() {
         final int cycles50 = testAutoTuneCycle(50);
         final int cycles100 = testAutoTuneCycle(100);

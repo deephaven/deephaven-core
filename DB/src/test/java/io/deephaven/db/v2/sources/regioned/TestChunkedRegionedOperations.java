@@ -29,6 +29,7 @@ import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.codec.BigIntegerCodec;
 import junit.framework.TestCase;
@@ -45,6 +46,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +56,7 @@ import static org.junit.Assert.assertTrue;
  * High-level unit tests for {@link RegionedColumnSource} implementations of
  * {@link io.deephaven.db.v2.sources.ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, OrderedKeys)}.
  */
+@Category(OutOfBandTest.class)
 public class TestChunkedRegionedOperations {
 
     private static final long TABLE_SIZE = 100_000;
@@ -322,6 +325,7 @@ public class TestChunkedRegionedOperations {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testEqual() {
         assertTableEquals(expected, actual);
     }
@@ -419,46 +423,55 @@ public class TestChunkedRegionedOperations {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testFullTableFullChunks() {
         assertChunkWiseEquals(expected, actual, expected.intSize());
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testFullTableNormalChunks() {
         assertChunkWiseEquals(expected, actual, 4096);
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testFullTableSmallChunks() {
         assertChunkWiseEquals(expected, actual, 8);
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testHalfDenseTableFullChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), expected.intSize());
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testHalfDenseTableNormalChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 4096);
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testHalfDenseTableSmallChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 8);
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testSparseTableFullChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), expected.intSize());
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testSparseTableNormalChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), 4096);
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testSparseTableSmallChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), 8);
     }

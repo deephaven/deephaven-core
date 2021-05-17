@@ -8,6 +8,7 @@ import io.deephaven.db.tables.dbarrays.DbIntArray;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.ArrayUtils;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
 
@@ -15,13 +16,16 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 
+@Category(OutOfBandTest.class)
 public class QueryTableJoinTest extends QueryTableTestBase {
+    @Category(OutOfBandTest.class)
     public void testAjIncremental() throws ParseException {
         final int maxSteps = 10;
         final int[] leftSizes = new int[]{10, 20};

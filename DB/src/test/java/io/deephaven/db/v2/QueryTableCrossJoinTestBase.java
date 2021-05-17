@@ -16,6 +16,7 @@ import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -24,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.longCol;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     private final int numRightBitsToReserve;
@@ -188,6 +191,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Category(OutOfBandTest.class)
     public void testIncrementalZeroKeyJoin() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -249,6 +253,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testLargeStaticJoin() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -454,6 +459,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testIncrementalWithKeyColumns() {
         final int[] sizes = {10, 100, 1000};
 
@@ -529,6 +535,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testShiftingDuringRehash() {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();

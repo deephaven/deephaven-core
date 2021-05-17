@@ -10,14 +10,17 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.sources.LogicalClock;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class TestSyncTableFilter extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
@@ -412,6 +415,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertTableEquals(s2f, s2mergedSorted);
     }
 
+    @Category(OutOfBandTest.class)
     public void testTableMapRandomized() {
         for (int seed = 0; seed < 1; ++seed) {
             testTableMapRandomized(seed);

@@ -14,10 +14,12 @@ import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
@@ -25,6 +27,7 @@ import static io.deephaven.db.v2.TstUtils.addToTable;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.AggCombo;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.AggSortedLast;
 
+@Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestSortedFirstOrLastByFactory.class, "CompilerTools.logEnabled", false);
@@ -56,6 +59,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
         for (final int size : sizes) {

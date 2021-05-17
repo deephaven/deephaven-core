@@ -3,6 +3,7 @@ package io.deephaven.db.v2.utils.sortedranges;
 import io.deephaven.db.v2.utils.*;
 import io.deephaven.db.v2.utils.rsp.RspBitmap;
 import io.deephaven.db.v2.utils.singlerange.SingleRange;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.Shuffle;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -19,9 +20,11 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.*;
 
+@Category(OutOfBandTest.class)
 public class SortedRangesTest {
     private static final int runs = 1;
     private static final int lastRun = 1; // to help offset the seed when doing multiple runs.
@@ -2270,6 +2273,7 @@ public class SortedRangesTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testRemoveSinglesTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
@@ -2517,6 +2521,7 @@ public class SortedRangesTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testGetOrderedKeysByKeyRange() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;

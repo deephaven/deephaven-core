@@ -7,8 +7,10 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 
+import io.deephaven.test.types.OutOfBandTest;
 import java.io.IOException;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.diff;
 import static io.deephaven.db.tables.utils.TableTools.emptyTable;
@@ -16,6 +18,7 @@ import static io.deephaven.db.tables.utils.TableTools.showWithIndex;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
+@Category(OutOfBandTest.class)
 public class QueryTableSliceTest extends QueryTableTestBase {
     public void testSliceIncremental() throws IOException {
         final int[] sizes = {1, 10, 100};
@@ -342,6 +345,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testTailWithGrowth() {
         final long steps = 4096;
 

@@ -19,13 +19,16 @@ import gnu.trove.map.hash.TByteIntHashMap;
 import gnu.trove.map.hash.TCharIntHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TShortIntHashMap;
+import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
+@Category(OutOfBandTest.class)
 public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     private final static boolean DO_STATIC_JOIN_PRINT = false;
 
@@ -203,6 +206,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         QueryScope.addParam("rightMap", null);
     }
 
+    @Category(OutOfBandTest.class)
     public void testNaturalJoinRandomStatic() {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10; rightSize <= 100_000; rightSize *= 10) {
@@ -233,6 +237,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     }
 
     // let's force some collisions by making our table small
+    @Category(OutOfBandTest.class)
     public void testNaturalJoinRandomStaticOverflow() {
         for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {

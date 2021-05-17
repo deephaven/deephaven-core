@@ -18,6 +18,7 @@ import io.deephaven.db.v2.by.SortedFirstBy;
 import io.deephaven.db.v2.select.MatchFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -32,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.getTable;
@@ -39,6 +41,7 @@ import static io.deephaven.db.v2.TstUtils.i;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.Agg;
 import static io.deephaven.db.v2.by.ComboAggregateFactory.AggCombo;
 
+@Category(OutOfBandTest.class)
 public class TestByExternal extends QueryTableTestBase {
 
     class TableMapNugget implements EvalNuggetInterface {
@@ -442,6 +445,7 @@ public class TestByExternal extends QueryTableTestBase {
         assertTrue(((TableMapImpl)map).isRefreshing());
     }
 
+    @Category(OutOfBandTest.class)
     public void testByExternalWithShifts() {
         for (int seed = 0; seed < 100; ++seed) {
             System.out.println("Seed = " + seed);

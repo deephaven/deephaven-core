@@ -8,17 +8,21 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.sources.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.base.ArrayUtil.swap;
 
+@Category(OutOfBandTest.class)
 public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 
+    @Category(OutOfBandTest.class)
     public void testRedirectionIndex() throws InterruptedException {
         final RedirectionIndexLockFreeImpl index = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
         index.startTrackingPrevValues();
