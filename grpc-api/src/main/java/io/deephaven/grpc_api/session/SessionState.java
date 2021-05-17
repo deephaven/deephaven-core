@@ -35,12 +35,10 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -108,7 +106,7 @@ public class SessionState extends LivenessArtifact {
 
     // some types of exports have a more sound story if the server tells the client what to call it
     private volatile long nextServerAllocatedId = -1;
-    private static final AtomicLongFieldUpdater<SessionState> SERVER_EXPORT_UPDATOR =
+    private static final AtomicLongFieldUpdater<SessionState> SERVER_EXPORT_UPDATER =
             AtomicLongFieldUpdater.newUpdater(SessionState.class, "nextServerAllocatedId");
 
     // maintains all requested exports by this client's session
@@ -141,8 +139,9 @@ public class SessionState extends LivenessArtifact {
         if (expiration.session != this) {
             throw new IllegalArgumentException("mismatched session for expiration token");
         }
-        // AtomicReference
+        // AtomicReference -> CAS to null to see if you are the winner and get to close things
         this.expiration = expiration;
+
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
                 .append("' which expires at ").append(expiration.deadline.toString())
@@ -222,7 +221,7 @@ public class SessionState extends LivenessArtifact {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
-        final long exportId = SERVER_EXPORT_UPDATOR.getAndDecrement(this);
+        final long exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
         //noinspection unchecked
         final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
         manage(result); // since we never `setWork` the session would otherwise not manage this EXPORTED export
@@ -387,7 +386,6 @@ public class SessionState extends LivenessArtifact {
 
         // final result of export
         private volatile T result;
-        private volatile boolean isExported;
         private volatile ExportState state = ExportState.UNKNOWN;
 
         // This indicates whether or not the LTM's exclusive lock should be held when executing the export
@@ -404,7 +402,7 @@ public class SessionState extends LivenessArtifact {
         private List<ExportObject<?>> parents = Collections.emptyList();
 
         // used to detect when this object is ready for export
-        volatile int dependentCount = -1;
+        private volatile int dependentCount = -1;
 
         // used to identify and propagate error details
         private String errorId;
@@ -949,6 +947,7 @@ public class SessionState extends LivenessArtifact {
             isClosed = true;
             safelyExecuteLocked(listener, listener::onCompleted);
             exportListeners.remove(this);
+            result = null;
         }
     }
 
@@ -1121,7 +1120,7 @@ public class SessionState extends LivenessArtifact {
      * @param ticket the grpc Ticket
      * @return the export id that the Ticket wraps
      */
-    public static long ticketToExportId(final Ticket ticket) {
+    public static long ticketToExportId(yfinal Ticket ticket) {
         if (ticket == null || ticket.getId().size() != 8) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "missing or incorrectly formatted ticket");
         }
@@ -1131,7 +1130,7 @@ public class SessionState extends LivenessArtifact {
     // used to detect when the export object is ready for export
     @SuppressWarnings("unchecked")
     private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
+            ExportedAtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
 
     private static final KeyedLongObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY = new KeyedLongObjectKey.BasicStrict<ExportObject<?>>() {
         @Override
