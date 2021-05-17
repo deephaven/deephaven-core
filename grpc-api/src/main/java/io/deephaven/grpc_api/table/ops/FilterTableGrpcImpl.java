@@ -4,9 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.table.ops.filter.FilterFactory;
-import io.deephaven.grpc_api.table.ops.filter.FilterPrinter;
-import io.deephaven.grpc_api.table.ops.filter.NormalizeFilters;
+import io.deephaven.grpc_api.table.ops.filter.*;
 import io.deephaven.proto.backplane.grpc.*;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -50,18 +48,18 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         //TODO
 
         // rewrite unnecessary NOT expressions away
-        filter = NormalizeFilters.exec(filter);
+        filter = NormalizeNots.exec(filter);
 
         // if a "in" expression has a non-reference on the left or reference on the right, flip it, and split
         // up values so these can be left as INs or remade into EQs, and join them together with OR/ANDs.
-        //TODO
+        filter = FlipNonReferenceMatchExpression.exec(filter);
 
         // merge ANDs nested in ANDs and ORs nested in ORs for a simpler structure
-        //TODO
+        filter = MergeNestedBinaryOperations.exec(filter);
 
         // for any "in" expression (at this point, all have a reference on the left), if they have a reference
         // value on the left it must be split into its own "equals" instead.
-        //TODO
+        filter = ConvertInvalidInExpressions.exec(filter);
 
         // replace any EQ-type expression with its corresponding IN-type expression. this preserves the changes
         // made above, could be moved earlier in this list, but must come before "in"/"not in"s are merged
@@ -72,10 +70,11 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         //TODO
 
         // rewrite any expressions which "should" be safe from the client needing to add null checks
-        //TODO
+        filter = MakeExpressionsNullSafe.exec(filter);
 
         // get a top array of filters to convert into SelectFilters
         //TODO
+
         List<Condition> finishedConditions = Collections.singletonList(filter);
 
         // build SelectFilter[] to pass to the table

@@ -5,22 +5,43 @@ import io.deephaven.proto.backplane.grpc.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Tools to create filter conditions
+ */
 public class NormalizeFilterUtil {
     private static List<Condition> visitChildren(List<Condition> children, FilterVisitor<Condition> visitor) {
         // note: don't bother with the possibility of null returns anymore because it doesn't really make sense IMO
         return children.stream().map(c -> FilterVisitor.accept(c, visitor)).collect(Collectors.toList());
     }
 
-    public static Condition doAnd(List<Condition> filtersList, FilterVisitor<Condition> visitor) {
+    public static Condition doAnd(List<Condition> filtersList) {
         return Condition.newBuilder().setAnd(AndCondition.newBuilder()
-                .addAllFilters(visitChildren(filtersList, visitor))
+                .addAllFilters(filtersList)
+                .build()).build();
+    }
+
+    public static Condition doAnd(List<Condition> filtersList, FilterVisitor<Condition> visitor) {
+        return doAnd(visitChildren(filtersList, visitor));
+    }
+
+    public static Condition doOr(List<Condition> filtersList) {
+        return Condition.newBuilder().setOr(OrCondition.newBuilder()
+                .addAllFilters(filtersList)
                 .build()).build();
     }
 
     public static Condition doOr(List<Condition> filtersList, FilterVisitor<Condition> visitor) {
-        return Condition.newBuilder().setOr(OrCondition.newBuilder()
-                .addAllFilters(visitChildren(filtersList, visitor))
-                .build()).build();
+        return doOr(visitChildren(filtersList, visitor));
+    }
+
+    public static Condition doInvert(Condition condition) {
+        return Condition.newBuilder().setNot(NotCondition.newBuilder()
+                .setFilter(condition))
+                .build();
+    }
+
+    public static Condition doInvert(Condition condition, FilterVisitor<Condition> visitor) {
+        return doInvert(FilterVisitor.accept(condition, visitor));
     }
 
     public static Condition doNot(Condition filter, FilterVisitor<Condition> visitor) {
@@ -30,9 +51,10 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    public static Condition doComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
         return Condition.newBuilder().setCompare(CompareCondition.newBuilder()
                 .setOperation(operation)
+                .setCaseSensitivity(caseSensitivity)
                 .setLhs(lhs)
                 .setRhs(rhs)
                 .build()).build();
@@ -84,9 +106,5 @@ public class NormalizeFilterUtil {
                 .setSearchString(searchString)
                 .addAllOptionalReferences(optionalReferencesList)
                 .build()).build();
-    }
-
-    public static Condition doInvert(Condition condition) {
-        return Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(condition)).build();
     }
 }

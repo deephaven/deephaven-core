@@ -72,7 +72,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    public SelectFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
         switch (operation) {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
@@ -81,7 +81,13 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
                 return generateNumericConditionFilter(operation, lhs, rhs);
             case EQUALS:
             case NOT_EQUALS:
-                throw new IllegalStateException("probably not possible here, needs to be converted to an IN before this point");
+                // At this point, we shouldn't be able to be optimized to a match filter, so we'll tostring and build a condition
+                // and let the DBLangParser turn the "==" into the appropriate java call
+                // Note that case insensitive checks aren't supported on this path
+                if (caseSensitivity != CaseSensitivity.MATCH_CASE) {
+                    throw new IllegalStateException("Should have been compiled out in a previous pass");
+                }
+                return generateConditionFilter(NormalizeFilterUtil.doComparison(operation, caseSensitivity, lhs, rhs));
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare operation " + operation);

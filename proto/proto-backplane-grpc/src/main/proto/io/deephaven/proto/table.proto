@@ -404,8 +404,9 @@ message CompareCondition {
     NOT_EQUALS = 5;
   }
   CompareOperation operation = 1;
-  Value lhs = 2;
-  Value rhs = 3;
+  CaseSensitivity caseSensitivity = 2;
+  Value lhs = 3;
+  Value rhs = 4;
 }
 
 enum CaseSensitivity {

@@ -9,7 +9,7 @@ public interface FilterVisitor<R> {
     R onOr(List<Condition> filtersList);
     R onNot(Condition filter);
 
-    R onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs);
+    R onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs);
 
     R onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType);
 
@@ -27,11 +27,11 @@ public interface FilterVisitor<R> {
             case AND:
                 return visitor.onAnd(condition.getAnd().getFiltersList());
             case OR:
-                return visitor.onOr(condition.getAnd().getFiltersList());
+                return visitor.onOr(condition.getOr().getFiltersList());
             case NOT:
                 return visitor.onNot(condition.getNot().getFilter());
             case COMPARE:
-                return visitor.onComparison(condition.getCompare().getOperation(), condition.getCompare().getLhs(), condition.getCompare().getRhs());
+                return visitor.onComparison(condition.getCompare().getOperation(), condition.getCompare().getCaseSensitivity(), condition.getCompare().getLhs(), condition.getCompare().getRhs());
             case IN:
                 return visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(), condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
             case INVOKE:

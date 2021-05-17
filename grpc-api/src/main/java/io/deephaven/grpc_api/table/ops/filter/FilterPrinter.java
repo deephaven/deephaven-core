@@ -80,7 +80,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onComparison(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    public Void onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
         accept(lhs);
         switch (operation) {
             case LESS_THAN:
@@ -97,9 +97,15 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 break;
             case EQUALS:
                 sb.append(" == ");
+                if (caseSensitivity == CaseSensitivity.IGNORE_CASE) {
+                    sb.append("(ignore case)");
+                }
                 break;
             case NOT_EQUALS:
                 sb.append(" != ");
+                if (caseSensitivity == CaseSensitivity.IGNORE_CASE) {
+                    sb.append("(ignore case)");
+                }
                 break;
             case UNRECOGNIZED:
             default:
