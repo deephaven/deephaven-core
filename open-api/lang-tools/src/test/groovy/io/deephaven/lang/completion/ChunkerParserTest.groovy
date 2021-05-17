@@ -119,7 +119,7 @@ val = {
         CompletionParser p = new CompletionParser()
         String src =
 """
-t = db.timeTable(${q}0:00:01$q)
+t = io.deephaven.db.tables.utils.TableTools.timeTable(${q}0:00:01$q)
 g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
 """
         doc = p.parse(src)
@@ -151,7 +151,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
         testSearch 25, ChunkerString,  "${q}0:00:0", '1', q
         testSearch 26, ChunkerString,  "${q}0:00:01", q, ''
 
-        testSearch 27, ChunkerInvoke,  "db.timeTable(${q}0:00:01$q", ')', ''
+        testSearch 27, ChunkerInvoke,  "io.deephaven.db.tables.utils.TableTools.timeTable(${q}0:00:01$q", ')', ''
 
         testSearch 28, ChunkerNewline,  '', '\n', ''
 

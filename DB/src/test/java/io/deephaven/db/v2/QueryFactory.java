@@ -816,7 +816,7 @@ public class QueryFactory {
                 "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
                 "\tcolumnRandoms[colNum] = new Random(seed);\n" +
                 "}\n\n" +
-                "tt = db.timeTable(\"00:00:00.1\");" +
+                "tt = io.deephaven.db.tables.utils.TableTools.timeTable(\"00:00:00.1\");" +
                 "tickingValues = tt.update(\n" +
                 "\"MyString=new String(`a`+i)\",\n" +
                 "\"MyInt=new Integer(i)\",\n" +
