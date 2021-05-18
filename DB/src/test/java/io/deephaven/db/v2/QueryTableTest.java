@@ -33,12 +33,14 @@ import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +55,7 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
@@ -67,6 +70,7 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
  * {@link QueryTableFlattenTest}, and {@link QueryTableSortTest}.
  */
+@Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
     public void testStupidCast(){
         QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6));
@@ -687,6 +691,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testStringContainsFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -766,6 +771,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(TableTools.newTable(intCol("IV", 1, 2, 4, 6)), geq1.dropColumns("LV"));
     }
 
+    @Category(OutOfBandTest.class)
     public void testDoubleRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -799,6 +805,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testDateTimeRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -2284,7 +2291,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-
+    @Category(OutOfBandTest.class)
     public void testUngroupIncremental() throws ParseException {
         testUngroupIncremental(100, false);
         testUngroupIncremental(100, true);
@@ -2860,5 +2867,31 @@ public class QueryTableTest extends QueryTableTestBase {
         listener.close(); // we typically grab and ref-count this for testing
 
         Assert.assertNull(update.added);
+    }
+
+    public void testRegressionIssue544() {
+        // The expression that fails in the console is:
+        // x = merge(newTable(byteCol("Q", (byte)0)), timeTable("00:00:01").view("Q=(byte)(i%2)"))
+        //    .tail(1)
+        //    .view("Q=Q*i")
+        //    .sumBy()
+        //
+        // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has elements not in the index
+        //
+        final Table t0 = newTable(byteCol("Q", (byte) 0));
+        final QueryTable t1 = TstUtils.testRefreshingTable(i(), intCol("T"));
+        final Table t2 = t1.view("Q=(byte)(i%2)");
+        final Table result = merge(t0, t2).tail(1).view("Q=Q*i").sumBy();
+        int i = 1;
+        for (int step = 0; step < 2; ++step) {
+            final int key = i++;
+            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                final Index addIndex = i(key);
+                addToTable(t1, addIndex, intCol("T", key));
+                t1.notifyListeners(addIndex, i(), i());
+                TableTools.show(result);
+            });
+        }
+        assertEquals(0, getUpdateErrors().size());
     }
 }

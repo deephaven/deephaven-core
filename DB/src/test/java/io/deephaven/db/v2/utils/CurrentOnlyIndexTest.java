@@ -1,7 +1,10 @@
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.experimental.categories.Category;
 
+@Category(OutOfBandTest.class)
 public class CurrentOnlyIndexTest extends SortedIndexTestBase {
     @NotNull
     @Override

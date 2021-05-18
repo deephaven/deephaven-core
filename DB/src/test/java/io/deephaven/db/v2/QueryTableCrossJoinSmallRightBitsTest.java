@@ -5,9 +5,11 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OutOfKeySpaceException;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.intCol;
 import static io.deephaven.db.v2.TstUtils.c;
@@ -15,11 +17,13 @@ import static io.deephaven.db.v2.TstUtils.i;
 import static io.deephaven.db.v2.TstUtils.testRefreshingTable;
 import static io.deephaven.db.v2.TstUtils.testTable;
 
+@Category(OutOfBandTest.class)
 public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTestBase {
    public QueryTableCrossJoinSmallRightBitsTest() {
        super(1);
    }
 
+    @Category(OutOfBandTest.class)
     public void testIncrementalWithKeyColumnsShallow() {
         final int size = 10;
 

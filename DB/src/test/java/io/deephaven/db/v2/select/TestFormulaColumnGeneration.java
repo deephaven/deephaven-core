@@ -20,10 +20,10 @@ public class TestFormulaColumnGeneration {
     // code only needs to be run when the formula generation code changes, and only after
     // some human believes that the code is correct. When that happens the process
     // is:
-    // 1. Once the formula generation code is believed to be correct, uncomment this "Test"
-    // 2. Run it once to generate new "golden master" files.
+    // 1. Once the formula generation code is believed to be correct, uncomment @Test for this test case below.
+    // 2. Run this test case once to generate new "golden master" files.
     // 3. Comment this "test" back out
-    // 4. Confirm that the modified files pass "validateFiles".
+    // 4. Confirm that the modified files pass the "validateFiles" case.
     // 4. Check in the modified "golden master" files.
     // @Test
     public void generateFiles() throws FileNotFoundException {

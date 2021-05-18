@@ -7,13 +7,16 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 
+import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.emptyTable;
 
 /**
  * Tests for {@link StaticCalendarMethods}
  */
+@Category(OutOfBandTest.class)
 public class StaticCalendarMethodsTest extends BaseArrayTestCase{
     private final BusinessCalendar calendar = Calendars.calendar();
     private final DBDateTime time1 = DBTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
@@ -226,6 +229,7 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase{
         assertEquals(calendar.getBusinessSchedule(LocalDate.now()), StaticCalendarMethods.getBusinessSchedule(LocalDate.now()));
     }
 
+    @Category(OutOfBandTest.class)
     public void testBusinessCalendarMethodsTable() {
 
         if(!QueryLibrary.getStaticImports().contains(StaticCalendarMethods.class)) {

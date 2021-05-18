@@ -19,6 +19,7 @@ import io.deephaven.db.v2.sources.UnionRedirection;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.IntChunk;
 import io.deephaven.db.v2.utils.*;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -41,10 +42,12 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 import java.nio.charset.Charset;
+import org.junit.experimental.categories.Category;
 
 /**
  * Unit tests for {@link TableTools}.
  */
+@Category(OutOfBandTest.class)
 public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
@@ -741,6 +744,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     // This merge should work out nicely, we'll end up collapsing it into a single broad merge.
     @Test
+    @Category(OutOfBandTest.class)
     public void testMergeRecursive() {
         Table result = null;
 
@@ -1143,6 +1147,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testMergeIndexShiftingPerformance() {
         final QueryTable testRefreshingTable = TstUtils.testRefreshingTable(i(0), intCol("IntCol", 0), charCol("CharCol", 'a'));
 

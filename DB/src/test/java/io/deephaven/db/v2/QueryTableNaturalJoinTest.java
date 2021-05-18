@@ -16,6 +16,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -26,12 +27,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.function.BiConsumer;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Arrays.asList;
 
+@Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinRehash() {
@@ -130,6 +133,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testNaturalJoinIncremental() {
         setExpectError(false);
 

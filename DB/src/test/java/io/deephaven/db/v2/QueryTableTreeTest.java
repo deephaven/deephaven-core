@@ -21,6 +21,7 @@ import io.deephaven.db.v2.by.SortedLastBy;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.PrevColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
@@ -37,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
@@ -47,6 +49,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Test of Tree Tables and rollups.
  */
+@Category(OutOfBandTest.class)
 public class QueryTableTreeTest extends QueryTableTestBase {
     private final ExecutorService pool = Executors.newFixedThreadPool(1);
 
@@ -1583,6 +1586,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         return new io.deephaven.datastructures.util.SmartKey(id, pos.substring(0, liof));
     }
 
+    @Category(OutOfBandTest.class)
     public void testOrderTreeTable() {
         final Random random = new Random(0);
 

@@ -12,6 +12,7 @@ import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
@@ -23,7 +24,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+import org.junit.experimental.categories.Category;
 
+@Category(OutOfBandTest.class)
 public class TestSort extends BaseArrayTestCase {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestSort.class, "CompilerTools.logEnabled", false);
@@ -62,6 +65,7 @@ public class TestSort extends BaseArrayTestCase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testSortMulti() {
         for (int ncols = 1; ncols <= 4; ++ncols)
         {
