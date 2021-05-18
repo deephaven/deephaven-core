@@ -146,6 +146,7 @@
   var table;
   var oldTableHandlerCleanup;
   var simplePagingTable = document.getElementById('simplePagingTable');
+  var topMenu = document.getElementById('topMenu');
 
   (async () => {
       ide = await dh.Ide.getExistingSession(window.location.protocol + "//" + window.location.host, "", null, "groovy");
