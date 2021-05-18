@@ -7,6 +7,7 @@ plugins {
 }
 
 evaluationDependsOn ':deephaven-jpy'
+evaluationDependsOn ':Integrations'
 
 sourceSets {
   // All sourcesets here are used for testing; we'll inform the idea{} plugin, below
@@ -133,6 +134,7 @@ if (!PyEnv.pythonEnabled(project)) {
           into 'classes'
         }
       }
+      parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
       dockerfile {
         // base image with default java, python, wheels
         from 'deephaven/runtime-base'
