@@ -262,8 +262,12 @@ test {
 // Adds a custom testParallel task which is allowed to run tests in parallel.
 // Add @Category(ParallelTest.class) to have your tests run in parallel
 // Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
+
 // testParallel: parallel, not a db test, not isolated
-TestTools.addDbTest(project, 'Parallel', true)
+// TODO: undo?
+// make Parallel act like Serial
+TestTools.addDbTest(project, 'Parallel', false, false, true)
+
 // testSerial: non-parallel, not a db test, isolated
 TestTools.addDbTest(project, 'Serial', false, false, true)
 // testOutOfBand: non-parallel, not a db test, not isolated
@@ -271,9 +275,9 @@ TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 
 // The configuration of this with respect to the build environment isn't very tight.
 // Ideally, the build environment would be able to configure this as appropriate.
-tasks.testParallel.maxHeapSize = '3g'
-tasks.testSerial.maxHeapSize = '3g'
-tasks.testOutOfBand.maxHeapSize = '3g'
-tasks.test.maxHeapSize = '3g'
+tasks.testParallel.maxHeapSize = '6g'
+tasks.testSerial.maxHeapSize = '6g'
+tasks.testOutOfBand.maxHeapSize = '6g'
+tasks.test.maxHeapSize = '6g'
 
 Tools.applyAnnotationProcessorPathHacks(project, true)
