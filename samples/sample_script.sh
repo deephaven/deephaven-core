@@ -80,8 +80,8 @@ function do_checkout_version()
 
 #####
 # set up the source and target info
-git_root_url="git://github.com/mikeblas/samples-junk.git"
-target_path="data/examples"
+git_root_url="git://github.com/deephaven/examples.git"
+target_path="/data/examples"
 
 # figure out command and dispatch ...
 case "$1" in
