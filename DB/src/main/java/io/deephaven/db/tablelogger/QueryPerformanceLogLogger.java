@@ -162,7 +162,7 @@ public class QueryPerformanceLogLogger
     }
 
     private static final TableDefinition TABLE_DEFINITION =
-            TableDefinition.tableDefinition(columnDbTypes, columnNames);
+            TableDefinition.tableDefinition(TABLE_NAME, columnDbTypes, columnNames);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;
