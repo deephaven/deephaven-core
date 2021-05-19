@@ -82,7 +82,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
 
     public void testPartialCopy() {
         final int nodeSize = 8;
-        final ObjectSegmentedSortedMultiset ssm = new ObjectSegmentedSortedMultiset(nodeSize);
+        final ObjectSegmentedSortedMultiset ssm = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
 
         final Object[] data = new Object[24];
         final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(24);
