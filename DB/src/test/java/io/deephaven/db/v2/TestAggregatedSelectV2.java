@@ -62,7 +62,7 @@ public class TestAggregatedSelectV2 extends TestCase {
         }
 
         TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(tableDirectory, tableDefinition);
+        return TableManagementTools.readTable(tableDirectory);
     }
 
     Table doAggregatedQuery() throws IOException

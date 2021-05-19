@@ -68,7 +68,7 @@ public class TestCodecColumns {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
             TableManagementTools.writeTable(TABLE, dir, storageFormat);
-            final Table result = TableManagementTools.readTable(dir, TABLE_DEFINITION);
+            final Table result = TableManagementTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

@@ -1329,7 +1329,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
         TableManagementTools.writeTable(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(leftDirectory, leftDefinition);
+        return TableManagementTools.readTable(leftDirectory);
     }
 
     @NotNull
@@ -1340,6 +1340,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
         TableManagementTools.writeTable(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(rightDirectory, rightDefinition);
+        return TableManagementTools.readTable(rightDirectory);
     }
 }

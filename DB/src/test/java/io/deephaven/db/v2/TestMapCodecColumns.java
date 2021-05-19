@@ -84,7 +84,7 @@ public class TestMapCodecColumns {
         try {
             TableManagementTools.writeTable(TABLE, dir, storageFormat);
             // TODO (deephaven/deephaven-core/issues/322): Infer the definition
-            final Table result = TableManagementTools.readTable(dir, TABLE_DEFINITION);
+            final Table result = TableManagementTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);
