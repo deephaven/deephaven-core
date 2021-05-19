@@ -25,7 +25,7 @@ function fail_out()
 }
 
 
-# check that we have the expected enlistment directory; complain and fail if not
+# check that we have the expected enlistment directory; download if not
 function ensure_enlistment()
 {
   if [ ! -d $target_path/.git ]; then
@@ -105,4 +105,3 @@ case "$1" in
     usage
     ;;
 esac
-
