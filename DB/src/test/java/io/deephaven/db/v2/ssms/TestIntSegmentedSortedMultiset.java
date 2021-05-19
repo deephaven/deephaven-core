@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.db.v2.ssms;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
@@ -13,12 +14,14 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
+import io.deephaven.db.v2.ssa.SsaChecker;
 import io.deephaven.db.v2.ssa.SsaTestHelpers;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.compact.IntCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
@@ -33,41 +36,46 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(ParallelTest.class)
 public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
+
     public void testInsertion() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
             for (int tableSize = 10; tableSize <= 1000; tableSize *= 10) {
                 for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
-                    testUpdates(seed, tableSize, nodeSize, true, false, true);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), true, false, true);
                 }
             }
         }
     }
 
     public void testRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
             for (int tableSize = 10; tableSize <= 1000; tableSize *= 10) {
                 for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
-                    testUpdates(seed, tableSize, nodeSize, false, true, true);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), false, true, true);
                 }
             }
         }
     }
 
     public void testInsertAndRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int tableSize = 10; tableSize <= 1000; tableSize *= 2) {
             for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
                 for (int seed = 0; seed < 100; ++seed) {
-                    testUpdates(seed, tableSize, nodeSize, true, true, true);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), true, true, true);
                 }
             }
         }
     }
 
     public void testMove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int tableSize = 10; tableSize <= 10000; tableSize *= 2) {
             for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
                 for (int seed = 0; seed < 200; ++seed) {
-                    testMove(seed, tableSize, nodeSize, true);
+                    testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }
         }
@@ -116,21 +124,20 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(final int seed, final int tableSize, final int nodeSize, boolean allowAddition, boolean allowRemoval, boolean countNull) {
-        final Random random = new Random(seed);
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+        final Random random = new Random(desc.seed());
         final TstUtils.ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(tableSize, random, columnInfo = initColumnInfos(new String[]{"Value"},
+        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForInt()));
 
         final Table asInteger = SsaTestHelpers.prepareTestTableForInt(table);
 
-        final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(nodeSize);
+        final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(desc.nodeSize());
 
         //noinspection unchecked
         final ColumnSource<Integer> valueSource = asInteger.getColumnSource("Value");
 
-        System.out.println("Creation seed=" + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize);
-        checkSsmInitial(asInteger, ssm, valueSource, countNull);
+        checkSsmInitial(asInteger, ssm, valueSource, countNull, desc);
 
         ((DynamicTable)asInteger).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asInteger) {
             @Override
@@ -140,7 +147,7 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
                      final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(maxSize);
                      final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(maxSize)
                 ) {
-                    final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(nodeSize);
+                    final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(desc.nodeSize());
 
                     if (removed.nonempty()) {
                         valueSource.fillPrevChunk(fillContext, chunk, removed);
@@ -158,55 +165,58 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
             }
         });
 
-        for (int step = 0; step < 50; ++step) {
-            System.out.println("Seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize + ", step = " + step);
+        while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index [] notify = GenerateTableUpdates.computeTableUpdates(tableSize, random, table, columnInfo, allowAddition, allowRemoval, false);
+                final Index [] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                 assertTrue(notify[2].empty());
                 table.notifyListeners(notify[0], notify[1], notify[2]);
             });
 
             try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize())) {
-                checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getIndex()).asIntChunk(), countNull);
+                checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getIndex()).asIntChunk(), countNull, desc);
             }
 
             if (!allowAddition && table.size() == 0) {
-                System.out.println("All values removed.");
                 break;
             }
         }
 
     }
 
-    private void testMove(final int seed, final int tableSize, final int nodeSize, boolean countNull) {
-        final Random random = new Random(seed);
-        final QueryTable table = getTable(tableSize, random, initColumnInfos(new String[]{"Value"},
+    private void testMove(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean countNull) {
+        final Random random = new Random(desc.seed());
+        final QueryTable table = getTable(desc.tableSize(), random, initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForInt()));
 
         final Table asInteger = SsaTestHelpers.prepareTestTableForInt(table);
 
-        final IntSegmentedSortedMultiset ssmLo = new IntSegmentedSortedMultiset(nodeSize);
-        final IntSegmentedSortedMultiset ssmHi = new IntSegmentedSortedMultiset(nodeSize);
+        final IntSegmentedSortedMultiset ssmLo = new IntSegmentedSortedMultiset(desc.nodeSize());
+        final IntSegmentedSortedMultiset ssmHi = new IntSegmentedSortedMultiset(desc.nodeSize());
 
         //noinspection unchecked
         final ColumnSource<Integer> valueSource = asInteger.getColumnSource("Value");
 
-        System.out.println("Creation seed=" + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize +", actual size=" + asInteger.size());
-        checkSsmInitial(asInteger, ssmLo, valueSource, countNull);
+        checkSsmInitial(asInteger, ssmLo, valueSource, countNull, desc);
         final long totalExpectedSize = ssmLo.totalSize();
 
         while (ssmLo.size() > 0) {
-            final long count = random.nextInt(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()) + 1);
-            final long newLoCount = ssmLo.totalSize() - count;
-            final long newHiCount = ssmHi.totalSize() + count;
-            if (printTableUpdates) {
-                System.out.println("Moving " + count + " of " + ssmLo.totalSize() + " elements.");
-            }
-            ssmLo.moveBackToFront(ssmHi, count);
+            desc.advance();
+            try {
+                final long count = random.nextInt(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()) + 1);
+                final long newLoCount = ssmLo.totalSize() - count;
+                final long newHiCount = ssmHi.totalSize() + count;
+                if (printTableUpdates) {
+                    System.out.println("Moving " + count + " of " + ssmLo.totalSize() + " elements.");
+                }
+                ssmLo.moveBackToFront(ssmHi, count);
 
-            assertEquals(newLoCount, ssmLo.totalSize());
-            assertEquals(newHiCount, ssmHi.totalSize());
-            assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
+                assertEquals(newLoCount, ssmLo.totalSize());
+                assertEquals(newHiCount, ssmHi.totalSize());
+                assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
+
+            } catch (AssertionFailure e) {
+                TestCase.fail("Moving lo to hi failed at " + desc + ": " + e.getMessage());
+            }
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
                  final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
@@ -214,36 +224,38 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
                 valueChunk.sort();
                 final IntChunk<? extends Values> loValues = valueChunk.slice(0, LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()));
                 final IntChunk<? extends Values> hiValues = valueChunk.slice(LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()), LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()));
-                checkSsm(ssmLo, loValues, countNull);
-                checkSsm(ssmHi, hiValues, countNull);
+                checkSsm(ssmLo, loValues, countNull, desc);
+                checkSsm(ssmHi, hiValues, countNull, desc);
             }
-
         }
 
-        System.out.println("All lo elements moved to hi.");
-        checkSsm(asInteger, ssmHi, valueSource, countNull);
+        checkSsm(asInteger, ssmHi, valueSource, countNull, desc);
 
         while (ssmHi.size() > 0) {
-            final long count = random.nextInt(LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()) + 1);
+            desc.advance();
+            try {
+                final long count = random.nextInt(LongSizedDataStructure.intSize("ssmHi", ssmHi.totalSize()) + 1);
 
-            final long newLoCount = ssmLo.totalSize() + count;
-            final long newHiCount = ssmHi.totalSize() - count;
+                final long newLoCount = ssmLo.totalSize() + count;
+                final long newHiCount = ssmHi.totalSize() - count;
 
-            if (printTableUpdates) {
-                System.out.println("Moving " + count + " of " + ssmHi.totalSize() + " elements.");
+                if (printTableUpdates) {
+                    System.out.println("Moving " + count + " of " + ssmHi.totalSize() + " elements.");
+                }
+                ssmHi.moveFrontToBack(ssmLo, count);
+
+                assertEquals(newLoCount, ssmLo.totalSize());
+                assertEquals(newHiCount, ssmHi.totalSize());
+                assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
+            } catch (AssertionFailure e) {
+                TestCase.fail("Moving hi to lo failed at " + desc + ": " + e.getMessage());
             }
-            ssmHi.moveFrontToBack(ssmLo, count);
-
-            assertEquals(newLoCount, ssmLo.totalSize());
-            assertEquals(newHiCount, ssmHi.totalSize());
-            assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
         }
 
-        System.out.println("All hi elements moved to lo.");
-        checkSsm(asInteger, ssmLo, valueSource, countNull);
+        checkSsm(asInteger, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull) {
+    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
              final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
@@ -255,47 +267,51 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getIndex());
-            checkSsm(ssm, valueChunk, countNull);
+            checkSsm(ssm, valueChunk, countNull, desc);
         }
     }
 
-    private void checkSsm(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull) {
+    private void checkSsm(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
              final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getIndex());
-            checkSsm(ssm, valueChunk, countNull);
+            checkSsm(ssm, valueChunk, countNull, desc);
         }
     }
 
-    private void checkSsm(IntSegmentedSortedMultiset ssm, IntChunk<? extends Values> valueChunk, boolean countNull) {
-        ssm.validate();
-        final IntChunk<?> keys = ssm.keyChunk();
-        final LongChunk<?> counts = ssm.countChunk();
-        int totalSize = 0;
+    private void checkSsm(IntSegmentedSortedMultiset ssm, IntChunk<? extends Values> valueChunk, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+        try {
+            ssm.validate();
+            final IntChunk<?> keys = ssm.keyChunk();
+            final LongChunk<?> counts = ssm.countChunk();
+            int totalSize = 0;
 
-        final Map<Integer, Integer> checkMap = new TreeMap<>(DhIntComparisons::compare);
-        for (int ii = 0; ii < valueChunk.size(); ++ii) {
-            final int value = valueChunk.get(ii);
-            if (value == NULL_INT && !countNull) {
-                continue;
+            final Map<Integer, Integer> checkMap = new TreeMap<>(DhIntComparisons::compare);
+            for (int ii = 0; ii < valueChunk.size(); ++ii) {
+                final int value = valueChunk.get(ii);
+                if (value == NULL_INT && !countNull) {
+                    continue;
+                }
+                totalSize++;
+                checkMap.compute(value, (key, cnt) -> {
+                    if (cnt == null) return 1;
+                    else return cnt + 1;
+                });
             }
-            totalSize++;
-            checkMap.compute(value, (key, cnt) -> {
-                if (cnt == null) return 1;
-                else return cnt + 1;
+
+            assertEquals(checkMap.size(), ssm.size());
+            assertEquals(totalSize, ssm.totalSize());
+            assertEquals(checkMap.size(), keys.size());
+            assertEquals(checkMap.size(), counts.size());
+
+            final MutableInt offset = new MutableInt(0);
+            checkMap.forEach((key, count) -> {
+                assertEquals((int) key, keys.get(offset.intValue()));
+                assertEquals((long) count, counts.get(offset.intValue()));
+                offset.increment();
             });
+        } catch (AssertionFailure e) {
+            TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
-
-        assertEquals(checkMap.size(), ssm.size());
-        assertEquals(totalSize, ssm.totalSize());
-        assertEquals(checkMap.size(), keys.size());
-        assertEquals(checkMap.size(), counts.size());
-
-        final MutableInt offset = new MutableInt(0);
-        checkMap.forEach((key, count) -> {
-            TestCase.assertEquals((int)key, keys.get(offset.intValue()));
-            TestCase.assertEquals((long)count, counts.get(offset.intValue()));
-            offset.increment();
-        });
     }
 }
