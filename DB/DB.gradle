@@ -269,11 +269,11 @@ TestTools.addDbTest(project, 'Serial', false, false, true)
 // testOutOfBand: non-parallel, not a db test, not isolated
 TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 
-tasks.testParallel.maxHeapSize = '6g'
-tasks.testSerial.maxHeapSize = '6g'
-tasks.testOutOfBand.maxHeapSize = '6g'
-tasks.test.maxHeapSize = '6g'
-// consider giving all our tests a mountain of RAM:
-// tasks.withType(Test)*.maxHeapSize = '12g'
+// The configuration of this with respect to the build environment isn't very tight.
+// Ideally, the build environment would be able to configure this as appropriate.
+tasks.testParallel.maxHeapSize = '3g'
+tasks.testSerial.maxHeapSize = '3g'
+tasks.testOutOfBand.maxHeapSize = '3g'
+tasks.test.maxHeapSize = '3g'
 
 Tools.applyAnnotationProcessorPathHacks(project, true)
