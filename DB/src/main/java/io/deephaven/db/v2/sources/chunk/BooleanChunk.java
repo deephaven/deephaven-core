@@ -14,11 +14,6 @@ import org.jetbrains.annotations.NotNull;
 // region BufferImports
 // endregion BufferImports
 
-/**
- * {@link Chunk} implementation for boolean data.
- *
- * @IncludeAll
- */
 public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final BooleanChunk EMPTY = new BooleanChunk<>(ArrayUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
@@ -112,6 +107,12 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @Override
     public final boolean isAlias(Chunk chunk) {
         return chunk.isAlias(data);
+    }
+
+    @Override
+    public final <V extends Visitor<ATTR>> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
     }
 
     // region ApplyDecoder

@@ -61,7 +61,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             case Deephaven:
                 return new ConditionFilter(formula);
             case Numba:
-                return new PythonVectorFilter(formula);
+                throw new UnsupportedOperationException("Python condition filter should be created from python");
             default:
                 throw new UnsupportedOperationException("Unknow parser type " + parser);
         }
@@ -266,7 +266,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         private final String[] columnNames;
         private final int chunkSize;
 
-        ChunkFilter(FilterKernel filterKernel, String[] columnNames, int chunkSize) {
+        public ChunkFilter(FilterKernel filterKernel, String[] columnNames, int chunkSize) {
             this.filterKernel = filterKernel;
             this.columnNames = columnNames;
             this.chunkSize = chunkSize;

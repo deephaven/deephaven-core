@@ -16,11 +16,6 @@ import java.nio.Buffer;
 import java.nio.ShortBuffer;
 // endregion BufferImports
 
-/**
- * {@link Chunk} implementation for short data.
- *
- * @IncludeAll
- */
 public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final ShortChunk EMPTY = new ShortChunk<>(ArrayUtils.EMPTY_SHORT_ARRAY, 0, 0);
@@ -114,6 +109,12 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     @Override
     public final boolean isAlias(Chunk chunk) {
         return chunk.isAlias(data);
+    }
+
+    @Override
+    public final <V extends Visitor<ATTR>> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
     }
 
     // region ApplyDecoder

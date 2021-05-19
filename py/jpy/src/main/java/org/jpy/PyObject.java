@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * This file was modified by Deephaven Data Labs.
+ * This file was modified by Illumon.
  *
  */
 
@@ -462,7 +462,7 @@ public class PyObject implements AutoCloseable {
             // Let's be defensive here right now - we can loosen this in the future if necessary.
             Objects.requireNonNull(paramTypes[i], "paramTypes items must be non null");
             Objects.requireNonNull(args[i], "args items must be non null");
-            if (!paramTypes[i].isAssignableFrom(args[i].getClass())) {
+            if (!Assignment.isAssignableFrom(paramTypes[i], args[i])) {
                 throw new IllegalArgumentException(String.format(
                     "Argument %d of type '%s' is not assignable to type '%s'",
                     i,

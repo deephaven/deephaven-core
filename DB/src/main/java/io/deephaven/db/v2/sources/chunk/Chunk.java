@@ -5,13 +5,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.Buffer;
 
-/**
- * Data structure for a contiguous region of data.
- *
- * @param <ATTR> {@link Attributes} that apply to this chunk
- *
- * @IncludeAll
- */
 public interface Chunk<ATTR extends Any> {
     /**
      * The threshold at which we should use System.arrayCopy rather than our own copy
@@ -25,6 +18,18 @@ public interface Chunk<ATTR extends Any> {
      * The maximum number of elements a chunk can contain.
      */
     int MAXIMUM_SIZE = Integer.MAX_VALUE;
+
+    interface Visitor<ATTR extends Any> {
+        void visit(ByteChunk<ATTR> chunk);
+        void visit(BooleanChunk<ATTR> chunk);
+        void visit(CharChunk<ATTR> chunk);
+        void visit(ShortChunk<ATTR> chunk);
+        void visit(IntChunk<ATTR> chunk);
+        void visit(LongChunk<ATTR> chunk);
+        void visit(FloatChunk<ATTR> chunk);
+        void visit(DoubleChunk<ATTR> chunk);
+        <T> void visit(ObjectChunk<T, ATTR> chunk);
+    }
 
     /**
      * Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a
@@ -87,6 +92,13 @@ public interface Chunk<ATTR extends Any> {
      */
     ChunkType getChunkType();
 
+    default void checkChunkType(ChunkType expected) {
+        final ChunkType actual = getChunkType();
+        if (actual != expected) {
+            throw new IllegalArgumentException(String.format("Expected chunk type '%s', but is '%s'.", expected, actual));
+        }
+    }
+
     /**
      * @return true iff this and array are aliases, that is they refer to the same underlying data
      */
@@ -96,6 +108,8 @@ public interface Chunk<ATTR extends Any> {
      * @return true iff this and chunk are aliases, that is they refer to the same underlying data
      */
     boolean isAlias(Chunk chunk);
+
+    <V extends Visitor<ATTR>> V walk(V visitor);
 
     default ByteChunk<ATTR> asByteChunk() {
         return (ByteChunk<ATTR>) this;
