@@ -11,7 +11,8 @@ function usage()
   printf "        download [<version>] - downloads and mounts all example data\n" >&2
   printf "                               gets latest version unless <version> supplied\n" >&2
   printf "        remove - removes all example data\n" >&2
-  printf "        version - show local version\n" >&2
+  printf "        version [<version>] - get version <version>\n" >&2
+  printf "                            - without a parameter, shows current the version\n" >&2
   printf "        versions - list available versions\n" >&2
   exit 2
 }
@@ -25,7 +26,7 @@ function fail_out()
 }
 
 
-# check that we have the expected enlistment directory; complain and fail if not
+# check that we have the expected enlistment directory; download it if not
 function ensure_enlistment()
 {
   if [ ! -d $target_path/.git ]; then
@@ -44,7 +45,13 @@ function do_download()
     git clone --quiet $git_root_url $target_path || fail_out "Couldn't clone examples repository"
     printf "examples downloaded to $target_path\n"
   fi
-  [ ! -z "$1" ] && do_checkout_version "$1"
+
+  if [ ! -z "$1" ]; then
+     do_checkout_version "$1"
+  else
+     cd $target_path
+     do_checkout_version `git describe --tags $(git rev-list --tags --max-count=1)`
+  fi
 }
 
 
@@ -73,6 +80,7 @@ function do_list_versions()
 function do_checkout_version()
 {
   cd $target_path
+  printf "checkout out version %s ...\n" "$1"
   git -c advice.detachedHead=false checkout "$1" || fail_out "Couldn't change versions"
   printf "set to version %s\n" "$1"
 }
@@ -81,6 +89,7 @@ function do_checkout_version()
 #####
 # set up the source and target info
 git_root_url="git://github.com/deephaven/examples.git"
+
 target_path="/data/examples"
 
 # figure out command and dispatch ...
@@ -89,9 +98,13 @@ case "$1" in
     do_download "$2"
     ;;
   version)
-    [ -z "$2" ] && fail_out "need a version specification"
     ensure_enlistment
-    do_checkout_version "$2"
+    if [ -z "$2" ]; then
+      cd $target_path
+      git describe
+    else
+      do_checkout_version "$2"
+    fi
     ;;
   versions)
     ensure_enlistment
