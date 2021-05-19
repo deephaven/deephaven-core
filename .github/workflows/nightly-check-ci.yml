@@ -32,7 +32,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: check
-          arguments: --scan --continue check
+          arguments: --scan --continue --rerun-tasks check
           gradle-version: wrapper
 
       - name: Upload Test Results
@@ -71,7 +71,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: testSerial
-          arguments: --scan --continue testSerial
+          arguments: --scan --continue --rerun-tasks testSerial
           gradle-version: wrapper
 
       - name: Upload Test Results
@@ -110,7 +110,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: testParallel
-          arguments: --scan --continue testParallel
+          arguments: --scan --continue --rerun-tasks testParallel
           gradle-version: wrapper
 
       - name: Upload Test Results
@@ -149,7 +149,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: testOutOfBand
-          arguments: --scan --continue testOutOfBand
+          arguments: --scan --continue --rerun-tasks testOutOfBand
           gradle-version: wrapper
 
       - name: Upload Test Results
