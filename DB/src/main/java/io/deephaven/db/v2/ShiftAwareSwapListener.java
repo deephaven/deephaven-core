@@ -1,12 +1,11 @@
 package io.deephaven.db.v2;
 
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.live.NotificationQueue;
 
 public class ShiftAwareSwapListener extends SwapListenerBase<ShiftAwareListener> implements ShiftAwareListener {
 
-    public ShiftAwareSwapListener(final Logger log, final BaseTable sourceTable) {
-        super(log, sourceTable);
+    public ShiftAwareSwapListener(final BaseTable sourceTable) {
+        super(sourceTable);
     }
 
     @Override

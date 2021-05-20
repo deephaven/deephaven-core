@@ -276,7 +276,7 @@ public abstract class SourceTable extends RedefinableTable {
     protected final QueryTable doCoalesce() {
         initialize();
 
-        final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing((final Logger log, final BaseTable parent) -> new ShiftAwareSwapListener(log, parent) {
+        final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing((final BaseTable parent) -> new ShiftAwareSwapListener(parent) {
 
             @Override
             public final void destroy() {

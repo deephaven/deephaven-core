@@ -1,7 +1,6 @@
 package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.Pair;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.*;
@@ -128,7 +127,7 @@ public class TestWindowCheck {
         final DBDateTime[] emptyDateTimeArray = new DBDateTime[0];
         final Table tableToCheck = testRefreshingTable(i(), c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
-        final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() ->  WindowCheck.addTimeWindowInternal(new StreamLoggerImpl(), timeProvider, tableToCheck, "Timestamp", DBTimeUtils.SECOND * 60, "InWindow", false));
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() ->  WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp", DBTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithIndex(windowed.first);
 
@@ -177,7 +176,7 @@ public class TestWindowCheck {
             this.table = table;
             this.timeProvider = timeProvider;
             windowNanos = 300 * DBTimeUtils.SECOND;
-            windowed = WindowCheck.addTimeWindowInternal(new StreamLoggerImpl(), timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
+            windowed = WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable)windowed.first);
 
             ((QueryTable)windowed.first).listenForUpdates(windowedFailureListener);

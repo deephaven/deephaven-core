@@ -71,7 +71,7 @@ public class TableToolsMergeHelper {
             LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
         }
 
-        final UnionSourceManager unionSourceManager = new UnionSourceManager(staticLog_, tableDef, parentDependency);
+        final UnionSourceManager unionSourceManager = new UnionSourceManager(tableDef, parentDependency);
         final QueryTable queryTable = unionSourceManager.getResult();
 
         for (Table table : tables) {
