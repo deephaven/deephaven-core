@@ -14,7 +14,6 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
-import io.deephaven.db.v2.ssa.SsaChecker;
 import io.deephaven.db.v2.ssa.SsaTestHelpers;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.compact.IntCompactKernel;
@@ -139,7 +138,7 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
 
         checkSsmInitial(asInteger, ssm, valueSource, countNull, desc);
 
-        ((DynamicTable)asInteger).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asInteger) {
+        final Listener asIntegerListener = new InstrumentedListenerAdapter((DynamicTable) asInteger, false) {
             @Override
             public void onUpdate(Index added, Index removed, Index modified) {
                 final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
@@ -163,7 +162,8 @@ public class TestIntSegmentedSortedMultiset extends LiveTableTestCase {
                     }
                 }
             }
-        });
+        };
+        ((DynamicTable)asInteger).listenForUpdates(asIntegerListener);
 
         while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

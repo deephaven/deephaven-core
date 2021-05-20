@@ -38,7 +38,7 @@ public class GroupingValidator extends InstrumentedShiftAwareListenerAdapter {
     }
 
     private GroupingValidator(String context, DynamicTable source, Collection<String[]> groupingColumns) {
-        super("grouping validator " + context, source);
+        super("grouping validator " + context, source, false);
         this.context = context;
         this.source = source;
         this.groupingColumns = groupingColumns;

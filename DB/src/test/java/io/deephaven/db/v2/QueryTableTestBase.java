@@ -182,7 +182,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
     protected static class SimpleListener extends InstrumentedListenerAdapter {
         protected SimpleListener(DynamicTable source) {
-            super(source);
+            super(source, false);
             reset();
         }
 
@@ -246,7 +246,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         Index.LegacyIndexUpdateCoalescer indexUpdateCoalescer = new Index.LegacyIndexUpdateCoalescer();
 
         protected CoalescingListener(DynamicTable source) {
-            super(source);
+            super(source, false);
         }
 
         public int getCount() {
@@ -288,7 +288,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
     protected class ListenerWithGlobals extends InstrumentedListenerAdapter {
         protected ListenerWithGlobals(DynamicTable source) {
-            super(source);
+            super(source, false);
             reset();
         }
 
@@ -316,7 +316,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
     protected static class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdapter {
         protected SimpleShiftAwareListener(DynamicTable source) {
-            super(source);
+            super(source, false);
             reset();
         }
 

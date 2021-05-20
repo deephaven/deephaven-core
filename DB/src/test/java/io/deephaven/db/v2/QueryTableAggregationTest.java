@@ -2960,7 +2960,7 @@ public class QueryTableAggregationTest {
         final Table reversedFlat = table.reverse().flatten().where("Sentinel != 2");
         final Table last = reversedFlat.lastBy();
 
-        final InstrumentedShiftAwareListenerAdapter adapter = new InstrumentedShiftAwareListenerAdapter((DynamicTable)reversedFlat) {
+        final InstrumentedShiftAwareListenerAdapter adapter = new InstrumentedShiftAwareListenerAdapter((DynamicTable)reversedFlat, false) {
             @Override
             public void onUpdate(Update upstream) {
                 System.out.println(upstream);

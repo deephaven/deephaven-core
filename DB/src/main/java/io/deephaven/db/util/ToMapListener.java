@@ -66,7 +66,7 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
     }
 
     private ToMapListener(DynamicTable source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer, LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
-        super(source);
+        super(source, false);
         this.keyProducer = keyProducer;
         this.prevKeyProducer = prevKeyProducer;
         this.valueProducer = valueProducer;

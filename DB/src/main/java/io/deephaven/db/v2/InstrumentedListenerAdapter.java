@@ -14,6 +14,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -35,34 +36,23 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     protected final DynamicTable source;
 
     /**
-     * Create an instrumented listener for source.
+     * Create an instrumented listener for source. No description is provided.
      *
-     * The listener will be retained and no description is provided.
-     *
-     * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
+     * @param source The source table this listener will subscribe to - needed for preserving referential integrity
+     * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
+     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(DynamicTable source) {
-        this(null, source, true);
-    }
-
-    /**
-     * Create an instrumented listener for source.
-     *
-     * The listener will be retained and no description is provided.
-     *
-     * @param description A description for the UpdatePerformanceTracker to append to its entry description.
-     * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
-     */
-    public InstrumentedListenerAdapter(@Nullable String description, DynamicTable source) {
-        this(description, source, true);
+    public InstrumentedListenerAdapter(@NotNull final DynamicTable source, final boolean retain) {
+        this(null, source, retain);
     }
 
     /**
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
+     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(@Nullable String description, DynamicTable source, boolean retain) {
+    public InstrumentedListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source, final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if(retain) {

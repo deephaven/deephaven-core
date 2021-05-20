@@ -85,7 +85,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
-        ((DynamicTable)asInteger).listenForUpdates(new InstrumentedShiftAwareListenerAdapter((DynamicTable) asInteger) {
+        final ShiftAwareListener asIntegerListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asInteger, false) {
             @Override
             public void onUpdate(Update upstream) {
                 try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getIndex().getPrevIndex().intSize())) {
@@ -146,7 +146,8 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                     ssa.validate();
                 }
             }
-        });
+        };
+        ((DynamicTable)asInteger).listenForUpdates(asIntegerListener);
 
         while (desc.advance(50)) {
             System.out.println();
@@ -174,7 +175,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
-        ((DynamicTable)asInteger).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asInteger) {
+        final Listener asIntegerListener = new InstrumentedListenerAdapter((DynamicTable) asInteger, false) {
             @Override
             public void onUpdate(Index added, Index removed, Index modified) {
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -187,7 +188,8 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             }
-        });
+        };
+        ((DynamicTable)asInteger).listenForUpdates(asIntegerListener);
 
         while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

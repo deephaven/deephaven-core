@@ -12,7 +12,6 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
-import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.ParallelTest;
@@ -85,7 +84,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asLong, ssa, valueSource, desc);
 
-        ((DynamicTable)asLong).listenForUpdates(new InstrumentedShiftAwareListenerAdapter((DynamicTable) asLong) {
+        final ShiftAwareListener asLongListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asLong, false) {
             @Override
             public void onUpdate(Update upstream) {
                 try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getIndex().getPrevIndex().intSize())) {
@@ -146,7 +145,8 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                     ssa.validate();
                 }
             }
-        });
+        };
+        ((DynamicTable)asLong).listenForUpdates(asLongListener);
 
         while (desc.advance(50)) {
             System.out.println();
@@ -174,7 +174,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asLong, ssa, valueSource, desc);
 
-        ((DynamicTable)asLong).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asLong) {
+        final Listener asLongListener = new InstrumentedListenerAdapter((DynamicTable) asLong, false) {
             @Override
             public void onUpdate(Index added, Index removed, Index modified) {
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -187,7 +187,8 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             }
-        });
+        };
+        ((DynamicTable)asLong).listenForUpdates(asLongListener);
 
         while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

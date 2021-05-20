@@ -85,7 +85,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
-        ((DynamicTable)asFloat).listenForUpdates(new InstrumentedShiftAwareListenerAdapter((DynamicTable) asFloat) {
+        final ShiftAwareListener asFloatListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asFloat, false) {
             @Override
             public void onUpdate(Update upstream) {
                 try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getIndex().getPrevIndex().intSize())) {
@@ -146,7 +146,8 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                     ssa.validate();
                 }
             }
-        });
+        };
+        ((DynamicTable)asFloat).listenForUpdates(asFloatListener);
 
         while (desc.advance(50)) {
             System.out.println();
@@ -174,7 +175,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
-        ((DynamicTable)asFloat).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asFloat) {
+        final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
             @Override
             public void onUpdate(Index added, Index removed, Index modified) {
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -187,7 +188,8 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             }
-        });
+        };
+        ((DynamicTable)asFloat).listenForUpdates(asFloatListener);
 
         while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
