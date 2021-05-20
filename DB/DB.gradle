@@ -264,7 +264,9 @@ test {
 // Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
 
 // testParallel: parallel, not a db test, not isolated
-TestTools.addDbTest(project, 'Parallel', true)
+// TODO: undo?
+// make Parallel act like Serial
+TestTools.addDbTest(project, 'Parallel', false, false, true)
 
 // testSerial: non-parallel, not a db test, isolated
 TestTools.addDbTest(project, 'Serial', false, false, true)
