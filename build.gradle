@@ -331,8 +331,10 @@ tasks.register 'allJavadoc', Javadoc, {
             languageVersion = JavaLanguageVersion.of(11)
         }
         jdoc.inputs.file javaDocOverviewLocation
+        jdoc.inputs.files project.project(':javadoc').tasks.getByName('compileJava').outputs.files
+
         jdoc.options.encoding = 'UTF-8'
-        jdoc.options.docletpath = [new File("$rootDir/buildSrc/javadoc/build/classes/java/main")]
+        jdoc.options.docletpath = [new File("$rootDir/javadoc/build/classes/java/main")]
         jdoc.options.doclet = 'io.deephaven.javadoc.IncludeDoclet'
         jdoc.options.tags = ['Include:a:', 'Exclude:a:', 'IncludeAll:a:', 'apiNote', 'implNote']
         // include a note on the front Javadoc page telling us what version the Javadoc was generated from.

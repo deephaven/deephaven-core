@@ -1,14 +1,8 @@
-buildscript {
-    dependencies {
-        gradleApi()
-    }
-}
 plugins {
     id 'groovy'
     id 'idea'
     id 'groovy-gradle-plugin'
 }
-
 
 java {
     toolchain {
@@ -30,18 +24,7 @@ repositories {
     }
 }
 
-allprojects {
-    apply plugin: 'java'
-    tasks.named('jar', Jar).configure {
-        Jar jar ->
-            jar.preserveFileTimestamps = false
-            jar.reproducibleFileOrder = true
-            jar.outputs.cacheIf { true }
-    }
-}
-
 dependencies {
-
     compile('de.esoco.gwt:gwt-gradle-plugin:1.1.1') {
         exclude group: 'org.codehaus.groovy'
     }
@@ -51,9 +34,5 @@ dependencies {
     compile('com.netflix.nebula:gradle-ospackage-plugin:8.3.0')
 
     compile "gradle.plugin.com.jetbrains.python:gradle-python-envs:0.0.30"
-
-    // we cheat here b/c our module is java 8, but javadoc is java 11.  This bypasses jvm-matching.
-    // The javadoc jar is only ever used by one specific java 11 task, so it's harmless to include it here.
-    runtime project(':javadoc').tasks.getByName('jar').outputs.files
 }
 

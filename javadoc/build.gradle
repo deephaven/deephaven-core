@@ -1,12 +1,6 @@
-buildscript {
-    dependencies {
-        gradleApi()
-    }
-}
 plugins {
     id 'java'
 }
-
 
 java {
     toolchain {
@@ -24,4 +18,3 @@ compileJava.targetCompatibility = '11'
 
 compileJava.options.compilerArgs.addAll(
         ['--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=dh_javadoc'])
-
