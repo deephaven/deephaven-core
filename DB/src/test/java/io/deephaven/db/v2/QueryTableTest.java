@@ -989,8 +989,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testReverseClipping() {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(table);
-        ((QueryTable)table.reverse()).listenForUpdates(listener);
+        final QueryTable reverseTable = (QueryTable)table.reverse();
+        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(reverseTable);
+        reverseTable.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
