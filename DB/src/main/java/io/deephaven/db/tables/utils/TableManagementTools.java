@@ -78,14 +78,18 @@ public class TableManagementTools {
         return readTable(new File(sourceDir));
     }
 
+    public static Table readTable(@NotNull final File sourceDir) {
+        return readTable(sourceDir, false);
+    }
+
     /**
      * Reads in a table from disk.
      *
      * @param sourceDir table location
      * @return table
      */
-    public static Table readTable(@NotNull final File sourceDir) {
-        TableDefinition tableDefinition = TableDefinition.loadDefinition(sourceDir, true);
+    public static Table readTable(@NotNull final File sourceDir, final boolean tryDhTableDef) {
+        TableDefinition tableDefinition = tryDhTableDef ? TableDefinition.loadDefinition(sourceDir, true) : null;
         if (tableDefinition == null) {
             final ColumnsSpecHelper cols = new ColumnsSpecHelper();
             try {
@@ -132,7 +136,7 @@ public class TableManagementTools {
     public static void writeTable(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
         if (storageFormat == StorageFormat.Parquet) {
             writeParquetTables(new Table[]{sourceTable}, definition, CompressionCodecName.SNAPPY, new File[]{destDir}, definition.getGroupingColumnNamesArray());
-            TableDefinition.persistDefinition(definition, destDir);
+            // TableDefinition.persistDefinition(definition, destDir);
         } else {
             throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
         }

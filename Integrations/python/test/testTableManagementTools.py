@@ -76,12 +76,8 @@ class TestTableManagementTools(unittest.TestCase):
             self.assertTrue(os.path.exists(fileLocation2))
 
         # Reading
-        # TODO (core#322) restore this when readtable works with a definition but no file
-        # with self.subTest(msg="readTable(File)"):
-        #     table2 = TableManagementTools.readTable(fileLocation)
-        with self.subTest(msg="readTable(File, TableDefinition)"):
-            # this seems like a ridiculous method?
-            table2 = TableManagementTools.readTable(fileLocation, definition)
+        with self.subTest(msg="readTable(File)"):
+            table2 = TableManagementTools.readTable(fileLocation)
 
         # Delete
         with self.subTest(msg="delete(File)"):

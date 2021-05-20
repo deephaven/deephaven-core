@@ -9,12 +9,14 @@ import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.OriginalType;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -108,16 +110,116 @@ public class ParquetReaderUtil {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
         final MessageType schema = pf.getSchema();
+        final MutableObject<String> errorString = new MutableObject<>();
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
                 return Optional.of(String.class);
             }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.MapLogicalTypeAnnotation mapLogicalType) {
+                errorString.setValue("MapLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.ListLogicalTypeAnnotation listLogicalType) {
+                errorString.setValue("ListLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
+                errorString.setValue("EnumLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
+                errorString.setValue("DecimalLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
+                errorString.setValue("DateLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
+                errorString.setValue("timeLogicalType,isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
+                return Optional.empty();
+            }
+
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
                 if (timestampLogicalType.isAdjustedToUTC() && timestampLogicalType.getUnit().equals(LogicalTypeAnnotation.TimeUnit.NANOS)) {
                     return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
                 }
+                errorString.setValue("TimestampLogicalType,isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ",unit=" + timestampLogicalType.getUnit());
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
+                if (intLogicalType.isSigned()) {
+                    switch (intLogicalType.getBitWidth()) {
+                        case 64:
+                            return Optional.of(long.class);
+                        case 32:
+                            return Optional.of(int.class);
+                        case 16:
+                            return Optional.of(short.class);
+                        case 8:
+                            return Optional.of(byte.class);
+                        default:
+                            // fallthrough.
+                    }
+                } else {
+                    switch (intLogicalType.getBitWidth()) {
+                        case 32:
+                            return Optional.of(long.class);
+                        case 16:
+                            return Optional.of(int.class);
+                        case 8:
+                            return Optional.of(short.class);
+                        default:
+                            // fallthrough.
+                    }
+                }
+                errorString.setValue("IntLogicalType,isSigned=" + intLogicalType.isSigned() + ",bitWidth=" + intLogicalType.getBitWidth());
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.JsonLogicalTypeAnnotation jsonLogicalType) {
+                errorString.setValue("JsonLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.BsonLogicalTypeAnnotation bsonLogicalType) {
+                errorString.setValue("BsonLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.UUIDLogicalTypeAnnotation uuidLogicalType) {
+                errorString.setValue("UUIDLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.IntervalLogicalTypeAnnotation intervalLogicalType) {
+                errorString.setValue("IntervalLogicalType");
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> visit(final LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
+                errorString.setValue("MapLogicalType");
                 return Optional.empty();
             }
         };
@@ -151,7 +253,11 @@ public class ParquetReaderUtil {
             } else {
                 final Optional<Class<?>> optionalClass = logicalTypeAnnotation.accept(visitor);
                 if (!optionalClass.isPresent()) {
-                    throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath()) + ", no mappeable logical type annotation found.");
+                    final String logicalTypeString = errorString.getValue();
+                    throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath())
+                            + ((logicalTypeString != null)
+                                ? (logicalTypeString + " not supported")
+                                : "no mappeable logical type annotation found."));
                 }
                 colDefConsumer.accept(colName, optionalClass.get());
             }
