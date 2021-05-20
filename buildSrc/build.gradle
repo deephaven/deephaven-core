@@ -1,35 +1,42 @@
+buildscript {
+    dependencies {
+        gradleApi()
+    }
+}
 plugins {
     id 'groovy'
-    id 'java'
     id 'idea'
     id 'groovy-gradle-plugin'
 }
 
-/*
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
-    }
-}*/
-
-sourceCompatibility = '11'
-targetCompatibility = '11'
-
-idea {
-    project {
-        jdkName = '11'
-        languageLevel = '11'
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
 
-sourceSets {
-    compat { }
+idea {
+    project {
+        jdkName = '1.8'
+        languageLevel = '1.8'
+    }
 }
 
 repositories {
     mavenCentral()
     maven {
         url "https://plugins.gradle.org/m2/"
+    }
+}
+
+allprojects {
+    apply plugin: 'java'
+    tasks.named('jar', Jar).configure {
+        Jar jar ->
+            jar.preserveFileTimestamps = false
+            jar.reproducibleFileOrder = true
+            jar.outputs.cacheIf { true }
     }
 }
 
@@ -45,15 +52,8 @@ dependencies {
 
     compile "gradle.plugin.com.jetbrains.python:gradle-python-envs:0.0.30"
 
-    runtime sourceSets.compat.output
+    // we cheat here b/c our module is java 8, but javadoc is java 11.  This bypasses jvm-matching.
+    // The javadoc jar is only ever used by one specific java 11 task, so it's harmless to include it here.
+    runtime project(':javadoc').tasks.getByName('jar').outputs.files
 }
 
-compileCompatJava.options.compilerArgs.addAll(
-        ['--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED'])
-
-tasks.named('jar', Jar).configure {
-    Jar jar ->
-        jar.preserveFileTimestamps = false
-        jar.reproducibleFileOrder = true
-        jar.outputs.cacheIf { true }
-}

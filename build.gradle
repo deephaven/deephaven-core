@@ -332,7 +332,7 @@ tasks.register 'allJavadoc', Javadoc, {
         }
         jdoc.inputs.file javaDocOverviewLocation
         jdoc.options.encoding = 'UTF-8'
-        jdoc.options.docletpath = [new File("$rootDir/buildSrc/build/classes/java/compat")]
+        jdoc.options.docletpath = [new File("$rootDir/buildSrc/javadoc/build/classes/java/main")]
         jdoc.options.doclet = 'io.deephaven.javadoc.IncludeDoclet'
         jdoc.options.tags = ['Include:a:', 'Exclude:a:', 'IncludeAll:a:', 'apiNote', 'implNote']
         // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
