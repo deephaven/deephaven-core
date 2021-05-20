@@ -331,8 +331,9 @@ tasks.register 'allJavadoc', Javadoc, {
             languageVersion = JavaLanguageVersion.of(11)
         }
         jdoc.inputs.file javaDocOverviewLocation
-        jdoc.inputs.files project.project(':javadoc').tasks.getByName('compileJava').outputs.files
-
+        if (project.findProperty('includeJavadoc') == 'true') {
+            jdoc.inputs.files project.project(':javadoc').tasks.getByName('compileJava').outputs.files
+        }
         jdoc.options.encoding = 'UTF-8'
         jdoc.options.docletpath = [new File("$rootDir/javadoc/build/classes/java/main")]
         jdoc.options.doclet = 'io.deephaven.javadoc.IncludeDoclet'
