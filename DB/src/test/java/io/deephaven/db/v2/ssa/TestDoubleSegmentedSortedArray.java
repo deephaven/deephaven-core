@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.db.v2.ssa;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.*;
@@ -16,77 +17,80 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.ParallelTest;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.Random;
 
-import static io.deephaven.db.v2.TstUtils.getTable;
-import static io.deephaven.db.v2.TstUtils.initColumnInfos;
+import static io.deephaven.db.v2.TstUtils.*;
 
 @Category(ParallelTest.class)
 public class TestDoubleSegmentedSortedArray extends LiveTableTestCase {
     public void testInsertion() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
             for (int tableSize = 100; tableSize <= 1000; tableSize *= 10) {
                 for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
-                    testUpdates(seed, tableSize, nodeSize, true, false);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), true, false);
                 }
             }
         }
     }
 
     public void testRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 20; ++seed) {
             for (int tableSize = 100; tableSize <= 10000; tableSize *= 10) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
-                    testUpdates(seed, tableSize, nodeSize, false, true);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), false, true);
                 }
             }
         }
     }
 
     public void testInsertAndRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
             for (int tableSize = 100; tableSize <= 10000; tableSize *= 10) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
-                    testUpdates(seed, tableSize, nodeSize, true, true);
+                    testUpdates(desc.reset(seed, tableSize, nodeSize), true, true);
                 }
             }
         }
     }
 
     public void testShifts() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 20; ++seed) {
             for (int tableSize = 10; tableSize <= 10000; tableSize *= 10) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
-                    testShifts(seed, tableSize, nodeSize);
+                    testShifts(desc.reset(seed, tableSize, nodeSize));
                 }
             }
         }
     }
 
-    private void testShifts(final int seed, final int tableSize, final int nodeSize) {
-        final Random random = new Random(seed);
+    private void testShifts(@NotNull final SsaTestHelpers.TestDescriptor desc) {
+        final Random random = new Random(desc.seed());
         final TstUtils.ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(tableSize, random, columnInfo = initColumnInfos(new String[]{"Value"},
+        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForDouble()));
 
         final Table asDouble = SsaTestHelpers.prepareTestTableForDouble(table);
 
-        final DoubleSegmentedSortedArray ssa = new DoubleSegmentedSortedArray(nodeSize);
+        final DoubleSegmentedSortedArray ssa = new DoubleSegmentedSortedArray(desc.nodeSize());
 
         //noinspection unchecked
         final ColumnSource<Double> valueSource = asDouble.getColumnSource("Value");
 
-        System.out.println("Creation seed=" + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize);
-        checkSsaInitial(asDouble, ssa, valueSource);
+        checkSsaInitial(asDouble, ssa, valueSource, desc);
 
         ((DynamicTable)asDouble).listenForUpdates(new InstrumentedShiftAwareListenerAdapter((DynamicTable) asDouble) {
             @Override
             public void onUpdate(Update upstream) {
                 try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asDouble.getIndex().getPrevIndex().intSize())) {
                     final Index relevantIndices = asDouble.getIndex().getPrevIndex();
-                    checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk());
+                    checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk(), desc);
                 }
 
                 final int size = Math.max(upstream.modified.intSize() +  Math.max(upstream.added.intSize(), upstream.removed.intSize()), (int)upstream.shifted.getEffectiveSize());
@@ -103,7 +107,7 @@ public class TestDoubleSegmentedSortedArray extends LiveTableTestCase {
 
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asDouble.getIndex().getPrevIndex().intSize())) {
                         final Index relevantIndices = asDouble.getIndex().getPrevIndex().minus(takeout);
-                        checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk());
+                        checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk(), desc);
                     }
 
                     if (upstream.shifted.nonempty()) {
@@ -131,7 +135,7 @@ public class TestDoubleSegmentedSortedArray extends LiveTableTestCase {
 
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asDouble.intSize())) {
                         final Index relevantIndices = asDouble.getIndex().minus(putin);
-                        checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk());
+                        checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asDoubleChunk(), relevantIndices.asKeyIndicesChunk(), desc);
                     }
 
                     if (putin.nonempty()) {
@@ -144,32 +148,31 @@ public class TestDoubleSegmentedSortedArray extends LiveTableTestCase {
             }
         });
 
-        for (int step = 0; step < 50; ++step) {
-            System.out.println("Seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize + ", step = " + step);
+        while (desc.advance(50)) {
+            System.out.println();
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, tableSize, random, table, columnInfo));
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
             try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asDouble.intSize())) {
-                checkSsa(ssa, valueSource.getChunk(getContext, asDouble.getIndex()).asDoubleChunk(), asDouble.getIndex().asKeyIndicesChunk());
+                checkSsa(ssa, valueSource.getChunk(getContext, asDouble.getIndex()).asDoubleChunk(), asDouble.getIndex().asKeyIndicesChunk(), desc);
             }
         }
     }
 
-    private void testUpdates(final int seed, final int tableSize, final int nodeSize, boolean allowAddition, boolean allowRemoval) {
-        final Random random = new Random(seed);
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval) {
+        final Random random = new Random(desc.seed());
         final TstUtils.ColumnInfo[] columnInfo;
-        final QueryTable table = getTable(tableSize, random, columnInfo = initColumnInfos(new String[]{"Value"},
+        final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForDouble()));
 
         final Table asDouble = SsaTestHelpers.prepareTestTableForDouble(table);
 
-        final DoubleSegmentedSortedArray ssa = new DoubleSegmentedSortedArray(nodeSize);
+        final DoubleSegmentedSortedArray ssa = new DoubleSegmentedSortedArray(desc.nodeSize());
 
         //noinspection unchecked
         final ColumnSource<Double> valueSource = asDouble.getColumnSource("Value");
 
-        System.out.println("Creation seed=" + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize);
-        checkSsaInitial(asDouble, ssa, valueSource);
+        checkSsaInitial(asDouble, ssa, valueSource, desc);
 
         ((DynamicTable)asDouble).listenForUpdates(new InstrumentedListenerAdapter((DynamicTable) asDouble) {
             @Override
@@ -186,44 +189,41 @@ public class TestDoubleSegmentedSortedArray extends LiveTableTestCase {
             }
         });
 
-        for (int step = 0; step < 50; ++step) {
-            System.out.println("Seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize + ", step = " + step);
+        while (desc.advance(50)) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index [] notify = GenerateTableUpdates.computeTableUpdates(tableSize, random, table, columnInfo, allowAddition, allowRemoval, false);
+                final Index [] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                 assertTrue(notify[2].empty());
                 table.notifyListeners(notify[0], notify[1], notify[2]);
             });
 
             try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asDouble.intSize())) {
-                checkSsa(ssa, valueSource.getChunk(getContext, asDouble.getIndex()).asDoubleChunk(), asDouble.getIndex().asKeyIndicesChunk());
+                checkSsa(ssa, valueSource.getChunk(getContext, asDouble.getIndex()).asDoubleChunk(), asDouble.getIndex().asKeyIndicesChunk(), desc);
             }
 
             if (!allowAddition && table.size() == 0) {
-                System.out.println("All values removed.");
                 break;
             }
         }
 
     }
 
-    private void checkSsaInitial(Table asDouble, DoubleSegmentedSortedArray ssa, ColumnSource<?> valueSource) {
+    private void checkSsaInitial(Table asDouble, DoubleSegmentedSortedArray ssa, ColumnSource<?> valueSource, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asDouble.intSize())) {
             final DoubleChunk<? extends Values> valueChunk = valueSource.getChunk(getContext, asDouble.getIndex()).asDoubleChunk();
             final LongChunk<Attributes.OrderedKeyIndices> tableIndexChunk = asDouble.getIndex().asKeyIndicesChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
 
-            checkSsa(ssa, valueChunk, tableIndexChunk);
+            checkSsa(ssa, valueChunk, tableIndexChunk, desc);
         }
     }
 
-    private void checkSsa(DoubleSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk) {
-        ssa.validate();
-
+    private void checkSsa(DoubleSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends KeyIndices> tableIndexChunk, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try {
+            ssa.validate();
             DoubleSsaChecker.checkSsa(ssa, valueChunk, tableIndexChunk);
-        } catch (SsaChecker.SsaCheckException e) {
-            TestCase.fail(e.getMessage());
+        } catch (AssertionFailure | SsaChecker.SsaCheckException e) {
+            TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
     }
 }

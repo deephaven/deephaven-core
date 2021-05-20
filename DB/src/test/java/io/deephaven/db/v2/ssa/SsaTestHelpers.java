@@ -79,4 +79,45 @@ public class SsaTestHelpers {
         // an update might be faster, but updateView ensures we break when object equality is not the same as ==
         return LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
     }
+
+    public static final class TestDescriptor {
+
+        private int seed;
+        private int tableSize;
+        private int nodeSize;
+        private int step;
+
+        public TestDescriptor reset(final int seed, final int tableSize, final int nodeSize) {
+            this.seed = seed;
+            this.tableSize = tableSize;
+            this.nodeSize = nodeSize;
+            step = -1;
+            return this;
+        }
+
+        public boolean advance(final int maxSteps) {
+            return ++step < maxSteps;
+        }
+
+        public void advance() {
+            ++step;
+        }
+
+        @Override
+        public String toString() {
+            return "seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize + ", step = " + step;
+        }
+
+        public int seed() {
+            return seed;
+        }
+
+        public int tableSize() {
+            return tableSize;
+        }
+
+        public int nodeSize() {
+            return nodeSize;
+        }
+    }
 }
