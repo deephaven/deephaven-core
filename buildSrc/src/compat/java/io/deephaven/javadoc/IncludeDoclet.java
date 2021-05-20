@@ -1,218 +1,274 @@
-package io.deephaven.javadoc;// From http://www.sixlegs.com/blog/java/exclude-javadoc-tag.html
+package io.deephaven.javadoc;
 
-import com.sun.javadoc.*;
-import com.sun.tools.doclets.standard.Standard;
-import com.sun.tools.javadoc.Main;
+import com.sun.source.doctree.BlockTagTree;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import com.sun.source.util.DocTrees;
+import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.Reporter;
+import jdk.javadoc.doclet.StandardDoclet;
+import jdk.javadoc.internal.tool.DocEnvImpl;
 
-import java.io.FileNotFoundException;
-import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.List;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import java.util.*;
 
 /**
- * Allows for the custom javadoc tags
- * Include
- * IncludeAll
- * Exclude
- * With none of these tags, the javadoc will not be included in the produced document.
+ * This doclet uses the custom tags "IncludeAll", "Include" and "Exclude"
+ * to (in part) determine whether javadoc is generated.
  *
  * IncludeAll- add at the beginning of a Class to include all methods, fields, etc. by default. Note inner classes must
- * have their own Include tag to be included.
+ * have their own IncludeAll/Include tags to be included. If an IncludeAll is added to a non-Class, it behaves as an Include.
  * Include- add to a class, method, or field to include inside the produced javadoc.
- * Exclude- add to a class, method, or field to exclude inside the produced javadoc. Only necessary after an IncludeAll tag
+ * Exclude- add to a class, method, or field to exclude from the produced javadoc. Only necessary after an IncludeAll tag
  */
-public class IncludeDoclet extends com.sun.tools.doclets.standard.Standard {
-    private static String INCLUDEALL = "IncludeAll";
-    private static String INCLUDE = "Include";
-    private static String EXCLUDE = "Exclude";
-    public static void main(String[] args) throws FileNotFoundException {
-        debug("main()");
-        String name = IncludeDoclet.class.getName();
-        Main.execute(name, args);
+public class IncludeDoclet extends StandardDoclet {
+    private static final String INCLUDEALL = "IncludeAll";
+    private static final String INCLUDE = "Include";
+    private static final String EXCLUDE = "Exclude";
+    private static final boolean debug = false;
+    private Reporter reporter;
+
+    @Override
+    public String getName() {
+        return "IncludeDoclet";
     }
 
-    public static boolean start(RootDoc root)  {
-        debug("start()");
-        return Standard.start((RootDoc) process(root, RootDoc.class));
+    @Override
+    public void init(Locale locale, Reporter reporter) {
+        this.reporter = reporter;
+        super.init(locale, reporter);
     }
 
-    private static Object process(Object obj, Class<?> expect) {
-        debug("process(%s, %s)", obj, expect);
-        if (obj == null)
-            return null;
-        Class<?> cls = obj.getClass();
-        if (cls.getName().startsWith("com.sun.")) {
-            return Proxy.newProxyInstance(cls.getClassLoader(),
-                    cls.getInterfaces(), new IncludeHandler(obj));
-        } else if (obj instanceof Object[]) {
-            Class<?> componentType = expect.getComponentType();
-            Object[] array = (Object[]) obj;
-            List<Object> list = new ArrayList<Object>(array.length);
-            for (int i = 0; i < array.length; i++) {
-                Object entry = array[i];
-                if ((entry instanceof Doc) && includeAll((Doc) entry)) {
-                    if(entry instanceof ClassDoc) {
-                        list.add(processNeedExclude(entry, componentType));
-                        continue;
+    @Override
+    public boolean run(DocletEnvironment docEnv) {
+        report("Running IncludeDoclet");
+        return super.run(new DocletEnvironmentImplementation(docEnv));
+    }
+
+    private void report(final String report) {
+        if(debug) {
+            reporter.print(Diagnostic.Kind.NOTE, report);
+        }
+    }
+
+    private void reportStartSection() {
+        if(debug) {
+            reporter.print(Diagnostic.Kind.NOTE, "----------START SECTION-----------");
+        }
+    }
+
+    private void reportEndSection() {
+        if(debug) {
+            reporter.print(Diagnostic.Kind.NOTE, "-----------END SECTION-------------");
+        }
+    }
+
+    /**
+     * This wrapper extends jdk.javadoc.internal.tool. To run, compile with
+     * --add-exports jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED
+     *
+     * This will also need to be added to the javadoc command e.g.
+     * javadoc -J--add-exports -Jjdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED -docletpath ~/dev/Javadoc/src/main/java/        -doclet IncludeDoclet  -tag Exclude:a: -tag Include:a: -tag IncludeAll:a:   -d ~/dev/Javadoc/build/javadoc   com.javadoc > output.txt
+     */
+    private class DocletEnvironmentImplementation extends jdk.javadoc.internal.tool.DocEnvImpl {
+
+        private final Set<Element> includeAllClasses = new HashSet<>();
+        private final Set<Element> notIncludeAllClasses = new HashSet<>();
+
+        private DocletEnvironmentImplementation(DocletEnvironment docletEnvironment) {
+            super(((DocEnvImpl) docletEnvironment).toolEnv, ((DocEnvImpl) docletEnvironment).etable);
+        }
+
+        @Override
+        public Set<? extends Element> getIncludedElements() {
+            final Set<? extends Element> elements = super.getIncludedElements();
+            reportStartSection();
+            report("Running getIncludedElements");
+            report("All elements: " + elements);
+            report("All element kinds: " + Arrays.toString(elements.stream().map(Element::getKind).toArray()));
+
+            final Set<Element> ret = new LinkedHashSet<>();
+
+            for (final Element e : elements) {
+                if(isPackageOrModule(e)) {
+                    ret.add(e);
+                } else {
+                    if(isIncludedCustomTags(e)) {
+                        ret.add(e);
                     }
-                } else if ((entry instanceof Doc) && !include((Doc) entry)) {
-                    continue;
-                }
-                list.add(process(entry, componentType));
-            }
-            return list.toArray((Object[]) Array.newInstance(componentType,
-                    list.size()));
-        } else {
-            return obj;
-        }
-    }
-
-    private static Object processNeedExclude(Object obj, Class<?> expect) {
-        debug("process(%s, %s)", obj, expect);
-        if (obj == null)
-            return null;
-        Class<?> cls = obj.getClass();
-        if (cls.getName().startsWith("com.sun.")) {
-            return Proxy.newProxyInstance(cls.getClassLoader(),
-                    cls.getInterfaces(), new ExcludeHandler(obj));
-        } else if (obj instanceof Object[]) {
-            Class<?> componentType = expect.getComponentType();
-            Object[] array = (Object[]) obj;
-            List<Object> list = new ArrayList<Object>(array.length);
-            for (int i = 0; i < array.length; i++) {
-                Object entry = array[i];
-                if ((entry instanceof Doc) && exclude((Doc) entry)) {
-                    continue;
-                }
-                list.add(processNeedExclude(entry, componentType));
-            }
-            return list.toArray((Object[]) Array.newInstance(componentType,
-                    list.size()));
-        } else {
-            return obj;
-        }
-    }
-
-    private static boolean includeAll(Doc doc) {
-        if (doc instanceof ProgramElementDoc) {
-            if (((ProgramElementDoc) doc).containingPackage().tags(INCLUDEALL).length > 0) {
-                debug("includeall(%s) returns true", doc.toString());
-                return true;
-            }
-        }
-        boolean result = doc.tags(INCLUDEALL).length > 0;
-        debug("includeall(%s) returns true", doc.toString());
-        return result;
-    }
-
-    private static boolean include(Doc doc) {
-        if (doc instanceof ProgramElementDoc) {
-            if (((ProgramElementDoc) doc).containingPackage().tags(INCLUDE).length > 0) {
-                debug("include(%s) returns true", doc.toString());
-                return true;
-            }
-        }
-        boolean result = doc.tags(INCLUDE).length > 0;
-        debug("include(%s) returns true", doc.toString());
-        return result;
-    }
-
-    private static boolean exclude(Doc doc) {
-        if (doc instanceof ProgramElementDoc) {
-            if (((ProgramElementDoc) doc).containingPackage().tags(EXCLUDE).length > 0) {
-                debug("exclude(%s) returns true", doc.toString());
-                return true;
-            }
-        }
-        //changed to include= maybe change back
-        boolean result = doc.tags(EXCLUDE).length > 0;
-        debug("exclude(%s) returns true", doc.toString());
-        return result;
-    }
-
-    private static class IncludeHandler implements InvocationHandler {
-        private Object target;
-
-        public IncludeHandler(Object target) {
-            this.target = target;
-        }
-
-        public Object invoke(Object proxy, Method method, Object[] args)
-                throws Throwable {
-            debug("invoke(%s, %s, %s)", "proxy", "method", args);
-
-            if (args != null) {
-                String methodName = method.getName();
-                if (methodName.equals("compareTo")
-                        || methodName.equals("equals")
-                        || methodName.equals("overrides")
-                        || methodName.equals("subclassOf")) {
-                    args[0] = unwrap(args[0]);
                 }
             }
-            try {
-                return process(method.invoke(target, args),
-                        method.getReturnType());
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
+
+            report("All included elements: " + ret);
+            report("All included element kinds: " + Arrays.toString(ret.stream().map(Element::getKind).toArray()));
+            reportEndSection();
+
+            return ret;
         }
 
-        private Object unwrap(Object proxy) {
-            debug("unwrap(%s)", proxy);
-            if (proxy instanceof Proxy) {
-                if(Proxy.getInvocationHandler(proxy) instanceof IncludeHandler) {
-                    return ((IncludeHandler) Proxy.getInvocationHandler(proxy)).target;
+        @Override
+        public boolean isIncluded(Element e) {
+            reportStartSection();
+            final String prefix = "isIncluded: ";
+            report("Running " + prefix + e);
+
+            boolean include;
+            if(isPackageOrModule(e)) {
+                include = super.isIncluded(e);
+            } else {
+                include = isIncludedCustomTags(e) && super.isIncluded(e);
+            }
+            report(prefix + e.getKind());
+            report(prefix + include);
+            reportEndSection();
+
+            return include;
+        }
+
+        @Override
+        public boolean isSelected(Element e) {
+            reportStartSection();
+            final String prefix = "isSelected: ";
+            report("Running " + prefix + e);
+
+            boolean select;
+            if(isPackageOrModule(e)) {
+                select = super.isSelected(e);
+            } else {
+                select = isIncludedCustomTags(e) && super.isSelected(e);
+            }
+            report(prefix + e.getKind());
+            report(prefix + select);
+            reportEndSection();
+
+            return select;
+        }
+
+        private boolean isIncludedCustomTags(final Element e) {
+            final DocCommentTree docCommentTree = super.getDocTrees().getDocCommentTree(e);
+
+            if (docCommentTree != null) {
+                //The custom tags are block tags (as opposed to an inline tag {@example})
+                final BlockTagTree[] trees = docCommentTree
+                    .getBlockTags()
+                    .stream()
+                    .filter(bt -> bt.getKind() == DocTree.Kind.UNKNOWN_BLOCK_TAG)
+                    .map(bt -> (BlockTagTree) bt)
+                    .toArray(BlockTagTree[]::new);
+
+                report("Doc trees for element name " + e.getSimpleName() + " of type " + e.getKind());
+                report(Arrays.toString(trees));
+
+                for (BlockTagTree dt : trees) {
+                    final String tagName = dt.getTagName();
+                    report("TagName " + tagName);
+
+                    switch (tagName) {
+                        case INCLUDEALL:
+                            if (isClass(e)) {
+                                includeAllClasses.add(e);
+                            }
+                            return true;
+
+                        case INCLUDE:
+                            return true;
+
+                        case EXCLUDE:
+                            return false;
+                    }
+
+                }
+            }
+
+            //nested classes must have their own include tags
+            return !isClass(e) && hasIncludeAllParent(e);
+        }
+
+        private boolean isClass(Element e) {
+            return e != null && e.getKind() == ElementKind.CLASS;
+        }
+
+        private boolean isIncludeAllClass(final Element e) {
+            reportStartSection();
+            report("Running isIncludeAllClass");
+            report("Element " + e);
+            report("Element kind " + e.getKind());
+
+            if(!isClass(e)) {
+                report("Not a class");
+                return false;
+            } else if(isClass(e) && includeAllClasses.contains(e)) {
+                report("Class found in includeAllClasses");
+                reportEndSection();
+                return true;
+            } else if(isClass(e) && notIncludeAllClasses.contains(e)) {
+                report("Class found in notIncludeAllClasses");
+                reportEndSection();
+                return false;
+            }
+
+
+            //search doc to find INCLUDEALL tag
+            final DocCommentTree docCommentTree = super.getDocTrees().getDocCommentTree(e);
+
+            if (docCommentTree != null) {
+                final String[] trees = docCommentTree
+                    .getBlockTags()
+                    .stream()
+                    .filter(bt -> bt.getKind() == DocTree.Kind.UNKNOWN_BLOCK_TAG)
+                    .map(bt -> ((BlockTagTree) bt).getTagName())
+                    .filter(tagName -> tagName.equals(INCLUDEALL))
+                    .toArray(String[]::new);
+
+                report("Looking through block tags " + docCommentTree.getBlockTags());
+                report("IncludeAllFound " + Arrays.toString(trees));
+                reportEndSection();
+                if(trees.length > 0) {
+                    includeAllClasses.add(e);
+                    return true;
                 } else {
-                    return ((ExcludeHandler) Proxy.getInvocationHandler(proxy)).target;
+                    notIncludeAllClasses.add(e);
+                    return false;
                 }
             }
-            return proxy;
-        }
-    }
 
-    private static class ExcludeHandler implements InvocationHandler {
-        private Object target;
-
-        public ExcludeHandler(Object target) {
-            this.target = target;
+            report("DocCommentTree null");
+            reportEndSection();
+            return false;
         }
 
-        public Object invoke(Object proxy, Method method, Object[] args)
-                throws Throwable {
-            debug("invokeExcludeHandler(%s, %s, %s)", "proxy", "method", args);
+        private boolean hasIncludeAllParent(final Element e) {
+            reportStartSection();
+            report("Running hasIncludeAllParent");
 
-            if (args != null) {
-                String methodName = method.getName();
-                if (methodName.equals("compareTo")
-                        || methodName.equals("equals")
-                        || methodName.equals("overrides")
-                        || methodName.equals("subclassOf")) {
-                    args[0] = unwrap(args[0]);
-                }
+            final Element enclosingElement = e.getEnclosingElement();
+
+            report("EnclosingElement " + enclosingElement);
+            report("EnclosingElement kind" + (enclosingElement == null ? "" : enclosingElement.getKind()));
+
+            if(isClass(enclosingElement)) {
+                final boolean hasIncludeAllParent = isIncludeAllClass(enclosingElement);
+                report("hasIncludeAllParent=" + hasIncludeAllParent);
+                reportEndSection();
+                return hasIncludeAllParent;
             }
-            try {
-                return processNeedExclude(method.invoke(target, args),
-                        method.getReturnType());
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
+
+            report("hasIncludeAllParent=false");
+            reportEndSection();
+            return false;
         }
 
-        private Object unwrap(Object proxy) {
-            debug("unwrap(%s)", proxy);
-            if (proxy instanceof Proxy) {
-                if(Proxy.getInvocationHandler(proxy) instanceof IncludeHandler) {
-                    return ((IncludeHandler) Proxy.getInvocationHandler(proxy)).target;
-                } else {
-                    return ((ExcludeHandler) Proxy.getInvocationHandler(proxy)).target;
-                }
-            }
-            return proxy;
+        private boolean isPackageOrModule(final Element e) {
+            return e != null && (e.getKind() == ElementKind.PACKAGE || e.getKind() == ElementKind.MODULE);
         }
-    }
-
-    private static void debug(String fmt, Object... o) {
-        //  System.out.printf("IncludeDoclet: " + fmt + "\n", o);
     }
 }
+

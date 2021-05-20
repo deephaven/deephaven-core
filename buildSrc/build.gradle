@@ -5,17 +5,20 @@ plugins {
     id 'groovy-gradle-plugin'
 }
 
+/*
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(11)
     }
-}
+}*/
+
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 idea {
     project {
-        //if you want to set specific jdk and language level
-        jdkName = '1.8'
-        languageLevel = '1.8'
+        jdkName = '11'
+        languageLevel = '11'
     }
 }
 
@@ -45,40 +48,8 @@ dependencies {
     runtime sourceSets.compat.output
 }
 
-static def getToolsJar(JavaCompiler compiler) {
-    File toolsJar = compiler.metadata.installationPath.file('lib/tools.jar').asFile
-    if (toolsJar.exists()) {
-        return toolsJar
-    }
-    File javaHome = compiler.metadata.installationPath.asFile
-    if (javaHome.getName().equalsIgnoreCase('jre')) {
-        javaHome = javaHome.getParentFile()
-        toolsJar = new File(javaHome, "lib/tools.jar")
-        if (toolsJar.exists()) {
-            return toolsJar;
-        }
-    }
-    if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
-        String version = compiler.metadata.languageVersion.toString()
-        if (javaHome.getName().matches("jre\\d+") || javaHome.getName() == "jre${version}") {
-            javaHome = new File(javaHome.getParentFile(), "jdk${version}")
-            toolsJar = new File(javaHome, 'lib/tools.jar')
-            if (toolsJar.exists()) {
-                return toolsJar
-            }
-        }
-    }
-    return null
-}
-
-def compiler = javaToolchains.compilerFor {
-    languageVersion = JavaLanguageVersion.of(8)
-}
-def toolsJar = getToolsJar(compiler.get())
-if (toolsJar == null) {
-    throw new IllegalStateException("Unable to find toolsJar for '${compiler.get().metadata.installationPath}'")
-}
-dependencies.add 'compatCompile', files(toolsJar)
+compileCompatJava.options.compilerArgs.addAll(
+        ['--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED'])
 
 tasks.named('jar', Jar).configure {
     Jar jar ->
