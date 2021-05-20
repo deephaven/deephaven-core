@@ -7,7 +7,7 @@ on:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
   push:
-    branches: [ 'fix-nightly-check' ]
+    branches: [ 'nightly/**' ]
 
 jobs:
   check:
@@ -49,6 +49,16 @@ jobs:
           name: nightly-check-ci-reports
           path: '**/build/reports/tests/**'
 
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: check report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+
   testSerial:
     runs-on: ubuntu-20.04
     steps:
@@ -87,6 +97,16 @@ jobs:
         with:
           name: nightly-testSerial-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testSerial report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
 
   testParallel:
     runs-on: ubuntu-20.04
@@ -127,6 +147,16 @@ jobs:
           name: nightly-testParallel-ci-reports
           path: '**/build/reports/tests/**'
 
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testParallel report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+
   testOutOfBand:
     runs-on: ubuntu-20.04
     steps:
@@ -165,3 +195,13 @@ jobs:
         with:
           name: nightly-testOutOfBand-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testOutOfBand report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
