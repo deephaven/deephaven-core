@@ -344,6 +344,7 @@ tasks.register 'allJavadoc', Javadoc, {
         jdoc.options.jFlags '--add-exports', 'jdk.internal.opt/jdk.internal.joptsimple=ALL-UNNAMED',
                 '--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED'
         jdoc.options.addStringOption('Xdoclint:none', '-quiet')
+        jdoc.options.addBooleanOption('--no-module-directories', true)
 
         //add to as javadoc gets completed
         String [] exportedProjects = [
