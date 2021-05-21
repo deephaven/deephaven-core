@@ -31,6 +31,8 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
 
     private static final RetentionCache<InstrumentedShiftAwareListenerAdapter> RETENTION_CACHE = new RetentionCache<>();
 
+    private final boolean retain;
+
     @ReferentialIntegrity
     protected final DynamicTable source;
 
@@ -54,7 +56,7 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
     public InstrumentedShiftAwareListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source, final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
-        if (retain) {
+        if (this.retain = retain) {
             RETENTION_CACHE.retain(this);
             if (Liveness.DEBUG_MODE_ENABLED) {
                 Liveness.log.info().append("LivenessDebug: InstrumentedListenerAdapter ")
@@ -92,5 +94,8 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
     @Override
     protected void destroy() {
         source.removeUpdateListener(this);
+        if (retain) {
+            RETENTION_CACHE.forget(this);
+        }
     }
 }
