@@ -424,6 +424,9 @@ public class BatchTableRequest {
             }
 
             @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                     .FiltersListFieldType.CompareFieldType.LhsFieldType
                 getLhs();
@@ -433,6 +436,9 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getRhs();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
 
             @JsProperty
             void setLhs(
@@ -1855,6 +1861,9 @@ public class BatchTableRequest {
             }
 
             @JsProperty
+            double getCasesensitivity();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                     .FiltersListFieldType.CompareFieldType.LhsFieldType
                 getLhs();
@@ -1864,6 +1873,9 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getRhs();
+
+            @JsProperty
+            void setCasesensitivity(double casesensitivity);
 
             @JsProperty
             void setLhs(

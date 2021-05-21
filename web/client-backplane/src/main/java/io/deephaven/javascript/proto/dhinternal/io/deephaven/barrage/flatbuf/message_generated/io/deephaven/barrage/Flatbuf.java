@@ -507,11 +507,6 @@ public class Flatbuf {
     }
   }
 
-  public static Object BarrageRecordBatch;
-  public static Object Schema;
-  public static Object SparseTensor;
-  public static Object Tensor;
-
   public static native Flatbuf.UnionListToMessageHeaderUnionType unionListToMessageHeader(
       int type, Flatbuf.UnionListToMessageHeaderAccessorFn accessor, double index);
 

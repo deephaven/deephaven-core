@@ -135,6 +135,9 @@ public class FilterTableRequest {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         FilterTableRequest.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType
             getLhs();
 
@@ -143,6 +146,9 @@ public class FilterTableRequest {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(
@@ -666,6 +672,9 @@ public class FilterTableRequest {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType
             getLhs();
 
@@ -674,6 +683,9 @@ public class FilterTableRequest {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(

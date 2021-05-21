@@ -411,6 +411,9 @@ public class Operation {
           }
 
           @JsProperty
+          double getCasesensitivity();
+
+          @JsProperty
           Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
                   .LhsFieldType
               getLhs();
@@ -420,6 +423,9 @@ public class Operation {
 
           @JsProperty
           Object getRhs();
+
+          @JsProperty
+          void setCasesensitivity(double casesensitivity);
 
           @JsProperty
           void setLhs(
@@ -1718,6 +1724,9 @@ public class Operation {
           }
 
           @JsProperty
+          double getCasesensitivity();
+
+          @JsProperty
           Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
                   .LhsFieldType
               getLhs();
@@ -1727,6 +1736,9 @@ public class Operation {
 
           @JsProperty
           Object getRhs();
+
+          @JsProperty
+          void setCasesensitivity(double casesensitivity);
 
           @JsProperty
           void setLhs(

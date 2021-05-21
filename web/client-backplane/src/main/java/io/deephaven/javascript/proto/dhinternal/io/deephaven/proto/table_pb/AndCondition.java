@@ -113,6 +113,9 @@ public class AndCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType getLhs();
 
         @JsProperty
@@ -120,6 +123,9 @@ public class AndCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(
@@ -524,6 +530,9 @@ public class AndCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType
             getLhs();
 
@@ -532,6 +541,9 @@ public class AndCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(

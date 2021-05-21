@@ -132,6 +132,9 @@ public class NotCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType getLhs();
 
         @JsProperty
@@ -139,6 +142,9 @@ public class NotCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(
@@ -537,6 +543,9 @@ public class NotCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType getLhs();
 
         @JsProperty
@@ -544,6 +553,9 @@ public class NotCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(

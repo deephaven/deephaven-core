@@ -132,6 +132,9 @@ public class OrCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType getLhs();
 
         @JsProperty
@@ -139,6 +142,9 @@ public class OrCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(
@@ -540,6 +546,9 @@ public class OrCondition {
         }
 
         @JsProperty
+        double getCasesensitivity();
+
+        @JsProperty
         OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType getLhs();
 
         @JsProperty
@@ -547,6 +556,9 @@ public class OrCondition {
 
         @JsProperty
         Object getRhs();
+
+        @JsProperty
+        void setCasesensitivity(double casesensitivity);
 
         @JsProperty
         void setLhs(

@@ -95,6 +95,9 @@ public class CompareCondition {
     }
 
     @JsProperty
+    double getCasesensitivity();
+
+    @JsProperty
     CompareCondition.ToObjectReturnType.LhsFieldType getLhs();
 
     @JsProperty
@@ -102,6 +105,9 @@ public class CompareCondition {
 
     @JsProperty
     Object getRhs();
+
+    @JsProperty
+    void setCasesensitivity(double casesensitivity);
 
     @JsProperty
     void setLhs(CompareCondition.ToObjectReturnType.LhsFieldType lhs);
@@ -194,6 +200,9 @@ public class CompareCondition {
     }
 
     @JsProperty
+    double getCasesensitivity();
+
+    @JsProperty
     CompareCondition.ToObjectReturnType0.LhsFieldType getLhs();
 
     @JsProperty
@@ -201,6 +210,9 @@ public class CompareCondition {
 
     @JsProperty
     Object getRhs();
+
+    @JsProperty
+    void setCasesensitivity(double casesensitivity);
 
     @JsProperty
     void setLhs(CompareCondition.ToObjectReturnType0.LhsFieldType lhs);
@@ -228,6 +240,8 @@ public class CompareCondition {
 
   public native void clearRhs();
 
+  public native double getCasesensitivity();
+
   public native Value getLhs();
 
   public native double getOperation();
@@ -239,6 +253,8 @@ public class CompareCondition {
   public native boolean hasRhs();
 
   public native Uint8Array serializeBinary();
+
+  public native void setCasesensitivity(double value);
 
   public native void setLhs();
 
