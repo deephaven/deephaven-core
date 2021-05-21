@@ -16,6 +16,11 @@ import java.nio.Buffer;
 import java.nio.DoubleBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for double data.
+ *
+ * @IncludeAll
+ */
 public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final DoubleChunk EMPTY = new DoubleChunk<>(ArrayUtils.EMPTY_DOUBLE_ARRAY, 0, 0);

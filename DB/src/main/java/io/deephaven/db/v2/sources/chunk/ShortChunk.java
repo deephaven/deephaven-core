@@ -16,6 +16,11 @@ import java.nio.Buffer;
 import java.nio.ShortBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for short data.
+ *
+ * @IncludeAll
+ */
 public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final ShortChunk EMPTY = new ShortChunk<>(ArrayUtils.EMPTY_SHORT_ARRAY, 0, 0);

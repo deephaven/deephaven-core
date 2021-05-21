@@ -16,6 +16,11 @@ import java.nio.Buffer;
 import java.nio.IntBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for int data.
+ *
+ * @IncludeAll
+ */
 public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final IntChunk EMPTY = new IntChunk<>(ArrayUtils.EMPTY_INT_ARRAY, 0, 0);

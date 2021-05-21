@@ -16,6 +16,11 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for float data.
+ *
+ * @IncludeAll
+ */
 public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final FloatChunk EMPTY = new FloatChunk<>(ArrayUtils.EMPTY_FLOAT_ARRAY, 0, 0);

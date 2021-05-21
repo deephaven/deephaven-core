@@ -17,6 +17,11 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for byte data.
+ *
+ * @IncludeAll
+ */
 public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final ByteChunk EMPTY = new ByteChunk<>(ArrayUtils.EMPTY_BYTE_ARRAY, 0, 0);

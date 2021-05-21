@@ -14,6 +14,11 @@ import org.jetbrains.annotations.NotNull;
 // region BufferImports
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for Object data.
+ *
+ * @IncludeAll
+ */
 public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final ObjectChunk EMPTY = new ObjectChunk<>(ArrayUtils.EMPTY_OBJECT_ARRAY, 0, 0);

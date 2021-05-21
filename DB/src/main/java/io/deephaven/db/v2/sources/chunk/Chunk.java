@@ -5,6 +5,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.Buffer;
 
+/**
+ * Data structure for a contiguous region of data.
+ *
+ * @param <ATTR> {@link Attributes} that apply to this chunk
+ *
+ * @IncludeAll
+ */
 public interface Chunk<ATTR extends Any> {
     /**
      * The threshold at which we should use System.arrayCopy rather than our own copy

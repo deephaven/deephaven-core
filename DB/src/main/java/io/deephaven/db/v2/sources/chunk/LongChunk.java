@@ -16,6 +16,11 @@ import java.nio.Buffer;
 import java.nio.LongBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for long data.
+ *
+ * @IncludeAll
+ */
 public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final LongChunk EMPTY = new LongChunk<>(ArrayUtils.EMPTY_LONG_ARRAY, 0, 0);

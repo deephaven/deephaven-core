@@ -14,6 +14,11 @@ import org.jetbrains.annotations.NotNull;
 // region BufferImports
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for boolean data.
+ *
+ * @IncludeAll
+ */
 public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final BooleanChunk EMPTY = new BooleanChunk<>(ArrayUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);

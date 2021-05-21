@@ -13,6 +13,11 @@ import java.nio.Buffer;
 import java.nio.CharBuffer;
 // endregion BufferImports
 
+/**
+ * {@link Chunk} implementation for char data.
+ *
+ * @IncludeAll
+ */
 public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     private static final CharChunk EMPTY = new CharChunk<>(ArrayUtils.EMPTY_CHAR_ARRAY, 0, 0);
