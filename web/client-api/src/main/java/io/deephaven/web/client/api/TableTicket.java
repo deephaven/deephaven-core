@@ -3,6 +3,7 @@ package io.deephaven.web.client.api;
 import elemental2.core.Int32Array;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 
 /**
  * Replacement for TableHandle, wraps up Ticket plus current export state. We only consider the lower bytes for
@@ -78,6 +79,12 @@ public class TableTicket {
         Ticket ticket = new Ticket();
         ticket.setId(getTicket());
         return ticket;
+    }
+
+    public TableReference makeTableReference() {
+        TableReference reference = new TableReference();
+        reference.setTicket(makeTicket());
+        return reference;
     }
 
     @Override
