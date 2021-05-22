@@ -327,14 +327,24 @@ apply plugin: 'io.deephaven.java-conventions'
 String javaDocOverviewLocation = 'build/docs/overview.html'
 tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
+        jdoc.javadocTool = javaToolchains.javadocToolFor{it ->
+            languageVersion = JavaLanguageVersion.of(11)
+        }
         jdoc.inputs.file javaDocOverviewLocation
+        if (project.findProperty('includeJavadoc') == 'true') {
+            jdoc.inputs.files project.project(':javadoc').tasks.getByName('compileJava').outputs.files
+        }
         jdoc.options.encoding = 'UTF-8'
-        jdoc.options.docletpath = [new File("$rootDir/buildSrc/build/classes/java/compat")]
+        jdoc.options.docletpath = [new File("$rootDir/javadoc/build/classes/java/main")]
         jdoc.options.doclet = 'io.deephaven.javadoc.IncludeDoclet'
         jdoc.options.tags = ['Include:a:', 'Exclude:a:', 'IncludeAll:a:', 'apiNote', 'implNote']
         // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
         jdoc.options.overview = new File("$rootDir", javaDocOverviewLocation)
-        jdoc.options.links = ['https://docs.oracle.com/javase/8/docs/api/']
+        jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
+        jdoc.options.jFlags '--add-exports', 'jdk.internal.opt/jdk.internal.joptsimple=ALL-UNNAMED',
+                '--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=ALL-UNNAMED'
+        jdoc.options.addStringOption('Xdoclint:none', '-quiet')
+        jdoc.options.addBooleanOption('-no-module-directories', true)
 
         //add to as javadoc gets completed
         String [] exportedProjects = [
