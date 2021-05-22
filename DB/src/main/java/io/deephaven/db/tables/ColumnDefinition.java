@@ -31,7 +31,9 @@ import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
  * @IncludeAll
  */
 public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
+
     public static final ColumnDefinition[] ZERO_LENGTH_COLUMN_DEFINITION_ARRAY = new ColumnDefinition[0];
+
     private static final long serialVersionUID = 3656456077670712362L;
 
     public static final EnumFormatter COLUMN_TYPE_FORMATTER =

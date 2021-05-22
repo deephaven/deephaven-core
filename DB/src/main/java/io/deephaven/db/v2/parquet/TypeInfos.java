@@ -1,6 +1,7 @@
 package io.deephaven.db.v2.parquet;
 
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -69,14 +70,30 @@ class TypeInfos {
     }
 
     static Pair<String, String> getCodecAndArgs(ColumnDefinition columnDefinition) {
-        String objectCodecClass = columnDefinition.getObjectCodecClass();
+        final String objectCodecClass = columnDefinition.getObjectCodecClass();
+        // Explicit codecs always take precedence
         if (objectCodecClass != null && !objectCodecClass.equals(ColumnDefinition.ObjectCodecType.DEFAULT.name())) {
             return new ImmutablePair<>(objectCodecClass, columnDefinition.getObjectCodecArguments());
         }
-        Class dataType = columnDefinition.getDataType();
-        if (dataType.isPrimitive() || dataType.equals(String.class) || dataType.equals(Boolean.class) || dataType.equals(DBDateTime.class)) {
+        // No need to impute a codec for any basic formats we already understand
+        final Class<?> dataType = columnDefinition.getDataType();
+        if (dataType.isPrimitive() || dataType == String.class || StringSet.class.isAssignableFrom(dataType) || dataType == Boolean.class || dataType == DBDateTime.class) {
             return null;
         }
+        if (dataType.isArray() || DbArrayBase.class.isAssignableFrom(dataType)) {
+            final Class<?> componentType = columnDefinition.getComponentType();
+            if (componentType.isPrimitive() || componentType == Boolean.class) {
+                return null;
+            }
+        }
+        /* TODO (deephaven/deephaven-core/issues/622):
+         *   1. We should maybe distinguish between "imputed codec" like this and "specified codec", although that may be
+         *      less relevant if we remove codec information from the ColumnDefinition.
+         *   2. We need to come up with a strategy to describe nested codecs (e.g. arrays of codec'd things). Right now
+         *      we can either codec the whole thing, or codec the components, and we haven't defined this well. DHE
+         *      would only apply it to the entire thing, but maybe an alternative option makes sense here.
+         *   3. We need to write down data type and component type.
+         */
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), columnDefinition.getDataType().getName());
         }

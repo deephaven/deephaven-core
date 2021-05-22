@@ -11,6 +11,7 @@ import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.util.codec.CodecCache;
+import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
@@ -18,6 +19,7 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.codec.SerializableCodec;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -140,9 +142,10 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
             final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + name);
+            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
-            final boolean isCodec = codecName != null;
+            final boolean isCodec = codecName != null && !codecName.equals(SerializableCodec.class.getName()) && !codecName.equals(ExternalizableCodec.class.getName());
 
             if (isArray && columnChunkReader.getMaxRl() > 1) {
                 throw new TableDataException("No support for nested repeated parquet columns.");
@@ -198,10 +201,12 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             " with logical type " + logicalTypeAnnotation);
                 }
 
+                if (specialTypeName.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    toPage = ToStringSetPage.create(dataType, toPage);
+                }
+
                 if (isArray && !isCodec) {
-                    if (StringSet.class.isAssignableFrom(dataType)) {
-                        toPage = ToStringSetPage.create(dataType, toPage);
-                    } else if (DbArrayBase.class.isAssignableFrom(dataType)) {
+                    if (DbArrayBase.class.isAssignableFrom(dataType)) {
                         toPage = ToDbArrayPage.create(dataType, componentType, toPage);
                     } else if (dataType.isArray()) {
                         toPage = ToArrayPage.create(dataType, componentType, toPage);
