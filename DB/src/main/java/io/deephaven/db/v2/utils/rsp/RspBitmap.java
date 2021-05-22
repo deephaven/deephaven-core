@@ -244,20 +244,22 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 if (firstValue == key) {
                     return null;
                 }
-                if (firstValue + 1 < key) {
-                    final short keyLowBits = lowBitsAsShort(key);
-                    final short firstValueLowBits = lowBitsAsShort(firstValue);
-                    return new TwoValuesContainer(firstValueLowBits, keyLowBits);
+                final long left, right;
+                if (firstValue < key) {
+                    left = firstValue;
+                    right = key;
+                } else {
+                    left = key;
+                    right = firstValue;
                 }
-                if (firstValue + 1 == key) {
-                    final int start = lowBitsAsInt(firstValue);
-                    final int end = lowBitsAsInt(key);
+                if (left + 1 == right) {
+                    final int start = lowBitsAsInt(left);
+                    final int end = lowBitsAsInt(right);
                     return new SingleRangeContainer(start, end + 1);
                 }
-                // firstValue + 1 > key
-                final short keyLowBits = lowBitsAsShort(key);
-                final short firstValueLowBits = lowBitsAsShort(firstValue);
-                return new TwoValuesContainer(keyLowBits, firstValueLowBits);
+                final short leftLow = lowBitsAsShort(left);
+                final short rightLow = lowBitsAsShort(right);
+                return new TwoValuesContainer(leftLow, rightLow);
             }
             final short firstValueLowBits = lowBitsAsShort(firstValue);
             return container.iset(firstValueLowBits);
