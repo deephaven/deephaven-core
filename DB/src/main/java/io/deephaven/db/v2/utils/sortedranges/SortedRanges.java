@@ -1040,7 +1040,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         // We don't want to do two passes, we allocated an array big enough instead.
         final boolean brokenInitialRange = startPos < pos;
         int ansLen = count - i + (brokenInitialRange ? 2 : 1);
-        ansLen = Math.min(ansLen, (int) (inputRangeSpan + 1));
+        ansLen = (int) Math.min(ansLen, (inputRangeSpan + 1));
         final SortedRanges ans = makeMyTypeAndOffset(ansLen);
         ans.count = 0;
         ans.cardinality = 0;
