@@ -377,15 +377,44 @@ message FigureDescriptor {
         string color = 10;
         float minRange = 11;
         float maxRange = 12;
-        int32 minorTickCount = 13;
-        float gapBetweenMajorTicks = 14;
-        repeated float majorTickLocations = 15;
-        float tickLabelAngle = 16;
-        bool invert = 17;
-        BusinessCalendarDescriptor businessCalendarDescriptor = 18;
+        bool minorTicksVisible = 13;
+        bool majorTicksVisible = 14;
+        int32 minorTickCount = 15;
+        float gapBetweenMajorTicks = 16;
+        repeated float majorTickLocations = 17;
+        float tickLabelAngle = 18;
+        bool invert = 19;
+        bool isTimeAxis = 20;
+        BusinessCalendarDescriptor businessCalendarDescriptor = 21;
     }
     message BusinessCalendarDescriptor {
-
+        enum DayOfWeek {
+            SUNDAY = 0;
+            MONDAY = 1;
+            TUESDAY = 2;
+            WEDNESDAY = 3;
+            THURSDAY = 4;
+            FRIDAY = 5;
+            SATURDAY = 6;
+        }
+        message BusinessPeriod {
+            string open = 1;
+            string close = 2;
+        }
+        message Holiday {
+            LocalDate date = 1;
+            repeated BusinessPeriod businessPeriods = 2;
+        }
+        message LocalDate {
+            int32 year = 1;
+            int32 month = 2;
+            int32 day = 3;
+        }
+        string name = 1;
+        string timeZone = 2;
+        repeated DayOfWeek businessDays = 3;
+        repeated BusinessPeriod businessPeriods = 4;
+        repeated Holiday holidays = 5;
     }
     message MultiSeriesSourceDescriptor {
         AxisDescriptor axis = 1;
