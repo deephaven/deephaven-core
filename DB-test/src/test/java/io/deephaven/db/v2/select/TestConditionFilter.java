@@ -280,10 +280,10 @@ public class TestConditionFilter extends PythonTest {
 
     @Test
     public void testLoadNumpyTwice() {
-        Assert.assertNotNull(PyModule.importModule("numba"));
+        Assert.assertNotNull(PyModule.importModule("deephaven/numba"));
         Assert.assertNotNull(PyModule.importModule("numpy"));
         Assert.assertNotNull(PyModule.importModule("deephaven.lang.vectorize_simple"));
-        Assert.assertNotNull(PyModule.importModule("numba"));
+        Assert.assertNotNull(PyModule.importModule("deephaven/numba"));
         Assert.assertNotNull(PyModule.importModule("numpy"));
         Assert.assertNotNull(PyModule.importModule("deephaven.lang.vectorize_simple"));
     }
@@ -436,12 +436,6 @@ public class TestConditionFilter extends PythonTest {
 
     private Index initCheck(String expression, FormulaParserConfiguration parser) {
         final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
-        conditionFilter.init(testDataTable.getDefinition());
-        return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(), testDataTable, false);
-    }
-
-    private Index initV3PythonCheck(String expression) {
-        PythonVectorFilter conditionFilter = new PythonVectorFilter(expression.replaceAll(" = ", " == "));
         conditionFilter.init(testDataTable.getDefinition());
         return conditionFilter.filter(testDataTable.getIndex().clone(), testDataTable.getIndex(), testDataTable, false);
     }

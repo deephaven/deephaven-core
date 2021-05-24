@@ -116,6 +116,12 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return chunk.isAlias(data);
     }
 
+    @Override
+    public final <V extends Visitor<ATTR>> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
     // region ApplyDecoder
     // endregion ApplyDecoder
 

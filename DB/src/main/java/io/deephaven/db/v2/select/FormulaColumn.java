@@ -10,7 +10,7 @@ public interface FormulaColumn extends SelectColumn {
             case Deephaven:
                 return new DhFormulaColumn(columnName, formulaString);
             case Numba:
-                return new NumbaFormulaColumn(columnName, formulaString);
+                throw new UnsupportedOperationException("Python formula columns must be created from python");
             default:
                 throw new UnsupportedOperationException("Parser support not implemented for " + parser);
         }
