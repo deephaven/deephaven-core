@@ -2191,7 +2191,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     public final TreeIndexImpl invertRangeOnNew(final long start, final long end, final long maxPosition) {
         final long packedStart = pack(start);
         int i = 0;
-        int pos = 0;
+        long pos = 0;
         long data = packedGet(i);
         boolean neg = false;
         long pendingStart = -1;
