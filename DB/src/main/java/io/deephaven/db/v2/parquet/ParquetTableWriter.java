@@ -60,6 +60,7 @@ public class ParquetTableWriter {
     public static final String GROUPING = "grouping";
     public static final String _CODEC_NAME_PREFIX_ = "__codec_name__";
     public static final String _CODEC_ARGS_PREFIX_ = "__codec_args__";
+    public static final String _CODEC_TYPE_PREFIX_ = "__codec_type__";
     public static final String SPECIAL_TYPE_NAME_PREFIX_ = "__special_type__";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     private static final int LOCAL_CHUNK_SIZE = 1024;
@@ -274,13 +275,15 @@ public class ParquetTableWriter {
         MappedSchema mappedSchema = MappedSchema.create(definition);
         Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (ColumnDefinition column : definition.getColumns()) {
+            final String colName = column.getName();
             Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column);
             if (codecData != null) {
-                extraMetaData.put(_CODEC_NAME_PREFIX_ + column.getName(), codecData.getLeft());
-                extraMetaData.put(_CODEC_ARGS_PREFIX_ + column.getName(), codecData.getRight());
+                extraMetaData.put(_CODEC_NAME_PREFIX_ + colName, codecData.getLeft());
+                extraMetaData.put(_CODEC_ARGS_PREFIX_ + colName, codecData.getRight());
+                extraMetaData.put(_CODEC_TYPE_PREFIX_ + colName, column.getDataType().getName());
             }
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX_ + column.getName(), STRING_SET_SPECIAL_TYPE);
+                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX_ + colName, STRING_SET_SPECIAL_TYPE);
             }
         }
         return new ParquetFileWriter(path, new LocalFSChannelProvider(), PAGE_SIZE,

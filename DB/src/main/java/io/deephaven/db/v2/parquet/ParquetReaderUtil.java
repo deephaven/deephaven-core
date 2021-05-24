@@ -1,6 +1,7 @@
 package io.deephaven.db.v2.parquet;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
@@ -16,15 +17,14 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.OriginalType;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ParquetReaderUtil {
 
@@ -104,17 +104,36 @@ public class ParquetReaderUtil {
         }
     }
 
+    @FunctionalInterface
+    public interface ColumnDefinitionConsumer {
+        void accept(String columnName, Class<?> columnDbType, boolean isGroupingColumn);
+    }
+
     public static void readParquetSchema(
-            final String filePath, final BiConsumer<String, Class<?>> colDefConsumer
+            final String filePath, final ColumnDefinitionConsumer colDefConsumer, final ClassLoader classLoader
     ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
         final MessageType schema = pf.getSchema();
+        final ParquetMetadata pm = new ParquetMetadataConverter().fromParquetMetadata(pf.fileMetaData);
+        final Map<String, String> keyValueMetaData = pm.getFileMetaData().getKeyValueMetaData();
         final MutableObject<String> errorString = new MutableObject<>();
+        final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-                return Optional.of(String.class);
+                final ColumnDescriptor column = currentColumn.getValue();
+                final String specialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + column.getPath()[0]);
+                if (specialType != null) {
+                    if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                        return Optional.of(StringSet.class);
+                    }
+                    throw new RuntimeException("Type " + column.getPrimitiveType()
+                            + " for column " + Arrays.toString(column.getPath())
+                            + " with unknown special type " + specialType);
+                } else {
+                    return Optional.of(String.class);
+                }
             }
 
             @Override
@@ -223,30 +242,69 @@ public class ParquetReaderUtil {
                 return Optional.empty();
             }
         };
+
+        final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING);
+        Set<String> groupingCols = Collections.emptySet();
+        if (csvGroupingCols != null) {
+            groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
+        }
+
         int c = 0;
         for (ColumnDescriptor column : schema.getColumns()) {
-            LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
+            currentColumn.setValue(column);
+            final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
             final String colName = schema.getFieldName(c++);
+            final boolean isGroupinng = groupingCols.contains(colName);
             if (logicalTypeAnnotation == null) {
                 switch (column.getPrimitiveType().getPrimitiveTypeName()) {
                     case BOOLEAN:
-                        colDefConsumer.accept(colName, Boolean.class);
+                        colDefConsumer.accept(colName, Boolean.class, isGroupinng);
                         break;
                     case INT32:
-                        colDefConsumer.accept(colName, int.class);
+                        colDefConsumer.accept(colName, int.class, isGroupinng);
                         break;
                     case INT64:
-                        colDefConsumer.accept(colName, long.class);
+                        colDefConsumer.accept(colName, long.class, isGroupinng);
                         break;
                     case DOUBLE:
-                        colDefConsumer.accept(colName, double.class);
+                        colDefConsumer.accept(colName, double.class, isGroupinng);
                         break;
                     case FLOAT:
-                        colDefConsumer.accept(colName, float.class);
+                        colDefConsumer.accept(colName, float.class, isGroupinng);
                         break;
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
-                        // Do not directly map to String when the logical annotation is not present.
+                        final String specialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + column.getPath()[0]);
+                        final Supplier<String> exceptionTextSupplier = ()
+                                -> "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
+                                    + " for column " + Arrays.toString(column.getPath());
+                        final Class<?> dbType;
+                        if (specialType != null) {
+                            if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                                dbType = StringSet.class;
+                            } else {
+                                throw new RuntimeException(exceptionTextSupplier.get()
+                                        + " with unknown special type " + specialType);
+                            }
+                        } else {
+                            final String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + column.getPath()[0]);
+                            if (codecType != null) {
+                                try {
+                                    dbType = (classLoader == null)
+                                            ? Class.forName(codecType)
+                                            : Class.forName(codecType, true, classLoader)
+                                    ;
+                                } catch (ClassNotFoundException e) {
+                                    throw new RuntimeException(exceptionTextSupplier.get()
+                                            + " with codec type " + codecType + " that can't be found in current classloader.");
+                                }
+                            } else {
+                                throw new RuntimeException(exceptionTextSupplier.get()
+                                        + " with no codec type or special type defined.");
+                            }
+                        }
+                        colDefConsumer.accept(colName, dbType, isGroupinng);
+                        break;
                     default:
                         throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
                 }
@@ -259,7 +317,7 @@ public class ParquetReaderUtil {
                                 ? (logicalTypeString + " not supported")
                                 : "no mappeable logical type annotation found."));
                 }
-                colDefConsumer.accept(colName, optionalClass.get());
+                colDefConsumer.accept(colName, optionalClass.get(), isGroupinng);
             }
         }
     }
@@ -367,7 +425,6 @@ public class ParquetReaderUtil {
 
     private static void readRowGroup(RowGroupReader rg, Object nullValue, Consumer<Object> print, List<String> path) throws IOException {
         ColumnChunkReader cc = rg.getColumnChunk(path);
-        int maxRl = cc.getMaxRl();
         Dictionary dictionary = cc.getDictionary();
         DictionaryAdapter dictionaryMapping = dictionary != null ? DictionaryAdapter.getAdapter(dictionary, nullValue) : null;
         int nullId = 0;

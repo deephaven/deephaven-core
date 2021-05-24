@@ -6,6 +6,7 @@ package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.parquet.ParquetReaderUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
@@ -79,29 +80,31 @@ public class TableManagementTools {
     }
 
     public static Table readTable(@NotNull final File sourceDir) {
-        return readTable(sourceDir, false);
+        return readTableWithClassLoader(sourceDir, null);
     }
 
     /**
      * Reads in a table from disk.
      *
      * @param sourceDir table location
+     * @param classLoader a class loader to use for encoded types, or null to use bootstrap classloader.
      * @return table
      */
-    public static Table readTable(@NotNull final File sourceDir, final boolean tryDhTableDef) {
-        TableDefinition tableDefinition = tryDhTableDef ? TableDefinition.loadDefinition(sourceDir, true) : null;
-        if (tableDefinition == null) {
-            final ColumnsSpecHelper cols = new ColumnsSpecHelper();
-            try {
-                ParquetReaderUtil.readParquetSchema(sourceDir.getPath() + File.separator + "table.parquet", cols::add);
-            } catch (java.io.FileNotFoundException e) {
-                throw new IllegalArgumentException(sourceDir + " doesn't have a loadable TableDefinition");
-            } catch (java.io.IOException e) {
-                throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
-            }
-            tableDefinition = TableDefinition.tableDefinition(cols.getDbTypes(), cols.getColumnNames());
+    public static Table readTableWithClassLoader(@NotNull final File sourceDir, final ClassLoader classLoader) {
+        final ArrayList<ColumnDefinition> cols = new ArrayList<>();
+        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = (final String name, final Class<?> dbType, final boolean isGrouping) -> {
+            final int columnType = isGrouping ? ColumnDefinition.COLUMNTYPE_GROUPING : ColumnDefinition.COLUMNTYPE_NORMAL;
+            final ColumnDefinition<?> colDef = new ColumnDefinition<>(name, dbType, columnType);
+            cols.add(colDef);
+        };
+        try {
+            ParquetReaderUtil.readParquetSchema(sourceDir.getPath() + File.separator + "table.parquet", colConsumer, classLoader);
+        } catch (java.io.FileNotFoundException e) {
+            throw new IllegalArgumentException(sourceDir + " doesn't have a loadable TableDefinition");
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }
-        return readTable(sourceDir, tableDefinition);
+        return readTable(sourceDir, new TableDefinition(cols));
     }
 
     /**
@@ -136,7 +139,6 @@ public class TableManagementTools {
     public static void writeTable(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
         if (storageFormat == StorageFormat.Parquet) {
             writeParquetTables(new Table[]{sourceTable}, definition, CompressionCodecName.SNAPPY, new File[]{destDir}, definition.getGroupingColumnNamesArray());
-            // TableDefinition.persistDefinition(definition, destDir);
         } else {
             throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
         }

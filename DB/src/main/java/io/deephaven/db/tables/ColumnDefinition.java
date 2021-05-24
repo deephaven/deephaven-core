@@ -137,7 +137,7 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         this(name, dataType, COLUMNTYPE_NORMAL);
     }
 
-    ColumnDefinition(String name, Class<TYPE> dataType, int columnType) {
+    public ColumnDefinition(String name, Class<TYPE> dataType, int columnType) {
         this(name, dataType, columnType, false);
     }
 
