@@ -40,6 +40,7 @@ function do_download()
 {
   if [ -d $target_path/.git ]; then
     printf "examples collection already exists at %s\n" $target_path >&2
+    git pull || fail_out "Couldn't update existing collection"
   else
     git clone --quiet $git_root_url $target_path || fail_out "Couldn't clone examples repository"
     printf "examples downloaded to $target_path\n"
