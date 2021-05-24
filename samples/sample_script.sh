@@ -9,10 +9,9 @@ function usage()
   printf "\n" >&2
   printf "    commands are:\n"
   printf "        download [<version>] - downloads and mounts all example data\n" >&2
-  printf "                               gets latest version unless <version> supplied\n" >&2
+  printf "                               gets latest version, unless <version> supplied\n" >&2
   printf "        remove - removes all example data\n" >&2
-  printf "        version [<version>] - get version <version>\n" >&2
-  printf "                            - without a parameter, shows current the version\n" >&2
+  printf "        version - shows current the version\n" >&2
   printf "        versions - list available versions\n" >&2
   exit 2
 }
@@ -99,12 +98,8 @@ case "$1" in
     ;;
   version)
     ensure_enlistment
-    if [ -z "$2" ]; then
-      cd $target_path
-      git describe
-    else
-      do_checkout_version "$2"
-    fi
+    cd $target_path
+    git describe
     ;;
   versions)
     ensure_enlistment
