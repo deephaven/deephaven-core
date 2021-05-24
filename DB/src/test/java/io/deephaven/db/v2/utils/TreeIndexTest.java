@@ -16,6 +16,7 @@ import io.deephaven.db.v2.utils.sortedranges.SortedRangesInt;
 import io.deephaven.db.v2.utils.sortedranges.SortedRangesLong;
 import io.deephaven.db.v2.utils.sortedranges.SortedRangesShort;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -31,10 +32,12 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_SIZE;
 
+@Category(OutOfBandTest.class)
 public class TreeIndexTest extends SortedIndexTestBase {
     @NotNull
     @Override

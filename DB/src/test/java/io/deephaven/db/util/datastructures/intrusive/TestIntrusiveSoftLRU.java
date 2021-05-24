@@ -1,12 +1,15 @@
 package io.deephaven.db.util.datastructures.intrusive;
 
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU;
 import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import org.junit.experimental.categories.Category;
 
+@Category(OutOfBandTest.class)
 public class TestIntrusiveSoftLRU {
 
     class Obj extends IntrusiveSoftLRU.Node.Impl<Obj> {
@@ -78,6 +81,7 @@ public class TestIntrusiveSoftLRU {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testRobustness() {
         ArrayList<Obj> objects = new ArrayList<>(1000);
         ArrayList<WeakReference<Obj>> objRefs = new ArrayList<>(1000);

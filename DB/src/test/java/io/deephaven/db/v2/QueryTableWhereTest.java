@@ -23,6 +23,7 @@ import io.deephaven.db.v2.sources.UnionRedirection;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 
@@ -38,12 +39,14 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.tables.utils.WhereClause.whereClause;
 import static io.deephaven.db.v2.TstUtils.*;
 import static java.util.Arrays.asList;
 
+@Category(OutOfBandTest.class)
 public class QueryTableWhereTest extends QueryTableTestBase {
 
     @Test
@@ -395,6 +398,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testWhereDynamicInIncremental() {
         final ColumnInfo[] setInfo;
         final ColumnInfo[] filteredInfo;
@@ -558,6 +562,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testWhereOneOfIncremental() {
 
         final ColumnInfo[] filteredInfo;
@@ -882,6 +887,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         return table;
     }
 
+    @Category(OutOfBandTest.class)
     public void testComparableBinarySearch() {
         final Random random = new Random(0);
 

@@ -4,6 +4,7 @@ import static io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import static io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.utils.*;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.Shuffle;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -18,11 +19,13 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.*;
 
+@Category(OutOfBandTest.class)
 public class RspBitmapTest {
     private static final int runs = 1;
     private static final int lastRun = 1; // to help offset the seed when doing multiple runs.
@@ -801,7 +804,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testIteratorAdvanceBlockBoundaries() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testIteratorAdvanceBlockBoundaries() {
         final long[] b0s = new long[] { BLOCK_LAST - 4, BLOCK_LAST - 3, BLOCK_LAST - 2, BLOCK_LAST - 1, BLOCK_LAST };
         final long[] b1s = new long[] { BLOCK_SIZE, BLOCK_SIZE + 1, BLOCK_SIZE + 2, BLOCK_SIZE + 3, BLOCK_SIZE + 4 };
         final long[] alls = new long[b0s.length + b1s.length];
@@ -1225,7 +1230,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testRemoveRange5() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testRemoveRange5() {
         randomizedTest(RspBitmapTest::doTestRemoveRange5);
     }
 
@@ -1265,7 +1272,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testSubrangeByKey() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testSubrangeByKey() {
         randomizedTest(RspBitmapTest::doTestSubrangeByKey);
     }
 
@@ -2382,7 +2391,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testInvert() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testInvert() {
         randomizedTest(RspBitmapTest::doTestInvert);
     }
 
@@ -3214,7 +3225,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testAppendRanges() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testAppendRanges() {
         randomizedTest(RspBitmapTest::doTestAppendRanges);
     }
 
@@ -3222,7 +3235,9 @@ public class RspBitmapTest {
         doTestBatchBuilderOp(seed, "appendRanges", (out, in) -> out.appendRangesUnsafeNoWriteCheck(in.getRangeIterator()));
     }
 
-    @Test public void testAddRanges() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testAddRanges() {
         randomizedTest(RspBitmapTest::doTestAddRanges);
     }
 
@@ -3230,7 +3245,9 @@ public class RspBitmapTest {
         doTestBatchBuilderOp(seed, "appendRanges", (out, in) -> out.addRangesUnsafeNoWriteCheck(in.ixRangeIterator()));
     }
 
-    @Test public void testAppendValues() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testAppendValues() {
         randomizedTest(RspBitmapTest::doTestAppendValues);
     }
 
@@ -3238,7 +3255,9 @@ public class RspBitmapTest {
         doTestBatchBuilderOp(seed, "appendValues", (out, in) -> out.appendValuesUnsafeNoWriteCheck(in.getIterator()));
     }
 
-    @Test public void testAddValues() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testAddValues() {
         randomizedTest(RspBitmapTest::doTestAddValues);
     }
 
@@ -3339,7 +3358,9 @@ public class RspBitmapTest {
         assertEquals(rb, rb2);
     }
 
-    @Test public void testAndEquals() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testAndEquals() {
         randomizedTest(RspBitmapTest::doTestAndEquals);
     }
 
@@ -3667,6 +3688,7 @@ public class RspBitmapTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void testRemoveRangeManyBlocks() {
         final Random rand = new Random(seed0 + 2);
         final int blockCount = 1024;
@@ -4124,7 +4146,9 @@ public class RspBitmapTest {
         }
     }
 
-    @Test public void testOrderedKeysByValue() {
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testOrderedKeysByValue() {
         randomizedTest(RspBitmapTest::doTestOrderedKeysByValue);
     }
 
@@ -4208,5 +4232,17 @@ public class RspBitmapTest {
         assertEquals(2, result.get(1));
         assertEquals(3, result.get(2));
         assertEquals(rb.getCardinality() - 1, result.get(picks.getCardinality() - 1));
+    }
+
+    @Test
+    public void testAddValuesUnsafeRegression() {
+        RspBitmap rb = new RspBitmap();
+        rb = rb.add(3);
+        final WritableLongChunk<OrderedKeyIndices> chunk = WritableLongChunk.makeWritableChunk(4);
+        chunk.setSize(0);
+        chunk.add(4);
+        chunk.add(BLOCK_SIZE + 10);
+        // we saw: "java.lang.IllegalStateException: iv1=3, iv2=4"
+        rb.addValuesUnsafeNoWriteCheck(chunk, 0, 2);
     }
 }

@@ -8,12 +8,15 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class TestSelectOverheadLimiter extends LiveTableTestCase {
     public void testSelectOverheadLimiter() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(0, 100));
@@ -89,6 +92,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         });
     }
 
+    @Category(OutOfBandTest.class)
     public void testByExternal() {
         SelectOverheadLimiter.conversions.set(0);
         int seed;

@@ -7,6 +7,7 @@ plugins {
 }
 
 evaluationDependsOn ':deephaven-jpy'
+evaluationDependsOn ':Integrations'
 
 sourceSets {
   // All sourcesets here are used for testing; we'll inform the idea{} plugin, below
@@ -110,6 +111,51 @@ Task pythonToJava = tasks.create 'unittestPythonToJava', {
 }
 
 if (!PyEnv.pythonEnabled(project)) {
+  Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet sourceSet ->
+
+    def gradleWrapper = tasks.register("${taskName}GradleInit", Wrapper.class) { wrapper ->
+      wrapper.scriptFile "${buildDir}/template-project/gradlew"
+      wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+    }
+    return Docker.registerDockerTask(project, taskName) {
+      copyIn {
+        dependsOn gradleWrapper
+        from ("${buildDir}/template-project") {
+          into 'project'
+        }
+        from(project.file('src/javaToPython/build.gradle.template')) {
+          into 'project'
+          rename { file -> 'build.gradle' }
+        }
+        from (sourceSet.runtimeClasspath) {
+          into 'classpath'
+        }
+        from (sourceSet.output.getClassesDirs()) {
+          into 'classes'
+        }
+      }
+      parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+      dockerfile {
+        // base image with default java, python, wheels
+        from 'deephaven/runtime-base'
+
+        // set up the project
+        copyFile 'project', '/project'
+        workingDir '/project'
+        // run once with no actual classes, so that gradle is preinstalled and cached
+        runCommand '/project/gradlew'
+        copyFile 'classpath', '/classpath'
+        copyFile 'classes', '/classes'
+      }
+      entrypoint = ['/project/gradlew', 'test', '--info']
+      containerOutPath = '/project/build/test-results/test/'
+      copyOut {
+        into "${buildDir}/test-results/${taskName}"
+      }
+    }
+  }
+  testJavaToPython.dependsOn gradleTestInDocker('java-to-python-test', sourceSets.javaToPython)
+
 //  Task testTask = venvTest.javaTest(project, "java-to-python-test-${pv.name}", installWheels, sourceSets.javaToPython)
 //  testJavaToPython.dependsOn testTask
 

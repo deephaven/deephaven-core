@@ -16,6 +16,7 @@ import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.File;
@@ -25,10 +26,12 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class QueryTableSortTest extends QueryTableTestBase {
 
     public void testSort() {
@@ -225,6 +228,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals("",diff(descending, testRefreshingTable(c("boolCol", true, true, false, false, null)),10));
     }
 
+    @Category(OutOfBandTest.class)
     public void testSortIncremental2() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -232,6 +236,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testMultiColumnRuns() {
         final Random random = new Random(0);
         final ColumnInfo columnInfo[];
@@ -340,6 +345,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     /**
      * Test sort performance on a variety of scenarios.
      */
+    @Category(OutOfBandTest.class)
     public void testSortPerformance() {
         final long large = 100000000;
         // sequence: 0, 10, 20, 30, ...
@@ -530,6 +536,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testGrowingMergeReinterpret() {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final Table viewed = table.update("Timestamp='2019-04-11T09:30 NY' + (ii * 60L * 1000000000L)");
@@ -643,6 +650,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    @Category(OutOfBandTest.class)
     public void testSymbolTableSortIncremental() throws IOException {
         diskBackedTestHarness(this::doSymbolTableIncrementalTest);
     }

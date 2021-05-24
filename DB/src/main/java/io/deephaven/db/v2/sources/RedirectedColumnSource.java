@@ -96,13 +96,20 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
 
     private class RedirectionFillFrom implements FillFromContext {
         final RedirectionIndex.FillContext redirectionFillContext;
-        final WritableLongChunk<KeyIndices> redirections;
         final FillFromContext innerFillFromContext;
+        final WritableLongChunk<KeyIndices> redirections;
 
         private RedirectionFillFrom(int chunkCapacity) {
             this.redirectionFillContext = redirectionIndex.makeFillContext(chunkCapacity, null);
             this.innerFillFromContext = ((WritableSource)innerSource).makeFillFromContext(chunkCapacity);
             this.redirections = WritableLongChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            redirectionFillContext.close();
+            innerFillFromContext.close();
+            redirections.close();
         }
     }
 

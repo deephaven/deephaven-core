@@ -11,6 +11,7 @@ import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -20,8 +21,9 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.junit.experimental.categories.Category;
 
-
+@Category(OutOfBandTest.class)
 public class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
@@ -146,6 +148,7 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
@@ -153,6 +156,7 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
+    @Category(OutOfBandTest.class)
     public void vectorParquetFormat() {
         testEmptyArrayStore("smallEmpty", 20);
         groupedOneColumnTable("smallAggOneColumn", 20);

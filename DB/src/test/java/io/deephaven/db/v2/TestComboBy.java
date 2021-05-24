@@ -13,6 +13,7 @@ import io.deephaven.db.tables.dbarrays.DbCharArray;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.by.AggType;
@@ -29,6 +30,7 @@ import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Random;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.DBTimeUtils.convertDateTime;
 import static io.deephaven.db.tables.utils.TableTools.*;
@@ -37,6 +39,7 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
+@Category(OutOfBandTest.class)
 public class TestComboBy extends LiveTableTestCase {
 
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestComboBy.class, "CompilerTools.logEnabled", false);
@@ -196,6 +199,7 @@ public class TestComboBy extends LiveTableTestCase {
         }
     }
 
+    @Category(OutOfBandTest.class)
     public void testComboByIncremental() {
         for (int size = 10; size <= 1000; size *= 10) {
             testComboByIncremental("size-" + size, size);

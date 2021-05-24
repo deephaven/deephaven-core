@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Settings these explicitly avoids adding the --release flag, which will blow up w/ --add-exports
+compileJava.sourceCompatibility = '11'
+compileJava.targetCompatibility = '11'
+
+compileJava.options.compilerArgs.addAll(
+        ['--add-exports', 'jdk.javadoc/jdk.javadoc.internal.tool=dh_javadoc'])

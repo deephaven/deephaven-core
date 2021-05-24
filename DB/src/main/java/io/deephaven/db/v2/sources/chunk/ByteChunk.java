@@ -117,6 +117,12 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return chunk.isAlias(data);
     }
 
+    @Override
+    public final <V extends Visitor<ATTR>> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
     // region ApplyDecoder
     public final <T> T applyDecoder(ObjectDecoder<T> decoder) {
         return decoder.decode(data, offset, size);

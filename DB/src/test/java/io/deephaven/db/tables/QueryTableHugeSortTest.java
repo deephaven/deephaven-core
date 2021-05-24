@@ -5,6 +5,7 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
 import org.junit.Test;
 
@@ -12,13 +13,16 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.*;
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 
+@Category(OutOfBandTest.class)
 public class QueryTableHugeSortTest {
     @Test
+    @Category(OutOfBandTest.class)
     public void testHugeSort() {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;
