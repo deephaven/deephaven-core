@@ -201,7 +201,235 @@ message FetchFigureRequest {
     reserved 2;
 }
 message FetchFigureResponse {
+    FigureDescriptor figureDescriptor = 1;
+}
 
+message FigureDescriptor {
+    string title = 1;
+    string titleFont = 2;
+    string titleColor = 3;
+    //    bool resizable = 4;//unused?
+
+    //    Theme theme = 5;//unused?
+    //    bool isDefaultTheme = 6;//unused?
+
+    double updateInterval = 7;
+
+    int32 cols = 8;
+    int32 rows = 9;
+
+    repeated ChartDescriptor charts = 10;
+
+    repeated io.deephaven.proto.backplane.grpc.Ticket tableIds = 11;
+//    repeated repeated int32 plotHandleIds = 12;
+
+    repeated io.deephaven.proto.backplane.grpc.Ticket tableMaps = 13;
+//    repeated repeated int32 tableMapIds = 14;
+
+    repeated string errors = 15;
+
+    message ChartDescriptor {
+        enum ChartType {
+            XY = 0;
+            PIE = 1;
+            OHLC = 2;
+            CATEGORY = 3;
+            XYZ = 4;
+            CATEGORY_3D = 5;
+        }
+        int32 colspan = 1;
+        int32 rowspan = 2;
+
+        repeated SeriesDescriptor series = 3;
+        repeated MultiSeriesDescriptor multiSeries = 4;
+        repeated AxisDescriptor axes = 5;
+
+        ChartType chartType = 6;
+
+        string title = 7;
+        string titleFont = 8;
+        string titleColor = 9;
+
+        bool showLegend = 10;
+        string legendFont = 11;
+        string legendColor = 12;
+
+        bool is3d = 13;
+    }
+
+    enum SeriesPlotStyle {
+        BAR = 0;
+        STACKED_BAR = 1;
+        LINE = 2;
+        AREA = 3;
+        STACKED_AREA = 4;
+        PIE = 5;
+        HISTOGRAM = 6;
+        OHLC = 7;
+        SCATTER = 8;
+        STEP = 9;
+        ERROR_BAR = 10;
+    }
+
+    message SeriesDescriptor {
+        SeriesPlotStyle plotStyle = 1;
+
+        string name = 2;
+
+        optional bool linesVisible = 3;
+        optional bool shapesVisible = 4;
+
+        bool gradientVisible = 5;
+        string lineColor = 6;
+        //    string lineStyle = 7;
+        string pointLabelFormat = 8;
+        string xToolTipPattern = 9;
+        string yToolTipPattern = 10;
+
+        string shapeLabel = 11;
+        optional float shapeSize = 12;
+        string shapeColor = 13;
+        string shape = 14;
+
+        repeated SourceDescriptor dataSources = 15;
+    }
+    message MultiSeriesDescriptor {
+        SeriesPlotStyle plotStyle = 1;
+
+        string name = 2;
+
+        StringMapWithDefault lineColor = 3;
+
+        StringMapWithDefault pointColor = 4;
+
+        BoolMapWithDefault linesVisible = 5;
+
+        BoolMapWithDefault pointsVisible = 6;
+
+        BoolMapWithDefault gradientVisible = 7;
+
+        StringMapWithDefault pointLabelFormat = 8;
+
+        StringMapWithDefault xToolTipPattern = 9;
+
+        StringMapWithDefault yToolTipPattern = 10;
+
+        StringMapWithDefault pointLabel = 11;
+
+        FloatMapWithDefault pointSize = 12;
+
+        StringMapWithDefault pointShape = 13;
+
+        repeated MultiSeriesSourceDescriptor dataSources = 14;
+
+    }
+    message StringMapWithDefault {
+        string defaultString = 1;
+        repeated string keys = 2;
+        repeated string values = 3;
+    }
+    message FloatMapWithDefault {
+        float defaultFloat = 1;
+        repeated string keys = 2;
+        repeated float values = 3;
+    }
+    message BoolMapWithDefault {
+        bool defaultBool = 1;
+        repeated string keys = 2;
+        repeated bool values = 3;
+    }
+    message AxisDescriptor {
+        enum AxisFormatType {
+            CATEGORY = 0;
+            NUMBER = 1;
+        }
+        enum AxisType {
+            X = 0;
+            Y = 1;
+            SHAPE = 2;
+            SIZE = 3;
+            LABEL = 4;
+            COLOR = 5;
+        }
+        enum AxisPosition {
+            TOP = 0;
+            BOTTOM = 1;
+            LEFT = 2;
+            RIGHT = 3;
+            NONE = 4;
+        }
+
+        string id = 1;
+
+        AxisFormatType formatType = 2;
+
+        AxisType type = 3;
+
+        AxisPosition position = 4;
+
+        bool log = 5;
+        string label = 6;
+        string labelFont = 7;
+        string ticksFont = 8;
+        string formatPattern = 9;
+        string color = 10;
+        float minRange = 11;
+        float maxRange = 12;
+        int32 minorTickCount = 13;
+        float gapBetweenMajorTicks = 14;
+        repeated float majorTickLocations = 15;
+        float tickLabelAngle = 16;
+        bool invert = 17;
+        BusinessCalendarDescriptor businessCalendarDescriptor = 18;
+    }
+    message BusinessCalendarDescriptor {
+
+    }
+    message MultiSeriesSourceDescriptor {
+        AxisDescriptor axis = 1;
+
+        SourceType type = 2;
+
+        int32 tableMapId = 3;
+        string columnName = 4;
+    }
+
+    enum SourceType {
+        X = 0;
+        Y = 1;
+        Z = 2;
+        X_LOW = 3;
+        X_HIGH = 4;
+        Y_LOW = 5;
+        Y_HIGH = 6;
+        TIME = 7;
+        OPEN = 8;
+        HIGH = 9;
+        LOW = 10;
+        CLOSE = 11;
+        SHAPE = 12;
+        SIZE = 13;
+        LABEL = 14;
+        COLOR = 15;
+    }
+    message SourceDescriptor {
+        AxisDescriptor axis = 1;
+
+        SourceType type = 2;
+
+        int32 tableId = 3;
+        int32 tableMapId = 4;
+        string columnName = 5;
+
+        string columnType = 6;
+
+        OneClickDescriptor oneClick = 7;
+    }
+    message OneClickDescriptor {
+        repeated string columns = 1;
+        repeated string columnTypes = 2;
+        bool requireAllFiltersToDisplay = 3;
+    }
 }
 
 message FetchTableMapRequest {
