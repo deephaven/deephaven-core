@@ -14,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.mes
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.BarrageData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.SubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb_service.BarrageServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
@@ -602,6 +603,10 @@ public class WorkerConnection {
     public Promise<JsFigure> getFigure(String figureName, Ticket script) {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
+                    FetchFigureRequest request = new FetchFigureRequest();
+                    request.setConsoleid(script);
+                    request.setFigurename(figureName);
+                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
 //                    if (script != null) {
 //                        getServer().fetchScriptFigure(script, figureName, c);
 //                    } else {

@@ -6,7 +6,15 @@ import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.web.client.api.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.web.client.api.Callback;
+import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.HasEventHandling;
+import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.TableMap;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -14,8 +22,7 @@ import io.deephaven.web.shared.data.InitialTableDefinition;
 import io.deephaven.web.shared.data.TableHandle;
 import io.deephaven.web.shared.data.TableMapDeclaration;
 import io.deephaven.web.shared.data.columns.ColumnData;
-import io.deephaven.web.shared.data.plot.AxisDescriptor;
-import io.deephaven.web.shared.data.plot.FigureDescriptor;
+import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -45,7 +52,7 @@ public class JsFigure extends HasEventHandling {
             EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
 
     public interface FigureFetch {
-        void fetch(Callback<FigureDescriptor, String> callback);
+        void fetch(JsBiConsumer<Object, FetchFigureResponse> callback);
     }
 
     public interface FigureTableFetch {
@@ -125,10 +132,10 @@ public class JsFigure extends HasEventHandling {
         tablesToPlotHandles = new HashMap<>();
         plotHandlesToTables = new HashMap<>();
 
-        return Callbacks.promise(this, fetch::fetch).then(descriptor -> {
-            this.descriptor = descriptor;
+        return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
+            this.descriptor = response.getFiguredescriptor();
 
-            charts = Arrays.stream(descriptor.getCharts()).map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
+            charts = descriptor.getChartsList().asList().stream().map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
 
             return this.tableFetch.fetch(this, descriptor);
@@ -156,7 +163,7 @@ public class JsFigure extends HasEventHandling {
             fireEvent(EVENT_RECONNECT);
             return Promise.resolve(this);
         }, err -> {
-            final FigureFetchError fetchError = new FigureFetchError(ofObject(err), this.descriptor != null ? this.descriptor.getErrors() : new String[]{});
+            final FigureFetchError fetchError = new FigureFetchError(ofObject(err), this.descriptor != null ? this.descriptor.getErrorsList() : new String[]{});
             final CustomEventInit init = CustomEventInit.create();
             init.setDetail(fetchError);
             unsuppressEvents();

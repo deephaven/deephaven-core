@@ -199,6 +199,8 @@ message FetchPandasTableRequest {
 message FetchFigureRequest {
     arrow.flight.protocol.Ticket console_id = 1;
     reserved 2;
+
+    string figureName = 3;
 }
 message FetchFigureResponse {
     FigureDescriptor figureDescriptor = 1;
