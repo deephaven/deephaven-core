@@ -742,7 +742,13 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsMethod
     public Promise<JsTable> freeze() {
         return workerConnection.newState((c, state, metadata) -> {
-            workerConnection.tableServiceClient().snapshot(new SnapshotTableRequest(), metadata, c::apply);
+            SnapshotTableRequest request = new SnapshotTableRequest();
+            request.setLeftid(null);// explicit null to signal that we are just freezing this table
+            request.setRightid(state().getHandle().makeTableReference());
+            request.setResultid(state.getHandle().makeTicket());
+            request.setDoinitialsnapshot(true);
+            request.setStampcolumnsList(new String[0]);
+            workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
         }, "freeze").refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -765,7 +771,14 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
         final String fetchSummary = "snapshot(" + rightHandSide + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
         return workerConnection.newState((c, state, metadata) -> {
-            workerConnection.tableServiceClient().snapshot(new SnapshotTableRequest(), metadata, c::apply);
+            SnapshotTableRequest request = new SnapshotTableRequest();
+            request.setLeftid(state().getHandle().makeTableReference());
+            request.setRightid(rightHandSide.state().getHandle().makeTableReference());
+            request.setResultid(state.getHandle().makeTicket());
+            request.setDoinitialsnapshot(realDoInitialSnapshot);
+            request.setStampcolumnsList(realStampColums);
+
+            workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 

@@ -16,6 +16,9 @@
 
 package org.jpy;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -64,6 +67,33 @@ class PyProxyHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxyObject, Method method, Object[] args) throws Throwable {
         //assertPythonRuns(); // todo: get rid of this check to remove a call down into JNI?
+
+        if (method.isDefault()) {
+            // This allows our proxy-able interfaces to define default methods.
+            // Note: in this current implementation, defaults methods will always take precedence.
+            final Class<?> declaringClass = method.getDeclaringClass();
+
+            // https://blog.jooq.org/2018/03/28/correct-reflective-access-to-interface-default-methods-in-java-8-9-10/
+
+            // note: the following throws an IllegalAccessException of the form no private access for invokespecial
+            //return MethodHandles.lookup()
+            //    .in(declaringClass)
+            //    .unreflectSpecial(method, declaringClass)
+            //    .bindTo(proxyObject)
+            //    .invokeWithArguments(args);
+
+            // Unfortunately, the following doesn't work w/ Java 9+. There should be some new api
+            // methods that work w/ Java 9+ though. (MethodHandles#privateLookupIn)
+            final Constructor<Lookup> constructor = Lookup.class
+                .getDeclaredConstructor(Class.class);
+            constructor.setAccessible(true);
+            return constructor
+                .newInstance(declaringClass)
+                .in(declaringClass)
+                .unreflectSpecial(method, declaringClass)
+                .bindTo(proxyObject)
+                .invokeWithArguments(args);
+        }
 
         final long pointer = this.pyObject.getPointer();
 

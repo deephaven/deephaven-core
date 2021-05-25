@@ -14,10 +14,12 @@ import io.deephaven.db.v2.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.db.v2.TstUtils.getTable;
-import static io.deephaven.db.v2.TstUtils.initColumnInfos;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-@Category(OutOfBandTest.class)
+import static io.deephaven.db.v2.TstUtils.assertTableEquals;
+
 public class TestIncrementalReleaseFilter extends LiveTableTestCase {
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
@@ -35,6 +37,28 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
         }
+    }
+
+    public void testBigTable() {
+        final Table sourcePart = TableTools.emptyTable(1_000_000_000L);
+        final List<Table> sourceParts = IntStream.range(0, 20).mapToObj(x -> sourcePart).collect(Collectors.toList());
+        final Table source = TableTools.merge(sourceParts);
+        TableTools.show(source);
+
+        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 10_000_000);
+        final Table filtered = source.where(incrementalReleaseFilter);
+        final Table flattened = filtered.flatten();
+
+        assertEquals(2, filtered.size());
+
+        int cycles = 0;
+        while (filtered.size() < source.size()) {
+            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            cycles++;
+        }
+        assertTableEquals(source, filtered);
+        assertTableEquals(flattened, filtered);
+        System.out.println("Cycles: " + cycles);
     }
 
     static public <T> T sleepValue(long duration, T retVal) {

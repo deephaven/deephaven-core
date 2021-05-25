@@ -26,6 +26,18 @@ public interface Chunk<ATTR extends Any> {
      */
     int MAXIMUM_SIZE = Integer.MAX_VALUE;
 
+    interface Visitor<ATTR extends Any> {
+        void visit(ByteChunk<ATTR> chunk);
+        void visit(BooleanChunk<ATTR> chunk);
+        void visit(CharChunk<ATTR> chunk);
+        void visit(ShortChunk<ATTR> chunk);
+        void visit(IntChunk<ATTR> chunk);
+        void visit(LongChunk<ATTR> chunk);
+        void visit(FloatChunk<ATTR> chunk);
+        void visit(DoubleChunk<ATTR> chunk);
+        <T> void visit(ObjectChunk<T, ATTR> chunk);
+    }
+
     /**
      * Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a
      * subrange of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).
@@ -87,6 +99,13 @@ public interface Chunk<ATTR extends Any> {
      */
     ChunkType getChunkType();
 
+    default void checkChunkType(ChunkType expected) {
+        final ChunkType actual = getChunkType();
+        if (actual != expected) {
+            throw new IllegalArgumentException(String.format("Expected chunk type '%s', but is '%s'.", expected, actual));
+        }
+    }
+
     /**
      * @return true iff this and array are aliases, that is they refer to the same underlying data
      */
@@ -96,6 +115,8 @@ public interface Chunk<ATTR extends Any> {
      * @return true iff this and chunk are aliases, that is they refer to the same underlying data
      */
     boolean isAlias(Chunk chunk);
+
+    <V extends Visitor<ATTR>> V walk(V visitor);
 
     default ByteChunk<ATTR> asByteChunk() {
         return (ByteChunk<ATTR>) this;

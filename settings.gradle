@@ -142,6 +142,10 @@ include(':envoy')
 
 include(':grpc-proxy')
 
+if (includeJavadoc == 'true') {
+    include(':javadoc')
+}
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

@@ -4233,4 +4233,16 @@ public class RspBitmapTest {
         assertEquals(3, result.get(2));
         assertEquals(rb.getCardinality() - 1, result.get(picks.getCardinality() - 1));
     }
+
+    @Test
+    public void testAddValuesUnsafeRegression() {
+        RspBitmap rb = new RspBitmap();
+        rb = rb.add(3);
+        final WritableLongChunk<OrderedKeyIndices> chunk = WritableLongChunk.makeWritableChunk(4);
+        chunk.setSize(0);
+        chunk.add(4);
+        chunk.add(BLOCK_SIZE + 10);
+        // we saw: "java.lang.IllegalStateException: iv1=3, iv2=4"
+        rb.addValuesUnsafeNoWriteCheck(chunk, 0, 2);
+    }
 }

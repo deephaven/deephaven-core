@@ -43,7 +43,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         this.innerToOuterNames = Collections.emptyMap();
     }
 
-    AbstractConditionFilter(@NotNull String formula, Map<String, String> renames, boolean unboxArguments) {
+     protected AbstractConditionFilter(@NotNull String formula, Map<String, String> renames, boolean unboxArguments) {
         this.formula = formula;
         this.outerToInnerNames = renames;
         this.unboxArguments = unboxArguments;

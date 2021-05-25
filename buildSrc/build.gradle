@@ -1,6 +1,5 @@
 plugins {
     id 'groovy'
-    id 'java'
     id 'idea'
     id 'groovy-gradle-plugin'
 }
@@ -13,14 +12,9 @@ java {
 
 idea {
     project {
-        //if you want to set specific jdk and language level
         jdkName = '1.8'
         languageLevel = '1.8'
     }
-}
-
-sourceSets {
-    compat { }
 }
 
 repositories {
@@ -31,7 +25,6 @@ repositories {
 }
 
 dependencies {
-
     compile('de.esoco.gwt:gwt-gradle-plugin:1.1.1') {
         exclude group: 'org.codehaus.groovy'
     }
@@ -41,48 +34,5 @@ dependencies {
     compile('com.netflix.nebula:gradle-ospackage-plugin:8.3.0')
 
     compile "gradle.plugin.com.jetbrains.python:gradle-python-envs:0.0.30"
-
-    runtime sourceSets.compat.output
 }
 
-static def getToolsJar(JavaCompiler compiler) {
-    File toolsJar = compiler.metadata.installationPath.file('lib/tools.jar').asFile
-    if (toolsJar.exists()) {
-        return toolsJar
-    }
-    File javaHome = compiler.metadata.installationPath.asFile
-    if (javaHome.getName().equalsIgnoreCase('jre')) {
-        javaHome = javaHome.getParentFile()
-        toolsJar = new File(javaHome, "lib/tools.jar")
-        if (toolsJar.exists()) {
-            return toolsJar;
-        }
-    }
-    if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
-        String version = compiler.metadata.languageVersion.toString()
-        if (javaHome.getName().matches("jre\\d+") || javaHome.getName() == "jre${version}") {
-            javaHome = new File(javaHome.getParentFile(), "jdk${version}")
-            toolsJar = new File(javaHome, 'lib/tools.jar')
-            if (toolsJar.exists()) {
-                return toolsJar
-            }
-        }
-    }
-    return null
-}
-
-def compiler = javaToolchains.compilerFor {
-    languageVersion = JavaLanguageVersion.of(8)
-}
-def toolsJar = getToolsJar(compiler.get())
-if (toolsJar == null) {
-    throw new IllegalStateException("Unable to find toolsJar for '${compiler.get().metadata.installationPath}'")
-}
-dependencies.add 'compatCompile', files(toolsJar)
-
-tasks.named('jar', Jar).configure {
-    Jar jar ->
-        jar.preserveFileTimestamps = false
-        jar.reproducibleFileOrder = true
-        jar.outputs.cacheIf { true }
-}
