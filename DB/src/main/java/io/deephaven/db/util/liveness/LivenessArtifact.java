@@ -18,6 +18,7 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     private static final long serialVersionUID = 1L;
 
     protected LivenessArtifact() {
+        super(false);
         manageWithCurrentScope();
     }
 

@@ -9,6 +9,7 @@ import gnu.trove.impl.Constants;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.custom_hash.TObjectIntCustomHashMap;
 import gnu.trove.strategy.IdentityHashingStrategy;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility for holding strong references to otherwise unreachable classes (e.g. listeners that will be weakly held
@@ -20,25 +21,28 @@ public class RetentionCache<TYPE> {
             new TObjectIntCustomHashMap<>(IdentityHashingStrategy.INSTANCE, Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 0);
 
     /**
-     * Ask this RetentionCache to hold on to a reference.
-     * @param object The object to hold a reference to.
-     * @return object, for convenience when retaining anonymous class instances.
+     * Ask this RetentionCache to hold on to a reference in order to ensure that {@code referent} remains
+     * strongly-reachable for the garbage collector.
+     *
+     * @param referent The object to hold a reference to
+     * @return {@code referent}, for convenience when retaining anonymous class instances
      */
-    public synchronized TYPE retain(TYPE object) {
-        retainedObjectToReferenceCount.put(object, retainedObjectToReferenceCount.get(object) + 1);
-        return object;
+    public synchronized TYPE retain(@NotNull final TYPE referent) {
+        retainedObjectToReferenceCount.put(referent, retainedObjectToReferenceCount.get(referent) + 1);
+        return referent;
     }
 
     /**
      * Ask this RetentionCache to forget about a reference.
-     * @param object The object to forget the reference to.
+     *
+     * @param referent The referent to forget the reference to
      */
-    public synchronized void forget(TYPE object) {
-        int referenceCount = retainedObjectToReferenceCount.get(object);
-        if(referenceCount == 1) {
-            retainedObjectToReferenceCount.remove(object);
+    public synchronized void forget(@NotNull final TYPE referent) {
+        int referenceCount = retainedObjectToReferenceCount.get(referent);
+        if (referenceCount == 1) {
+            retainedObjectToReferenceCount.remove(referent);
         } else {
-            retainedObjectToReferenceCount.put(object, referenceCount - 1);
+            retainedObjectToReferenceCount.put(referent, referenceCount - 1);
         }
     }
 

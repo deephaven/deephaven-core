@@ -4,10 +4,11 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.db.util.liveness.Liveness;
+import io.deephaven.db.util.liveness.PermanentLivenessManager;
 import io.deephaven.db.v2.utils.AsyncErrorLogger;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.db.v2.utils.Index;
