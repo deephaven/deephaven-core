@@ -150,7 +150,7 @@ public class WorkerConnection {
         boolean debugGrpc = false;
         sessionServiceClient = new SessionServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         tableServiceClient = new TableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        barrageApiClient = new BarrageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        barrageApiClient = new BarrageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", true));
         consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
 //        builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
