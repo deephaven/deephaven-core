@@ -716,13 +716,26 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
-     * @param after Whether this is *after* a unit test completed, and hence whether held locks should result in an exception
+     *
+     * @param after Whether this is *after* a unit test completed. If true, held locks should result in an exception and
+     *              the LivenessScopeStack will be cleared.
      */
     @TestUseOnly
     public void resetForUnitTests(final boolean after) {
         resetForUnitTests(after, false, 0, 0, 0, 0);
     }
 
+    /**
+     * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
+     *
+     * @param after                    Whether this is *after* a unit test completed. If true, held locks should result
+     *                                in an exception and the LivenessScopeStack will be cleared.
+     * @param randomizedNotifications   Whether the notification processor should randomize the order of delivery
+     * @param seed                     Seed for randomized notification delivery order and delays
+     * @param maxRandomizedThreadCount Maximum number of threads handling randomized notification delivery
+     * @param notificationStartDelay    Maximum randomized notification start delay
+     * @param notificationAdditionDelay Maximum randomized notification addition delay
+     */
     public void resetForUnitTests(boolean after,
                                   final boolean randomizedNotifications, final int seed, final int maxRandomizedThreadCount,
                                   final int notificationStartDelay, final int notificationAdditionDelay) {
@@ -748,12 +761,13 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         tablesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
 
         refreshScope = null;
-        LivenessManager stackTop;
-        while ((stackTop = LivenessScopeStack.peek()) instanceof LivenessScope) {
-            LivenessScopeStack.pop((LivenessScope) stackTop);
+        if (after) {
+            LivenessManager stackTop;
+            while ((stackTop = LivenessScopeStack.peek()) instanceof LivenessScope) {
+                LivenessScopeStack.pop((LivenessScope) stackTop);
+            }
+            CleanupReferenceProcessorInstance.resetAllForUnitTests();
         }
-
-        CleanupReferenceProcessorInstance.resetAllForUnitTests();
 
         ensureUnlocked("unit test reset thread", errors);
 
