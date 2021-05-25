@@ -9,6 +9,8 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.DhFloatComparisons;
 import io.deephaven.db.util.LongSizedDataStructure;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -18,6 +20,7 @@ import io.deephaven.db.v2.ssa.SsaTestHelpers;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.compact.FloatCompactKernel;
 import io.deephaven.test.types.ParallelTest;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -138,49 +141,50 @@ public class TestFloatSegmentedSortedMultiset extends LiveTableTestCase {
 
         checkSsmInitial(asFloat, ssm, valueSource, countNull, desc);
 
-        final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
-            @Override
-            public void onUpdate(Index added, Index removed, Index modified) {
-                final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
-                try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
-                     final WritableFloatChunk<Values> chunk = WritableFloatChunk.makeWritableChunk(maxSize);
-                     final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(maxSize)
-                ) {
-                    final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(desc.nodeSize());
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
+                @Override
+                public void onUpdate(Index added, Index removed, Index modified) {
+                    final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
+                    try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(maxSize);
+                         final WritableFloatChunk<Values> chunk = WritableFloatChunk.makeWritableChunk(maxSize);
+                         final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(maxSize)
+                    ) {
+                        final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(desc.nodeSize());
 
-                    if (removed.nonempty()) {
-                        valueSource.fillPrevChunk(fillContext, chunk, removed);
-                        FloatCompactKernel.compactAndCount(chunk, counts, countNull);
-                        ssm.remove(removeContext, chunk, counts);
-                    }
+                        if (removed.nonempty()) {
+                            valueSource.fillPrevChunk(fillContext, chunk, removed);
+                            FloatCompactKernel.compactAndCount(chunk, counts, countNull);
+                            ssm.remove(removeContext, chunk, counts);
+                        }
 
 
-                    if (added.nonempty()) {
-                        valueSource.fillChunk(fillContext, chunk, added);
-                        FloatCompactKernel.compactAndCount(chunk, counts, countNull);
-                        ssm.insert(chunk, counts);
+                        if (added.nonempty()) {
+                            valueSource.fillChunk(fillContext, chunk, added);
+                            FloatCompactKernel.compactAndCount(chunk, counts, countNull);
+                            ssm.insert(chunk, counts);
+                        }
                     }
                 }
-            }
-        };
-        ((DynamicTable)asFloat).listenForUpdates(asFloatListener);
+            };
+            ((DynamicTable) asFloat).listenForUpdates(asFloatListener);
 
-        while (desc.advance(50)) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index [] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                assertTrue(notify[2].empty());
-                table.notifyListeners(notify[0], notify[1], notify[2]);
-            });
+            while (desc.advance(50)) {
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                    final Index[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    assertTrue(notify[2].empty());
+                    table.notifyListeners(notify[0], notify[1], notify[2]);
+                });
 
-            try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize())) {
-                checkSsm(ssm, valueSource.getChunk(getContext, asFloat.getIndex()).asFloatChunk(), countNull, desc);
-            }
+                try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize())) {
+                    checkSsm(ssm, valueSource.getChunk(getContext, asFloat.getIndex()).asFloatChunk(), countNull, desc);
+                }
 
-            if (!allowAddition && table.size() == 0) {
-                break;
+                if (!allowAddition && table.size() == 0) {
+                    break;
+                }
             }
         }
-
     }
 
     private void testMove(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean countNull) {

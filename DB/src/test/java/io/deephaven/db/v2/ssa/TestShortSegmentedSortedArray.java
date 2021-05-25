@@ -6,6 +6,8 @@ package io.deephaven.db.v2.ssa;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -16,6 +18,7 @@ import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.ParallelTest;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
@@ -26,6 +29,7 @@ import static io.deephaven.db.v2.TstUtils.*;
 
 @Category(ParallelTest.class)
 public class TestShortSegmentedSortedArray extends LiveTableTestCase {
+
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -85,77 +89,79 @@ public class TestShortSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asShort, ssa, valueSource, desc);
 
-        final ShiftAwareListener asShortListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asShort, false) {
-            @Override
-            public void onUpdate(Update upstream) {
-                try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asShort.getIndex().getPrevIndex().intSize())) {
-                    final Index relevantIndices = asShort.getIndex().getPrevIndex();
-                    checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asShortChunk(), relevantIndices.asKeyIndicesChunk(), desc);
-                }
-
-                final int size = Math.max(upstream.modified.intSize() +  Math.max(upstream.added.intSize(), upstream.removed.intSize()), (int)upstream.shifted.getEffectiveSize());
-                try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size)) {
-                    ssa.validate();
-
-                    final Index takeout = upstream.removed.union(upstream.getModifiedPreShift());
-                    if (takeout.nonempty()) {
-                        final ShortChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asShortChunk();
-                        ssa.remove(valuesToRemove, takeout.asKeyIndicesChunk());
-                    }
-
-                    ssa.validate();
-
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            final ShiftAwareListener asShortListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asShort, false) {
+                @Override
+                public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asShort.getIndex().getPrevIndex().intSize())) {
-                        final Index relevantIndices = asShort.getIndex().getPrevIndex().minus(takeout);
+                        final Index relevantIndices = asShort.getIndex().getPrevIndex();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asShortChunk(), relevantIndices.asKeyIndicesChunk(), desc);
                     }
 
-                    if (upstream.shifted.nonempty()) {
-                        final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
-                        while (sit.hasNext()) {
-                            sit.next();
-                            final Index indexToShift = table.getIndex().getPrevIndex().subindexByKey(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
-                            if (indexToShift.empty()) {
-                                continue;
-                            }
+                    final int size = Math.max(upstream.modified.intSize() + Math.max(upstream.added.intSize(), upstream.removed.intSize()), (int) upstream.shifted.getEffectiveSize());
+                    try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size)) {
+                        ssa.validate();
 
-                            final ShortChunk<? extends Values> shiftValues = valueSource.getPrevChunk(getContext, indexToShift).asShortChunk();
+                        final Index takeout = upstream.removed.union(upstream.getModifiedPreShift());
+                        if (takeout.nonempty()) {
+                            final ShortChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asShortChunk();
+                            ssa.remove(valuesToRemove, takeout.asKeyIndicesChunk());
+                        }
 
-                            if (sit.polarityReversed()) {
-                                ssa.applyShiftReverse(shiftValues, indexToShift.asKeyIndicesChunk(), sit.shiftDelta());
-                            } else {
-                                ssa.applyShift(shiftValues, indexToShift.asKeyIndicesChunk(), sit.shiftDelta());
+                        ssa.validate();
+
+                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asShort.getIndex().getPrevIndex().intSize())) {
+                            final Index relevantIndices = asShort.getIndex().getPrevIndex().minus(takeout);
+                            checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asShortChunk(), relevantIndices.asKeyIndicesChunk(), desc);
+                        }
+
+                        if (upstream.shifted.nonempty()) {
+                            final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
+                            while (sit.hasNext()) {
+                                sit.next();
+                                final Index indexToShift = table.getIndex().getPrevIndex().subindexByKey(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                if (indexToShift.empty()) {
+                                    continue;
+                                }
+
+                                final ShortChunk<? extends Values> shiftValues = valueSource.getPrevChunk(getContext, indexToShift).asShortChunk();
+
+                                if (sit.polarityReversed()) {
+                                    ssa.applyShiftReverse(shiftValues, indexToShift.asKeyIndicesChunk(), sit.shiftDelta());
+                                } else {
+                                    ssa.applyShift(shiftValues, indexToShift.asKeyIndicesChunk(), sit.shiftDelta());
+                                }
                             }
                         }
+
+                        ssa.validate();
+
+                        final Index putin = upstream.added.union(upstream.modified);
+
+                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asShort.intSize())) {
+                            final Index relevantIndices = asShort.getIndex().minus(putin);
+                            checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asShortChunk(), relevantIndices.asKeyIndicesChunk(), desc);
+                        }
+
+                        if (putin.nonempty()) {
+                            final ShortChunk<? extends Values> valuesToInsert = valueSource.getChunk(getContext, putin).asShortChunk();
+                            ssa.insert(valuesToInsert, putin.asKeyIndicesChunk());
+                        }
+
+                        ssa.validate();
                     }
-
-                    ssa.validate();
-
-                    final Index putin = upstream.added.union(upstream.modified);
-
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asShort.intSize())) {
-                        final Index relevantIndices = asShort.getIndex().minus(putin);
-                        checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asShortChunk(), relevantIndices.asKeyIndicesChunk(), desc);
-                    }
-
-                    if (putin.nonempty()) {
-                        final ShortChunk<? extends Values> valuesToInsert = valueSource.getChunk(getContext, putin).asShortChunk();
-                        ssa.insert(valuesToInsert, putin.asKeyIndicesChunk());
-                    }
-
-                    ssa.validate();
                 }
-            }
-        };
-        ((DynamicTable)asShort).listenForUpdates(asShortListener);
+            };
+            ((DynamicTable) asShort).listenForUpdates(asShortListener);
 
-        while (desc.advance(50)) {
-            System.out.println();
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
+            while (desc.advance(50)) {
+                System.out.println();
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
-            try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asShort.intSize())) {
-                checkSsa(ssa, valueSource.getChunk(getContext, asShort.getIndex()).asShortChunk(), asShort.getIndex().asKeyIndicesChunk(), desc);
+                try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asShort.intSize())) {
+                    checkSsa(ssa, valueSource.getChunk(getContext, asShort.getIndex()).asShortChunk(), asShort.getIndex().asKeyIndicesChunk(), desc);
+                }
             }
         }
     }
@@ -175,38 +181,39 @@ public class TestShortSegmentedSortedArray extends LiveTableTestCase {
 
         checkSsaInitial(asShort, ssa, valueSource, desc);
 
-        final Listener asShortListener = new InstrumentedListenerAdapter((DynamicTable) asShort, false) {
-            @Override
-            public void onUpdate(Index added, Index removed, Index modified) {
-                try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
-                    if (removed.nonempty()) {
-                        final ShortChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asShortChunk();
-                        ssa.remove(valuesToRemove, removed.asKeyIndicesChunk());
-                    }
-                    if (added.nonempty()) {
-                        ssa.insert(valueSource.getChunk(getContext, added).asShortChunk(), added.asKeyIndicesChunk());
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            final Listener asShortListener = new InstrumentedListenerAdapter((DynamicTable) asShort, false) {
+                @Override
+                public void onUpdate(Index added, Index removed, Index modified) {
+                    try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
+                        if (removed.nonempty()) {
+                            final ShortChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, removed).asShortChunk();
+                            ssa.remove(valuesToRemove, removed.asKeyIndicesChunk());
+                        }
+                        if (added.nonempty()) {
+                            ssa.insert(valueSource.getChunk(getContext, added).asShortChunk(), added.asKeyIndicesChunk());
+                        }
                     }
                 }
-            }
-        };
-        ((DynamicTable)asShort).listenForUpdates(asShortListener);
+            };
+            ((DynamicTable) asShort).listenForUpdates(asShortListener);
 
-        while (desc.advance(50)) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final Index [] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                assertTrue(notify[2].empty());
-                table.notifyListeners(notify[0], notify[1], notify[2]);
-            });
+            while (desc.advance(50)) {
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                    final Index[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    assertTrue(notify[2].empty());
+                    table.notifyListeners(notify[0], notify[1], notify[2]);
+                });
 
-            try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asShort.intSize())) {
-                checkSsa(ssa, valueSource.getChunk(getContext, asShort.getIndex()).asShortChunk(), asShort.getIndex().asKeyIndicesChunk(), desc);
-            }
+                try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asShort.intSize())) {
+                    checkSsa(ssa, valueSource.getChunk(getContext, asShort.getIndex()).asShortChunk(), asShort.getIndex().asKeyIndicesChunk(), desc);
+                }
 
-            if (!allowAddition && table.size() == 0) {
-                break;
+                if (!allowAddition && table.size() == 0) {
+                    break;
+                }
             }
         }
-
     }
 
     private void checkSsaInitial(Table asShort, ShortSegmentedSortedArray ssa, ColumnSource<?> valueSource, @NotNull final SsaTestHelpers.TestDescriptor desc) {
