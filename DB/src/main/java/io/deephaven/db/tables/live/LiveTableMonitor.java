@@ -847,9 +847,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     @TestUseOnly
     private void completeCycleForUnitTestsInternal() {
-        try {
-            flushNotificationsAndCompleteCycle();
-        } finally {
+        try (final SafeCloseable ignored = () -> {
             if (refreshScope != null) {
                 LivenessScopeStack.pop(refreshScope);
                 refreshScope.release();
@@ -858,6 +856,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
             LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
             isRefreshThread.remove();
+        }) {
+            flushNotificationsAndCompleteCycle();
         }
     }
 

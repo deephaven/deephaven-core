@@ -12,6 +12,8 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.SystemicObjectTracker;
 import io.deephaven.db.tables.utils.TableDiff;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.db.v2.by.*;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
@@ -27,6 +29,7 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -1485,6 +1488,12 @@ public class QueryTableAggregationTest {
     }
 
     private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            doTestSumByIncremental(size, seed, grouped, lotsOfStrings);
+        }
+    }
+
+    private void doTestSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
         final Random random = new Random(seed);
         final ColumnInfo[] columnInfo;
         final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();

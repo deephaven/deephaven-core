@@ -9,6 +9,8 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.QueryTableTestBase.ListenerWithGlobals;
 import io.deephaven.db.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.db.v2.select.DhFormulaColumn;
@@ -20,6 +22,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
@@ -497,7 +500,9 @@ public class QueryTableSelectUpdateTest {
         try {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = useRedirection;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = useRedirection;
-            testUpdateIncremental(seed, new MutableInt(100));
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testUpdateIncremental(seed, new MutableInt(100));
+            }
         } finally {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
@@ -802,12 +807,16 @@ public class QueryTableSelectUpdateTest {
         int size = 1000;
         for (int seed = 0; seed < 10; ++seed) {
             System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
-            testSparseSelect(size, seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testSparseSelect(size, seed);
+            }
         }
         size = 10000;
         for (int seed = 0; seed < 1; ++seed) {
             System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
-            testSparseSelect(size, seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testSparseSelect(size, seed);
+            }
         }
     }
 
