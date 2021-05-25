@@ -1,0 +1,22 @@
+name: Label Check CI
+
+on:
+  pull_request:
+    # This set of types only causes this workflow to run once when it is opened, or when the labels
+    # change. For example, it won't be (and doesn't need to be) retriggered when new commits are
+    # pushed.
+    types: [ labeled, unlabeled, opened ]
+    branches: [ main ]
+
+jobs:
+  doc-labels:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Check Documentation Labels
+        env:
+          HAS_DocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded') }}
+          HAS_NoDocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoDocumentationNeeded') }}
+        run: .github/scripts/check-doc-labels.sh

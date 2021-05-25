@@ -6,6 +6,7 @@ out/
 *.ipr
 *.iws
 *.iml
+data/
 tmp/
 target/
 IRIS_GRADLE_VERSION
