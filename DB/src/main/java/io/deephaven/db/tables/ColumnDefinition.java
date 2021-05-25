@@ -79,15 +79,15 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
 
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
         String name, Class<T> dataType, String codecName) {
-        return ofVariableWidthCodec(name, dataType, null, codecName);
+        return ofVariableWidthCodec(name, dataType, COLUMNTYPE_NORMAL, null, codecName, null);
     }
 
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-            String name, Class<T> dataType, Class<?> componentType, String codecName) {
+            String name, Class<T> dataType, int columnType, Class<?> componentType, String codecName, String codecArgs) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
         Objects.requireNonNull(codecName);
-        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
+        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType, columnType);
         cd.setComponentType(componentType);
         cd.setObjectCodecClass(codecName);
         return cd;

@@ -92,11 +92,17 @@ public class TableManagementTools {
      */
     public static Table readTableWithClassLoader(@NotNull final File sourceDir, final ClassLoader classLoader) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
-        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = (final String name, final Class<?> dbType, final boolean isGrouping) -> {
-            final int columnType = isGrouping ? ColumnDefinition.COLUMNTYPE_GROUPING : ColumnDefinition.COLUMNTYPE_NORMAL;
-            final ColumnDefinition<?> colDef = new ColumnDefinition<>(name, dbType, columnType);
-            cols.add(colDef);
-        };
+        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
+                (final String name, final Class<?> dbType, final boolean isGrouping, final String codecName, final String codecArgs) -> {
+                    final int columnType = isGrouping ? ColumnDefinition.COLUMNTYPE_GROUPING : ColumnDefinition.COLUMNTYPE_NORMAL;
+                    final ColumnDefinition<?> colDef;
+                    if (codecName != null) {
+                        colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, columnType, null, codecName, codecArgs);
+                    } else {
+                        colDef = new ColumnDefinition<>(name, dbType, columnType);
+                    }
+                    cols.add(colDef);
+                };
         try {
             ParquetReaderUtil.readParquetSchema(sourceDir.getPath() + File.separator + "table.parquet", colConsumer, classLoader);
         } catch (java.io.FileNotFoundException e) {

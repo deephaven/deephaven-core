@@ -106,7 +106,7 @@ public class ParquetReaderUtil {
 
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
-        void accept(String columnName, Class<?> columnDbType, boolean isGroupingColumn);
+        void accept(String columnName, Class<?> columnDbType, boolean isGroupingColumn, String codecName, String codecArgs);
     }
 
     public static void readParquetSchema(
@@ -255,22 +255,24 @@ public class ParquetReaderUtil {
             final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
             final String colName = schema.getFieldName(c++);
             final boolean isGroupinng = groupingCols.contains(colName);
+            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + column.getPath()[0]);
+            final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + column.getPath()[0]);
             if (logicalTypeAnnotation == null) {
                 switch (column.getPrimitiveType().getPrimitiveTypeName()) {
                     case BOOLEAN:
-                        colDefConsumer.accept(colName, Boolean.class, isGroupinng);
+                        colDefConsumer.accept(colName, Boolean.class, isGroupinng, codecName, codecArgs);
                         break;
                     case INT32:
-                        colDefConsumer.accept(colName, int.class, isGroupinng);
+                        colDefConsumer.accept(colName, int.class, isGroupinng, codecName, codecArgs);
                         break;
                     case INT64:
-                        colDefConsumer.accept(colName, long.class, isGroupinng);
+                        colDefConsumer.accept(colName, long.class, isGroupinng, codecName, codecArgs);
                         break;
                     case DOUBLE:
-                        colDefConsumer.accept(colName, double.class, isGroupinng);
+                        colDefConsumer.accept(colName, double.class, isGroupinng, codecName, codecArgs);
                         break;
                     case FLOAT:
-                        colDefConsumer.accept(colName, float.class, isGroupinng);
+                        colDefConsumer.accept(colName, float.class, isGroupinng, codecName, codecArgs);
                         break;
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
@@ -303,7 +305,7 @@ public class ParquetReaderUtil {
                                         + " with no codec type or special type defined.");
                             }
                         }
-                        colDefConsumer.accept(colName, dbType, isGroupinng);
+                        colDefConsumer.accept(colName, dbType, isGroupinng, codecName, codecArgs);
                         break;
                     default:
                         throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
@@ -317,7 +319,7 @@ public class ParquetReaderUtil {
                                 ? (logicalTypeString + " not supported")
                                 : "no mappeable logical type annotation found."));
                 }
-                colDefConsumer.accept(colName, optionalClass.get(), isGroupinng);
+                colDefConsumer.accept(colName, optionalClass.get(), isGroupinng, codecName, codecArgs);
             }
         }
     }
