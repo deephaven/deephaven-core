@@ -10,8 +10,11 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.UpdateErrorReporter;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.SystemicObjectTracker;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.util.ExceptionDetails;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,6 +33,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
+    private SafeCloseable scopeCloseable;
 
     List<Throwable> errors;
 
@@ -42,11 +46,13 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
+        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
+        scopeCloseable.close();
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);
         QueryTable.setMemoizeResults(oldMemoize);
         AsyncClientErrorNotifier.setReporter(oldReporter);
