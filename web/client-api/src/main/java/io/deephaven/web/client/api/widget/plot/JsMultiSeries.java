@@ -2,12 +2,11 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.shared.data.plot.*;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ public class JsMultiSeries {
 
     @JsIgnore
     public void initSources(Map<Integer, TableMap> plotHandlesToTableMaps) {
-        Arrays.stream(descriptor.getDataSources()).mapToInt(MultiSeriesSourceDescriptor::getTableMapId).distinct()
+        descriptor.getDatasourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTablemapid).distinct()
                 //TODO assert only one at this stage
                 .forEach(plotHandle -> {
             TableMap tableMap = plotHandlesToTableMaps.get(plotHandle);
@@ -49,39 +48,39 @@ public class JsMultiSeries {
             SeriesDescriptor seriesInstance = new SeriesDescriptor();
 
             seriesInstance.setName(seriesName);
-            seriesInstance.setPlotStyle(getPlotStyle());
+            seriesInstance.setPlotstyle(getPlotStyle());
 
-            seriesInstance.setLineColor(getOrDefault(seriesName, descriptor.getLineColorDefault(), descriptor.getLineColorKeys(), descriptor.getLineColorValues()));
-            seriesInstance.setShapeColor(getOrDefault(seriesName, descriptor.getPointColorDefault(), descriptor.getPointColorKeys(), descriptor.getPointColorValues()));
-            seriesInstance.setLinesVisible(getOrDefault(seriesName, descriptor.getLinesVisibleDefault(), descriptor.getLinesVisibleKeys(), descriptor.getLinesVisibleValues()));
-            seriesInstance.setShapesVisible(getOrDefault(seriesName, descriptor.getPointsVisibleDefault(), descriptor.getPointsVisibleKeys(), descriptor.getPointsVisibleValues()));
-            Boolean gradientVisible = getOrDefault(seriesName, descriptor.getGradientVisibleDefault(), descriptor.getGradientVisibleKeys(), descriptor.getGradientVisibleValues());
+            seriesInstance.setLinecolor(getOrDefault(seriesName, descriptor.getLinecolor()));
+            seriesInstance.setShapecolor(getOrDefault(seriesName, descriptor.getPointcolor()));
+            seriesInstance.setLinesvisible(getOrDefault(seriesName, descriptor.getLinesvisible()));
+            seriesInstance.setShapesvisible(getOrDefault(seriesName, descriptor.getPointsvisible()));
+            Boolean gradientVisible = getOrDefault(seriesName, descriptor.getGradientvisible());
             if (gradientVisible != null) {
-                seriesInstance.setGradientVisible(gradientVisible);
+                seriesInstance.setGradientvisible(gradientVisible);
             }
 
-            seriesInstance.setYToolTipPattern(getOrDefault(seriesName, descriptor.getYToolTipPatternDefault(), descriptor.getYToolTipPatternKeys(), descriptor.getYToolTipPatternValues()));
-            seriesInstance.setXToolTipPattern(getOrDefault(seriesName, descriptor.getXToolTipPatternDefault(), descriptor.getXToolTipPatternKeys(), descriptor.getXToolTipPatternValues()));
+            seriesInstance.setYtooltippattern(getOrDefault(seriesName, descriptor.getYtooltippattern()));
+            seriesInstance.setXtooltippattern(getOrDefault(seriesName, descriptor.getXtooltippattern()));
 
-            seriesInstance.setShapeLabel(getOrDefault(seriesName, descriptor.getPointLabelDefault(), descriptor.getPointLabelKeys(), descriptor.getPointLabelValues()));
-            seriesInstance.setShapeSize(getOrDefault(seriesName, descriptor.getPointSizeDefault(), descriptor.getPointSizeKeys(), descriptor.getPointSizeValues()));
-            seriesInstance.setShape(getOrDefault(seriesName, descriptor.getPointShapeDefault(), descriptor.getPointShapeKeys(), descriptor.getPointShapeValues()));
+            seriesInstance.setShapelabel(getOrDefault(seriesName, descriptor.getPointlabel()));
+            seriesInstance.setShapesize(getOrDefault(seriesName, descriptor.getPointsize()));
+            seriesInstance.setShape(getOrDefault(seriesName, descriptor.getPointshape()));
 
-            seriesInstance.setPointLabelFormat(getOrDefault(seriesName, descriptor.getPointLabelFormatDefault(), descriptor.getPointLabelFormatKeys(), descriptor.getPointLabelFormatValues()));
+            seriesInstance.setPointlabelformat(getOrDefault(seriesName, descriptor.getPointlabelformat()));
 
             int tableId = figure.registerTable(table);
 
-            seriesInstance.setDataSources(
-                    Arrays.stream(descriptor.getDataSources())
-                            .map(multiSeriesSource -> {
+            seriesInstance.setDatasourcesList(
+                    descriptor.getDatasourcesList()
+                            .map((multiSeriesSource, p1, p2) -> {
                                 SourceDescriptor sourceDescriptor = new SourceDescriptor();
-                                sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
+                                sourceDescriptor.setColumnname(multiSeriesSource.getColumnname());
                                 sourceDescriptor.setAxis(multiSeriesSource.getAxis());
-                                sourceDescriptor.setTableId(tableId);
+                                sourceDescriptor.setTableid(tableId);
                                 sourceDescriptor.setType(multiSeriesSource.getType());
                                 return sourceDescriptor;
                             })
-                            .toArray(SourceDescriptor[]::new)
+
             );
 
             JsSeries series = new JsSeries(seriesInstance, figure, axes);
@@ -99,19 +98,31 @@ public class JsMultiSeries {
         });
     }
 
-    private <T> T getOrDefault(String name, T defaultValue, String[] seriesNames, T[] values) {
-        for (int i = 0; i < seriesNames.length; i++) {
-            if (name.equals(seriesNames[i])) {
-                return values[i];
-            }
+    private boolean getOrDefault(String name, BoolMapWithDefault map) {
+        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+        if (index == -1) {
+            return map.getDefaultbool();
         }
-
-        return defaultValue;
+        return map.getValuesList().getAt(index);
+    }
+    private String getOrDefault(String name, StringMapWithDefault map) {
+        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+        if (index == -1) {
+            return map.getDefaultstring();
+        }
+        return map.getValuesList().getAt(index);
+    }
+    private double getOrDefault(String name, FloatMapWithDefault map) {
+        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+        if (index == -1) {
+            return map.getDefaultfloat();
+        }
+        return map.getValuesList().getAt(index);
     }
 
     @JsProperty
-    public SeriesPlotStyle getPlotStyle() {
-        return descriptor.getPlotStyle();
+    public int getPlotStyle() {
+        return descriptor.getPlotstyle();
     }
 
     @JsProperty

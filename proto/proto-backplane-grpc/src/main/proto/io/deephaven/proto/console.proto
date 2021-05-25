@@ -207,6 +207,9 @@ message FetchFigureResponse {
 }
 
 message FigureDescriptor {
+    message RepeatedInt32 {
+        repeated int32 ids = 1;
+    }
     string title = 1;
     string titleFont = 2;
     string titleColor = 3;
@@ -223,10 +226,10 @@ message FigureDescriptor {
     repeated ChartDescriptor charts = 10;
 
     repeated io.deephaven.proto.backplane.grpc.Ticket tableIds = 11;
-//    repeated repeated int32 plotHandleIds = 12;
+    repeated RepeatedInt32 plotHandleIds = 12;
 
     repeated io.deephaven.proto.backplane.grpc.Ticket tableMaps = 13;
-//    repeated repeated int32 tableMapIds = 14;
+    repeated RepeatedInt32 tableMapIds = 14;
 
     repeated string errors = 15;
 

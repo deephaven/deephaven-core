@@ -1,11 +1,10 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsObject;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.shared.data.plot.SeriesDescriptor;
-import io.deephaven.web.shared.data.plot.SeriesPlotStyle;
-import io.deephaven.web.shared.data.plot.SourceDescriptor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -36,19 +35,19 @@ public class JsSeries {
 
         this.sources = new SeriesDataSource[0];
 
-        for (int i = 0; i < series.getDataSources().length; i++) {
-            SourceDescriptor dataSource = series.getDataSources()[i];
+        for (int i = 0; i < series.getDatasourcesList().length; i++) {
+            SourceDescriptor dataSource = series.getDatasourcesList().getAt(i);
             sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxis().getId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
-                if (dataSource.getOneClick() != null) {
+                if (dataSource.hasOneclick()) {
                     assert i == 0;
-                    oneClick = new OneClick(jsFigure, dataSource.getOneClick(), this);
+                    oneClick = new OneClick(jsFigure, dataSource.getOneclick(), this);
                 }
             } else {
-                assert dataSource.getOneClick() != null;
-                assert dataSource.getOneClick().equals(oneClick.getDescriptor());
+                assert dataSource.hasOneclick();
+                assert dataSource.getOneclick().equals(oneClick.getDescriptor());
             }
         }
         JsObject.freeze(sources);
@@ -63,7 +62,7 @@ public class JsSeries {
     public void initSources(Map<Integer, JsTable> tables, Map<Integer, TableMap> tableMaps) {
         Arrays.stream(sources).forEach(s -> s.initColumnType(tables));
         if (oneClick != null) {
-            oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getTableMapId()));
+            oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getTablemapid()));
         }
     }
 
@@ -103,8 +102,8 @@ public class JsSeries {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public SeriesPlotStyle getPlotStyle() {
-        return descriptor.getPlotStyle();
+    public int getPlotStyle() {
+        return descriptor.getPlotstyle();
     }
 
     @JsProperty
@@ -114,22 +113,22 @@ public class JsSeries {
 
     @JsProperty(name = "isLinesVisible")
     public Boolean getLinesVisible() {
-        return descriptor.getLinesVisible();
+        return descriptor.getLinesvisible();
     }
 
     @JsProperty(name = "isShapesVisible")
     public Boolean getShapesVisible() {
-        return descriptor.getShapesVisible();
+        return descriptor.getShapesvisible();
     }
 
     @JsProperty
     public boolean isGradientVisible() {
-        return descriptor.isGradientVisible();
+        return descriptor.getGradientvisible();
     }
 
     @JsProperty
     public String getLineColor() {
-        return descriptor.getLineColor();
+        return descriptor.getLinecolor();
     }
 
     //TODO IDS-4139
@@ -140,32 +139,32 @@ public class JsSeries {
 
     @JsProperty
     public String getPointLabelFormat() {
-        return descriptor.getPointLabelFormat();
+        return descriptor.getPointlabelformat();
     }
 
     @JsProperty
     public String getXToolTipPattern() {
-        return descriptor.getXToolTipPattern();
+        return descriptor.getXtooltippattern();
     }
 
     @JsProperty
     public String getYToolTipPattern() {
-        return descriptor.getYToolTipPattern();
+        return descriptor.getYtooltippattern();
     }
 
     @JsProperty
     public String getShapeLabel() {
-        return descriptor.getShapeLabel();
+        return descriptor.getShapelabel();
     }
 
     @JsProperty
     public Double getShapeSize() {
-        return descriptor.getShapeSize();
+        return descriptor.getShapesize();
     }
 
     @JsProperty
     public String getShapeColor() {
-        return descriptor.getShapeColor();
+        return descriptor.getShapecolor();
     }
 
     @JsProperty

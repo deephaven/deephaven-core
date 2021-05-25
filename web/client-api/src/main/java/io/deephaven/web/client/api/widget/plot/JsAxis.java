@@ -1,12 +1,10 @@
 package io.deephaven.web.client.api.widget.plot;
 
-import elemental2.core.JsArray;
-import elemental2.core.JsNumber;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.shared.data.BusinessCalendarDescriptor;
-import io.deephaven.web.shared.data.plot.AxisDescriptor;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
@@ -25,7 +23,7 @@ public class JsAxis {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinessCalendarDescriptor();
+        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinesscalendardescriptor();
         if (businessCalendarDescriptor != null) {
             businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
         } else {
@@ -45,25 +43,25 @@ public class JsAxis {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisFormatType getFormatType() {
-        return axis.getFormatType();
+    public int getFormatType() {
+        return axis.getFormattype();
     }
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisType getType() {
+    public int getType() {
         return axis.getType();
     }
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisPosition getPosition() {
+    public int getPosition() {
         return axis.getPosition();
     }
 
     @JsProperty
     public boolean isLog() {
-        return axis.isLog();
+        return axis.getLog();
     }
 
     @JsProperty
@@ -73,12 +71,12 @@ public class JsAxis {
 
     @JsProperty
     public String getLabelFont() {
-        return axis.getLabelFont();
+        return axis.getLabelfont();
     }
 
     @JsProperty
     public String getTicksFont() {
-        return axis.getTicksFont();
+        return axis.getTicksfont();
     }
 
     //TODO IDS-4139
@@ -89,7 +87,7 @@ public class JsAxis {
 
     @JsProperty
     public String getFormatPattern() {
-        return axis.getFormatPattern();
+        return axis.getFormatpattern();
     }
 
     @JsProperty
@@ -99,37 +97,37 @@ public class JsAxis {
 
     @JsProperty
     public double getMinRange() {
-        return axis.getMinRange();
+        return axis.getMinrange();
     }
 
     @JsProperty
     public double getMaxRange() {
-        return axis.getMaxRange();
+        return axis.getMaxrange();
     }
 
     @JsProperty
     public boolean isMinorTicksVisible() {
-        return axis.isMinorTicksVisible();
+        return axis.getMinorticksvisible();
     }
 
     @JsProperty
     public boolean isMajorTicksVisible() {
-        return axis.isMajorTicksVisible();
+        return axis.getMajorticksvisible();
     }
 
     @JsProperty
     public int getMinorTickCount() {
-        return axis.getMinorTickCount();
+        return axis.getMinortickcount();
     }
 
     @JsProperty
     public double getGapBetweenMajorTicks() {
-        return axis.getGapBetweenMajorTicks();
+        return axis.getGapbetweenmajorticks();
     }
 
     @JsProperty
     public double[] getMajorTickLocations() {
-        return Js.uncheckedCast(Js.<JsArray<JsNumber>>uncheckedCast(axis.getMajorTickLocations()).slice());
+        return Js.uncheckedCast(axis.getMajorticklocationsList().slice());
     }
 
     //TODO IDS-4139
@@ -140,17 +138,17 @@ public class JsAxis {
 
     @JsProperty
     public double getTickLabelAngle() {
-        return axis.getTickLabelAngle();
+        return axis.getTicklabelangle();
     }
 
     @JsProperty
     public boolean isInvert() {
-        return axis.isInvert();
+        return axis.getInvert();
     }
 
     @JsProperty
     public boolean isTimeAxis() {
-        return axis.isTimeAxis();
+        return axis.getIstimeaxis();
     }
 
     @JsMethod

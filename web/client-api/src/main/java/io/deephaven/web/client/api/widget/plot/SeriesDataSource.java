@@ -1,8 +1,7 @@
 package io.deephaven.web.client.api.widget.plot;
 
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.shared.data.plot.SourceDescriptor;
-import io.deephaven.web.shared.data.plot.SourceType;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
@@ -19,10 +18,10 @@ public class SeriesDataSource {
     }
 
     public void initColumnType(Map<Integer, JsTable> tables) {
-        if (sourceDescriptor.getTableId() != -1) {
-            columnType = tables.get(sourceDescriptor.getTableId()).findColumn(sourceDescriptor.getColumnName()).getType();
-        } else if (sourceDescriptor.getTableMapId() != -1) {
-            columnType = sourceDescriptor.getColumnType();
+        if (sourceDescriptor.getTableid() != -1) {
+            columnType = tables.get(sourceDescriptor.getTableid()).findColumn(sourceDescriptor.getColumnname()).getType();
+        } else if (sourceDescriptor.getTablemapid() != -1) {
+            columnType = sourceDescriptor.getColumntype();
         } else {
             throw new SeriesDataSourceException(this, "No table available for source");
         }
@@ -35,7 +34,7 @@ public class SeriesDataSource {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public SourceType getType() {
+    public int getType() {
         return sourceDescriptor.getType();
     }
 

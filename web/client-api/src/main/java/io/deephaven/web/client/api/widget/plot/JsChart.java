@@ -9,7 +9,6 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,14 +25,14 @@ public class JsChart extends HasEventHandling {
     public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
         //build axes first, key them in a map for easy reuse when constructing series instances
-        axes = Arrays.stream(descriptor.getAxes()).map(axis -> new JsAxis(axis, jsFigure)).toArray(JsAxis[]::new);
+        axes = descriptor.getAxesList().map((p0, p1, p2) -> new JsAxis(p0, jsFigure));
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
-        series = Arrays.stream(descriptor.getSeries()).map(series -> new JsSeries(series, jsFigure, indexed)).toArray(JsSeries[]::new);
-        multiSeries = Arrays.stream(descriptor.getMultiSeries()).map(multiSeries -> new JsMultiSeries(multiSeries, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
+        series = descriptor.getSeriesList().map((p0, p1, p2) -> new JsSeries(p0, jsFigure, indexed));
+        multiSeries = descriptor.getMultiseriesList().map((p0, p1, p2) -> new JsMultiSeries(p0, jsFigure, indexed, this));
         JsObject.freeze(multiSeries);
     }
 
@@ -49,8 +48,8 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public ChartDescriptor.ChartType getChartType() {
-        return descriptor.getChartType();
+    public int getChartType() {
+        return descriptor.getCharttype();
     }
 
     @JsProperty
@@ -60,32 +59,32 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     public String getTitleFont() {
-        return descriptor.getTitleFont();
+        return descriptor.getTitlefont();
     }
 
     @JsProperty
     public String getTitleColor() {
-        return descriptor.getTitleColor();
+        return descriptor.getTitlecolor();
     }
 
     @JsProperty
     public boolean isShowLegend() {
-        return descriptor.isShowLegend();
+        return descriptor.getShowlegend();
     }
 
     @JsProperty
     public String getLegendFont() {
-        return descriptor.getLegendFont();
+        return descriptor.getLegendfont();
     }
 
     @JsProperty
     public String getLegendColor() {
-        return descriptor.getLegendColor();
+        return descriptor.getLegendcolor();
     }
 
     @JsProperty(name = "is3d")
     public boolean isIs3d() {
-        return descriptor.isIs3d();
+        return descriptor.getIs3d();
     }
 
     //exposed for JS, do not use this from java methods

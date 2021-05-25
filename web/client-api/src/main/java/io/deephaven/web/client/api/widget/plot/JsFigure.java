@@ -2,7 +2,6 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -65,10 +64,10 @@ public class JsFigure extends HasEventHandling {
 
     public class FigureSourceException extends RuntimeException {
         @JsProperty
-        JsTable table;
+        transient JsTable table;
 
         @JsProperty
-        SeriesDataSource source;
+        transient SeriesDataSource source;
 
         FigureSourceException(JsTable table, SeriesDataSource source, String message) {
             super(message);
@@ -83,9 +82,9 @@ public class JsFigure extends HasEventHandling {
         Object error;
 
         @JsProperty
-        Object[] errors;
+        JsArray<? extends Object> errors;
 
-        FigureFetchError(Object error, Object[] errors) {
+        FigureFetchError(Object error, JsArray<? extends Object> errors) {
             this.error = error;
             this.errors = errors;
         }
@@ -146,9 +145,9 @@ public class JsFigure extends HasEventHandling {
             plotHandlesToTableMaps = tableFetchData.plotHandlesToTableMaps;
             onClose = tableFetchData.onClose;
 
-            for (int i = 0; i < descriptor.getTableIds().length; i++) {
+            for (int i = 0; i < descriptor.getTableidsList().length; i++) {
                 JsTable table = tables[i];
-                registerTableWithId(table, descriptor.getPlotHandleIds()[i]);
+                registerTableWithId(table, descriptor.getPlothandleidsList().getAt(i).getIdsList());
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
@@ -163,7 +162,7 @@ public class JsFigure extends HasEventHandling {
             fireEvent(EVENT_RECONNECT);
             return Promise.resolve(this);
         }, err -> {
-            final FigureFetchError fetchError = new FigureFetchError(ofObject(err), this.descriptor != null ? this.descriptor.getErrorsList() : new String[]{});
+            final FigureFetchError fetchError = new FigureFetchError(ofObject(err), this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
             final CustomEventInit init = CustomEventInit.create();
             init.setDetail(fetchError);
             unsuppressEvents();
@@ -182,17 +181,18 @@ public class JsFigure extends HasEventHandling {
 
     @JsProperty
     public String getTitleFont() {
-        return descriptor.getTitleFont();
+        return descriptor.getTitlefont();
     }
 
     @JsProperty
     public String getTitleColor() {
-        return descriptor.getTitleColor();
+        return descriptor.getTitlecolor();
     }
 
+    @Deprecated
     @JsProperty
     public boolean isResizable() {
-        return descriptor.isResizable();
+        return true;
     }
 
     //TODO IDS-4140
@@ -201,14 +201,15 @@ public class JsFigure extends HasEventHandling {
 //        return descriptor.getTheme();
 //    }
 
+    @Deprecated
     @JsProperty
     public boolean isDefaultTheme() {
-        return descriptor.isDefaultTheme();
+        return true;
     }
 
     @JsProperty
     public double getUpdateInterval() {
-        return descriptor.getUpdateInterval();
+        return descriptor.getUpdateinterval();
     }
 
     @JsProperty
@@ -227,7 +228,7 @@ public class JsFigure extends HasEventHandling {
     }
 
     public String[] getErrors() {
-        return Js.uncheckedCast(Js.<JsArray<JsString>>uncheckedCast(descriptor.getErrors()).slice());
+        return Js.uncheckedCast(descriptor.getErrorsList().slice());
     }
 
     @JsIgnore
@@ -334,7 +335,7 @@ public class JsFigure extends HasEventHandling {
 
         // otherwise grab the first table we can find
         //TODO loop, assert all match
-        return plotHandlesToTables.get(s.getDescriptor().getDataSources()[0].getTableId());
+        return plotHandlesToTables.get(s.getDescriptor().getDatasourcesList().getAt(0).getTableid());
     }
 
     // First, break down the ranges so we can tell when they are entirely incompatible. They
@@ -399,7 +400,7 @@ public class JsFigure extends HasEventHandling {
             if (downsampledAxisDetails == null) {
                 continue;
             }
-            return new AxisRange(source.getDescriptor().getColumnName(), downsampledAxisDetails.min, downsampledAxisDetails.max);
+            return new AxisRange(source.getDescriptor().getColumnname(), downsampledAxisDetails.min, downsampledAxisDetails.max);
         }
         return null;
     }
@@ -408,28 +409,20 @@ public class JsFigure extends HasEventHandling {
         if (series.getShapesVisible() == Boolean.TRUE) {
             return false;
         }
-        switch (series.getPlotStyle()) {
-            case BAR:
-            case STACKED_BAR:
-            case PIE:
-                // category charts, can't remove categories
-                return false;
-            case SCATTER:
-                // pointless without shapes visible, this ensures we aren't somehow trying to draw it
-                return false;
-            case LINE:
-            case AREA:
-            case STACKED_AREA:
-            case HISTOGRAM:
-            case OHLC:
-            case STEP:
-            case ERROR_BAR:
-                //allowed, fall through (listed so we can default to not downsample)
-                return true;
-            default:
-                //unsupported
-                return false;
+        // this was formerly a switch/case, but since we're referencing JS we need to use expressions that look like non-constants to java
+        int plotStyle = series.getPlotStyle();
+        if (plotStyle == FigureDescriptor.SeriesPlotStyle.getBAR() || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_BAR() || plotStyle == FigureDescriptor.SeriesPlotStyle.getPIE()) {
+            // category charts, can't remove categories
+            return false;
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getSCATTER()) {
+            // pointless without shapes visible, this ensures we aren't somehow trying to draw it
+            return false;
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getLINE() || plotStyle == FigureDescriptor.SeriesPlotStyle.getAREA() || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_AREA() || plotStyle == FigureDescriptor.SeriesPlotStyle.getHISTOGRAM() || plotStyle == FigureDescriptor.SeriesPlotStyle.getOHLC() || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTEP() || plotStyle == FigureDescriptor.SeriesPlotStyle.getERROR_BAR()) {
+            //allowed, fall through (listed so we can default to not downsample)
+            return true;
         }
+        //unsupported
+        return false;
     }
 
     private DownsampleParams makeParamsForSeries(JsSeries s) {
@@ -440,7 +433,7 @@ public class JsFigure extends HasEventHandling {
             SeriesDataSource source = s.getSources()[i];
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());
             if (downsampledAxisDetails == null) {
-                yCols[yCols.length] = source.getDescriptor().getColumnName();
+                yCols[yCols.length] = source.getDescriptor().getColumnname();
             } else {
                 pixels = downsampledAxisDetails.pixels;
             }
@@ -513,7 +506,7 @@ public class JsFigure extends HasEventHandling {
                 Arrays.stream(s.getSources())
                     .forEach(source -> {
                         try {
-                            table.findColumn(source.getDescriptor().getColumnName());
+                            table.findColumn(source.getDescriptor().getColumnname());
                         } catch (NoSuchElementException e) {
                             throw new FigureSourceException(table, source, e.toString());
                         }
@@ -540,14 +533,14 @@ public class JsFigure extends HasEventHandling {
     @JsIgnore
     public int registerTable(JsTable table) {
         int id = plotHandlesToTables.size();
-        registerTableWithId(table, new int[] { id });
+        registerTableWithId(table, Js.uncheckedCast(new double[] { id }));
         return id;
     }
 
-    private void registerTableWithId(JsTable table, int[] plotTableHandles) {
+    private void registerTableWithId(JsTable table, JsArray<Double> plotTableHandles) {
         for (int j = 0; j < plotTableHandles.length; j++) {
-            plotHandlesToTables.put(plotTableHandles[j], table);
-            tablesToPlotHandles.computeIfAbsent(table, ignore2 -> new HashSet<>()).add(plotTableHandles[j]);
+            plotHandlesToTables.put((int) (double) plotTableHandles.getAt(j), table);
+            tablesToPlotHandles.computeIfAbsent(table, ignore2 -> new HashSet<>()).add((int) (double) plotTableHandles.getAt(j));
         }
     }
 
@@ -556,7 +549,7 @@ public class JsFigure extends HasEventHandling {
         if (pixels == null) {
             downsampled.remove(axis);
         } else {
-            if (axis.isLog() || axis.getType() != AxisDescriptor.AxisType.X || axis.isInvert()) {
+            if (axis.getLog() || axis.getType() != AxisDescriptor.AxisType.getX() || axis.getInvert()) {
                 return;
             }
             downsampled.put(axis, new DownsampledAxisDetails(pixels, min, max));
@@ -640,42 +633,42 @@ public class JsFigure extends HasEventHandling {
         public Promise fetch(JsFigure figure, FigureDescriptor descriptor) {
             JsTable[] tables;
 
-            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
-            TableMap[] tableMaps = new TableMap[descriptor.getTableMaps().length];
-            Promise<?>[] tableMapPromises = new Promise[descriptor.getTableMaps().length];
+//            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
+            TableMap[] tableMaps = new TableMap[descriptor.getTablemapsList().length];
+//            Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];
             Map<Integer, TableMap> plotHandlesToTableMaps = new HashMap<>();
-            for (int i = 0; i < descriptor.getTableMaps().length; i++) {
-                final int index = i;
-                tableMapPromises[i] = Callbacks
-                        .<ColumnData, String>promise(null, c -> {
-//                            connection.getServer().getTableMapKeys(descriptor.getTableMaps()[index], c);
-                            throw new UnsupportedOperationException("getTableMapKeys");
-                        })
-                        .then(keys -> {
-                            TableMapDeclaration decl = new TableMapDeclaration();
-                            decl.setKeys(keys);
-                            decl.setHandle(descriptor.getTableMaps()[index]);
-                            TableMap tableMap = new TableMap(connection, c -> c.onSuccess(decl));
-
-                            // never attempt a reconnect, we'll get a new tablemap with the figure when it reconnects
-                            tableMap.addEventListener(TableMap.EVENT_DISCONNECT, ignore -> tableMap.close());
-
-                            int[] plotIds = descriptor.getTableMapIds()[index];
-                            for (int j = 0; j < plotIds.length; j++) {
-                                plotHandlesToTableMaps.put(plotIds[j], tableMap);
-                            }
-                            tableMaps[index] = tableMap;
-                            return tableMap.refetch();
-                        });
-            }
+//            for (int i = 0; i < descriptor.getTablemapsList().length; i++) {
+//                final int index = i;
+//                tableMapPromises[i] = Callbacks
+//                        .<ColumnData, String>promise(null, c -> {
+////                            connection.getServer().getTableMapKeys(descriptor.getTableMaps()[index], c);
+//                            throw new UnsupportedOperationException("getTableMapKeys");
+//                        })
+//                        .then(keys -> {
+//                            TableMapDeclaration decl = new TableMapDeclaration();
+//                            decl.setKeys(keys);
+//                            decl.setHandle(descriptor.getTablemapsList().getAt(index));
+//                            TableMap tableMap = new TableMap(connection, c -> c.onSuccess(decl));
+//
+//                            // never attempt a reconnect, we'll get a new tablemap with the figure when it reconnects
+//                            tableMap.addEventListener(TableMap.EVENT_DISCONNECT, ignore -> tableMap.close());
+//
+//                            JsArray<Double> plotIds = descriptor.getTablemapidsList().getAt(index).getIdsList();
+//                            for (int j = 0; j < plotIds.length; j++) {
+//                                plotHandlesToTableMaps.put((int) (double) plotIds.getAt(j), tableMap);
+//                            }
+//                            tableMaps[index] = tableMap;
+//                            return tableMap.refetch();
+//                        });
+//            }
 
             // iterate through the table handles we're supposed to have and prep TableHandles for them
-            TableHandle[] handles = new TableHandle[descriptor.getTableIds().length];
+            TableHandle[] handles = new TableHandle[descriptor.getTableidsList().length];
             List<Callback<InitialTableDefinition, String>> callbackList = new ArrayList<>();
-            tables = new JsTable[descriptor.getTableIds().length];
+            tables = new JsTable[descriptor.getTableidsList().length];
 
-            Promise<Void>[] tablePromises = new Promise[descriptor.getTableIds().length];
-            for (int i = 0; i < descriptor.getTableIds().length; i++) {
+            Promise<Void>[] tablePromises = new Promise[descriptor.getTableidsList().length];
+            for (int i = 0; i < descriptor.getTableidsList().length; i++) {
 
                 //note that this lambda is executed immediately
                 final int index = i;
@@ -716,7 +709,7 @@ public class JsFigure extends HasEventHandling {
 //                }));
                 throw new UnsupportedOperationException("finishFigureFetch");// not necessary with server-driven exports
             })
-            .then(ignore -> JsPromise.all(new IThenable[] {JsPromise.all(tablePromises), JsPromise.all(tableMapPromises)}))
+            .then(ignore -> JsPromise.all(new IThenable[] {JsPromise.all(tablePromises)/*, JsPromise.all(tableMapPromises)*/}))
             .then(ignore -> { connection.registerFigure(figure); return Promise.resolve((Void)null); })
             .then(ignore -> Promise.resolve(
                 new FigureTableFetchData(tables, tableMaps, plotHandlesToTableMaps, f -> this.connection.releaseFigure(f))
