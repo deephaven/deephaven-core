@@ -57,7 +57,7 @@ public final class FigureSubscription {
         this.downsampleParams = downsampleParams;
 
         this.includedSeries.addAll(series);
-        this.requiredColumns = Collections.unmodifiableSet(includedSeries.stream().flatMap(s -> Arrays.stream(s.getSources())).map(source -> source.getDescriptor().getColumnName()).collect(Collectors.toSet()));
+        this.requiredColumns = Collections.unmodifiableSet(includedSeries.stream().flatMap(s -> Arrays.stream(s.getSources())).map(source -> source.getDescriptor().getColumnname()).collect(Collectors.toSet()));
     }
 
     /**
@@ -70,7 +70,7 @@ public final class FigureSubscription {
     public Set<JsSeries> replaceSeries(final Set<JsSeries> replacements) {
         final Set<JsSeries> copy = new HashSet<>(replacements);
         copy.removeAll(includedSeries);
-        assert requiredColumns.containsAll(copy.stream().flatMap(s -> Arrays.stream(s.getSources())).map(s -> s.getDescriptor().getColumnName()).collect(Collectors.toSet()));
+        assert requiredColumns.containsAll(copy.stream().flatMap(s -> Arrays.stream(s.getSources())).map(s -> s.getDescriptor().getColumnname()).collect(Collectors.toSet()));
         includedSeries.addAll(copy);
 
         // For each of the series in copy, if this subscription is downsampled we need to notify of this fact.
