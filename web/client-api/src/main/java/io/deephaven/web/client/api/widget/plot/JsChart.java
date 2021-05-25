@@ -25,14 +25,14 @@ public class JsChart extends HasEventHandling {
     public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
         //build axes first, key them in a map for easy reuse when constructing series instances
-        axes = descriptor.getAxesList().map((p0, p1, p2) -> new JsAxis(p0, jsFigure));
+        axes = descriptor.getAxesList().asList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure)).toArray(JsAxis[]::new);
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
-        series = descriptor.getSeriesList().map((p0, p1, p2) -> new JsSeries(p0, jsFigure, indexed));
-        multiSeries = descriptor.getMultiseriesList().map((p0, p1, p2) -> new JsMultiSeries(p0, jsFigure, indexed, this));
+        series = descriptor.getSeriesList().asList().stream().map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
+        multiSeries = descriptor.getMultiseriesList().asList().stream().map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
     }
 

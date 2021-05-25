@@ -212,8 +212,12 @@ public class JsFigureFactory {
 
         descriptor.setPlotstyle(Js.coerceToInt(jsDescriptor.plotStyle));
         descriptor.setName(jsDescriptor.name);
-        descriptor.setLinesvisible(jsDescriptor.linesVisible);
-        descriptor.setShapesvisible(jsDescriptor.shapesVisible);
+        if (jsDescriptor.linesVisible != null) {
+            descriptor.setLinesvisible(jsDescriptor.linesVisible);
+        }
+        if (jsDescriptor.shapesVisible != null) {
+            descriptor.setShapesvisible(jsDescriptor.shapesVisible);
+        }
         descriptor.setGradientvisible(jsDescriptor.gradientVisible != null ? jsDescriptor.gradientVisible : false);
         descriptor.setLinecolor(jsDescriptor.lineColor);
         descriptor.setPointlabelformat(jsDescriptor.pointLabelFormat);
@@ -221,7 +225,9 @@ public class JsFigureFactory {
         descriptor.setYtooltippattern(jsDescriptor.yToolTipPattern);
 
         descriptor.setShapelabel(jsDescriptor.shapeLabel);
-        descriptor.setShapesize(jsDescriptor.shapeSize);
+        if (jsDescriptor.shapeSize != null) {
+            descriptor.setShapesize(jsDescriptor.shapeSize);
+        }
         descriptor.setShapecolor(jsDescriptor.shapeColor);
         descriptor.setShape(jsDescriptor.shape);
 
