@@ -167,5 +167,10 @@ b = 2
 c = 3
 t = emptyTable."""
     }
-
+    @Override
+    VariableProvider getVariables() {
+        return Mock(VariableProvider) {
+            _ * getVariableNames() >> []
+        }
+    }
 }

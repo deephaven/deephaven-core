@@ -2,12 +2,14 @@ package io.deephaven.lang.completion
 
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+import io.deephaven.db.util.VariableProvider
+import io.deephaven.io.logger.Logger
 import io.deephaven.lang.generated.Node
 import io.deephaven.lang.generated.Token
+import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.lang.parse.ParsedDocument
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.proto.backplane.script.grpc.CompletionItemOrBuilder
-import io.deephaven.proto.backplane.script.grpc.Position
+import io.deephaven.util.process.ProcessEnvironment
 import spock.lang.Specification
 
 /**
@@ -34,13 +36,29 @@ trait ChunkerParseTestMixin {
         }
     }
 
-    String doCompletion(String command, CompletionItemOrBuilder fragment) {
-        Position.Builder pos = doc.findEditRange(fragment.textEdit.range)
+    abstract VariableProvider getVariables()
 
-        return new StringBuilder(command)
-                .replace(pos.line, pos.character, fragment.textEdit.text)
-                .toString()
+    ParsedDocument parse(String command) {
+        CompletionParser p = new CompletionParser();
+        doc = p.parse(command)
+        return doc
     }
+
+    @CompileDynamic
+    String doCompletion(String command, int completionPos, int resultIndex) {
+        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+
+        ChunkerCompleter completer = new ChunkerCompleter(log, variables)
+        parse(command)
+        Set<CompletionItem> results = completer.runCompletion(doc, completionPos)
+        List<CompletionItem.Builder> result = results.toList()
+        if (resultIndex >= results.size()) {
+            throw new IllegalArgumentException("Invalid result index " + resultIndex +"; only had " + results.size() + " results: " + results)
+        }
+        return doCompletion(command, result.get(resultIndex))
+
+    }
+
 
     @CompileDynamic
     void assertAllValid(ParsedDocument parsed, String src) {
