@@ -298,7 +298,6 @@ class Docker {
                     cfg.envVars.forEach createContainer.&withEnvVar
                 }
 
-
                 targetImageId makeImage.get().getImageId()
                 containerName.set(dockerContainerName)
             }

@@ -149,7 +149,7 @@ public class ClusterController {
             }
             if (machine.isInUse()) {
                 if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
-                    // machine is past expiry... lets turn this box off.
+                    // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
 
                     turnOff(machine);
                 }
@@ -508,6 +508,7 @@ public class ClusterController {
                             }
                             machine.setIp(ip.getName());
                             manager.createMachine(machine);
+                            ips.addIpUsed(ip);
                             result.code = 0;
                         }
                     }
@@ -557,6 +558,7 @@ public class ClusterController {
             final IpMapping mapping = ips.reserveIp(this, machine, ip);
             ensureAccessConfig(machine, mapping);
             machine.setIp(mapping.getIp());
+            ips.addIpUsed(mapping);
         } else {
             if (machineIp.indexOf('.') == -1 && machineIp.indexOf(':') == -1) {
                 final IpMapping mapping = ips.reserveIp(this, machine, ip);
@@ -564,6 +566,7 @@ public class ClusterController {
                 //    https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address#IP_assign
                 ensureAccessConfig(machine, mapping);
                 machine.setIp(mapping.getIp());
+                ips.addIpUsed(mapping);
             }
         }
 
@@ -609,6 +612,7 @@ public class ClusterController {
                 }
                 // address exists... parse out the value!
                 System.out.println("Created address for " + ip + " :\n" + result.out);
+                ips.addIpUnused(ip);
             } catch (IOException | InterruptedException e) {
                 System.err.println("Unable to create an IP address for " + ip + "; check for resource quotas / service outage?");
                 e.printStackTrace();
@@ -664,7 +668,8 @@ public class ClusterController {
                         "  else\n" +
                         "    echo Tried 720 times to reach https://localhost:10000/health but " + failed + "\n" +
                         "  fi\n" +
-                        "} ; TIMEFORMAT='wait_til_ready exited after: %3Rs' ; time wait_til_ready ; code=$? ; " +
+                        "} ; TIMEFORMAT='\n" +
+                        "wait_til_ready exited after: %3Rs' ; time wait_til_ready ; code=$? ; " +
                         "echo " + key + "${code} ; echo ; sleep 1 ; kill $PPID "
         );
         int realCodeLoc = result.out.lastIndexOf(key);

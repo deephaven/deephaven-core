@@ -51,3 +51,4 @@ project.tasks.register('cleanDocker') {
 }
 
 assemble.dependsOn buildImage
+

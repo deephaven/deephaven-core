@@ -121,10 +121,8 @@ test -f /certs/deephaven-svc-act.json && gcloud auth activate-service-account --
 gcloud config set core/disable_usage_reporting true
 gcloud config set component_manager/disable_update_check true
 gcloud config set project deephaven-oss
-# cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 export JAVA_OPTIONS="-Dquarkus.log.level=DEBUG -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.port=7117 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 cd /deployments
-cat /deployments/run-java.sh
 ./run-java.sh --debug
 """
         File protoOut = new File(buildDir, launchScript)
@@ -178,6 +176,7 @@ String webTag = project.version
 
 String envoyRepository = project.property('envoyRepository')
 String envoyTag = project.version
+
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
@@ -246,3 +245,4 @@ tasks.register('pushAll', DockerPushImage) {
         p.images = [ "${grpcApiRepository}:${grpcApiTag}", "${webRepository}:${webTag}", "${envoyRepository}:${envoyTag}" ]
         p.dependsOn tagAll
 }
+

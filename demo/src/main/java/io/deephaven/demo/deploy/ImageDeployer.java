@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -58,50 +59,54 @@ public class ImageDeployer {
 
         LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
         // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
-//        ClusterController.setTimer("Delete " + controllerBox, ()->
-//            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox)
-//        );
-//        // no need to offthread, the next "expensive" operation we do is to create a clean box.
-//        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
-//        GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
-//
-//
-//        LOG.info("Creating new worker template box");
-//        final IpMapping workerIp = ctrl.requestIp();
-//        Machine worker = new Machine(workerBox);
-//        worker.setIp(workerIp.getName());
-//        worker.setSnapshotCreate(true);
-//        // The manager itself has code to select our prepare-worker.sh script as machine startup script
-//        manager.createMachine(worker);
-//        manager.assignDns(Stream.of(worker));
-//        // even if we're just going to shut the machine down, wait until ssh is responsive
-//        manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
-//        // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
-//        ctrl.waitUntilHealthy(worker);
-//        // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules are persisting across restarts
-//
-//        finishDeploy("Worker", worker, manager);
-//
-//        // worker is done, do the controller
-//        LOG.info("Creating new controller template box");
-//        final IpMapping controllerIp = ctrl.requestIp();
-//        Machine controller = new Machine(controllerBox);
-//        controller.setIp(controllerIp.getName());
-//        // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
-//        controller.setController(true);
-//        controller.setSnapshotCreate(true);
-//        manager.createMachine(controller);
-//        manager.assignDns(Stream.of(controller));
-//        manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
-//        ctrl.waitUntilHealthy(controller);
-//
-//        finishDeploy("Controller", controller, manager);
+        ClusterController.setTimer("Delete " + controllerBox, ()-> {
+            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", controllerBox);
+            return "";
+        });
+        // no need to offthread, the next "expensive" operation we do is to create a clean box.
+        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
+        GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
+
+
+        LOG.info("Creating new worker template box");
+        final IpMapping workerIp = ctrl.requestIp();
+        Machine worker = new Machine(workerBox);
+        worker.setIp(workerIp.getName());
+        worker.setSnapshotCreate(true);
+        // The manager itself has code to select our prepare-worker.sh script as machine startup script
+        manager.createMachine(worker);
+        manager.assignDns(Stream.of(worker));
+        // even if we're just going to shut the machine down, wait until ssh is responsive
+        manager.waitForSsh(worker, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
+        ctrl.waitUntilHealthy(worker);
+        // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules are persisting across restarts
+
+        finishDeploy("Worker", worker, manager);
+
+        // worker is done, do the controller
+        LOG.info("Creating new controller template box");
+        final IpMapping controllerIp = ctrl.requestIp();
+        Machine controller = new Machine(controllerBox);
+        controller.setIp(controllerIp.getName());
+        // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
+        controller.setController(true);
+        controller.setSnapshotCreate(true);
+        manager.createMachine(controller);
+        manager.assignDns(Stream.of(controller));
+        manager.waitForSsh(controller, TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(15));
+        ctrl.waitUntilHealthy(controller);
+
+        finishDeploy("Controller", controller, manager);
 
         Machine newCtrl = new Machine("controller-" + VERSION_MANGLE);
         newCtrl.setIp(ctrl.requestIp().getName());
         newCtrl.setController(true);
         manager.createMachine(newCtrl);
         manager.assignDns(Stream.of(newCtrl));
+
+        LOG.infof("Destroying VMs %s and %s", worker, controller);
+        manager.destroyCluster(Arrays.asList(worker, controller), "");
 
     }
 
@@ -119,8 +124,6 @@ public class ImageDeployer {
                     "--source-disk", machine.getHost(), "--source-disk-zone", GoogleDeploymentManager.getGoogleZone());
             LOG.infof("Done creating new %s image %s", typeLower, snapName);
 
-            LOG.infof("Destroying VM %s", machine);
-            manager.destroyCluster(Collections.singletonList(machine), "");
         } else {
             LOG.warnf("NOT DEPLOYING %s IMAGE, to deploy, set -DdeployImage=true or env DEPLOY_IMAGE=true", typeUpper);
             if (LOG.isInfoEnabled()) {

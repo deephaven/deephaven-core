@@ -7,7 +7,7 @@ package io.deephaven.demo.deploy;
  * <p>
  * If we can't even claim an IP, we'll grab / request new Unverified IPs to immediately claim ^-^
  */
-enum IpState {
+public enum IpState {
     /**
      * This IP address is a freshly created that has not even requested changed to google DNS yet.
      */

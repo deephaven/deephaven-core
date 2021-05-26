@@ -83,12 +83,13 @@ COPY --chown=1001 build/launchScript /deployments/launch/
 RUN mkdir -p /root/.config/gcloud/logs #&& chown -R 1001:1001 /root/.config/gcloud
 
 RUN echo "mode=jvm" > /server-mode
-#RUN cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 
 EXPOSE 7117
+
 # For now, we're going to run as root as gcloud doesn't blow up when we do.
 # This seems to be related to either ssl ca certs (see above) or readonly gcloud config directories
 #USER 1001
+
 ENTRYPOINT [ "/deployments/launch/demo-start.sh" ]
 #ENTRYPOINT [ "/deployments/run-java.sh" ]
 

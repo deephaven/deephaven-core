@@ -31,10 +31,12 @@ public class MachinePool {
             //            settings the --address 1.2.3.4 to an IP will a) fail b/c IP is used by our gcloud address name, and b) change on restart
             machine.setIp(ip.getName());
         }
-        machines.add(machine);
         try {
             manager.createMachine(machine);
-            machine.setIp(ip.getIp());
+            machines.add(machine);
+            if (ip != null) {
+                machine.setIp(ip.getIp());
+            }
         } catch (IOException | InterruptedException e) {
             String msg = "Failed to create machine " + name;
             System.err.println(msg);
@@ -50,8 +52,7 @@ public class MachinePool {
     public Optional<Machine> maybeGetMachine(final GoogleDeploymentManager manager) {
         Machine candidate = null;
         synchronized (machines) {
-            for (final Iterator<Machine> itr = machines.iterator(); itr.hasNext(); ) {
-                Machine next = itr.next();
+            for (Machine next : machines) {
                 if (!next.isInUse()) {
                     if (next.isOnline()) {
                         LOG.info("Sending user already-warm machine " + next);

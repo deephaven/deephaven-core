@@ -2,6 +2,7 @@ package io.deephaven.demo.deploy;
 
 // this package name is intentional. it works better w/ quarkus native compiler
 import io.deephaven.demo.ClusterController;
+import org.jboss.logging.Logger;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * <p>
  */
 public class IpPool {
+
+    private static final Logger LOG = Logger.getLogger(IpPool.class);
+
     private final ConcurrentMap<String, IpMapping> allIps;
     private final SortedSet<IpMapping> used;
     private final SortedSet<IpMapping> unused;
@@ -42,6 +46,7 @@ public class IpPool {
     }
 
     public void addIpUnused(IpMapping ip) {
+        ip.setState(IpState.Unclaimed);
         allIps.put(ip.getName(), ip);
         if (ip.getIp() != null) {
             allIps.put(ip.getIp(), ip);
@@ -50,25 +55,49 @@ public class IpPool {
     }
 
     public void addIpUsed(IpMapping ip) {
+        ip.setState(IpState.Claimed);
         allIps.put(ip.getName(), ip);
         allIps.put(ip.getIp(), ip);
         used.add(ip);
     }
 
     public IpMapping getUnusedIp(ClusterController ctrl) {
-        final IpMapping ip;
+        IpMapping ip = null;
         synchronized (unused) {
             if (unused.isEmpty()) {
                 // uh-oh! no more IPs... ask for at least one new IP, scaling up by square root of total IPs allocated
                 ctrl.requestNewIps((int) (1 + Math.sqrt(allIps.size())))
                         .forEach(this::addIpUnused);
             }
-            final Iterator<IpMapping> itr = unused.iterator();
-            ip = itr.next();
-            itr.remove();
-            used.add(ip);
+            for (final Iterator<IpMapping> itr = unused.iterator(); itr.hasNext();) {
+                ip = itr.next();
+                if (ip.getState() == IpState.Unverified) {
+                    // schedule unverified IP to be checked for existence
+                    checkIpState(ctrl, ip);
+                } else {
+                    itr.remove();
+                    used.add(ip);
+                    break;
+                }
+            }
         }
+
         return ip;
+    }
+
+    private void checkIpState(final ClusterController ctrl, final IpMapping ip) {
+        ClusterController.setTimer("Check IP " + ip.getName(), ()-> {
+            final Execute.ExecutionResult result = GoogleDeploymentManager.gcloud(true, false, "addresses", "describe", ip.getName());
+            if (result.code != 0) {
+                LOG.error("IP address " + ip + " does not exist! Grep logs for QUOTA, or other address-related errors.");
+                unused.remove(ip);
+                allIps.remove(ip.getName());
+                if (ip.getIp() != null) {
+                    allIps.remove(ip.getIp());
+                }
+            }
+            return "";
+        });
     }
 
     public IpMapping reserveIp(ClusterController ctrl, Machine node, IpMapping backup) {

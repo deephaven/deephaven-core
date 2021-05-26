@@ -7,9 +7,9 @@ grep -c DH_SVC "$DH_DIR/.env" || echo "
 DH_SVC=$DH_SVC
 " | sudo tee -a "$DH_DIR/.env" > /dev/null
 
-test -d "$DH_SVC/act" || sudo mkdir -p "$DH_SVC/act"
-test -f "$DH_SVC/act/svc-act.json" ||
-    { kubectl get secret dh-svc-act -o go-template='{{index .data "deephaven-svc-act.json" | base64decode}}' | sudo tee "$DH_SVC/act/deephaven-svc-act.json" > /dev/null ; }
+test -d "$DH_SVC" || sudo mkdir -p "$DH_SVC"
+test -f "$DH_SVC/deephaven-svc-act.json" ||
+    { kubectl get secret dh-svc-act -o go-template='{{index .data "deephaven-svc-act.json" | base64decode}}' | sudo tee "$DH_SVC/deephaven-svc-act.json" > /dev/null ; }
 
 echo "
 [auth]
@@ -24,23 +24,21 @@ version: "3.4"
 services:
   demo-server:
     image: ${REPO:-ghcr.io/deephaven}/demo-server:${VERSION:-latest}
+    network_mode: "host"
     expose:
       - '7117'
     volumes:
-      # TODO: reduce this to /root/.config/gcloud and whatever other minimal tools we need.
       - /root/.config:/root/.config
-      - ${DH_SVC:-/dh/svc}/config:/root/gcloud
-      - ${DH_SVC:-/dh/svc}/act:/certs
+      - "${DH_SVC:-/dh/svc}:/certs"
     environment:
-      - JAVA_TOOL_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
-      - CLOUDSDK_CONFIG=/config/gcloud
+      - JAVA_OPTIONS="-Xmx12g -Dquarkus.http.cors.origins=https://${DOMAIN:-demo.deephaven.app}"
+      - CLOUDSDK_CONFIG=/root/.config/gcloud
 
   envoy:
     image: envoyproxy/envoy:v1.18.3
+    network_mode: "host"
     depends_on:
       - demo-server
-    ports:
-      - "${PORT:-10000}:10000"
     volumes:
       - /etc/ssl/dh:/etc/ssl/dh
       - /etc/ssl/internal:/etc/ssl/internal
@@ -115,11 +113,11 @@ static_resources:
   clusters:
     - name: control
       connect_timeout: 10s
-      http_protocol_options:
-        max_stream_duration: 120s
       type: LOGICAL_DNS
       lb_policy: ROUND_ROBIN
       http_protocol_options: {}
+      common_http_protocol_options:
+        max_stream_duration: 3000s
       load_assignment:
         cluster_name: control
         endpoints:
