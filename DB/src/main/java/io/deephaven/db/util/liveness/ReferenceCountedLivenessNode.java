@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference;
  */
 abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements LivenessNode {
 
-    private final boolean enforceStrongReachability;
+    final boolean enforceStrongReachability;
 
     transient RetainedReferenceTracker<ReferenceCountedLivenessNode> tracker;
 

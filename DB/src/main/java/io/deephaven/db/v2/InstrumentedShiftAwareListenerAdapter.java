@@ -44,7 +44,7 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
      *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
     public InstrumentedShiftAwareListenerAdapter(@NotNull final DynamicTable source, final boolean retain) {
-        this(null, source, true);
+        this(null, source, retain);
     }
 
     /**

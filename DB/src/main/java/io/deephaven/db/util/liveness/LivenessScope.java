@@ -47,6 +47,9 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }
+        if (enforceStrongReachability) {
+            throw new UnsupportedOperationException("LivenessScope does not support reference transfer if enforceStrongReachability is specified");
+        }
         if (other instanceof ReferenceCountedLivenessNode) {
             tracker.transferReferencesTo(((ReferenceCountedLivenessNode) other).tracker);
         } else if (other instanceof PermanentLivenessManager) {

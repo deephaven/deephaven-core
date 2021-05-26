@@ -238,9 +238,14 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         public void drop(@NotNull final LivenessReferent referent) {
             for (int rrLast = retainedReferences.size() - 1, rri = 0; rri <= rrLast; ) {
                 final WeakReference<? extends LivenessReferent> retainedReference = retainedReferences.get(rri);
-                final boolean found = retainedReference.get() == referent;
-                final boolean cleared = !found && retainedReference.get() == null;
-                if (!found && !cleared) {
+                final boolean cleared;
+                final boolean found;
+                {
+                    final LivenessReferent retained = retainedReference.get();
+                    cleared = retained == null;
+                    found = !cleared && retained == referent;
+                }
+                if (!cleared && !found) {
                     ++rri;
                     continue;
                 }
@@ -261,9 +266,14 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             referentsToRemove.addAll(referents);
             for (int rrLast = retainedReferences.size() - 1, rri = 0; rri <= rrLast; ) {
                 final WeakReference<? extends LivenessReferent> retainedReference = retainedReferences.get(rri);
-                final boolean found = referentsToRemove.remove(retainedReference.get());
-                final boolean cleared = !found && retainedReference.get() == null;
-                if (!found && !cleared) {
+                final boolean cleared;
+                final boolean found;
+                {
+                    final LivenessReferent retained = retainedReference.get();
+                    cleared = retained == null;
+                    found = !cleared && referentsToRemove.remove(retained);
+                }
+                if (!cleared && !found) {
                     ++rri;
                     continue;
                 }
@@ -275,6 +285,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     final LivenessReferent referent = retainedReference.get();
                     if (referent != null) { // Probably unnecessary, unless the referents collection is engaged in some reference trickery internally, but better safe than sorry.
                         referent.dropReference();
+                    }
+                    if (referentsToRemove.isEmpty()) {
+                        return;
                     }
                 }
             }
@@ -339,6 +352,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull final Collection<? extends LivenessReferent> referents) {
+            if (referents.isEmpty()) {
+                return;
+            }
             final Set<LivenessReferent> referentsToRemove = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
             referentsToRemove.addAll(referents);
             for (int rLast = retained.size() - 1, ri = 0; ri <= rLast; ) {
@@ -349,6 +365,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     }
                     retained.remove(rLast--);
                     current.dropReference();
+                    if (referentsToRemove.isEmpty()) {
+                        return;
+                    }
                 } else {
                     ++ri;
                 }
@@ -362,6 +381,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void makePermanent() {
+            // See LivenessScope.transferTo: This is currently unreachable code, but implemented for completeness
             retained.forEach(permanentReferences::retain);
             retained.clear();
         }
