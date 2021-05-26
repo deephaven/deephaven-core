@@ -114,8 +114,8 @@ public class ConsoleClient {
                 .onNext(response -> scheduler.runImmediately(this::awaitCommand))
                 .build());
         LogSubscriptionRequest request = LogSubscriptionRequest.newBuilder()
-            .addLevel("STDOUT")
-            .addLevel("STDERR")
+            .addLevels("STDOUT")
+            .addLevels("STDERR")
             .setLastSeenLogTimestamp(System.currentTimeMillis() * 1000) // don't replay any logs that came before now
             .build();
         consoleServiceGrpc.subscribeToLogs(request,

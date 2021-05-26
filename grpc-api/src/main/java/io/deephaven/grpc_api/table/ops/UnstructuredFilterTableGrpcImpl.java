@@ -26,7 +26,7 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] filters = request.getFilterList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] filters = request.getFiltersList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final SelectFilter[] selectFilters = ColumnExpressionValidator.validateSelectFilters(filters, parent);
         return parent.where(selectFilters);
     }
