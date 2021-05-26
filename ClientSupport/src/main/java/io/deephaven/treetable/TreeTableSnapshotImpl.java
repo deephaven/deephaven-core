@@ -7,7 +7,6 @@ import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.table.sort.SortDirective;
-import io.deephaven.treetable.TreeSnapshotQuery.Operation;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.BitSet;

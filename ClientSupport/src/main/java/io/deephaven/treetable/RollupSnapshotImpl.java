@@ -13,7 +13,6 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.table.sort.SortDirective;
-import io.deephaven.treetable.TreeSnapshotQuery.Operation;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
