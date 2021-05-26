@@ -69,6 +69,22 @@ trait ChunkerParseTestMixin {
 
 
     @CompileDynamic
+    String doCompletion(String command, int completionPos, int resultIndex) {
+        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+
+        ChunkerCompleter completer = new ChunkerCompleter(log, variables)
+        parse(command)
+        Set<CompletionItem> results = completer.runCompletion(doc, completionPos)
+        List<CompletionItem.Builder> result = results.toList()
+        if (resultIndex >= results.size()) {
+            throw new IllegalArgumentException("Invalid result index " + resultIndex +"; only had " + results.size() + " results: " + results)
+        }
+        return doCompletion(command, result.get(resultIndex))
+
+    }
+
+
+    @CompileDynamic
     void assertAllValid(ParsedDocument parsed, String src) {
         if (!src) {
             return
