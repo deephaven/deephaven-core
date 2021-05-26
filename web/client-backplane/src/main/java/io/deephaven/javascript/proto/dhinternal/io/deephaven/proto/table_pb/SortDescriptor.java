@@ -22,22 +22,22 @@ public class SortDescriptor {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
     double getDirection();
 
     @JsProperty
-    boolean isIsabsolute();
+    boolean isIsAbsolute();
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
     void setDirection(double direction);
 
     @JsProperty
-    void setIsabsolute(boolean isabsolute);
+    void setIsAbsolute(boolean isAbsolute);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -48,22 +48,22 @@ public class SortDescriptor {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
     double getDirection();
 
     @JsProperty
-    boolean isIsabsolute();
+    boolean isIsAbsolute();
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
     void setDirection(double direction);
 
     @JsProperty
-    void setIsabsolute(boolean isabsolute);
+    void setIsAbsolute(boolean isAbsolute);
   }
 
   public static SortDirectionMap SortDirection;
@@ -78,19 +78,19 @@ public class SortDescriptor {
   public static native SortDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, SortDescriptor msg);
 
-  public native String getColumnname();
+  public native String getColumnName();
 
   public native double getDirection();
 
-  public native boolean getIsabsolute();
+  public native boolean getIsAbsolute();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnname(String value);
+  public native void setColumnName(String value);
 
   public native void setDirection(double value);
 
-  public native void setIsabsolute(boolean value);
+  public native void setIsAbsolute(boolean value);
 
   public native SortDescriptor.ToObjectReturnType0 toObject();
 

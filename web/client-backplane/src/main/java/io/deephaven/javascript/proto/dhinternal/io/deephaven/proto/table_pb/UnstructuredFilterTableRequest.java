@@ -18,11 +18,11 @@ public class UnstructuredFilterTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType
+        static UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType
             of(Object o) {
           return Js.cast(o);
         }
@@ -49,22 +49,22 @@ public class UnstructuredFilterTableRequest {
       }
 
       @JsOverlay
-      static UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType create() {
+      static UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
       void setId(
-          UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+          UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType
+                .<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType
                         .GetIdUnionType>
                     uncheckedCast(id));
       }
@@ -73,27 +73,27 @@ public class UnstructuredFilterTableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType
+                .<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType
                         .GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static UnstructuredFilterTableRequest.ToObjectReturnType.SourceidFieldType create() {
+      static UnstructuredFilterTableRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -105,37 +105,37 @@ public class UnstructuredFilterTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getFilterList();
+    JsArray<String> getFiltersList();
 
     @JsProperty
-    UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    UnstructuredFilterTableRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    UnstructuredFilterTableRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setFilterList(JsArray<String> filterList);
+    void setFiltersList(JsArray<String> filtersList);
 
     @JsOverlay
-    default void setFilterList(String[] filterList) {
-      setFilterList(Js.<JsArray<String>>uncheckedCast(filterList));
+    default void setFiltersList(String[] filtersList) {
+      setFiltersList(Js.<JsArray<String>>uncheckedCast(filtersList));
     }
 
     @JsProperty
-    void setResultid(UnstructuredFilterTableRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(UnstructuredFilterTableRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(UnstructuredFilterTableRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType
+        static UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType
             of(Object o) {
           return Js.cast(o);
         }
@@ -162,22 +162,22 @@ public class UnstructuredFilterTableRequest {
       }
 
       @JsOverlay
-      static UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
       void setId(
-          UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+          UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType
+                .<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType
                         .GetIdUnionType>
                     uncheckedCast(id));
       }
@@ -186,27 +186,27 @@ public class UnstructuredFilterTableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType
+                .<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType
                         .GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static UnstructuredFilterTableRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static UnstructuredFilterTableRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -218,27 +218,27 @@ public class UnstructuredFilterTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getFilterList();
+    JsArray<String> getFiltersList();
 
     @JsProperty
-    UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    UnstructuredFilterTableRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    UnstructuredFilterTableRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setFilterList(JsArray<String> filterList);
+    void setFiltersList(JsArray<String> filtersList);
 
     @JsOverlay
-    default void setFilterList(String[] filterList) {
-      setFilterList(Js.<JsArray<String>>uncheckedCast(filterList));
+    default void setFiltersList(String[] filtersList) {
+      setFiltersList(Js.<JsArray<String>>uncheckedCast(filtersList));
     }
 
     @JsProperty
-    void setResultid(UnstructuredFilterTableRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(UnstructuredFilterTableRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(UnstructuredFilterTableRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native UnstructuredFilterTableRequest deserializeBinary(Uint8Array bytes);
@@ -252,42 +252,42 @@ public class UnstructuredFilterTableRequest {
   public static native UnstructuredFilterTableRequest.ToObjectReturnType toObject(
       boolean includeInstance, UnstructuredFilterTableRequest msg);
 
-  public native String addFilter(String value, double index);
+  public native String addFilters(String value, double index);
 
-  public native String addFilter(String value);
+  public native String addFilters(String value);
 
-  public native void clearFilterList();
+  public native void clearFiltersList();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native JsArray<String> getFilterList();
+  public native JsArray<String> getFiltersList();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setFilterList(JsArray<String> value);
+  public native void setFiltersList(JsArray<String> value);
 
   @JsOverlay
-  public final void setFilterList(String[] value) {
-    setFilterList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setFiltersList(String[] value) {
+    setFiltersList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native UnstructuredFilterTableRequest.ToObjectReturnType0 toObject();
 

@@ -22,20 +22,20 @@ public class LogSubscriptionRequest {
     }
 
     @JsProperty
-    double getLastseenlogtimestamp();
+    double getLastSeenLogTimestamp();
 
     @JsProperty
-    JsArray<String> getLevelList();
+    JsArray<String> getLevelsList();
 
     @JsProperty
-    void setLastseenlogtimestamp(double lastseenlogtimestamp);
+    void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
 
     @JsProperty
-    void setLevelList(JsArray<String> levelList);
+    void setLevelsList(JsArray<String> levelsList);
 
     @JsOverlay
-    default void setLevelList(String[] levelList) {
-      setLevelList(Js.<JsArray<String>>uncheckedCast(levelList));
+    default void setLevelsList(String[] levelsList) {
+      setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
     }
   }
 
@@ -47,20 +47,20 @@ public class LogSubscriptionRequest {
     }
 
     @JsProperty
-    double getLastseenlogtimestamp();
+    double getLastSeenLogTimestamp();
 
     @JsProperty
-    JsArray<String> getLevelList();
+    JsArray<String> getLevelsList();
 
     @JsProperty
-    void setLastseenlogtimestamp(double lastseenlogtimestamp);
+    void setLastSeenLogTimestamp(double lastSeenLogTimestamp);
 
     @JsProperty
-    void setLevelList(JsArray<String> levelList);
+    void setLevelsList(JsArray<String> levelsList);
 
     @JsOverlay
-    default void setLevelList(String[] levelList) {
-      setLevelList(Js.<JsArray<String>>uncheckedCast(levelList));
+    default void setLevelsList(String[] levelsList) {
+      setLevelsList(Js.<JsArray<String>>uncheckedCast(levelsList));
     }
   }
 
@@ -74,25 +74,25 @@ public class LogSubscriptionRequest {
   public static native LogSubscriptionRequest.ToObjectReturnType toObject(
       boolean includeInstance, LogSubscriptionRequest msg);
 
-  public native String addLevel(String value, double index);
+  public native String addLevels(String value, double index);
 
-  public native String addLevel(String value);
+  public native String addLevels(String value);
 
-  public native void clearLevelList();
+  public native void clearLevelsList();
 
-  public native double getLastseenlogtimestamp();
+  public native double getLastSeenLogTimestamp();
 
-  public native JsArray<String> getLevelList();
+  public native JsArray<String> getLevelsList();
 
   public native Uint8Array serializeBinary();
 
-  public native void setLastseenlogtimestamp(double value);
+  public native void setLastSeenLogTimestamp(double value);
 
-  public native void setLevelList(JsArray<String> value);
+  public native void setLevelsList(JsArray<String> value);
 
   @JsOverlay
-  public final void setLevelList(String[] value) {
-    setLevelList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setLevelsList(String[] value) {
+    setLevelsList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
   public native LogSubscriptionRequest.ToObjectReturnType0 toObject();

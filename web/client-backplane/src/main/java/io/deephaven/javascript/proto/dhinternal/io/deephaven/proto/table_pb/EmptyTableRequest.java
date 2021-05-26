@@ -18,11 +18,11 @@ public class EmptyTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static EmptyTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(Object o) {
+        static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -48,27 +48,27 @@ public class EmptyTableRequest {
       }
 
       @JsOverlay
-      static EmptyTableRequest.ToObjectReturnType.ResultidFieldType create() {
+      static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      EmptyTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(EmptyTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<EmptyTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<EmptyTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
@@ -79,35 +79,35 @@ public class EmptyTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnnamesList();
+    JsArray<String> getColumnNamesList();
 
     @JsProperty
-    JsArray<String> getColumntypesList();
+    JsArray<String> getColumnTypesList();
 
     @JsProperty
-    EmptyTableRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    EmptyTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
     String getSize();
 
     @JsProperty
-    void setColumnnamesList(JsArray<String> columnnamesList);
+    void setColumnNamesList(JsArray<String> columnNamesList);
 
     @JsOverlay
-    default void setColumnnamesList(String[] columnnamesList) {
-      setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+    default void setColumnNamesList(String[] columnNamesList) {
+      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
     }
 
     @JsProperty
-    void setColumntypesList(JsArray<String> columntypesList);
+    void setColumnTypesList(JsArray<String> columnTypesList);
 
     @JsOverlay
-    default void setColumntypesList(String[] columntypesList) {
-      setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
+    default void setColumnTypesList(String[] columnTypesList) {
+      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
     }
 
     @JsProperty
-    void setResultid(EmptyTableRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(EmptyTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
     void setSize(String size);
@@ -116,11 +116,11 @@ public class EmptyTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static EmptyTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(Object o) {
+        static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -146,21 +146,21 @@ public class EmptyTableRequest {
       }
 
       @JsOverlay
-      static EmptyTableRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      EmptyTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(EmptyTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<EmptyTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -168,7 +168,7 @@ public class EmptyTableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<EmptyTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -179,35 +179,35 @@ public class EmptyTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnnamesList();
+    JsArray<String> getColumnNamesList();
 
     @JsProperty
-    JsArray<String> getColumntypesList();
+    JsArray<String> getColumnTypesList();
 
     @JsProperty
-    EmptyTableRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
     String getSize();
 
     @JsProperty
-    void setColumnnamesList(JsArray<String> columnnamesList);
+    void setColumnNamesList(JsArray<String> columnNamesList);
 
     @JsOverlay
-    default void setColumnnamesList(String[] columnnamesList) {
-      setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+    default void setColumnNamesList(String[] columnNamesList) {
+      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
     }
 
     @JsProperty
-    void setColumntypesList(JsArray<String> columntypesList);
+    void setColumnTypesList(JsArray<String> columnTypesList);
 
     @JsOverlay
-    default void setColumntypesList(String[] columntypesList) {
-      setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
+    default void setColumnTypesList(String[] columnTypesList) {
+      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
     }
 
     @JsProperty
-    void setResultid(EmptyTableRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
     void setSize(String size);
@@ -223,49 +223,49 @@ public class EmptyTableRequest {
   public static native EmptyTableRequest.ToObjectReturnType toObject(
       boolean includeInstance, EmptyTableRequest msg);
 
-  public native String addColumnnames(String value, double index);
+  public native String addColumnNames(String value, double index);
 
-  public native String addColumnnames(String value);
+  public native String addColumnNames(String value);
 
-  public native String addColumntypes(String value, double index);
+  public native String addColumnTypes(String value, double index);
 
-  public native String addColumntypes(String value);
+  public native String addColumnTypes(String value);
 
-  public native void clearColumnnamesList();
+  public native void clearColumnNamesList();
 
-  public native void clearColumntypesList();
+  public native void clearColumnTypesList();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native JsArray<String> getColumnnamesList();
+  public native JsArray<String> getColumnNamesList();
 
-  public native JsArray<String> getColumntypesList();
+  public native JsArray<String> getColumnTypesList();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
   public native String getSize();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnnamesList(JsArray<String> value);
+  public native void setColumnNamesList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumnnamesList(String[] value) {
-    setColumnnamesList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnNamesList(String[] value) {
+    setColumnNamesList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setColumntypesList(JsArray<String> value);
+  public native void setColumnTypesList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumntypesList(String[] value) {
-    setColumntypesList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnTypesList(String[] value) {
+    setColumnTypesList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
   public native void setSize(String value);
 

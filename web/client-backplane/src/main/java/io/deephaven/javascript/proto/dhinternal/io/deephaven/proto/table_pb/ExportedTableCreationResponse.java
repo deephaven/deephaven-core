@@ -101,13 +101,13 @@ public class ExportedTableCreationResponse {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface TicketFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetIdUnionType {
           @JsOverlay
-          static ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+          static ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
                   .GetIdUnionType
               of(Object o) {
             return Js.cast(o);
@@ -135,19 +135,19 @@ public class ExportedTableCreationResponse {
         }
 
         @JsOverlay
-        static ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+        static ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+        ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
                 .GetIdUnionType
             getId();
 
         @JsProperty
         void setId(
-            ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+            ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
                     .GetIdUnionType
                 id);
 
@@ -155,7 +155,7 @@ public class ExportedTableCreationResponse {
         default void setId(String id) {
           setId(
               Js
-                  .<ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType
+                  .<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType
                           .TicketFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
@@ -164,30 +164,30 @@ public class ExportedTableCreationResponse {
         default void setId(Uint8Array id) {
           setId(
               Js
-                  .<ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType
+                  .<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType
                           .TicketFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
       }
 
       @JsOverlay
-      static ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType create() {
+      static ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
-      ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+      ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
           getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(
-          ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType.TicketFieldType
+          ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
               ticket);
     }
 
@@ -197,10 +197,10 @@ public class ExportedTableCreationResponse {
     }
 
     @JsProperty
-    String getErrorinfo();
+    String getErrorInfo();
 
     @JsProperty
-    ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType getResultid();
+    ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
     ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType getSchemaHeader();
@@ -209,19 +209,19 @@ public class ExportedTableCreationResponse {
     String getSize();
 
     @JsProperty
-    boolean isIsstatic();
+    boolean isIsStatic();
 
     @JsProperty
     boolean isSuccess();
 
     @JsProperty
-    void setErrorinfo(String errorinfo);
+    void setErrorInfo(String errorInfo);
 
     @JsProperty
-    void setIsstatic(boolean isstatic);
+    void setIsStatic(boolean isStatic);
 
     @JsProperty
-    void setResultid(ExportedTableCreationResponse.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
     void setSchemaHeader(
@@ -282,13 +282,13 @@ public class ExportedTableCreationResponse {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface TicketFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetIdUnionType {
           @JsOverlay
-          static ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+          static ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
                   .GetIdUnionType
               of(Object o) {
             return Js.cast(o);
@@ -316,19 +316,19 @@ public class ExportedTableCreationResponse {
         }
 
         @JsOverlay
-        static ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+        static ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+        ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
                 .GetIdUnionType
             getId();
 
         @JsProperty
         void setId(
-            ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+            ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
                     .GetIdUnionType
                 id);
 
@@ -336,7 +336,7 @@ public class ExportedTableCreationResponse {
         default void setId(String id) {
           setId(
               Js
-                  .<ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType
+                  .<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType
                           .TicketFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
@@ -345,30 +345,30 @@ public class ExportedTableCreationResponse {
         default void setId(Uint8Array id) {
           setId(
               Js
-                  .<ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType
+                  .<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType
                           .TicketFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
       }
 
       @JsOverlay
-      static ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType create() {
+      static ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
-      ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+      ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
           getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(
-          ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType.TicketFieldType
+          ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
               ticket);
     }
 
@@ -378,10 +378,10 @@ public class ExportedTableCreationResponse {
     }
 
     @JsProperty
-    String getErrorinfo();
+    String getErrorInfo();
 
     @JsProperty
-    ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType getResultid();
+    ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
     ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType getSchemaHeader();
@@ -390,19 +390,19 @@ public class ExportedTableCreationResponse {
     String getSize();
 
     @JsProperty
-    boolean isIsstatic();
+    boolean isIsStatic();
 
     @JsProperty
     boolean isSuccess();
 
     @JsProperty
-    void setErrorinfo(String errorinfo);
+    void setErrorInfo(String errorInfo);
 
     @JsProperty
-    void setIsstatic(boolean isstatic);
+    void setIsStatic(boolean isStatic);
 
     @JsProperty
-    void setResultid(ExportedTableCreationResponse.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
     void setSchemaHeader(
@@ -442,13 +442,13 @@ public class ExportedTableCreationResponse {
   public static native ExportedTableCreationResponse.ToObjectReturnType toObject(
       boolean includeInstance, ExportedTableCreationResponse msg);
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native String getErrorinfo();
+  public native String getErrorInfo();
 
-  public native boolean getIsstatic();
+  public native boolean getIsStatic();
 
-  public native TableReference getResultid();
+  public native TableReference getResultId();
 
   public native ExportedTableCreationResponse.GetSchemaHeaderUnionType getSchemaHeader();
 
@@ -460,17 +460,17 @@ public class ExportedTableCreationResponse {
 
   public native boolean getSuccess();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setErrorinfo(String value);
+  public native void setErrorInfo(String value);
 
-  public native void setIsstatic(boolean value);
+  public native void setIsStatic(boolean value);
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(TableReference value);
+  public native void setResultId(TableReference value);
 
   public native void setSchemaHeader(
       ExportedTableCreationResponse.SetSchemaHeaderValueUnionType value);
