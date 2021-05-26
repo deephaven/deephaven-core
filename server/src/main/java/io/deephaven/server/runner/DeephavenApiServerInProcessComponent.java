@@ -2,6 +2,7 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.inject.Named;
@@ -11,7 +12,8 @@ import java.io.PrintStream;
 @Singleton
 @Component(modules = {
         DeephavenApiServerModule.class,
-        ServerBuilderInProcessModule.class
+        ServerBuilderInProcessModule.class,
+        HealthCheckModule.class
 })
 public interface DeephavenApiServerInProcessComponent {
 

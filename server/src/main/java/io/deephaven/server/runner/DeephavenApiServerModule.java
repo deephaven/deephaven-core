@@ -26,10 +26,12 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
+import io.grpc.protobuf.services.HealthStatusManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -61,8 +63,8 @@ public class DeephavenApiServerModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<BindableService> primeServices() {
-        return Collections.emptySet();
+    static Set<BindableService> primeServices(HealthStatusManager healthStatusManager) {
+        return Collections.singleton(healthStatusManager.getHealthService());
     }
 
     @Provides
