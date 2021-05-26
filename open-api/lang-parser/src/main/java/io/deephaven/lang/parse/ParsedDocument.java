@@ -3,13 +3,13 @@ package io.deephaven.lang.parse;
 import io.deephaven.base.Lazy;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.*;
+import io.deephaven.lang.parse.api.ParsedResult;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.Position;
+import io.deephaven.proto.backplane.script.grpc.TextEdit;
 import io.deephaven.web.shared.fu.MappedIterable;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
-import io.deephaven.web.shared.ide.lsp.Position;
-import io.deephaven.web.shared.ide.lsp.TextEdit;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
  * For now, we will be re-parsing the entire string document every time,
  * but in the future, we would like to be able to update only ranges of changed code.
  */
-public class ParsedDocument {
+public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssign, Node> {
 
     private static class AnchorNode extends SimpleNode {
 
@@ -103,7 +103,7 @@ public class ParsedDocument {
     private final String src;
     private String errorSource;
     private ParseException error;
-    private final Map<DocumentRange, Position> computedPositions;
+    private final Map<DocumentRange, Position.Builder> computedPositions;
     private final Map<String, List<ChunkerAssign>> assignments;
 
     public ParsedDocument(ChunkerDocument doc, String document) {
@@ -166,6 +166,9 @@ public class ParsedDocument {
         Assert.geq(best.getEndIndex(), "node.endIndex", i);
 
         int c = best.jjtGetNumChildren() - 1;
+        if (c == -1) {
+            return best;
+        }
         final Node child = best.jjtGetChild(c);
         if (child.getEndIndex() >= i) {
             if (child.jjtGetNumChildren() == 0) {
@@ -229,29 +232,29 @@ public class ParsedDocument {
             '}';
     }
 
-    public Position findEditRange(DocumentRange replaceRange) {
+    public Position.Builder findEditRange(DocumentRange replaceRange) {
         final Token end = doc.jjtGetLastToken();
         // Our document and thus, our token is 1-indexed
         // Our range which we send back through lsp protocol is 0-indexed.
         // So, this less than is really <= after correcting array indexing.
-        assert replaceRange.end.line < end.endLine;
-        assert replaceRange.end.character <= end.endColumn;
+        assert replaceRange.getEnd().getLine() < end.endLine;
+        assert replaceRange.getEnd().getCharacter() <= end.endColumn;
 
         // Most definitely want to cache this very expensive operation.
         return computedPositions.computeIfAbsent(replaceRange, r-> findFromNodes(replaceRange, doc));
     }
 
-    private Position findFromNodes(DocumentRange replaceRange, Node startNode) {
+    private Position.Builder findFromNodes(DocumentRange replaceRange, Node startNode) {
         return findFromNodes(replaceRange, startNode, null);
     }
-    private Position findFromNodes(DocumentRange replaceRange, Node startNode, Node endNode) {
+    private Position.Builder findFromNodes(DocumentRange replaceRange, Node startNode, Node endNode) {
 
         if (startNode.jjtGetNumChildren() == 0) {
             // we are the winner node!
             if (endNode != startNode) {
                 endNode = refineEndNode(replaceRange, endNode == null ? startNode : endNode);
             }
-            assert startsBefore(startNode, replaceRange.start);
+            assert startsBefore(startNode, replaceRange.getStart());
             // Note, we're intentionally sending the first token of both the start and end node,
             // as we need to search forward-only when examining tokens.
             return findFromTokens(replaceRange, startNode.jjtGetFirstToken(), endNode.jjtGetFirstToken());
@@ -263,11 +266,11 @@ public class ParsedDocument {
                 // we eventually rely on tokens instead of nodes,
                 // which only have forward links; thus, we must anchor to start node.
                 if (endNode == null || endNode == startNode) {
-                    if (startsBefore(kid, replaceRange.end)) {
+                    if (startsBefore(kid, replaceRange.getEnd())) {
                         endNode = kid;
                     }
                 }
-                if (startsBefore(kid, replaceRange.start)) {
+                if (startsBefore(kid, replaceRange.getStart())) {
                     return findFromNodes(replaceRange, kid, endNode);
                 }
             }
@@ -279,7 +282,7 @@ public class ParsedDocument {
     }
 
     private boolean startsBefore(Node kid, Position start) {
-        return kid.jjtGetFirstToken().positionStart().lessOrEqual(start);
+        return LspTools.lessOrEqual(kid.jjtGetFirstToken().positionStart(), start);
     }
 
     private Node refineEndNode(DocumentRange replaceRange, Node endNode) {
@@ -287,7 +290,7 @@ public class ParsedDocument {
             return endNode;
         }
         for (Node kid : MappedIterable.reversed(endNode.getChildren())) {
-            if (startsBefore(kid, replaceRange.end)) {
+            if (startsBefore(kid, replaceRange.getEnd())) {
                 return refineEndNode(replaceRange, kid);
             }
         }
@@ -295,19 +298,19 @@ public class ParsedDocument {
     }
 
     @SuppressWarnings("Duplicates")
-    private Position findFromTokens(DocumentRange replaceRange, Token start, Token end) {
+    private Position.Builder findFromTokens(DocumentRange replaceRange, Token start, Token end) {
         // while it would be nice to actually iterate backwards here,
         // we only maintain forward links, and it would be a hassle / O(n) operation
         // to setup backlinks.
-        final Position startPos = start.positionStart();
-        final Position endPos = end.positionStart();
+        final Position.Builder startPos = start.positionStart();
+        final Position.Builder endPos = end.positionStart();
         // both asserts are >= because both start and end are the earliest token-containing-our-range we could find.
-        assert replaceRange.start.greaterOrEqual(startPos);
-        assert replaceRange.end.greaterOrEqual(endPos);
+        assert LspTools.greaterOrEqual(replaceRange.getStart(), startPos);
+        assert LspTools.greaterOrEqual(replaceRange.getEnd(), endPos);
 
-        int startInd = findFromToken(replaceRange.start, start, true);
-        int endInd = findFromToken(replaceRange.end, end, false);
-        return new Position(startInd, endInd);
+        int startInd = findFromToken(replaceRange.getStart(), start, true);
+        int endInd = findFromToken(replaceRange.getEnd(), end, false);
+        return Position.newBuilder().setLine(startInd).setCharacter(endInd);
     }
 
     private int findFromToken(Position pos, Token tok, boolean start) {
@@ -321,18 +324,18 @@ public class ParsedDocument {
         while (tok.next != null) {
             if (tok.containsPosition(pos)) {
                 int ind = tok.tokenBegin;//start ? tok.tokenBegin : tok.startIndex;
-                final Position candidate = tok.positionStart();
+                final Position.Builder candidate = tok.positionStart();
                 final String[] lines = NEW_LINE_PATTERN.split(tok.image);
                 // multi-line tokens rare, but not illegal.
                 for (int linePos = 0; linePos < lines.length; linePos++) {
                     String line = lines[linePos];
-                    if (candidate.line == pos.line) {
+                    if (candidate.getLine() == pos.getLine()) {
                         // we're down to the same line.
-                        ind += pos.character - candidate.character;
+                        ind += pos.getCharacter() - candidate.getCharacter();
                         return ind;
                     } else {
-                        candidate.line++;
-                        candidate.character = 0;
+                        candidate.setLine(candidate.getLine() + 1);
+                        candidate.setCharacter(0);
                         // TODO: make monaco force \n only instead of \r\n, and blow up if client gives us \r\ns
                         //  so the +1 we are doing here for the line split is always valid. IDS-1517-26
                         ind += line.length() + 1;
@@ -346,58 +349,28 @@ public class ParsedDocument {
         throw new IllegalArgumentException("Token " + startTok + " does not contain position " + pos);
     }
 
-    public List<ChunkerAssign> findAssignment(CompletionRequest request, String name) {
-        if (assignments.isEmpty()) {
-            fillAssignments();
-        }
-        final List<ChunkerAssign> options = assignments.get(name), results = new ArrayList<>();
-        if (options != null) {
-            assert !options.isEmpty();
-            final ListIterator<ChunkerAssign> itr = options.listIterator(options.size());
-            while (itr.hasPrevious()) {
-                final ChunkerAssign test = itr.previous();
-                if (test.getStartIndex() <= request.getOffset()) {
-                    results.add(test);
-                }
-            }
-            return results;
-        }
-        return Collections.emptyList();
-    }
-
-    private void fillAssignments() {
-        doc.jjtAccept(new ChunkerDefaultVisitor() {
-            @Override
-            public Object visitChunkerAssign(ChunkerAssign node, Object data) {
-                assignments.computeIfAbsent(node.getName(), n->new ArrayList<>()).add(node);
-                return super.visitChunkerAssign(node, data);
-            }
-
-            @Override
-            public Object visitChunkerTypedAssign(ChunkerTypedAssign node, Object data) {
-                assignments.computeIfAbsent(node.getName(), n->new ArrayList<>()).add(node);
-                return super.visitChunkerTypedAssign(node, data);
-            }
-        }, null);
-    }
-
-    public void extendEnd(CompletionItem item, Position requested, Node node) {
-        Token tok = node.findToken(item.textEdit.range.end);
-        while (item.textEdit.range.end.lessThan(requested)) {
+    public void extendEnd(CompletionItem.Builder item, Position requested, Node node) {
+        Token tok = node.findToken(item.getTextEditBuilder().getRangeBuilder().getEndBuilder());
+        while (LspTools.lessThan(item.getTextEdit().getRange().getEnd(), requested)) {
             tok = extendEnd(tok, requested, item);
             if (tok == null) {
-                item.textEdit.range.end = requested.plus(0, 1);
+                item.getTextEditBuilder().getRangeBuilder()
+                    .setEnd(LspTools.plus(requested, 0, 1));
                 break;
             }
         }
     }
 
-    private Token extendEnd(Token tok, Position requested, CompletionItem edit) {
+    private Token extendEnd(Token tok, Position requested, CompletionItem.Builder edit) {
         if (tok.beginLine == tok.endLine) {
             // most common case (almost everything)
-            int moved = edit.textEdit.range.end.extend(tok.positionEnd());
+            final TextEdit.Builder textEdit = edit.getTextEditBuilder();
+            int moved = LspTools.extend(textEdit.getRangeBuilder().getEndBuilder(), tok.positionEnd());
             String txt = tok.image;
-            edit.textEdit.text += txt.substring(txt.length() - moved);
+            textEdit.setText(textEdit.getText() +
+                txt.substring(txt.length() - moved)
+            );
+            edit.setTextEdit(textEdit);
             return tok.next;
         } else {
             // ick.  multi-line tokens are the devil.
@@ -407,38 +380,8 @@ public class ParsedDocument {
         }
     }
 
-    public void extendStart(CompletionItem item, Position requested, Node node) {
-        throw new UnsupportedOperationException("No extendStart support yet");
-    }
-
-    public TextEdit sliceBefore(CompletionItem item, Position requested, Node node) {
-        final TextEdit edit = new TextEdit();
-        final DocumentRange range = item.textEdit.range;
-        Token tok = node.findToken(range.start);
-        Position start = tok.positionStart();
-        if (start.line != requested.line || range.start.line != requested.line) {
-            // not going to worry about this highly unlikely and complex corner case just yet.
-            return null;
-        }
-        // advance the position to the start of the replacement range.
-        int imageInd = 0;
-        while (start.lessThan(range.start)) {
-            start.character++;
-            imageInd++;
-        }
-        edit.range = new DocumentRange(start.copy(), requested);
-        StringBuilder b = new StringBuilder();
-        // now, from here, gobble up the token contents as we advance the position to the requested index.
-        while (start.lessThan(requested)) {
-            if (tok.positionEnd(false).lessOrEqual(start)) {
-                tok = tok.next;
-                imageInd = 0;
-                start = tok.positionStart();
-            }
-            start.character++;
-            b.append(tok.image.charAt(imageInd++));
-        }
-        edit.text = b.toString();
-        return edit;
+    @Override
+    public Map<String, List<ChunkerAssign>> getAssignments() {
+        return assignments;
     }
 }

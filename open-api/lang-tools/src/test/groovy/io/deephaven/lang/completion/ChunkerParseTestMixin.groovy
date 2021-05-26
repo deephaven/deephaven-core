@@ -5,8 +5,9 @@ import groovy.transform.CompileStatic
 import io.deephaven.lang.generated.Node
 import io.deephaven.lang.generated.Token
 import io.deephaven.lang.parse.ParsedDocument
-import io.deephaven.web.shared.ide.lsp.CompletionItem
-import io.deephaven.web.shared.ide.lsp.Position
+import io.deephaven.proto.backplane.script.grpc.CompletionItem
+import io.deephaven.proto.backplane.script.grpc.CompletionItemOrBuilder
+import io.deephaven.proto.backplane.script.grpc.Position
 import spock.lang.Specification
 
 /**
@@ -33,8 +34,8 @@ trait ChunkerParseTestMixin {
         }
     }
 
-    String doCompletion(String command, CompletionItem fragment) {
-        Position pos = doc.findEditRange(fragment.textEdit.range)
+    String doCompletion(String command, CompletionItemOrBuilder fragment) {
+        Position.Builder pos = doc.findEditRange(fragment.textEdit.range)
 
         return new StringBuilder(command)
                 .replace(pos.line, pos.character, fragment.textEdit.text)

@@ -2,6 +2,7 @@ package io.deephaven.lang.completion;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.util.VariableProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;

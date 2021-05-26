@@ -12,6 +12,8 @@ apply from: "$rootDir/gradle/web-common.gradle"
 dependencies {
     compile project(':open-api-shared-ide')
     compile project(':open-api-shared-fu')
+    compile project(':open-api-lang-api')
+    compile project(':proto:proto-backplane-grpc')
 }
 Classpaths.inheritJsInterop project, 'jsinterop-annotations'
 Classpaths.inheritJavaParser project

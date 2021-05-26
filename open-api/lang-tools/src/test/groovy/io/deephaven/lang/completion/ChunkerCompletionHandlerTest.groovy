@@ -2,11 +2,14 @@ package io.deephaven.lang.completion
 
 import io.deephaven.db.tables.ColumnDefinition
 import io.deephaven.db.tables.TableDefinition
+import io.deephaven.db.util.VariableProvider
 import io.deephaven.io.logger.Logger
+import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
+import io.deephaven.proto.backplane.script.grpc.CompletionItem
+import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier
 import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.db.tables.Table
 import io.deephaven.lang.parse.CompletionParser
-import io.deephaven.web.shared.ide.lsp.*
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -22,9 +25,13 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
 
     /** Makes a simple text document change that just inserts text at the given position */
     private static TextDocumentContentChangeEvent makeChange(int line, int character, String text) {
-        return new TextDocumentContentChangeEvent(
-                new DocumentRange(new Position(line, character), new Position(line, character)), 0, text
-        )
+        TextDocumentContentChangeEvent.Builder result
+        result = TextDocumentContentChangeEvent.newBuilder()
+        result.rangeBuilder.startBuilder.setLine(line).setCharacter(character)
+        result.rangeBuilder.endBuilder.setLine(line).setCharacter(character)
+        result.setText(text)
+        result.setRangeLength(0)
+        return result.build()
     }
 
     @Override
@@ -45,7 +52,7 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
         VariableProvider vars = Mock(VariableProvider){
             _ * getVariableType('t') >> Table
             _ * getVariableType(_) >> null
-            _ * getVariable(_) >> null
+            _ * getVariable(_, _) >> null
             _ * getVariableNames() >> []
             _ * getTableDefinition('emptyTable') >> new TableDefinition(new ColumnDefinition[0])
             0 * _
@@ -82,7 +89,7 @@ u = t.'''
         VariableProvider vars = Mock(VariableProvider){
             _ * getVariableType('t') >> Table
             _ * getVariableType(_) >> null
-            _ * getVariable(_) >> null
+            _ * getVariable(_,_) >> null
             _ * getVariableNames() >> []
             0 * _
         }
@@ -118,7 +125,7 @@ u = t.'''
         String src = "t ="
         doc = p.parse(src)
 
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        ProcessEnvironment.getDefaultLog(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
             _ * getVariableNames() >> ['emptyTable']
             0 * _
@@ -142,8 +149,8 @@ b = 2
 c = 3
 """
         String src2 = "t = "
-        p.update(new VersionedTextDocumentIdentifier(uri, 0), [ makeChange(0, 0, src1) ] as TextDocumentContentChangeEvent[], log)
-        p.update(new VersionedTextDocumentIdentifier(uri, 1), [ makeChange(3, 0, src2) ] as TextDocumentContentChangeEvent[], log)
+        p.update(uri, "0", [ makeChange(0, 0, src1) ], log)
+        p.update(uri, "1", [ makeChange(3, 0, src2) ], log)
         doc = p.finish(uri)
 
         VariableProvider variables = Mock(VariableProvider) {

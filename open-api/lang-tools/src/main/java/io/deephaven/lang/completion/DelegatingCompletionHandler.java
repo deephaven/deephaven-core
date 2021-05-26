@@ -1,7 +1,12 @@
 package io.deephaven.lang.completion;
 
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.parse.ParsedDocument;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.Position;
+
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -22,8 +27,9 @@ import java.util.concurrent.TimeoutException;
  * We will delete it after merging, to have it in git history,
  * in case we decide to revive it later.
  */
-public class DelegatingCompletionHandler implements CompletionHandler {
+public class DelegatingCompletionHandler implements CompletionHandler<ParsedDocument> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DelegatingCompletionHandler.class);
     private final CompletionHandler[] handlers;
 
     public DelegatingCompletionHandler(CompletionHandler ... handlers) {
@@ -31,37 +37,31 @@ public class DelegatingCompletionHandler implements CompletionHandler {
     }
 
     @Override
-    public CompletableFuture<? extends Collection<CompletionFragment>> complete(String command, int offset) {
-        // this is ...kind of silly... we should just be pushing results as they come in.
-        // TODO: a new api that supports push, with the future-based api adding blocking around said push messages.  IDS-1517-25
-        CompletableFuture[] futures = new CompletableFuture[handlers.length];
-        Collection<CompletionFragment>[] results = new Collection[handlers.length];
+    public Collection<CompletionItem.Builder> runCompletion(final ParsedDocument doc, final Position pos, final int offset) {
+        CompletableFuture<Collection<CompletionItem.Builder>>[] futures = new CompletableFuture[handlers.length];
         for (int i = 0; i < handlers.length; i++) {
-            final int slot = i;
             final CompletionHandler handler = handlers[i];
-            final CompletableFuture<? extends Collection<CompletionFragment>> started = handler.complete(command, offset);
-            futures[i] = CompletableFuture.supplyAsync(()->{
-                try {
-                    return results[slot] = started.get(5, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // stay interrupted
-                } catch (ExecutionException e) {
-                    // log this
-                    throw new RuntimeException("Failure in completion handler code for " + handler, e.getCause());
-                } catch (TimeoutException e) {
-                    // log this
-                    throw new RuntimeException("Timeout for completion handler code for " + handler, e.getCause());
-                }
-                return results[slot] = Collections.emptyList();
-            });
+            futures[i] = CompletableFuture.supplyAsync(()-> handler.runCompletion(doc, pos, offset));
         }
-        return CompletableFuture.allOf(futures).thenApply(ignored->{
-            // coalesce results.  This _really_ should, ideally, just be just pushed to clients...
-            Set<CompletionFragment> all = new LinkedHashSet<>();
-            for (Collection<CompletionFragment> result : results) {
-                all.addAll(result);
+        Set<CompletionItem.Builder> all = new LinkedHashSet<>();
+        for (CompletableFuture<Collection<CompletionItem.Builder>> future : futures) {
+            try {
+                all.addAll(future.get(5, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (ExecutionException e) {
+                LOGGER.trace()
+                        .append("Unknown error running autocomplete. ")
+                        .append(e.getCause())
+                        .endl();
+            } catch (TimeoutException e) {
+                // yikes, more than 5 seconds? no human alive wants to wait 5 seconds to get autocomplete popup!
+                continue;
             }
-            return all;
-        });
+        }
+
+        return all;
     }
+
 }
