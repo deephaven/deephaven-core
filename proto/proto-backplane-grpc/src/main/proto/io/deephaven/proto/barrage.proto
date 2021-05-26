@@ -84,12 +84,12 @@ message SubscriptionRequest {
    * cannot share intermediary state with other subscriptions and greatly increases the footprint of this subscription.
    * The default is 1000ms.
    */
-  sint64 updateIntervalMs = 20 [jstype=JS_STRING];
+  sint64 update_interval_ms = 20 [jstype=JS_STRING];
 
   /*
    * Export this subscription so that it can be referenced for out of band updates.
    */
-  Ticket exportId = 21;
+  Ticket export_id = 21;
 
   /*
    * Subscription request processing may incur some for of coalescing. Additionally, out of band updates may
@@ -105,7 +105,7 @@ message SubscriptionRequest {
    * most of the time as we don't have to look into an additional parallel data structure to compare against null.
    * See engine documentation on "Deephaven Nulls" for more information.
    */
-  bool useDeephavenNulls = 23;
+  bool use_deephaven_nulls = 23;
 }
 
 /*
@@ -115,5 +115,5 @@ message OutOfBandSubscriptionResponse {
   /*
    * Returns true if the subscription was found.
    */
-  bool subscriptionFound = 1;
+  bool subscription_found = 1;
 }
