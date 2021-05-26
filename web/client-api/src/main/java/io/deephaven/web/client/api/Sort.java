@@ -68,8 +68,8 @@ public class Sort {
             throw new IllegalStateException("Cannot perform a sort without a direction, please call desc() or asc()");
         }
         SortDescriptor descriptor = new SortDescriptor();
-        descriptor.setIsabsolute(isAbs());
-        descriptor.setColumnname(getColumn().getName());
+        descriptor.setIsAbsolute(isAbs());
+        descriptor.setColumnName(getColumn().getName());
         switch (direction) {
             case ASCENDING:
                 descriptor.setDirection(SortDescriptor.SortDirection.getASCENDING());
