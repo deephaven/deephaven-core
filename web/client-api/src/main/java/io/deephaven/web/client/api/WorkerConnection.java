@@ -480,9 +480,9 @@ public class WorkerConnection {
                     JsLog.debug("performing fetch for ", tableName, " / ", cts, " (" + LazyString.of(cts::getHandle), ",", script, ")");
                     assert script != null : "no global scope support at this time";
                     FetchTableRequest fetch = new FetchTableRequest();
-                    fetch.setConsoleid(script);
-                    fetch.setTablename(tableName);
-                    fetch.setTableid(cts.getHandle().makeTicket());
+                    fetch.setConsoleId(script);
+                    fetch.setTableName(tableName);
+                    fetch.setTableId(cts.getHandle().makeTicket());
                     consoleServiceClient.fetchTable(fetch, metadata, c::apply);
                 }, "fetch table " + tableName
             ).then(cts -> {
@@ -668,8 +668,8 @@ public class WorkerConnection {
             }
             JsLog.debug("Merging tables: ", LazyString.of(cts.getHandle()), " for ", cts.getHandle().isResolved(), cts.getResolution());
             MergeTablesRequest requestMessage = new MergeTablesRequest();
-            requestMessage.setResultid(cts.getHandle().makeTicket());
-            requestMessage.setSourceidsList(tableHandles);
+            requestMessage.setResultId(cts.getHandle().makeTicket());
+            requestMessage.setSourceIdsList(tableHandles);
             tableServiceClient.mergeTables(requestMessage, metadata, c::apply);
         }, "merging tables").then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
@@ -873,13 +873,13 @@ public class WorkerConnection {
                     request.setViewport(serializeRanges(vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
                 }
 //                request.setUpdateintervalms();//TODO core#188 support this, along with other subscription improvements
-                request.setUsedeephavennulls(true);
+                request.setUseDeephavenNulls(true);
 
                 request.setTicket(state.getHandle().makeTicket());
 
                 final Ticket handle = new Ticket();
                 handle.setId(config.newTicket());
-                request.setExportid(handle);
+                request.setExportId(handle);
                 ResponseStreamWrapper<BarrageData> stream = ResponseStreamWrapper.of(barrageApiClient.doSubscribeNoClientStream(request, metadata));
                 stream.onData(data -> {
                     ByteBuffer body = typedArrayToLittleEndianByteBuffer(data.getDataBody_asU8());
@@ -948,7 +948,7 @@ public class WorkerConnection {
             logStream = ResponseStreamWrapper.of(consoleServiceClient.subscribeToLogs(new LogSubscriptionRequest(), metadata));
             logStream.onData(data -> {
                 LogItem logItem = new LogItem();
-                logItem.setLogLevel(data.getLoglevel());
+                logItem.setLogLevel(data.getLogLevel());
                 logItem.setMessage(data.getMessage());
                 logItem.setMicros(data.getMicros());
 
@@ -1033,10 +1033,10 @@ public class WorkerConnection {
         }
         return whenServerReady("create emptyTable").then(server -> newState(info, (c, cts, metadata) -> {
             EmptyTableRequest emptyTableRequest = new EmptyTableRequest();
-            emptyTableRequest.setResultid(cts.getHandle().makeTicket());
+            emptyTableRequest.setResultId(cts.getHandle().makeTicket());
             emptyTableRequest.setSize(size + "");
-            emptyTableRequest.setColumnnamesList(columnNames);
-            emptyTableRequest.setColumntypesList(columnTypes);
+            emptyTableRequest.setColumnNamesList(columnNames);
+            emptyTableRequest.setColumnTypesList(columnTypes);
             tableServiceClient.emptyTable(emptyTableRequest, metadata, c::apply);
         }, "emptyTable(" + size + ", " + Arrays.toString(columnNames) + "," + Arrays.toString(columnTypes) + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
@@ -1045,9 +1045,9 @@ public class WorkerConnection {
         final long startTimeNanos = startTime == null ? -1 : startTime.getWrapped();
         return whenServerReady("create timetable").then(server -> newState(info, (c, cts, metadata) -> {
             TimeTableRequest timeTableRequest = new TimeTableRequest();
-            timeTableRequest.setResultid(cts.getHandle().makeTicket());
-            timeTableRequest.setPeriodnanos(periodNanos + "");
-            timeTableRequest.setStarttimenanos(startTimeNanos + "");
+            timeTableRequest.setResultId(cts.getHandle().makeTicket());
+            timeTableRequest.setPeriodNanos(periodNanos + "");
+            timeTableRequest.setStartTimeNanos(startTimeNanos + "");
             tableServiceClient.timeTable(timeTableRequest, metadata, c::apply);
         }, "create timetable(" + periodNanos + ", " + startTime + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
     }

@@ -62,17 +62,17 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
 
         final FunctionalInterfaces.ThrowingSupplier<Table, RuntimeException> doJoin = () -> {
             switch(request.getJoinType()) {
-                case CrossJoin:
+                case CROSS_JOIN:
                     return lhs.join(rhs, columnsToMatch, columnsToAdd);
-                case NaturalJoin:
+                case NATURAL_JOIN:
                     return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
-                case AsOfJoin:
+                case AS_OF_JOIN:
                     return lhs.aj(rhs, columnsToMatch, columnsToAdd);
-                case ReverseAsOfJoin:
+                case REVERSE_AS_OF_JOIN:
                     return lhs.raj(rhs, columnsToMatch, columnsToAdd);
-                case ExactJoin:
+                case EXACT_JOIN:
                     return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
-                case LeftJoin:
+                case LEFT_JOIN:
                     return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
                 default:
                     throw new RuntimeException("Unsupported join type: " + request.getJoinType());

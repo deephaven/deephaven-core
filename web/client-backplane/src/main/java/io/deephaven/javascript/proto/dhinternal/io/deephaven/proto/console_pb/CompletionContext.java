@@ -21,16 +21,16 @@ public class CompletionContext {
     }
 
     @JsProperty
-    String getTriggercharacter();
+    String getTriggerCharacter();
 
     @JsProperty
-    double getTriggerkind();
+    double getTriggerKind();
 
     @JsProperty
-    void setTriggercharacter(String triggercharacter);
+    void setTriggerCharacter(String triggerCharacter);
 
     @JsProperty
-    void setTriggerkind(double triggerkind);
+    void setTriggerKind(double triggerKind);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -41,16 +41,16 @@ public class CompletionContext {
     }
 
     @JsProperty
-    String getTriggercharacter();
+    String getTriggerCharacter();
 
     @JsProperty
-    double getTriggerkind();
+    double getTriggerKind();
 
     @JsProperty
-    void setTriggercharacter(String triggercharacter);
+    void setTriggerCharacter(String triggerCharacter);
 
     @JsProperty
-    void setTriggerkind(double triggerkind);
+    void setTriggerKind(double triggerKind);
   }
 
   public static native CompletionContext deserializeBinary(Uint8Array bytes);
@@ -63,15 +63,15 @@ public class CompletionContext {
   public static native CompletionContext.ToObjectReturnType toObject(
       boolean includeInstance, CompletionContext msg);
 
-  public native String getTriggercharacter();
+  public native String getTriggerCharacter();
 
-  public native double getTriggerkind();
+  public native double getTriggerKind();
 
   public native Uint8Array serializeBinary();
 
-  public native void setTriggercharacter(String value);
+  public native void setTriggerCharacter(String value);
 
-  public native void setTriggerkind(double value);
+  public native void setTriggerKind(double value);
 
   public native CompletionContext.ToObjectReturnType0 toObject();
 

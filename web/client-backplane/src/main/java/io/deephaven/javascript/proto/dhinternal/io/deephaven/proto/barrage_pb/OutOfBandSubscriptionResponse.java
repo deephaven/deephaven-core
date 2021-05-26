@@ -21,10 +21,10 @@ public class OutOfBandSubscriptionResponse {
     }
 
     @JsProperty
-    boolean isSubscriptionfound();
+    boolean isSubscriptionFound();
 
     @JsProperty
-    void setSubscriptionfound(boolean subscriptionfound);
+    void setSubscriptionFound(boolean subscriptionFound);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -35,10 +35,10 @@ public class OutOfBandSubscriptionResponse {
     }
 
     @JsProperty
-    boolean isSubscriptionfound();
+    boolean isSubscriptionFound();
 
     @JsProperty
-    void setSubscriptionfound(boolean subscriptionfound);
+    void setSubscriptionFound(boolean subscriptionFound);
   }
 
   public static native OutOfBandSubscriptionResponse deserializeBinary(Uint8Array bytes);
@@ -52,11 +52,11 @@ public class OutOfBandSubscriptionResponse {
   public static native OutOfBandSubscriptionResponse.ToObjectReturnType toObject(
       boolean includeInstance, OutOfBandSubscriptionResponse msg);
 
-  public native boolean getSubscriptionfound();
+  public native boolean getSubscriptionFound();
 
   public native Uint8Array serializeBinary();
 
-  public native void setSubscriptionfound(boolean value);
+  public native void setSubscriptionFound(boolean value);
 
   public native OutOfBandSubscriptionResponse.ToObjectReturnType0 toObject();
 

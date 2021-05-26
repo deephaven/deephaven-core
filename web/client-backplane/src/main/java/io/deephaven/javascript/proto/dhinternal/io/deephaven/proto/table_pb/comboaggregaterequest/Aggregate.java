@@ -22,10 +22,10 @@ public class Aggregate {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    JsArray<String> getMatchpairsList();
+    JsArray<String> getMatchPairsList();
 
     @JsProperty
     double getPercentile();
@@ -34,20 +34,20 @@ public class Aggregate {
     double getType();
 
     @JsProperty
-    boolean isAvgmedian();
+    boolean isAvgMedian();
 
     @JsProperty
-    void setAvgmedian(boolean avgmedian);
+    void setAvgMedian(boolean avgMedian);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setMatchpairsList(JsArray<String> matchpairsList);
+    void setMatchPairsList(JsArray<String> matchPairsList);
 
     @JsOverlay
-    default void setMatchpairsList(String[] matchpairsList) {
-      setMatchpairsList(Js.<JsArray<String>>uncheckedCast(matchpairsList));
+    default void setMatchPairsList(String[] matchPairsList) {
+      setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
     }
 
     @JsProperty
@@ -65,10 +65,10 @@ public class Aggregate {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    JsArray<String> getMatchpairsList();
+    JsArray<String> getMatchPairsList();
 
     @JsProperty
     double getPercentile();
@@ -77,20 +77,20 @@ public class Aggregate {
     double getType();
 
     @JsProperty
-    boolean isAvgmedian();
+    boolean isAvgMedian();
 
     @JsProperty
-    void setAvgmedian(boolean avgmedian);
+    void setAvgMedian(boolean avgMedian);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setMatchpairsList(JsArray<String> matchpairsList);
+    void setMatchPairsList(JsArray<String> matchPairsList);
 
     @JsOverlay
-    default void setMatchpairsList(String[] matchpairsList) {
-      setMatchpairsList(Js.<JsArray<String>>uncheckedCast(matchpairsList));
+    default void setMatchPairsList(String[] matchPairsList) {
+      setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
     }
 
     @JsProperty
@@ -109,17 +109,17 @@ public class Aggregate {
   public static native Aggregate.ToObjectReturnType toObject(
       boolean includeInstance, Aggregate msg);
 
-  public native String addMatchpairs(String value, double index);
+  public native String addMatchPairs(String value, double index);
 
-  public native String addMatchpairs(String value);
+  public native String addMatchPairs(String value);
 
-  public native void clearMatchpairsList();
+  public native void clearMatchPairsList();
 
-  public native boolean getAvgmedian();
+  public native boolean getAvgMedian();
 
-  public native String getColumnname();
+  public native String getColumnName();
 
-  public native JsArray<String> getMatchpairsList();
+  public native JsArray<String> getMatchPairsList();
 
   public native double getPercentile();
 
@@ -127,15 +127,15 @@ public class Aggregate {
 
   public native Uint8Array serializeBinary();
 
-  public native void setAvgmedian(boolean value);
+  public native void setAvgMedian(boolean value);
 
-  public native void setColumnname(String value);
+  public native void setColumnName(String value);
 
-  public native void setMatchpairsList(JsArray<String> value);
+  public native void setMatchPairsList(JsArray<String> value);
 
   @JsOverlay
-  public final void setMatchpairsList(String[] value) {
-    setMatchpairsList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setMatchPairsList(String[] value) {
+    setMatchPairsList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
   public native void setPercentile(double value);

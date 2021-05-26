@@ -243,7 +243,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         @Override
         public void record(LogBufferRecord record) {
             // only pass levels the client wants
-            if (request.getLevelCount() != 0 && !request.getLevelList().contains(record.getLevel().getName())) {
+            if (request.getLevelsCount() != 0 && !request.getLevelsList().contains(record.getLevel().getName())) {
                 return;
             }
 

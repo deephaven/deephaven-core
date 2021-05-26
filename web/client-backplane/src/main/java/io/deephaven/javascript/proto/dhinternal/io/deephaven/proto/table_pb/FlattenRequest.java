@@ -17,11 +17,11 @@ public class FlattenRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static FlattenRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(Object o) {
+        static FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -47,46 +47,46 @@ public class FlattenRequest {
       }
 
       @JsOverlay
-      static FlattenRequest.ToObjectReturnType.ResultidFieldType create() {
+      static FlattenRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      FlattenRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(FlattenRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<FlattenRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<FlattenRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static FlattenRequest.ToObjectReturnType.SourceidFieldType create() {
+      static FlattenRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -98,26 +98,26 @@ public class FlattenRequest {
     }
 
     @JsProperty
-    FlattenRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    FlattenRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    FlattenRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    FlattenRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setResultid(FlattenRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(FlattenRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(FlattenRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(FlattenRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static FlattenRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(Object o) {
+        static FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -143,46 +143,46 @@ public class FlattenRequest {
       }
 
       @JsOverlay
-      static FlattenRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static FlattenRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      FlattenRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(FlattenRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<FlattenRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<FlattenRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static FlattenRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static FlattenRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -194,16 +194,16 @@ public class FlattenRequest {
     }
 
     @JsProperty
-    FlattenRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    FlattenRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    FlattenRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    FlattenRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setResultid(FlattenRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(FlattenRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(FlattenRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(FlattenRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native FlattenRequest deserializeBinary(Uint8Array bytes);
@@ -216,27 +216,27 @@ public class FlattenRequest {
   public static native FlattenRequest.ToObjectReturnType toObject(
       boolean includeInstance, FlattenRequest msg);
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native FlattenRequest.ToObjectReturnType0 toObject();
 

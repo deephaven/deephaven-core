@@ -75,12 +75,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void emptyTable(final EmptyTableRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EMPTYTABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EMPTY_TABLE, request, responseObserver);
     }
 
     @Override
     public void timeTable(final TimeTableRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TIMETABLE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TIME_TABLE, request, responseObserver);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void selectDistinct(final SelectDistinctRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECTDISTINCT, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT, request, responseObserver);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void lazyUpdate(final SelectOrUpdateRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LAZYUPDATE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LAZY_UPDATE, request, responseObserver);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void updateView(final SelectOrUpdateRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATEVIEW, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_VIEW, request, responseObserver);
     }
 
     @Override
@@ -120,12 +120,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void headBy(final HeadOrTailByRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEADBY, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD_BY, request, responseObserver);
     }
 
     @Override
     public void tailBy(final HeadOrTailByRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAILBY, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL_BY, request, responseObserver);
     }
 
     @Override
@@ -145,7 +145,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void comboAggregate(final ComboAggregateRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COMBOAGGREGATE, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE, request, responseObserver);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void dropColumns(final DropColumnsRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROPCOLUMNS, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROP_COLUMNS, request, responseObserver);
     }
 
     @Override
@@ -170,7 +170,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     @Override
     public void unstructuredFilter(final UnstructuredFilterTableRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNSTRUCTUREDFILTER, request, responseObserver);
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER, request, responseObserver);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState session = sessionService.getCurrentSession();
 
             // step 1: initialize exports
-            final List<BatchExportBuilder> exportBuilders = request.getOpList().stream()
+            final List<BatchExportBuilder> exportBuilders = request.getOpsList().stream()
                     .map(op -> new BatchExportBuilder(session, op))
                     .collect(Collectors.toList());
 
@@ -203,7 +203,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 switch (ref.getRefCase()) {
                     case TICKET:
                         return session.getExport(ref.getTicket());
-                    case BATCHOFFSET:
+                    case BATCH_OFFSET:
                         final int offset = ref.getBatchOffset();
                         if (offset < 0 || offset >= exportBuilders.size()) {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
