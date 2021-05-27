@@ -39,10 +39,6 @@ jobs:
         uses: docker/setup-buildx-action@v1
         with:
           install: true
-
-          # By default, the driver is "docker-container".
-          # We want to use the "docker" driver, so that the tagged images from one step can be used
-          # by subsequent steps.
           driver: docker
 
       - name: Login to ghcr.io
@@ -52,20 +48,6 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_PAT }}
-
-# Docker cache doesn't seem to be working. Not sure why.
-# During the export cache step for Docker build, we are getting
-# level=error msg="(*service).Write failed" error="rpc error: code = Canceled desc = context canceled" expected="sha256:e1cf0ed900810d12941c8478ee6c6f8d159db5bb6c3afeeb7863c798f29cc37a" ref="sha256:e1cf0ed900810d12941c8478ee6c6f8d159db5bb6c3afeeb7863c798f29cc37a" total=2214
-# And during the start for next Docker build, we are getting
-# level=warning msg="local cache import at /tmp/.buildx-cache not found due to err: could not read /tmp/.buildx-cache/index.json: open /tmp/.buildx-cache/index.json: no such file or directory"
-#      - name: Cache Docker layers
-#        uses: actions/cache@v2
-#        with:
-#          path: /tmp/.buildx-cache
-#          key: ${{ runner.os }}-buildx-grpc-api-${{ github.sha }}
-#          restore-keys: |
-#            ${{ runner.os }}-buildx-grpc-api-
-#            ${{ runner.os }}-buildx-
 
       - name: Setup gradle properties
         run: |
@@ -90,12 +72,6 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-api/server/docker/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
-
-      # Workaround for https://github.com/docker/build-push-action/issues/252
-#      - name: Move cache
-#        run:
-#          rm -rf /tmp/.buildx-cache
-#          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   grpc-proxy:
     runs-on: ubuntu-20.04
@@ -245,10 +221,6 @@ jobs:
         uses: docker/setup-buildx-action@v1
         with:
           install: true
-
-          # By default, the driver is "docker-container".
-          # We want to use the "docker" driver, so that the tagged images from one step can be used
-          # by subsequent steps.
           driver: docker
 
       - name: Login to ghcr.io
@@ -279,3 +251,13 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: ./web/client-ide/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
+
+
+### Notes about `driver: docker`
+###
+### By default, the driver used is `docker-container`. This does not allow the Dockerfile to
+### reference images that were built in earlier steps. Since our grpc-api and web Dockerfiles
+### reference earlier images (built during the gradle step), we need to change the driver to
+### `docker`.
+###
+### See https://github.com/docker/buildx/blob/master/docs/reference/buildx_create.md#driver
