@@ -21,13 +21,14 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/deephaven/grpc-api
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
             org.opencontainers.image.title=deephaven/grpc-api
             org.opencontainers.image.description=Deephaven grpc-api
 
@@ -108,12 +109,13 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/deephaven/grpc-proxy
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
       - name: Set up Docker Buildx
         id: buildx
@@ -164,13 +166,14 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/deephaven/envoy
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
             org.opencontainers.image.title=deephaven/envoy
             org.opencontainers.image.description=Deephaven Envoy
 
@@ -217,13 +220,14 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/deephaven/web
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
             org.opencontainers.image.title=deephaven/web
             org.opencontainers.image.description=Deephaven web
  
