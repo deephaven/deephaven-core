@@ -119,7 +119,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
         final Table fromDisk = TableManagementTools.readTable(dest);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
@@ -127,7 +127,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
         final Table fromDisk = TableManagementTools.readTable(dest);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void groupedOneColumnTable(String tableName, int size) {
@@ -136,7 +136,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
         final Table fromDisk = TableManagementTools.readTable(dest);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void testEmptyArrayStore(String tableName, int size) {
@@ -144,7 +144,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
         final Table fromDisk = TableManagementTools.readTable(dest);
-        TstUtils.assertTableEquals(fromDisk, tableToSave);
+        TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     @Test

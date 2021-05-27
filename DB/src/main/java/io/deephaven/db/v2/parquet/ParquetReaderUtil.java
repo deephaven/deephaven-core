@@ -106,7 +106,41 @@ public class ParquetReaderUtil {
 
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
-        void accept(String columnName, Class<?> columnDbType, boolean isGroupingColumn, String codecName, String codecArgs);
+        void accept(String name, Class<?> dbType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs);
+    }
+
+    private static Class<?> loadClassMaybeClassLoader(final String colName, final String desc, final String className, final ClassLoader classLoader) {
+        try {
+            if (classLoader != null) {
+                return Class.forName(className, true, classLoader);
+            }
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Column " + colName + " with " + desc + " that can't be found in classloader.");
+        }
+    }
+
+    private static Class<?> classForPrimitiveNameOrNull(final String name) {
+        switch (name) {
+            case "byte":
+                return byte.class;
+            case "short":
+                return short.class;
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return double.class;
+            case "boolean":
+                return boolean.class;
+            case "char":
+                return char.class;
+            default:
+                return null;
+        }
     }
 
     public static void readParquetSchema(
@@ -257,58 +291,79 @@ public class ParquetReaderUtil {
             final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
             final String colName = schema.getFieldName(c++);
             final boolean isGroupinng = groupingCols.contains(colName);
-            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + column.getPath()[0]);
-            final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + column.getPath()[0]);
+            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + colName);
+            final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
+            String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + colName);
+            if (codecType != null && !codecType.isEmpty()) {
+                final Class<?> dbType = loadClassMaybeClassLoader(colName, "codec type", codecType, classLoader);
+                final String codecComponentType = keyValueMetaData.get(ParquetTableWriter._CODEC_COMPONENT_TYPE_PREFIX_ + colName);
+                final Class<?> componentType;
+                if (codecComponentType == null || codecComponentType.isEmpty()) {
+                    componentType = null;
+                } else {
+                    final Class<?> maybePrimitiveType = classForPrimitiveNameOrNull(codecComponentType);
+                    componentType = (maybePrimitiveType != null)
+                        ? maybePrimitiveType
+                        : loadClassMaybeClassLoader(colName, "codec component type", codecComponentType, classLoader)
+                        ;
+                }
+                colDefConsumer.accept(colName, dbType, componentType, isGroupinng, codecName, codecArgs);
+                continue;
+            }
+            final boolean isArray = column.getMaxRepetitionLevel() > 0;
             if (logicalTypeAnnotation == null) {
                 switch (column.getPrimitiveType().getPrimitiveTypeName()) {
                     case BOOLEAN:
-                        colDefConsumer.accept(colName, Boolean.class, isGroupinng, codecName, codecArgs);
+                        if (isArray) {
+                            colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGroupinng, codecName, codecArgs);
+                        } else {
+                            colDefConsumer.accept(colName, Boolean.class, null, isGroupinng, codecName, codecArgs);
+                        }
                         break;
                     case INT32:
-                        colDefConsumer.accept(colName, int.class, isGroupinng, codecName, codecArgs);
+                        if (isArray) {
+                            colDefConsumer.accept(colName, int[].class, int.class, isGroupinng, codecName, codecArgs);
+                        } else {
+                            colDefConsumer.accept(colName, int.class, null, isGroupinng, codecName, codecArgs);
+                        }
                         break;
                     case INT64:
-                        colDefConsumer.accept(colName, long.class, isGroupinng, codecName, codecArgs);
+                        if (isArray) {
+                            colDefConsumer.accept(colName, long[].class, long.class, isGroupinng, codecName, codecArgs);
+                        } else {
+                            colDefConsumer.accept(colName, long.class, null, isGroupinng, codecName, codecArgs);
+                        }
                         break;
                     case DOUBLE:
-                        colDefConsumer.accept(colName, double.class, isGroupinng, codecName, codecArgs);
+                        if (isArray) {
+                            colDefConsumer.accept(colName, double[].class, double.class, isGroupinng, codecName, codecArgs);
+                        } else {
+                            colDefConsumer.accept(colName, double.class, null, isGroupinng, codecName, codecArgs);
+                        }
                         break;
                     case FLOAT:
-                        colDefConsumer.accept(colName, float.class, isGroupinng, codecName, codecArgs);
+                        if (isArray) {
+                            colDefConsumer.accept(colName, float[].class, float.class, isGroupinng, codecName, codecArgs);
+                        } else {
+                            colDefConsumer.accept(colName, float.class, null, isGroupinng, codecName, codecArgs);
+                        }
                         break;
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
-                        final String specialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + column.getPath()[0]);
+                        final String specialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + colName);
                         final Supplier<String> exceptionTextSupplier = ()
                                 -> "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
                                     + " for column " + Arrays.toString(column.getPath());
                         final Class<?> dbType;
                         if (specialType != null) {
                             if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                                dbType = StringSet.class;
+                                colDefConsumer.accept(colName, StringSet.class, null, isGroupinng, codecName, codecArgs);
                             } else {
                                 throw new RuntimeException(exceptionTextSupplier.get()
                                         + " with unknown special type " + specialType);
                             }
-                        } else {
-                            final String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + column.getPath()[0]);
-                            if (codecType != null) {
-                                try {
-                                    dbType = (classLoader == null)
-                                            ? Class.forName(codecType)
-                                            : Class.forName(codecType, true, classLoader)
-                                    ;
-                                } catch (ClassNotFoundException e) {
-                                    throw new RuntimeException(exceptionTextSupplier.get()
-                                            + " with codec type " + codecType + " that can't be found in current classloader.");
-                                }
-                            } else {
-                                throw new RuntimeException(exceptionTextSupplier.get()
-                                        + " with no codec type or special type defined.");
-                            }
                         }
-                        colDefConsumer.accept(colName, dbType, isGroupinng, codecName, codecArgs);
-                        break;
+                        throw new RuntimeException(exceptionTextSupplier.get() + " with no special type or encoding metadata.");
                     default:
                         throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
                 }
@@ -321,7 +376,14 @@ public class ParquetReaderUtil {
                                 ? (logicalTypeString + " not supported")
                                 : "no mappeable logical type annotation found."));
                 }
-                colDefConsumer.accept(colName, optionalClass.get(), isGroupinng, codecName, codecArgs);
+                if (isArray) {
+                    final Class<?> componentType = optionalClass.get();
+                    // On Java 12, replace by:  dbType = componentType.arrayType();
+                    final Class<?> dbType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
+                    colDefConsumer.accept(colName, dbType, componentType, isGroupinng, codecName, codecArgs);
+                } else {
+                    colDefConsumer.accept(colName, optionalClass.get(), null, isGroupinng, codecName, codecArgs);
+                }
             }
         }
     }

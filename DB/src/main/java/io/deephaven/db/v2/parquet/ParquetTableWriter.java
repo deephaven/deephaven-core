@@ -61,6 +61,7 @@ public class ParquetTableWriter {
     public static final String _CODEC_NAME_PREFIX_ = "__codec_name__";
     public static final String _CODEC_ARGS_PREFIX_ = "__codec_args__";
     public static final String _CODEC_TYPE_PREFIX_ = "__codec_type__";
+    public static final String _CODEC_COMPONENT_TYPE_PREFIX_ = "__codec_comp_type__";
     public static final String SPECIAL_TYPE_NAME_PREFIX_ = "__special_type__";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     private static final int LOCAL_CHUNK_SIZE = 1024;
@@ -281,6 +282,10 @@ public class ParquetTableWriter {
                 extraMetaData.put(_CODEC_NAME_PREFIX_ + colName, codecData.getLeft());
                 extraMetaData.put(_CODEC_ARGS_PREFIX_ + colName, codecData.getRight());
                 extraMetaData.put(_CODEC_TYPE_PREFIX_ + colName, column.getDataType().getName());
+                final Class<?> componentType = column.getComponentType();
+                if (componentType != null) {
+                    extraMetaData.put(_CODEC_COMPONENT_TYPE_PREFIX_ + colName, column.getComponentType().getName());
+                }
             }
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
                 extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX_ + colName, STRING_SET_SPECIAL_TYPE);

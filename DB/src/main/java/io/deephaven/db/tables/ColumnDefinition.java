@@ -129,6 +129,16 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         return cd;
     }
 
+    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType, int columnType, Class<?> componentType) {
+        Objects.requireNonNull(dataType);
+        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType, columnType);
+        if (componentType == null) {
+            return cd;
+        }
+        cd.setComponentType(componentType);
+        return cd;
+    }
+
     // needed for deserialization
     public ColumnDefinition() {
     }
