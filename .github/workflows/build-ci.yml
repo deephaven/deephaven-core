@@ -30,9 +30,6 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-          labels: |
-            org.opencontainers.image.title=deephaven/grpc-api
-            org.opencontainers.image.description=Deephaven grpc-api
 
       - name: Set up Docker Buildx
         id: buildx
@@ -151,9 +148,6 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-          labels: |
-            org.opencontainers.image.title=deephaven/envoy
-            org.opencontainers.image.description=Deephaven Envoy
 
       - name: Set up Docker Buildx
         id: buildx
@@ -205,9 +199,6 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-          labels: |
-            org.opencontainers.image.title=deephaven/web
-            org.opencontainers.image.description=Deephaven web
  
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
