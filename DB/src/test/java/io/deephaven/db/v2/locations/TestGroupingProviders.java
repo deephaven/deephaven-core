@@ -3,7 +3,6 @@ package io.deephaven.db.v2.locations;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
@@ -13,7 +12,7 @@ import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.locations.local.NestedPartitionedLocalTableLocationScanner;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProvider;
+import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByScanner;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import junit.framework.TestCase;
@@ -170,7 +169,7 @@ public class TestGroupingProviders {
         final Table actual = new NestedPartitionedDiskBackedTable(
                 partitionedDataDefinition,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new ReadOnlyLocalTableLocationProvider(
+                new ReadOnlyLocalTableLocationProviderByScanner(
                         tableKey,
                         new NestedPartitionedLocalTableLocationScanner(dataDirectory),
                         false,

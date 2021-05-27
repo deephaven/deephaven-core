@@ -17,7 +17,6 @@ import junit.framework.TestCase;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 
@@ -62,7 +61,7 @@ public class TestAggregatedSelectV2 extends TestCase {
         }
 
         TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(tableDirectory);
+        return TableManagementTools.readTableFromDir(tableDirectory);
     }
 
     Table doAggregatedQuery() throws IOException

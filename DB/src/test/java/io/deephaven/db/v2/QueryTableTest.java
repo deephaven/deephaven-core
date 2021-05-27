@@ -9,7 +9,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.primitives.Ints;
-import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
@@ -40,7 +39,6 @@ import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -2678,7 +2676,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]").by("Symbol").ungroup();
         try {
             TableManagementTools.writeTable(source, definition, testDirectory, TableManagementTools.StorageFormat.Parquet);
-            final Table table = TableManagementTools.readTable(testDirectory);
+            final Table table = TableManagementTools.readTableFromDir(testDirectory);
             testFunction.accept(table);
             table.close();
         } finally {

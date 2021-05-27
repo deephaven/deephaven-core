@@ -277,7 +277,7 @@ public class TestChunkedRegionedOperations {
         actual = new NestedPartitionedDiskBackedTable(
                 partitionedDataDefinition,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new ReadOnlyLocalTableLocationProvider(
+                new ReadOnlyLocalTableLocationProviderByScanner(
                         tableKey,
                         ((SETUP_COUNTER.getAndIncrement() & 1) == 0
                                 ? new IndexedLocalTableLocationScanner(dataDirectory, new TableLocationMetadataIndex(snapshots.toArray(new TableLocationMetadataIndex.TableLocationSnapshot[0])))

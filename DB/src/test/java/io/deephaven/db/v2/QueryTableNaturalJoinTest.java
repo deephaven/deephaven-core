@@ -13,7 +13,6 @@ import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.test.types.OutOfBandTest;
@@ -1333,7 +1332,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
         TableManagementTools.writeTable(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(leftDirectory);
+        return TableManagementTools.readTableFromDir(leftDirectory);
     }
 
     @NotNull
@@ -1344,6 +1343,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
         TableManagementTools.writeTable(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(rightDirectory);
+        return TableManagementTools.readTableFromDir(rightDirectory);
     }
 }

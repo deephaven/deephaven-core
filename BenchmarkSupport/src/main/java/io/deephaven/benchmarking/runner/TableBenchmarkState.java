@@ -69,6 +69,6 @@ public class TableBenchmarkState {
     }
 
     static Table readBin(File directory) {
-        return TableManagementTools.readTable(directory, RESULT_DEF);
+        return TableManagementTools.readTableFromDir(directory, RESULT_DEF);
     }
 }
