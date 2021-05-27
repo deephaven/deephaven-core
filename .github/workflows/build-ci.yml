@@ -1,8 +1,6 @@
 name: Build CI
 
 on:
-  pull_request:
-    branches: [ workflow ]
   push:
     branches: [ 'main', 'build/**' ]
     tags: [ 'v*' ]

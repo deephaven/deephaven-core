@@ -2,7 +2,7 @@ name: Check CI
 
 on:
   pull_request:
-    branches: [ main, workflow ]
+    branches: [ main ]
   push:
     branches: [ 'main', 'check/**' ]
     tags: [ 'v*' ]
