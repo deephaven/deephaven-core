@@ -137,7 +137,7 @@ if (!PyEnv.pythonEnabled(project)) {
       parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
       dockerfile {
         // base image with default java, python, wheels
-        from 'deephaven/runtime-base'
+        from 'deephaven/runtime-base:local-build'
 
         // set up the project
         copyFile 'project', '/project'
@@ -167,9 +167,9 @@ if (!PyEnv.pythonEnabled(project)) {
         }
       }
       parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
-      imageName = 'deephaven/jpy-integration-java-to-python-tests'
+      imageName = 'deephaven/jpy-integration-java-to-python-tests:local-build'
       dockerfile {
-        from 'deephaven/runtime-base'
+        from 'deephaven/runtime-base:local-build'
 
         copyFile 'classpath', '/classpath'
       }
@@ -218,10 +218,10 @@ if (!PyEnv.pythonEnabled(project)) {
         }
       }
       parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
-      imageName = 'deephaven/jpy-integration-python-to-java-tests'
+      imageName = 'deephaven/jpy-integration-python-to-java-tests:local-build'
       dockerfile {
         // set up the container, env vars - things that aren't likely to change
-        from 'deephaven/runtime-base'
+        from 'deephaven/runtime-base:local-build'
         runCommand '''set -eux; \\
                         pip3 install unittest-xml-reporting==3.0.4;\\
                         mkdir /out;'''
