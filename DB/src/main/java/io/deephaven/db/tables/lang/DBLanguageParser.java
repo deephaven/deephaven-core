@@ -8,7 +8,8 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.util.PythonScopeJpyImpl;
+import io.deephaven.db.tables.select.Param;
+import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.util.type.TypeUtils;
 import com.github.javaparser.ExpressionParser;
 import com.github.javaparser.ast.*;
@@ -34,6 +35,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.deephaven.db.util.PythonScopeJpyImpl.*;
 
 public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLanguageParser.VisitArgs> {
 
@@ -365,7 +368,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
             if (acceptableMethods.size() == 0) {
                 final Class methodClass = variables.get(methodName);
                 if (isPotentialImplicitCall(methodClass)) {
-                    for (Method method : methodClass.getDeclaredMethods()) {
+                    for (Method method : methodClass.getMethods()) {
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                     }
                 }
@@ -377,7 +380,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         else{
             if (scope == org.jpy.PyObject.class) {
                 // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
-                for (Method method : PythonScopeJpyImpl.CallableWrapper.class.getDeclaredMethods()) {
+                for (Method method : CallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                 }
             } else {
@@ -408,7 +411,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
     }
 
     private static boolean isPotentialImplicitCall(Class methodClass) {
-        return methodClass == PythonScopeJpyImpl.CallableWrapper.class || methodClass == groovy.lang.Closure.class;
+        return CallableWrapper.class.isAssignableFrom(methodClass) || methodClass == groovy.lang.Closure.class;
     }
 
     private Class getMethodReturnType(Class scope, String methodName, Class paramTypes[], Class parameterizedTypes[][]){
@@ -1528,6 +1531,11 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
 
         //now do some parameter conversions...
 
+        Class methodClass = variables.get(n.getName());
+        if (methodClass == NumbaCallableWrapper.class) {
+            parsePyNumbaVectorizedFunc(n, expressions, expressionTypes);
+        }
+
         expressions=convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
 
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
@@ -1565,6 +1573,30 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         }
 
         return calculateMethodReturnTypeUsingGenerics(method, expressionTypes, parameterizedTypes);
+    }
+
+    private void parsePyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class[] expressionTypes) {
+        if (n.getParentNode() != null) {
+            throw new RuntimeException("Numba vectorized function can't be used in an expression.");
+        };
+        final QueryScope queryScope = QueryScope.getDefaultInstance();
+        for (Param param : queryScope.getParams(queryScope.getParamNames())) {
+            if (param.getName().equals(n.getName())) {
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
+                List<Class> params = numbaCallableWrapper.getParamTypes();
+                if (params.size() != expressions.length) {
+                    throw new RuntimeException("Numba vectorized function argument count mismatch: " + params.size() + " vs." + expressions.length);
+                }
+                for (int i = 0; i < expressions.length; i++) {
+                    if (!(expressions[i] instanceof NameExpr)) {
+                        throw new RuntimeException("Numba vectorized function arguments can only be columns.");
+                    }
+                    if (!params.get(i).isAssignableFrom(expressionTypes[i])) {
+                        throw new RuntimeException("Numba vectorized function argument type mismatch: " + params.get(i).getSimpleName() + " vs. " + expressionTypes[i].getSimpleName());
+                    }
+                }
+            }
+        }
     }
 
     public Class visit(ExpressionStmt n, VisitArgs printer) {
