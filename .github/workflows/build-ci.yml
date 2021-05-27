@@ -45,7 +45,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
@@ -105,7 +105,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
@@ -165,7 +165,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
@@ -227,7 +227,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
