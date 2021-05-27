@@ -145,7 +145,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
-            final boolean isCodec = codecName != null && !codecName.equals(SerializableCodec.class.getName()) && !codecName.equals(ExternalizableCodec.class.getName());
+            final boolean isCodec = codecName != null;
 
             if (isArray && columnChunkReader.getMaxRl() > 1) {
                 throw new TableDataException("No support for nested repeated parquet columns.");
@@ -201,7 +201,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             " with logical type " + logicalTypeAnnotation);
                 }
 
-                if (specialTypeName.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                     toPage = ToStringSetPage.create(dataType, toPage);
                 }
 
