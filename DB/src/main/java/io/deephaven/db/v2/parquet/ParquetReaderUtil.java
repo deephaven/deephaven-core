@@ -198,10 +198,12 @@ public class ParquetReaderUtil {
                     }
                 } else {
                     switch (intLogicalType.getBitWidth()) {
+                        // uint16 maps to java's char;
+                        // other unsigned types are promoted.
+                        case 16:
+                            return Optional.of(char.class);
                         case 32:
                             return Optional.of(long.class);
-                        case 16:
-                            return Optional.of(int.class);
                         case 8:
                             return Optional.of(short.class);
                         default:
