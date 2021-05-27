@@ -63,7 +63,7 @@ jobs:
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/buildx/pull/535
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -120,7 +120,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -180,7 +180,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -242,7 +242,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
