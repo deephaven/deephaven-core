@@ -250,7 +250,7 @@ public class QueryFactory {
         final String nextTableName = "table" + nameSeed + "_" + opNum;
         final String lastTableName = "table" + nameSeed + "_" + (opNum - 1);
         opChain.append(nextTableName).append("prime = ");
-        opChain.append("io.deephaven.db.v2.SelectOverheadLimiter.clampSelectOverhead(log, ").append(lastTableName).append(", 10.0d);\n");
+        opChain.append("io.deephaven.db.v2.SelectOverheadLimiter.clampSelectOverhead(").append(lastTableName).append(", 10.0d);\n");
         opChain.append(nextTableName).append(" = ").append(nextTableName).append("prime").append(".select();\n");
     }
 
@@ -816,7 +816,7 @@ public class QueryFactory {
                 "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
                 "\tcolumnRandoms[colNum] = new Random(seed);\n" +
                 "}\n\n" +
-                "tt = db.timeTable(\"00:00:00.1\");" +
+                "tt = timeTable(\"00:00:00.1\");" +
                 "tickingValues = tt.update(\n" +
                 "\"MyString=new String(`a`+i)\",\n" +
                 "\"MyInt=new Integer(i)\",\n" +

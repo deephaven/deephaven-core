@@ -1,7 +1,6 @@
 package io.deephaven.db.v2.join;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.SortingOrder;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.v2.*;
@@ -68,8 +67,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     private final ObjectArraySource<Index.SequentialBuilder> sequentialBuilders = new ObjectArraySource<>(Index.SequentialBuilder.class);
     private final LongArraySource slots = new LongArraySource();
 
-    public BucketedChunkedAjMergedListener(Logger log,
-                                           JoinListenerRecorder leftRecorder,
+    public BucketedChunkedAjMergedListener(JoinListenerRecorder leftRecorder,
                                            JoinListenerRecorder rightRecorder,
                                            String listenerDescription,
                                            QueryTable result,
@@ -88,7 +86,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                            SsaSsaStamp ssaSsaStamp,
                                            JoinControl control, RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager,
                                            RedirectionIndex redirectionIndex) {
-        super(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
         this.leftTable = leftTable;

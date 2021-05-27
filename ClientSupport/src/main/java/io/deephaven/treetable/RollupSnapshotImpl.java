@@ -1,7 +1,6 @@
 package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.NotificationQueue;
 import io.deephaven.db.tables.select.MatchPair;
@@ -30,7 +29,6 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
      * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the specified rows
      * and columns, applying the specified sorts and filters if required to fetch tables
      *
-     * @param log         A log object to use.
      * @param baseTableId The Id of the base table.  Used to maintain client state.
      * @param baseTable   The base table to use if sorts/filters must be applied.
      * @param tablesByKey The tables within the tree for which viewports are being tracked, separated by table key.
@@ -42,8 +40,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
      * @param client      The client issuing the TSQ.
      * @param includedOps The set of operations performed by the client since the last TSQ.
      */
-    RollupSnapshotImpl(Logger log,
-                       int baseTableId,
+    RollupSnapshotImpl(int baseTableId,
                        HierarchicalTable baseTable,
                        Map<Object, TableDetails> tablesByKey,
                        long firstRow,
@@ -53,7 +50,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
                        @NotNull List<SortDirective> sorts,
                        CLIENT_TYPE client,
                        Set<TreeSnapshotQuery.Operation> includedOps) {
-        super(log, baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
+        super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
 
         if(getInfo().includesConstituents()) {
             final List<SortDirective> updated = maybeComputeConstituentSorts(sorts);

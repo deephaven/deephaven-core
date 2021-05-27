@@ -188,7 +188,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         if (control == null) {
             joined = leftJoinTable.naturalJoin(rightJoinTable, matchKeys, "RightSentinel");
         } else {
-            joined = NaturalJoinHelper.naturalJoin(log, (QueryTable)leftJoinTable, (QueryTable) rightJoinTable, MatchPairFactory.getExpressions(StringUtils.splitToCollection(matchKeys)), MatchPairFactory.getExpressions("RightSentinel"), false, control);
+            joined = NaturalJoinHelper.naturalJoin((QueryTable)leftJoinTable, (QueryTable) rightJoinTable, MatchPairFactory.getExpressions(StringUtils.splitToCollection(matchKeys)), MatchPairFactory.getExpressions("RightSentinel"), false, control);
         }
 
         final Table updated = updateFixup.apply(leftTable.update(updateString));

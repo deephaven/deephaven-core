@@ -3,7 +3,6 @@ package io.deephaven.db.v2;
 import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -58,7 +57,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
 
-        final Callable<Table> callable = () -> TreeTableFilter.rawFilterTree(Logger.NULL, treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
+        final Callable<Table> callable = () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         final Table rawSorted = pool.submit(callable).get();

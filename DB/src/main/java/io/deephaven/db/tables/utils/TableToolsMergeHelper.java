@@ -1,8 +1,6 @@
 package io.deephaven.db.tables.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -23,7 +21,6 @@ import java.util.stream.Stream;
  *
  */
 public class TableToolsMergeHelper {
-    private static final Logger staticLog_ = ProcessEnvironment.getDefaultLog(TableToolsMergeHelper.class);
 
     public static Table mergeTableMap(LocalTableMap tableMap) {
         final List<Table> tablesToMergeOrNull = getTablesToMerge(tableMap.values().stream(), tableMap.size());
@@ -71,7 +68,7 @@ public class TableToolsMergeHelper {
             LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
         }
 
-        final UnionSourceManager unionSourceManager = new UnionSourceManager(staticLog_, tableDef, parentDependency);
+        final UnionSourceManager unionSourceManager = new UnionSourceManager(tableDef, parentDependency);
         final QueryTable queryTable = unionSourceManager.getResult();
 
         for (Table table : tables) {

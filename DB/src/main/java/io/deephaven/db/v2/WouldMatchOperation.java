@@ -2,7 +2,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.exceptions.UncheckedTableException;
 import io.deephaven.db.tables.live.NotificationQueue;
 import io.deephaven.db.tables.select.WouldMatchPair;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
     private static final ReadOnlyIndex EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
-    private final Logger log;
     private final List<ColumnHolder> matchColumns;
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -57,8 +55,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
     }
 
-    WouldMatchOperation(Logger log, QueryTable parent, WouldMatchPair... filters) {
-        this.log = log;
+    WouldMatchOperation(QueryTable parent, WouldMatchPair... filters) {
         this.parent = parent;
         matchColumns = Arrays.stream(filters).map(ColumnHolder::new).collect(Collectors.toList());
 
@@ -136,7 +133,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             if (parent.isRefreshing()) {
                 // If we're refreshing, our final listener needs to handle upstream updates from a recorder.
                 final ListenerRecorder recorder = new ListenerRecorder("where(" + makeDescription() + ")", parent, resultTable);
-                final Listener listener = new Listener(log, recorder, dependencies);
+                final Listener listener = new Listener(recorder, dependencies);
                 recorder.setMergedListener(listener);
 
                 eventualMergedListener = listener;
@@ -145,7 +142,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 // If not, then we still need to update if any of our filters request updates.  We'll use the
                 // merge listener to handle that.  Note that the filters themselves should set the table to
                 // refreshing.
-                eventualMergedListener = new StaticListener(log, dependencies);
+                eventualMergedListener = new StaticListener(dependencies);
             }
 
             if (eventualMergedListener != null) {
@@ -170,11 +167,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     private class Listener extends MergedListener {
         final ListenerRecorder recorder;
 
-        Listener(@NotNull Logger log,
-                 @NotNull ListenerRecorder recorder,
+        Listener(@NotNull ListenerRecorder recorder,
                  @NotNull List<NotificationQueue.Dependency> dependencies) {
-            super(log,
-                  Collections.singletonList(recorder),
+            super(Collections.singletonList(recorder),
                   dependencies,
                   "merge(" + makeDescription() + ")",
                   resultTable);
@@ -215,10 +210,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
      *      * the parent table is static (not ticking).
      */
     private class StaticListener extends MergedListener {
-        StaticListener(@NotNull Logger log,
-                       @NotNull List<NotificationQueue.Dependency> dependencies) {
-            super(log,
-                    Collections.emptyList(),
+        StaticListener(@NotNull List<NotificationQueue.Dependency> dependencies) {
+            super(Collections.emptyList(),
                     dependencies,
                     "wouldMatch(" + makeDescription() + ")",
                     resultTable);

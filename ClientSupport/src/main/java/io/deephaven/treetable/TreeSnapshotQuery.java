@@ -3,7 +3,6 @@ package io.deephaven.treetable;
 import io.deephaven.base.Function;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.remote.AsyncMethod;
 import io.deephaven.db.v2.HierarchicalTable;
@@ -12,7 +11,6 @@ import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.TreeTableInfo;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.table.sort.SortDirective;
-import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -21,8 +19,6 @@ import java.util.*;
  * A query that fetches a flat viewport-ready snapshot of a tree table, taking into account the set of expanded rows at each level.
  */
 public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> implements Function.Unary<TreeSnapshotResult, Table> {
-
-    private static final Logger log = LoggerFactory.getLogger(TreeSnapshotQuery.class);
 
     private final CLIENT_TYPE client;
 
@@ -86,10 +82,10 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
 
         final HierarchicalTableInfo sourceInfoAttr = ((HierarchicalTable)arg).getInfo();
         if(sourceInfoAttr instanceof TreeTableInfo) {
-            return new TreeTableSnapshotImpl<>(log, baseTableId, (HierarchicalTable)arg, tablesByKey,
+            return new TreeTableSnapshotImpl<>(baseTableId, (HierarchicalTable)arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         } else if(sourceInfoAttr instanceof RollupInfo) {
-            return new RollupSnapshotImpl<>(log, baseTableId, (HierarchicalTable)arg, tablesByKey,
+            return new RollupSnapshotImpl<>(baseTableId, (HierarchicalTable)arg, tablesByKey,
                     firstViewportRow, lastViewportRow, columns, filters, directives, client, includedOps).getSnapshot();
         }
 

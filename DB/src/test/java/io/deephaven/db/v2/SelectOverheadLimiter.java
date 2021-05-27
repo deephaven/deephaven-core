@@ -2,7 +2,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.NotificationQueue;
@@ -19,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * The table {@link Table#select} or {@link Table#update} and operations produce sparse sources as of Treasure.  If you
  * have a sparse index, that means that you can have many blocks which only actually contain one or very few elements.
- * The {@link #clampSelectOverhead(Logger, Table, double)} method is intended to precede a select or update operation, to
+ * The {@link #clampSelectOverhead(Table, double)} method is intended to precede a select or update operation, to
  * limit the amount of memory overhead allowed.  For tables that are relatively dense, the original indices are
  * preserved.  If the overhead exceeds the allowable factor, then the table is flattened before passing updates to
  * select.  Once a table is made flat, it will not revert to it's original address space but rather remain flat.
@@ -86,7 +85,7 @@ public class SelectOverheadLimiter {
         }
     }
 
-    public static Table clampSelectOverhead(Logger log, Table input, double permittedOverhead) {
+    public static Table clampSelectOverhead(Table input, double permittedOverhead) {
         if (!input.isLive()) {
             return input.flatten();
         }
@@ -115,7 +114,7 @@ public class SelectOverheadLimiter {
         final List<ListenerRecorder> recorders = Collections.synchronizedList(new ArrayList<>());
         recorders.add(inputRecorder.getValue());
 
-        final MergedListener mergedListener = new MergedListener(log, recorders, Collections.singletonList((NotificationQueue.Dependency)input), "clampSelectOverhead", result) {
+        final MergedListener mergedListener = new MergedListener(recorders, Collections.singletonList((NotificationQueue.Dependency)input), "clampSelectOverhead", result) {
             Table flatResult = null;
             ListenerRecorder flatRecorder;
             ModifiedColumnSet.Transformer flatTransformer;
