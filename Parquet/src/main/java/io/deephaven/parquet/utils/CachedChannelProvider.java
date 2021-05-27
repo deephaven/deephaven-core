@@ -17,33 +17,30 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final Map<ChannelType, ChannelPool> pools = new HashMap<>();
     private final int maxSize;
 
+    private CachedChannelProvider.CachedChannel makeCachedChannel(
+            final ChannelType channelType, final SeekableChannelsProvider wrappedProvider, final String path) {
+        final String absolutePath = Paths.get(path).toAbsolutePath().toString();
+        try {
+            switch (channelType) {
+                case Read:
+                    return new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, absolutePath);
+                case Write:
+                    return new CachedChannel(wrappedProvider.getWriteChannel(path, false), ChannelType.Write, absolutePath);
+                case WriteAppend:
+                    return new CachedChannel(wrappedProvider.getWriteChannel(path, true), ChannelType.WriteAppend, absolutePath);
+                default:
+                    throw new IllegalStateException("Unsupported ChannelType " + channelType);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("absolutePath=" + absolutePath + ": " + e, e);
+        }
+    }
 
     public CachedChannelProvider(SeekableChannelsProvider wrappedProvider, int maxSize) {
         this.maxSize = maxSize;
-        pools.put(ChannelType.Read, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException();
-            }
-        }));
-        pools.put(ChannelType.Write, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getWriteChannel(path, false), ChannelType.Write, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException();
-            }
-        }));
-        pools.put(ChannelType.WriteAppend, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getWriteChannel(path, true), ChannelType.WriteAppend, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException();
-            }
-        }));
+        pools.put(ChannelType.Read, new ChannelPool((path) -> makeCachedChannel(ChannelType.Read, wrappedProvider, path)));
+        pools.put(ChannelType.Write, new ChannelPool((path) -> makeCachedChannel(ChannelType.Write, wrappedProvider, path)));
+        pools.put(ChannelType.WriteAppend, new ChannelPool((path) -> makeCachedChannel(ChannelType.WriteAppend, wrappedProvider, path)));
     }
 
     @Override

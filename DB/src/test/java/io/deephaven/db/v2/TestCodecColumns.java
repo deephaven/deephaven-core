@@ -7,7 +7,6 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.util.codec.BigIntegerCodec;
-import io.deephaven.util.codec.ByteArrayCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.CodecCacheException;
 import junit.framework.TestCase;
@@ -68,7 +67,7 @@ public class TestCodecColumns {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
             TableManagementTools.writeTable(TABLE, dir, storageFormat);
-            final Table result = TableManagementTools.readTable(dir);
+            final Table result = TableManagementTools.readTableFromDir(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

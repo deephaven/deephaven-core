@@ -576,7 +576,7 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeCsv(String sourcePath, String destPath, DBTimeZone timeZone, boolean nullsAsEmpty, String... columns) throws IOException {
-        Table source = TableManagementTools.readTable(new File(sourcePath));
+        Table source = TableManagementTools.readTableFromDir(new File(sourcePath));
         writeCsv(source, destPath, false, timeZone, nullsAsEmpty, columns);
     }
 
@@ -781,13 +781,25 @@ public class TableTools {
     //endregion
 
     @ScriptApi
-    public static Table readParquet(final String sourceDir) {
-        return TableManagementTools.readTable(sourceDir);
+    /**
+     * Reads a table from disk in Parquet format.
+     *
+     * @param sourceFilePath the path to the parquet file to read
+     * @return a Deephaven table
+     */
+    public static Table readParquet(final String sourceFilePath) {
+        return TableManagementTools.readTable(sourceFilePath);
     }
 
+    /**
+     * Writes a table to disk in Parquet format.
+     *
+     * @param sourceTable the table to write
+     * @param destFilePath the destination file location
+     */
     @ScriptApi
-    public static void writeParquet(final Table sourceTable, final String destDir) {
-        TableManagementTools.writeTable(sourceTable, destDir, TableManagementTools.StorageFormat.Parquet);
+    public static void writeParquet(final Table sourceTable, final String destFilePath) {
+        TableManagementTools.writeTable(sourceTable, destFilePath, TableManagementTools.StorageFormat.Parquet);
     }
 
     /////////// Utilities for Creating Columns  ///////////

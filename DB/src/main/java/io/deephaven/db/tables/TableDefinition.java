@@ -579,15 +579,6 @@ public class TableDefinition extends DefaultTableDefinition {
     }
 
     /**
-     * Persist the supplied TableDefinition to the default file for the supplied directory and table name.
-     * @param definition The definition
-     * @param destinationDirectory The destination directory
-     */
-    public static void persistDefinition(@NotNull final TableDefinition definition, @NotNull final File destinationDirectory) {
-        persistDefinitionImpl(definition, new File(destinationDirectory, DEFAULT_FILE_NAME));
-    }
-
-    /**
      * Load a TableDefinition from the supplied file.
      * @param sourceDirectory The directory to find the definition in
      * @return The TableDefinition object

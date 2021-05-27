@@ -40,6 +40,7 @@ import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -65,10 +66,10 @@ public class ParquetTableWriter {
     public static final String SPECIAL_TYPE_NAME_PREFIX_ = "__special_type__";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     private static final int LOCAL_CHUNK_SIZE = 1024;
-    public static final IntBuffer EMPTY_INT_BUFFER = IntBuffer.allocate(0);
     public static final String BEGIN_POS = "__begin_pos__";
     public static final String END_POS = "__end_pos__";
     public static final String GROUPING_KEY = "__key__";
+    public static final String PARQUET_FILE_NAME = "table.parquet";
     public static Function<String, String> defaultGroupingFileName = columnName -> columnName + "_grouping.parquet";
 
 
@@ -137,7 +138,7 @@ public class ParquetTableWriter {
 
             Map<String, String> tableMeta = new HashMap<>();
             tableMeta.put(GROUPING, String.join(",", definition.getGroupingColumnNamesArray()));
-            writers[i] = getParquetFileWriter(tablesToWrite[i], definition, destinationInfo.getOutputPath() + "/table.parquet", tableMeta, codecName);
+            writers[i] = getParquetFileWriter(tablesToWrite[i], definition, destinationInfo.getOutputPath() + File.separator + PARQUET_FILE_NAME, tableMeta, codecName);
             rowGroupWriters[i] = writers[i].addRowGroup(tablesToWrite[i].size());
             tablesToWrite[i] = pretransformTable(tablesToWrite[i], definition);
             for (Map.Entry<String, Map<?, long[]>> columnGrouping : destinationInfo.columnNameToGroupToRange.entrySet()) {

@@ -15,7 +15,6 @@ import junit.framework.TestCase;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 
@@ -64,7 +63,7 @@ public class TestAggregatedSelect extends TestCase {
 
         TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
 
-        tableToClose = TableManagementTools.readTable(tableDirectory);
+        tableToClose = TableManagementTools.readTableFromDir(tableDirectory);
         return tableToClose;
     }
 
