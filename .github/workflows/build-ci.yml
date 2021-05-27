@@ -23,7 +23,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/grpc-api
+          images: ghcr.io/${{ github.repository_owner }}/grpc-api
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
@@ -87,7 +87,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/grpc-proxy
+          images: ghcr.io/${{ github.repository_owner }}/grpc-proxy
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
@@ -144,7 +144,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/envoy
+          images: ghcr.io/${{ github.repository_owner }}/envoy
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
@@ -198,7 +198,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/web
+          images: ghcr.io/${{ github.repository_owner }}/web
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
