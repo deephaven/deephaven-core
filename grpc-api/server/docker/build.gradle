@@ -70,20 +70,6 @@ docker {
 
     volume("/data")
     volume("/cache")
-
-    // https://github.com/opencontainers/image-spec/blob/master/annotations.md#pre-defined-annotation-keys
-    label([
-        'org.opencontainers.image.vendor': "${project.property('grpc-api-docker.vendor')}",
-        'org.opencontainers.image.title': "${project.property('grpc-api-docker.title')}",
-        'org.opencontainers.image.description': "${project.property('grpc-api-docker.description')}",
-        'org.opencontainers.image.source': "${project.property('grpc-api-docker.source')}",
-        'org.opencontainers.image.licenses': "${project.property('grpc-api-docker.licenses')}",
-        'org.opencontainers.image.version': "${project.version}",
-        //'org.opencontainers.image.revision': "${sha}",
-        // todo: do we even want this? causes invalidation every single build, and makes builds non-reproducible
-        // consider sourcing this from a file instead?
-        //'org.opencontainers.image.created': "${Instant.now()}"
-    ])
   }
 }
 

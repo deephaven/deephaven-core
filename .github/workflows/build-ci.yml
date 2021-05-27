@@ -30,6 +30,11 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Core
+            org.opencontainers.image.description=Deephaven Core
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -91,6 +96,11 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven gRPC Web Proxy
+            org.opencontainers.image.description=Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy
+            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -148,6 +158,11 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Envoy
+            org.opencontainers.image.description=Deephaven envoy proxy
+            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -199,7 +214,12 @@ jobs:
             type=edge,branch=main
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
- 
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Web
+            org.opencontainers.image.description=Deephaven web
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
+
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
         id: setup-java
