@@ -200,10 +200,10 @@ message FetchFigureRequest {
     arrow.flight.protocol.Ticket console_id = 1;
     reserved 2;
 
-    string figureName = 3;
+    string figure_name = 3;
 }
 message FetchFigureResponse {
-    FigureDescriptor figureDescriptor = 1;
+    FigureDescriptor figure_descriptor = 1;
 }
 
 message FigureDescriptor {
@@ -211,25 +211,25 @@ message FigureDescriptor {
         repeated int32 ids = 1;
     }
     string title = 1;
-    string titleFont = 2;
-    string titleColor = 3;
+    string title_font = 2;
+    string title_color = 3;
     //    bool resizable = 4;//unused?
 
     //    Theme theme = 5;//unused?
-    //    bool isDefaultTheme = 6;//unused?
+    //    bool is_default_theme = 6;//unused?
 
-    double updateInterval = 7;
+    double update_interval = 7;
 
     int32 cols = 8;
     int32 rows = 9;
 
     repeated ChartDescriptor charts = 10;
 
-    repeated io.deephaven.proto.backplane.grpc.Ticket tableIds = 11;
-    repeated RepeatedInt32 plotHandleIds = 12;
+    repeated io.deephaven.proto.backplane.grpc.Ticket table_ids = 11;
+    repeated RepeatedInt32 plot_handle_ids = 12;
 
-    repeated io.deephaven.proto.backplane.grpc.Ticket tableMaps = 13;
-    repeated RepeatedInt32 tableMapIds = 14;
+    repeated io.deephaven.proto.backplane.grpc.Ticket table_maps = 13;
+    repeated RepeatedInt32 table_map_ids = 14;
 
     repeated string errors = 15;
 
@@ -246,18 +246,18 @@ message FigureDescriptor {
         int32 rowspan = 2;
 
         repeated SeriesDescriptor series = 3;
-        repeated MultiSeriesDescriptor multiSeries = 4;
+        repeated MultiSeriesDescriptor multi_series = 4;
         repeated AxisDescriptor axes = 5;
 
-        ChartType chartType = 6;
+        ChartType chart_type = 6;
 
         string title = 7;
-        string titleFont = 8;
-        string titleColor = 9;
+        string title_font = 8;
+        string title_color = 9;
 
-        bool showLegend = 10;
-        string legendFont = 11;
-        string legendColor = 12;
+        bool show_legend = 10;
+        string legend_font = 11;
+        string legend_color = 12;
 
         bool is3d = 13;
     }
@@ -277,69 +277,69 @@ message FigureDescriptor {
     }
 
     message SeriesDescriptor {
-        SeriesPlotStyle plotStyle = 1;
+        SeriesPlotStyle plot_style = 1;
 
         string name = 2;
 
-        optional bool linesVisible = 3;
-        optional bool shapesVisible = 4;
+        optional bool lines_visible = 3;
+        optional bool shapes_visible = 4;
 
-        bool gradientVisible = 5;
-        string lineColor = 6;
-        //    string lineStyle = 7;
-        string pointLabelFormat = 8;
-        string xToolTipPattern = 9;
-        string yToolTipPattern = 10;
+        bool gradient_visible = 5;
+        string line_color = 6;
+        //    string line_style = 7;
+        string point_label_format = 8;
+        string x_tool_tip_pattern = 9;
+        string y_tool_tip_pattern = 10;
 
-        string shapeLabel = 11;
-        optional double shapeSize = 12;
-        string shapeColor = 13;
+        string shape_label = 11;
+        optional double shape_size = 12;
+        string shape_color = 13;
         string shape = 14;
 
-        repeated SourceDescriptor dataSources = 15;
+        repeated SourceDescriptor data_sources = 15;
     }
     message MultiSeriesDescriptor {
-        SeriesPlotStyle plotStyle = 1;
+        SeriesPlotStyle plot_style = 1;
 
         string name = 2;
 
-        StringMapWithDefault lineColor = 3;
+        StringMapWithDefault line_color = 3;
 
-        StringMapWithDefault pointColor = 4;
+        StringMapWithDefault point_color = 4;
 
-        BoolMapWithDefault linesVisible = 5;
+        BoolMapWithDefault lines_visible = 5;
 
-        BoolMapWithDefault pointsVisible = 6;
+        BoolMapWithDefault points_visible = 6;
 
-        BoolMapWithDefault gradientVisible = 7;
+        BoolMapWithDefault gradient_visible = 7;
 
-        StringMapWithDefault pointLabelFormat = 8;
+        StringMapWithDefault point_label_format = 8;
 
-        StringMapWithDefault xToolTipPattern = 9;
+        StringMapWithDefault x_tool_tip_pattern = 9;
 
-        StringMapWithDefault yToolTipPattern = 10;
+        StringMapWithDefault y_tool_tip_pattern = 10;
 
-        StringMapWithDefault pointLabel = 11;
+        StringMapWithDefault point_label = 11;
 
-        DoubleMapWithDefault pointSize = 12;
+        DoubleMapWithDefault point_size = 12;
 
-        StringMapWithDefault pointShape = 13;
+        StringMapWithDefault point_shape = 13;
 
-        repeated MultiSeriesSourceDescriptor dataSources = 14;
+        repeated MultiSeriesSourceDescriptor data_sources = 14;
 
     }
     message StringMapWithDefault {
-        string defaultString = 1;
+        string default_string = 1;
         repeated string keys = 2;
         repeated string values = 3;
     }
     message DoubleMapWithDefault {
-        double defaultDouble = 1;
+        double default_double = 1;
         repeated string keys = 2;
         repeated double values = 3;
     }
     message BoolMapWithDefault {
-        bool defaultBool = 1;
+        bool default_bool = 1;
         repeated string keys = 2;
         repeated bool values = 3;
     }
@@ -366,7 +366,7 @@ message FigureDescriptor {
 
         string id = 1;
 
-        AxisFormatType formatType = 2;
+        AxisFormatType format_type = 2;
 
         AxisType type = 3;
 
@@ -374,21 +374,21 @@ message FigureDescriptor {
 
         bool log = 5;
         string label = 6;
-        string labelFont = 7;
-        string ticksFont = 8;
-        string formatPattern = 9;
+        string label_font = 7;
+        string ticks_font = 8;
+        string format_pattern = 9;
         string color = 10;
-        double minRange = 11;
-        double maxRange = 12;
-        bool minorTicksVisible = 13;
-        bool majorTicksVisible = 14;
-        int32 minorTickCount = 15;
-        double gapBetweenMajorTicks = 16;
-        repeated double majorTickLocations = 17;
-        double tickLabelAngle = 18;
+        double min_range = 11;
+        double max_range = 12;
+        bool minor_ticks_visible = 13;
+        bool major_ticks_visible = 14;
+        int32 minor_tick_count = 15;
+        double gap_between_major_ticks = 16;
+        repeated double major_tick_locations = 17;
+        double tick_label_angle = 18;
         bool invert = 19;
-        bool isTimeAxis = 20;
-        BusinessCalendarDescriptor businessCalendarDescriptor = 21;
+        bool is_time_axis = 20;
+        BusinessCalendarDescriptor business_calendar_descriptor = 21;
     }
     message BusinessCalendarDescriptor {
         enum DayOfWeek {
@@ -406,7 +406,7 @@ message FigureDescriptor {
         }
         message Holiday {
             LocalDate date = 1;
-            repeated BusinessPeriod businessPeriods = 2;
+            repeated BusinessPeriod business_periods = 2;
         }
         message LocalDate {
             int32 year = 1;
@@ -414,9 +414,9 @@ message FigureDescriptor {
             int32 day = 3;
         }
         string name = 1;
-        string timeZone = 2;
-        repeated DayOfWeek businessDays = 3;
-        repeated BusinessPeriod businessPeriods = 4;
+        string time_zone = 2;
+        repeated DayOfWeek business_days = 3;
+        repeated BusinessPeriod business_periods = 4;
         repeated Holiday holidays = 5;
     }
     message MultiSeriesSourceDescriptor {
@@ -424,8 +424,8 @@ message FigureDescriptor {
 
         SourceType type = 2;
 
-        int32 tableMapId = 3;
-        string columnName = 4;
+        int32 table_map_id = 3;
+        string column_name = 4;
     }
 
     enum SourceType {
@@ -451,18 +451,18 @@ message FigureDescriptor {
 
         SourceType type = 2;
 
-        int32 tableId = 3;
-        int32 tableMapId = 4;
-        string columnName = 5;
+        int32 table_id = 3;
+        int32 table_map_id = 4;
+        string column_name = 5;
 
-        string columnType = 6;
+        string column_type = 6;
 
-        OneClickDescriptor oneClick = 7;
+        OneClickDescriptor one_click = 7;
     }
     message OneClickDescriptor {
         repeated string columns = 1;
-        repeated string columnTypes = 2;
-        bool requireAllFiltersToDisplay = 3;
+        repeated string column_types = 2;
+        bool require_all_filters_to_display = 3;
     }
 }
 
