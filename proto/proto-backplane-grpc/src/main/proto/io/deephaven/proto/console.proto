@@ -292,7 +292,7 @@ message FigureDescriptor {
         string yToolTipPattern = 10;
 
         string shapeLabel = 11;
-        optional float shapeSize = 12;
+        optional double shapeSize = 12;
         string shapeColor = 13;
         string shape = 14;
 
@@ -321,7 +321,7 @@ message FigureDescriptor {
 
         StringMapWithDefault pointLabel = 11;
 
-        FloatMapWithDefault pointSize = 12;
+        DoubleMapWithDefault pointSize = 12;
 
         StringMapWithDefault pointShape = 13;
 
@@ -333,10 +333,10 @@ message FigureDescriptor {
         repeated string keys = 2;
         repeated string values = 3;
     }
-    message FloatMapWithDefault {
-        float defaultFloat = 1;
+    message DoubleMapWithDefault {
+        double defaultDouble = 1;
         repeated string keys = 2;
-        repeated float values = 3;
+        repeated double values = 3;
     }
     message BoolMapWithDefault {
         bool defaultBool = 1;
@@ -378,14 +378,14 @@ message FigureDescriptor {
         string ticksFont = 8;
         string formatPattern = 9;
         string color = 10;
-        float minRange = 11;
-        float maxRange = 12;
+        double minRange = 11;
+        double maxRange = 12;
         bool minorTicksVisible = 13;
         bool majorTicksVisible = 14;
         int32 minorTickCount = 15;
-        float gapBetweenMajorTicks = 16;
-        repeated float majorTickLocations = 17;
-        float tickLabelAngle = 18;
+        double gapBetweenMajorTicks = 16;
+        repeated double majorTickLocations = 17;
+        double tickLabelAngle = 18;
         bool invert = 19;
         bool isTimeAxis = 20;
         BusinessCalendarDescriptor businessCalendarDescriptor = 21;
