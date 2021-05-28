@@ -604,8 +604,8 @@ public class WorkerConnection {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
                     FetchFigureRequest request = new FetchFigureRequest();
-                    request.setConsoleid(script);
-                    request.setFigurename(figureName);
+                    request.setConsoleId(script);
+                    request.setFigureName(figureName);
                     consoleServiceClient().fetchFigure(request, metadata(), c::apply);
 //                    if (script != null) {
 //                        getServer().fetchScriptFigure(script, figureName, c);

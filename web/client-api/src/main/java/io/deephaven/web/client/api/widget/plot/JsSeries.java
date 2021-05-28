@@ -35,19 +35,19 @@ public class JsSeries {
 
         this.sources = new SeriesDataSource[0];
 
-        for (int i = 0; i < series.getDatasourcesList().length; i++) {
-            SourceDescriptor dataSource = series.getDatasourcesList().getAt(i);
+        for (int i = 0; i < series.getDataSourcesList().length; i++) {
+            SourceDescriptor dataSource = series.getDataSourcesList().getAt(i);
             sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxis().getId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
-                if (dataSource.hasOneclick()) {
+                if (dataSource.hasOneClick()) {
                     assert i == 0;
-                    oneClick = new OneClick(jsFigure, dataSource.getOneclick(), this);
+                    oneClick = new OneClick(jsFigure, dataSource.getOneClick(), this);
                 }
             } else {
-                assert dataSource.hasOneclick();
-                assert dataSource.getOneclick().equals(oneClick.getDescriptor());
+                assert dataSource.hasOneClick();
+                assert dataSource.getOneClick().equals(oneClick.getDescriptor());
             }
         }
         JsObject.freeze(sources);
@@ -62,7 +62,7 @@ public class JsSeries {
     public void initSources(Map<Integer, JsTable> tables, Map<Integer, TableMap> tableMaps) {
         Arrays.stream(sources).forEach(s -> s.initColumnType(tables));
         if (oneClick != null) {
-            oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getTablemapid()));
+            oneClick.setTableMap(tableMaps.get(sources[0].getDescriptor().getTableMapId()));
         }
     }
 
@@ -103,7 +103,7 @@ public class JsSeries {
     @JsProperty
     @SuppressWarnings("unusable-by-js")
     public int getPlotStyle() {
-        return descriptor.getPlotstyle();
+        return descriptor.getPlotStyle();
     }
 
     @JsProperty
@@ -113,22 +113,22 @@ public class JsSeries {
 
     @JsProperty(name = "isLinesVisible")
     public Boolean getLinesVisible() {
-        return descriptor.getLinesvisible();
+        return descriptor.getLinesVisible();
     }
 
     @JsProperty(name = "isShapesVisible")
     public Boolean getShapesVisible() {
-        return descriptor.getShapesvisible();
+        return descriptor.getShapesVisible();
     }
 
     @JsProperty
     public boolean isGradientVisible() {
-        return descriptor.getGradientvisible();
+        return descriptor.getGradientVisible();
     }
 
     @JsProperty
     public String getLineColor() {
-        return descriptor.getLinecolor();
+        return descriptor.getLineColor();
     }
 
     //TODO IDS-4139
@@ -139,32 +139,32 @@ public class JsSeries {
 
     @JsProperty
     public String getPointLabelFormat() {
-        return descriptor.getPointlabelformat();
+        return descriptor.getPointLabelFormat();
     }
 
     @JsProperty
     public String getXToolTipPattern() {
-        return descriptor.getXtooltippattern();
+        return descriptor.getXToolTipPattern();
     }
 
     @JsProperty
     public String getYToolTipPattern() {
-        return descriptor.getYtooltippattern();
+        return descriptor.getYToolTipPattern();
     }
 
     @JsProperty
     public String getShapeLabel() {
-        return descriptor.getShapelabel();
+        return descriptor.getShapeLabel();
     }
 
     @JsProperty
     public Double getShapeSize() {
-        return descriptor.getShapesize();
+        return descriptor.getShapeSize();
     }
 
     @JsProperty
     public String getShapeColor() {
-        return descriptor.getShapecolor();
+        return descriptor.getShapeColor();
     }
 
     @JsProperty

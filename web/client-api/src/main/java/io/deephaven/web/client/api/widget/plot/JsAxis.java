@@ -23,7 +23,7 @@ public class JsAxis {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinesscalendardescriptor();
+        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinessCalendarDescriptor();
         if (businessCalendarDescriptor != null) {
             businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
         } else {
@@ -44,7 +44,7 @@ public class JsAxis {
     @JsProperty
     @SuppressWarnings("unusable-by-js")
     public int getFormatType() {
-        return axis.getFormattype();
+        return axis.getFormatType();
     }
 
     @JsProperty
@@ -71,12 +71,12 @@ public class JsAxis {
 
     @JsProperty
     public String getLabelFont() {
-        return axis.getLabelfont();
+        return axis.getLabelFont();
     }
 
     @JsProperty
     public String getTicksFont() {
-        return axis.getTicksfont();
+        return axis.getTicksFont();
     }
 
     //TODO IDS-4139
@@ -87,7 +87,7 @@ public class JsAxis {
 
     @JsProperty
     public String getFormatPattern() {
-        return axis.getFormatpattern();
+        return axis.getFormatPattern();
     }
 
     @JsProperty
@@ -97,37 +97,37 @@ public class JsAxis {
 
     @JsProperty
     public double getMinRange() {
-        return axis.getMinrange();
+        return axis.getMinRange();
     }
 
     @JsProperty
     public double getMaxRange() {
-        return axis.getMaxrange();
+        return axis.getMaxRange();
     }
 
     @JsProperty
     public boolean isMinorTicksVisible() {
-        return axis.getMinorticksvisible();
+        return axis.getMinorTicksVisible();
     }
 
     @JsProperty
     public boolean isMajorTicksVisible() {
-        return axis.getMajorticksvisible();
+        return axis.getMajorTicksVisible();
     }
 
     @JsProperty
     public int getMinorTickCount() {
-        return axis.getMinortickcount();
+        return axis.getMinorTickCount();
     }
 
     @JsProperty
     public double getGapBetweenMajorTicks() {
-        return axis.getGapbetweenmajorticks();
+        return axis.getGapBetweenMajorTicks();
     }
 
     @JsProperty
     public double[] getMajorTickLocations() {
-        return Js.uncheckedCast(axis.getMajorticklocationsList().slice());
+        return Js.uncheckedCast(axis.getMajorTickLocationsList().slice());
     }
 
     //TODO IDS-4139
@@ -138,7 +138,7 @@ public class JsAxis {
 
     @JsProperty
     public double getTickLabelAngle() {
-        return axis.getTicklabelangle();
+        return axis.getTickLabelAngle();
     }
 
     @JsProperty
@@ -148,7 +148,7 @@ public class JsAxis {
 
     @JsProperty
     public boolean isTimeAxis() {
-        return axis.getIstimeaxis();
+        return axis.getIsTimeAxis();
     }
 
     @JsMethod

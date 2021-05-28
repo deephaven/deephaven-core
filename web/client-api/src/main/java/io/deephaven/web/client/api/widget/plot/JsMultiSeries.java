@@ -26,7 +26,7 @@ public class JsMultiSeries {
 
     @JsIgnore
     public void initSources(Map<Integer, TableMap> plotHandlesToTableMaps) {
-        descriptor.getDatasourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTablemapid).distinct()
+        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTableMapId).distinct()
                 //TODO assert only one at this stage
                 .forEach(plotHandle -> {
             TableMap tableMap = plotHandlesToTableMaps.get(plotHandle);
@@ -48,35 +48,35 @@ public class JsMultiSeries {
             SeriesDescriptor seriesInstance = new SeriesDescriptor();
 
             seriesInstance.setName(seriesName);
-            seriesInstance.setPlotstyle(getPlotStyle());
+            seriesInstance.setPlotStyle(getPlotStyle());
 
-            seriesInstance.setLinecolor(getOrDefault(seriesName, descriptor.getLinecolor()));
-            seriesInstance.setShapecolor(getOrDefault(seriesName, descriptor.getPointcolor()));
-            seriesInstance.setLinesvisible(getOrDefault(seriesName, descriptor.getLinesvisible()));
-            seriesInstance.setShapesvisible(getOrDefault(seriesName, descriptor.getPointsvisible()));
-            Boolean gradientVisible = getOrDefault(seriesName, descriptor.getGradientvisible());
+            seriesInstance.setLineColor(getOrDefault(seriesName, descriptor.getLineColor()));
+            seriesInstance.setShapeColor(getOrDefault(seriesName, descriptor.getPointColor()));
+            seriesInstance.setLinesVisible(getOrDefault(seriesName, descriptor.getLinesVisible()));
+            seriesInstance.setShapesVisible(getOrDefault(seriesName, descriptor.getPointsVisible()));
+            Boolean gradientVisible = getOrDefault(seriesName, descriptor.getGradientVisible());
             if (gradientVisible != null) {
-                seriesInstance.setGradientvisible(gradientVisible);
+                seriesInstance.setGradientVisible(gradientVisible);
             }
 
-            seriesInstance.setYtooltippattern(getOrDefault(seriesName, descriptor.getYtooltippattern()));
-            seriesInstance.setXtooltippattern(getOrDefault(seriesName, descriptor.getXtooltippattern()));
+            seriesInstance.setYToolTipPattern(getOrDefault(seriesName, descriptor.getYToolTipPattern()));
+            seriesInstance.setXToolTipPattern(getOrDefault(seriesName, descriptor.getXToolTipPattern()));
 
-            seriesInstance.setShapelabel(getOrDefault(seriesName, descriptor.getPointlabel()));
-            seriesInstance.setShapesize(getOrDefault(seriesName, descriptor.getPointsize()));
-            seriesInstance.setShape(getOrDefault(seriesName, descriptor.getPointshape()));
+            seriesInstance.setShapeLabel(getOrDefault(seriesName, descriptor.getPointLabel()));
+            seriesInstance.setShapeSize(getOrDefault(seriesName, descriptor.getPointSize()));
+            seriesInstance.setShape(getOrDefault(seriesName, descriptor.getPointShape()));
 
-            seriesInstance.setPointlabelformat(getOrDefault(seriesName, descriptor.getPointlabelformat()));
+            seriesInstance.setPointLabelFormat(getOrDefault(seriesName, descriptor.getPointLabelFormat()));
 
             int tableId = figure.registerTable(table);
 
-            seriesInstance.setDatasourcesList(
-                    descriptor.getDatasourcesList()
+            seriesInstance.setDataSourcesList(
+                    descriptor.getDataSourcesList()
                             .map((multiSeriesSource, p1, p2) -> {
                                 SourceDescriptor sourceDescriptor = new SourceDescriptor();
-                                sourceDescriptor.setColumnname(multiSeriesSource.getColumnname());
+                                sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
                                 sourceDescriptor.setAxis(multiSeriesSource.getAxis());
-                                sourceDescriptor.setTableid(tableId);
+                                sourceDescriptor.setTableId(tableId);
                                 sourceDescriptor.setType(multiSeriesSource.getType());
                                 return sourceDescriptor;
                             })
@@ -101,28 +101,28 @@ public class JsMultiSeries {
     private boolean getOrDefault(String name, BoolMapWithDefault map) {
         int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
         if (index == -1) {
-            return map.getDefaultbool();
+            return map.getDefaultBool();
         }
         return map.getValuesList().getAt(index);
     }
     private String getOrDefault(String name, StringMapWithDefault map) {
         int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
         if (index == -1) {
-            return map.getDefaultstring();
+            return map.getDefaultString();
         }
         return map.getValuesList().getAt(index);
     }
-    private double getOrDefault(String name, FloatMapWithDefault map) {
+    private double getOrDefault(String name, DoubleMapWithDefault map) {
         int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
         if (index == -1) {
-            return map.getDefaultfloat();
+            return map.getDefaultDouble();
         }
         return map.getValuesList().getAt(index);
     }
 
     @JsProperty
     public int getPlotStyle() {
-        return descriptor.getPlotstyle();
+        return descriptor.getPlotStyle();
     }
 
     @JsProperty

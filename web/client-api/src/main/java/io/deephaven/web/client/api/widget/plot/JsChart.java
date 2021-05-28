@@ -32,7 +32,7 @@ public class JsChart extends HasEventHandling {
             indexed.put(axes[i].getId(), axes[i]);
         }
         series = descriptor.getSeriesList().asList().stream().map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
-        multiSeries = descriptor.getMultiseriesList().asList().stream().map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
+        multiSeries = descriptor.getMultiSeriesList().asList().stream().map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
     }
 
@@ -49,7 +49,7 @@ public class JsChart extends HasEventHandling {
     @JsProperty
     @SuppressWarnings("unusable-by-js")
     public int getChartType() {
-        return descriptor.getCharttype();
+        return descriptor.getChartType();
     }
 
     @JsProperty
@@ -59,27 +59,27 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     public String getTitleFont() {
-        return descriptor.getTitlefont();
+        return descriptor.getTitleFont();
     }
 
     @JsProperty
     public String getTitleColor() {
-        return descriptor.getTitlecolor();
+        return descriptor.getTitleColor();
     }
 
     @JsProperty
     public boolean isShowLegend() {
-        return descriptor.getShowlegend();
+        return descriptor.getShowLegend();
     }
 
     @JsProperty
     public String getLegendFont() {
-        return descriptor.getLegendfont();
+        return descriptor.getLegendFont();
     }
 
     @JsProperty
     public String getLegendColor() {
-        return descriptor.getLegendcolor();
+        return descriptor.getLegendColor();
     }
 
     @JsProperty(name = "is3d")

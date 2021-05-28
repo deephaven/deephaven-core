@@ -256,7 +256,7 @@ public class OneClick {
 
     @JsProperty
     public boolean isRequireAllFiltersToDisplay() {
-        return oneClick.getRequireallfilterstodisplay();
+        return oneClick.getRequireAllFiltersToDisplay();
     }
 
     public OneClickDescriptor getDescriptor() {

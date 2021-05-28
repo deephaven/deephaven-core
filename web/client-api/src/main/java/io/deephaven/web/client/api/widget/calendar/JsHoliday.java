@@ -11,7 +11,7 @@ public class JsHoliday {
 
     public JsHoliday(Holiday holiday) {
         date = new LocalDateWrapper(holiday.getDate().getYear(), holiday.getDate().getMonth(), holiday.getDate().getDay());
-        businessPeriods = holiday.getBusinessperiodsList().map((p0, p1, p2) -> new JsBusinessPeriod(p0));
+        businessPeriods = holiday.getBusinessPeriodsList().map((p0, p1, p2) -> new JsBusinessPeriod(p0));
         JsObject.freeze(businessPeriods);
     }
 

@@ -19,8 +19,6 @@ import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.InitialTableDefinition;
 import io.deephaven.web.shared.data.TableHandle;
-import io.deephaven.web.shared.data.TableMapDeclaration;
-import io.deephaven.web.shared.data.columns.ColumnData;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
@@ -132,7 +130,7 @@ public class JsFigure extends HasEventHandling {
         plotHandlesToTables = new HashMap<>();
 
         return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
-            this.descriptor = response.getFiguredescriptor();
+            this.descriptor = response.getFigureDescriptor();
 
             charts = descriptor.getChartsList().asList().stream().map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
@@ -145,9 +143,9 @@ public class JsFigure extends HasEventHandling {
             plotHandlesToTableMaps = tableFetchData.plotHandlesToTableMaps;
             onClose = tableFetchData.onClose;
 
-            for (int i = 0; i < descriptor.getTableidsList().length; i++) {
+            for (int i = 0; i < descriptor.getTableIdsList().length; i++) {
                 JsTable table = tables[i];
-                registerTableWithId(table, descriptor.getPlothandleidsList().getAt(i).getIdsList());
+                registerTableWithId(table, descriptor.getPlotHandleIdsList().getAt(i).getIdsList());
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
@@ -181,12 +179,12 @@ public class JsFigure extends HasEventHandling {
 
     @JsProperty
     public String getTitleFont() {
-        return descriptor.getTitlefont();
+        return descriptor.getTitleFont();
     }
 
     @JsProperty
     public String getTitleColor() {
-        return descriptor.getTitlecolor();
+        return descriptor.getTitleColor();
     }
 
     @Deprecated
@@ -209,7 +207,7 @@ public class JsFigure extends HasEventHandling {
 
     @JsProperty
     public double getUpdateInterval() {
-        return descriptor.getUpdateinterval();
+        return descriptor.getUpdateInterval();
     }
 
     @JsProperty
@@ -335,7 +333,7 @@ public class JsFigure extends HasEventHandling {
 
         // otherwise grab the first table we can find
         //TODO loop, assert all match
-        return plotHandlesToTables.get(s.getDescriptor().getDatasourcesList().getAt(0).getTableid());
+        return plotHandlesToTables.get(s.getDescriptor().getDataSourcesList().getAt(0).getTableId());
     }
 
     // First, break down the ranges so we can tell when they are entirely incompatible. They
@@ -400,7 +398,7 @@ public class JsFigure extends HasEventHandling {
             if (downsampledAxisDetails == null) {
                 continue;
             }
-            return new AxisRange(source.getDescriptor().getColumnname(), downsampledAxisDetails.min, downsampledAxisDetails.max);
+            return new AxisRange(source.getDescriptor().getColumnName(), downsampledAxisDetails.min, downsampledAxisDetails.max);
         }
         return null;
     }
@@ -433,7 +431,7 @@ public class JsFigure extends HasEventHandling {
             SeriesDataSource source = s.getSources()[i];
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());
             if (downsampledAxisDetails == null) {
-                yCols[yCols.length] = source.getDescriptor().getColumnname();
+                yCols[yCols.length] = source.getDescriptor().getColumnName();
             } else {
                 pixels = downsampledAxisDetails.pixels;
             }
@@ -506,7 +504,7 @@ public class JsFigure extends HasEventHandling {
                 Arrays.stream(s.getSources())
                     .forEach(source -> {
                         try {
-                            table.findColumn(source.getDescriptor().getColumnname());
+                            table.findColumn(source.getDescriptor().getColumnName());
                         } catch (NoSuchElementException e) {
                             throw new FigureSourceException(table, source, e.toString());
                         }
@@ -634,7 +632,7 @@ public class JsFigure extends HasEventHandling {
             JsTable[] tables;
 
 //            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
-            TableMap[] tableMaps = new TableMap[descriptor.getTablemapsList().length];
+            TableMap[] tableMaps = new TableMap[descriptor.getTableMapsList().length];
 //            Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];
             Map<Integer, TableMap> plotHandlesToTableMaps = new HashMap<>();
 //            for (int i = 0; i < descriptor.getTablemapsList().length; i++) {
@@ -663,12 +661,12 @@ public class JsFigure extends HasEventHandling {
 //            }
 
             // iterate through the table handles we're supposed to have and prep TableHandles for them
-            TableHandle[] handles = new TableHandle[descriptor.getTableidsList().length];
+            TableHandle[] handles = new TableHandle[descriptor.getTableIdsList().length];
             List<Callback<InitialTableDefinition, String>> callbackList = new ArrayList<>();
-            tables = new JsTable[descriptor.getTableidsList().length];
+            tables = new JsTable[descriptor.getTableIdsList().length];
 
-            Promise<Void>[] tablePromises = new Promise[descriptor.getTableidsList().length];
-            for (int i = 0; i < descriptor.getTableidsList().length; i++) {
+            Promise<Void>[] tablePromises = new Promise[descriptor.getTableIdsList().length];
+            for (int i = 0; i < descriptor.getTableIdsList().length; i++) {
 
                 //note that this lambda is executed immediately
                 final int index = i;

@@ -18,10 +18,10 @@ public class SeriesDataSource {
     }
 
     public void initColumnType(Map<Integer, JsTable> tables) {
-        if (sourceDescriptor.getTableid() != -1) {
-            columnType = tables.get(sourceDescriptor.getTableid()).findColumn(sourceDescriptor.getColumnname()).getType();
-        } else if (sourceDescriptor.getTablemapid() != -1) {
-            columnType = sourceDescriptor.getColumntype();
+        if (sourceDescriptor.getTableId() != -1) {
+            columnType = tables.get(sourceDescriptor.getTableId()).findColumn(sourceDescriptor.getColumnName()).getType();
+        } else if (sourceDescriptor.getTableMapId() != -1) {
+            columnType = sourceDescriptor.getColumnType();
         } else {
             throw new SeriesDataSourceException(this, "No table available for source");
         }

@@ -49,9 +49,9 @@ public class DataUpdateEvent {
     }
 
     private String getColumnName(JsSeries series, int sourceType) {
-        return series.getDescriptor().getDatasourcesList().asList().stream()
+        return series.getDescriptor().getDataSourcesList().asList().stream()
                 .filter(sd -> sd.getType() == sourceType)
-                .findFirst().map(SourceDescriptor::getColumnname)
+                .findFirst().map(SourceDescriptor::getColumnName)
                 .orElseThrow(() -> new IllegalArgumentException("No sourceType " + sourceType + " in provided series"));
     }
 }
