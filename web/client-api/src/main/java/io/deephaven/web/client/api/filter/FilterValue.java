@@ -44,11 +44,11 @@ public class FilterValue {
         Objects.requireNonNull(input);
         if (input instanceof DateWrapper) {
             Literal lit = new Literal();
-            lit.setNanoTimeValue(((DateWrapper) input).getWrapped());
+            lit.setNanoTimeValue(((DateWrapper) input).valueOf());
             return new FilterValue(lit);
         } else if (input instanceof LongWrapper) {
             Literal lit = new Literal();
-            lit.setLongValue(((LongWrapper) input).getWrapped());
+            lit.setLongValue(((LongWrapper) input).valueOf());
             return new FilterValue(lit);
         } else if (Js.typeof(input).equals("number")) {
             Literal lit = new Literal();
