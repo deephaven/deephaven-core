@@ -29,9 +29,9 @@ public class FilterCondition {
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition search(FilterValue value, @JsOptional FilterValue[] columns) {
         SearchCondition search = new SearchCondition();
-        search.setSearchstring(value.descriptor.getLiteral().getStringvalue());
+        search.setSearchString(value.descriptor.getLiteral().getStringValue());
         if (columns != null) {
-            search.setOptionalreferencesList(Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
+            search.setOptionalReferencesList(Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
         }
 
         Condition c = new Condition();

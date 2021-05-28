@@ -36,7 +36,7 @@ public class FilterValue {
             string = input.toString();
         }
         Literal lit = new Literal();
-        lit.setStringvalue(string);
+        lit.setStringValue(string);
         return new FilterValue(lit);
     }
     @JsMethod(namespace = "dh.FilterValue")
@@ -44,20 +44,20 @@ public class FilterValue {
         Objects.requireNonNull(input);
         if (input instanceof DateWrapper) {
             Literal lit = new Literal();
-            lit.setNanotimevalue(((DateWrapper) input).getWrapped());
+            lit.setNanoTimeValue(((DateWrapper) input).getWrapped());
             return new FilterValue(lit);
         } else if (input instanceof LongWrapper) {
             Literal lit = new Literal();
-            lit.setLongvalue(((LongWrapper) input).getWrapped());
+            lit.setLongValue(((LongWrapper) input).getWrapped());
             return new FilterValue(lit);
         } else if (Js.typeof(input).equals("number")) {
             Literal lit = new Literal();
-            lit.setDoublevalue(Js.asDouble(input));
+            lit.setDoubleValue(Js.asDouble(input));
             return new FilterValue(lit);
         } else {
             //not sure what the input is, try to toString(), then parse to Double, and use that
             Literal lit = new Literal();
-            lit.setDoublevalue(Double.parseDouble(input.toString()));
+            lit.setDoubleValue(Double.parseDouble(input.toString()));
             return new FilterValue(lit);
         }
     }
@@ -66,7 +66,7 @@ public class FilterValue {
         Objects.requireNonNull(b);
 
         Literal lit = new Literal();
-        lit.setBoolvalue(b);
+        lit.setBoolValue(b);
         return new FilterValue(lit);
     }
 
@@ -78,7 +78,7 @@ public class FilterValue {
     @JsIgnore
     public FilterValue(Column column) {
         Reference ref = new Reference();
-        ref.setColumnname(column.getName());
+        ref.setColumnName(column.getName());
 
         descriptor = new Value();
         descriptor.setReference(ref);
@@ -136,8 +136,8 @@ public class FilterValue {
     private FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
         InCondition value = new InCondition();
         value.setTarget(descriptor);
-        value.setMatchtype(matchType);
-        value.setCasesensitivity(casesensitivity);
+        value.setMatchType(matchType);
+        value.setCaseSensitivity(casesensitivity);
         value.setCandidatesList(Arrays.stream(terms).map(v -> v.descriptor).toArray(Value[]::new));
 
         Condition c = new Condition();
@@ -166,8 +166,8 @@ public class FilterValue {
 
     private FilterCondition makeContains(FilterValue term, double casesensitivity) {
         ContainsCondition contains = new ContainsCondition();
-        contains.setSearchstring(term.descriptor.getLiteral().getStringvalue());
-        contains.setCasesensitivity(casesensitivity);
+        contains.setSearchString(term.descriptor.getLiteral().getStringValue());
+        contains.setCaseSensitivity(casesensitivity);
 
         Condition c = new Condition();
         c.setContains(contains);
@@ -185,8 +185,8 @@ public class FilterValue {
         MatchesCondition contains = new MatchesCondition();
 
         contains.setReference(this.descriptor.getReference());
-        contains.setRegex(term.descriptor.getLiteral().getStringvalue());
-        contains.setCasesensitivity(casesensitivity);
+        contains.setRegex(term.descriptor.getLiteral().getStringValue());
+        contains.setCaseSensitivity(casesensitivity);
 
         Condition c = new Condition();
         c.setMatches(contains);
@@ -206,7 +206,7 @@ public class FilterValue {
         isNull.setReference(this.descriptor.getReference());
 
         Condition c = new Condition();
-        c.setIsnull(isNull);
+        c.setIsNull(isNull);
         return FilterCondition.createAndValidate(c);
     }
 
