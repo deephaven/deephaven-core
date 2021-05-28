@@ -37,7 +37,7 @@ public class JsSeries {
 
         for (int i = 0; i < series.getDataSourcesList().length; i++) {
             SourceDescriptor dataSource = series.getDataSourcesList().getAt(i);
-            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxis().getId()), dataSource);
+            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {

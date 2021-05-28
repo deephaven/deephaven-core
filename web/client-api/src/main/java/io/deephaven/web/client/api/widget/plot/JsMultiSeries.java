@@ -75,7 +75,7 @@ public class JsMultiSeries {
                             .map((multiSeriesSource, p1, p2) -> {
                                 SourceDescriptor sourceDescriptor = new SourceDescriptor();
                                 sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
-                                sourceDescriptor.setAxis(multiSeriesSource.getAxis());
+                                sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());
                                 sourceDescriptor.setTableId(tableId);
                                 sourceDescriptor.setType(multiSeriesSource.getType());
                                 return sourceDescriptor;

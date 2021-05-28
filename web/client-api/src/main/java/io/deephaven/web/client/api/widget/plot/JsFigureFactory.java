@@ -244,7 +244,7 @@ public class JsFigureFactory {
     private static SourceDescriptor convertJsSourceDescriptor(JsSourceDescriptor jsDescriptor, JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
         SourceDescriptor descriptor = new SourceDescriptor();
 
-        descriptor.setAxis(axisMap.get(jsDescriptor.axis));
+        descriptor.setAxisId(axisMap.get(jsDescriptor.axis).getId());
         descriptor.setTableId(tables.indexOf(jsDescriptor.table));
         descriptor.setColumnName(jsDescriptor.columnName);
         descriptor.setType(Js.coerceToInt(jsDescriptor.type));
