@@ -799,7 +799,7 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeParquet(final Table sourceTable, final String destFilePath) {
-        TableManagementTools.writeTable(sourceTable, destFilePath, TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(sourceTable, destFilePath);
     }
 
     /////////// Utilities for Creating Columns  ///////////

@@ -140,9 +140,10 @@ public class TestTableManagementTools {
     }
 
     @Test
-    public void testWriteTable() throws IOException {
-        TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "Table1"), storageFormat);
-        Table result = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Table1"));
+    public void testWriteTable() {
+        String path = testRoot + File.separator + "Table1";
+        TableManagementTools.writeTable(table1, path);
+        Table result = TableManagementTools.readTable(new File(path));
         TableTools.show(result);
         TableTools.show(table1);
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -155,8 +156,9 @@ public class TestTableManagementTools {
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
                 "toS(enumC_[(i+1)% 10]))");
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table2"), storageFormat);
-        Table test2 = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Table2"));
+        path = testRoot + File.separator + "Table2";
+        TableManagementTools.writeTable(test, path);
+        Table test2 = TableManagementTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))), Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
@@ -167,10 +169,10 @@ public class TestTableManagementTools {
         }
         test2.close();
 
-
         test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table3"), storageFormat);
-        test2 = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Table3"));
+        path = testRoot + File.separator + "Table3";
+        TableManagementTools.writeTable(test, path);
+        test2 = TableManagementTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)), Arrays.asList(test2.getColumn("enumC").get(0, 10)));
@@ -182,16 +184,17 @@ public class TestTableManagementTools {
             ColumnDefinition.ofString("aString").withGrouping()),
             col("anInt", 1, 2, 3),
             col("aString", "ab", "ab", "bc"));
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table4"), storageFormat);
-        test2 = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Table4"));
+        path = testRoot + File.separator + "Table4";
+        TableManagementTools.writeTableToDir(test, path);
+        test2 = TableManagementTools.readTableFromDir(new File(path));
         assertNotNull(test2.getColumnSource("aString").getGroupToRange());
         test2.close();
     }
 
 
     @Test
-    public void testWriteTableEmpty() throws IOException {
-        TableManagementTools.writeTable(emptyTable, new File(testRoot + File.separator + "Empty"), storageFormat);
+    public void testWriteTableEmpty() {
+        TableManagementTools.writeTableToDir(emptyTable, new File(testRoot + File.separator + "Empty"), storageFormat);
         Table result = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Empty"));
         TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
@@ -222,7 +225,7 @@ public class TestTableManagementTools {
     public void testWriteTableExceptions() throws IOException {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {
-            TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"), storageFormat);
+            TableManagementTools.writeTableToDir(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"), storageFormat);
             TestCase.fail("Expected exception");
         } catch (IllegalArgumentException e) {
             //Expected
@@ -230,12 +233,12 @@ public class TestTableManagementTools {
 
         new File(testRoot + File.separator + "Table1").mkdirs();
         new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
-        TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "Table1"), storageFormat);
+        TableManagementTools.writeTableToDir(table1, new File(testRoot + File.separator + "Table1"), storageFormat);
         TestCase.assertFalse(new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").exists());
 
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
-            TableManagementTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
+            TableManagementTools.writeTableToDir(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
             TestCase.fail("Expected exception");
         } catch (UnsupportedOperationException e) {
             //Expected exception
@@ -245,7 +248,7 @@ public class TestTableManagementTools {
 
         new File(testRoot + File.separator + "Nested").setReadOnly();
         try {
-            TableManagementTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
+            TableManagementTools.writeTableToDir(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
             TestCase.fail("Expected exception");
         } catch (RuntimeException e) {
             //Expected exception
@@ -260,7 +263,7 @@ public class TestTableManagementTools {
             return;
         }
         File path = new File(testRoot + File.separator + "Table1");
-        TableManagementTools.writeTable(table1, path, storageFormat);
+        TableManagementTools.writeTableToDir(table1, path, storageFormat);
         Table result = TableManagementTools.readTableFromDir(new File(testRoot + File.separator + "Table1"));
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();

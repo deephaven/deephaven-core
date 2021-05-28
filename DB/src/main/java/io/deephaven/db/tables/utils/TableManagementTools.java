@@ -15,7 +15,7 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.SimpleSourceTable;
 import io.deephaven.db.v2.locations.StandaloneTableKey;
 import io.deephaven.db.v2.locations.TableLocationProvider;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByScanner;
+import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProvider;
 import io.deephaven.db.v2.locations.local.StandaloneLocalTableLocationScanner;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
@@ -48,6 +48,15 @@ public class TableManagementTools {
 
     ///////////  Utilities For Table I/O /////////////////
 
+    private static Table getTable(final String description, final TableDefinition sourceDef, final TableLocationProvider locationProvider) {
+        TableDefinition tableDefinition = sourceDef.getWritable();
+        if (tableDefinition.getStorageType() == TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK) {
+            tableDefinition = new TableDefinition(tableDefinition);
+            tableDefinition.setStorageType(TableDefinition.STORAGETYPE_SPLAYEDONDISK);
+        }
+        return new SimpleSourceTable(tableDefinition, description, RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+    }
+
     /**
      * Reads in a table from disk.
      *
@@ -56,18 +65,18 @@ public class TableManagementTools {
      * @return table
      */
     public static Table readTableFromDir(@NotNull final File path, @NotNull TableDefinition tableDefinition) {
-        tableDefinition = tableDefinition.getWritable();
-        if (tableDefinition.getStorageType() == TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK) {
-            tableDefinition = new TableDefinition(tableDefinition);
-            tableDefinition.setStorageType(TableDefinition.STORAGETYPE_SPLAYEDONDISK);
-        }
-        final String description = "Stand-alone V2 table from " + path;
-        final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByScanner(
+        final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProvider(
                 StandaloneTableKey.getInstance(),
                 new StandaloneLocalTableLocationScanner(path),
                 false,
                 TableDataRefreshService.getSharedRefreshService());
-        return new SimpleSourceTable(tableDefinition, description, RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+        return getTable("Stand-alone V2 table from " + path, tableDefinition, locationProvider);
+    }
+
+    private static Table readTableFromSingleParquetFile(@NotNull final File sourceFile, @NotNull final TableDefinition tableDefinition) {
+        final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
+                sourceFile, TableDataRefreshService.getSharedRefreshService());
+        return getTable("Read single parquet file from " + sourceFile, tableDefinition, locationProvider);
     }
 
     /**
@@ -100,16 +109,6 @@ public class TableManagementTools {
         return readParquetTableWithClassLoader(sourceDir, true, null);
     }
 
-    private static Table readParquetTableImpl(@NotNull final File sourceFile, @NotNull final TableDefinition tableDefinition) {
-        final String description = "Read parquet from " + sourceFile;
-        final TableLocationProvider locationProvider =
-                new ReadOnlyLocalTableLocationProviderByParquetFile(
-                        sourceFile, TableDataRefreshService.getSharedRefreshService());
-        return new SimpleSourceTable(
-                tableDefinition, description, RegionedTableComponentFactoryImpl.INSTANCE,
-                locationProvider, null);
-    }
-
     private static Table readParquetTableWithClassLoader(@NotNull final File source, final boolean isDirectory, final ClassLoader classLoader) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
@@ -134,8 +133,24 @@ public class TableManagementTools {
         final TableDefinition def = new TableDefinition(cols);
         return isDirectory
                 ? readTableFromDir(source, def)
-                : readParquetTableImpl(source, def)
+                : readTableFromSingleParquetFile(source, def)
                 ;
+    }
+
+    /**
+     * Write out a table to disk, to a single file, ignoring any grouping information.
+     *
+     * @param sourceTable source table
+     * @param destFilePath destination file path
+     */
+    public static void writeTable(Table sourceTable, String destFilePath) {
+        try {
+            ParquetTableWriter.write(
+                    sourceTable, sourceTable.getDefinition()
+                    , destFilePath, Collections.emptyMap(), CompressionCodecName.SNAPPY);
+        } catch (Exception e) {
+            throw new RuntimeException("Error writing table to " + destFilePath + ": " + e, e);
+        }
     }
 
     /**
@@ -144,8 +159,8 @@ public class TableManagementTools {
      * @param sourceTable source table
      * @param destDir destination
      */
-    public static void writeTable(Table sourceTable, String destDir) {
-        writeTable(sourceTable, destDir, StorageFormat.Parquet);
+    public static void writeTableToDir(Table sourceTable, String destDir) {
+        writeTableToDir(sourceTable, destDir, StorageFormat.Parquet);
     }
 
     /**
@@ -155,8 +170,8 @@ public class TableManagementTools {
      * @param destDir destination
      * @param storageFormat Format used for storage
      */
-    public static void writeTable(Table sourceTable, String destDir, StorageFormat storageFormat) {
-        writeTable(sourceTable, sourceTable.getDefinition(), new File(destDir), storageFormat);
+    public static void writeTableToDir(Table sourceTable, String destDir, StorageFormat storageFormat) {
+        writeTableToDir(sourceTable, sourceTable.getDefinition(), new File(destDir), storageFormat);
     }
 
     /**
@@ -167,7 +182,7 @@ public class TableManagementTools {
      * @param destDir destination
      * @param storageFormat Format used for storage
      */
-    public static void writeTable(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
+    public static void writeTableToDir(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
         if (storageFormat == StorageFormat.Parquet) {
             writeParquetTable(sourceTable, definition, CompressionCodecName.SNAPPY, destDir, definition.getGroupingColumnNamesArray());
         } else {
@@ -181,8 +196,8 @@ public class TableManagementTools {
      * @param sourceTable source table
      * @param destDir destination
      */
-    public static void writeTable(Table sourceTable, File destDir) {
-        writeTable(sourceTable, destDir, StorageFormat.Parquet);
+    public static void writeTableToDir(Table sourceTable, File destDir) {
+        writeTableToDir(sourceTable, destDir, StorageFormat.Parquet);
     }
 
     /**
@@ -192,8 +207,8 @@ public class TableManagementTools {
      * @param destDir destination
      * @param storageFormat Format used for storage
      */
-    public static void writeTable(Table sourceTable, File destDir, StorageFormat storageFormat) {
-        writeTable(sourceTable, sourceTable.getDefinition(), destDir, storageFormat);
+    public static void writeTableToDir(Table sourceTable, File destDir, StorageFormat storageFormat) {
+        writeTableToDir(sourceTable, sourceTable.getDefinition(), destDir, storageFormat);
     }
 
     /**
@@ -203,7 +218,7 @@ public class TableManagementTools {
      * @param destination The destination directory
      * @return The first created directory
      */
-    private static File prepareDestination(@NotNull File destination) {
+    static File prepareDestination(@NotNull File destination) {
         destination = destination.getAbsoluteFile();
         if (destination.exists()) {
             FileUtils.deleteRecursivelyOnNFS(destination);
@@ -254,19 +269,19 @@ public class TableManagementTools {
      * @param codecName       Compression codec to use.  The only supported codecs are
      *                        {@link CompressionCodecName#SNAPPY} and {@link CompressionCodecName#UNCOMPRESSED}.
      *
-     * @param destination     The destination path
+     * @param destinationDir     The destination path
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
      */
     public static void writeParquetTable(
             @NotNull final Table source,
             @NotNull final TableDefinition tableDefinition,
             final CompressionCodecName codecName,
-            @NotNull final File destination,
-            String[] groupingColumns) {
-        final File firstCreatedDir = prepareDestination(destination.getAbsoluteFile());
+            @NotNull final File destinationDir,
+            final String[] groupingColumns) {
+        final File firstCreatedDir = prepareDestination(destinationDir.getAbsoluteFile());
 
         try {
-            writeParquetTableImpl(source, tableDefinition, codecName, destination, groupingColumns);
+            writeParquetTableImpl(source, tableDefinition, codecName, destinationDir, groupingColumns);
         } catch (RuntimeException e) {
             log.error("Error in table writing, cleaning up potentially incomplete table destination path starting from " +
                     firstCreatedDir.getAbsolutePath(), e);

@@ -192,7 +192,9 @@ public class ParquetTableWriter {
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
-    public static void write(Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns) throws SchemaMappingException, IOException {
+    public static void write(
+            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns
+    ) throws SchemaMappingException, IOException {
         write(t, path, incomingMeta, CompressionCodecName.UNCOMPRESSED, t.getDefinition(), groupingPathFactory, groupingColumns);
     }
 
@@ -213,7 +215,10 @@ public class ParquetTableWriter {
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
-    public static void write(Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName, TableDefinition definition, Function<String, String> groupingPathFactory, String... groupingColumns) throws SchemaMappingException, IOException {
+    public static void write(
+            Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName,
+            TableDefinition definition, Function<String, String> groupingPathFactory, String... groupingColumns
+    ) throws SchemaMappingException, IOException {
         Map<String, String> tableMeta = new HashMap<>(incomingMeta);
         Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
         tableMeta.put(GROUPING, String.join(",", groupingColumns));

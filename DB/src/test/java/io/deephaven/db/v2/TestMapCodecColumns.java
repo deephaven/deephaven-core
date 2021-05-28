@@ -82,7 +82,7 @@ public class TestMapCodecColumns {
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
-            TableManagementTools.writeTable(TABLE, dir, storageFormat);
+            TableManagementTools.writeTableToDir(TABLE, dir, storageFormat);
             // TODO (deephaven/deephaven-core/issues/322): Infer the definition
             final Table result = TableManagementTools.readTableFromDir(dir);
             TableTools.show(result);

@@ -13,7 +13,7 @@ import java.io.File;
 /**
  * Location provider for read-only table locations.
  */
-public class ReadOnlyLocalTableLocationProviderByScanner extends LocalTableLocationProvider {
+public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProvider {
 
     private static final String PARQUET_FILE_NAME = "table.parquet";
 
@@ -21,7 +21,7 @@ public class ReadOnlyLocalTableLocationProviderByScanner extends LocalTableLocat
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
 
-    public ReadOnlyLocalTableLocationProviderByScanner(
+    public ReadOnlyLocalTableLocationProvider(
             @NotNull final TableKey tableKey,
             @NotNull final Scanner scanner,
             final boolean supportsSubscriptions,
@@ -32,7 +32,7 @@ public class ReadOnlyLocalTableLocationProviderByScanner extends LocalTableLocat
 
     @Override
     public String getImplementationName() {
-        return "ReadOnlyLocalTableLocationProvider";
+        return ReadOnlyLocalTableLocationProvider.class.getSimpleName();
     }
 
     @Override

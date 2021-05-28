@@ -2,6 +2,7 @@ package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -22,11 +23,14 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends AbstractTab
 
     @Override
     public String getImplementationName() {
-        return "ReadOnlyLocalTableLocationProvider";
+        return ReadOnlyLocalTableLocationProviderByParquetFile.class.getSimpleName();
     }
 
     @Override
-    public void refresh() { }
+    public void refresh() {
+        handleTableLocationKey(SimpleTableLocationKey.getInstance());
+        setInitialized();
+    }
 
     @Override
     protected void activateUnderlyingDataSource() {
@@ -53,6 +57,10 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends AbstractTab
     }
 
     private TableLocation<?> makeLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
-        return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, false);
+        if (Utils.fileExistsPrivileged(fileLocation)) {
+            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, supportsSubscriptions());
+        } else {
+            throw new UnsupportedOperationException(this + ": Unrecognized data format in location " + tableLocationKey);
+        }
     }
 }

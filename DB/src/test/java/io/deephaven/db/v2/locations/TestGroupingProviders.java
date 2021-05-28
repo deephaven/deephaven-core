@@ -12,7 +12,7 @@ import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.locations.local.NestedPartitionedLocalTableLocationScanner;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByScanner;
+import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProvider;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import junit.framework.TestCase;
@@ -144,10 +144,10 @@ public class TestGroupingProviders {
 
         final TableKey tableKey = new TableLookupKey.Immutable(partitionedDataDefinition.getNamespace(), partitionedDataDefinition.getName(), TableType.STANDALONE_SPLAYED);
 
-        TableManagementTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTableToDir(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTableToDir(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTableToDir(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTableToDir(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
         TableManagementTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
                 partitionedDataDefinition,
@@ -169,7 +169,7 @@ public class TestGroupingProviders {
         final Table actual = new NestedPartitionedDiskBackedTable(
                 partitionedDataDefinition,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new ReadOnlyLocalTableLocationProviderByScanner(
+                new ReadOnlyLocalTableLocationProvider(
                         tableKey,
                         new NestedPartitionedLocalTableLocationScanner(dataDirectory),
                         false,
