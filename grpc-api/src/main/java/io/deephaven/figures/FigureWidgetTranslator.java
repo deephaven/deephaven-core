@@ -111,7 +111,7 @@ public class FigureWidgetTranslator {
         FigureDescriptor.ChartDescriptor.Builder clientChart = FigureDescriptor.ChartDescriptor.newBuilder();
 
         boolean swappedPositions = chart.getPlotOrientation() != ChartImpl.PlotOrientation.VERTICAL;
-        Map<String, AxisDescriptor.Builder> axes = new HashMap<>();
+        Map<String, AxisDescriptor> axes = new HashMap<>();
 
         //x=0, y=1, z=2, unless swapped
 
@@ -178,7 +178,7 @@ public class FigureWidgetTranslator {
                     }
                 }
 
-                axes.put(type.name() + axis.id(), clientAxis);
+                axes.put(type.name() + axis.id(), clientAxis.build());
             }
         }
         clientChart.addAllAxes(axes.values());
@@ -552,7 +552,7 @@ public class FigureWidgetTranslator {
 
     private MultiSeriesSourceDescriptor makeTableMapSourceDescriptor(int plotHandleId, String columnName, SourceType sourceType, AxisDescriptor axis) {
         MultiSeriesSourceDescriptor.Builder source = MultiSeriesSourceDescriptor.newBuilder();
-        source.setAxis(axis);
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
         source.setTableMapId(plotHandleId);
         source.setColumnName(columnName);
@@ -564,7 +564,7 @@ public class FigureWidgetTranslator {
 
         source.setColumnName(columnName);
         source.setTableId(tableHandle.id());
-        source.setAxis(axis);
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
 
         return source.build();
@@ -573,7 +573,7 @@ public class FigureWidgetTranslator {
     private SourceDescriptor makeSourceDescriptor(SwappableTable swappableTable, String columnName, SourceType sourceType, AxisDescriptor axis) {
         SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
 
-        source.setAxis(axis);
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
 
         if (swappableTable instanceof SwappableTableOneClickAbstract) {
@@ -592,7 +592,7 @@ public class FigureWidgetTranslator {
 
     private SourceDescriptor makeSourceDescriptor(IndexableNumericData data, SourceType sourceType, AxisDescriptor axis) {
         SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
-        source.setAxis(axis);
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
         if (data instanceof IndexableNumericDataTable) {
             ColumnHandlerFactory.ColumnHandler columnHandler = ((IndexableNumericDataTable) data).getColumnHandler();

@@ -420,7 +420,7 @@ message FigureDescriptor {
         repeated Holiday holidays = 5;
     }
     message MultiSeriesSourceDescriptor {
-        AxisDescriptor axis = 1;
+        string axis_id = 1;
 
         SourceType type = 2;
 
@@ -447,7 +447,7 @@ message FigureDescriptor {
         COLOR = 15;
     }
     message SourceDescriptor {
-        AxisDescriptor axis = 1;
+        string axis_id = 1;
 
         SourceType type = 2;
 
