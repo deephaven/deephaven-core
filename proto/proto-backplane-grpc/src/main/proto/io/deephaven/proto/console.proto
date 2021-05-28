@@ -225,10 +225,10 @@ message FigureDescriptor {
 
     repeated ChartDescriptor charts = 10;
 
-    repeated io.deephaven.proto.backplane.grpc.Ticket table_ids = 11;
+    repeated arrow.flight.protocol.Ticket table_ids = 11;
     repeated RepeatedInt32 plot_handle_ids = 12;
 
-    repeated io.deephaven.proto.backplane.grpc.Ticket table_maps = 13;
+    repeated arrow.flight.protocol.Ticket table_maps = 13;
     repeated RepeatedInt32 table_map_ids = 14;
 
     repeated string errors = 15;

@@ -129,6 +129,13 @@ service TableService {
    */
   rpc Flatten(FlattenRequest) returns (ExportedTableCreationResponse) {}
 
+  /**
+   * Downsamples a table assume its contents will be rendered in a run chart, with each subsequent row holding a later
+   * X value (i.e., sorted on that column). Multiple Y columns can be specified, as can a range of values for the X
+   * column to support zooming in.
+   */
+  rpc RunChartDownsample(RunChartDownsampleRequest) returns (ExportedTableCreationResponse) {}
+
   /*
    * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
    * requiring them to be exported and managed by the client. The server will automatically release any tables when they
@@ -473,6 +480,20 @@ message FlattenRequest {
   TableReference source_id = 2;
 }
 
+message RunChartDownsampleRequest {
+  message ZoomRange {
+    optional int64 min_date_nanos = 1 [jstype=JS_STRING];
+    optional int64 max_date_nanos = 2 [jstype=JS_STRING];
+  }
+  arrow.flight.protocol.Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  int32 pixel_count = 3;
+  ZoomRange zoom_range = 4;
+  string x_column_name = 5;
+  repeated string y_column_names = 6;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -500,7 +521,8 @@ message BatchTableRequest {
       ComboAggregateRequest combo_aggregate = 20;
       SnapshotTableRequest snapshot = 21;
       FlattenRequest flatten = 22;
-      AsOfJoinTablesRequest as_of_join = 23;
+      AsOfJoinTablesRequest as_of_join = 24;
+      RunChartDownsampleRequest run_chart_downsample = 23;
     }
   }
 }

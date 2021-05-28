@@ -24,6 +24,8 @@ dependencies {
 
     compile project(':Plot')
 
+    compile project(':ClientSupport')
+
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':classgraph-extension')
     }
