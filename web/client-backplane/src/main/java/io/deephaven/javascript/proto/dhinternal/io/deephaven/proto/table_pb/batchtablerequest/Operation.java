@@ -12,6 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Head
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
@@ -1007,6 +1008,77 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface RunChartDownsampleFieldType {
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface ZoomRangeFieldType {
+        @JsOverlay
+        static Operation.ToObjectReturnType.RunChartDownsampleFieldType.ZoomRangeFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMaxDateNanos();
+
+        @JsProperty
+        String getMinDateNanos();
+
+        @JsProperty
+        void setMaxDateNanos(String maxDateNanos);
+
+        @JsProperty
+        void setMinDateNanos(String minDateNanos);
+      }
+
+      @JsOverlay
+      static Operation.ToObjectReturnType.RunChartDownsampleFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getPixelCount();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getSourceId();
+
+      @JsProperty
+      String getXColumnName();
+
+      @JsProperty
+      JsArray<String> getYColumnNamesList();
+
+      @JsProperty
+      Operation.ToObjectReturnType.RunChartDownsampleFieldType.ZoomRangeFieldType getZoomRange();
+
+      @JsProperty
+      void setPixelCount(double pixelCount);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setSourceId(Object sourceId);
+
+      @JsProperty
+      void setXColumnName(String xColumnName);
+
+      @JsProperty
+      void setYColumnNamesList(JsArray<String> yColumnNamesList);
+
+      @JsOverlay
+      default void setYColumnNamesList(String[] yColumnNamesList) {
+        setYColumnNamesList(Js.<JsArray<String>>uncheckedCast(yColumnNamesList));
+      }
+
+      @JsProperty
+      void setZoomRange(
+          Operation.ToObjectReturnType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SelectDistinctFieldType {
       @JsOverlay
       static Operation.ToObjectReturnType.SelectDistinctFieldType create() {
@@ -1306,6 +1378,9 @@ public class Operation {
     Operation.ToObjectReturnType.MergeFieldType getMerge();
 
     @JsProperty
+    Operation.ToObjectReturnType.RunChartDownsampleFieldType getRunChartDownsample();
+
+    @JsProperty
     Object getSelect();
 
     @JsProperty
@@ -1373,6 +1448,10 @@ public class Operation {
 
     @JsProperty
     void setMerge(Operation.ToObjectReturnType.MergeFieldType merge);
+
+    @JsProperty
+    void setRunChartDownsample(
+        Operation.ToObjectReturnType.RunChartDownsampleFieldType runChartDownsample);
 
     @JsProperty
     void setSelect(Object select);
@@ -2392,6 +2471,77 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface RunChartDownsampleFieldType {
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface ZoomRangeFieldType {
+        @JsOverlay
+        static Operation.ToObjectReturnType0.RunChartDownsampleFieldType.ZoomRangeFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMaxDateNanos();
+
+        @JsProperty
+        String getMinDateNanos();
+
+        @JsProperty
+        void setMaxDateNanos(String maxDateNanos);
+
+        @JsProperty
+        void setMinDateNanos(String minDateNanos);
+      }
+
+      @JsOverlay
+      static Operation.ToObjectReturnType0.RunChartDownsampleFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getPixelCount();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getSourceId();
+
+      @JsProperty
+      String getXColumnName();
+
+      @JsProperty
+      JsArray<String> getYColumnNamesList();
+
+      @JsProperty
+      Operation.ToObjectReturnType0.RunChartDownsampleFieldType.ZoomRangeFieldType getZoomRange();
+
+      @JsProperty
+      void setPixelCount(double pixelCount);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setSourceId(Object sourceId);
+
+      @JsProperty
+      void setXColumnName(String xColumnName);
+
+      @JsProperty
+      void setYColumnNamesList(JsArray<String> yColumnNamesList);
+
+      @JsOverlay
+      default void setYColumnNamesList(String[] yColumnNamesList) {
+        setYColumnNamesList(Js.<JsArray<String>>uncheckedCast(yColumnNamesList));
+      }
+
+      @JsProperty
+      void setZoomRange(
+          Operation.ToObjectReturnType0.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SelectDistinctFieldType {
       @JsOverlay
       static Operation.ToObjectReturnType0.SelectDistinctFieldType create() {
@@ -2691,6 +2841,9 @@ public class Operation {
     Operation.ToObjectReturnType0.MergeFieldType getMerge();
 
     @JsProperty
+    Operation.ToObjectReturnType0.RunChartDownsampleFieldType getRunChartDownsample();
+
+    @JsProperty
     Object getSelect();
 
     @JsProperty
@@ -2758,6 +2911,10 @@ public class Operation {
 
     @JsProperty
     void setMerge(Operation.ToObjectReturnType0.MergeFieldType merge);
+
+    @JsProperty
+    void setRunChartDownsample(
+        Operation.ToObjectReturnType0.RunChartDownsampleFieldType runChartDownsample);
 
     @JsProperty
     void setSelect(Object select);
@@ -2828,6 +2985,8 @@ public class Operation {
 
   public native void clearMerge();
 
+  public native void clearRunChartDownsample();
+
   public native void clearSelect();
 
   public native void clearSelectDistinct();
@@ -2876,6 +3035,8 @@ public class Operation {
 
   public native int getOpCase();
 
+  public native RunChartDownsampleRequest getRunChartDownsample();
+
   public native SelectOrUpdateRequest getSelect();
 
   public native SelectDistinctRequest getSelectDistinct();
@@ -2921,6 +3082,8 @@ public class Operation {
   public native boolean hasLazyUpdate();
 
   public native boolean hasMerge();
+
+  public native boolean hasRunChartDownsample();
 
   public native boolean hasSelect();
 
@@ -2991,6 +3154,10 @@ public class Operation {
   public native void setMerge();
 
   public native void setMerge(MergeTablesRequest value);
+
+  public native void setRunChartDownsample();
+
+  public native void setRunChartDownsample(RunChartDownsampleRequest value);
 
   public native void setSelect();
 
