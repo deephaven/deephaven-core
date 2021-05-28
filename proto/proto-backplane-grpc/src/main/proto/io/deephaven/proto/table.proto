@@ -350,8 +350,8 @@ message Literal {
     string string_value = 1;
     double double_value = 2;
     bool bool_value = 3;
-    sint64 long_value = 4;
-    sint64 nano_time_value = 5; // nanos since the epoch
+    sint64 long_value = 4 [jstype=JS_STRING];
+    sint64 nano_time_value = 5 [jstype=JS_STRING]; // nanos since the epoch
   }
 }
 // could also inline this to each place that uses it
