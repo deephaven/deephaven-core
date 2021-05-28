@@ -29,7 +29,7 @@ docker {
 
   javaApplication {
     mainClassName = 'io.deephaven.grpc_api.runner.Main'
-    images = [ "${project.property('grpc-api-docker.imageName')}:latest" ]
+    images = [ "${project.property('grpc-api-docker.imageName')}" ]
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
     ports = [ 8080 ]
