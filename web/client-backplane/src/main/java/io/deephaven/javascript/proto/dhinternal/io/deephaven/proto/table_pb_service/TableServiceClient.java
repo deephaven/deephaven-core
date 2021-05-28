@@ -15,6 +15,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Head
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
@@ -1057,6 +1058,101 @@ public class TableServiceClient {
     @JsOverlay
     default boolean isMergeTablesMetadata_or_callbackFn() {
       return (Object) this instanceof TableServiceClient.MergeTablesMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
+  public interface RunChartDownsampleCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.RunChartDownsampleCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.RunChartDownsampleCallbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface RunChartDownsampleMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.RunChartDownsampleMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.RunChartDownsampleMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface RunChartDownsampleMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default TableServiceClient.RunChartDownsampleMetadata_or_callbackFn
+        asRunChartDownsampleMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isRunChartDownsampleMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.RunChartDownsampleMetadata_or_callbackFn;
     }
   }
 
@@ -2759,6 +2855,58 @@ public class TableServiceClient {
   public native UnaryResponse mergeTables(
       MergeTablesRequest requestMessage,
       TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
+  public final UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.RunChartDownsampleCallbackFn callback) {
+    return runChartDownsample(
+        requestMessage,
+        Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return runChartDownsample(
+        requestMessage,
+        Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage,
+      TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.RunChartDownsampleCallbackFn callback) {
+    return runChartDownsample(
+        requestMessage,
+        Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage,
+      TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback) {
+    return runChartDownsample(
+        requestMessage,
+        Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage,
+      TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.RunChartDownsampleCallbackFn callback);
+
+  public native UnaryResponse runChartDownsample(
+      RunChartDownsampleRequest requestMessage,
+      TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback);
 
   @JsOverlay
   public final UnaryResponse select(
