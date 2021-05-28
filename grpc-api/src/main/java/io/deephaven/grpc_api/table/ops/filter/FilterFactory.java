@@ -116,22 +116,22 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
         }
         String valueString;
         switch (value.getValueCase()) {
-            case STRINGVALUE:
+            case STRING_VALUE:
                 valueString = value.getStringValue();
                 break;
-            case DOUBLEVALUE:
+            case DOUBLE_VALUE:
                 DecimalFormat format = new DecimalFormat("##0");
                 format.setDecimalSeparatorAlwaysShown(false);
                 format.setGroupingUsed(false);
                 valueString = format.format(value.getDoubleValue());
                 break;
-            case BOOLVALUE:
+            case BOOL_VALUE:
                 valueString = Boolean.toString(value.getBoolValue());
                 break;
-            case LONGVALUE:
+            case LONG_VALUE:
                 valueString = Long.toString(value.getLongValue());
                 break;
-            case NANOTIMEVALUE:
+            case NANO_TIME_VALUE:
                 valueString = Long.toString(value.getNanoTimeValue());
                 break;
             case VALUE_NOT_SET:
@@ -170,7 +170,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
             assert d.getDataCase() == Value.DataCase.LITERAL;
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
-            if (literal.getValueCase() == Literal.ValueCase.NANOTIMEVALUE) {
+            if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
                 values[i - 1] = "'" + new DBDateTime(literal.getNanoTimeValue()).toString(DBTimeZone.TZ_DEFAULT) + "'";
             } else {
                 FilterPrinter printer = makePrinterNoEscape();

@@ -229,22 +229,22 @@ public class FilterPrinter implements FilterVisitor<Void> {
 
     private void onLiteral(Literal literal) {
         switch (literal.getValueCase()) {
-            case STRINGVALUE:
+            case STRING_VALUE:
                 sb.append(stringEscape.apply(literal.getStringValue()));
                 break;
-            case DOUBLEVALUE:
+            case DOUBLE_VALUE:
                 DecimalFormat format = new DecimalFormat("##0");
                 format.setDecimalSeparatorAlwaysShown(false);
                 format.setGroupingUsed(false);
                 sb.append(format.format(literal.getDoubleValue()));
                 break;
-            case BOOLVALUE:
+            case BOOL_VALUE:
                 sb.append(literal.getBoolValue());
                 break;
-            case LONGVALUE:
+            case LONG_VALUE:
                 sb.append(literal.getLongValue());
                 break;
-            case NANOTIMEVALUE:
+            case NANO_TIME_VALUE:
                 sb.append("new DBDateTime(").append(literal.getNanoTimeValue()).append(")");
                 break;
             case VALUE_NOT_SET:

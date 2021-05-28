@@ -342,16 +342,16 @@ message FilterTableRequest {
 }
 
 message Reference {
-  string columnName = 1;
+  string column_name = 1;
 }
 
 message Literal {
   oneof value {
-    string stringValue = 1;
-    double doubleValue = 2;
-    bool boolValue = 3;
-    sint64 longValue = 4;
-    sint64 nanoTimeValue = 5; // nanos since the epoch
+    string string_value = 1;
+    double double_value = 2;
+    bool bool_value = 3;
+    sint64 long_value = 4;
+    sint64 nano_time_value = 5; // nanos since the epoch
   }
 }
 // could also inline this to each place that uses it
@@ -374,7 +374,7 @@ message Condition {
 
     InvokeCondition invoke = 6;
 
-    IsNullCondition isNull = 7;
+    IsNullCondition is_null = 7;
 
     MatchesCondition matches = 8;
     ContainsCondition contains = 9;
@@ -404,7 +404,7 @@ message CompareCondition {
     NOT_EQUALS = 5;
   }
   CompareOperation operation = 1;
-  CaseSensitivity caseSensitivity = 2;
+  CaseSensitivity case_sensitivity = 2;
   Value lhs = 3;
   Value rhs = 4;
 }
@@ -422,8 +422,8 @@ message InCondition {
   Value target = 1;
   repeated Value candidates = 2;
 
-  CaseSensitivity caseSensitivity = 3;
-  MatchType matchType = 4;
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
 }
 
 message InvokeCondition {
@@ -439,22 +439,22 @@ message MatchesCondition {
   Reference reference = 1;
   string regex = 2;
 
-  CaseSensitivity caseSensitivity = 3;
-  MatchType matchType = 4;
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
 }
 
 message ContainsCondition {
   Reference reference = 1;
-  string searchString = 2;
+  string search_string = 2;
 
-  CaseSensitivity caseSensitivity = 3;
-  MatchType matchType = 4;
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
 }
 
 // search
 message SearchCondition {
-  string searchString = 1;
-  repeated Reference optionalReferences = 2;
+  string search_string = 1;
+  repeated Reference optional_references = 2;
 }
 
 message FlattenRequest {

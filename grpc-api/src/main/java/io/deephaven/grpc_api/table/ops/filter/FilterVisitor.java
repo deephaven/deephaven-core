@@ -36,7 +36,7 @@ public interface FilterVisitor<R> {
                 return visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(), condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
             case INVOKE:
                 return visitor.onInvoke(condition.getInvoke().getMethod(), condition.getInvoke().getTarget(), condition.getInvoke().getArgumentsList());
-            case ISNULL:
+            case IS_NULL:
                 return visitor.onIsNull(condition.getIsNull().getReference());
             case MATCHES:
                 return visitor.onMatches(condition.getMatches().getReference(), condition.getMatches().getRegex(), condition.getMatches().getCaseSensitivity(), condition.getMatches().getMatchType());
