@@ -1,7 +1,6 @@
 package io.deephaven.web.client.api.widget.calendar.enums;
 
 import elemental2.core.JsObject;
-import io.deephaven.web.shared.data.BusinessCalendarDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
