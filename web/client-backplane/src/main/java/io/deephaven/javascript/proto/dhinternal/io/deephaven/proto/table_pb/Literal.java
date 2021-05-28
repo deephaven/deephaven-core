@@ -25,10 +25,10 @@ public class Literal {
     double getDoubleValue();
 
     @JsProperty
-    double getLongValue();
+    String getLongValue();
 
     @JsProperty
-    double getNanoTimeValue();
+    String getNanoTimeValue();
 
     @JsProperty
     String getStringValue();
@@ -43,10 +43,10 @@ public class Literal {
     void setDoubleValue(double doubleValue);
 
     @JsProperty
-    void setLongValue(double longValue);
+    void setLongValue(String longValue);
 
     @JsProperty
-    void setNanoTimeValue(double nanoTimeValue);
+    void setNanoTimeValue(String nanoTimeValue);
 
     @JsProperty
     void setStringValue(String stringValue);
@@ -63,10 +63,10 @@ public class Literal {
     double getDoubleValue();
 
     @JsProperty
-    double getLongValue();
+    String getLongValue();
 
     @JsProperty
-    double getNanoTimeValue();
+    String getNanoTimeValue();
 
     @JsProperty
     String getStringValue();
@@ -81,10 +81,10 @@ public class Literal {
     void setDoubleValue(double doubleValue);
 
     @JsProperty
-    void setLongValue(double longValue);
+    void setLongValue(String longValue);
 
     @JsProperty
-    void setNanoTimeValue(double nanoTimeValue);
+    void setNanoTimeValue(String nanoTimeValue);
 
     @JsProperty
     void setStringValue(String stringValue);
@@ -112,9 +112,9 @@ public class Literal {
 
   public native double getDoubleValue();
 
-  public native double getLongValue();
+  public native String getLongValue();
 
-  public native double getNanoTimeValue();
+  public native String getNanoTimeValue();
 
   public native String getStringValue();
 
@@ -136,9 +136,9 @@ public class Literal {
 
   public native void setDoubleValue(double value);
 
-  public native void setLongValue(double value);
+  public native void setLongValue(String value);
 
-  public native void setNanoTimeValue(double value);
+  public native void setNanoTimeValue(String value);
 
   public native void setStringValue(String value);
 

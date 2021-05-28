@@ -54,10 +54,10 @@ public class NotCondition {
             double getDoubleValue();
 
             @JsProperty
-            double getLongValue();
+            String getLongValue();
 
             @JsProperty
-            double getNanoTimeValue();
+            String getNanoTimeValue();
 
             @JsProperty
             String getStringValue();
@@ -72,10 +72,10 @@ public class NotCondition {
             void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongValue(double longValue);
+            void setLongValue(String longValue);
 
             @JsProperty
-            void setNanoTimeValue(double nanoTimeValue);
+            void setNanoTimeValue(String nanoTimeValue);
 
             @JsProperty
             void setStringValue(String stringValue);
@@ -465,10 +465,10 @@ public class NotCondition {
             double getDoubleValue();
 
             @JsProperty
-            double getLongValue();
+            String getLongValue();
 
             @JsProperty
-            double getNanoTimeValue();
+            String getNanoTimeValue();
 
             @JsProperty
             String getStringValue();
@@ -483,10 +483,10 @@ public class NotCondition {
             void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongValue(double longValue);
+            void setLongValue(String longValue);
 
             @JsProperty
-            void setNanoTimeValue(double nanoTimeValue);
+            void setNanoTimeValue(String nanoTimeValue);
 
             @JsProperty
             void setStringValue(String stringValue);
