@@ -49,34 +49,34 @@ public class Condition {
           }
 
           @JsProperty
-          double getDoublevalue();
+          double getDoubleValue();
 
           @JsProperty
-          double getLongvalue();
+          double getLongValue();
 
           @JsProperty
-          double getNanotimevalue();
+          double getNanoTimeValue();
 
           @JsProperty
-          String getStringvalue();
+          String getStringValue();
 
           @JsProperty
-          boolean isBoolvalue();
+          boolean isBoolValue();
 
           @JsProperty
-          void setBoolvalue(boolean boolvalue);
+          void setBoolValue(boolean boolValue);
 
           @JsProperty
-          void setDoublevalue(double doublevalue);
+          void setDoubleValue(double doubleValue);
 
           @JsProperty
-          void setLongvalue(double longvalue);
+          void setLongValue(double longValue);
 
           @JsProperty
-          void setNanotimevalue(double nanotimevalue);
+          void setNanoTimeValue(double nanoTimeValue);
 
           @JsProperty
-          void setStringvalue(String stringvalue);
+          void setStringValue(String stringValue);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -88,10 +88,10 @@ public class Condition {
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
         }
 
         @JsOverlay
@@ -122,7 +122,7 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
       Condition.ToObjectReturnType.CompareFieldType.LhsFieldType getLhs();
@@ -134,7 +134,7 @@ public class Condition {
       Object getRhs();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
       void setLhs(Condition.ToObjectReturnType.CompareFieldType.LhsFieldType lhs);
@@ -154,28 +154,28 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getReference();
 
       @JsProperty
-      String getSearchstring();
+      String getSearchString();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setReference(Object reference);
 
       @JsProperty
-      void setSearchstring(String searchstring);
+      void setSearchString(String searchString);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -210,9 +210,9 @@ public class Condition {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface IsnullFieldType {
+    public interface IsNullFieldType {
       @JsOverlay
-      static Condition.ToObjectReturnType.IsnullFieldType create() {
+      static Condition.ToObjectReturnType.IsNullFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -231,10 +231,10 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getReference();
@@ -243,10 +243,10 @@ public class Condition {
       String getRegex();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setReference(Object reference);
@@ -299,10 +299,10 @@ public class Condition {
       JsArray<Object> getCandidatesList();
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getTarget();
@@ -316,10 +316,10 @@ public class Condition {
       }
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setTarget(Object target);
@@ -333,21 +333,21 @@ public class Condition {
       }
 
       @JsProperty
-      JsArray<Object> getOptionalreferencesList();
+      JsArray<Object> getOptionalReferencesList();
 
       @JsProperty
-      String getSearchstring();
+      String getSearchString();
 
       @JsProperty
-      void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+      void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
       @JsOverlay
-      default void setOptionalreferencesList(Object[] optionalreferencesList) {
-        setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+      default void setOptionalReferencesList(Object[] optionalReferencesList) {
+        setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
       }
 
       @JsProperty
-      void setSearchstring(String searchstring);
+      void setSearchString(String searchString);
     }
 
     @JsOverlay
@@ -368,7 +368,7 @@ public class Condition {
     Condition.ToObjectReturnType.InvokeFieldType getInvoke();
 
     @JsProperty
-    Condition.ToObjectReturnType.IsnullFieldType getIsnull();
+    Condition.ToObjectReturnType.IsNullFieldType getIsNull();
 
     @JsProperty
     Condition.ToObjectReturnType.MatchesFieldType getMatches();
@@ -398,7 +398,7 @@ public class Condition {
     void setInvoke(Condition.ToObjectReturnType.InvokeFieldType invoke);
 
     @JsProperty
-    void setIsnull(Condition.ToObjectReturnType.IsnullFieldType isnull);
+    void setIsNull(Condition.ToObjectReturnType.IsNullFieldType isNull);
 
     @JsProperty
     void setMatches(Condition.ToObjectReturnType.MatchesFieldType matches);
@@ -450,34 +450,34 @@ public class Condition {
           }
 
           @JsProperty
-          double getDoublevalue();
+          double getDoubleValue();
 
           @JsProperty
-          double getLongvalue();
+          double getLongValue();
 
           @JsProperty
-          double getNanotimevalue();
+          double getNanoTimeValue();
 
           @JsProperty
-          String getStringvalue();
+          String getStringValue();
 
           @JsProperty
-          boolean isBoolvalue();
+          boolean isBoolValue();
 
           @JsProperty
-          void setBoolvalue(boolean boolvalue);
+          void setBoolValue(boolean boolValue);
 
           @JsProperty
-          void setDoublevalue(double doublevalue);
+          void setDoubleValue(double doubleValue);
 
           @JsProperty
-          void setLongvalue(double longvalue);
+          void setLongValue(double longValue);
 
           @JsProperty
-          void setNanotimevalue(double nanotimevalue);
+          void setNanoTimeValue(double nanoTimeValue);
 
           @JsProperty
-          void setStringvalue(String stringvalue);
+          void setStringValue(String stringValue);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -489,10 +489,10 @@ public class Condition {
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
         }
 
         @JsOverlay
@@ -523,7 +523,7 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
       Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType getLhs();
@@ -535,7 +535,7 @@ public class Condition {
       Object getRhs();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
       void setLhs(Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType lhs);
@@ -555,28 +555,28 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getReference();
 
       @JsProperty
-      String getSearchstring();
+      String getSearchString();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setReference(Object reference);
 
       @JsProperty
-      void setSearchstring(String searchstring);
+      void setSearchString(String searchString);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -611,9 +611,9 @@ public class Condition {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface IsnullFieldType {
+    public interface IsNullFieldType {
       @JsOverlay
-      static Condition.ToObjectReturnType0.IsnullFieldType create() {
+      static Condition.ToObjectReturnType0.IsNullFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -632,10 +632,10 @@ public class Condition {
       }
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getReference();
@@ -644,10 +644,10 @@ public class Condition {
       String getRegex();
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setReference(Object reference);
@@ -700,10 +700,10 @@ public class Condition {
       JsArray<Object> getCandidatesList();
 
       @JsProperty
-      double getCasesensitivity();
+      double getCaseSensitivity();
 
       @JsProperty
-      double getMatchtype();
+      double getMatchType();
 
       @JsProperty
       Object getTarget();
@@ -717,10 +717,10 @@ public class Condition {
       }
 
       @JsProperty
-      void setCasesensitivity(double casesensitivity);
+      void setCaseSensitivity(double caseSensitivity);
 
       @JsProperty
-      void setMatchtype(double matchtype);
+      void setMatchType(double matchType);
 
       @JsProperty
       void setTarget(Object target);
@@ -734,21 +734,21 @@ public class Condition {
       }
 
       @JsProperty
-      JsArray<Object> getOptionalreferencesList();
+      JsArray<Object> getOptionalReferencesList();
 
       @JsProperty
-      String getSearchstring();
+      String getSearchString();
 
       @JsProperty
-      void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+      void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
       @JsOverlay
-      default void setOptionalreferencesList(Object[] optionalreferencesList) {
-        setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+      default void setOptionalReferencesList(Object[] optionalReferencesList) {
+        setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
       }
 
       @JsProperty
-      void setSearchstring(String searchstring);
+      void setSearchString(String searchString);
     }
 
     @JsOverlay
@@ -769,7 +769,7 @@ public class Condition {
     Condition.ToObjectReturnType0.InvokeFieldType getInvoke();
 
     @JsProperty
-    Condition.ToObjectReturnType0.IsnullFieldType getIsnull();
+    Condition.ToObjectReturnType0.IsNullFieldType getIsNull();
 
     @JsProperty
     Condition.ToObjectReturnType0.MatchesFieldType getMatches();
@@ -799,7 +799,7 @@ public class Condition {
     void setInvoke(Condition.ToObjectReturnType0.InvokeFieldType invoke);
 
     @JsProperty
-    void setIsnull(Condition.ToObjectReturnType0.IsnullFieldType isnull);
+    void setIsNull(Condition.ToObjectReturnType0.IsNullFieldType isNull);
 
     @JsProperty
     void setMatches(Condition.ToObjectReturnType0.MatchesFieldType matches);
@@ -836,7 +836,7 @@ public class Condition {
 
   public native void clearInvoke();
 
-  public native void clearIsnull();
+  public native void clearIsNull();
 
   public native void clearMatches();
 
@@ -858,7 +858,7 @@ public class Condition {
 
   public native InvokeCondition getInvoke();
 
-  public native IsNullCondition getIsnull();
+  public native IsNullCondition getIsNull();
 
   public native MatchesCondition getMatches();
 
@@ -878,7 +878,7 @@ public class Condition {
 
   public native boolean hasInvoke();
 
-  public native boolean hasIsnull();
+  public native boolean hasIsNull();
 
   public native boolean hasMatches();
 
@@ -910,9 +910,9 @@ public class Condition {
 
   public native void setInvoke(InvokeCondition value);
 
-  public native void setIsnull();
+  public native void setIsNull();
 
-  public native void setIsnull(IsNullCondition value);
+  public native void setIsNull(IsNullCondition value);
 
   public native void setMatches();
 

@@ -23,10 +23,10 @@ public class IsNullCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -51,10 +51,10 @@ public class IsNullCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay

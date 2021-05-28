@@ -23,34 +23,34 @@ public class Value {
       }
 
       @JsProperty
-      double getDoublevalue();
+      double getDoubleValue();
 
       @JsProperty
-      double getLongvalue();
+      double getLongValue();
 
       @JsProperty
-      double getNanotimevalue();
+      double getNanoTimeValue();
 
       @JsProperty
-      String getStringvalue();
+      String getStringValue();
 
       @JsProperty
-      boolean isBoolvalue();
+      boolean isBoolValue();
 
       @JsProperty
-      void setBoolvalue(boolean boolvalue);
+      void setBoolValue(boolean boolValue);
 
       @JsProperty
-      void setDoublevalue(double doublevalue);
+      void setDoubleValue(double doubleValue);
 
       @JsProperty
-      void setLongvalue(double longvalue);
+      void setLongValue(double longValue);
 
       @JsProperty
-      void setNanotimevalue(double nanotimevalue);
+      void setNanoTimeValue(double nanoTimeValue);
 
       @JsProperty
-      void setStringvalue(String stringvalue);
+      void setStringValue(String stringValue);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -61,10 +61,10 @@ public class Value {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -95,34 +95,34 @@ public class Value {
       }
 
       @JsProperty
-      double getDoublevalue();
+      double getDoubleValue();
 
       @JsProperty
-      double getLongvalue();
+      double getLongValue();
 
       @JsProperty
-      double getNanotimevalue();
+      double getNanoTimeValue();
 
       @JsProperty
-      String getStringvalue();
+      String getStringValue();
 
       @JsProperty
-      boolean isBoolvalue();
+      boolean isBoolValue();
 
       @JsProperty
-      void setBoolvalue(boolean boolvalue);
+      void setBoolValue(boolean boolValue);
 
       @JsProperty
-      void setDoublevalue(double doublevalue);
+      void setDoubleValue(double doubleValue);
 
       @JsProperty
-      void setLongvalue(double longvalue);
+      void setLongValue(double longValue);
 
       @JsProperty
-      void setNanotimevalue(double nanotimevalue);
+      void setNanoTimeValue(double nanoTimeValue);
 
       @JsProperty
-      void setStringvalue(String stringvalue);
+      void setStringValue(String stringValue);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -133,10 +133,10 @@ public class Value {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay

@@ -14,7 +14,7 @@ public class DataCase {
   DATA_NOT_SET,
   IN,
   INVOKE,
-  ISNULL,
+  IS_NULL,
   MATCHES,
   NOT,
   OR,

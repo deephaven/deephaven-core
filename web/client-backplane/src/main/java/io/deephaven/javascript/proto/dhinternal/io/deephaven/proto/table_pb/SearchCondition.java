@@ -17,17 +17,17 @@ public class SearchCondition {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OptionalreferencesListFieldType {
+    public interface OptionalReferencesListFieldType {
       @JsOverlay
-      static SearchCondition.ToObjectReturnType.OptionalreferencesListFieldType create() {
+      static SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -36,45 +36,45 @@ public class SearchCondition {
     }
 
     @JsProperty
-    JsArray<SearchCondition.ToObjectReturnType.OptionalreferencesListFieldType>
-        getOptionalreferencesList();
+    JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType>
+        getOptionalReferencesList();
 
     @JsProperty
-    String getSearchstring();
+    String getSearchString();
 
     @JsProperty
-    void setOptionalreferencesList(
-        JsArray<SearchCondition.ToObjectReturnType.OptionalreferencesListFieldType>
-            optionalreferencesList);
+    void setOptionalReferencesList(
+        JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType>
+            optionalReferencesList);
 
     @JsOverlay
-    default void setOptionalreferencesList(
-        SearchCondition.ToObjectReturnType.OptionalreferencesListFieldType[]
-            optionalreferencesList) {
-      setOptionalreferencesList(
+    default void setOptionalReferencesList(
+        SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType[]
+            optionalReferencesList) {
+      setOptionalReferencesList(
           Js
-              .<JsArray<SearchCondition.ToObjectReturnType.OptionalreferencesListFieldType>>
-                  uncheckedCast(optionalreferencesList));
+              .<JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType>>
+                  uncheckedCast(optionalReferencesList));
     }
 
     @JsProperty
-    void setSearchstring(String searchstring);
+    void setSearchString(String searchString);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OptionalreferencesListFieldType {
+    public interface OptionalReferencesListFieldType {
       @JsOverlay
-      static SearchCondition.ToObjectReturnType0.OptionalreferencesListFieldType create() {
+      static SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -83,29 +83,29 @@ public class SearchCondition {
     }
 
     @JsProperty
-    JsArray<SearchCondition.ToObjectReturnType0.OptionalreferencesListFieldType>
-        getOptionalreferencesList();
+    JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType>
+        getOptionalReferencesList();
 
     @JsProperty
-    String getSearchstring();
+    String getSearchString();
 
     @JsProperty
-    void setOptionalreferencesList(
-        JsArray<SearchCondition.ToObjectReturnType0.OptionalreferencesListFieldType>
-            optionalreferencesList);
+    void setOptionalReferencesList(
+        JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType>
+            optionalReferencesList);
 
     @JsOverlay
-    default void setOptionalreferencesList(
-        SearchCondition.ToObjectReturnType0.OptionalreferencesListFieldType[]
-            optionalreferencesList) {
-      setOptionalreferencesList(
+    default void setOptionalReferencesList(
+        SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType[]
+            optionalReferencesList) {
+      setOptionalReferencesList(
           Js
-              .<JsArray<SearchCondition.ToObjectReturnType0.OptionalreferencesListFieldType>>
-                  uncheckedCast(optionalreferencesList));
+              .<JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType>>
+                  uncheckedCast(optionalReferencesList));
     }
 
     @JsProperty
-    void setSearchstring(String searchstring);
+    void setSearchString(String searchString);
   }
 
   public static native SearchCondition deserializeBinary(Uint8Array bytes);
@@ -118,28 +118,28 @@ public class SearchCondition {
   public static native SearchCondition.ToObjectReturnType toObject(
       boolean includeInstance, SearchCondition msg);
 
-  public native Reference addOptionalreferences();
+  public native Reference addOptionalReferences();
 
-  public native Reference addOptionalreferences(Reference value, double index);
+  public native Reference addOptionalReferences(Reference value, double index);
 
-  public native Reference addOptionalreferences(Reference value);
+  public native Reference addOptionalReferences(Reference value);
 
-  public native void clearOptionalreferencesList();
+  public native void clearOptionalReferencesList();
 
-  public native JsArray<Reference> getOptionalreferencesList();
+  public native JsArray<Reference> getOptionalReferencesList();
 
-  public native String getSearchstring();
+  public native String getSearchString();
 
   public native Uint8Array serializeBinary();
 
-  public native void setOptionalreferencesList(JsArray<Reference> value);
+  public native void setOptionalReferencesList(JsArray<Reference> value);
 
   @JsOverlay
-  public final void setOptionalreferencesList(Reference[] value) {
-    setOptionalreferencesList(Js.<JsArray<Reference>>uncheckedCast(value));
+  public final void setOptionalReferencesList(Reference[] value) {
+    setOptionalReferencesList(Js.<JsArray<Reference>>uncheckedCast(value));
   }
 
-  public native void setSearchstring(String value);
+  public native void setSearchString(String value);
 
   public native SearchCondition.ToObjectReturnType0 toObject();
 

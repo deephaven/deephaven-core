@@ -26,34 +26,34 @@ public class InCondition {
         }
 
         @JsProperty
-        double getDoublevalue();
+        double getDoubleValue();
 
         @JsProperty
-        double getLongvalue();
+        double getLongValue();
 
         @JsProperty
-        double getNanotimevalue();
+        double getNanoTimeValue();
 
         @JsProperty
-        String getStringvalue();
+        String getStringValue();
 
         @JsProperty
-        boolean isBoolvalue();
+        boolean isBoolValue();
 
         @JsProperty
-        void setBoolvalue(boolean boolvalue);
+        void setBoolValue(boolean boolValue);
 
         @JsProperty
-        void setDoublevalue(double doublevalue);
+        void setDoubleValue(double doubleValue);
 
         @JsProperty
-        void setLongvalue(double longvalue);
+        void setLongValue(double longValue);
 
         @JsProperty
-        void setNanotimevalue(double nanotimevalue);
+        void setNanoTimeValue(double nanoTimeValue);
 
         @JsProperty
-        void setStringvalue(String stringvalue);
+        void setStringValue(String stringValue);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -64,10 +64,10 @@ public class InCondition {
         }
 
         @JsProperty
-        String getColumnname();
+        String getColumnName();
 
         @JsProperty
-        void setColumnname(String columnname);
+        void setColumnName(String columnName);
       }
 
       @JsOverlay
@@ -98,10 +98,10 @@ public class InCondition {
     JsArray<Object> getCandidatesList();
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     InCondition.ToObjectReturnType.TargetFieldType getTarget();
@@ -115,10 +115,10 @@ public class InCondition {
     }
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setTarget(InCondition.ToObjectReturnType.TargetFieldType target);
@@ -136,34 +136,34 @@ public class InCondition {
         }
 
         @JsProperty
-        double getDoublevalue();
+        double getDoubleValue();
 
         @JsProperty
-        double getLongvalue();
+        double getLongValue();
 
         @JsProperty
-        double getNanotimevalue();
+        double getNanoTimeValue();
 
         @JsProperty
-        String getStringvalue();
+        String getStringValue();
 
         @JsProperty
-        boolean isBoolvalue();
+        boolean isBoolValue();
 
         @JsProperty
-        void setBoolvalue(boolean boolvalue);
+        void setBoolValue(boolean boolValue);
 
         @JsProperty
-        void setDoublevalue(double doublevalue);
+        void setDoubleValue(double doubleValue);
 
         @JsProperty
-        void setLongvalue(double longvalue);
+        void setLongValue(double longValue);
 
         @JsProperty
-        void setNanotimevalue(double nanotimevalue);
+        void setNanoTimeValue(double nanoTimeValue);
 
         @JsProperty
-        void setStringvalue(String stringvalue);
+        void setStringValue(String stringValue);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -174,10 +174,10 @@ public class InCondition {
         }
 
         @JsProperty
-        String getColumnname();
+        String getColumnName();
 
         @JsProperty
-        void setColumnname(String columnname);
+        void setColumnName(String columnName);
       }
 
       @JsOverlay
@@ -208,10 +208,10 @@ public class InCondition {
     JsArray<Object> getCandidatesList();
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     InCondition.ToObjectReturnType0.TargetFieldType getTarget();
@@ -225,10 +225,10 @@ public class InCondition {
     }
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setTarget(InCondition.ToObjectReturnType0.TargetFieldType target);
@@ -255,9 +255,9 @@ public class InCondition {
 
   public native JsArray<Value> getCandidatesList();
 
-  public native double getCasesensitivity();
+  public native double getCaseSensitivity();
 
-  public native double getMatchtype();
+  public native double getMatchType();
 
   public native Value getTarget();
 
@@ -272,9 +272,9 @@ public class InCondition {
     setCandidatesList(Js.<JsArray<Value>>uncheckedCast(value));
   }
 
-  public native void setCasesensitivity(double value);
+  public native void setCaseSensitivity(double value);
 
-  public native void setMatchtype(double value);
+  public native void setMatchType(double value);
 
   public native void setTarget();
 

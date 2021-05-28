@@ -52,34 +52,34 @@ public class FilterTableRequest {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -92,10 +92,10 @@ public class FilterTableRequest {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -135,7 +135,7 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         FilterTableRequest.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType
@@ -148,7 +148,7 @@ public class FilterTableRequest {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -171,28 +171,28 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -227,9 +227,9 @@ public class FilterTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsnullFieldType create() {
+        static FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsNullFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -249,10 +249,10 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -261,10 +261,10 @@ public class FilterTableRequest {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -317,10 +317,10 @@ public class FilterTableRequest {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -334,10 +334,10 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -351,21 +351,21 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -386,7 +386,7 @@ public class FilterTableRequest {
       FilterTableRequest.ToObjectReturnType.FiltersListFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsnullFieldType getIsnull();
+      FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       FilterTableRequest.ToObjectReturnType.FiltersListFieldType.MatchesFieldType getMatches();
@@ -419,8 +419,8 @@ public class FilterTableRequest {
           FilterTableRequest.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(
-          FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsnullFieldType isnull);
+      void setIsNull(
+          FilterTableRequest.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(
@@ -589,34 +589,34 @@ public class FilterTableRequest {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -629,10 +629,10 @@ public class FilterTableRequest {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -672,7 +672,7 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType
@@ -685,7 +685,7 @@ public class FilterTableRequest {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -709,28 +709,28 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -766,9 +766,9 @@ public class FilterTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType
+        static FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
@@ -789,10 +789,10 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -801,10 +801,10 @@ public class FilterTableRequest {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -857,10 +857,10 @@ public class FilterTableRequest {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -874,10 +874,10 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -892,21 +892,21 @@ public class FilterTableRequest {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -927,7 +927,7 @@ public class FilterTableRequest {
       FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType getIsnull();
+      FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType getMatches();
@@ -960,8 +960,8 @@ public class FilterTableRequest {
           FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(
-          FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType isnull);
+      void setIsNull(
+          FilterTableRequest.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(

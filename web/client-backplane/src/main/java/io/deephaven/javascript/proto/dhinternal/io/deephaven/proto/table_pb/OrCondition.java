@@ -51,34 +51,34 @@ public class OrCondition {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -91,10 +91,10 @@ public class OrCondition {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -132,7 +132,7 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType getLhs();
@@ -144,7 +144,7 @@ public class OrCondition {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -165,28 +165,28 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -221,9 +221,9 @@ public class OrCondition {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static OrCondition.ToObjectReturnType.FiltersListFieldType.IsnullFieldType create() {
+        static OrCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -242,10 +242,10 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -254,10 +254,10 @@ public class OrCondition {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -291,10 +291,10 @@ public class OrCondition {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -308,10 +308,10 @@ public class OrCondition {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -325,21 +325,21 @@ public class OrCondition {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -360,7 +360,7 @@ public class OrCondition {
       OrCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      OrCondition.ToObjectReturnType.FiltersListFieldType.IsnullFieldType getIsnull();
+      OrCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       OrCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType getMatches();
@@ -391,7 +391,7 @@ public class OrCondition {
       void setInvoke(OrCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(OrCondition.ToObjectReturnType.FiltersListFieldType.IsnullFieldType isnull);
+      void setIsNull(OrCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(OrCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType matches);
@@ -465,34 +465,34 @@ public class OrCondition {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -505,10 +505,10 @@ public class OrCondition {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -546,7 +546,7 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType getLhs();
@@ -558,7 +558,7 @@ public class OrCondition {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -579,28 +579,28 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -635,9 +635,9 @@ public class OrCondition {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static OrCondition.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType create() {
+        static OrCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -656,10 +656,10 @@ public class OrCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -668,10 +668,10 @@ public class OrCondition {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -705,10 +705,10 @@ public class OrCondition {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -722,10 +722,10 @@ public class OrCondition {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -739,21 +739,21 @@ public class OrCondition {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -774,7 +774,7 @@ public class OrCondition {
       OrCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      OrCondition.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType getIsnull();
+      OrCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       OrCondition.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType getMatches();
@@ -806,7 +806,7 @@ public class OrCondition {
       void setInvoke(OrCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(OrCondition.ToObjectReturnType0.FiltersListFieldType.IsnullFieldType isnull);
+      void setIsNull(OrCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(

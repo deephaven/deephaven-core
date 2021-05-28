@@ -51,34 +51,34 @@ public class NotCondition {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -91,10 +91,10 @@ public class NotCondition {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -132,7 +132,7 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType getLhs();
@@ -144,7 +144,7 @@ public class NotCondition {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -165,28 +165,28 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -221,9 +221,9 @@ public class NotCondition {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static NotCondition.ToObjectReturnType.FilterFieldType.IsnullFieldType create() {
+        static NotCondition.ToObjectReturnType.FilterFieldType.IsNullFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -242,10 +242,10 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -254,10 +254,10 @@ public class NotCondition {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -296,10 +296,10 @@ public class NotCondition {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -313,10 +313,10 @@ public class NotCondition {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -330,21 +330,21 @@ public class NotCondition {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -365,7 +365,7 @@ public class NotCondition {
       NotCondition.ToObjectReturnType.FilterFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      NotCondition.ToObjectReturnType.FilterFieldType.IsnullFieldType getIsnull();
+      NotCondition.ToObjectReturnType.FilterFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       NotCondition.ToObjectReturnType.FilterFieldType.MatchesFieldType getMatches();
@@ -395,7 +395,7 @@ public class NotCondition {
       void setInvoke(NotCondition.ToObjectReturnType.FilterFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(NotCondition.ToObjectReturnType.FilterFieldType.IsnullFieldType isnull);
+      void setIsNull(NotCondition.ToObjectReturnType.FilterFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(NotCondition.ToObjectReturnType.FilterFieldType.MatchesFieldType matches);
@@ -462,34 +462,34 @@ public class NotCondition {
             }
 
             @JsProperty
-            double getDoublevalue();
+            double getDoubleValue();
 
             @JsProperty
-            double getLongvalue();
+            double getLongValue();
 
             @JsProperty
-            double getNanotimevalue();
+            double getNanoTimeValue();
 
             @JsProperty
-            String getStringvalue();
+            String getStringValue();
 
             @JsProperty
-            boolean isBoolvalue();
+            boolean isBoolValue();
 
             @JsProperty
-            void setBoolvalue(boolean boolvalue);
+            void setBoolValue(boolean boolValue);
 
             @JsProperty
-            void setDoublevalue(double doublevalue);
+            void setDoubleValue(double doubleValue);
 
             @JsProperty
-            void setLongvalue(double longvalue);
+            void setLongValue(double longValue);
 
             @JsProperty
-            void setNanotimevalue(double nanotimevalue);
+            void setNanoTimeValue(double nanoTimeValue);
 
             @JsProperty
-            void setStringvalue(String stringvalue);
+            void setStringValue(String stringValue);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -502,10 +502,10 @@ public class NotCondition {
             }
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
           }
 
           @JsOverlay
@@ -543,7 +543,7 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
         NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType getLhs();
@@ -555,7 +555,7 @@ public class NotCondition {
         Object getRhs();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
         void setLhs(
@@ -576,28 +576,28 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -632,9 +632,9 @@ public class NotCondition {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface IsnullFieldType {
+      public interface IsNullFieldType {
         @JsOverlay
-        static NotCondition.ToObjectReturnType0.FilterFieldType.IsnullFieldType create() {
+        static NotCondition.ToObjectReturnType0.FilterFieldType.IsNullFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -653,10 +653,10 @@ public class NotCondition {
         }
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getReference();
@@ -665,10 +665,10 @@ public class NotCondition {
         String getRegex();
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setReference(Object reference);
@@ -707,10 +707,10 @@ public class NotCondition {
         JsArray<Object> getCandidatesList();
 
         @JsProperty
-        double getCasesensitivity();
+        double getCaseSensitivity();
 
         @JsProperty
-        double getMatchtype();
+        double getMatchType();
 
         @JsProperty
         Object getTarget();
@@ -724,10 +724,10 @@ public class NotCondition {
         }
 
         @JsProperty
-        void setCasesensitivity(double casesensitivity);
+        void setCaseSensitivity(double caseSensitivity);
 
         @JsProperty
-        void setMatchtype(double matchtype);
+        void setMatchType(double matchType);
 
         @JsProperty
         void setTarget(Object target);
@@ -741,21 +741,21 @@ public class NotCondition {
         }
 
         @JsProperty
-        JsArray<Object> getOptionalreferencesList();
+        JsArray<Object> getOptionalReferencesList();
 
         @JsProperty
-        String getSearchstring();
+        String getSearchString();
 
         @JsProperty
-        void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+        void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
         @JsOverlay
-        default void setOptionalreferencesList(Object[] optionalreferencesList) {
-          setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+        default void setOptionalReferencesList(Object[] optionalReferencesList) {
+          setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
         }
 
         @JsProperty
-        void setSearchstring(String searchstring);
+        void setSearchString(String searchString);
       }
 
       @JsOverlay
@@ -776,7 +776,7 @@ public class NotCondition {
       NotCondition.ToObjectReturnType0.FilterFieldType.InvokeFieldType getInvoke();
 
       @JsProperty
-      NotCondition.ToObjectReturnType0.FilterFieldType.IsnullFieldType getIsnull();
+      NotCondition.ToObjectReturnType0.FilterFieldType.IsNullFieldType getIsNull();
 
       @JsProperty
       NotCondition.ToObjectReturnType0.FilterFieldType.MatchesFieldType getMatches();
@@ -806,7 +806,7 @@ public class NotCondition {
       void setInvoke(NotCondition.ToObjectReturnType0.FilterFieldType.InvokeFieldType invoke);
 
       @JsProperty
-      void setIsnull(NotCondition.ToObjectReturnType0.FilterFieldType.IsnullFieldType isnull);
+      void setIsNull(NotCondition.ToObjectReturnType0.FilterFieldType.IsNullFieldType isNull);
 
       @JsProperty
       void setMatches(NotCondition.ToObjectReturnType0.FilterFieldType.MatchesFieldType matches);

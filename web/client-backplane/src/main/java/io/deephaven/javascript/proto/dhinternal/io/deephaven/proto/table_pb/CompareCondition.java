@@ -26,34 +26,34 @@ public class CompareCondition {
         }
 
         @JsProperty
-        double getDoublevalue();
+        double getDoubleValue();
 
         @JsProperty
-        double getLongvalue();
+        double getLongValue();
 
         @JsProperty
-        double getNanotimevalue();
+        double getNanoTimeValue();
 
         @JsProperty
-        String getStringvalue();
+        String getStringValue();
 
         @JsProperty
-        boolean isBoolvalue();
+        boolean isBoolValue();
 
         @JsProperty
-        void setBoolvalue(boolean boolvalue);
+        void setBoolValue(boolean boolValue);
 
         @JsProperty
-        void setDoublevalue(double doublevalue);
+        void setDoubleValue(double doubleValue);
 
         @JsProperty
-        void setLongvalue(double longvalue);
+        void setLongValue(double longValue);
 
         @JsProperty
-        void setNanotimevalue(double nanotimevalue);
+        void setNanoTimeValue(double nanoTimeValue);
 
         @JsProperty
-        void setStringvalue(String stringvalue);
+        void setStringValue(String stringValue);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -64,10 +64,10 @@ public class CompareCondition {
         }
 
         @JsProperty
-        String getColumnname();
+        String getColumnName();
 
         @JsProperty
-        void setColumnname(String columnname);
+        void setColumnName(String columnName);
       }
 
       @JsOverlay
@@ -95,7 +95,7 @@ public class CompareCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
     CompareCondition.ToObjectReturnType.LhsFieldType getLhs();
@@ -107,7 +107,7 @@ public class CompareCondition {
     Object getRhs();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
     void setLhs(CompareCondition.ToObjectReturnType.LhsFieldType lhs);
@@ -131,34 +131,34 @@ public class CompareCondition {
         }
 
         @JsProperty
-        double getDoublevalue();
+        double getDoubleValue();
 
         @JsProperty
-        double getLongvalue();
+        double getLongValue();
 
         @JsProperty
-        double getNanotimevalue();
+        double getNanoTimeValue();
 
         @JsProperty
-        String getStringvalue();
+        String getStringValue();
 
         @JsProperty
-        boolean isBoolvalue();
+        boolean isBoolValue();
 
         @JsProperty
-        void setBoolvalue(boolean boolvalue);
+        void setBoolValue(boolean boolValue);
 
         @JsProperty
-        void setDoublevalue(double doublevalue);
+        void setDoubleValue(double doubleValue);
 
         @JsProperty
-        void setLongvalue(double longvalue);
+        void setLongValue(double longValue);
 
         @JsProperty
-        void setNanotimevalue(double nanotimevalue);
+        void setNanoTimeValue(double nanoTimeValue);
 
         @JsProperty
-        void setStringvalue(String stringvalue);
+        void setStringValue(String stringValue);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -169,10 +169,10 @@ public class CompareCondition {
         }
 
         @JsProperty
-        String getColumnname();
+        String getColumnName();
 
         @JsProperty
-        void setColumnname(String columnname);
+        void setColumnName(String columnName);
       }
 
       @JsOverlay
@@ -200,7 +200,7 @@ public class CompareCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
     CompareCondition.ToObjectReturnType0.LhsFieldType getLhs();
@@ -212,7 +212,7 @@ public class CompareCondition {
     Object getRhs();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
     void setLhs(CompareCondition.ToObjectReturnType0.LhsFieldType lhs);
@@ -240,7 +240,7 @@ public class CompareCondition {
 
   public native void clearRhs();
 
-  public native double getCasesensitivity();
+  public native double getCaseSensitivity();
 
   public native Value getLhs();
 
@@ -254,7 +254,7 @@ public class CompareCondition {
 
   public native Uint8Array serializeBinary();
 
-  public native void setCasesensitivity(double value);
+  public native void setCaseSensitivity(double value);
 
   public native void setLhs();
 

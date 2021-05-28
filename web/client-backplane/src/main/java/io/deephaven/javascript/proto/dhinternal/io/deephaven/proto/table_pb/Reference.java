@@ -21,10 +21,10 @@ public class Reference {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -35,10 +35,10 @@ public class Reference {
     }
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
   }
 
   public static native Reference deserializeBinary(Uint8Array bytes);
@@ -50,11 +50,11 @@ public class Reference {
   public static native Reference.ToObjectReturnType toObject(
       boolean includeInstance, Reference msg);
 
-  public native String getColumnname();
+  public native String getColumnName();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnname(String value);
+  public native void setColumnName(String value);
 
   public native Reference.ToObjectReturnType0 toObject();
 

@@ -340,34 +340,34 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                double getDoublevalue();
+                double getDoubleValue();
 
                 @JsProperty
-                double getLongvalue();
+                double getLongValue();
 
                 @JsProperty
-                double getNanotimevalue();
+                double getNanoTimeValue();
 
                 @JsProperty
-                String getStringvalue();
+                String getStringValue();
 
                 @JsProperty
-                boolean isBoolvalue();
+                boolean isBoolValue();
 
                 @JsProperty
-                void setBoolvalue(boolean boolvalue);
+                void setBoolValue(boolean boolValue);
 
                 @JsProperty
-                void setDoublevalue(double doublevalue);
+                void setDoubleValue(double doubleValue);
 
                 @JsProperty
-                void setLongvalue(double longvalue);
+                void setLongValue(double longValue);
 
                 @JsProperty
-                void setNanotimevalue(double nanotimevalue);
+                void setNanoTimeValue(double nanoTimeValue);
 
                 @JsProperty
-                void setStringvalue(String stringvalue);
+                void setStringValue(String stringValue);
               }
 
               @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -380,10 +380,10 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                String getColumnname();
+                String getColumnName();
 
                 @JsProperty
-                void setColumnname(String columnname);
+                void setColumnName(String columnName);
               }
 
               @JsOverlay
@@ -424,7 +424,7 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
@@ -438,7 +438,7 @@ public class BatchTableRequest {
             Object getRhs();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
             void setLhs(
@@ -463,28 +463,28 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getReference();
 
             @JsProperty
-            String getSearchstring();
+            String getSearchString();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setReference(Object reference);
 
             @JsProperty
-            void setSearchstring(String searchstring);
+            void setSearchString(String searchString);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -521,10 +521,10 @@ public class BatchTableRequest {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface IsnullFieldType {
+          public interface IsNullFieldType {
             @JsOverlay
             static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
-                    .FiltersListFieldType.IsnullFieldType
+                    .FiltersListFieldType.IsNullFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -546,10 +546,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getReference();
@@ -558,10 +558,10 @@ public class BatchTableRequest {
             String getRegex();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setReference(Object reference);
@@ -620,10 +620,10 @@ public class BatchTableRequest {
             JsArray<Object> getCandidatesList();
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getTarget();
@@ -637,10 +637,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setTarget(Object target);
@@ -656,21 +656,21 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            JsArray<Object> getOptionalreferencesList();
+            JsArray<Object> getOptionalReferencesList();
 
             @JsProperty
-            String getSearchstring();
+            String getSearchString();
 
             @JsProperty
-            void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+            void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
             @JsOverlay
-            default void setOptionalreferencesList(Object[] optionalreferencesList) {
-              setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+            default void setOptionalReferencesList(Object[] optionalReferencesList) {
+              setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
             }
 
             @JsProperty
-            void setSearchstring(String searchstring);
+            void setSearchString(String searchString);
           }
 
           @JsOverlay
@@ -702,8 +702,8 @@ public class BatchTableRequest {
 
           @JsProperty
           BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
-                  .IsnullFieldType
-              getIsnull();
+                  .IsNullFieldType
+              getIsNull();
 
           @JsProperty
           BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType.FiltersListFieldType
@@ -755,10 +755,10 @@ public class BatchTableRequest {
                   invoke);
 
           @JsProperty
-          void setIsnull(
+          void setIsNull(
               BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
-                      .FiltersListFieldType.IsnullFieldType
-                  isnull);
+                      .FiltersListFieldType.IsNullFieldType
+                  isNull);
 
           @JsProperty
           void setMatches(
@@ -1777,34 +1777,34 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                double getDoublevalue();
+                double getDoubleValue();
 
                 @JsProperty
-                double getLongvalue();
+                double getLongValue();
 
                 @JsProperty
-                double getNanotimevalue();
+                double getNanoTimeValue();
 
                 @JsProperty
-                String getStringvalue();
+                String getStringValue();
 
                 @JsProperty
-                boolean isBoolvalue();
+                boolean isBoolValue();
 
                 @JsProperty
-                void setBoolvalue(boolean boolvalue);
+                void setBoolValue(boolean boolValue);
 
                 @JsProperty
-                void setDoublevalue(double doublevalue);
+                void setDoubleValue(double doubleValue);
 
                 @JsProperty
-                void setLongvalue(double longvalue);
+                void setLongValue(double longValue);
 
                 @JsProperty
-                void setNanotimevalue(double nanotimevalue);
+                void setNanoTimeValue(double nanoTimeValue);
 
                 @JsProperty
-                void setStringvalue(String stringvalue);
+                void setStringValue(String stringValue);
               }
 
               @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1817,10 +1817,10 @@ public class BatchTableRequest {
                 }
 
                 @JsProperty
-                String getColumnname();
+                String getColumnName();
 
                 @JsProperty
-                void setColumnname(String columnname);
+                void setColumnName(String columnName);
               }
 
               @JsOverlay
@@ -1861,7 +1861,7 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
@@ -1875,7 +1875,7 @@ public class BatchTableRequest {
             Object getRhs();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
             void setLhs(
@@ -1900,28 +1900,28 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getReference();
 
             @JsProperty
-            String getSearchstring();
+            String getSearchString();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setReference(Object reference);
 
             @JsProperty
-            void setSearchstring(String searchstring);
+            void setSearchString(String searchString);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1958,10 +1958,10 @@ public class BatchTableRequest {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface IsnullFieldType {
+          public interface IsNullFieldType {
             @JsOverlay
             static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
-                    .FiltersListFieldType.IsnullFieldType
+                    .FiltersListFieldType.IsNullFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -1983,10 +1983,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getReference();
@@ -1995,10 +1995,10 @@ public class BatchTableRequest {
             String getRegex();
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setReference(Object reference);
@@ -2057,10 +2057,10 @@ public class BatchTableRequest {
             JsArray<Object> getCandidatesList();
 
             @JsProperty
-            double getCasesensitivity();
+            double getCaseSensitivity();
 
             @JsProperty
-            double getMatchtype();
+            double getMatchType();
 
             @JsProperty
             Object getTarget();
@@ -2074,10 +2074,10 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            void setCasesensitivity(double casesensitivity);
+            void setCaseSensitivity(double caseSensitivity);
 
             @JsProperty
-            void setMatchtype(double matchtype);
+            void setMatchType(double matchType);
 
             @JsProperty
             void setTarget(Object target);
@@ -2093,21 +2093,21 @@ public class BatchTableRequest {
             }
 
             @JsProperty
-            JsArray<Object> getOptionalreferencesList();
+            JsArray<Object> getOptionalReferencesList();
 
             @JsProperty
-            String getSearchstring();
+            String getSearchString();
 
             @JsProperty
-            void setOptionalreferencesList(JsArray<Object> optionalreferencesList);
+            void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
 
             @JsOverlay
-            default void setOptionalreferencesList(Object[] optionalreferencesList) {
-              setOptionalreferencesList(Js.<JsArray<Object>>uncheckedCast(optionalreferencesList));
+            default void setOptionalReferencesList(Object[] optionalReferencesList) {
+              setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
             }
 
             @JsProperty
-            void setSearchstring(String searchstring);
+            void setSearchString(String searchString);
           }
 
           @JsOverlay
@@ -2139,8 +2139,8 @@ public class BatchTableRequest {
 
           @JsProperty
           BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
-                  .FiltersListFieldType.IsnullFieldType
-              getIsnull();
+                  .FiltersListFieldType.IsNullFieldType
+              getIsNull();
 
           @JsProperty
           BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
@@ -2192,10 +2192,10 @@ public class BatchTableRequest {
                   invoke);
 
           @JsProperty
-          void setIsnull(
+          void setIsNull(
               BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
-                      .FiltersListFieldType.IsnullFieldType
-                  isnull);
+                      .FiltersListFieldType.IsNullFieldType
+                  isNull);
 
           @JsProperty
           void setMatches(

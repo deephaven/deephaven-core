@@ -23,10 +23,10 @@ public class ContainsCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -35,28 +35,28 @@ public class ContainsCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     ContainsCondition.ToObjectReturnType.ReferenceFieldType getReference();
 
     @JsProperty
-    String getSearchstring();
+    String getSearchString();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setReference(ContainsCondition.ToObjectReturnType.ReferenceFieldType reference);
 
     @JsProperty
-    void setSearchstring(String searchstring);
+    void setSearchString(String searchString);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -69,10 +69,10 @@ public class ContainsCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -81,28 +81,28 @@ public class ContainsCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     ContainsCondition.ToObjectReturnType0.ReferenceFieldType getReference();
 
     @JsProperty
-    String getSearchstring();
+    String getSearchString();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setReference(ContainsCondition.ToObjectReturnType0.ReferenceFieldType reference);
 
     @JsProperty
-    void setSearchstring(String searchstring);
+    void setSearchString(String searchString);
   }
 
   public static native ContainsCondition deserializeBinary(Uint8Array bytes);
@@ -117,27 +117,27 @@ public class ContainsCondition {
 
   public native void clearReference();
 
-  public native double getCasesensitivity();
+  public native double getCaseSensitivity();
 
-  public native double getMatchtype();
+  public native double getMatchType();
 
   public native Reference getReference();
 
-  public native String getSearchstring();
+  public native String getSearchString();
 
   public native boolean hasReference();
 
   public native Uint8Array serializeBinary();
 
-  public native void setCasesensitivity(double value);
+  public native void setCaseSensitivity(double value);
 
-  public native void setMatchtype(double value);
+  public native void setMatchType(double value);
 
   public native void setReference();
 
   public native void setReference(Reference value);
 
-  public native void setSearchstring(String value);
+  public native void setSearchString(String value);
 
   public native ContainsCondition.ToObjectReturnType0 toObject();
 

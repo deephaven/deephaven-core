@@ -22,34 +22,34 @@ public class Literal {
     }
 
     @JsProperty
-    double getDoublevalue();
+    double getDoubleValue();
 
     @JsProperty
-    double getLongvalue();
+    double getLongValue();
 
     @JsProperty
-    double getNanotimevalue();
+    double getNanoTimeValue();
 
     @JsProperty
-    String getStringvalue();
+    String getStringValue();
 
     @JsProperty
-    boolean isBoolvalue();
+    boolean isBoolValue();
 
     @JsProperty
-    void setBoolvalue(boolean boolvalue);
+    void setBoolValue(boolean boolValue);
 
     @JsProperty
-    void setDoublevalue(double doublevalue);
+    void setDoubleValue(double doubleValue);
 
     @JsProperty
-    void setLongvalue(double longvalue);
+    void setLongValue(double longValue);
 
     @JsProperty
-    void setNanotimevalue(double nanotimevalue);
+    void setNanoTimeValue(double nanoTimeValue);
 
     @JsProperty
-    void setStringvalue(String stringvalue);
+    void setStringValue(String stringValue);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -60,34 +60,34 @@ public class Literal {
     }
 
     @JsProperty
-    double getDoublevalue();
+    double getDoubleValue();
 
     @JsProperty
-    double getLongvalue();
+    double getLongValue();
 
     @JsProperty
-    double getNanotimevalue();
+    double getNanoTimeValue();
 
     @JsProperty
-    String getStringvalue();
+    String getStringValue();
 
     @JsProperty
-    boolean isBoolvalue();
+    boolean isBoolValue();
 
     @JsProperty
-    void setBoolvalue(boolean boolvalue);
+    void setBoolValue(boolean boolValue);
 
     @JsProperty
-    void setDoublevalue(double doublevalue);
+    void setDoubleValue(double doubleValue);
 
     @JsProperty
-    void setLongvalue(double longvalue);
+    void setLongValue(double longValue);
 
     @JsProperty
-    void setNanotimevalue(double nanotimevalue);
+    void setNanoTimeValue(double nanoTimeValue);
 
     @JsProperty
-    void setStringvalue(String stringvalue);
+    void setStringValue(String stringValue);
   }
 
   public static native Literal deserializeBinary(Uint8Array bytes);
@@ -98,49 +98,49 @@ public class Literal {
 
   public static native Literal.ToObjectReturnType toObject(boolean includeInstance, Literal msg);
 
-  public native void clearBoolvalue();
+  public native void clearBoolValue();
 
-  public native void clearDoublevalue();
+  public native void clearDoubleValue();
 
-  public native void clearLongvalue();
+  public native void clearLongValue();
 
-  public native void clearNanotimevalue();
+  public native void clearNanoTimeValue();
 
-  public native void clearStringvalue();
+  public native void clearStringValue();
 
-  public native boolean getBoolvalue();
+  public native boolean getBoolValue();
 
-  public native double getDoublevalue();
+  public native double getDoubleValue();
 
-  public native double getLongvalue();
+  public native double getLongValue();
 
-  public native double getNanotimevalue();
+  public native double getNanoTimeValue();
 
-  public native String getStringvalue();
+  public native String getStringValue();
 
   public native ValueCase getValueCase();
 
-  public native boolean hasBoolvalue();
+  public native boolean hasBoolValue();
 
-  public native boolean hasDoublevalue();
+  public native boolean hasDoubleValue();
 
-  public native boolean hasLongvalue();
+  public native boolean hasLongValue();
 
-  public native boolean hasNanotimevalue();
+  public native boolean hasNanoTimeValue();
 
-  public native boolean hasStringvalue();
+  public native boolean hasStringValue();
 
   public native Uint8Array serializeBinary();
 
-  public native void setBoolvalue(boolean value);
+  public native void setBoolValue(boolean value);
 
-  public native void setDoublevalue(double value);
+  public native void setDoubleValue(double value);
 
-  public native void setLongvalue(double value);
+  public native void setLongValue(double value);
 
-  public native void setNanotimevalue(double value);
+  public native void setNanoTimeValue(double value);
 
-  public native void setStringvalue(String value);
+  public native void setStringValue(String value);
 
   public native Literal.ToObjectReturnType0 toObject();
 

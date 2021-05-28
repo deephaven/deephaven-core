@@ -23,10 +23,10 @@ public class MatchesCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -35,10 +35,10 @@ public class MatchesCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     MatchesCondition.ToObjectReturnType.ReferenceFieldType getReference();
@@ -47,10 +47,10 @@ public class MatchesCondition {
     String getRegex();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setReference(MatchesCondition.ToObjectReturnType.ReferenceFieldType reference);
@@ -69,10 +69,10 @@ public class MatchesCondition {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
     }
 
     @JsOverlay
@@ -81,10 +81,10 @@ public class MatchesCondition {
     }
 
     @JsProperty
-    double getCasesensitivity();
+    double getCaseSensitivity();
 
     @JsProperty
-    double getMatchtype();
+    double getMatchType();
 
     @JsProperty
     MatchesCondition.ToObjectReturnType0.ReferenceFieldType getReference();
@@ -93,10 +93,10 @@ public class MatchesCondition {
     String getRegex();
 
     @JsProperty
-    void setCasesensitivity(double casesensitivity);
+    void setCaseSensitivity(double caseSensitivity);
 
     @JsProperty
-    void setMatchtype(double matchtype);
+    void setMatchType(double matchType);
 
     @JsProperty
     void setReference(MatchesCondition.ToObjectReturnType0.ReferenceFieldType reference);
@@ -117,9 +117,9 @@ public class MatchesCondition {
 
   public native void clearReference();
 
-  public native double getCasesensitivity();
+  public native double getCaseSensitivity();
 
-  public native double getMatchtype();
+  public native double getMatchType();
 
   public native Reference getReference();
 
@@ -129,9 +129,9 @@ public class MatchesCondition {
 
   public native Uint8Array serializeBinary();
 
-  public native void setCasesensitivity(double value);
+  public native void setCaseSensitivity(double value);
 
-  public native void setMatchtype(double value);
+  public native void setMatchType(double value);
 
   public native void setReference();
 
