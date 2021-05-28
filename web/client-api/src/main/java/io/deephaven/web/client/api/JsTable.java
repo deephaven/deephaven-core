@@ -10,8 +10,10 @@ import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -874,16 +876,19 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", " + Arrays.toString(yCols) + ")";
         return workerConnection.newState((c, state, metadata) -> {
-//            workerConnection.getServer().downsampleTable(
-//                    state().getHandle(),
-//                    state.getHandle(),
-//                    xCol,
-//                    yCols,
-//                    pixelCount,
-//                    zoomRange == null ? null : new long[] { zoomRange[0].getWrapped(), zoomRange[1].getWrapped() },
-//                    c
-//            );
-            throw new UnsupportedOperationException("downsample");
+            RunChartDownsampleRequest downsampleRequest = new RunChartDownsampleRequest();
+            downsampleRequest.setPixelCount(pixelCount);
+            if (zoomRange != null) {
+                ZoomRange zoom = new ZoomRange();
+                zoom.setMaxDateNanos(Long.toString(zoomRange[0].getWrapped()));
+                zoom.setMinDateNanos(Long.toString(zoomRange[1].getWrapped()));
+                downsampleRequest.setZoomRange(zoom);
+            }
+            downsampleRequest.setXColumnName(xCol);
+            downsampleRequest.setYColumnNamesList(yCols);
+            downsampleRequest.setSourceId(state().getHandle().makeTableReference());
+            downsampleRequest.setResultId(state.getHandle().makeTicket());
+            workerConnection.tableServiceClient().runChartDownsample(downsampleRequest, workerConnection.metadata(), c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
