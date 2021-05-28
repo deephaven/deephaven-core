@@ -7,17 +7,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
-public class ReadOnlyLocalTableLocationProviderByParquetFile extends AbstractTableLocationProvider {
-    private final TableDataRefreshService refreshService;
+public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableLocationProvider {
 
-    private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
     private final File fileLocation;
 
     public ReadOnlyLocalTableLocationProviderByParquetFile(
+            @NotNull final TableKey tableKey,
             @NotNull final File fileLocation,
+            final boolean supportsSubscriptions,
             @NotNull final TableDataRefreshService refreshService) {
-        super(StandaloneTableKey.getInstance(), false);
-        this.refreshService = refreshService;
+        super(tableKey, supportsSubscriptions, refreshService);
         this.fileLocation = fileLocation;
     }
 
@@ -30,24 +29,6 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends AbstractTab
     public void refresh() {
         handleTableLocationKey(SimpleTableLocationKey.getInstance());
         setInitialized();
-    }
-
-    @Override
-    protected void activateUnderlyingDataSource() {
-        subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this);
-    }
-
-    @Override
-    protected void deactivateUnderlyingDataSource() {
-        if (subscriptionToken != null) {
-            subscriptionToken.cancel();
-            subscriptionToken = null;
-        }
-    }
-
-    @Override
-    protected <T> boolean matchSubscriptionToken(final T token) {
-        return token == subscriptionToken;
     }
 
     @Override

@@ -75,7 +75,10 @@ public class TableManagementTools {
 
     private static Table readTableFromSingleParquetFile(@NotNull final File sourceFile, @NotNull final TableDefinition tableDefinition) {
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
-                sourceFile, TableDataRefreshService.getSharedRefreshService());
+                StandaloneTableKey.getInstance(),
+                sourceFile,
+                false,
+                TableDataRefreshService.getSharedRefreshService());
         return getTable("Read single parquet file from " + sourceFile, tableDefinition, locationProvider);
     }
 
