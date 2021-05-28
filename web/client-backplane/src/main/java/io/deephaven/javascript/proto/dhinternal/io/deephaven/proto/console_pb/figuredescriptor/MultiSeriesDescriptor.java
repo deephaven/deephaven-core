@@ -251,7 +251,7 @@ public class MultiSeriesDescriptor {
       }
 
       @JsProperty
-      double getDefaultfloat();
+      double getDefaultdouble();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -260,7 +260,7 @@ public class MultiSeriesDescriptor {
       JsArray<Double> getValuesList();
 
       @JsProperty
-      void setDefaultfloat(double defaultfloat);
+      void setDefaultdouble(double defaultdouble);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -617,7 +617,7 @@ public class MultiSeriesDescriptor {
       }
 
       @JsProperty
-      double getDefaultfloat();
+      double getDefaultdouble();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -626,7 +626,7 @@ public class MultiSeriesDescriptor {
       JsArray<Double> getValuesList();
 
       @JsProperty
-      void setDefaultfloat(double defaultfloat);
+      void setDefaultdouble(double defaultdouble);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -809,7 +809,7 @@ public class MultiSeriesDescriptor {
 
   public native StringMapWithDefault getPointshape();
 
-  public native FloatMapWithDefault getPointsize();
+  public native DoubleMapWithDefault getPointsize();
 
   public native BoolMapWithDefault getPointsvisible();
 
@@ -882,7 +882,7 @@ public class MultiSeriesDescriptor {
 
   public native void setPointsize();
 
-  public native void setPointsize(FloatMapWithDefault value);
+  public native void setPointsize(DoubleMapWithDefault value);
 
   public native void setPointsvisible();
 

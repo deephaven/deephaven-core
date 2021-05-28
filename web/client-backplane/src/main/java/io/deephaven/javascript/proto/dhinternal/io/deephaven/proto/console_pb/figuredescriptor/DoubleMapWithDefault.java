@@ -11,18 +11,18 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.FloatMapWithDefault",
+    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.DoubleMapWithDefault",
     namespace = JsPackage.GLOBAL)
-public class FloatMapWithDefault {
+public class DoubleMapWithDefault {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsOverlay
-    static FloatMapWithDefault.ToObjectReturnType create() {
+    static DoubleMapWithDefault.ToObjectReturnType create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    double getDefaultfloat();
+    double getDefaultdouble();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -31,7 +31,7 @@ public class FloatMapWithDefault {
     JsArray<Double> getValuesList();
 
     @JsProperty
-    void setDefaultfloat(double defaultfloat);
+    void setDefaultdouble(double defaultdouble);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -53,12 +53,12 @@ public class FloatMapWithDefault {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsOverlay
-    static FloatMapWithDefault.ToObjectReturnType0 create() {
+    static DoubleMapWithDefault.ToObjectReturnType0 create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    double getDefaultfloat();
+    double getDefaultdouble();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -67,7 +67,7 @@ public class FloatMapWithDefault {
     JsArray<Double> getValuesList();
 
     @JsProperty
-    void setDefaultfloat(double defaultfloat);
+    void setDefaultdouble(double defaultdouble);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -86,15 +86,15 @@ public class FloatMapWithDefault {
     }
   }
 
-  public static native FloatMapWithDefault deserializeBinary(Uint8Array bytes);
+  public static native DoubleMapWithDefault deserializeBinary(Uint8Array bytes);
 
-  public static native FloatMapWithDefault deserializeBinaryFromReader(
-      FloatMapWithDefault message, Object reader);
+  public static native DoubleMapWithDefault deserializeBinaryFromReader(
+      DoubleMapWithDefault message, Object reader);
 
-  public static native void serializeBinaryToWriter(FloatMapWithDefault message, Object writer);
+  public static native void serializeBinaryToWriter(DoubleMapWithDefault message, Object writer);
 
-  public static native FloatMapWithDefault.ToObjectReturnType toObject(
-      boolean includeInstance, FloatMapWithDefault msg);
+  public static native DoubleMapWithDefault.ToObjectReturnType toObject(
+      boolean includeInstance, DoubleMapWithDefault msg);
 
   public native String addKeys(String value, double index);
 
@@ -108,7 +108,7 @@ public class FloatMapWithDefault {
 
   public native void clearValuesList();
 
-  public native double getDefaultfloat();
+  public native double getDefaultdouble();
 
   public native JsArray<String> getKeysList();
 
@@ -116,7 +116,7 @@ public class FloatMapWithDefault {
 
   public native Uint8Array serializeBinary();
 
-  public native void setDefaultfloat(double value);
+  public native void setDefaultdouble(double value);
 
   public native void setKeysList(JsArray<String> value);
 
@@ -132,7 +132,7 @@ public class FloatMapWithDefault {
     setValuesList(Js.<JsArray<Double>>uncheckedCast(value));
   }
 
-  public native FloatMapWithDefault.ToObjectReturnType0 toObject();
+  public native DoubleMapWithDefault.ToObjectReturnType0 toObject();
 
-  public native FloatMapWithDefault.ToObjectReturnType0 toObject(boolean includeInstance);
+  public native DoubleMapWithDefault.ToObjectReturnType0 toObject(boolean includeInstance);
 }

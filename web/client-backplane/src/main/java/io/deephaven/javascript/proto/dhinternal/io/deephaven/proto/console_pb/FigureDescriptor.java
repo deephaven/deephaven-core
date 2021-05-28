@@ -144,7 +144,7 @@ public class FigureDescriptor {
           }
 
           @JsProperty
-          double getDefaultfloat();
+          double getDefaultdouble();
 
           @JsProperty
           JsArray<String> getKeysList();
@@ -153,7 +153,7 @@ public class FigureDescriptor {
           JsArray<Double> getValuesList();
 
           @JsProperty
-          void setDefaultfloat(double defaultfloat);
+          void setDefaultdouble(double defaultdouble);
 
           @JsProperty
           void setKeysList(JsArray<String> keysList);
@@ -1033,7 +1033,7 @@ public class FigureDescriptor {
           }
 
           @JsProperty
-          double getDefaultfloat();
+          double getDefaultdouble();
 
           @JsProperty
           JsArray<String> getKeysList();
@@ -1042,7 +1042,7 @@ public class FigureDescriptor {
           JsArray<Double> getValuesList();
 
           @JsProperty
-          void setDefaultfloat(double defaultfloat);
+          void setDefaultdouble(double defaultdouble);
 
           @JsProperty
           void setKeysList(JsArray<String> keysList);

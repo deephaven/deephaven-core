@@ -142,7 +142,7 @@ public class FetchFigureResponse {
             }
 
             @JsProperty
-            double getDefaultfloat();
+            double getDefaultdouble();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -151,7 +151,7 @@ public class FetchFigureResponse {
             JsArray<Double> getValuesList();
 
             @JsProperty
-            void setDefaultfloat(double defaultfloat);
+            void setDefaultdouble(double defaultdouble);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -1094,7 +1094,7 @@ public class FetchFigureResponse {
             }
 
             @JsProperty
-            double getDefaultfloat();
+            double getDefaultdouble();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -1103,7 +1103,7 @@ public class FetchFigureResponse {
             JsArray<Double> getValuesList();
 
             @JsProperty
-            void setDefaultfloat(double defaultfloat);
+            void setDefaultdouble(double defaultdouble);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);

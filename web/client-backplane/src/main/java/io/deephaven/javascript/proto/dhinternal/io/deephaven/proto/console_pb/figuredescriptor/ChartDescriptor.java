@@ -135,7 +135,7 @@ public class ChartDescriptor {
         }
 
         @JsProperty
-        double getDefaultfloat();
+        double getDefaultdouble();
 
         @JsProperty
         JsArray<String> getKeysList();
@@ -144,7 +144,7 @@ public class ChartDescriptor {
         JsArray<Double> getValuesList();
 
         @JsProperty
-        void setDefaultfloat(double defaultfloat);
+        void setDefaultdouble(double defaultdouble);
 
         @JsProperty
         void setKeysList(JsArray<String> keysList);
@@ -830,7 +830,7 @@ public class ChartDescriptor {
         }
 
         @JsProperty
-        double getDefaultfloat();
+        double getDefaultdouble();
 
         @JsProperty
         JsArray<String> getKeysList();
@@ -839,7 +839,7 @@ public class ChartDescriptor {
         JsArray<Double> getValuesList();
 
         @JsProperty
-        void setDefaultfloat(double defaultfloat);
+        void setDefaultdouble(double defaultdouble);
 
         @JsProperty
         void setKeysList(JsArray<String> keysList);
