@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ 'main', 'check/**' ]
+    branches: [ 'main', 'check/**', 'release/v*' ]
     tags: [ 'v*' ]
 
 jobs:
