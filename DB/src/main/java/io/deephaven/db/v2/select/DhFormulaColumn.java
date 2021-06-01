@@ -192,9 +192,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         // check if this is a column to be created with a numba vectorized function
         for (Param param : params) {
             if (param.getValue().getClass() == NumbaCallableWrapper.class) {
-                if (params.length > 1) {
-                    throw new RuntimeException("...4");
-                }
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
                 formulaColumnPython = FormulaColumnPython.create(this.columnName,
                         DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),

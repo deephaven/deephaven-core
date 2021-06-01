@@ -367,7 +367,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
             // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is defined in Query scope
             if (acceptableMethods.size() == 0) {
                 final Class methodClass = variables.get(methodName);
-                if (isPotentialImplicitCall(methodClass)) {
+                if (methodClass != null && isPotentialImplicitCall(methodClass)) {
                     for (Method method : methodClass.getMethods()) {
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
                     }
@@ -1533,7 +1533,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
 
         Class methodClass = variables.get(n.getName());
         if (methodClass == NumbaCallableWrapper.class) {
-            parsePyNumbaVectorizedFunc(n, expressions, expressionTypes);
+            checkPyNumbaVectorizedFunc(n, expressions, expressionTypes);
         }
 
         expressions=convertParameters(method, argumentTypes, expressionTypes, parameterizedTypes, expressions);
@@ -1575,10 +1575,10 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         return calculateMethodReturnTypeUsingGenerics(method, expressionTypes, parameterizedTypes);
     }
 
-    private void parsePyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class[] expressionTypes) {
+    private void checkPyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class[] expressionTypes) {
         if (n.getParentNode() != null) {
             throw new RuntimeException("Numba vectorized function can't be used in an expression.");
-        };
+        }
         final QueryScope queryScope = QueryScope.getDefaultInstance();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getName())) {

@@ -93,11 +93,14 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     private static CallableWrapper wrapCallable(PyObject pyObject) {
-        if (pyObject.hasAttribute("ufunc")) {
+        // check if this is a numba vectorized function
+        if (pyObject.getType().toString().equals("<class 'numba.np.ufunc.dufunc.DUFunc'>")) {
             List<PyObject> params = pyObject.getAttribute("types").asList();
             if (params.isEmpty()) {
-                return new CallableWrapper(pyObject);
+                throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
             }
+            // numba allows a vectorized function have multiple signatures, only the first one
+            // will be accepted by DH
             String numbaFuncTypes = params.get(0).getStringValue();
             return parseNumbaVectorized(pyObject, numbaFuncTypes);
         } else {
@@ -117,10 +120,13 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     private static CallableWrapper parseNumbaVectorized(PyObject pyObject, String numbaFuncTypes) {
+        // the 'types' field of a numba vectorized function takes the form of '[parameter-type-char*]->[return-type-char]',
+        // eg. [ll->d] defines two int64 (long) arguments and a double return type.
+
         char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
         Class returnType = numpyType2JavaClass.get(numpyTypeCode);
         if (returnType == null) {
-            return new CallableWrapper(pyObject);
+            throw new IllegalArgumentException("numba vectorized functions must have a return type.");
         }
 
         List<Class> paramTypes = new ArrayList<>();
@@ -132,11 +138,14 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             }
         }
 
+        if (paramTypes.size() == 0) {
+            throw new IllegalArgumentException("numba vectorized functions must have at least one argument.");
+        }
         return new NumbaCallableWrapper(pyObject, returnType, paramTypes);
     }
 
     /**
-     * Converts a pyObject into an appropriate Java object for use outside of JPy.
+     * Converts a pyO   bject into an appropriate Java object for use outside of JPy.
      * <p>
      * If we're a List, Dictionary, or Callable, then we wrap them in a java object.
      * <p>
