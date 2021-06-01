@@ -25,12 +25,13 @@ import java.util.stream.Collectors;
 public class FilterFactory implements FilterVisitor<SelectFilter> {
     private final Table table;
 
-    public FilterFactory(Table table) {
+    private FilterFactory(Table table) {
         this.table = table;
     }
 
-    public SelectFilter makeFilter(Condition condition) {
-        return FilterVisitor.accept(condition, this);
+    public static SelectFilter makeFilter(Table table, Condition condition) {
+        FilterFactory f = new FilterFactory(table);
+        return FilterVisitor.accept(condition, f);
     }
 
     @Override
@@ -50,17 +51,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     private SelectFilter generateConditionFilter(Condition filter) {
-        FilterPrinter printer = makePrinter();
-        return SelectFilterFactory.getExpression(printer.print(filter));
-    }
-
-    @NotNull
-    private FilterPrinter makePrinter() {
-        return new FilterPrinter(str -> "\"" + StringEscapeUtils.escapeJava(str) + "\"");
-    }
-
-    private FilterPrinter makePrinterNoEscape() {
-        return new FilterPrinter(str -> "\"" + str + "\"");
+        return SelectFilterFactory.getExpression(FilterPrinter.print(filter));
     }
 
     @Override
@@ -165,16 +156,15 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
-        for (int i = 1; i < candidatesList.size(); i++) {
+        for (int i = 0; i < candidatesList.size(); i++) {
             Value d = candidatesList.get(i);
             assert d.getDataCase() == Value.DataCase.LITERAL;
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i - 1] = "'" + new DBDateTime(literal.getNanoTimeValue()).toString(DBTimeZone.TZ_DEFAULT) + "'";
+                values[i] = "'" + new DBDateTime(literal.getNanoTimeValue()).toString(DBTimeZone.TZ_DEFAULT) + "'";
             } else {
-                FilterPrinter printer = makePrinterNoEscape();
-                values[i - 1] = printer.print(literal);
+                values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
         return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), values);
@@ -234,7 +224,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     public SelectFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
         final Set<String> columnNames = optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
         SelectFilter[] selectFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
-        if (selectFilters == null || selectFilters.length == 0) {
+        if (selectFilters.length == 0) {
             return SelectNoneFilter.INSTANCE;
         }
         return DisjunctiveFilter.makeDisjunctiveFilter(selectFilters);

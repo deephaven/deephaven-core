@@ -11,17 +11,11 @@ public abstract class AbstractNormalizingFilterTest {
     }
 
     protected void assertFilterEquals(String message, Condition input, Condition output) {
-
         Condition actual = execute(input);
         if (!output.equals(actual)) {
-            fail(message + " expected: " + print(output) + " but was: " + print(actual));
+            fail(message + " expected: " + FilterPrinter.print(output) + " but was: " + FilterPrinter.print(actual));
         }
         assertEquals(message, output, actual);
-    }
-
-    private static String print(Condition f) {
-        FilterPrinter p = new FilterPrinter(str -> "\"" + str + "\"");//not correct, but good enough for logging failures
-        return p.print(f);
     }
 
     protected abstract Condition execute(Condition f);

@@ -1,45 +1,53 @@
 package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.*;
+import org.apache.commons.text.StringEscapeUtils;
 
-import java.text.DecimalFormat;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 public class FilterPrinter implements FilterVisitor<Void> {
     private final StringBuilder sb = new StringBuilder();
-    private final UnaryOperator<String> stringEscape;
+    private final boolean escapeStrings;
 
-    public FilterPrinter(UnaryOperator<String> stringEscape) {
-        this.stringEscape = stringEscape;
+    public static String print(Condition condition) {
+        FilterPrinter visitor = new FilterPrinter(true);
+        FilterVisitor.accept(condition, visitor);
+
+        return visitor.sb.toString();
+    }
+    public static String printNoEscape(Literal literal) {
+        FilterPrinter visitor = new FilterPrinter(false);
+        visitor.onLiteral(literal);
+
+        return visitor.sb.toString();
     }
 
-    public String print(Condition condition) {
-        assert sb.length() == 0 : "sb.length() == 0";
-        FilterVisitor.accept(condition, this);
-
-        return sb.toString();
+    public FilterPrinter(boolean escapeStrings) {
+        this.escapeStrings = escapeStrings;
     }
-    public String print(Literal literal) {
-        assert sb.length() == 0 : "sb.length() == 0";
-        onLiteral(literal);
 
-        return sb.toString();
+    private String stringEscape(String str) {
+        if (escapeStrings) {
+            return "\"" + StringEscapeUtils.escapeJava(str) + "\"";
+        }
+        return str;
     }
 
     @Override
     public Void onAnd(List<Condition> filtersList) {
         if (filtersList.isEmpty()) {
-            return null;//should be pruned earlier
+            // should be pruned earlier
+            return null;
         }
         if (filtersList.size() == 1) {
-            FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
+            // should have been stripped earlier
+            FilterVisitor.accept(filtersList.get(0), this);
             return null;
         }
         sb.append("(");
 
         // at least 2 entries, handle the first, then the rest
-        FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
+        FilterVisitor.accept(filtersList.get(0), this);
         filtersList.stream().skip(1).forEach(condition -> {
             sb.append(" && ");
             FilterVisitor.accept(condition, this);
@@ -52,16 +60,18 @@ public class FilterPrinter implements FilterVisitor<Void> {
     @Override
     public Void onOr(List<Condition> filtersList) {
         if (filtersList.isEmpty()) {
-            return null;//should be pruned earlier
+            // should be pruned earlier
+            return null;
         }
         if (filtersList.size() == 1) {
-            FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
+            // should have been stripped earlier
+            FilterVisitor.accept(filtersList.get(0), this);
             return null;
         }
         sb.append("(");
 
         // at least 2 entries, handle the first, then the rest
-        FilterVisitor.accept(filtersList.get(0), this);//should have been stripped earlier
+        FilterVisitor.accept(filtersList.get(0), this);
         filtersList.stream().skip(1).forEach(condition -> {
             sb.append(" || ");
             FilterVisitor.accept(condition, this);
@@ -118,7 +128,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     @Override
     public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
         if (candidatesList.isEmpty()) {
-            return null;// should have already been pruned
+            // should have already been pruned
+            return null;
         }
         accept(target);
         if (caseSensitivity == CaseSensitivity.IGNORE_CASE) {
@@ -173,7 +184,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
         sb.append("(");
         onReference(reference);
         sb.append(",");
-        sb.append(stringEscape.apply(searchString));
+        sb.append(stringEscape(searchString));
         sb.append(")");
         return null;
     }
@@ -190,7 +201,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
         sb.append("(");
         onReference(reference);
         sb.append(",");
-        sb.append(stringEscape.apply(regex));
+        sb.append(stringEscape(regex));
         sb.append(")");
         return null;
     }
@@ -198,7 +209,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     @Override
     public Void onSearch(String searchString, List<Reference> optionalReferencesList) {
         sb.append("searchTableColumns(");
-        sb.append(stringEscape.apply(searchString));
+        sb.append(stringEscape(searchString));
         for (Reference reference : optionalReferencesList) {
             sb.append(",");
             onReference(reference);
@@ -207,7 +218,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
         return null;
     }
 
-    private Void accept(Value value) {
+    private void accept(Value value) {
         switch (value.getDataCase()) {
             case REFERENCE:
                 onReference(value.getReference());
@@ -219,24 +230,34 @@ public class FilterPrinter implements FilterVisitor<Void> {
             default:
                 throw new UnsupportedOperationException("Unknown value " + value);
         }
-        return null;
     }
 
-    private Void onReference(Reference reference) {
+    private void onReference(Reference reference) {
         sb.append(reference.getColumnName());
-        return null;
     }
 
     private void onLiteral(Literal literal) {
         switch (literal.getValueCase()) {
             case STRING_VALUE:
-                sb.append(stringEscape.apply(literal.getStringValue()));
+                sb.append(stringEscape(literal.getStringValue()));
                 break;
             case DOUBLE_VALUE:
-                DecimalFormat format = new DecimalFormat("##0");
-                format.setDecimalSeparatorAlwaysShown(false);
-                format.setGroupingUsed(false);
-                sb.append(format.format(literal.getDoubleValue()));
+                double doubleVal = literal.getDoubleValue();
+                if (doubleVal == Double.NEGATIVE_INFINITY) {
+                    sb.append("Double.NEGATIVE_INFINITY");
+                } else if (doubleVal == Double.POSITIVE_INFINITY) {
+                    sb.append("Double.POSITIVE_INFINITY");
+                } else if (Double.isNaN(doubleVal)) {
+                    sb.append("Double.NaN");
+                } else {
+                    long longVal = (long) doubleVal;
+                    if (longVal - doubleVal != 0) {
+                        // has a decimal value
+                        sb.append(doubleVal);
+                    } else {
+                        sb.append(longVal);
+                    }
+                }
                 break;
             case BOOL_VALUE:
                 sb.append(literal.getBoolValue());

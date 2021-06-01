@@ -78,8 +78,7 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         List<Condition> finishedConditions = Collections.singletonList(filter);
 
         // build SelectFilter[] to pass to the table
-        System.out.println(new FilterPrinter(str -> "\"" + StringEscapeUtils.escapeJava(str) + "\"").print(filter));
-        SelectFilter[] selectFilters = finishedConditions.stream().map(f -> new FilterFactory(sourceTable).makeFilter(f)).toArray(SelectFilter[]::new);
+        SelectFilter[] selectFilters = finishedConditions.stream().map(f -> FilterFactory.makeFilter(sourceTable, f)).toArray(SelectFilter[]::new);
 
         // execute the filters
         return sourceTable.where(selectFilters);

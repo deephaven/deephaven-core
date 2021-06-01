@@ -24,7 +24,7 @@ public class MergeNestedBinaryOperations extends AbstractNormalizeFilters {
     @Override
     public Condition onAnd(List<Condition> filtersList) {
         List<Condition> visited = new ArrayList<>();
-        // walk the children, recursing into AND nodes, but only copying non-AND nodes into our result list
+        // walk the descendents, recursing into AND nodes, but only copying non-AND nodes into our result list
         collect(filtersList, visited, Condition::hasAnd, c -> c.getAnd().getFiltersList());
 
         // before actually wrapping, visit children in case there are ANDs or ORs further nested
@@ -45,7 +45,7 @@ public class MergeNestedBinaryOperations extends AbstractNormalizeFilters {
     @Override
     public Condition onOr(List<Condition> filtersList) {
         List<Condition> visited = new ArrayList<>();
-        // walk the children, recursing into OR nodes, but only copying non-OR nodes into our result list
+        // walk the descendents, recursing into OR nodes, but only copying non-OR nodes into our result list
         collect(filtersList, visited, Condition::hasOr, c -> c.getOr().getFiltersList());
 
         // before actually wrapping, visit children in case there are ANDs or ORs further nested
