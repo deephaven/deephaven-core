@@ -19,12 +19,12 @@ public class ExportedTableUpdateBatchMessage {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface UpdatesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ExportidFieldType {
+      public interface ExportIdFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetIdUnionType {
           @JsOverlay
           static ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType
-                  .ExportidFieldType.GetIdUnionType
+                  .ExportIdFieldType.GetIdUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -52,20 +52,20 @@ public class ExportedTableUpdateBatchMessage {
 
         @JsOverlay
         static ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType
-                .ExportidFieldType
+                .ExportIdFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportidFieldType
+        ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportIdFieldType
                 .GetIdUnionType
             getId();
 
         @JsProperty
         void setId(
             ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType
-                    .ExportidFieldType.GetIdUnionType
+                    .ExportIdFieldType.GetIdUnionType
                 id);
 
         @JsOverlay
@@ -73,7 +73,7 @@ public class ExportedTableUpdateBatchMessage {
           setId(
               Js
                   .<ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType
-                          .ExportidFieldType.GetIdUnionType>
+                          .ExportIdFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
 
@@ -82,7 +82,7 @@ public class ExportedTableUpdateBatchMessage {
           setId(
               Js
                   .<ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType
-                          .ExportidFieldType.GetIdUnionType>
+                          .ExportIdFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
       }
@@ -93,25 +93,25 @@ public class ExportedTableUpdateBatchMessage {
       }
 
       @JsProperty
-      ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportidFieldType
-          getExportid();
+      ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportIdFieldType
+          getExportId();
 
       @JsProperty
       String getSize();
 
       @JsProperty
-      String getUpdatefailuremessage();
+      String getUpdateFailureMessage();
 
       @JsProperty
-      void setExportid(
-          ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportidFieldType
-              exportid);
+      void setExportId(
+          ExportedTableUpdateBatchMessage.ToObjectReturnType.UpdatesListFieldType.ExportIdFieldType
+              exportId);
 
       @JsProperty
       void setSize(String size);
 
       @JsProperty
-      void setUpdatefailuremessage(String updatefailuremessage);
+      void setUpdateFailureMessage(String updateFailureMessage);
     }
 
     @JsOverlay
@@ -143,12 +143,12 @@ public class ExportedTableUpdateBatchMessage {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface UpdatesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ExportidFieldType {
+      public interface ExportIdFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetIdUnionType {
           @JsOverlay
           static ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType
-                  .ExportidFieldType.GetIdUnionType
+                  .ExportIdFieldType.GetIdUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -176,20 +176,20 @@ public class ExportedTableUpdateBatchMessage {
 
         @JsOverlay
         static ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType
-                .ExportidFieldType
+                .ExportIdFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportidFieldType
+        ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportIdFieldType
                 .GetIdUnionType
             getId();
 
         @JsProperty
         void setId(
             ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType
-                    .ExportidFieldType.GetIdUnionType
+                    .ExportIdFieldType.GetIdUnionType
                 id);
 
         @JsOverlay
@@ -197,7 +197,7 @@ public class ExportedTableUpdateBatchMessage {
           setId(
               Js
                   .<ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType
-                          .ExportidFieldType.GetIdUnionType>
+                          .ExportIdFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
 
@@ -206,7 +206,7 @@ public class ExportedTableUpdateBatchMessage {
           setId(
               Js
                   .<ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType
-                          .ExportidFieldType.GetIdUnionType>
+                          .ExportIdFieldType.GetIdUnionType>
                       uncheckedCast(id));
         }
       }
@@ -217,25 +217,25 @@ public class ExportedTableUpdateBatchMessage {
       }
 
       @JsProperty
-      ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportidFieldType
-          getExportid();
+      ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportIdFieldType
+          getExportId();
 
       @JsProperty
       String getSize();
 
       @JsProperty
-      String getUpdatefailuremessage();
+      String getUpdateFailureMessage();
 
       @JsProperty
-      void setExportid(
-          ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportidFieldType
-              exportid);
+      void setExportId(
+          ExportedTableUpdateBatchMessage.ToObjectReturnType0.UpdatesListFieldType.ExportIdFieldType
+              exportId);
 
       @JsProperty
       void setSize(String size);
 
       @JsProperty
-      void setUpdatefailuremessage(String updatefailuremessage);
+      void setUpdateFailureMessage(String updateFailureMessage);
     }
 
     @JsOverlay

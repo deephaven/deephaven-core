@@ -6,6 +6,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.NotificationQueue;
@@ -31,7 +32,8 @@ import java.util.stream.Stream;
  * produce notifications more than once in a cycle; which is an error.
  */
 public abstract class MergedListener extends LivenessArtifact implements NotificationQueue.Dependency {
-    private final Logger log;
+    private static final Logger log = LoggerFactory.getLogger(MergedListener.class);
+
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final String logPrefix;
 
@@ -47,8 +49,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private final UpdatePerformanceTracker.Entry entry;
 
-    protected MergedListener(Logger log, Collection<? extends ListenerRecorder> recorders, Collection<NotificationQueue.Dependency> dependencies, String listenerDescription, QueryTable result) {
-        this.log = log;
+    protected MergedListener(Collection<? extends ListenerRecorder> recorders, Collection<NotificationQueue.Dependency> dependencies, String listenerDescription, QueryTable result) {
         this.recorders = recorders;
         recorders.forEach(this::manage);
         this.dependencies = dependencies;

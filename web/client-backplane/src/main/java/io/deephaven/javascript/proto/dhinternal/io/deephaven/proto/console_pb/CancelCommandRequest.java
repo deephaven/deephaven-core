@@ -17,11 +17,11 @@ public class CancelCommandRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType of(
+        static CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -48,21 +48,21 @@ public class CancelCommandRequest {
       }
 
       @JsOverlay
-      static CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType create() {
+      static CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType getId();
+      CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType id);
+      void setId(CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -70,7 +70,7 @@ public class CancelCommandRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -81,26 +81,26 @@ public class CancelCommandRequest {
     }
 
     @JsProperty
-    Object getCommandid();
+    Object getCommandId();
 
     @JsProperty
-    CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType getConsoleid();
+    CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    void setCommandid(Object commandid);
+    void setCommandId(Object commandId);
 
     @JsProperty
-    void setConsoleid(CancelCommandRequest.ToObjectReturnType.ConsoleidFieldType consoleid);
+    void setConsoleId(CancelCommandRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType of(
+        static CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -127,21 +127,21 @@ public class CancelCommandRequest {
       }
 
       @JsOverlay
-      static CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType create() {
+      static CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType getId();
+      CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType id);
+      void setId(CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -149,7 +149,7 @@ public class CancelCommandRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -160,16 +160,16 @@ public class CancelCommandRequest {
     }
 
     @JsProperty
-    Object getCommandid();
+    Object getCommandId();
 
     @JsProperty
-    CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType getConsoleid();
+    CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    void setCommandid(Object commandid);
+    void setCommandId(Object commandId);
 
     @JsProperty
-    void setConsoleid(CancelCommandRequest.ToObjectReturnType0.ConsoleidFieldType consoleid);
+    void setConsoleId(CancelCommandRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
   }
 
   public static native CancelCommandRequest deserializeBinary(Uint8Array bytes);
@@ -182,27 +182,27 @@ public class CancelCommandRequest {
   public static native CancelCommandRequest.ToObjectReturnType toObject(
       boolean includeInstance, CancelCommandRequest msg);
 
-  public native void clearCommandid();
+  public native void clearCommandId();
 
-  public native void clearConsoleid();
+  public native void clearConsoleId();
 
-  public native Ticket getCommandid();
+  public native Ticket getCommandId();
 
-  public native Ticket getConsoleid();
+  public native Ticket getConsoleId();
 
-  public native boolean hasCommandid();
+  public native boolean hasCommandId();
 
-  public native boolean hasConsoleid();
+  public native boolean hasConsoleId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setCommandid();
+  public native void setCommandId();
 
-  public native void setCommandid(Ticket value);
+  public native void setCommandId(Ticket value);
 
-  public native void setConsoleid();
+  public native void setConsoleId();
 
-  public native void setConsoleid(Ticket value);
+  public native void setConsoleId(Ticket value);
 
   public native CancelCommandRequest.ToObjectReturnType0 toObject();
 

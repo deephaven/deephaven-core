@@ -25,7 +25,8 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
               c("Bool",  true,  false,      true,  true, false,    false));
 
         final QueryTable t1Matched = (QueryTable)t1.wouldMatch("HasAnE=Text.contains(`e`)", "isGt3=Number > 3", "Compound=Bool || Text.length() < 5");
-        t1Matched.listenForUpdates(new ListenerWithGlobals(t1Matched));
+        final Listener t1MatchedListener = new ListenerWithGlobals(t1Matched);
+        t1Matched.listenForUpdates(t1MatchedListener);
 
         show(t1Matched);
         assertEquals(Arrays.asList(true , false,  true, false, false, true) , Arrays.asList(t1Matched.getColumn("HasAnE").get(0,6)));

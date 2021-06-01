@@ -12,9 +12,22 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
 
     /**
      * Construct a new scope, which must be {@link #release()}d in order to release any subsequently added
-     * {@link LivenessReferent}s.
+     * {@link LivenessReferent}s. Will only enforce weak reachability on its  {@link #manage(LivenessReferent)}ed
+     * referents.
      */
     public LivenessScope() {
+        this(false);
+    }
+
+    /**
+     * Construct a new scope, which must be {@link #release()}d in order to release any subsequently added
+     * {@link LivenessReferent}s.
+     *
+     * @param enforceStrongReachability Whether this {@link LivenessScope} should maintain strong references to its
+     *                                  {@link #manage(LivenessReferent)}ed referents
+     */
+    public LivenessScope(boolean enforceStrongReachability) {
+        super(enforceStrongReachability);
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }
@@ -33,6 +46,9 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
     public final void transferTo(@NotNull final LivenessManager other) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
+        }
+        if (enforceStrongReachability) {
+            throw new UnsupportedOperationException("LivenessScope does not support reference transfer if enforceStrongReachability is specified");
         }
         if (other instanceof ReferenceCountedLivenessNode) {
             tracker.transferReferencesTo(((ReferenceCountedLivenessNode) other).tracker);

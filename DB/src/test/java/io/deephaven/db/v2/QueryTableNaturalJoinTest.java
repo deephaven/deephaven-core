@@ -249,17 +249,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final EvalNugget[] en = new EvalNugget[]{
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, rightTable, MatchPairFactory.getExpressions("I1"), MatchPairFactory.getExpressions("LI1=I1","LC1=C1","LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("I1"), MatchPairFactory.getExpressions("LI1=I1","LC1=C1","LC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, rightTable, MatchPairFactory.getExpressions("C1","I1"), MatchPairFactory.getExpressions("LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("C1","I1"), MatchPairFactory.getExpressions("LC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, (QueryTable)rightTable.update("Exists=true"), MatchPairFactory.getExpressions("C1","C2","I1"), MatchPairFactory.getExpressions("Exists"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable)rightTable.update("Exists=true"), MatchPairFactory.getExpressions("C1","C2","I1"), MatchPairFactory.getExpressions("Exists"), false, control);
                     }
                 },
         };

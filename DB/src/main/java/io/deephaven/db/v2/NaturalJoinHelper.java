@@ -3,7 +3,6 @@ package io.deephaven.db.v2;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.v2.join.JoinListenerRecorder;
@@ -21,18 +20,18 @@ import java.util.*;
 class NaturalJoinHelper {
     private NaturalJoinHelper() {} // static use only
 
-    static Table naturalJoin(@SuppressWarnings("SameParameterValue") Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch) {
-        return naturalJoin(log, leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, new JoinControl());
+    static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch) {
+        return naturalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, new JoinControl());
     }
 
     @VisibleForTesting
-    static Table naturalJoin(Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
-        final Table result = naturalJoinInternal(log, leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
+    static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+        final Table result = naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         return result;
     }
 
-    private static Table naturalJoinInternal(Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+    private static Table naturalJoinInternal(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         try (final BucketingContext bucketingContext = new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
@@ -56,7 +55,7 @@ class NaturalJoinHelper {
             }
 
             if (bucketingContext.leftSources.length == 0) {
-                return zeroKeyColumnsJoin(log, leftTable, rightTable, columnsToAdd, exactMatch, bucketingContext.listenerDescription);
+                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, exactMatch, bucketingContext.listenerDescription);
             }
 
             final LongArraySource leftHashSlots = new LongArraySource();
@@ -88,7 +87,7 @@ class NaturalJoinHelper {
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                     final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
-                            log, leftTable, rightTable, bucketingContext.leftSources, bucketingContext.rightSources, columnsToMatch,
+                            leftTable, rightTable, bucketingContext.leftSources, bucketingContext.rightSources, columnsToMatch,
                             columnsToAdd, leftRecorder, rightRecorder, result, redirectionIndex, jsm, exactMatch, bucketingContext.listenerDescription);
                     leftRecorder.setMergedListener(mergedJoinListener);
                     rightRecorder.setMergedListener(mergedJoinListener);
@@ -182,7 +181,7 @@ class NaturalJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, boolean exactMatch, String listenerDescription) {
+    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, boolean exactMatch, String listenerDescription) {
         // we are a single value join, we do not need to do any work
         final SingleValueRedirectionIndex redirectionIndex;
 
@@ -213,7 +212,7 @@ class NaturalJoinHelper {
                 final JoinListenerRecorder leftRecorder = new JoinListenerRecorder(true, listenerDescription, leftTable, result);
                 final JoinListenerRecorder rightRecorder = new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
-                final MergedListener mergedListener = new MergedListener(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result) {
+                final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result) {
                     @Override
                     protected void process() {
                         result.modifiedColumnSet.clear();
@@ -654,7 +653,7 @@ class NaturalJoinHelper {
         private final NaturalJoinModifiedSlotTracker modifiedSlotTracker;
 
 
-        private ChunkedMergedJoinListener(Logger log, QueryTable leftTable,
+        private ChunkedMergedJoinListener(QueryTable leftTable,
                                           QueryTable rightTable,
                                           ColumnSource<?>[] leftSources,
                                           ColumnSource<?>[] rightSources,
@@ -667,7 +666,7 @@ class NaturalJoinHelper {
                                           IncrementalChunkedNaturalJoinStateManager jsm,
                                           boolean exactMatch,
                                           String listenerDescription) {
-            super(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+            super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
             this.leftSources = leftSources;
             this.rightSources = rightSources;
             this.leftRecorder = leftRecorder;

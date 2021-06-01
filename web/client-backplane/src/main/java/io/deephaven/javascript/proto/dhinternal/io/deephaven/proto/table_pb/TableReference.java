@@ -76,13 +76,13 @@ public class TableReference {
     }
 
     @JsProperty
-    double getBatchoffset();
+    double getBatchOffset();
 
     @JsProperty
     TableReference.ToObjectReturnType.TicketFieldType getTicket();
 
     @JsProperty
-    void setBatchoffset(double batchoffset);
+    void setBatchOffset(double batchOffset);
 
     @JsProperty
     void setTicket(TableReference.ToObjectReturnType.TicketFieldType ticket);
@@ -152,13 +152,13 @@ public class TableReference {
     }
 
     @JsProperty
-    double getBatchoffset();
+    double getBatchOffset();
 
     @JsProperty
     TableReference.ToObjectReturnType0.TicketFieldType getTicket();
 
     @JsProperty
-    void setBatchoffset(double batchoffset);
+    void setBatchOffset(double batchOffset);
 
     @JsProperty
     void setTicket(TableReference.ToObjectReturnType0.TicketFieldType ticket);
@@ -174,23 +174,23 @@ public class TableReference {
   public static native TableReference.ToObjectReturnType toObject(
       boolean includeInstance, TableReference msg);
 
-  public native void clearBatchoffset();
+  public native void clearBatchOffset();
 
   public native void clearTicket();
 
-  public native double getBatchoffset();
+  public native double getBatchOffset();
 
   public native int getRefCase();
 
   public native Ticket getTicket();
 
-  public native boolean hasBatchoffset();
+  public native boolean hasBatchOffset();
 
   public native boolean hasTicket();
 
   public native Uint8Array serializeBinary();
 
-  public native void setBatchoffset(double value);
+  public native void setBatchOffset(double value);
 
   public native void setTicket();
 

@@ -17,11 +17,11 @@ public class GetCompletionItemsRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType of(
+        static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -48,21 +48,21 @@ public class GetCompletionItemsRequest {
       }
 
       @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType create() {
+      static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType getId();
+      GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType id);
+      void setId(GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -70,7 +70,7 @@ public class GetCompletionItemsRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -83,16 +83,16 @@ public class GetCompletionItemsRequest {
       }
 
       @JsProperty
-      String getTriggercharacter();
+      String getTriggerCharacter();
 
       @JsProperty
-      double getTriggerkind();
+      double getTriggerKind();
 
       @JsProperty
-      void setTriggercharacter(String triggercharacter);
+      void setTriggerCharacter(String triggerCharacter);
 
       @JsProperty
-      void setTriggerkind(double triggerkind);
+      void setTriggerKind(double triggerKind);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -116,9 +116,9 @@ public class GetCompletionItemsRequest {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextdocumentFieldType {
+    public interface TextDocumentFieldType {
       @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.TextdocumentFieldType create() {
+      static GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -141,7 +141,7 @@ public class GetCompletionItemsRequest {
     }
 
     @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType getConsoleid();
+    GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
     GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType getContext();
@@ -150,10 +150,10 @@ public class GetCompletionItemsRequest {
     GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType getPosition();
 
     @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.TextdocumentFieldType getTextdocument();
+    GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
 
     @JsProperty
-    void setConsoleid(GetCompletionItemsRequest.ToObjectReturnType.ConsoleidFieldType consoleid);
+    void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
     @JsProperty
     void setContext(GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType context);
@@ -162,18 +162,18 @@ public class GetCompletionItemsRequest {
     void setPosition(GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType position);
 
     @JsProperty
-    void setTextdocument(
-        GetCompletionItemsRequest.ToObjectReturnType.TextdocumentFieldType textdocument);
+    void setTextDocument(
+        GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType of(
+        static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -200,22 +200,22 @@ public class GetCompletionItemsRequest {
       }
 
       @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType create() {
+      static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType getId();
+      GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
       void setId(
-          GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType id);
+          GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -223,7 +223,7 @@ public class GetCompletionItemsRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -236,16 +236,16 @@ public class GetCompletionItemsRequest {
       }
 
       @JsProperty
-      String getTriggercharacter();
+      String getTriggerCharacter();
 
       @JsProperty
-      double getTriggerkind();
+      double getTriggerKind();
 
       @JsProperty
-      void setTriggercharacter(String triggercharacter);
+      void setTriggerCharacter(String triggerCharacter);
 
       @JsProperty
-      void setTriggerkind(double triggerkind);
+      void setTriggerKind(double triggerKind);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -269,9 +269,9 @@ public class GetCompletionItemsRequest {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextdocumentFieldType {
+    public interface TextDocumentFieldType {
       @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.TextdocumentFieldType create() {
+      static GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -294,7 +294,7 @@ public class GetCompletionItemsRequest {
     }
 
     @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType getConsoleid();
+    GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
     GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType getContext();
@@ -303,10 +303,10 @@ public class GetCompletionItemsRequest {
     GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType getPosition();
 
     @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.TextdocumentFieldType getTextdocument();
+    GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
 
     @JsProperty
-    void setConsoleid(GetCompletionItemsRequest.ToObjectReturnType0.ConsoleidFieldType consoleid);
+    void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
 
     @JsProperty
     void setContext(GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType context);
@@ -315,8 +315,8 @@ public class GetCompletionItemsRequest {
     void setPosition(GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType position);
 
     @JsProperty
-    void setTextdocument(
-        GetCompletionItemsRequest.ToObjectReturnType0.TextdocumentFieldType textdocument);
+    void setTextDocument(
+        GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
   }
 
   public static native GetCompletionItemsRequest deserializeBinary(Uint8Array bytes);
@@ -330,35 +330,35 @@ public class GetCompletionItemsRequest {
   public static native GetCompletionItemsRequest.ToObjectReturnType toObject(
       boolean includeInstance, GetCompletionItemsRequest msg);
 
-  public native void clearConsoleid();
+  public native void clearConsoleId();
 
   public native void clearContext();
 
   public native void clearPosition();
 
-  public native void clearTextdocument();
+  public native void clearTextDocument();
 
-  public native Ticket getConsoleid();
+  public native Ticket getConsoleId();
 
   public native CompletionContext getContext();
 
   public native Position getPosition();
 
-  public native VersionedTextDocumentIdentifier getTextdocument();
+  public native VersionedTextDocumentIdentifier getTextDocument();
 
-  public native boolean hasConsoleid();
+  public native boolean hasConsoleId();
 
   public native boolean hasContext();
 
   public native boolean hasPosition();
 
-  public native boolean hasTextdocument();
+  public native boolean hasTextDocument();
 
   public native Uint8Array serializeBinary();
 
-  public native void setConsoleid();
+  public native void setConsoleId();
 
-  public native void setConsoleid(Ticket value);
+  public native void setConsoleId(Ticket value);
 
   public native void setContext();
 
@@ -368,9 +368,9 @@ public class GetCompletionItemsRequest {
 
   public native void setPosition(Position value);
 
-  public native void setTextdocument();
+  public native void setTextDocument();
 
-  public native void setTextdocument(VersionedTextDocumentIdentifier value);
+  public native void setTextDocument(VersionedTextDocumentIdentifier value);
 
   public native GetCompletionItemsRequest.ToObjectReturnType0 toObject();
 

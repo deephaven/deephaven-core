@@ -72,7 +72,7 @@ class IncrementalBenchmark {
 
         final InstrumentedShiftAwareListenerAdapter failureListener;
         if (result instanceof DynamicTable) {
-            failureListener = new InstrumentedShiftAwareListenerAdapter("Failure Listener", (DynamicTable) result) {
+            failureListener = new InstrumentedShiftAwareListenerAdapter("Failure Listener", (DynamicTable) result, false) {
                 @Override
                 public void onUpdate(Update upstream) {
                 }

@@ -18,11 +18,11 @@ public class SortTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SortTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(Object o) {
+        static SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -48,27 +48,27 @@ public class SortTableRequest {
       }
 
       @JsOverlay
-      static SortTableRequest.ToObjectReturnType.ResultidFieldType create() {
+      static SortTableRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SortTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SortTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<SortTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<SortTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
@@ -81,39 +81,39 @@ public class SortTableRequest {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
       double getDirection();
 
       @JsProperty
-      boolean isIsabsolute();
+      boolean isIsAbsolute();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
       void setDirection(double direction);
 
       @JsProperty
-      void setIsabsolute(boolean isabsolute);
+      void setIsAbsolute(boolean isAbsolute);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static SortTableRequest.ToObjectReturnType.SourceidFieldType create() {
+      static SortTableRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -125,16 +125,16 @@ public class SortTableRequest {
     }
 
     @JsProperty
-    SortTableRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    SortTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
     JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType> getSortsList();
 
     @JsProperty
-    SortTableRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    SortTableRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setResultid(SortTableRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(SortTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
     void setSortsList(JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType> sortsList);
@@ -147,17 +147,17 @@ public class SortTableRequest {
     }
 
     @JsProperty
-    void setSourceid(SortTableRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(SortTableRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SortTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(Object o) {
+        static SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -183,27 +183,27 @@ public class SortTableRequest {
       }
 
       @JsOverlay
-      static SortTableRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static SortTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SortTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SortTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<SortTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<SortTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
@@ -216,39 +216,39 @@ public class SortTableRequest {
       }
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
       double getDirection();
 
       @JsProperty
-      boolean isIsabsolute();
+      boolean isIsAbsolute();
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
       void setDirection(double direction);
 
       @JsProperty
-      void setIsabsolute(boolean isabsolute);
+      void setIsAbsolute(boolean isAbsolute);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static SortTableRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static SortTableRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -260,16 +260,16 @@ public class SortTableRequest {
     }
 
     @JsProperty
-    SortTableRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    SortTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
     JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType> getSortsList();
 
     @JsProperty
-    SortTableRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    SortTableRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setResultid(SortTableRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(SortTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
     void setSortsList(JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType> sortsList);
@@ -282,7 +282,7 @@ public class SortTableRequest {
     }
 
     @JsProperty
-    void setSourceid(SortTableRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(SortTableRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native SortTableRequest deserializeBinary(Uint8Array bytes);
@@ -301,27 +301,27 @@ public class SortTableRequest {
 
   public native SortDescriptor addSorts(SortDescriptor value);
 
-  public native void clearResultid();
+  public native void clearResultId();
 
   public native void clearSortsList();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
   public native JsArray<SortDescriptor> getSortsList();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
   public native void setSortsList(JsArray<SortDescriptor> value);
 
@@ -330,9 +330,9 @@ public class SortTableRequest {
     setSortsList(Js.<JsArray<SortDescriptor>>uncheckedCast(value));
   }
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native SortTableRequest.ToObjectReturnType0 toObject();
 

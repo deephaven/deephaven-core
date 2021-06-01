@@ -6,7 +6,6 @@ package io.deephaven.db.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -47,7 +46,7 @@ public class UnionSourceManager {
 
     private UpdateCommitter<UnionSourceManager> prevFlusher = null;
 
-    public UnionSourceManager(Logger log, TableDefinition tableDefinition, @Nullable NotificationQueue.Dependency parentDependency){
+    public UnionSourceManager(TableDefinition tableDefinition, @Nullable NotificationQueue.Dependency parentDependency){
         // noinspection unchecked
         sources = tableDefinition.getColumnList().stream()
                 .map((cd) -> new UnionColumnSource(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
@@ -59,7 +58,7 @@ public class UnionSourceManager {
         result = new QueryTable(index, getColumnSources());
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
-        mergedListener = new MergedUnionListener(log, listeners, "TableTools.merge()", result);
+        mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);
     }
 
     /**
@@ -207,8 +206,8 @@ public class UnionSourceManager {
     }
 
     class MergedUnionListener extends MergedListener {
-        MergedUnionListener(Logger log, Collection<UnionListenerRecorder> recorders, String listenerDescription, QueryTable result) {
-            super(log, recorders, Collections.emptyList(), listenerDescription, result);
+        MergedUnionListener(Collection<UnionListenerRecorder> recorders, String listenerDescription, QueryTable result) {
+            super(recorders, Collections.emptyList(), listenerDescription, result);
         }
 
         @Override

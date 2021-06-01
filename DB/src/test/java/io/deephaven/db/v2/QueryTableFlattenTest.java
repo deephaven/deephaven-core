@@ -224,17 +224,17 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         TestHelper(final Table sourceTable, final ListenerFactory<T> factory) {
             this.sourceTable = (QueryTable) sourceTable;
             listener = factory.newListener(this.sourceTable);
-            if (listener instanceof SimpleListener) {
-                this.sourceTable.listenForUpdates((SimpleListener) listener);
-            } else if (listener instanceof SimpleShiftAwareListener) {
-                this.sourceTable.listenForUpdates((SimpleShiftAwareListener) listener);
+            if (listener instanceof Listener) {
+                this.sourceTable.listenForUpdates((Listener) listener);
+            } else if (listener instanceof ShiftAwareListener) {
+                this.sourceTable.listenForUpdates((ShiftAwareListener) listener);
             } else {
                 throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
 
             validator = TableUpdateValidator.make(this.sourceTable);
             final QueryTable validatorTable = validator.getResultTable();
-            validatorTable.listenForUpdates(new InstrumentedShiftAwareListenerAdapter(validatorTable) {
+            final ShiftAwareListener validatorTableListener = new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
                 @Override
                 public void onUpdate(Update upstream) {}
 
@@ -242,7 +242,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                 public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
                     TestCase.fail(originalException.getMessage());
                 }
-            });
+            };
+            validatorTable.listenForUpdates(validatorTableListener);
 
             showWithIndex(sourceTable);
         }

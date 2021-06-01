@@ -71,7 +71,7 @@ task prepareDockerForWheel(type: Sync) {
 def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWheel') {
     dependsOn prepareDockerForWheel
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/deephaven-wheel')
+    images.add('deephaven/deephaven-wheel:local-build')
     target.set('build')
 }
 
@@ -80,9 +80,9 @@ def buildDockerForWheel = Docker.registerDockerImage(project, 'buildDockerForWhe
  */
 task deephavenPythonDockerfile(type: Dockerfile) {
     destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
-    from new Dockerfile.From('deephaven/deephaven-jpy-wheel').withStage('deephaven-jpy-wheel')
-    from new Dockerfile.From('deephaven/deephaven-wheel').withStage('deephaven-wheel')
-    from new Dockerfile.From('deephaven/java-and-python')
+    from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
+    from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
+    from new Dockerfile.From('deephaven/java-and-python:local-build')
 
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
@@ -102,7 +102,7 @@ Docker.registerDockerImage(project, 'buildDeephavenPython') {
 
     inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
 
-    images.add('deephaven/runtime-base')
+    images.add('deephaven/runtime-base:local-build')
 }
 
 /**
@@ -151,7 +151,7 @@ if (PyEnv.pythonEnabled(project)) {
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/runtime-base'
+            from 'deephaven/runtime-base:local-build'
             runCommand '''set -eux; \\
                           pip3 install unittest-xml-reporting==3.0.4;\\
                           mkdir -p /out/report;\\

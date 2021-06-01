@@ -5,7 +5,6 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.sources.ReversedColumnSource;
@@ -53,8 +52,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public ShiftAwareSwapListener newSwapListener(Logger log, QueryTable queryTable) {
-        return new ShiftAwareSwapListener(log, queryTable) {
+    public ShiftAwareSwapListener newSwapListener(QueryTable queryTable) {
+        return new ShiftAwareSwapListener(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);

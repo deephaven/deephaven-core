@@ -3,6 +3,7 @@ package io.deephaven.treetable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.NotificationQueue;
@@ -49,13 +50,12 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private final TreeTableClientTableManager.ClientState clientState;
     private final TreeTableClientTableManager.TreeState treeState;
 
-    protected final Logger log;
+    private static final Logger log = LoggerFactory.getLogger(AbstractTreeSnapshotImpl.class);
 
     /**
      * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the specified rows
      * and columns, applying the specified sorts and filters if required to fetch tables
-     *
-     * @param baseTable   The ID of the base table.  This will be used as a key to maintain this client state.
+     *  @param baseTable   The ID of the base table.  This will be used as a key to maintain this client state.
      * @param tablesByKey The tables within the tree for which viewports are being tracked, separated by table key.
      * @param firstRow     The first row of the flat viewport
      * @param lastRow     The last row of the flat viewport
@@ -65,8 +65,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
      * @param client      The CLIENT_TYPE instance
      * @param includedOps The set of operations the client has performed before submitting this TSQ.
      */
-    AbstractTreeSnapshotImpl(Logger log,
-                             int baseTableId,
+    AbstractTreeSnapshotImpl(int baseTableId,
                              HierarchicalTable baseTable,
                              Map<Object, TableDetails> tablesByKey,
                              long firstRow, long lastRow,
@@ -81,7 +80,6 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         this.client = client;
         this.baseTable = baseTable;
         this.baseTableId = baseTableId;
-        this.log = log;
         this.includedOps = includedOps;
 
         firstViewportRow = firstRow;

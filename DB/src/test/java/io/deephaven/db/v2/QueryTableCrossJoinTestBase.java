@@ -13,7 +13,6 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.ResettableWritableChunk;
 import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
@@ -424,9 +423,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         final EvalNugget[] en = new EvalNugget[]{
-                EvalNugget.from(() -> CrossJoinHelper.join(QueryTable.log, leftNotTicking, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
-                EvalNugget.from(() -> CrossJoinHelper.join(QueryTable.log, leftTicking, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
-                EvalNugget.from(() -> CrossJoinHelper.join(QueryTable.log, leftShifting, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                EvalNugget.from(() -> CrossJoinHelper.join(leftNotTicking, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                EvalNugget.from(() -> CrossJoinHelper.join(leftTicking, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                EvalNugget.from(() -> CrossJoinHelper.join(leftShifting, rightTicking, MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
         };
 
         final int updateSize = (int)Math.ceil(Math.sqrt(numGroups));
@@ -561,7 +560,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         final EvalNugget[] en = new EvalNugget[]{
-                EvalNugget.from(() -> CrossJoinHelper.join(QueryTable.log, leftTicking, rightTicking, MatchPairFactory.getExpressions("intCol"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                EvalNugget.from(() -> CrossJoinHelper.join(leftTicking, rightTicking, MatchPairFactory.getExpressions("intCol"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
         };
 
         if (LiveTableTestCase.printTableUpdates) {
