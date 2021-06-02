@@ -99,7 +99,7 @@ public class TableManagementTools {
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetTableWithClassLoader(sourceFile, false, null);
+        return readParquetTable(sourceFile, false);
     }
 
     /**
@@ -109,10 +109,10 @@ public class TableManagementTools {
      * @return table
      */
     public static Table readTableFromDir(@NotNull final File sourceDir) {
-        return readParquetTableWithClassLoader(sourceDir, true, null);
+        return readParquetTable(sourceDir, true);
     }
 
-    private static Table readParquetTableWithClassLoader(@NotNull final File source, final boolean isDirectory, final ClassLoader classLoader) {
+    private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
                 (final String name, final Class<?> dbType, Class<?> componentType, final boolean isGrouping, final String codecName, final String codecArgs) -> {
@@ -127,7 +127,7 @@ public class TableManagementTools {
                 };
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
-            ParquetReaderUtil.readParquetSchema(path, colConsumer, classLoader);
+            ParquetReaderUtil.readParquetSchema(path, colConsumer);
         } catch (java.io.FileNotFoundException e) {
             throw new IllegalArgumentException(source + " doesn't have a loadable TableDefinition");
         } catch (java.io.IOException e) {

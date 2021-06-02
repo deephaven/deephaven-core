@@ -109,11 +109,8 @@ public class ParquetReaderUtil {
         void accept(String name, Class<?> dbType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs);
     }
 
-    private static Class<?> loadClassMaybeClassLoader(final String colName, final String desc, final String className, final ClassLoader classLoader) {
+    private static Class<?> loadClass(final String colName, final String desc, final String className) {
         try {
-            if (classLoader != null) {
-                return Class.forName(className, true, classLoader);
-            }
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Column " + colName + " with " + desc + " that can't be found in classloader.");
@@ -143,9 +140,7 @@ public class ParquetReaderUtil {
         }
     }
 
-    public static void readParquetSchema(
-            final String filePath, final ColumnDefinitionConsumer colDefConsumer, final ClassLoader classLoader
-    ) throws IOException {
+    public static void readParquetSchema(final String filePath, final ColumnDefinitionConsumer colDefConsumer) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
         final MessageType schema = pf.getSchema();
@@ -295,7 +290,7 @@ public class ParquetReaderUtil {
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
             String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + colName);
             if (codecType != null && !codecType.isEmpty()) {
-                final Class<?> dbType = loadClassMaybeClassLoader(colName, "codec type", codecType, classLoader);
+                final Class<?> dbType = loadClass(colName, "codec type", codecType);
                 final String codecComponentType = keyValueMetaData.get(ParquetTableWriter._CODEC_COMPONENT_TYPE_PREFIX_ + colName);
                 final Class<?> componentType;
                 if (codecComponentType == null || codecComponentType.isEmpty()) {
@@ -304,7 +299,7 @@ public class ParquetReaderUtil {
                     final Class<?> maybePrimitiveType = classForPrimitiveNameOrNull(codecComponentType);
                     componentType = (maybePrimitiveType != null)
                         ? maybePrimitiveType
-                        : loadClassMaybeClassLoader(colName, "codec component type", codecComponentType, classLoader)
+                        : loadClass(colName, "codec component type", codecComponentType)
                         ;
                 }
                 colDefConsumer.accept(colName, dbType, componentType, isGroupinng, codecName, codecArgs);
