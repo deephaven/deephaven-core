@@ -10,14 +10,15 @@ import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
-    private static PyObject NUMBA_VECTORIZED_FUNC_TYPE;
+    private static final PyObject NUMBA_VECTORIZED_FUNC_TYPE = getNumbaVectorizedFuncType();
+
     // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
     // false assumption, then we'll need to make this initialization code 'python restart' proof.
-    {
+    private static PyObject getNumbaVectorizedFuncType() {
         try {
-            NUMBA_VECTORIZED_FUNC_TYPE = PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
+            return PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
         } catch (Exception e) {
-            NUMBA_VECTORIZED_FUNC_TYPE = null;
+            return null;
         }
     }
 
