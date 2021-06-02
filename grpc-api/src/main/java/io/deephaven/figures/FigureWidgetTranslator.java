@@ -26,9 +26,12 @@ import io.deephaven.db.plot.util.tables.*;
 import io.deephaven.db.plot.util.tables.TableHandle;
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.*;
@@ -80,17 +83,16 @@ public class FigureWidgetTranslator {
 
         clientFigure.setUpdateInterval(figure.getUpdateInterval());
 
-        List<Ticket> tickets = new ArrayList<>();
-        final int[] tableHandleIds = new int[descriptor.getTables().size()];
+        List<ExportedTableCreationResponse> tables = new ArrayList<>();
         for (int i = 0; i < descriptor.getTables().size(); i++) {
-            final ExportedTableDescriptorMessage t = (ExportedTableDescriptorMessage) descriptor.getTables().get(i);
-            SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(descriptor.getTables().get(i));
-            tickets.add(tableExportObject);
+            Table table = descriptor.getTables().get(i);
+            SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(table);
+            tables.add(TableServiceGrpcImpl.buildTableCreationResponse(TableReference.newBuilder().setTicket(tableExportObject.getExportId()).build(), table));
         }
 
-        final int[][] plotHandleIds = descriptor.getDeflatedIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new);
-        clientFigure.addAllTableIds(tableHandleIds);
-        clientFigure.setPlotHandleIds(plotHandleIds);
+        clientFigure.addAllTableIds(tables);
+        List<RepeatedInt32> plotHandleIds = descriptor.getTableIds().stream().map(set -> RepeatedInt32.newBuilder().build()).collect(Collectors.toList());
+        clientFigure.addAllPlotHandleIds(plotHandleIds);
 //
 //        clientFigure.setTableMaps(descriptor.getDeflatedTableMaps().stream().map(etmd -> {
 //            ExportedTableMapHandleManager.Descriptor tableMapDescriptor = (ExportedTableMapHandleManager.Descriptor) etmd;
