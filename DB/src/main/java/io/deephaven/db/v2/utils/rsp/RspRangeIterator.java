@@ -16,6 +16,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     private RspArray.SpanCursorForward p;
     // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
     private SearchRangeIterator ri;
+    // To hold the container on which ri is based.
+    private SpanView riView;
     // Current start and end values.
     private long start;
     private long end;  // inclusive.
@@ -30,6 +32,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             nextValid = false;
             return;
         }
+        riView = new SpanView(null);
         this.p = p;
         nextValid = true;
         p.next();
@@ -52,13 +55,13 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         // as end corresponds exactly with the last element in a block interval, which may need to be merged
         // with the next range.
         boolean hasPrev = false;
-        long sk = p.spanKey();
-        long sbk = highBits(sk);
+        long spanInfo = p.spanInfo();
+        long spanKey = spanInfoToKey(spanInfo);
         while (true) {
             if (ri != null) {
-                final long kris = sbk | (long) ri.start();
+                final long kris = spanKey | (long) ri.start();
                 final int rie = ri.end() - 1;
-                final long krie = sbk | (long) rie;
+                final long krie = spanKey | (long) rie;
                 if (hasPrev) {
                     if (ri.start() != 0) {
                         return;
@@ -72,6 +75,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                     ri.next();
                     return;
                 }
+                riView.reset();
                 ri = null;
                 if (!p.hasNext()) {
                     setFinished();
@@ -83,18 +87,18 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 }
                 // we need to check for a potential merge with the next range.
                 hasPrev = true;
-                sk = p.spanKey();
-                sbk = highBits(sk);
+                spanInfo = p.spanInfo();
+                spanKey = spanInfoToKey(spanInfo);
             }
-            if (hasPrev && sbk - end != 1) {
+            if (hasPrev && spanKey - end != 1) {
                 return;
             }
             Object s = p.span();
-            final long slen = getFullBlockSpanLen(s);
+            final long slen = getFullBlockSpanLen(spanInfo, s);
             if (slen > 0) {
                 if (!hasPrev) {
-                    start = sbk;
-                    end = sbk + slen * BLOCK_SIZE - 1;
+                    start = spanKey;
+                    end = spanKey + slen * BLOCK_SIZE - 1;
                 } else {
                     end += slen * BLOCK_SIZE;
                 }
@@ -102,25 +106,26 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                     setFinished();
                     return;
                 }
+                final long prevSpanKey = spanKey;
                 p.next();
-                sk = p.spanKey();
-                final long sbkNew = highBits(sk);
-                if (sbk + slen * BLOCK_SIZE < sbkNew) {
+                spanInfo = p.spanInfo();
+                spanKey = spanInfoToKey(spanInfo);
+                if (prevSpanKey + slen * BLOCK_SIZE < spanKey) {
                     nextValid = true;
                     return;
                 }
-                sbk = sbkNew;
                 // This span can't be a full block span: it would have been merged with the previous one.
                 // Therefore at this point we know p.span() is an RB Container.
                 hasPrev = true;
                 s = p.span();
             }
-            final Container c;
-            if (s == null) {
-                ri = new SingletonContainer.SearchRangeIter(lowBits(sk));
+            if (isSingletonSpan(s)) {
+                final long singletonValue = spanInfoToSingletonSpanValue(spanInfo);
+                riView.reset();
+                ri = new SingletonContainer.SearchRangeIter(lowBits(singletonValue));
             } else {
-                c = (Container) s;
-                ri = c.getShortRangeIterator(0);
+                riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+                ri = riView.getContainer().getShortRangeIterator(0);
             }
             // ri.hasNext() has to be true by construction; this container can't be empty or it wouldn't be present.
             ri.hasNext();  // we call it for its potential side effects.
@@ -129,15 +134,18 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     private long peekNextStart() {
+        final long spanInfo = p.spanInfo();
+        final long spanKey = spanInfoToKey(spanInfo);
         if (ri != null) {
-            return p.spanKey() | (long) ri.start();
+            return spanKey | (long) ri.start();
         }
         final Object s = p.span();
-        if (s == null || RspArray.getFullBlockSpanLen(s) > 0) {
-            return p.spanKey();
+        if (isSingletonSpan(s) || RspArray.getFullBlockSpanLen(spanInfo, s) > 0) {
+            return spanKey;
         }
-        final Container c = (Container) s;
-        return p.spanKey() | (long) c.first();
+        try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
+            return spanKey | (long) res.getContainer().first();
+        }
     }
 
     /**
@@ -236,6 +244,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         }
         if (k != p.spanKey()) {
             // we are in a different container now.
+            riView.reset();
             ri = null;
         }
         nextInterval();
@@ -251,7 +260,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             next();
             return true;
         }
-        final int rk = (int) (key - highBits(p.spanKey()));
+        final int rk = (int) (key - p.spanKey());
         if (ri.advance(rk)) {
             nextInterval();
             start = Math.max(key, start);
@@ -262,6 +271,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             return false;
         }
         p.next();
+        riView.reset();
         ri = null;
         nextInterval();
         start = Math.max(key, start);
@@ -298,6 +308,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         final long targetSpanKey = p.spanKey();
         if (oldSpanKey != targetSpanKey) {
             // we are in a different container now.
+            riView.reset();
             ri = null;
         } else {
             final long s = peekNextStart();
@@ -323,7 +334,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 return;
             }
         }
-        final ContainerUtil.TargetComparator rcomp = (int v) -> comp.directionToTargetFrom(highBits(p.spanKey()) | v);
+        final long spanKey = p.spanKey();
+        final ContainerUtil.TargetComparator rcomp = (int v) -> comp.directionToTargetFrom(spanKey | v);
         final boolean found = ri.search(rcomp);
         if (found) {
             nextInterval();
@@ -332,7 +344,11 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         start = IndexUtilities.rangeSearch(start, end, comp);
     }
 
+    @Override
     public void close() {
+        if (riView != null) {
+            riView.close();
+        }
         if (p == null) {
             return;
         }
