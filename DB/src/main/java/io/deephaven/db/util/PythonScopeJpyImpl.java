@@ -10,12 +10,14 @@ import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
-    private static PyObject NumbaVectorizedFuncType;
+    private static PyObject NUMBA_VECTORIZED_FUNC_TYPE;
+    // this assumes that the Python interpreter won't be re-initialized during a session, if this turns out to be a
+    // false assumption, then we'll need to make this initialization code 'python restart' proof.
     {
         try {
-            NumbaVectorizedFuncType = PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
+            NUMBA_VECTORIZED_FUNC_TYPE = PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
         } catch (Exception e) {
-            NumbaVectorizedFuncType = null;
+            NUMBA_VECTORIZED_FUNC_TYPE = null;
         }
     }
 
@@ -104,7 +106,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     private static CallableWrapper wrapCallable(PyObject pyObject) {
         // check if this is a numba vectorized function
-        if (pyObject.getType().equals(NumbaVectorizedFuncType)) {
+        if (pyObject.getType().equals(NUMBA_VECTORIZED_FUNC_TYPE)) {
             List<PyObject> params = pyObject.getAttribute("types").asList();
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
