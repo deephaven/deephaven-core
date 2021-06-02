@@ -46,6 +46,7 @@ java -version
 docker-compose version
 docker run hello-world
 ```
+Note that Deephaven Core will only run on Java 8; the instructions below will help you install it if you have any other version of Java.
 
 <details>
   <summary>Installing Java...</summary>
