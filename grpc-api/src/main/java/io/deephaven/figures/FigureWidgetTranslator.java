@@ -24,9 +24,12 @@ import io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray;
 import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.tables.*;
 import io.deephaven.db.plot.util.tables.TableHandle;
+import io.deephaven.db.tables.Table;
+import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.*;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod;
@@ -56,7 +59,7 @@ public class FigureWidgetTranslator {
     public FigureWidgetTranslator() {
     }
 
-    public FigureDescriptor translate(DisplayableFigureDescriptor descriptor) {
+    public FigureDescriptor translate(DisplayableFigureDescriptor descriptor, SessionState sessionState) {
         FigureDescriptor.Builder clientFigure = FigureDescriptor.newBuilder();
 
         BaseFigureImpl figure = descriptor.getFigure().getFigure();
@@ -77,23 +80,17 @@ public class FigureWidgetTranslator {
 
         clientFigure.setUpdateInterval(figure.getUpdateInterval());
 
-        // TODO (deephaven/deephaven-core/41): Update this to match new DisplayableFigureDescriptor and whatever the JS plotting API needs post-GRPC.
-//        final int[] tableHandleIds = new int[descriptor.getDeflatedTables().size()];
-//        for (int i = 0; i < descriptor.getDeflatedTables().size(); i++) {
-//            final ExportedTableDescriptorMessage t = (ExportedTableDescriptorMessage) descriptor.getDeflatedTables().get(i);
-//            final ExportedTableDescriptorMessage nonPreemptive = (ExportedTableDescriptorMessage) descriptor.getDeflatedNonPreemptiveTables().get(i);
-//
-//            if (nonPreemptive != null) {
-//                tableHandleIds[i] = nonPreemptive.getId();
-//                tablesToRelease.add(t.getId());
-//            } else {
-//                tableHandleIds[i] = t.getId();
-//            }
-//        }
-//
-//        final int[][] plotHandleIds = descriptor.getDeflatedIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new);
-//        clientFigure.setTableIds(tableHandleIds);
-//        clientFigure.setPlotHandleIds(plotHandleIds);
+        List<Ticket> tickets = new ArrayList<>();
+        final int[] tableHandleIds = new int[descriptor.getTables().size()];
+        for (int i = 0; i < descriptor.getTables().size(); i++) {
+            final ExportedTableDescriptorMessage t = (ExportedTableDescriptorMessage) descriptor.getTables().get(i);
+            SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(descriptor.getTables().get(i));
+            tickets.add(tableExportObject);
+        }
+
+        final int[][] plotHandleIds = descriptor.getDeflatedIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new);
+        clientFigure.addAllTableIds(tableHandleIds);
+        clientFigure.setPlotHandleIds(plotHandleIds);
 //
 //        clientFigure.setTableMaps(descriptor.getDeflatedTableMaps().stream().map(etmd -> {
 //            ExportedTableMapHandleManager.Descriptor tableMapDescriptor = (ExportedTableMapHandleManager.Descriptor) etmd;
