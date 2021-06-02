@@ -1,6 +1,7 @@
 package io.deephaven.db.util;
 
 import org.jpy.PyDictWrapper;
+import org.jpy.PyModule;
 import org.jpy.PyObject;
 
 import java.util.*;
@@ -9,9 +10,18 @@ import java.util.stream.Stream;
 
 public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private final PyDictWrapper dict;
+    private static PyObject NumbaVectorizedFuncType;
+    {
+        try {
+            NumbaVectorizedFuncType = PyModule.importModule("numba.np.ufunc.dufunc").getAttribute("DUFunc");
+        } catch (Exception e) {
+            NumbaVectorizedFuncType = null;
+        }
+    }
 
     public PythonScopeJpyImpl(PyDictWrapper dict) {
         this.dict = dict;
+
     }
 
     @Override
@@ -94,12 +104,12 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     private static CallableWrapper wrapCallable(PyObject pyObject) {
         // check if this is a numba vectorized function
-        if (pyObject.getType().toString().equals("<class 'numba.np.ufunc.dufunc.DUFunc'>")) {
+        if (pyObject.getType().equals(NumbaVectorizedFuncType)) {
             List<PyObject> params = pyObject.getAttribute("types").asList();
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("numba vectorized function must have an explicit signature.");
             }
-            // numba allows a vectorized function have multiple signatures, only the first one
+            // numba allows a vectorized function to have multiple signatures, only the first one
             // will be accepted by DH
             String numbaFuncTypes = params.get(0).getStringValue();
             return parseNumbaVectorized(pyObject, numbaFuncTypes);
@@ -145,7 +155,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     /**
-     * Converts a pyO   bject into an appropriate Java object for use outside of JPy.
+     * Converts a pyObject into an appropriate Java object for use outside of JPy.
      * <p>
      * If we're a List, Dictionary, or Callable, then we wrap them in a java object.
      * <p>
