@@ -149,8 +149,7 @@ public class TableManagementTools {
     public static void writeTable(Table sourceTable, String destFilePath) {
         try {
             ParquetTableWriter.write(
-                    sourceTable, sourceTable.getDefinition()
-                    , destFilePath, Collections.emptyMap(), CompressionCodecName.SNAPPY);
+                    sourceTable, sourceTable.getDefinition(), destFilePath, Collections.emptyMap(), CompressionCodecName.SNAPPY);
         } catch (Exception e) {
             throw new RuntimeException("Error writing table to " + destFilePath + ": " + e, e);
         }

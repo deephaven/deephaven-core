@@ -52,19 +52,19 @@ class TestTableManagementTools(unittest.TestCase):
 
         # Writing
         with self.subTest(msg="writeTable(Table, String)"):
-            TableManagementTools.writeTable(table, fileLocation)
+            TableManagementTools.writeTableToDir(table, fileLocation)
             time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             shutil.rmtree(fileLocation)
             time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTable(Table, File)"):
-            TableManagementTools.writeTable(table, TableManagementTools.getFileObject(fileLocation))
+            TableManagementTools.writeTableToDir(table, TableManagementTools.getFileObject(fileLocation))
             time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             shutil.rmtree(fileLocation)
             time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTable(Table, String, StorageFormat) - Parquet"):
-            TableManagementTools.writeTable(table, fileLocation, 'Parquet')
+            TableManagementTools.writeTableToDir(table, fileLocation, 'Parquet')
             time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             shutil.rmtree(fileLocation)
@@ -77,7 +77,7 @@ class TestTableManagementTools(unittest.TestCase):
 
         # Reading
         with self.subTest(msg="readTable(File)"):
-            table2 = TableManagementTools.readTable(fileLocation)
+            table2 = TableManagementTools.readTableFromDir(fileLocation)
 
         # Delete
         with self.subTest(msg="delete(File)"):
