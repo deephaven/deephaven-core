@@ -17,6 +17,7 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.InitialTableDefinition;
 import io.deephaven.web.shared.data.TableHandle;
 import io.deephaven.web.shared.fu.JsBiConsumer;
@@ -632,7 +633,7 @@ public class JsFigure extends HasEventHandling {
             JsTable[] tables;
 
 //            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
-            TableMap[] tableMaps = new TableMap[descriptor.getTableMapsList().length];
+            TableMap[] tableMaps = new TableMap[descriptor.getTableMapIdsList().length];
 //            Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];
             Map<Integer, TableMap> plotHandlesToTableMaps = new HashMap<>();
 //            for (int i = 0; i < descriptor.getTablemapsList().length; i++) {
@@ -661,57 +662,21 @@ public class JsFigure extends HasEventHandling {
 //            }
 
             // iterate through the table handles we're supposed to have and prep TableHandles for them
-            TableHandle[] handles = new TableHandle[descriptor.getTableIdsList().length];
-            List<Callback<InitialTableDefinition, String>> callbackList = new ArrayList<>();
             tables = new JsTable[descriptor.getTableIdsList().length];
 
-            Promise<Void>[] tablePromises = new Promise[descriptor.getTableIdsList().length];
             for (int i = 0; i < descriptor.getTableIdsList().length; i++) {
-
-                //note that this lambda is executed immediately
-                final int index = i;
-                tablePromises[i] = connection.newState((c, newState, metadata) -> {
-//                    handles[index] = newState.getHandle();
-//
-//                    // hang on to the callback, we'll invoke it as part of the second phase of the figure fetch
-//                    callbackList.add(c);
-                    throw new UnsupportedOperationException("figure table fetch");// not needed with server-driven exports
-                }, "fetch table for plot " + i).fetchTable(null, connection.metadata())//ignore failure, we're already handling it
-                .then(table -> {
-                    // this lambda won't be called until the above callback resolves, so that we know the handle
-                    // and table are created, making it the last part of fetchTables to be called. As a result, we will
-                    // wait until this promise has resolved fully before returning at all
-
-                    tables[index] = table;
-
-                    // never attempt a reconnect, since we might have a different figure schema entirely
-                    table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-
-                    return null;
-                });
+                ClientTableState clientTableState = connection.newStateFromUnsolicitedTable(descriptor.getTableIdsList().getAt(i), "table " + i + " for plot");
+                JsTable table = new JsTable(connection, clientTableState);
+                // never attempt a reconnect, since we might have a different figure schema entirely
+                table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                tables[i] = table;
             }
 
-            // then go ask the server to populate all of them - as long as fetchTable is called before this, the callbacks
-            // and handles will be ready to be sent to the server
-            return Callbacks.<InitialTableDefinition[], String>promise(null, c -> {
-//                connection.getServer().finishFigureFetch(handles, descriptor.getTableIds(), Callbacks.of((s, f) -> {
-//                    if (f != null) {
-//                        c.onFailure(f);
-//                        callbackList.forEach(cb -> cb.onFailure(f));
-//                        return;
-//                    }
-//                    for (int i = 0; i < s.length; i++) {
-//                        callbackList.get(i).onSuccess(s[i]);
-//                    }
-//                    c.onSuccess(null);
-//                }));
-                throw new UnsupportedOperationException("finishFigureFetch");// not necessary with server-driven exports
-            })
-            .then(ignore -> JsPromise.all(new IThenable[] {JsPromise.all(tablePromises)/*, JsPromise.all(tableMapPromises)*/}))
-            .then(ignore -> { connection.registerFigure(figure); return Promise.resolve((Void)null); })
-            .then(ignore -> Promise.resolve(
-                new FigureTableFetchData(tables, tableMaps, plotHandlesToTableMaps, f -> this.connection.releaseFigure(f))
-            ));
+            connection.registerFigure(figure);
+
+            return Promise.resolve(
+                    new FigureTableFetchData(tables, tableMaps, plotHandlesToTableMaps, f -> this.connection.releaseFigure(f))
+            );
         }
     }
 }

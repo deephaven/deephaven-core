@@ -22,10 +22,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
@@ -738,6 +735,18 @@ public class WorkerConnection {
             return myBatcher;
         }
         return batcher;
+    }
+
+    public ClientTableState newStateFromUnsolicitedTable(ExportedTableCreationResponse unsolicitedTable, String fetchSummary) {
+        TableTicket tableTicket = new TableTicket(unsolicitedTable.getResultId().getTicket().getId_asU8());
+        JsTableFetch failFetch = (callback, newState, metadata1) -> {
+            throw new IllegalStateException("Cannot reconnect, must recreate the unsolicited table on the server: " + fetchSummary);
+        };
+        return cache.create(tableTicket, handle -> {
+            ClientTableState cts = new ClientTableState(this, handle, failFetch, fetchSummary);
+            cts.applyTableCreationResponse(unsolicitedTable);
+            return cts;
+        });
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
