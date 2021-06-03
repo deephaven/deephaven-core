@@ -139,12 +139,16 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
         Class returnType = numpyType2JavaClass.get(numpyTypeCode);
         if (returnType == null) {
-            throw new IllegalArgumentException("numba vectorized functions must have a return type.");
+            throw new IllegalArgumentException("numba vectorized functions must have a return type in integers, floating points, or boolean.");
         }
 
         List<Class> paramTypes = new ArrayList<>();
         for (char numpyTypeChar : numbaFuncTypes.toCharArray()) {
             if (numpyTypeChar != '-') {
+                Class paramType = numpyType2JavaClass.get(numpyTypeChar);
+                if (paramType == null) {
+                    throw new IllegalArgumentException("parameters of numba vectorized functions must be either integers, floating points, or boolean.");
+                }
                 paramTypes.add(numpyType2JavaClass.get(numpyTypeChar));
             } else {
                 break;

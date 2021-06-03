@@ -9,6 +9,7 @@ import io.deephaven.db.v2.select.ConditionFilter;
 import io.deephaven.db.v2.select.ConditionFilter.ChunkFilter;
 import io.deephaven.db.v2.utils.Index;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -17,6 +18,8 @@ import java.util.Objects;
  * A condition filter for python native code.
  */
 public class ConditionFilterPython extends AbstractConditionFilter {
+
+    private Filter filter;
 
     @SuppressWarnings("unused") // called from python
     public static ConditionFilterPython create(DeephavenCompatibleFunction dcf) {
@@ -45,6 +48,11 @@ public class ConditionFilterPython extends AbstractConditionFilter {
             dcf.toFilterKernel(),
             dcf.getColumnNames().toArray(new String[0]),
             ConditionFilter.CHUNK_SIZE);
+    }
+
+    @Override
+    protected void setFilter(Filter filter) {
+        this.filter = filter;
     }
 
     @Override

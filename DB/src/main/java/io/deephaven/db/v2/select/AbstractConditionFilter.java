@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.select;
 
+import io.deephaven.db.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -18,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.util.*;
 
+import static io.deephaven.db.util.PythonScopeJpyImpl.*;
 import static io.deephaven.db.v2.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends SelectFilterImpl {
@@ -117,14 +119,6 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             usedColumns = new ArrayList<>();
             usedColumnArrays = new ArrayList<>();
 
-            final Class resultType = result.getType();
-            if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
-                throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
-                        "Formula              : " + truncateLongFormula(formula) + '\n' +
-                        "Converted Expression : " + truncateLongFormula(result.getConvertedExpression()) + '\n' +
-                        "Expression Type      : " + resultType.getName());
-            }
-
             final List<Param> paramsList = new ArrayList<>();
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
@@ -152,10 +146,39 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             }
             params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
 
+            // check if this is a filter that uses a numba vectorized function
+            for (Param param : params) {
+                if (param.getValue().getClass() == NumbaCallableWrapper.class) {
+                    NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
+                    DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
+                            numbaCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]),
+                            true);
+                    checkReturnType(result, dcf.getReturnedType());
+                    setFilter(new ConditionFilter.ChunkFilter(
+                            dcf.toFilterKernel(),
+                            dcf.getColumnNames().toArray(new String[0]),
+                            ConditionFilter.CHUNK_SIZE));
+                    initialized = true;
+                    return;
+                }
+            }
+
+            final Class resultType = result.getType();
+            checkReturnType(result, resultType);
+
             generateFilterCode(tableDefinition, timeConversionResult, result);
             initialized = true;
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+        }
+    }
+
+    private void checkReturnType(DBLanguageParser.Result result, Class resultType) {
+        if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
+            throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
+                    "Formula              : " + truncateLongFormula(formula) + '\n' +
+                    "Converted Expression : " + truncateLongFormula(result.getConvertedExpression()) + '\n' +
+                    "Expression Type      : " + resultType.getName());
         }
     }
 
@@ -177,6 +200,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     }
 
     protected abstract Filter getFilter(Table table, Index fullSet) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
+    protected abstract void setFilter(Filter filter);
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {

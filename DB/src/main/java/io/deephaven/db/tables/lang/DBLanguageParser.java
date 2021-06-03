@@ -1576,9 +1576,10 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
     }
 
     private void checkPyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class[] expressionTypes) {
-        if (n.getParentNode() != null) {
+        if (n.getParentNode() != null && (n.getParentNode().getClass() != CastExpr.class || n.getParentNode().getParentNode() != null)) {
             throw new RuntimeException("Numba vectorized function can't be used in an expression.");
         }
+
         final QueryScope queryScope = QueryScope.getDefaultInstance();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getName())) {
@@ -1591,12 +1592,17 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
                     if (!(expressions[i] instanceof NameExpr)) {
                         throw new RuntimeException("Numba vectorized function arguments can only be columns.");
                     }
-                    if (!params.get(i).isAssignableFrom(expressionTypes[i])) {
-                        throw new RuntimeException("Numba vectorized function argument type mismatch: " + params.get(i).getSimpleName() + " vs. " + expressionTypes[i].getSimpleName());
+                    if (!isSafelyCoerceable(expressionTypes[i], params.get(i))) {
+                        throw new RuntimeException("Numba vectorized function argument type mismatch: " + expressionTypes[i].getSimpleName() + " -> " + params.get(i).getSimpleName());
                     }
                 }
             }
         }
+    }
+
+    private boolean isSafelyCoerceable(Class expressionType, Class aClass) {
+        // TODO, numba does appear to check for type coercing at runtime, though no explicit rules exist.
+        return true;
     }
 
     public Class visit(ExpressionStmt n, VisitArgs printer) {
