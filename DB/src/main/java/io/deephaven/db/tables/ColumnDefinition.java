@@ -5,9 +5,6 @@
 package io.deephaven.db.tables;
 
 import io.deephaven.base.string.EncodingInfo;
-import io.deephaven.dataobjects.persistence.DataObjectInputStream;
-import io.deephaven.dataobjects.persistence.ColumnsetConversionSchema;
-import io.deephaven.dataobjects.persistence.PersistentInputStream;
 import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.util.codec.ObjectCodec;
@@ -413,66 +410,49 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
     static final byte MAGIC_NUMBER = (byte)0b10001111;
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ColumnsetConversionSchema conversionSchema = null;
+        name = readAdoString(in);
 
-        if (in instanceof PersistentInputStream) {
-            conversionSchema = ((PersistentInputStream)in).getConversionSchema(getColumnSet().getName());
+        // This read isn't using PersistentInputStream's ColumnSet conversion - need to consume stream elements for
+        // the columns I've removed.
+        // This is further complicated by new additions in some cases, so we've overloaded the old formula (String)
+        // field as a "version number" for the externalized object -- see writeExternal() for format documentation.
+        final int versionStringUtfLen = in.readUnsignedShort();
+        final byte versionNumber;
+        if (versionStringUtfLen != 2) {
+            // This captures most possible "real" values (of which I think there are exactly 0 in use in persisted
+            // ColumnDefinitions "in the wild").
+            versionNumber = 0;
+            in.skipBytes(versionStringUtfLen);
+        } else if (in.readByte() != MAGIC_NUMBER) {
+            // We have the null case ("\0", which is encoded with 2 bytes for no reason I can, understand) or a
+            // "real" value of length 2.  We know it's impossible for a real, valid 2-byte UTF-8 sequence to start
+            // with the magic number constant we're using.
+            versionNumber = 0;
+            in.skipBytes(1); // versionStringUtfLen - 1 == 1
+        } else {
+            // Magic number was found, it's OK to read our version number byte.
+            versionNumber = in.readByte();
         }
-        else if (in instanceof DataObjectInputStream.WrappedObjectInputStream) {
-            final DataObjectInputStream childStream = ((DataObjectInputStream.WrappedObjectInputStream)in).getWObjectInputStream();
 
-            if (childStream instanceof PersistentInputStream) {
-                conversionSchema = ((PersistentInputStream)childStream).getConversionSchema(getColumnSet().getName());
-            }
+        dataType = (Class)in.readObject();
+        componentType = (Class)in.readObject();
+        columnType = in.readInt();
+        isVarSizeString = (Boolean)in.readObject();
+
+        if (versionNumber < STRING_ENCODING_VERSION) {
+            encoding = ENCODING_ISO_8859_1;
+        } else {
+            encoding = in.readInt();
         }
 
-        if (conversionSchema != null) {
-            conversionSchema.readExternalADO(in, this);
-       } else {
-            name = readAdoString(in);
-
-            // This read isn't using PersistentInputStream's ColumnSet conversion - need to consume stream elements for
-            // the columns I've removed.
-            // This is further complicated by new additions in some cases, so we've overloaded the old formula (String)
-            // field as a "version number" for the externalized object -- see writeExternal() for format documentation.
-            final int versionStringUtfLen = in.readUnsignedShort();
-            final byte versionNumber;
-            if (versionStringUtfLen != 2) {
-                // This captures most possible "real" values (of which I think there are exactly 0 in use in persisted
-                // ColumnDefinitions "in the wild").
-                versionNumber = 0;
-                in.skipBytes(versionStringUtfLen);
-            } else if (in.readByte() != MAGIC_NUMBER) {
-                // We have the null case ("\0", which is encoded with 2 bytes for no reason I can, understand) or a
-                // "real" value of length 2.  We know it's impossible for a real, valid 2-byte UTF-8 sequence to start
-                // with the magic number constant we're using.
-                versionNumber = 0;
-                in.skipBytes(1); // versionStringUtfLen - 1 == 1
-            } else {
-                // Magic number was found, it's OK to read our version number byte.
-                versionNumber = in.readByte();
-            }
-
-            dataType = (Class)in.readObject();
-            componentType = (Class)in.readObject();
-            columnType = in.readInt();
-            isVarSizeString = (Boolean)in.readObject();
-
-            if (versionNumber < STRING_ENCODING_VERSION) {
-                encoding = ENCODING_ISO_8859_1;
-            } else {
-                encoding = in.readInt();
-            }
-
-            if (versionNumber < OBJECT_CODEC_VERSION) {
-                objectCodecClass = null;
-                objectCodecArguments = null;
-                objectWidth = Integer.MIN_VALUE;
-            } else {
-                objectCodecClass = readAdoString(in);
-                objectCodecArguments = readAdoString(in);
-                objectWidth = in.readInt();
-            }
+        if (versionNumber < OBJECT_CODEC_VERSION) {
+            objectCodecClass = null;
+            objectCodecArguments = null;
+            objectWidth = Integer.MIN_VALUE;
+        } else {
+            objectCodecClass = readAdoString(in);
+            objectCodecArguments = readAdoString(in);
+            objectWidth = in.readInt();
         }
     }
 

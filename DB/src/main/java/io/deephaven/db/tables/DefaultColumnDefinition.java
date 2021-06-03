@@ -4,7 +4,6 @@
 
 package io.deephaven.db.tables;
 
-import java.util.Date;
 import java.io.*;
 import io.deephaven.base.CompareUtils;
 import io.deephaven.dataobjects.*;
@@ -13,11 +12,9 @@ import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.base.log.*;
 import io.deephaven.base.*;
 
-public class DefaultColumnDefinition implements AbstractDataObject, Externalizable, DataObjectStreamConstants, LogOutputAppendable, Copyable<DefaultColumnDefinition> {
+public class DefaultColumnDefinition implements Externalizable, DataObjectStreamConstants, LogOutputAppendable, Copyable<DefaultColumnDefinition> {
 
     private static final long serialVersionUID = 5684394895950293942L;
-
-    
 
     public static final int COLUMNTYPE_NORMAL=1;
     public static final int COLUMNTYPE_GROUPING=2;
@@ -59,7 +56,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         return columnSet_;
     }
 
-    public static final int INDEX_OF_NAME = 0;
     protected String name;
     public String getName() {
         return name;
@@ -69,7 +65,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.name=name;
     }
 
-    public static final int INDEX_OF_DATATYPE = 1;
     protected Class dataType;
     public Class getDataType() {
         return dataType;
@@ -79,7 +74,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.dataType=dataType;
     }
 
-    public static final int INDEX_OF_COMPONENTTYPE = 2;
     protected Class componentType;
     public Class getComponentType() {
         return componentType;
@@ -89,7 +83,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.componentType=componentType;
     }
 
-    public static final int INDEX_OF_COLUMNTYPE = 3;
     protected int columnType=Integer.MIN_VALUE;
     public int getColumnType() {
         return columnType;
@@ -99,7 +92,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.columnType=columnType;
     }
 
-    public static final int INDEX_OF_ISVARSIZESTRING = 4;
     protected Boolean isVarSizeString;
     public Boolean getIsVarSizeString() {
         return isVarSizeString;
@@ -109,7 +101,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.isVarSizeString=isVarSizeString;
     }
 
-    public static final int INDEX_OF_ENCODING = 5;
     protected int encoding=Integer.MIN_VALUE;
     public int getEncoding() {
         return encoding;
@@ -119,7 +110,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.encoding=encoding;
     }
 
-    public static final int INDEX_OF_OBJECTCODECCLASS = 6;
     protected String objectCodecClass;
     public String getObjectCodecClass() {
         return objectCodecClass;
@@ -129,7 +119,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.objectCodecClass=objectCodecClass;
     }
 
-    public static final int INDEX_OF_OBJECTCODECARGUMENTS = 7;
     protected String objectCodecArguments;
     public String getObjectCodecArguments() {
         return objectCodecArguments;
@@ -139,7 +128,6 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.objectCodecArguments=objectCodecArguments;
     }
 
-    public static final int INDEX_OF_OBJECTWIDTH = 8;
     protected int objectWidth=Integer.MIN_VALUE;
     public int getObjectWidth() {
         return objectWidth;
@@ -149,342 +137,7 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         this.objectWidth=objectWidth;
     }
 
-    public String getString(int index) {
-        switch (index){
-            case 0: return name;
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 6: return objectCodecClass;
-            case 7: return objectCodecArguments;
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public int getInt(int index) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 3: return columnType;
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 5: return encoding;
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 8: return objectWidth;
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public double getDouble(int index) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public long getLong(int index) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public byte getByte(int index) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public Date getDate(int index) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public String getString(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return null;
-
-        return ado.getString(index[index.length-1]);
-    }
-
-    public int getInt(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return Integer.MIN_VALUE;
-
-        return ado.getInt(index[index.length-1]);
-    }
-
-    public double getDouble(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return Double.NaN;
-
-        return ado.getDouble(index[index.length-1]);
-    }
-
-    public long getLong(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return Long.MIN_VALUE;
-
-        return ado.getLong(index[index.length-1]);
-    }
-
-    public byte getByte(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return Byte.MIN_VALUE;
-
-        return ado.getByte(index[index.length-1]);
-    }
-
-    public Date getDate(int[] index) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return null;
-
-        return ado.getDate(index[index.length-1]);
-    }
-
-    public String getString(String name) {
-        return getString(getColumnSet().getColumnIndex(name));
-    }
-
-    public int getInt(String name) {
-        return getInt(getColumnSet().getColumnIndex(name));
-    }
-
-    public double getDouble(String name) {
-        return getDouble(getColumnSet().getColumnIndex(name));
-    }
-
-    public long getLong(String name) {
-        return getLong(getColumnSet().getColumnIndex(name));
-    }
-
-    public byte getByte(String name) {
-        return getByte(getColumnSet().getColumnIndex(name));
-    }
-
-    public Date getDate(String name) {
-        return getDate(getColumnSet().getColumnIndex(name));
-    }
-
-    public void setString(int index, String data) {
-        switch (index){
-            case 0: this.name=data;  break;
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            case 6: this.objectCodecClass=data;  break;
-            case 7: this.objectCodecArguments=data;  break;
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=String");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setInt(int index, int data) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 3: this.columnType=data;  break;
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 5: this.encoding=data;  break;
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=int");
-            case 8: this.objectWidth=data;  break;
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setDouble(int index, double data) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=double");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setLong(int index, long data) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=long");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setByte(int index, byte data) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=byte");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setDate(int index, Date data) {
-        switch (index){
-            case 0: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 1: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 2: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 3: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 4: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 5: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 6: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 7: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            case 8: throw new IllegalArgumentException("index=" + index + " is not of type=Date");
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setString(String name, String value) {
-        setString(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public void setInt(String name, int value) {
-        setInt(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public void setDouble(String name, double value) {
-        setDouble(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public void setLong(String name, long value) {
-        setLong(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public void setByte(String name, byte value) {
-        setByte(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public void setDate(String name, Date value) {
-        setDate(getColumnSet().getColumnIndex(name), value);
-    }
-
-    public Object getValue(int index) {
-        switch (index){
-            case 0: return name;
-            case 1: return dataType;
-            case 2: return componentType;
-            case 3: return (columnType==Integer.MIN_VALUE) ? null : columnType;
-            case 4: return isVarSizeString;
-            case 5: return (encoding==Integer.MIN_VALUE) ? null : encoding;
-            case 6: return objectCodecClass;
-            case 7: return objectCodecArguments;
-            case 8: return (objectWidth==Integer.MIN_VALUE) ? null : objectWidth;
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public Object getValue(int index[]) {
-        AbstractDataObject ado = getRefObject(index);
-
-        if (ado==null) return null;
-
-        return ado.getValue(index[index.length-1]);
-    }
-
-    public Object getValue(String name) {
-        return getValue(getColumnSet().getColumnIndex(name));
-    }
-
-    public void setValue(int index, Object data) {
-        switch (index){
-            case 0: this.name=(String)data;  break;
-            case 1: this.dataType=(Class)data;  break;
-            case 2: this.componentType=(Class)data;  break;
-            case 3: this.columnType= (data==null) ? Integer.MIN_VALUE : (Integer)data;  break;
-            case 4: this.isVarSizeString=(Boolean)data;  break;
-            case 5: this.encoding= (data==null) ? Integer.MIN_VALUE : (Integer)data;  break;
-            case 6: this.objectCodecClass=(String)data;  break;
-            case 7: this.objectCodecArguments=(String)data;  break;
-            case 8: this.objectWidth= (data==null) ? Integer.MIN_VALUE : (Integer)data;  break;
-            default : throw new IllegalArgumentException("index=" + index + " is not in the columnset");
-        }
-    }
-
-    public void setValue(String name, Object value) {
-        setValue(getColumnSet().getColumnIndex(name), value);
-    }
-
-    private AbstractDataObject getRefObject(int index[]){   //assumes the last one is a field....
-        AbstractDataObject ado=this;
-
-        for (int i=0; i<index.length-1; i++){
-            if (ado==null){
-                return null;
-            }
-
-            ado=(AbstractDataObject)ado.getValue(index[i]);
-        }
-
-        return ado;
-    }
-
+    @Override
     public void copyValues(DefaultColumnDefinition x) {
         name = x.name;
         dataType = x.dataType;
@@ -535,19 +188,13 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
     public boolean equals(Object obj) {
         if (obj instanceof DefaultColumnDefinition) {
             DefaultColumnDefinition castObj = (DefaultColumnDefinition) obj;
-            return
-                CompareUtils.equals(name, castObj.name);
-        } else if (obj instanceof AbstractDataObjectImpl) {
-            AbstractDataObjectImpl castObj = (AbstractDataObjectImpl) obj;
-            return
-                CompareUtils.equals(name, castObj.getString("Name"));
+            return CompareUtils.equals(name, castObj.name);
         }
         return false;
     }
 
     public int hashCode() {
-        return
-            HashCodeUtil.toHashCode(name);
+        return HashCodeUtil.toHashCode(name);
     }
 
     @Override
@@ -561,32 +208,15 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ColumnsetConversionSchema conversionSchema = null;
-
-        if (in instanceof PersistentInputStream) {
-            conversionSchema = ((PersistentInputStream)in).getConversionSchema(getColumnSet().getName());
-        }
-        else if (in instanceof DataObjectInputStream.WrappedObjectInputStream) {
-            DataObjectInputStream childStream = ((DataObjectInputStream.WrappedObjectInputStream)in).getWObjectInputStream();
-
-            if (childStream instanceof PersistentInputStream) {
-                conversionSchema = ((PersistentInputStream)childStream).getConversionSchema(getColumnSet().getName());
-            }
-        }
-
-        if (conversionSchema != null) {
-            conversionSchema.readExternalADO(in, this);
-       } else {
-            name = in.readUTF(); name = "\0".equals(name) ? null : name;
-            dataType = (Class)in.readObject();
-            componentType = (Class)in.readObject();
-            columnType = in.readInt();
-            isVarSizeString = (Boolean)in.readObject();
-            encoding = in.readInt();
-            objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
-            objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
-            objectWidth = in.readInt();
-        }
+        name = in.readUTF(); name = "\0".equals(name) ? null : name;
+        dataType = (Class)in.readObject();
+        componentType = (Class)in.readObject();
+        columnType = in.readInt();
+        isVarSizeString = (Boolean)in.readObject();
+        encoding = in.readInt();
+        objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
+        objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
+        objectWidth = in.readInt();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -600,5 +230,4 @@ public class DefaultColumnDefinition implements AbstractDataObject, Externalizab
         if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
         out.writeInt(objectWidth);
     }
-
 }

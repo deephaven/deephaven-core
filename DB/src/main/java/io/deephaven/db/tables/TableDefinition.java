@@ -742,34 +742,17 @@ public class TableDefinition extends DefaultTableDefinition {
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ColumnsetConversionSchema conversionSchema = null;
+        namespace = readAdoString(in);
+        name = readAdoString(in);
+        columns = (ColumnDefinition[])in.readObject();
+        storageType = in.readInt();
 
-        if (in instanceof PersistentInputStream) {
-            conversionSchema = ((PersistentInputStream)in).getConversionSchema(getColumnSet().getName());
-        }
-        else if (in instanceof DataObjectInputStream.WrappedObjectInputStream) {
-            DataObjectInputStream childStream = ((DataObjectInputStream.WrappedObjectInputStream)in).getWObjectInputStream();
-
-            if (childStream instanceof PersistentInputStream) {
-                conversionSchema = ((PersistentInputStream)childStream).getConversionSchema(getColumnSet().getName());
-            }
-        }
-
-        if (conversionSchema != null) {
-            conversionSchema.readExternalADO(in, this);
-        } else {
-            namespace = readAdoString(in);
-            name = readAdoString(in);
-            columns = (ColumnDefinition[])in.readObject();
-            storageType = in.readInt();
-
-            // This read isn't using PersistentInputStream's ColumnSet conversion - need to consume stream elements for
-            // the columns I've removed.
-            in.readObject(); // Consume partitions
-            in.readUTF();    // Consume partionKey
-            in.readObject(); // Consume partitionerClass
-            in.readUTF();    // Consume partitionerArguments
-        }
+        // This read isn't using PersistentInputStream's ColumnSet conversion - need to consume stream elements for
+        // the columns I've removed.
+        in.readObject(); // Consume partitions
+        in.readUTF();    // Consume partionKey
+        in.readObject(); // Consume partitionerClass
+        in.readUTF();    // Consume partitionerArguments
     }
 
     @Override
