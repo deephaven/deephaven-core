@@ -36,9 +36,8 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
-    public static final String WORKER_CONSOLE_TYPE = Configuration.getInstance().getStringWithDefault("io.deephaven.console", "python");
+    public static final String WORKER_CONSOLE_TYPE = Configuration.getInstance().getStringWithDefault("io.deephaven.console.type", "python");
 
-    // There is a bit of work required to get multiple concurrent session to work without interfering with each other; for now we'll share one.
     private final ScriptSession globalSession;
 
     private final Map<String, Provider<ScriptSession>> scriptTypes;
@@ -64,7 +63,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getConsoleTypes(final GetConsoleTypesRequest request,
                                 final StreamObserver<GetConsoleTypesResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // Multiple sessions are currently only partially supported; for now force global session per worker.
+            // TODO (#702): initially show all console types; the first console determines the global console type thereafter
             responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
                     .addConsoleTypes(WORKER_CONSOLE_TYPE)
                     .build());
@@ -79,7 +78,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO auth hook, ensure the user can do this (owner of worker or admin)
 //            session.getAuthContext().requirePrivilege(CreateConsole);
 
-            // Multiple sessions are currently only partially supported; for now force global session per worker.
+            // TODO (#702): initially global session will be null; set it here if applicable
+
             final String sessionType = request.getSessionType();
             if (!scriptTypes.containsKey(sessionType)) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "session type '" + sessionType + "' is not supported");
@@ -88,7 +88,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             session.newExport(request.getResultId())
                     .onError(responseObserver::onError)
                     .submit(() -> {
-
                         final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
                             scriptSession = globalSession;
@@ -105,7 +104,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             responseObserver.onCompleted();
                         });
 
-                        // Multiple sessions are currently only partially supported; for now force global session per worker.
                         return scriptSession;
                     });
         });

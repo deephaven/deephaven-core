@@ -382,7 +382,7 @@ public class TestConditionFilter extends PythonTest {
             try {
                 if (pythonScope == null) {
                     pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(
-                            getMainGlobals().asDict())).getQueryScope();
+                            getMainGlobals().asDict())).newQueryScope();
                     QueryScope.setScope(pythonScope);
                 }
                 for (Param param : currentScope.getParams(currentScope.getParamNames())) {

@@ -19,7 +19,6 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     private final String scriptType;
     private final Map<String, Object> variables;
-    private final QueryScope queryScope = new QueryScope.SynchronizedScriptSessionImpl(this);
 
     public NoLanguageDeephavenSession() {
         this(SCRIPT_TYPE);
@@ -31,8 +30,8 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     @Override
-    public QueryScope getQueryScope() {
-        return queryScope;
+    public QueryScope newQueryScope() {
+        return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
     @Override

@@ -11,6 +11,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.util.ScriptSession;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,17 +45,17 @@ public abstract class QueryScope implements LogOutputAppendable {
     }
 
     /**
-     *
-     * This is a work around for incomplete support for multiple script sessions. For now there will be a global session
-     * for the worker.
+     * Sets the default scope.
      *
      * @param scope the script session's query scope
+     * @throws IllegalStateException if default scope is already set
+     * @throws NullPointerException if scope is null
      */
     public static synchronized void setDefaultScope(final QueryScope scope) {
         if (defaultScope != null) {
-            throw new IllegalStateException("It's too late to set default scope; it's already set: " + scope);
+            throw new IllegalStateException("It's too late to set default scope; it's already set to: " + defaultScope);
         }
-        defaultScope = scope;
+        defaultScope = Objects.requireNonNull(scope);
     }
 
     /**

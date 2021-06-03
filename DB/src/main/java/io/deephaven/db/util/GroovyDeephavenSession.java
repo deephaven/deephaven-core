@@ -97,7 +97,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private final ArrayList<String> scriptImports = new ArrayList<>();
 
     private final Set<String> dynamicClasses = new HashSet<>();
-    private final QueryScope queryScope = new QueryScope.SynchronizedScriptSessionImpl(this);
     private final GroovyShell groovyShell = new GroovyShell(STATIC_LOADER) {
         protected synchronized String generateScriptName() {
             return GroovyDeephavenSession.this.generateScriptName();
@@ -133,8 +132,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public QueryScope getQueryScope() {
-        return queryScope;
+    public QueryScope newQueryScope() {
+        return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
     public static InputStream findScript(String relativePath) throws IOException {
@@ -696,7 +695,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
             List<String> paths = StreamSupport.stream(initScripts.spliterator(), false)
                 .sorted(Comparator.comparingInt(InitScript::priority))
                 .map(InitScript::getScriptPath)
-                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
             return new RunScripts(paths);
         }

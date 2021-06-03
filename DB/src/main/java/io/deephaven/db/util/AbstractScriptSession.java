@@ -42,6 +42,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     private final File classCacheDirectory;
     private final LivenessScope livenessScope = new LivenessScope();
 
+    protected final QueryScope queryScope;
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
 
@@ -51,6 +52,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
         createOrClearDirectory(classCacheDirectory);
 
+        queryScope = newQueryScope();
         queryLibrary = QueryLibrary.makeNewLibrary();
 
         compilerContext = new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
@@ -74,7 +76,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         //
         if (!(this instanceof NoLanguageDeephavenSession)) {
             CompilerTools.setDefaultContext(compilerContext);
-            QueryScope.setDefaultScope(getQueryScope());
+            QueryScope.setDefaultScope(queryScope);
             QueryLibrary.setDefaultLibrary(queryLibrary);
         }
     }
@@ -91,7 +93,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         // retain any objects which are created in the executed code, we'll release them when the script session closes
         try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
             // point query scope static state to our session's state
-            QueryScope.setScope(getQueryScope());
+            QueryScope.setScope(queryScope);
             CompilerTools.setContext(compilerContext);
             QueryLibrary.setLibrary(queryLibrary);
 
@@ -160,7 +162,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     protected abstract void evaluate(String command, @Nullable String scriptName);
 
     /**
-     * @return the query scope for this session
+     * @return a query scope for this session; only invoked during construction
      */
-    protected abstract QueryScope getQueryScope();
+    protected abstract QueryScope newQueryScope();
 }

@@ -352,16 +352,17 @@ public class CompilerTools {
     }
 
     /**
-     * This is a work around for incomplete support for multiple script sessions. For now there will be a global session
-     * for the worker.
+     * Sets the default context.
      *
      * @param context the script session's compiler context
+     * @throws IllegalStateException if default context is already set
+     * @throws NullPointerException if context is null
      */
     public static synchronized void setDefaultContext(final Context context) {
         if (defaultContext != null) {
-            throw new IllegalStateException("it's too late to set default context; it's already set");
+            throw new IllegalStateException("It's too late to set default context; it's already set to: " + defaultContext);
         }
-        defaultContext = context;
+        defaultContext = Objects.requireNonNull(context);
     }
 
     private static final ThreadLocal<Context> currContext = ThreadLocal.withInitial(CompilerTools::getDefaultContext);
