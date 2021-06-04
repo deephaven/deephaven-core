@@ -9,6 +9,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.v2.select.python.FormulaColumnPython;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.WritableSource;
 import io.deephaven.db.v2.utils.Index;
@@ -66,7 +67,12 @@ public class SwitchColumn implements SelectColumn {
                 realColumn = FormulaColumn.createFormulaColumn(columnName, expression, parser);
             }
         }
-        return realColumn.initDef(columnDefinitionMap);
+        List<String> usedColumns = realColumn.initDef(columnDefinitionMap);
+        if (realColumn instanceof DhFormulaColumn) {
+            FormulaColumnPython formulaColumnPython = ((DhFormulaColumn) realColumn).getFormulaColumnPython();
+            realColumn = formulaColumnPython != null ? formulaColumnPython: realColumn;
+        }
+        return usedColumns;
     }
 
     @Override
