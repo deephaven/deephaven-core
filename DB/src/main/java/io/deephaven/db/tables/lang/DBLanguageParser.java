@@ -1600,8 +1600,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
         }
     }
 
-    private boolean isSafelyCoerceable(Class expressionType, Class aClass) {
+    private static boolean isSafelyCoerceable(Class expressionType, Class aClass) {
         // TODO, numba does appear to check for type coercing at runtime, though no explicit rules exist.
+        // GH-709 is filed to address this at some point in the future.
         return true;
     }
 
