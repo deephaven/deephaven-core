@@ -12,12 +12,12 @@ to that data, and build rich queries, dashboards, and representations with the r
 Deephaven Community Core is an open version of [Deephaven Enterprise](https://deephaven.io), 
 which functions as the data backbone for prominent hedge funds, banks, and financial exchanges.
 
-![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg)
-![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg)
-![Long Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/long-check-ci.yml/badge.svg)
-![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg)
-![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg)
-![Workflow Sync](https://github.com/deephaven/deephaven-core/actions/workflows/workflow-sync.yml/badge.svg)
+![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg?branch=main)
+![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
+![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
+![Long Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/long-check-ci.yml/badge.svg?branch=main)
+![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
+![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg?branch=main)
 
 ## Supported Languages
 
