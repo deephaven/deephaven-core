@@ -11,6 +11,7 @@ on:
 
 jobs:
   check:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -60,6 +61,7 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
   testSerial:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -109,6 +111,7 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
   testParallel:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -158,6 +161,7 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
   testOutOfBand:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
