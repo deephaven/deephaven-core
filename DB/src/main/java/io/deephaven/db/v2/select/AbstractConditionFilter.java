@@ -150,10 +150,12 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             for (Param param : params) {
                 if (param.getValue().getClass() == NumbaCallableWrapper.class) {
                     /*
-                     * numba vectorized function must be used alone as an expression, and that should be checked in
-                     * the DBLanguageParser
+                     * numba vectorized function must be used alone as an entire expression, and that should have been
+                     * checked in the DBLanguageParser already, this is a sanity check
                      */
-                    assert (params.length == 1);
+                    if (params.length != 1) {
+                        throw new RuntimeException("internal error - misuse of numba vectorized functions wasn't detected.");
+                    }
 
                     NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
                     DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
