@@ -220,7 +220,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             keys = new long[2];
             keys[0] = sHigh;
             spans = new Object[2];
-            spans[0] = distanceInBlocks(sHigh, eHigh);
+            setSpanAtIndex(spans, 0, distanceInBlocks(sHigh, eHigh));
             if (eLow == 0) {
                 keys[1] = end;
                 spans[1] = null;
@@ -237,7 +237,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             keys = new long[2];
             keys[1] = nextKey(sHigh);
             spans = new Object[2];
-            spans[1] = distanceInBlocks(sHigh, eHigh);
+            setSpanAtIndex(spans, 1, distanceInBlocks(sHigh, eHigh));
             if (sLow == BLOCK_LAST) {
                 keys[0] = start;
                 spans[0] = null;
@@ -486,7 +486,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startSplitIntermediateFullBlockSpanLen > 0) {
                 keys[i] = nextKey;
                 nextKey = highBits(nextKey + startSplitIntermediateFullBlockSpanCard);
-                spans[i] = startSplitIntermediateFullBlockSpanLen;
+                setSpanAtIndex(spans, i, startSplitIntermediateFullBlockSpanLen);
                 accSum += startSplitIntermediateFullBlockSpanCard;
                 maybeSetAcc(i, accSum);
                 ++i;
@@ -589,7 +589,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (deltaLast >= BLOCK_SIZE) {
                 final long flen = RspArray.divBlockSize(deltaLast);
                 final int delta = RspArray.modBlockSize(deltaLast);
-                spans[i] = flen;
+                setSpanAtIndex(spans, i, flen);
                 accSum += flen*BLOCK_SIZE;
                 maybeSetAcc(i, accSum);
                 ++i;
@@ -1211,6 +1211,18 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return (blockKeyEnd - blockKeyStart) >> 16;
     }
 
+    public static void setSpanAtIndex(final Object[] spans, final int i, final long flen) {
+        if (flen <= 0) {
+            throw new IllegalArgumentException("i=" + i + ", flen=" + flen);
+        }
+        spans[i] = flen;
+    }
+
+    public void setSpanAtIndex(final int i, final long flen) {
+        setSpanAtIndex(spans, i, flen);
+        modifiedSpan(i);
+    }
+
     public void setSpanAtIndex(final int i, final Object s) {
         spans[i] = s;
         modifiedSpan(i);
@@ -1518,7 +1530,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         ensureSizeCanGrowBy(1);
         keys[size] = k;
-        spans[size] = slen;
+        setSpanAtIndex(spans, size, slen);
         if (isCardinalityCached()) {
             // since is easy enough...
             long deltaCard = slen * BLOCK_SIZE;
@@ -1532,6 +1544,17 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ++size;
     }
 
+    public void insertSpanAtIndex(final int i, final long key, final Container c) {
+        insertSpanAtIndexRaw(i, key, c);
+    }
+
+    public void insertSpanAtIndex(final int i, final long key, final long flen) {
+        if (flen <= 0) {
+            throw new IllegalArgumentException("i=" + i + ", flen=" + flen);
+        }
+        insertSpanAtIndexRaw(i, key, flen);
+    }
+
     /**
      * Insert a new span at position i with key k, pushing the existing elements to the right.
      * The caller should ensure that the key order is preserved by this operation.
@@ -1540,7 +1563,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * @param key key for the span to be inserted
      * @param s span to be inserted
      */
-    public void insertSpanAtIndex(final int i, final long key, final Object s) {
+    public void insertSpanAtIndexRaw(final int i, final long key, final Object s) {
         ensureSizeCanGrowBy(1);
         final int dstPos = i + 1;
         final int n = size - i;
@@ -3087,7 +3110,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                             newLen -= distanceInBlocks(andLastKey, lastKey);
                             bail = true;
                         }
-                        buf.spans[newSize] = newLen;
+                        setSpanAtIndex(buf.spans, newSize, newLen);
                         ++newSize;
                         if (bail) {
                             startPos = i;
