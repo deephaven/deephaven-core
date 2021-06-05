@@ -305,9 +305,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected static void setFullBlockSpanRaw(
             final int i, final long[] spanInfos, final Object[] spans,
             final long key, final long flen) {
-	if (flen <= 0) {
-	    throw new IllegalArgumentException("i=" + i + ", flen=" + flen);
-	}
+        if (flen <= 0) {
+            throw new IllegalArgumentException("i=" + i + ", flen=" + flen);
+        }
         final long lowflen = lowBitsAsInt(flen);
         if (lowflen == flen) {
             spanInfos[i] = key | lowflen;
@@ -3547,14 +3547,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     final long lastKey = getKeyForLastBlockInSpan(spanKey, flen);
                     if (uGreaterOrEqual(lastKey, andSpanKey)) {
                         final long newKey = uMax(andSpanKey, spanKey);
-                        buf.spanInfos[buf.size] = newKey;
                         long newLen = flen - distanceInBlocks(spanKey, newKey);
                         boolean bail = false;
                         if (uGreater(lastKey, andLastKey)) {
                             newLen -= distanceInBlocks(andLastKey, lastKey);
                             bail = true;
                         }
-                        buf.spans[buf.size] = newLen;
+                        setFullBlockSpanRaw(buf.size, buf.spanInfos, buf.spans, newKey, newLen);
                         ++buf.size;
                         if (bail) {
                             startPos = i;
