@@ -4198,6 +4198,19 @@ public class RspBitmapTest {
         rb.addValuesUnsafeNoWriteCheck(chunk, 0, 2);
     }
 
+    private RspBitmap fromBlocksAsBits(final int nblocks, final int bits) {
+        RspBitmap r = RspBitmap.makeEmpty();
+        for (int b = 0; b < nblocks; ++b) {
+            if ((bits & (1 << b)) != 0) {
+                final long blockFirst = BLOCK_SIZE * (long) b;
+                final long blockLast = blockFirst + BLOCK_LAST;
+                r = r.addRange(blockFirst, blockLast);
+            }
+        }
+        r.validate();
+        return r;
+    }
+
     @Test
     public void testBinaryOpsWithFullSpans() {
         final Map<String, BiFunction<RspBitmap, RspBitmap, RspBitmap>> ops = new HashMap<>();
@@ -4210,24 +4223,29 @@ public class RspBitmapTest {
             final BiFunction<RspBitmap, RspBitmap, RspBitmap> op = ops.get(opName);
             for (int firstBlocksAsBitsSpec = 0; firstBlocksAsBitsSpec < maxBlocksAsBitsSpec; ++firstBlocksAsBitsSpec) {
                 for (int secondBlocksAsBitsSpec = 0; secondBlocksAsBitsSpec < maxBlocksAsBitsSpec; ++secondBlocksAsBitsSpec) {
-                    RspBitmap r1 = RspBitmap.makeEmpty();
-                    RspBitmap r2 = RspBitmap.makeEmpty();
-                    for (int b = 0; b < nblocks; ++b) {
-                        if ((firstBlocksAsBitsSpec & (1 << b)) != 0) {
-                            final long blockFirst = BLOCK_SIZE * b;
-                            final long blockLast = blockFirst + BLOCK_LAST;
-                            r1 = r1.addRange(blockFirst, blockLast);
-                        }
-                        if ((secondBlocksAsBitsSpec & (1 << b)) != 0) {
-                            final long blockFirst = BLOCK_SIZE * b;
-                            final long blockLast = blockFirst + BLOCK_LAST;
-                            r2 = r2.addRange(blockFirst, blockLast);
-                        }
+                    final RspBitmap r1 = fromBlocksAsBits(nblocks, firstBlocksAsBitsSpec);
+                    final RspBitmap r2 = fromBlocksAsBits(nblocks, secondBlocksAsBitsSpec);
+                    final RspBitmap result = op.apply(r1, r2);
+                    final String msg = opName
+                            + " && firstBlocksAsBitsSpec==" + firstBlocksAsBitsSpec
+                            + " && secondBlocksAsBitsSpec==" + secondBlocksAsBitsSpec;
+                    result.validate(msg);
+                    final int resultBits;
+                    switch(opName) {
+                        case "andNotEquals":
+                            resultBits = firstBlocksAsBitsSpec & ~secondBlocksAsBitsSpec;
+                            break;
+                        case "andEquals":
+                            resultBits = firstBlocksAsBitsSpec & secondBlocksAsBitsSpec;
+                            break;
+                        case "orEquals":
+                            resultBits = firstBlocksAsBitsSpec | secondBlocksAsBitsSpec;
+                            break;
+                        default:
+                            throw new IllegalStateException();
                     }
-                    RspBitmap result = op.apply(r1, r2);
-                    result.validate(opName
-                            + ", firstBlockAsBitsSpec=" + firstBlocksAsBitsSpec
-                            + ", secondBlockAsBitsSpec=" + secondBlocksAsBitsSpec);
+                    final RspBitmap expected = fromBlocksAsBits(nblocks, resultBits);
+                    assertEquals(msg, expected, result);
                 }
             }
         }
