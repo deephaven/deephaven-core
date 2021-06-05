@@ -3035,7 +3035,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         modifiedSpan(iFirst);
         SortedRanges madeNullSpans = madeNullSpansMu.getValue();
         if (madeNullSpans != null) {
-            madeNullSpans = madeNullSpans.addRangeUnsafe(iFirst, iLast);
+            madeNullSpans = madeNullSpans.appendRangeUnsafe(iFirst, iLast);
             madeNullSpansMu.setValue(madeNullSpans);
         }
     }
