@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.select;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -154,7 +155,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
                      * checked in the DBLanguageParser already, this is a sanity check
                      */
                     if (params.length != 1) {
-                        throw new RuntimeException("internal error - misuse of numba vectorized functions wasn't detected.");
+                        throw new UncheckedDeephavenException("internal error - misuse of numba vectorized functions wasn't detected.");
                     }
 
                     NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
