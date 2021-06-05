@@ -18,11 +18,11 @@ public class HeadOrTailByRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(
+        static HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -49,21 +49,21 @@ public class HeadOrTailByRequest {
       }
 
       @JsOverlay
-      static HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType create() {
+      static HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -71,26 +71,26 @@ public class HeadOrTailByRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static HeadOrTailByRequest.ToObjectReturnType.SourceidFieldType create() {
+      static HeadOrTailByRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -102,43 +102,43 @@ public class HeadOrTailByRequest {
     }
 
     @JsProperty
-    JsArray<String> getGroupbycolumnspecsList();
+    JsArray<String> getGroupByColumnSpecsList();
 
     @JsProperty
-    String getNumrows();
+    String getNumRows();
 
     @JsProperty
-    HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    HeadOrTailByRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    HeadOrTailByRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setGroupbycolumnspecsList(JsArray<String> groupbycolumnspecsList);
+    void setGroupByColumnSpecsList(JsArray<String> groupByColumnSpecsList);
 
     @JsOverlay
-    default void setGroupbycolumnspecsList(String[] groupbycolumnspecsList) {
-      setGroupbycolumnspecsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnspecsList));
+    default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
+      setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
     }
 
     @JsProperty
-    void setNumrows(String numrows);
+    void setNumRows(String numRows);
 
     @JsProperty
-    void setResultid(HeadOrTailByRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(HeadOrTailByRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(HeadOrTailByRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(
+        static HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -165,21 +165,21 @@ public class HeadOrTailByRequest {
       }
 
       @JsOverlay
-      static HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -187,26 +187,26 @@ public class HeadOrTailByRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static HeadOrTailByRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static HeadOrTailByRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -218,33 +218,33 @@ public class HeadOrTailByRequest {
     }
 
     @JsProperty
-    JsArray<String> getGroupbycolumnspecsList();
+    JsArray<String> getGroupByColumnSpecsList();
 
     @JsProperty
-    String getNumrows();
+    String getNumRows();
 
     @JsProperty
-    HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    HeadOrTailByRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    HeadOrTailByRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setGroupbycolumnspecsList(JsArray<String> groupbycolumnspecsList);
+    void setGroupByColumnSpecsList(JsArray<String> groupByColumnSpecsList);
 
     @JsOverlay
-    default void setGroupbycolumnspecsList(String[] groupbycolumnspecsList) {
-      setGroupbycolumnspecsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnspecsList));
+    default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
+      setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
     }
 
     @JsProperty
-    void setNumrows(String numrows);
+    void setNumRows(String numRows);
 
     @JsProperty
-    void setResultid(HeadOrTailByRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(HeadOrTailByRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(HeadOrTailByRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native HeadOrTailByRequest deserializeBinary(Uint8Array bytes);
@@ -257,46 +257,46 @@ public class HeadOrTailByRequest {
   public static native HeadOrTailByRequest.ToObjectReturnType toObject(
       boolean includeInstance, HeadOrTailByRequest msg);
 
-  public native String addGroupbycolumnspecs(String value, double index);
+  public native String addGroupByColumnSpecs(String value, double index);
 
-  public native String addGroupbycolumnspecs(String value);
+  public native String addGroupByColumnSpecs(String value);
 
-  public native void clearGroupbycolumnspecsList();
+  public native void clearGroupByColumnSpecsList();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native JsArray<String> getGroupbycolumnspecsList();
+  public native JsArray<String> getGroupByColumnSpecsList();
 
-  public native String getNumrows();
+  public native String getNumRows();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setGroupbycolumnspecsList(JsArray<String> value);
+  public native void setGroupByColumnSpecsList(JsArray<String> value);
 
   @JsOverlay
-  public final void setGroupbycolumnspecsList(String[] value) {
-    setGroupbycolumnspecsList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setGroupByColumnSpecsList(String[] value) {
+    setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setNumrows(String value);
+  public native void setNumRows(String value);
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native HeadOrTailByRequest.ToObjectReturnType0 toObject();
 

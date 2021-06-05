@@ -1,4 +1,4 @@
-FROM deephaven/proto-backplane-grpc AS proto-backplane-grpc
+FROM deephaven/proto-backplane-grpc:local-build AS proto-backplane-grpc
 
 FROM docker.io/library/node:14.16.0 AS sources
 WORKDIR /usr/src/app

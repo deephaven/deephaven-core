@@ -21,7 +21,7 @@ public class TextDocumentItem {
     }
 
     @JsProperty
-    String getLanguageid();
+    String getLanguageId();
 
     @JsProperty
     String getText();
@@ -33,7 +33,7 @@ public class TextDocumentItem {
     double getVersion();
 
     @JsProperty
-    void setLanguageid(String languageid);
+    void setLanguageId(String languageId);
 
     @JsProperty
     void setText(String text);
@@ -53,7 +53,7 @@ public class TextDocumentItem {
     }
 
     @JsProperty
-    String getLanguageid();
+    String getLanguageId();
 
     @JsProperty
     String getText();
@@ -65,7 +65,7 @@ public class TextDocumentItem {
     double getVersion();
 
     @JsProperty
-    void setLanguageid(String languageid);
+    void setLanguageId(String languageId);
 
     @JsProperty
     void setText(String text);
@@ -87,7 +87,7 @@ public class TextDocumentItem {
   public static native TextDocumentItem.ToObjectReturnType toObject(
       boolean includeInstance, TextDocumentItem msg);
 
-  public native String getLanguageid();
+  public native String getLanguageId();
 
   public native String getText();
 
@@ -97,7 +97,7 @@ public class TextDocumentItem {
 
   public native Uint8Array serializeBinary();
 
-  public native void setLanguageid(String value);
+  public native void setLanguageId(String value);
 
   public native void setText(String value);
 

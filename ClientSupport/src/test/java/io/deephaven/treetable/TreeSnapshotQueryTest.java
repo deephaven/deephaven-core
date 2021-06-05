@@ -2,7 +2,6 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -465,7 +464,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         testViewportAgainst(sortThenTree, state, 7, 51, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, true);
 
-        final Table filterThenTree = TreeTableFilter.filterTree(Logger.NULL, makeNyMunisTreeTable(),
+        final Table filterThenTree = TreeTableFilter.filterTree(makeNyMunisTreeTable(),
                 "!isNull(Website) && Website.contains(`ny`)");
 
         state.setCompareToTable(filterThenTree);
@@ -473,7 +472,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         // Deliberately sorting first than filtering,  it will produce the same result and is a different order than TSQ does,
         // so validates things nicely.
-        final Table filterAndSortThenTree = TreeTableFilter.filterTree(Logger.NULL, getRawNyMunis()
+        final Table filterAndSortThenTree = TreeTableFilter.filterTree(getRawNyMunis()
                 .sortDescending("County_Name", "Town_Name")
                 .treeTable("Path", "Direct"),
                 "!isNull(Website) && Website.contains(`ny`)");

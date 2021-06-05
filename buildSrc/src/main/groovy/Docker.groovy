@@ -23,6 +23,8 @@ import org.gradle.util.ConfigureUtil
  */
 @CompileStatic
 class Docker {
+    private static final String LOCAL_BUILD_TAG = 'local-build'
+
     /**
      * Helper method to make sure we rebuild the image if it is out of date. At
      * present, is only applicable if there are tags to set on the image
@@ -65,6 +67,7 @@ class Docker {
      * DSL object to describe a docker task
      */
     static class DockerTaskConfig {
+
         private Action<? super CopySpec> copyIn;
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
@@ -147,6 +150,12 @@ class Docker {
         boolean showLogsOnSuccess;
     }
 
+    private static void validateImageName(String imageName) {
+        if (!imageName.endsWith(":${LOCAL_BUILD_TAG}")) {
+            throw new IllegalArgumentException("imageName '${imageName}' is invalid, it must be tagged with '${LOCAL_BUILD_TAG}'")
+        }
+    }
+
     /**
      * Creates a task to run docker to do some work in a container rather than in the hosted environment.
      *
@@ -170,10 +179,12 @@ class Docker {
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
         DockerTaskConfig cfg = new DockerTaskConfig();
-        cfg.imageName = "deephaven/${taskName}"
+        cfg.imageName = "deephaven/${taskName}:${LOCAL_BUILD_TAG}"
 
         // ask for more configuration
-        action.execute(cfg);
+        action.execute(cfg)
+
+        validateImageName(cfg.imageName)
 
         String dockerContainerName = "$taskName-container-${UUID.randomUUID()}"
         String dockerCopyLocation = "${project.buildDir}/$taskName-tmp-copy"
@@ -363,6 +374,8 @@ class Docker {
         TaskProvider<DockerBuildImage> makeImage = project.tasks.register(taskName, DockerBuildImage) { buildImage ->
             action.execute(buildImage)
             if (buildImage.images) {
+                buildImage.images.get().forEach { String imageName -> validateImageName(imageName) }
+
                 // apply fix, since tags don't work properly
                 buildImage.outputs.upToDateWhen {
                     isImageUpToDate(buildImage)

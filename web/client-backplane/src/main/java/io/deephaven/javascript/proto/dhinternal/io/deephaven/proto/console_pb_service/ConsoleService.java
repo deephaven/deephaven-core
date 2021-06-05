@@ -584,18 +584,18 @@ public class ConsoleService {
     void setService(Object service);
   }
 
-  public static ConsoleService.BindTableToVariableType bindTableToVariable;
-  public static ConsoleService.CancelCommandType cancelCommand;
-  public static ConsoleService.ChangeDocumentType changeDocument;
-  public static ConsoleService.CloseDocumentType closeDocument;
-  public static ConsoleService.ExecuteCommandType executeCommand;
-  public static ConsoleService.FetchFigureType fetchFigure;
-  public static ConsoleService.FetchPandasTableType fetchPandasTable;
-  public static ConsoleService.FetchTableType fetchTable;
-  public static ConsoleService.FetchTableMapType fetchTableMap;
-  public static ConsoleService.GetCompletionItemsType getCompletionItems;
-  public static ConsoleService.OpenDocumentType openDocument;
+  public static ConsoleService.BindTableToVariableType BindTableToVariable;
+  public static ConsoleService.CancelCommandType CancelCommand;
+  public static ConsoleService.ChangeDocumentType ChangeDocument;
+  public static ConsoleService.CloseDocumentType CloseDocument;
+  public static ConsoleService.ExecuteCommandType ExecuteCommand;
+  public static ConsoleService.FetchFigureType FetchFigure;
+  public static ConsoleService.FetchPandasTableType FetchPandasTable;
+  public static ConsoleService.FetchTableType FetchTable;
+  public static ConsoleService.FetchTableMapType FetchTableMap;
+  public static ConsoleService.GetCompletionItemsType GetCompletionItems;
+  public static ConsoleService.OpenDocumentType OpenDocument;
+  public static ConsoleService.StartConsoleType StartConsole;
+  public static ConsoleService.SubscribeToLogsType SubscribeToLogs;
   public static String serviceName;
-  public static ConsoleService.StartConsoleType startConsole;
-  public static ConsoleService.SubscribeToLogsType subscribeToLogs;
 }

@@ -61,7 +61,8 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")),
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
-        whereResult.listenForUpdates(new ListenerWithGlobals(whereResult));
+        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
 
@@ -142,7 +143,8 @@ public class QueryTableWhereTest extends QueryTableTestBase {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"));
-        whereResult.listenForUpdates(new ListenerWithGlobals(whereResult));
+        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
 
@@ -207,7 +209,8 @@ public class QueryTableWhereTest extends QueryTableTestBase {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"), whereClause("y=='f'"));
-        whereResult.listenForUpdates(new ListenerWithGlobals(whereResult));
+        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
 

@@ -195,7 +195,7 @@ if (PyEnv.pythonEnabled(project)) {
         }
 
         parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python
-        imageName = 'deephaven/pydocs'
+        imageName = 'deephaven/pydocs:local-build'
         copyOut {
             into("$devRoot/Integrations/python/deephaven")
             preserve {// only overwrite doc and docCustom directories

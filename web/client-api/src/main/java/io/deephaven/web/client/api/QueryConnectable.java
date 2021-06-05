@@ -142,8 +142,8 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
 
         onConnected().then(e -> Callbacks.grpcUnaryPromise(callback -> {
             StartConsoleRequest request = new StartConsoleRequest();
-            request.setSessiontype(type);
-            request.setResultid(ticket);
+            request.setSessionType(type);
+            request.setResultId(ticket);
             connection.get().consoleServiceClient().startConsole(request, connection.get().metadata(), callback::apply);
         })).then(result -> {
             promise.succeed(ticket);

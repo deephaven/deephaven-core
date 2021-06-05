@@ -27,7 +27,7 @@ if (!PyEnv.pythonEnabled(project)) {
         }
 //        dockerfile = project.file('Dockerfile') // not needed with the above from 'docker'
         parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
-        imageName = 'deephaven/sphinx'
+        imageName = 'deephaven/sphinx:local-build'
         containerOutPath = '/build'
         copyOut {
             into docBuildDir

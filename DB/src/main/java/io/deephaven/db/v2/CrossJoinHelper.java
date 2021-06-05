@@ -3,7 +3,6 @@ package io.deephaven.db.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.v2.join.JoinListenerRecorder;
@@ -44,17 +43,17 @@ public class CrossJoinHelper {
     private CrossJoinHelper() {
     }
 
-    static Table join(final Logger log, final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, final int numReserveRightBits) {
-        return join(log, leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, new JoinControl());
+    static Table join(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, final int numReserveRightBits) {
+        return join(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, new JoinControl());
     }
 
-    static Table join(final Logger log, final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, final int numReserveRightBits, final JoinControl control) {
-        final Table result = internalJoin(log, leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, control);
+    static Table join(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, final int numReserveRightBits, final JoinControl control) {
+        final Table result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         return result;
     }
 
-    private static Table internalJoin(final Logger log, final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, int numRightBitsToReserve, final JoinControl control) {
+    private static Table internalJoin(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, int numRightBitsToReserve, final JoinControl control) {
         QueryTable.checkInitiateOperation(leftTable);
         QueryTable.checkInitiateOperation(rightTable);
 
@@ -65,7 +64,7 @@ public class CrossJoinHelper {
                 if (!leftTable.isLive() && !rightTable.isLive()) {
                     numRightBitsToReserve = 1; // tight computation of this is efficient and appropriate
                 }
-                return zeroKeyColumnsJoin(log, leftTable, rightTable, columnsToAdd, numRightBitsToReserve, bucketingContext.listenerDescription);
+                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, numRightBitsToReserve, bucketingContext.listenerDescription);
             }
 
             final ModifiedColumnSet rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
@@ -210,7 +209,7 @@ public class CrossJoinHelper {
                 // - Handle left adds.
                 // - Generate downstream MCS.
                 // - Propagate and Profit.
-                final MergedListener mergedListener = new MergedListener(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), bucketingContext.listenerDescription, resultTable) {
+                final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), bucketingContext.listenerDescription, resultTable) {
                     private final CrossJoinModifiedSlotTracker tracker = new CrossJoinModifiedSlotTracker(jsm);
 
                     @Override
@@ -793,7 +792,7 @@ public class CrossJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, int numRightBitsToReserve, String listenerDescription) {
+    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, int numRightBitsToReserve, String listenerDescription) {
         // we are a single value join, we do not need to do any hash-related work
         validateZeroKeyIndexSpace(leftTable, rightTable, numRightBitsToReserve);
         final CrossJoinShiftState crossJoinState = new CrossJoinShiftState(Math.max(numRightBitsToReserve, CrossJoinShiftState.getMinBits(rightTable)));
@@ -1009,7 +1008,7 @@ public class CrossJoinHelper {
             final JoinListenerRecorder leftRecorder = new JoinListenerRecorder(true, listenerDescription, leftTable, result);
             final JoinListenerRecorder rightRecorder = new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
-            final MergedListener mergedListener = new MergedListener(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result) {
+            final MergedListener mergedListener = new MergedListener(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result) {
                 @Override
                 protected void process() {
                     onUpdate.accept(leftRecorder.getUpdate(), rightRecorder.getUpdate());

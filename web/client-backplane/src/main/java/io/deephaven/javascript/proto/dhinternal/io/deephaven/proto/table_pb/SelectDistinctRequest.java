@@ -18,11 +18,11 @@ public class SelectDistinctRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SelectDistinctRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(
+        static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -49,21 +49,21 @@ public class SelectDistinctRequest {
       }
 
       @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType.ResultidFieldType create() {
+      static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SelectDistinctRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SelectDistinctRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<SelectDistinctRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -71,26 +71,26 @@ public class SelectDistinctRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<SelectDistinctRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType.SourceidFieldType create() {
+      static SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -102,37 +102,37 @@ public class SelectDistinctRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnnamesList();
+    JsArray<String> getColumnNamesList();
 
     @JsProperty
-    SelectDistinctRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    SelectDistinctRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setColumnnamesList(JsArray<String> columnnamesList);
+    void setColumnNamesList(JsArray<String> columnNamesList);
 
     @JsOverlay
-    default void setColumnnamesList(String[] columnnamesList) {
-      setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+    default void setColumnNamesList(String[] columnNamesList) {
+      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
     }
 
     @JsProperty
-    void setResultid(SelectDistinctRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(SelectDistinctRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(
+        static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -159,21 +159,21 @@ public class SelectDistinctRequest {
       }
 
       @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -181,26 +181,26 @@ public class SelectDistinctRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -212,27 +212,27 @@ public class SelectDistinctRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnnamesList();
+    JsArray<String> getColumnNamesList();
 
     @JsProperty
-    SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    SelectDistinctRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    void setColumnnamesList(JsArray<String> columnnamesList);
+    void setColumnNamesList(JsArray<String> columnNamesList);
 
     @JsOverlay
-    default void setColumnnamesList(String[] columnnamesList) {
-      setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+    default void setColumnNamesList(String[] columnNamesList) {
+      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
     }
 
     @JsProperty
-    void setResultid(SelectDistinctRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(SelectDistinctRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native SelectDistinctRequest deserializeBinary(Uint8Array bytes);
@@ -245,42 +245,42 @@ public class SelectDistinctRequest {
   public static native SelectDistinctRequest.ToObjectReturnType toObject(
       boolean includeInstance, SelectDistinctRequest msg);
 
-  public native String addColumnnames(String value, double index);
+  public native String addColumnNames(String value, double index);
 
-  public native String addColumnnames(String value);
+  public native String addColumnNames(String value);
 
-  public native void clearColumnnamesList();
+  public native void clearColumnNamesList();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native JsArray<String> getColumnnamesList();
+  public native JsArray<String> getColumnNamesList();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnnamesList(JsArray<String> value);
+  public native void setColumnNamesList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumnnamesList(String[] value) {
-    setColumnnamesList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnNamesList(String[] value) {
+    setColumnNamesList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native SelectDistinctRequest.ToObjectReturnType0 toObject();
 

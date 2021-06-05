@@ -7,7 +7,7 @@ class ErrorListener extends InstrumentedShiftAwareListenerAdapter {
     Throwable originalException;
 
     ErrorListener(DynamicTable table) {
-        super("Error Checker", table);
+        super("Error Checker", table, false);
     }
 
     @Override

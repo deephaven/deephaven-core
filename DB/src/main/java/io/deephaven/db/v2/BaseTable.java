@@ -1333,7 +1333,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     public interface SwapListenerFactory <T extends SwapListenerBase> {
-        T newListener(Logger log, BaseTable sourceTable);
+        T newListener(BaseTable sourceTable);
     }
 
     /**
@@ -1349,7 +1349,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
             return null;
         }
 
-        final T swapListener = factory.newListener(log, this);
+        final T swapListener = factory.newListener(this);
         swapListener.subscribeForUpdates();
         return swapListener;
     }

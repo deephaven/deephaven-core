@@ -9,8 +9,11 @@ import io.deephaven.db.v2.utils.rsp.container.ContainerShortBatchIterator;
 import java.util.PrimitiveIterator;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.SafeCloseable;
 
-public class RspIterator implements PrimitiveIterator.OfLong {
+import static io.deephaven.db.v2.utils.rsp.RspArray.SpanView;
+
+public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
     private interface SingleSpanIterator {
         boolean forEachLong(LongAbortableConsumer lc);
         int copyTo(long[] vs, int offset, int maxCount);
@@ -20,6 +23,8 @@ public class RspIterator implements PrimitiveIterator.OfLong {
     }
     private RspArray.SpanCursorForward p;
     private SingleSpanIterator sit;
+    // Resource to hold the container sit may be pointing to.
+    private SpanView sitView;
     private static final int BUFSZ =
             Configuration.getInstance().getIntegerForClassWithDefault(RspIterator.class, "bufferSize", 122);
     private boolean hasNext;
@@ -31,6 +36,7 @@ public class RspIterator implements PrimitiveIterator.OfLong {
             hasNext = false;
             return;
         }
+        sitView = new SpanView(null);
         this.p = p;
         nextSingleSpanIterator(firstSpanSkipCount);
         hasNext = true;
@@ -41,11 +47,19 @@ public class RspIterator implements PrimitiveIterator.OfLong {
     }
 
     public void release() {
+        if (sitView != null) {
+            sitView.close();
+        }
         if (p == null) {
             return;
         }
         p.release();
         p = null;
+    }
+
+    @Override
+    public void close() {
+        release();
     }
 
     public boolean forEachLong(final LongAbortableConsumer lc) {
@@ -95,14 +109,16 @@ public class RspIterator implements PrimitiveIterator.OfLong {
     private void nextSingleSpanIterator(final long skipCount) {
         io.deephaven.base.verify.Assert.neqNull(p, "p"); // IDS-6989
         p.next();
-        final long k = p.spanKey();
+        final long spanInfo = p.spanInfo();
         final Object s = p.span();
-        if (s == null) {
+        if (RspArray.isSingletonSpan(s)) {
             if (skipCount != 0) {
                 throw new IllegalArgumentException("skipCount=" + skipCount + " and next span is single element");
             }
+            final long singletonValue = RspArray.spanInfoToSingletonSpanValue(spanInfo);
+            sitView.reset();
             sit = new SingleSpanIterator() {
-                long v = k;
+                long v = singletonValue;
                 @Override public long nextLong() {
                     final long ret = v;
                     v = -1;
@@ -138,8 +154,10 @@ public class RspIterator implements PrimitiveIterator.OfLong {
             };
             return;
         }
-        final long flen = RspArray.getFullBlockSpanLen(s);
+        final long flen = RspArray.getFullBlockSpanLen(spanInfo, s);
+        final long k = RspArray.spanInfoToKey(spanInfo);
         if (flen > 0) {
+            sitView.reset();
             sit = new SingleSpanIterator() {
                 long curr = k + skipCount;
                 final long end = k + flen * RspArray.BLOCK_SIZE - 1;
@@ -177,7 +195,8 @@ public class RspIterator implements PrimitiveIterator.OfLong {
             };
             return;
         }
-        final Container c = (Container) s;
+        sitView.init(p.arr(), p.arrIdx(), spanInfo, s);
+        final Container c = sitView.getContainer();
         final int intSkipCount = (int) (((long) Integer.MAX_VALUE) & skipCount);
         sit = new SingleSpanIterator() {
             final ContainerShortBatchIterator cit = c.getShortBatchIterator(intSkipCount);

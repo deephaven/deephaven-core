@@ -1,6 +1,7 @@
 import io.deephaven.db.v2.FailureListener
 import io.deephaven.db.v2.FuzzerPrintListener
 import io.deephaven.db.v2.TableUpdateValidator
+import io.deephaven.db.tables.utils.TableTools
 
 tableSeed = 1583360794826387000 as long;
 size = 100 as int;
@@ -8,7 +9,7 @@ scale = 1000 as int;
 useRandomNullPoints = true as boolean;
 tableRandom = new Random(tableSeed) as Random;
 
-tt = db.timeTable("00:00:01");
+tt = TableTools.timeTable("00:00:01");
 tickingValues = tt.update(
         "MyString=new String(`a`+i)",
         "MyInt=new Integer(i)",

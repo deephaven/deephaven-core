@@ -249,7 +249,7 @@ public class SubscriptionRequest {
     SubscriptionRequest.ToObjectReturnType.GetColumnsUnionType getColumns();
 
     @JsProperty
-    Object getExportid();
+    Object getExportId();
 
     @JsProperty
     String getSequence();
@@ -258,13 +258,13 @@ public class SubscriptionRequest {
     SubscriptionRequest.ToObjectReturnType.TicketFieldType getTicket();
 
     @JsProperty
-    String getUpdateintervalms();
+    String getUpdateIntervalMs();
 
     @JsProperty
     SubscriptionRequest.ToObjectReturnType.GetViewportUnionType getViewport();
 
     @JsProperty
-    boolean isUsedeephavennulls();
+    boolean isUseDeephavenNulls();
 
     @JsProperty
     void setColumns(SubscriptionRequest.ToObjectReturnType.GetColumnsUnionType columns);
@@ -282,7 +282,7 @@ public class SubscriptionRequest {
     }
 
     @JsProperty
-    void setExportid(Object exportid);
+    void setExportId(Object exportId);
 
     @JsProperty
     void setSequence(String sequence);
@@ -291,10 +291,10 @@ public class SubscriptionRequest {
     void setTicket(SubscriptionRequest.ToObjectReturnType.TicketFieldType ticket);
 
     @JsProperty
-    void setUpdateintervalms(String updateintervalms);
+    void setUpdateIntervalMs(String updateIntervalMs);
 
     @JsProperty
-    void setUsedeephavennulls(boolean usedeephavennulls);
+    void setUseDeephavenNulls(boolean useDeephavenNulls);
 
     @JsProperty
     void setViewport(SubscriptionRequest.ToObjectReturnType.GetViewportUnionType viewport);
@@ -437,7 +437,7 @@ public class SubscriptionRequest {
     SubscriptionRequest.ToObjectReturnType0.GetColumnsUnionType getColumns();
 
     @JsProperty
-    Object getExportid();
+    Object getExportId();
 
     @JsProperty
     String getSequence();
@@ -446,13 +446,13 @@ public class SubscriptionRequest {
     SubscriptionRequest.ToObjectReturnType0.TicketFieldType getTicket();
 
     @JsProperty
-    String getUpdateintervalms();
+    String getUpdateIntervalMs();
 
     @JsProperty
     SubscriptionRequest.ToObjectReturnType0.GetViewportUnionType getViewport();
 
     @JsProperty
-    boolean isUsedeephavennulls();
+    boolean isUseDeephavenNulls();
 
     @JsProperty
     void setColumns(SubscriptionRequest.ToObjectReturnType0.GetColumnsUnionType columns);
@@ -470,7 +470,7 @@ public class SubscriptionRequest {
     }
 
     @JsProperty
-    void setExportid(Object exportid);
+    void setExportId(Object exportId);
 
     @JsProperty
     void setSequence(String sequence);
@@ -479,10 +479,10 @@ public class SubscriptionRequest {
     void setTicket(SubscriptionRequest.ToObjectReturnType0.TicketFieldType ticket);
 
     @JsProperty
-    void setUpdateintervalms(String updateintervalms);
+    void setUpdateIntervalMs(String updateIntervalMs);
 
     @JsProperty
-    void setUsedeephavennulls(boolean usedeephavennulls);
+    void setUseDeephavenNulls(boolean useDeephavenNulls);
 
     @JsProperty
     void setViewport(SubscriptionRequest.ToObjectReturnType0.GetViewportUnionType viewport);
@@ -510,7 +510,7 @@ public class SubscriptionRequest {
   public static native SubscriptionRequest.ToObjectReturnType toObject(
       boolean includeInstance, SubscriptionRequest msg);
 
-  public native void clearExportid();
+  public native void clearExportId();
 
   public native void clearTicket();
 
@@ -520,15 +520,15 @@ public class SubscriptionRequest {
 
   public native Uint8Array getColumns_asU8();
 
-  public native Ticket getExportid();
+  public native Ticket getExportId();
 
   public native String getSequence();
 
   public native Ticket getTicket();
 
-  public native String getUpdateintervalms();
+  public native String getUpdateIntervalMs();
 
-  public native boolean getUsedeephavennulls();
+  public native boolean getUseDeephavenNulls();
 
   public native SubscriptionRequest.GetViewportUnionType getViewport();
 
@@ -536,7 +536,7 @@ public class SubscriptionRequest {
 
   public native Uint8Array getViewport_asU8();
 
-  public native boolean hasExportid();
+  public native boolean hasExportId();
 
   public native boolean hasTicket();
 
@@ -554,9 +554,9 @@ public class SubscriptionRequest {
     setColumns(Js.<SubscriptionRequest.SetColumnsValueUnionType>uncheckedCast(value));
   }
 
-  public native void setExportid();
+  public native void setExportId();
 
-  public native void setExportid(Ticket value);
+  public native void setExportId(Ticket value);
 
   public native void setSequence(String value);
 
@@ -564,9 +564,9 @@ public class SubscriptionRequest {
 
   public native void setTicket(Ticket value);
 
-  public native void setUpdateintervalms(String value);
+  public native void setUpdateIntervalMs(String value);
 
-  public native void setUsedeephavennulls(boolean value);
+  public native void setUseDeephavenNulls(boolean value);
 
   public native void setViewport(SubscriptionRequest.SetViewportValueUnionType value);
 

@@ -143,12 +143,12 @@ public class SimpleDeephavenClient {
         final Ticket t2 = SessionState.exportIdToTicket(nextExportId());
 
         tableService.batch(BatchTableRequest.newBuilder()
-                .addOp(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
+                .addOps(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
                         .setPeriodNanos(1_000_000_000)))
-                .addOp(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
+                .addOps(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
                         .setPeriodNanos(12_000_000)
                         .setResultId(t2)))
-                .addOp(BatchTableRequest.Operation.newBuilder().setUpdate(SelectOrUpdateRequest.newBuilder()
+                .addOps(BatchTableRequest.Operation.newBuilder().setUpdate(SelectOrUpdateRequest.newBuilder()
                         .setResultId(exportTable)
                         .setSourceId(TableReference.newBuilder().setBatchOffset(0))
                         .addColumnSpecs("key = i")))
