@@ -4217,7 +4217,7 @@ public class RspBitmapTest {
         ops.put("andNotEquals", RspBitmap::andNotEquals);
         ops.put("andEquals", RspBitmap::andEquals);
         ops.put("orEquals", RspBitmap::orEquals);
-        final int nblocks = 5;
+        final int nblocks = 9;
         final int maxBlocksAsBitsSpec = 1 << nblocks;
         for (String opName : ops.keySet()) {
             final BiFunction<RspBitmap, RspBitmap, RspBitmap> op = ops.get(opName);
