@@ -1,5 +1,7 @@
 package io.deephaven.db.v2.parquet;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -113,30 +115,8 @@ public class ParquetReaderUtil {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Column " + colName + " with " + desc + " that can't be found in classloader.");
-        }
-    }
-
-    private static Class<?> classForPrimitiveNameOrNull(final String name) {
-        switch (name) {
-            case "byte":
-                return byte.class;
-            case "short":
-                return short.class;
-            case "int":
-                return int.class;
-            case "long":
-                return long.class;
-            case "float":
-                return float.class;
-            case "double":
-                return double.class;
-            case "boolean":
-                return boolean.class;
-            case "char":
-                return char.class;
-            default:
-                return null;
+            throw new UncheckedDeephavenException(
+                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader.");
         }
     }
 
@@ -288,7 +268,7 @@ public class ParquetReaderUtil {
             final boolean isGroupinng = groupingCols.contains(colName);
             final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + colName);
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
-            String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + colName);
+            String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_DATA_TYPE_PREFIX_ + colName);
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
                 final String codecComponentType = keyValueMetaData.get(ParquetTableWriter._CODEC_COMPONENT_TYPE_PREFIX_ + colName);
@@ -296,11 +276,13 @@ public class ParquetReaderUtil {
                 if (codecComponentType == null || codecComponentType.isEmpty()) {
                     componentType = null;
                 } else {
-                    final Class<?> maybePrimitiveType = classForPrimitiveNameOrNull(codecComponentType);
-                    componentType = (maybePrimitiveType != null)
-                        ? maybePrimitiveType
-                        : loadClass(colName, "codec component type", codecComponentType)
-                        ;
+                    try {
+                        componentType = ClassUtil.lookupClass(codecComponentType);
+                    } catch (ClassNotFoundException e) {
+                        throw new UncheckedDeephavenException(
+                                "Column " + colName + " with codec component type " + codecComponentType +
+                                        " that can't be found in classloader:" + e, e);
+                    }
                 }
                 colDefConsumer.accept(colName, dataType, componentType, isGroupinng, codecName, codecArgs);
                 continue;

@@ -127,8 +127,6 @@ public class TableManagementTools {
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
             ParquetReaderUtil.readParquetSchema(path, colConsumer);
-        } catch (java.io.FileNotFoundException e) {
-            throw new IllegalArgumentException(source + " doesn't have a loadable TableDefinition");
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }
@@ -257,7 +255,7 @@ public class TableManagementTools {
     }
 
     private static String defaultParquetPath(final String dirPath) {
-        return dirPath + File.separator + "table.parquet";
+        return dirPath + File.separator + ParquetTableWriter.PARQUET_FILE_NAME;
     }
 
     /**

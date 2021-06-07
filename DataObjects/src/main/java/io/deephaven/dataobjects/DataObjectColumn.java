@@ -4,6 +4,7 @@
 
 package io.deephaven.dataobjects;
 
+import io.deephaven.base.ClassUtil;
 import io.deephaven.datastructures.util.CollectionUtil;
 import org.jdom2.Element;
 import org.jetbrains.annotations.NotNull;
