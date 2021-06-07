@@ -131,7 +131,7 @@ These commands will create:
  1. a `deephaven-core` directory containing the source code.
  2. Docker images containing everything needed to launch Deephaven.
 
-### Run Deephaven Database
+### Run Deephaven Database (Python)
 
 From the `deephaven-core` directory, run
 ```
@@ -141,12 +141,15 @@ This will start the database.  The console will fill with status and logging out
 
 Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
-## Run Deephaven w/Groovy shell
+### Run Deephaven Database (Groovy)
 
-From the `core` directory, run
+From the `deephaven-core` directory, run
 ```
     docker-compose --env-file default_groovy.env up
 ```
+This will start the database.  The console will fill with status and logging output.
+
+Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
 ### Run Deephaven IDE
 
