@@ -39,11 +39,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
@@ -103,6 +103,8 @@ public class SessionState extends LivenessArtifact {
 
     private final String sessionId;
     private volatile SessionService.TokenExpiration expiration = null;
+    private static final AtomicReferenceFieldUpdater<SessionState, SessionService.TokenExpiration> EXPIRATION_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(SessionState.class, SessionService.TokenExpiration.class, "expiration");
 
     // some types of exports have a more sound story if the server tells the client what to call it
     private volatile long nextServerAllocatedId = -1;
@@ -133,14 +135,29 @@ public class SessionState extends LivenessArtifact {
     /**
      * This package private method is controlled by SessionService to update the expiration whenever the session is refreshed.
      * @param expiration the new expiration time and session token
+     * @param initialExpiration whether or not this expiration is the very first, created at construction
      */
     @VisibleForTesting
-    protected synchronized void setExpiration(final SessionService.TokenExpiration expiration) {
+    protected void setExpiration(final SessionService.TokenExpiration expiration, final boolean initialExpiration) {
         if (expiration.session != this) {
             throw new IllegalArgumentException("mismatched session for expiration token");
         }
-        // AtomicReference -> CAS to null to see if you are the winner and get to close things
-        this.expiration = expiration;
+        SessionService.TokenExpiration prevToken = this.expiration;
+        while (prevToken != null) {
+            if (EXPIRATION_UPDATER.compareAndSet(this, prevToken, expiration)) {
+                break;
+            }
+            prevToken = this.expiration;
+        }
+
+        if (prevToken == null) {
+            if (!initialExpiration) {
+                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            } else {
+                // this object has not yet been published because we are initializing it:
+                this.expiration = expiration;
+            }
+        }
 
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
@@ -282,11 +299,16 @@ public class SessionState extends LivenessArtifact {
      */
     public void onExpired() {
         // note that once we set expiration to null; we are not able to add any more objects to the exportMap
-        synchronized (this) {
-            if (expiration == null) {
-                return;
+        SessionService.TokenExpiration prevToken = expiration;
+        while (prevToken != null) {
+            if (EXPIRATION_UPDATER.compareAndSet(this, prevToken, null)) {
+                break;
             }
-            expiration = null;
+            prevToken = expiration;
+        }
+        if (prevToken == null) {
+            // already expired
+            return;
         }
 
         log.info().append(logPrefix).append("releasing outstanding exports").endl();
@@ -401,8 +423,8 @@ public class SessionState extends LivenessArtifact {
         // used to manage liveness of dependencies (to prevent a dependency from being released before it is used)
         private List<ExportObject<?>> parents = Collections.emptyList();
 
-        // used to detect when this object is ready for export
-        private volatile int dependentCount = -1;
+        // used to detect when this object is ready for export (is visible for atomic int field updater)
+        protected volatile int dependentCount = -1;
 
         // used to identify and propagate error details
         private String errorId;
@@ -601,7 +623,7 @@ public class SessionState extends LivenessArtifact {
                                 break;
                         }
 
-                        errorId = UUID.randomUUID().toString();
+                        errorId = UuidCreator.toString(UuidCreator.getRandomBased());
                         dependentErrorId = parent.logIdentity;
                         log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
                     }
@@ -947,7 +969,6 @@ public class SessionState extends LivenessArtifact {
             isClosed = true;
             safelyExecuteLocked(listener, listener::onCompleted);
             exportListeners.remove(this);
-            result = null;
         }
     }
 
@@ -1120,7 +1141,7 @@ public class SessionState extends LivenessArtifact {
      * @param ticket the grpc Ticket
      * @return the export id that the Ticket wraps
      */
-    public static long ticketToExportId(yfinal Ticket ticket) {
+    public static long ticketToExportId(final Ticket ticket) {
         if (ticket == null || ticket.getId().size() != 8) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "missing or incorrectly formatted ticket");
         }
@@ -1130,7 +1151,7 @@ public class SessionState extends LivenessArtifact {
     // used to detect when the export object is ready for export
     @SuppressWarnings("unchecked")
     private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
-            ExportedAtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
+            AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
 
     private static final KeyedLongObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY = new KeyedLongObjectKey.BasicStrict<ExportObject<?>>() {
         @Override

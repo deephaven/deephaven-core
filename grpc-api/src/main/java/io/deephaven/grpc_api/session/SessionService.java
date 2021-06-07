@@ -1,5 +1,6 @@
 package io.deephaven.grpc_api.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
@@ -58,7 +59,7 @@ public class SessionService extends LivenessArtifact {
      */
     public SessionState newSession(final AuthContext authContext) {
         final SessionState session = sessionFactory.create(authContext);
-        refreshToken(session);
+        refreshToken(session, true);
         manage(session);
         return session;
     }
@@ -69,8 +70,12 @@ public class SessionService extends LivenessArtifact {
      * @param session the session to refresh
      * @return the most recent token expiration
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public TokenExpiration refreshToken(final SessionState session) {
+        return refreshToken(session, false);
+    }
+
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
         final DBDateTime now = scheduler.currentTime();
@@ -83,11 +88,11 @@ public class SessionService extends LivenessArtifact {
             }
 
             do {
-                newUUID = UUID.randomUUID();
+                newUUID = UuidCreator.getRandomBased();
                 expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
-            session.setExpiration(expiration);
+            session.setExpiration(expiration, initialToken);
         }
         outstandingCookies.addLast(expiration);
 
@@ -176,7 +181,7 @@ public class SessionService extends LivenessArtifact {
          * Returns the UUID cookie in byte[] friendly format.
          */
         public ByteString getTokenAsByteString() {
-            return ByteString.copyFromUtf8(token.toString());
+            return ByteString.copyFromUtf8(UuidCreator.toString(token));
         }
     }
 

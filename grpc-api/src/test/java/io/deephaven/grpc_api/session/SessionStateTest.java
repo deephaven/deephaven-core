@@ -54,7 +54,7 @@ public class SessionStateTest {
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session));
+        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session), true);
         nextExportId = 1;
     }
 
@@ -611,7 +611,8 @@ public class SessionStateTest {
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session);
-        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration));
+        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration, true));
+        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration, false));
     }
 
     @Test
@@ -624,7 +625,7 @@ public class SessionStateTest {
 
     @Test
     public void testExpiredByTime() {
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session));
+        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session), false);
         Assert.eqNull(session.getExpiration(), "session.getExpiration()"); // already expired
         expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
         expectException(StatusRuntimeException.class, () -> session.nonExport());
@@ -725,7 +726,7 @@ public class SessionStateTest {
         final LivenessScope sessionScope = new LivenessScope();
         LivenessScopeStack.push(sessionScope);
         session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session));
+        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session), true);
         LivenessScopeStack.pop(sessionScope);
 
         final QueueingExportListener listener = new QueueingExportListener();
