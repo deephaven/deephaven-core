@@ -5,7 +5,6 @@
 package io.deephaven.db.plot.example_plots;
 
 import io.deephaven.db.plot.*;
-import io.deephaven.db.plot.themes.Themes;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.gui.color.Color;
@@ -14,8 +13,6 @@ import io.deephaven.gui.color.Color;
 public class PrettyChart1 {
 
     public static void main(String[] args) {
-        Theme theme = Themes.theme("Light");
-        theme.gridLineColor(new Color(250, 250, 250));
         final java.awt.Color red = java.awt.Color.decode("#d62728");
         final java.awt.Color darkBlue = java.awt.Color.decode("#1f77b4");
         final Color lighterRed = new Color(red.getRed(), red.getGreen(), red.getBlue(), 50);
@@ -167,7 +164,7 @@ public class PrettyChart1 {
             y3Lower[i] = d - ((2 + i) * 0.3);
         }
 
-        Figure fig = FigureFactory.figure().theme(theme);
+        Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
                 .chartTitle("Chart Title");
         Figure axs = cht.newAxes().plotStyle("LINE")

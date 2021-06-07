@@ -357,8 +357,6 @@ public class GeneratePlottingConvenience {
                 "io.deephaven.db.plot.axistransformations.AxisTransforms.axisTransform",
                 "io.deephaven.db.plot.axistransformations.AxisTransforms.axisTransformNames",
 
-                "io.deephaven.db.plot.themes.Themes.themeNames",
-
                 "io.deephaven.db.plot.filters.Selectables.oneClick",
                 "io.deephaven.db.plot.filters.Selectables.linked",
 

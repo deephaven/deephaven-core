@@ -18,6 +18,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.BaseTable;
@@ -92,9 +93,13 @@ public class PlotUtils {
      * @param color index
      * @return color of the {@code chart} at the index {@code color}
      */
+    @Deprecated
     public static Paint intToColor(final ChartImpl chart, final Integer color) {
-        Require.neqNull(chart, "chart");
-        return color == null || color == NULL_INT || color < 0 ? null : chart.theme().getSeriesColor(color);
+        return intToColor(color);
+    }
+
+    public static Paint intToColor(final Integer color) {
+        return color == null || color == NULL_INT || color < 0 ? null : new ColorPaletteArray(ColorPaletteArray.Palette.MATPLOTLIB).get(color);
     }
 
     /**

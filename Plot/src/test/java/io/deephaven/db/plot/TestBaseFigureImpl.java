@@ -5,7 +5,6 @@
 package io.deephaven.db.plot;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.db.plot.themes.Themes;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.gui.color.Color;
 import junit.framework.TestCase;
@@ -27,10 +26,6 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
     public void testSubplot() {
         BaseFigureImpl fig1 = new BaseFigureImpl();
 
-        fig1.theme((Theme) null);
-        assertEquals(Themes.theme(), fig1.getTheme());
-        fig1.theme("Light");
-        assertEquals(Themes.theme("Light"), fig1.getTheme());
         fig1.updateInterval(1000L);
 
         ChartImpl c1 = fig1.newChart();
