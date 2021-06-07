@@ -6,11 +6,12 @@ on:
   schedule:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
+  push:
+    branches: [ 'nightly/**' ]
 
 jobs:
-  nightly:
+  check:
     runs-on: ubuntu-20.04
-    timeout-minutes: 720
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -24,24 +25,183 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
-      - name: Check
+      - name: Run gradle
         uses: burrunan/gradle-cache-action@v1
-        timeout-minutes: 720
         with:
-          job-id: nightly
-          arguments: --scan --continue nightly
+          job-id: check
+          arguments: --scan --continue --rerun-tasks check
           gradle-version: wrapper
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-check-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-check-ci-reports
+          path: '**/build/reports/tests/**'
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
-        if: always()
+        if: ${{ github.repository_owner == 'deephaven' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: nightly-check-ci test report
+          check_name: check report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+
+  testSerial:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+
+      - name: Run gradle
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: testSerial
+          arguments: --scan --continue --rerun-tasks testSerial
+          gradle-version: wrapper
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testSerial-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testSerial-ci-reports
+          path: '**/build/reports/tests/**'
+
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testSerial report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+
+  testParallel:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+
+      - name: Run gradle
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: testParallel
+          arguments: --scan --continue --rerun-tasks testParallel
+          gradle-version: wrapper
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testParallel-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testParallel-ci-reports
+          path: '**/build/reports/tests/**'
+
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testParallel report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+
+  testOutOfBand:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
+      - name: Setup JDK
+        id: setup-java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.292'
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+
+      - name: Run gradle
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: testOutOfBand
+          arguments: --scan --continue --rerun-tasks testOutOfBand
+          gradle-version: wrapper
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testOutOfBand-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-testOutOfBand-ci-reports
+          path: '**/build/reports/tests/**'
+
+      - name: Publish Test Results
+        uses: scacap/action-surefire-report@v1
+        if: ${{ github.repository_owner == 'deephaven' }}
+        env:
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        with:
+          check_name: testOutOfBand report
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'

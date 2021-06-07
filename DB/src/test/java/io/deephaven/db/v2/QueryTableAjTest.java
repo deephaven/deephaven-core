@@ -502,7 +502,7 @@ public class QueryTableAjTest {
                 new TstUtils.SortedIntGenerator(0, 100000),
                 new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-        final Table result = AsOfJoinHelper.asOfJoin(log, QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable, (QueryTable)rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+        final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable, (QueryTable)rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
         final TableMap bucketResults = result.byExternal("Bucket");
         final TableMap leftBucket = leftTable.byExternal("Bucket");
@@ -822,28 +822,28 @@ public class QueryTableAjTest {
         final EvalNuggetInterface [] en = Stream.concat(Stream.concat(!withZeroKeys ? Stream.empty() : Stream.concat(
                 Stream.of(
                 // aj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightSorted, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
                 // < aj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
                 ),
                 !withReverse ? Stream.empty() : Stream.of(
                 // raj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightReversed, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
                 // > raj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true))
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true))
                 )),
                 !withBuckets ? Stream.empty() : Stream.of(
                 // aj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightSorted, MatchPairFactory.getExpressions("Truthiness", "Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightSorted, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("Truthiness", "Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
                 // < aj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "Bucket", "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "Bucket", "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
                 )),
                 !withBuckets || !withReverse ? Stream.empty() : Stream.of(
                 // raj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightReversed, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
                 // > raj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(log, control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "Bucket", "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true)))
+                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "Bucket", "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true)))
         ).toArray(EvalNuggetInterface[]::new);
 
         for (int step = 0; step < maxSteps; step++) {
@@ -876,7 +876,7 @@ public class QueryTableAjTest {
         }
 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table refreshingResult = AsOfJoinHelper.asOfJoin(log, control, leftTable, reverse ? ((QueryTable)rightTable.reverse()) : rightTable, AjMatchPairFactory.getExpressions(reverse, columnsToMatch.split(",")).first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
+            final Table refreshingResult = AsOfJoinHelper.asOfJoin(control, leftTable, reverse ? ((QueryTable)rightTable.reverse()) : rightTable, AjMatchPairFactory.getExpressions(reverse, columnsToMatch.split(",")).first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
 
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Refreshing: ");
@@ -1017,7 +1017,7 @@ public class QueryTableAjTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return AsOfJoinHelper.asOfJoin(log, QueryTableJoinTest.SMALL_RIGHT_CONTROL, leftTable, rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
+                        return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL, leftTable, rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
                     }
                 },
         };
@@ -1213,7 +1213,7 @@ public class QueryTableAjTest {
                     new EvalNugget() {
                         @Override
                         protected Table e() {
-                            return AsOfJoinHelper.asOfJoin(log, QueryTableJoinTest.SMALL_RIGHT_CONTROL, (QueryTable)leftTable.sort("LeftStamp"), rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
+                            return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL, (QueryTable)leftTable.sort("LeftStamp"), rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
                         }
                     },
             };

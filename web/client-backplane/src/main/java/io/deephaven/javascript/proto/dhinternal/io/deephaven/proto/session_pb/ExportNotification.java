@@ -81,10 +81,10 @@ public class ExportNotification {
     String getContext();
 
     @JsProperty
-    String getDependenthandle();
+    String getDependentHandle();
 
     @JsProperty
-    double getExportstate();
+    double getExportState();
 
     @JsProperty
     ExportNotification.ToObjectReturnType.TicketFieldType getTicket();
@@ -93,10 +93,10 @@ public class ExportNotification {
     void setContext(String context);
 
     @JsProperty
-    void setDependenthandle(String dependenthandle);
+    void setDependentHandle(String dependentHandle);
 
     @JsProperty
-    void setExportstate(double exportstate);
+    void setExportState(double exportState);
 
     @JsProperty
     void setTicket(ExportNotification.ToObjectReturnType.TicketFieldType ticket);
@@ -169,10 +169,10 @@ public class ExportNotification {
     String getContext();
 
     @JsProperty
-    String getDependenthandle();
+    String getDependentHandle();
 
     @JsProperty
-    double getExportstate();
+    double getExportState();
 
     @JsProperty
     ExportNotification.ToObjectReturnType0.TicketFieldType getTicket();
@@ -181,10 +181,10 @@ public class ExportNotification {
     void setContext(String context);
 
     @JsProperty
-    void setDependenthandle(String dependenthandle);
+    void setDependentHandle(String dependentHandle);
 
     @JsProperty
-    void setExportstate(double exportstate);
+    void setExportState(double exportState);
 
     @JsProperty
     void setTicket(ExportNotification.ToObjectReturnType0.TicketFieldType ticket);
@@ -206,9 +206,9 @@ public class ExportNotification {
 
   public native String getContext();
 
-  public native String getDependenthandle();
+  public native String getDependentHandle();
 
-  public native double getExportstate();
+  public native double getExportState();
 
   public native Ticket getTicket();
 
@@ -218,9 +218,9 @@ public class ExportNotification {
 
   public native void setContext(String value);
 
-  public native void setDependenthandle(String value);
+  public native void setDependentHandle(String value);
 
-  public native void setExportstate(double value);
+  public native void setExportState(double value);
 
   public native void setTicket();
 

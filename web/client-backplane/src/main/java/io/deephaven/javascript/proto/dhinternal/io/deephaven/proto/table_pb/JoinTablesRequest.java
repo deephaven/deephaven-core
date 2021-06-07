@@ -19,31 +19,31 @@ public class JoinTablesRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LeftidFieldType {
+    public interface LeftIdFieldType {
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType.LeftidFieldType create() {
+      static JoinTablesRequest.ToObjectReturnType.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static JoinTablesRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(Object o) {
+        static JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -69,27 +69,27 @@ public class JoinTablesRequest {
       }
 
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType.ResultidFieldType create() {
+      static JoinTablesRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JoinTablesRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(JoinTablesRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<JoinTablesRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<JoinTablesRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
@@ -100,80 +100,80 @@ public class JoinTablesRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnstoaddList();
+    JsArray<String> getColumnsToAddList();
 
     @JsProperty
-    JsArray<String> getColumnstomatchList();
+    JsArray<String> getColumnsToMatchList();
 
     @JsProperty
-    double getJointype();
+    double getJoinType();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType.LeftidFieldType getLeftid();
+    JoinTablesRequest.ToObjectReturnType.LeftIdFieldType getLeftId();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    JoinTablesRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    Object getRightid();
+    Object getRightId();
 
     @JsProperty
-    void setColumnstoaddList(JsArray<String> columnstoaddList);
+    void setColumnsToAddList(JsArray<String> columnsToAddList);
 
     @JsOverlay
-    default void setColumnstoaddList(String[] columnstoaddList) {
-      setColumnstoaddList(Js.<JsArray<String>>uncheckedCast(columnstoaddList));
+    default void setColumnsToAddList(String[] columnsToAddList) {
+      setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
     }
 
     @JsProperty
-    void setColumnstomatchList(JsArray<String> columnstomatchList);
+    void setColumnsToMatchList(JsArray<String> columnsToMatchList);
 
     @JsOverlay
-    default void setColumnstomatchList(String[] columnstomatchList) {
-      setColumnstomatchList(Js.<JsArray<String>>uncheckedCast(columnstomatchList));
+    default void setColumnsToMatchList(String[] columnsToMatchList) {
+      setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
     }
 
     @JsProperty
-    void setJointype(double jointype);
+    void setJoinType(double joinType);
 
     @JsProperty
-    void setLeftid(JoinTablesRequest.ToObjectReturnType.LeftidFieldType leftid);
+    void setLeftId(JoinTablesRequest.ToObjectReturnType.LeftIdFieldType leftId);
 
     @JsProperty
-    void setResultid(JoinTablesRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(JoinTablesRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setRightid(Object rightid);
+    void setRightId(Object rightId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LeftidFieldType {
+    public interface LeftIdFieldType {
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType0.LeftidFieldType create() {
+      static JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static JoinTablesRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(Object o) {
+        static JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -199,21 +199,21 @@ public class JoinTablesRequest {
       }
 
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JoinTablesRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(JoinTablesRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<JoinTablesRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -221,7 +221,7 @@ public class JoinTablesRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<JoinTablesRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -232,50 +232,50 @@ public class JoinTablesRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnstoaddList();
+    JsArray<String> getColumnsToAddList();
 
     @JsProperty
-    JsArray<String> getColumnstomatchList();
+    JsArray<String> getColumnsToMatchList();
 
     @JsProperty
-    double getJointype();
+    double getJoinType();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType0.LeftidFieldType getLeftid();
+    JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType getLeftId();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    Object getRightid();
+    Object getRightId();
 
     @JsProperty
-    void setColumnstoaddList(JsArray<String> columnstoaddList);
+    void setColumnsToAddList(JsArray<String> columnsToAddList);
 
     @JsOverlay
-    default void setColumnstoaddList(String[] columnstoaddList) {
-      setColumnstoaddList(Js.<JsArray<String>>uncheckedCast(columnstoaddList));
+    default void setColumnsToAddList(String[] columnsToAddList) {
+      setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
     }
 
     @JsProperty
-    void setColumnstomatchList(JsArray<String> columnstomatchList);
+    void setColumnsToMatchList(JsArray<String> columnsToMatchList);
 
     @JsOverlay
-    default void setColumnstomatchList(String[] columnstomatchList) {
-      setColumnstomatchList(Js.<JsArray<String>>uncheckedCast(columnstomatchList));
+    default void setColumnsToMatchList(String[] columnsToMatchList) {
+      setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
     }
 
     @JsProperty
-    void setJointype(double jointype);
+    void setJoinType(double joinType);
 
     @JsProperty
-    void setLeftid(JoinTablesRequest.ToObjectReturnType0.LeftidFieldType leftid);
+    void setLeftId(JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType leftId);
 
     @JsProperty
-    void setResultid(JoinTablesRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setRightid(Object rightid);
+    void setRightId(Object rightId);
   }
 
   public static TypeMap Type;
@@ -290,71 +290,71 @@ public class JoinTablesRequest {
   public static native JoinTablesRequest.ToObjectReturnType toObject(
       boolean includeInstance, JoinTablesRequest msg);
 
-  public native String addColumnstoadd(String value, double index);
+  public native String addColumnsToAdd(String value, double index);
 
-  public native String addColumnstoadd(String value);
+  public native String addColumnsToAdd(String value);
 
-  public native String addColumnstomatch(String value, double index);
+  public native String addColumnsToMatch(String value, double index);
 
-  public native String addColumnstomatch(String value);
+  public native String addColumnsToMatch(String value);
 
-  public native void clearColumnstoaddList();
+  public native void clearColumnsToAddList();
 
-  public native void clearColumnstomatchList();
+  public native void clearColumnsToMatchList();
 
-  public native void clearLeftid();
+  public native void clearLeftId();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearRightid();
+  public native void clearRightId();
 
-  public native JsArray<String> getColumnstoaddList();
+  public native JsArray<String> getColumnsToAddList();
 
-  public native JsArray<String> getColumnstomatchList();
+  public native JsArray<String> getColumnsToMatchList();
 
-  public native double getJointype();
+  public native double getJoinType();
 
-  public native TableReference getLeftid();
+  public native TableReference getLeftId();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getRightid();
+  public native TableReference getRightId();
 
-  public native boolean hasLeftid();
+  public native boolean hasLeftId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasRightid();
+  public native boolean hasRightId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnstoaddList(JsArray<String> value);
+  public native void setColumnsToAddList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumnstoaddList(String[] value) {
-    setColumnstoaddList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnsToAddList(String[] value) {
+    setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setColumnstomatchList(JsArray<String> value);
+  public native void setColumnsToMatchList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumnstomatchList(String[] value) {
-    setColumnstomatchList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnsToMatchList(String[] value) {
+    setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setJointype(double value);
+  public native void setJoinType(double value);
 
-  public native void setLeftid();
+  public native void setLeftId();
 
-  public native void setLeftid(TableReference value);
+  public native void setLeftId(TableReference value);
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setRightid();
+  public native void setRightId();
 
-  public native void setRightid(TableReference value);
+  public native void setRightId(TableReference value);
 
   public native JoinTablesRequest.ToObjectReturnType0 toObject();
 

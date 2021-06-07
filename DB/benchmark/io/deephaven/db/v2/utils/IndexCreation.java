@@ -16,16 +16,15 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class IndexCreation {
 
-    //@Param({"100", "10000", "1000000", "10000000"})
-    @Param({"100", "1000000"})
+    @Param({"10000000"})
     private int indexCount;
 
     //@Param({"1", "4", "16", "64","256","1024","1000000"})
-    @Param({"1", "4", "64", "1000000"})
+    @Param({"64", "10000"})
     private int avgElementsPerRange;
 
     //@Param({"1", "2", "4", "10", "100", "1000"})
-    @Param({"1", "10", "1000"})
+    @Param({"1", "1000"})
     private int sparsityFactor;
 
 

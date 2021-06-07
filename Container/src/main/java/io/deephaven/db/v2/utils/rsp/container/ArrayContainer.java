@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 /**
  * Simple container made of an array of 16-bit integers
  */
-public final class ArrayContainer extends Container {
+public class ArrayContainer extends Container {
 
     // Sizing of a short array object in a 64 bit JVM (Hotspot) uses
     // 12 bytes of object overhead (including array.length), plus
@@ -39,9 +39,19 @@ public final class ArrayContainer extends Container {
 
     protected int cardinality = 0;
 
-    short[] content;
+    protected short[] content;
 
-    private boolean shared = false;
+    protected boolean shared = false;
+
+    public short[] getContent() {
+        return content;
+    }
+
+    protected ArrayContainer(final short[] content, final int cardinality, final boolean shared) {
+        this.content = content;
+        this.cardinality = cardinality;
+        this.shared = shared;
+    }
 
     /**
      * Create an array container with default capacity
@@ -378,7 +388,7 @@ public final class ArrayContainer extends Container {
 
     @Override
     public ArrayContainer cowRef() {
-        shared = true;
+        setCopyOnWrite();
         return this;
     }
 
@@ -1809,9 +1819,15 @@ public final class ArrayContainer extends Container {
     }
 
     @Override
-    public void setCopyOnWrite() {
+    public final void setCopyOnWrite() {
+        if (shared) {
+            return;
+        }
         shared = true;
+        onCopyOnWrite();
     }
+
+    protected void onCopyOnWrite() {}
 
     private ArrayContainer deepcopyIfShared() {
         return shared ? deepCopy() : this;

@@ -528,7 +528,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         Throwable originalException;
 
         ErrorListener(String description, DynamicTable table) {
-            super("Error Checker: " + description, table);
+            super("Error Checker: " + description, table, false);
             table.listenForUpdates(this, false);
         }
 

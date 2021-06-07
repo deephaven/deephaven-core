@@ -1,6 +1,6 @@
 # Start with an image that has what we need to build the documentation
 # A better image would be something with the wheels, but not named as the base grpc-api image
-FROM deephaven/runtime-base
+FROM deephaven/runtime-base:local-build
 
 # install sphinx
 RUN set -eux; \

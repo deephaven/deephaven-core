@@ -9,7 +9,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.NotificationQueue;
@@ -189,7 +188,7 @@ public class SyncTableFilter {
 
     class MergedSyncListener extends io.deephaven.db.v2.MergedListener {
         MergedSyncListener(final QueryTable dummyResult) {
-            super(Logger.NULL, recorders, Collections.emptyList(), "SyncTableListener", dummyResult);
+            super(recorders, Collections.emptyList(), "SyncTableListener", dummyResult);
         }
 
         @Override

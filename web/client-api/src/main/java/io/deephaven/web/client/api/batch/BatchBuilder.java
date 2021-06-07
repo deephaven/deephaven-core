@@ -189,7 +189,7 @@ public class BatchBuilder {
                         ref.setTicket(op.getSource().makeTicket());
                     } else {
                         // every subsequent pb op references the entry before it
-                        ref.setBatchoffset(send.length + internalOffset);
+                        ref.setBatchOffset(send.length + internalOffset);
                     }
                     internalOffset++;
 
@@ -225,18 +225,18 @@ public class BatchBuilder {
 
         for (CustomColumnDescriptor customColumn : op.getCustomColumns()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasCustomColumn(customColumn)) {
-                value.addColumnspecs(customColumn.getExpression());
+                value.addColumnSpecs(customColumn.getExpression());
             }
         }
-        if (value.getColumnspecsList().length == 0) {
+        if (value.getColumnSpecsList().length == 0) {
             return null;
         }
 
         Operation updateViewOp = new Operation();
-        updateViewOp.setUpdateview(value);
+        updateViewOp.setUpdateView(value);
 
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
 
         return updateViewOp;
     }
@@ -249,8 +249,8 @@ public class BatchBuilder {
         Operation flattenOp = new Operation();
         FlattenRequest value = new FlattenRequest();
         flattenOp.setFlatten(value);
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
         return flattenOp;
     }
 
@@ -267,8 +267,8 @@ public class BatchBuilder {
         Operation sortOp = new Operation();
         sortOp.setSort(value);
 
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
 
         return sortOp;
     }
@@ -287,8 +287,8 @@ public class BatchBuilder {
         Operation filterOp = new Operation();
         filterOp.setFilter(value);
 
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
 
         return filterOp;
     }
@@ -296,34 +296,34 @@ public class BatchBuilder {
     private Operation buildDropColumns(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
         DropColumnsRequest value = new DropColumnsRequest();
         for (String dropColumn : op.getDropColumns()) {
-            value.addColumnnames(dropColumn);
+            value.addColumnNames(dropColumn);
         }
 
-        if (value.getColumnnamesList().length == 0) {
+        if (value.getColumnNamesList().length == 0) {
             return null;
         }
         Operation dropOp = new Operation();
-        dropOp.setDropcolumns(value);
+        dropOp.setDropColumns(value);
 
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
 
         return dropOp;
     }
     private Operation buildViewColumns(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
         SelectOrUpdateRequest value = new SelectOrUpdateRequest();
         for (String dropColumn : op.getDropColumns()) {
-            value.addColumnspecs(dropColumn);
+            value.addColumnSpecs(dropColumn);
         }
-        if (value.getColumnspecsList().length == 0) {
+        if (value.getColumnSpecsList().length == 0) {
             return null;
         }
 
         Operation dropOp = new Operation();
         dropOp.setView(value);
 
-        value.setSourceid(prevTableSupplier.get());
-        lastOp[0] = value::setResultid;
+        value.setSourceId(prevTableSupplier.get());
+        lastOp[0] = value::setResultId;
 
         return dropOp;
     }

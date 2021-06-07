@@ -106,7 +106,7 @@ public class ParquetReaderUtil {
 
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
-        void accept(String name, Class<?> dbType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs);
+        void accept(String name, Class<?> dataType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs);
     }
 
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
@@ -290,7 +290,7 @@ public class ParquetReaderUtil {
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
             String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_TYPE_PREFIX_ + colName);
             if (codecType != null && !codecType.isEmpty()) {
-                final Class<?> dbType = loadClass(colName, "codec type", codecType);
+                final Class<?> dataType = loadClass(colName, "codec type", codecType);
                 final String codecComponentType = keyValueMetaData.get(ParquetTableWriter._CODEC_COMPONENT_TYPE_PREFIX_ + colName);
                 final Class<?> componentType;
                 if (codecComponentType == null || codecComponentType.isEmpty()) {
@@ -302,7 +302,7 @@ public class ParquetReaderUtil {
                         : loadClass(colName, "codec component type", codecComponentType)
                         ;
                 }
-                colDefConsumer.accept(colName, dbType, componentType, isGroupinng, codecName, codecArgs);
+                colDefConsumer.accept(colName, dataType, componentType, isGroupinng, codecName, codecArgs);
                 continue;
             }
             final boolean isArray = column.getMaxRepetitionLevel() > 0;
@@ -349,7 +349,6 @@ public class ParquetReaderUtil {
                         final Supplier<String> exceptionTextSupplier = ()
                                 -> "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
                                     + " for column " + Arrays.toString(column.getPath());
-                        final Class<?> dbType;
                         if (specialType != null) {
                             if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                                 colDefConsumer.accept(colName, StringSet.class, null, isGroupinng, codecName, codecArgs);
@@ -373,9 +372,9 @@ public class ParquetReaderUtil {
                 }
                 if (isArray) {
                     final Class<?> componentType = optionalClass.get();
-                    // On Java 12, replace by:  dbType = componentType.arrayType();
-                    final Class<?> dbType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                    colDefConsumer.accept(colName, dbType, componentType, isGroupinng, codecName, codecArgs);
+                    // On Java 12, replace by:  dataType = componentType.arrayType();
+                    final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
+                    colDefConsumer.accept(colName, dataType, componentType, isGroupinng, codecName, codecArgs);
                 } else {
                     colDefConsumer.accept(colName, optionalClass.get(), null, isGroupinng, codecName, codecArgs);
                 }

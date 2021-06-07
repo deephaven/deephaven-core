@@ -19,14 +19,14 @@ public class GetCompletionItemsResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ItemsListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TexteditFieldType {
+      public interface TextEditFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface RangeFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
           public interface StartFieldType {
             @JsOverlay
             static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType
-                    .TexteditFieldType.RangeFieldType.StartFieldType
+                    .TextEditFieldType.RangeFieldType.StartFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -45,7 +45,7 @@ public class GetCompletionItemsResponse {
           }
 
           @JsOverlay
-          static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+          static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
                   .RangeFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -55,7 +55,7 @@ public class GetCompletionItemsResponse {
           Object getEnd();
 
           @JsProperty
-          GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+          GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
                   .RangeFieldType.StartFieldType
               getStart();
 
@@ -64,19 +64,19 @@ public class GetCompletionItemsResponse {
 
           @JsProperty
           void setStart(
-              GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+              GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
                       .RangeFieldType.StartFieldType
                   start);
         }
 
         @JsOverlay
-        static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+        static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+        GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
                 .RangeFieldType
             getRange();
 
@@ -85,7 +85,7 @@ public class GetCompletionItemsResponse {
 
         @JsProperty
         void setRange(
-            GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
+            GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
                     .RangeFieldType
                 range);
 
@@ -99,10 +99,10 @@ public class GetCompletionItemsResponse {
       }
 
       @JsProperty
-      JsArray<Object> getAdditionaltexteditsList();
+      JsArray<Object> getAdditionalTextEditsList();
 
       @JsProperty
-      JsArray<String> getCommitcharactersList();
+      JsArray<String> getCommitCharactersList();
 
       @JsProperty
       String getDetail();
@@ -111,10 +111,10 @@ public class GetCompletionItemsResponse {
       String getDocumentation();
 
       @JsProperty
-      String getFiltertext();
+      String getFilterText();
 
       @JsProperty
-      double getInserttextformat();
+      double getInsertTextFormat();
 
       @JsProperty
       double getKind();
@@ -126,14 +126,14 @@ public class GetCompletionItemsResponse {
       double getLength();
 
       @JsProperty
-      String getSorttext();
+      String getSortText();
 
       @JsProperty
       double getStart();
 
       @JsProperty
-      GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
-          getTextedit();
+      GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
+          getTextEdit();
 
       @JsProperty
       boolean isDeprecated();
@@ -142,19 +142,19 @@ public class GetCompletionItemsResponse {
       boolean isPreselect();
 
       @JsProperty
-      void setAdditionaltexteditsList(JsArray<Object> additionaltexteditsList);
+      void setAdditionalTextEditsList(JsArray<Object> additionalTextEditsList);
 
       @JsOverlay
-      default void setAdditionaltexteditsList(Object[] additionaltexteditsList) {
-        setAdditionaltexteditsList(Js.<JsArray<Object>>uncheckedCast(additionaltexteditsList));
+      default void setAdditionalTextEditsList(Object[] additionalTextEditsList) {
+        setAdditionalTextEditsList(Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
       }
 
       @JsProperty
-      void setCommitcharactersList(JsArray<String> commitcharactersList);
+      void setCommitCharactersList(JsArray<String> commitCharactersList);
 
       @JsOverlay
-      default void setCommitcharactersList(String[] commitcharactersList) {
-        setCommitcharactersList(Js.<JsArray<String>>uncheckedCast(commitcharactersList));
+      default void setCommitCharactersList(String[] commitCharactersList) {
+        setCommitCharactersList(Js.<JsArray<String>>uncheckedCast(commitCharactersList));
       }
 
       @JsProperty
@@ -167,10 +167,10 @@ public class GetCompletionItemsResponse {
       void setDocumentation(String documentation);
 
       @JsProperty
-      void setFiltertext(String filtertext);
+      void setFilterText(String filterText);
 
       @JsProperty
-      void setInserttextformat(double inserttextformat);
+      void setInsertTextFormat(double insertTextFormat);
 
       @JsProperty
       void setKind(double kind);
@@ -185,15 +185,15 @@ public class GetCompletionItemsResponse {
       void setPreselect(boolean preselect);
 
       @JsProperty
-      void setSorttext(String sorttext);
+      void setSortText(String sortText);
 
       @JsProperty
       void setStart(double start);
 
       @JsProperty
-      void setTextedit(
-          GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TexteditFieldType
-              textedit);
+      void setTextEdit(
+          GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.TextEditFieldType
+              textEdit);
     }
 
     @JsOverlay
@@ -223,14 +223,14 @@ public class GetCompletionItemsResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ItemsListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TexteditFieldType {
+      public interface TextEditFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface RangeFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
           public interface StartFieldType {
             @JsOverlay
             static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType
-                    .TexteditFieldType.RangeFieldType.StartFieldType
+                    .TextEditFieldType.RangeFieldType.StartFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -249,7 +249,7 @@ public class GetCompletionItemsResponse {
           }
 
           @JsOverlay
-          static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+          static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
                   .RangeFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -259,7 +259,7 @@ public class GetCompletionItemsResponse {
           Object getEnd();
 
           @JsProperty
-          GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+          GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
                   .RangeFieldType.StartFieldType
               getStart();
 
@@ -268,19 +268,19 @@ public class GetCompletionItemsResponse {
 
           @JsProperty
           void setStart(
-              GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+              GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
                       .RangeFieldType.StartFieldType
                   start);
         }
 
         @JsOverlay
-        static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+        static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+        GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
                 .RangeFieldType
             getRange();
 
@@ -289,7 +289,7 @@ public class GetCompletionItemsResponse {
 
         @JsProperty
         void setRange(
-            GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
+            GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
                     .RangeFieldType
                 range);
 
@@ -303,10 +303,10 @@ public class GetCompletionItemsResponse {
       }
 
       @JsProperty
-      JsArray<Object> getAdditionaltexteditsList();
+      JsArray<Object> getAdditionalTextEditsList();
 
       @JsProperty
-      JsArray<String> getCommitcharactersList();
+      JsArray<String> getCommitCharactersList();
 
       @JsProperty
       String getDetail();
@@ -315,10 +315,10 @@ public class GetCompletionItemsResponse {
       String getDocumentation();
 
       @JsProperty
-      String getFiltertext();
+      String getFilterText();
 
       @JsProperty
-      double getInserttextformat();
+      double getInsertTextFormat();
 
       @JsProperty
       double getKind();
@@ -330,14 +330,14 @@ public class GetCompletionItemsResponse {
       double getLength();
 
       @JsProperty
-      String getSorttext();
+      String getSortText();
 
       @JsProperty
       double getStart();
 
       @JsProperty
-      GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
-          getTextedit();
+      GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
+          getTextEdit();
 
       @JsProperty
       boolean isDeprecated();
@@ -346,19 +346,19 @@ public class GetCompletionItemsResponse {
       boolean isPreselect();
 
       @JsProperty
-      void setAdditionaltexteditsList(JsArray<Object> additionaltexteditsList);
+      void setAdditionalTextEditsList(JsArray<Object> additionalTextEditsList);
 
       @JsOverlay
-      default void setAdditionaltexteditsList(Object[] additionaltexteditsList) {
-        setAdditionaltexteditsList(Js.<JsArray<Object>>uncheckedCast(additionaltexteditsList));
+      default void setAdditionalTextEditsList(Object[] additionalTextEditsList) {
+        setAdditionalTextEditsList(Js.<JsArray<Object>>uncheckedCast(additionalTextEditsList));
       }
 
       @JsProperty
-      void setCommitcharactersList(JsArray<String> commitcharactersList);
+      void setCommitCharactersList(JsArray<String> commitCharactersList);
 
       @JsOverlay
-      default void setCommitcharactersList(String[] commitcharactersList) {
-        setCommitcharactersList(Js.<JsArray<String>>uncheckedCast(commitcharactersList));
+      default void setCommitCharactersList(String[] commitCharactersList) {
+        setCommitCharactersList(Js.<JsArray<String>>uncheckedCast(commitCharactersList));
       }
 
       @JsProperty
@@ -371,10 +371,10 @@ public class GetCompletionItemsResponse {
       void setDocumentation(String documentation);
 
       @JsProperty
-      void setFiltertext(String filtertext);
+      void setFilterText(String filterText);
 
       @JsProperty
-      void setInserttextformat(double inserttextformat);
+      void setInsertTextFormat(double insertTextFormat);
 
       @JsProperty
       void setKind(double kind);
@@ -389,15 +389,15 @@ public class GetCompletionItemsResponse {
       void setPreselect(boolean preselect);
 
       @JsProperty
-      void setSorttext(String sorttext);
+      void setSortText(String sortText);
 
       @JsProperty
       void setStart(double start);
 
       @JsProperty
-      void setTextedit(
-          GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TexteditFieldType
-              textedit);
+      void setTextEdit(
+          GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.TextEditFieldType
+              textEdit);
     }
 
     @JsOverlay

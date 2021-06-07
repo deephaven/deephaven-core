@@ -98,8 +98,8 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
         BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
-        bindRequest.setConsoleid(table.getHandle().makeTicket());
-        bindRequest.setVariablename(name);
+        bindRequest.setConsoleId(table.getHandle().makeTicket());
+        bindRequest.setVariableName(name);
         return Callbacks.grpcUnaryPromise(c ->
                 connection.consoleServiceClient().bindTableToVariable(bindRequest, connection.metadata(), c::apply))
                 .then(ignore -> Promise.resolve((Void)null)
@@ -114,14 +114,14 @@ public class IdeSession extends HasEventHandling {
         LazyPromise<CommandResult> promise = new LazyPromise<>();
 
         ExecuteCommandRequest request = new ExecuteCommandRequest();
-        request.setConsoleid(this.result);
+        request.setConsoleId(this.result);
         request.setCode(code);
         Promise<ExecuteCommandResponse> runCodePromise = Callbacks.grpcUnaryPromise(c -> {
             connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
             CommandResult commandResult = new CommandResult();
-            commandResult.setError(response.getErrormessage());
+            commandResult.setError(response.getErrorMessage());
             VariableChanges changes = new VariableChanges();
             changes.created = copyVariables(response.getCreatedList());
             changes.updated = copyVariables(response.getUpdatedList());

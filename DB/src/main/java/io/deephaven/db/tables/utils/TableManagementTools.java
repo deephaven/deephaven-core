@@ -116,12 +116,11 @@ public class TableManagementTools {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
                 (final String name, final Class<?> dbType, Class<?> componentType, final boolean isGrouping, final String codecName, final String codecArgs) -> {
-                    final int columnType = isGrouping ? ColumnDefinition.COLUMNTYPE_GROUPING : ColumnDefinition.COLUMNTYPE_NORMAL;
                     final ColumnDefinition<?> colDef;
                     if (codecName != null) {
-                        colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, columnType, componentType, codecName, codecArgs);
+                        colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, componentType, codecName, codecArgs);
                     } else {
-                        colDef = ColumnDefinition.fromGenericType(name, dbType, columnType, componentType);
+                        colDef = ColumnDefinition.fromGenericType(name, dbType, componentType);
                     }
                     cols.add(colDef);
                 };

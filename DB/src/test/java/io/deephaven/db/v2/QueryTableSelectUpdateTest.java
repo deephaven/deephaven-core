@@ -9,6 +9,8 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.QueryTableTestBase.ListenerWithGlobals;
 import io.deephaven.db.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.db.v2.select.DhFormulaColumn;
@@ -20,6 +22,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
@@ -66,7 +69,8 @@ public class QueryTableSelectUpdateTest {
         showWithIndex(table2);
 
         final Table table3 = table.update("q = i", "q = q + 1", "p = q+10");
-        table2.listenForUpdates(base.newListenerWithGlobals(table2));
+        final Listener table2Listener = base.newListenerWithGlobals(table2);
+        table2.listenForUpdates(table2Listener);
         TestCase
             .assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
         TestCase.assertEquals(Arrays.asList('a', 'b', 'c'), Arrays.asList(table2.getColumn("z").get(0, table2.size())));
@@ -145,7 +149,8 @@ public class QueryTableSelectUpdateTest {
 
         final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         table2 = (QueryTable) table6.update("z = x", "x = z + 1", "t = x - 3");
-        table2.listenForUpdates(base.newListenerWithGlobals(table2));
+        final Listener table2Listener2 = base.newListenerWithGlobals(table2);
+        table2.listenForUpdates(table2Listener2);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -495,7 +500,9 @@ public class QueryTableSelectUpdateTest {
         try {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = useRedirection;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = useRedirection;
-            testUpdateIncremental(seed, new MutableInt(100));
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testUpdateIncremental(seed, new MutableInt(100));
+            }
         } finally {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
@@ -800,12 +807,16 @@ public class QueryTableSelectUpdateTest {
         int size = 1000;
         for (int seed = 0; seed < 10; ++seed) {
             System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
-            testSparseSelect(size, seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testSparseSelect(size, seed);
+            }
         }
         size = 10000;
         for (int seed = 0; seed < 1; ++seed) {
             System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
-            testSparseSelect(size, seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                testSparseSelect(size, seed);
+            }
         }
     }
 

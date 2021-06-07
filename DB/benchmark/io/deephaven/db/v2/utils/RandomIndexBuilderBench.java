@@ -55,14 +55,6 @@ public class RandomIndexBuilderBench {
     }
 
     @Benchmark
-    public void b00a_buildAndPopulateRspAddKeyIndicesOnceCall(final Blackhole bh) {
-        RspBitmap rb = new RspBitmap();
-        rb = rb.addValuesUnsafe(values, 0, sz);
-        rb.finishMutationsAndOptimize();
-        bh.consume(rb);
-    }
-
-    @Benchmark
     public void b00b_buildAndPopulateRspAddKeyIndicesLoop(final Blackhole bh) {
         final RspBitmap rb = new RspBitmap();
         for (long v : values) {

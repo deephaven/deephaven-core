@@ -157,7 +157,7 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             return;
         }
 
-        final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(log, table);
+        final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(table);
         swapListener.subscribeForUpdates();
         final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
         manage(listener);

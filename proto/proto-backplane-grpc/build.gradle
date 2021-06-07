@@ -13,7 +13,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   }
   parentContainers = [ project(':protoc').tasks.findByName('buildDocker') ]
   containerOutPath = '/generated'
-  imageName = 'deephaven/proto-backplane-grpc'
+  imageName = 'deephaven/proto-backplane-grpc:local-build'
   copyOut {
     into('build/generated/source/proto/main')
   }

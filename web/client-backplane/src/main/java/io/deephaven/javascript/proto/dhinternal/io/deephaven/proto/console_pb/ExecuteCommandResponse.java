@@ -45,7 +45,7 @@ public class ExecuteCommandResponse {
     JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> getCreatedList();
 
     @JsProperty
-    String getErrormessage();
+    String getErrorMessage();
 
     @JsProperty
     JsArray<Object> getRemovedList();
@@ -66,7 +66,7 @@ public class ExecuteCommandResponse {
         JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> createdList);
 
     @JsProperty
-    void setErrormessage(String errormessage);
+    void setErrorMessage(String errorMessage);
 
     @JsProperty
     void setRemovedList(JsArray<Object> removedList);
@@ -116,7 +116,7 @@ public class ExecuteCommandResponse {
     JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> getCreatedList();
 
     @JsProperty
-    String getErrormessage();
+    String getErrorMessage();
 
     @JsProperty
     JsArray<Object> getRemovedList();
@@ -138,7 +138,7 @@ public class ExecuteCommandResponse {
         JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> createdList);
 
     @JsProperty
-    void setErrormessage(String errormessage);
+    void setErrorMessage(String errorMessage);
 
     @JsProperty
     void setRemovedList(JsArray<Object> removedList);
@@ -193,7 +193,7 @@ public class ExecuteCommandResponse {
 
   public native JsArray<VariableDefinition> getCreatedList();
 
-  public native String getErrormessage();
+  public native String getErrorMessage();
 
   public native JsArray<VariableDefinition> getRemovedList();
 
@@ -208,7 +208,7 @@ public class ExecuteCommandResponse {
     setCreatedList(Js.<JsArray<VariableDefinition>>uncheckedCast(value));
   }
 
-  public native void setErrormessage(String value);
+  public native void setErrorMessage(String value);
 
   public native void setRemovedList(JsArray<VariableDefinition> value);
 

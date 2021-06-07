@@ -19,11 +19,11 @@ public class ChangeDocumentRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType of(
+        static ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -50,21 +50,21 @@ public class ChangeDocumentRequest {
       }
 
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType getId();
+      ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType id);
+      void setId(ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -72,19 +72,19 @@ public class ChangeDocumentRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ContentchangesListFieldType {
+    public interface ContentChangesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface RangeFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface StartFieldType {
           @JsOverlay
-          static ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+          static ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
                   .StartFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -104,7 +104,7 @@ public class ChangeDocumentRequest {
         }
 
         @JsOverlay
-        static ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+        static ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
@@ -113,7 +113,7 @@ public class ChangeDocumentRequest {
         Object getEnd();
 
         @JsProperty
-        ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+        ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
                 .StartFieldType
             getStart();
 
@@ -122,42 +122,42 @@ public class ChangeDocumentRequest {
 
         @JsProperty
         void setStart(
-            ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+            ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
                     .StartFieldType
                 start);
       }
 
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+      ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
           getRange();
 
       @JsProperty
-      double getRangelength();
+      double getRangeLength();
 
       @JsProperty
       String getText();
 
       @JsProperty
       void setRange(
-          ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType.RangeFieldType
+          ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType.RangeFieldType
               range);
 
       @JsProperty
-      void setRangelength(double rangelength);
+      void setRangeLength(double rangeLength);
 
       @JsProperty
       void setText(String text);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextdocumentFieldType {
+    public interface TextDocumentFieldType {
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType.TextdocumentFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType.TextDocumentFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -180,45 +180,45 @@ public class ChangeDocumentRequest {
     }
 
     @JsProperty
-    ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType getConsoleid();
+    ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType>
-        getContentchangesList();
+    JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType>
+        getContentChangesList();
 
     @JsProperty
-    ChangeDocumentRequest.ToObjectReturnType.TextdocumentFieldType getTextdocument();
+    ChangeDocumentRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
 
     @JsProperty
-    void setConsoleid(ChangeDocumentRequest.ToObjectReturnType.ConsoleidFieldType consoleid);
+    void setConsoleId(ChangeDocumentRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
     @JsOverlay
-    default void setContentchangesList(
-        ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType[] contentchangesList) {
-      setContentchangesList(
+    default void setContentChangesList(
+        ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType[] contentChangesList) {
+      setContentChangesList(
           Js
-              .<JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType>>
-                  uncheckedCast(contentchangesList));
+              .<JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType>>
+                  uncheckedCast(contentChangesList));
     }
 
     @JsProperty
-    void setContentchangesList(
-        JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentchangesListFieldType>
-            contentchangesList);
+    void setContentChangesList(
+        JsArray<ChangeDocumentRequest.ToObjectReturnType.ContentChangesListFieldType>
+            contentChangesList);
 
     @JsProperty
-    void setTextdocument(
-        ChangeDocumentRequest.ToObjectReturnType.TextdocumentFieldType textdocument);
+    void setTextDocument(
+        ChangeDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType of(
+        static ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -245,21 +245,21 @@ public class ChangeDocumentRequest {
       }
 
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType getId();
+      ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType id);
+      void setId(ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -267,19 +267,19 @@ public class ChangeDocumentRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ContentchangesListFieldType {
+    public interface ContentChangesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface RangeFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface StartFieldType {
           @JsOverlay
-          static ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType
+          static ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType
                   .RangeFieldType.StartFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -299,7 +299,7 @@ public class ChangeDocumentRequest {
         }
 
         @JsOverlay
-        static ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType.RangeFieldType
+        static ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
@@ -308,7 +308,7 @@ public class ChangeDocumentRequest {
         Object getEnd();
 
         @JsProperty
-        ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType.RangeFieldType
+        ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType
                 .StartFieldType
             getStart();
 
@@ -317,42 +317,42 @@ public class ChangeDocumentRequest {
 
         @JsProperty
         void setStart(
-            ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType.RangeFieldType
+            ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType
                     .StartFieldType
                 start);
       }
 
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType.RangeFieldType
+      ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType
           getRange();
 
       @JsProperty
-      double getRangelength();
+      double getRangeLength();
 
       @JsProperty
       String getText();
 
       @JsProperty
       void setRange(
-          ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType.RangeFieldType
+          ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType.RangeFieldType
               range);
 
       @JsProperty
-      void setRangelength(double rangelength);
+      void setRangeLength(double rangeLength);
 
       @JsProperty
       void setText(String text);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextdocumentFieldType {
+    public interface TextDocumentFieldType {
       @JsOverlay
-      static ChangeDocumentRequest.ToObjectReturnType0.TextdocumentFieldType create() {
+      static ChangeDocumentRequest.ToObjectReturnType0.TextDocumentFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -375,36 +375,36 @@ public class ChangeDocumentRequest {
     }
 
     @JsProperty
-    ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType getConsoleid();
+    ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType>
-        getContentchangesList();
+    JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType>
+        getContentChangesList();
 
     @JsProperty
-    ChangeDocumentRequest.ToObjectReturnType0.TextdocumentFieldType getTextdocument();
+    ChangeDocumentRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
 
     @JsProperty
-    void setConsoleid(ChangeDocumentRequest.ToObjectReturnType0.ConsoleidFieldType consoleid);
+    void setConsoleId(ChangeDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
 
     @JsOverlay
-    default void setContentchangesList(
-        ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType[]
-            contentchangesList) {
-      setContentchangesList(
+    default void setContentChangesList(
+        ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType[]
+            contentChangesList) {
+      setContentChangesList(
           Js
-              .<JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType>>
-                  uncheckedCast(contentchangesList));
+              .<JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType>>
+                  uncheckedCast(contentChangesList));
     }
 
     @JsProperty
-    void setContentchangesList(
-        JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentchangesListFieldType>
-            contentchangesList);
+    void setContentChangesList(
+        JsArray<ChangeDocumentRequest.ToObjectReturnType0.ContentChangesListFieldType>
+            contentChangesList);
 
     @JsProperty
-    void setTextdocument(
-        ChangeDocumentRequest.ToObjectReturnType0.TextdocumentFieldType textdocument);
+    void setTextDocument(
+        ChangeDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
   }
 
   public static native ChangeDocumentRequest deserializeBinary(Uint8Array bytes);
@@ -417,46 +417,46 @@ public class ChangeDocumentRequest {
   public static native ChangeDocumentRequest.ToObjectReturnType toObject(
       boolean includeInstance, ChangeDocumentRequest msg);
 
-  public native TextDocumentContentChangeEvent addContentchanges();
+  public native TextDocumentContentChangeEvent addContentChanges();
 
-  public native TextDocumentContentChangeEvent addContentchanges(
+  public native TextDocumentContentChangeEvent addContentChanges(
       TextDocumentContentChangeEvent value, double index);
 
-  public native TextDocumentContentChangeEvent addContentchanges(
+  public native TextDocumentContentChangeEvent addContentChanges(
       TextDocumentContentChangeEvent value);
 
-  public native void clearConsoleid();
+  public native void clearConsoleId();
 
-  public native void clearContentchangesList();
+  public native void clearContentChangesList();
 
-  public native void clearTextdocument();
+  public native void clearTextDocument();
 
-  public native Ticket getConsoleid();
+  public native Ticket getConsoleId();
 
-  public native JsArray<TextDocumentContentChangeEvent> getContentchangesList();
+  public native JsArray<TextDocumentContentChangeEvent> getContentChangesList();
 
-  public native VersionedTextDocumentIdentifier getTextdocument();
+  public native VersionedTextDocumentIdentifier getTextDocument();
 
-  public native boolean hasConsoleid();
+  public native boolean hasConsoleId();
 
-  public native boolean hasTextdocument();
+  public native boolean hasTextDocument();
 
   public native Uint8Array serializeBinary();
 
-  public native void setConsoleid();
+  public native void setConsoleId();
 
-  public native void setConsoleid(Ticket value);
+  public native void setConsoleId(Ticket value);
 
-  public native void setContentchangesList(JsArray<TextDocumentContentChangeEvent> value);
+  public native void setContentChangesList(JsArray<TextDocumentContentChangeEvent> value);
 
   @JsOverlay
-  public final void setContentchangesList(TextDocumentContentChangeEvent[] value) {
-    setContentchangesList(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(value));
+  public final void setContentChangesList(TextDocumentContentChangeEvent[] value) {
+    setContentChangesList(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(value));
   }
 
-  public native void setTextdocument();
+  public native void setTextDocument();
 
-  public native void setTextdocument(VersionedTextDocumentIdentifier value);
+  public native void setTextDocument(VersionedTextDocumentIdentifier value);
 
   public native ChangeDocumentRequest.ToObjectReturnType0 toObject();
 

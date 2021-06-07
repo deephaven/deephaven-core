@@ -17,11 +17,11 @@ public class BindTableToVariableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType of(
+        static BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -48,22 +48,22 @@ public class BindTableToVariableRequest {
       }
 
       @JsOverlay
-      static BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType create() {
+      static BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType getId();
+      BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
       void setId(
-          BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType id);
+          BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -71,7 +71,7 @@ public class BindTableToVariableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -82,32 +82,32 @@ public class BindTableToVariableRequest {
     }
 
     @JsProperty
-    BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType getConsoleid();
+    BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    Object getTableid();
+    Object getTableId();
 
     @JsProperty
-    String getVariablename();
+    String getVariableName();
 
     @JsProperty
-    void setConsoleid(BindTableToVariableRequest.ToObjectReturnType.ConsoleidFieldType consoleid);
+    void setConsoleId(BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
     @JsProperty
-    void setTableid(Object tableid);
+    void setTableId(Object tableId);
 
     @JsProperty
-    void setVariablename(String variablename);
+    void setVariableName(String variableName);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType of(
+        static BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -134,22 +134,22 @@ public class BindTableToVariableRequest {
       }
 
       @JsOverlay
-      static BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType create() {
+      static BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType getId();
+      BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
       void setId(
-          BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType id);
+          BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -157,7 +157,7 @@ public class BindTableToVariableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -168,22 +168,22 @@ public class BindTableToVariableRequest {
     }
 
     @JsProperty
-    BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType getConsoleid();
+    BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
-    Object getTableid();
+    Object getTableId();
 
     @JsProperty
-    String getVariablename();
+    String getVariableName();
 
     @JsProperty
-    void setConsoleid(BindTableToVariableRequest.ToObjectReturnType0.ConsoleidFieldType consoleid);
+    void setConsoleId(BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
 
     @JsProperty
-    void setTableid(Object tableid);
+    void setTableId(Object tableId);
 
     @JsProperty
-    void setVariablename(String variablename);
+    void setVariableName(String variableName);
   }
 
   public static native BindTableToVariableRequest deserializeBinary(Uint8Array bytes);
@@ -197,31 +197,31 @@ public class BindTableToVariableRequest {
   public static native BindTableToVariableRequest.ToObjectReturnType toObject(
       boolean includeInstance, BindTableToVariableRequest msg);
 
-  public native void clearConsoleid();
+  public native void clearConsoleId();
 
-  public native void clearTableid();
+  public native void clearTableId();
 
-  public native Ticket getConsoleid();
+  public native Ticket getConsoleId();
 
-  public native Ticket getTableid();
+  public native Ticket getTableId();
 
-  public native String getVariablename();
+  public native String getVariableName();
 
-  public native boolean hasConsoleid();
+  public native boolean hasConsoleId();
 
-  public native boolean hasTableid();
+  public native boolean hasTableId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setConsoleid();
+  public native void setConsoleId();
 
-  public native void setConsoleid(Ticket value);
+  public native void setConsoleId(Ticket value);
 
-  public native void setTableid();
+  public native void setTableId();
 
-  public native void setTableid(Ticket value);
+  public native void setTableId(Ticket value);
 
-  public native void setVariablename(String value);
+  public native void setVariableName(String value);
 
   public native BindTableToVariableRequest.ToObjectReturnType0 toObject();
 

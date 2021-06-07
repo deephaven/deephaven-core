@@ -11,6 +11,7 @@ import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.util.codec.CodecCache;
+import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
@@ -18,6 +19,7 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.codec.SerializableCodec;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -139,8 +141,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
+            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + name);
+            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
+            final boolean isCodec = codecName != null;
 
             if (isArray && columnChunkReader.getMaxRl() > 1) {
                 throw new TableDataException("No support for nested repeated parquet columns.");
@@ -148,40 +153,40 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
             try {
                 // Note that is null for a StringSet.  ToStringSetPage.create specifically doesn't take this parameter.
-                Class<?> componentType = isArray ? columnDefinition.getComponentType() : columnDefinition.getDataType();
+                final Class<?> dataType = columnDefinition.getDataType();
+                final Class<?> componentType = columnDefinition.getComponentType();
+                final Class<?> pageType = isArray ? componentType : dataType;
 
                 ToPage<ATTR, ?> toPage = null;
 
                 if (logicalTypeAnnotation != null) {
-                    toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(name, columnChunkReader, componentType)).orElse(null);
+                    toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(name, columnChunkReader, pageType)).orElse(null);
                 }
 
                 if (toPage == null) {
                     switch (type.getPrimitiveTypeName()) {
                         case BOOLEAN:
-                            toPage = ToBooleanAsBytePage.create(componentType);
+                            toPage = ToBooleanAsBytePage.create(pageType);
                             break;
                         case INT32:
-                            toPage = ToIntPage.create(componentType);
+                            toPage = ToIntPage.create(pageType);
                             break;
                         case INT64:
-                            toPage = ToLongPage.create(componentType);
+                            toPage = ToLongPage.create(pageType);
                             break;
                         case DOUBLE:
-                            toPage = ToDoublePage.create(componentType);
+                            toPage = ToDoublePage.create(pageType);
                             break;
                         case FLOAT:
-                            toPage = ToFloatPage.create(componentType);
+                            toPage = ToFloatPage.create(pageType);
                             break;
                         case BINARY:
                         case FIXED_LEN_BYTE_ARRAY:
-                            String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + name);
-                            String codecParams = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + name);
-
-                            if (codecName != null) {
-                                ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
+                            if (isCodec) {
+                                final String codecParams = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + name);
+                                final ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                                 //noinspection unchecked
-                                toPage = ToObjectPage.create(componentType, codec, columnChunkReader.getDictionary());
+                                toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
                             } else {
                                 throw new TableDataException("No codec in parquet file for binary blob.");
                             }
@@ -196,12 +201,12 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             " with logical type " + logicalTypeAnnotation);
                 }
 
-                if (isArray) {
-                    @NotNull Class<?> dataType = columnDefinition.getDataType();
+                if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    toPage = ToStringSetPage.create(dataType, toPage);
+                }
 
-                    if (StringSet.class.isAssignableFrom(dataType)) {
-                        toPage = ToStringSetPage.create(dataType, toPage);
-                    } else if (DbArrayBase.class.isAssignableFrom(dataType)) {
+                if (isArray && !isCodec) {
+                    if (DbArrayBase.class.isAssignableFrom(dataType)) {
                         toPage = ToDbArrayPage.create(dataType, componentType, toPage);
                     } else if (dataType.isArray()) {
                         toPage = ToArrayPage.create(dataType, componentType, toPage);

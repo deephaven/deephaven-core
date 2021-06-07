@@ -9,7 +9,9 @@ import io.deephaven.dataobjects.persistence.DataObjectInputStream;
 import io.deephaven.dataobjects.persistence.ColumnsetConversionSchema;
 import io.deephaven.dataobjects.persistence.PersistentInputStream;
 import io.deephaven.base.formatters.EnumFormatter;
+import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
 import io.deephaven.util.codec.ObjectCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +31,9 @@ import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
  * @IncludeAll
  */
 public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
+
     public static final ColumnDefinition[] ZERO_LENGTH_COLUMN_DEFINITION_ARRAY = new ColumnDefinition[0];
+
     private static final long serialVersionUID = 3656456077670712362L;
 
     public static final EnumFormatter COLUMN_TYPE_FORMATTER =
@@ -37,74 +41,85 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
     public static final EnumFormatter ENCODING_FORMATTER =
                 new EnumFormatter(getColumnSetStatic().getColumn("Encoding").getEnums());
 
-    public static ColumnDefinition<Boolean> ofBoolean(String name) {
+    public static ColumnDefinition<Boolean> ofBoolean(@NotNull final String name) {
         return new ColumnDefinition<>(name, Boolean.class);
     }
 
-    public static ColumnDefinition<Byte> ofByte(String name) {
+    public static ColumnDefinition<Byte> ofByte(@NotNull final String name) {
         return new ColumnDefinition<>(name, byte.class);
     }
 
-    public static ColumnDefinition<Character> ofChar(String name) {
+    public static ColumnDefinition<Character> ofChar(@NotNull final String name) {
         return new ColumnDefinition<>(name, char.class);
     }
 
-    public static ColumnDefinition<Short> ofShort(String name) {
+    public static ColumnDefinition<Short> ofShort(@NotNull final String name) {
         return new ColumnDefinition<>(name, short.class);
     }
 
-    public static ColumnDefinition<Integer> ofInt(String name) {
+    public static ColumnDefinition<Integer> ofInt(@NotNull final String name) {
         return new ColumnDefinition<>(name, int.class);
     }
 
-    public static ColumnDefinition<Long> ofLong(String name) {
+    public static ColumnDefinition<Long> ofLong(@NotNull final String name) {
         return new ColumnDefinition<>(name, long.class);
     }
 
-    public static ColumnDefinition<Float> ofFloat(String name) {
+    public static ColumnDefinition<Float> ofFloat(@NotNull final String name) {
         return new ColumnDefinition<>(name, float.class);
     }
 
-    public static ColumnDefinition<Double> ofDouble(String name) {
+    public static ColumnDefinition<Double> ofDouble(@NotNull final String name) {
         return new ColumnDefinition<>(name, double.class);
     }
 
-    public static ColumnDefinition<String> ofString(String name) {
+    public static ColumnDefinition<String> ofString(@NotNull final String name) {
         return new ColumnDefinition<>(name, String.class);
     }
 
-    public static ColumnDefinition<DBDateTime> ofTime(String name) {
+    public static ColumnDefinition<DBDateTime> ofTime(@NotNull final String name) {
         return new ColumnDefinition<>(name, DBDateTime.class);
     }
 
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-        String name, Class<T> dataType, String codecName) {
-        return ofVariableWidthCodec(name, dataType, COLUMNTYPE_NORMAL, null, codecName, null);
+            @NotNull final String name, @NotNull final Class<T> dataType,
+            @Nullable final String codecName) {
+        return ofVariableWidthCodec(name, dataType, null, codecName, null);
     }
 
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-            String name, Class<T> dataType, int columnType, Class<?> componentType, String codecName, String codecArgs) {
+            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
+            @Nullable final String codecName) {
+        return ofVariableWidthCodec(name, dataType, componentType, codecName, null);
+    }
+
+    public static <T> ColumnDefinition<T> ofVariableWidthCodec(
+            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
+            @Nullable final String codecName, @Nullable final String codecArgs) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
         Objects.requireNonNull(codecName);
-        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType, columnType);
-        cd.setComponentType(componentType);
+        final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
+        maybeSetComponentType(cd, dataType, componentType);
         cd.setObjectCodecClass(codecName);
+        cd.setObjectCodecArguments(codecArgs);
         return cd;
     }
 
     public static <T> ColumnDefinition<T> ofFixedWidthCodec(
-        String name, Class<T> dataType, String codecName, String codecArguments, int width) {
+            @NotNull final String name, @NotNull final Class<T> dataType,
+            @Nullable final String codecName, @Nullable final String codecArguments, final int width) {
         return ofFixedWidthCodec(name, dataType, null, codecName, codecArguments, width);
     }
 
     public static <T> ColumnDefinition<T> ofFixedWidthCodec(
-            String name, Class<T> dataType, Class<?> componentType, String codecName, String codecArguments, int width) {
+            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
+            @Nullable final String codecName, @Nullable final String codecArguments, final int width) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
         Objects.requireNonNull(codecName);
-        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
-        cd.setComponentType(componentType);
+        final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
+        maybeSetComponentType(cd, dataType, componentType);
         cd.setObjectCodecClass(codecName);
         if (codecArguments != null) {
             cd.setObjectCodecArguments(codecArguments);
@@ -113,20 +128,114 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         return cd;
     }
 
-    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType) {
-        Objects.requireNonNull(dataType);
-        // TODO (core#534): Infer ColumnDefinition componentTypes
-        return new ColumnDefinition<>(name, dataType);
+    public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name, @NotNull final Class<T> dataType) {
+        return fromGenericType(name, dataType, null);
     }
 
-    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType, Class<?> componentType) {
+    public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
+        Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
-        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
-        if (componentType == null) {
-            return cd;
-        }
-        cd.setComponentType(componentType);
+        final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
+        maybeSetComponentType(cd, dataType, componentType);
         return cd;
+    }
+
+    /**
+     * {@link DbArrayBase} class for each type.
+     * Note that {@link DbBooleanArray} is deprecated, superseded by {@link DbArray}.
+     */
+    private static final SimpleTypeMap<Class<? extends DbArrayBase>> COMPONENT_TYPE_TO_DBARRAY_TYPE = SimpleTypeMap.create(
+            DbArray.class, DbCharArray.class, DbByteArray.class, DbShortArray.class, DbIntArray.class, DbLongArray.class, DbFloatArray.class, DbDoubleArray.class, DbArray.class);
+
+    /**
+     * Base component type class for each {@link DbArrayBase} type.
+     * Note that {@link DbBooleanArray} is deprecated, superseded by {@link DbArray}.
+     */
+    private static Class<?> baseComponentTypeForDbArray(@NotNull final Class<? extends DbArrayBase> dbArrayType) {
+        if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
+            return Boolean.class;
+        }
+        if (DbCharArray.class.isAssignableFrom(dbArrayType)) {
+            return char.class;
+        }
+        if (DbByteArray.class.isAssignableFrom(dbArrayType)) {
+            return byte.class;
+        }
+        if (DbShortArray.class.isAssignableFrom(dbArrayType)) {
+            return short.class;
+        }
+        if (DbIntArray.class.isAssignableFrom(dbArrayType)) {
+            return int.class;
+        }
+        if (DbLongArray.class.isAssignableFrom(dbArrayType)) {
+            return long.class;
+        }
+        if (DbFloatArray.class.isAssignableFrom(dbArrayType)) {
+            return float.class;
+        }
+        if (DbDoubleArray.class.isAssignableFrom(dbArrayType)) {
+            return double.class;
+        }
+        if (DbArray.class.isAssignableFrom(dbArrayType)) {
+            return Object.class;
+        }
+        throw new IllegalArgumentException("Unrecognized DbArray type " + dbArrayType);
+    }
+
+    private static void assertComponentTypeValid(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
+        if (!DbArrayBase.class.isAssignableFrom(dataType) && !dataType.isArray()) {
+            return;
+        }
+        if (componentType == null) {
+            throw new IllegalArgumentException("Required component type not specified for data type " + dataType);
+        }
+        if (dataType.isArray()) {
+            final Class<?> arrayComponentType = dataType.getComponentType();
+            if (!arrayComponentType.isAssignableFrom(componentType)) {
+                throw new IllegalArgumentException("Invalid component type " + componentType + " for array data type " + dataType);
+            }
+            return;
+        }
+        //noinspection unchecked
+        final Class<?> baseComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+        if (!baseComponentType.isAssignableFrom(componentType)) {
+            throw new IllegalArgumentException("Invalid component type " + componentType + " for DbArray data type " + dataType);
+        }
+    }
+
+    private static Class<?> checkAndMaybeInferComponentType(@NotNull final Class<?> dataType, @Nullable final Class<?> inputComponentType) {
+        if (dataType.isArray()) {
+            final Class<?> arrayComponentType = dataType.getComponentType();
+            if (inputComponentType == null) {
+                return arrayComponentType;
+            }
+            if (!arrayComponentType.isAssignableFrom(inputComponentType)) {
+                throw new IllegalArgumentException("Invalid component type " + inputComponentType + " for array data type " + dataType);
+            }
+            return inputComponentType;
+        }
+        if (DbArrayBase.class.isAssignableFrom(dataType)) {
+            //noinspection unchecked
+            final Class<?> dbArrayComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+            if (inputComponentType == null) {
+                if (DbArray.class.isAssignableFrom(dataType)) {
+                    throw new IllegalArgumentException("Missing required component type for DbArray data type " + dataType);
+                }
+                return dbArrayComponentType;
+            }
+            if (!dbArrayComponentType.isAssignableFrom(inputComponentType)) {
+                throw new IllegalArgumentException("Invalid component type " + inputComponentType + " for DbArray data type " + dataType);
+            }
+            return inputComponentType;
+        }
+        return inputComponentType;
+    }
+
+    private static <T> void maybeSetComponentType(@NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Class<T> dataType, @Nullable Class<?> inputComponentType) {
+        final Class<?> updatedComponentType = checkAndMaybeInferComponentType(dataType, inputComponentType);
+        if (updatedComponentType != null) {
+            columnDefinition.setComponentType(updatedComponentType);
+        }
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType, int columnType, Class<?> componentType) {
@@ -143,22 +252,22 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
     public ColumnDefinition() {
     }
 
-    ColumnDefinition(String name, Class<TYPE> dataType) {
+    private ColumnDefinition(String name, Class<TYPE> dataType) {
         this(name, dataType, COLUMNTYPE_NORMAL);
     }
 
-    public ColumnDefinition(String name, Class<TYPE> dataType, int columnType) {
+    private ColumnDefinition(String name, Class<TYPE> dataType, int columnType) {
         this(name, dataType, columnType, false);
     }
 
-    ColumnDefinition(String name, Class<TYPE> dataType, int columnType, boolean isVarSizeString) {
+    private ColumnDefinition(String name, Class<TYPE> dataType, int columnType, boolean isVarSizeString) {
         super(Objects.requireNonNull(name));
         setDataType(Objects.requireNonNull(dataType));
         setColumnType(columnType);
         setIsVarSizeString(isVarSizeString);
     }
 
-    ColumnDefinition(ColumnDefinition source) {
+    private ColumnDefinition(ColumnDefinition source) {
         super.copyValues(source);
     }
 
