@@ -43,8 +43,6 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     private final ErrorHandler errorHandler;
     private Reporter reporter;
 
-    private final QueryScope queryScope = new QueryScope.SynchronizedScriptSessionImpl(this);
-
     private class ErrorHandler extends AbstractFunction1<String, BoxedUnit> {
         String message;
 
@@ -112,8 +110,8 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     }
 
     @Override
-    public QueryScope getQueryScope() {
-        return queryScope;
+    protected QueryScope newQueryScope() {
+        return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
     @Override

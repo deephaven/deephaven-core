@@ -13,13 +13,13 @@ public class QueryLibraryTest  extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        QueryLibrary.startQuery();
+        QueryLibrary.resetLibrary();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        QueryLibrary.endQuery();
+        QueryLibrary.resetLibrary();
     }
 
     public void testImportClass(){

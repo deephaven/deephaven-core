@@ -11,6 +11,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.util.ScriptSession;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,17 +30,47 @@ public abstract class QueryScope implements LogOutputAppendable {
     // Singleton Management (ThreadLocal eliminated for the time being)
     // -----------------------------------------------------------------------------------------------------------------
 
-    private static volatile QueryScope defaultInstance = new StandaloneImpl();
+    private static volatile QueryScope defaultScope = null;
+    private static final ThreadLocal<QueryScope> currentScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
+
+    private static QueryScope getDefaultScope() {
+        if (defaultScope == null) {
+            synchronized (QueryScope.class) {
+                if (defaultScope == null) {
+                    defaultScope = new StandaloneImpl();
+                }
+            }
+        }
+        return defaultScope;
+    }
+
+    /**
+     * Sets the default scope.
+     *
+     * @param scope the script session's query scope
+     * @throws IllegalStateException if default scope is already set
+     * @throws NullPointerException if scope is null
+     */
+    public static synchronized void setDefaultScope(final QueryScope scope) {
+        if (defaultScope != null) {
+            throw new IllegalStateException("It's too late to set default scope; it's already set to: " + defaultScope);
+        }
+        defaultScope = Objects.requireNonNull(scope);
+    }
 
     /**
      * Sets the default {@link QueryScope} to be used in the current context. By default there is a
      * {@link StandaloneImpl} created by the static initializer and set as the defaultInstance. The
      * method allows the use of a new or separate instance as the default instance for static methods.
      *
-     * @param queryScope {@link QueryScope} to set as the new default instance.
+     * @param queryScope {@link QueryScope} to set as the new default instance; null clears the scope.
      */
-    public static void setDefaultInstance(@NotNull final QueryScope queryScope) {
-        defaultInstance = queryScope;
+    public static synchronized void setScope(final QueryScope queryScope) {
+        if (queryScope == null) {
+            currentScope.remove();
+        } else {
+            currentScope.set(queryScope);
+        }
     }
 
     /**
@@ -46,8 +78,8 @@ public abstract class QueryScope implements LogOutputAppendable {
      *
      * @return {@link QueryScope}
      */
-    public static QueryScope getDefaultInstance() {
-        return defaultInstance;
+    public static QueryScope getScope() {
+        return currentScope.get();
     }
 
     /**
@@ -59,7 +91,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param <T> type of the parameter/value.
      */
     public static <T> void addParam(final String name, final T value) {
-        getDefaultInstance().putParam(name, value);
+        getScope().putParam(name, value);
     }
 
     /**
@@ -68,7 +100,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param object object whose fields will be added.
      */
     public static void addObjectFields(final Object object) {
-        getDefaultInstance().putObjectFields(object);
+        getScope().putObjectFields(object);
     }
 
     /**
@@ -80,7 +112,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @throws MissingVariableException variable name is not defined.
      */
     public static <T> T getParamValue(final String name) throws MissingVariableException {
-        return getDefaultInstance().readParamValue(name);
+        return getScope().readParamValue(name);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

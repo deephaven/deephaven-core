@@ -78,7 +78,7 @@ public class TestFormulaColumn {
     public void tearDown() throws Exception {
         CompilerTools.setLogEnabled(compilerToolsLogEnabledInitial);
 
-        QueryLibrary.resetCurrent();
+        QueryLibrary.resetLibrary();
         DhFormulaColumn.useKernelFormulasProperty = kernelFormulasSavedValue;
     }
 

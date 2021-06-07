@@ -15,6 +15,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
@@ -51,9 +52,6 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     private final PythonEvaluator evaluator;
     private final PythonScope<?> scope;
 
-    // depend on the GIL instead of local synchronization
-    private final QueryScope queryScope = new QueryScope.UnsynchronizedScriptSessionImpl(this);
-
     /**
      * Create a Python ScriptSession.
      *
@@ -84,9 +82,13 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             }
         }
 
-        QueryLibrary.setCurrent(queryLibrary);
-        QueryLibrary.importClass(org.jpy.PyObject.class);
-
+        final QueryLibrary currLibrary = QueryLibrary.getLibrary();
+        try {
+            QueryLibrary.setLibrary(queryLibrary);
+            QueryLibrary.importClass(org.jpy.PyObject.class);
+        } finally {
+            QueryLibrary.setLibrary(currLibrary);
+        }
     }
 
     /**
@@ -100,8 +102,10 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public QueryScope getQueryScope() {
-        return queryScope;
+    @VisibleForTesting
+    public QueryScope newQueryScope() {
+        // depend on the GIL instead of local synchronization
+        return new QueryScope.UnsynchronizedScriptSessionImpl(this);
     }
 
     /**
