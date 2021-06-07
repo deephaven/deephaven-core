@@ -145,7 +145,7 @@ Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
 From the `core` directory, run
 ```
-    docker compose --env-file .default_groovy.env up
+    docker-compose --env-file default_groovy.env up
 ```
 
 ### Run Deephaven IDE
