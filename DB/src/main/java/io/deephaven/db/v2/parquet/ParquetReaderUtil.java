@@ -338,9 +338,11 @@ public class ParquetReaderUtil {
                                         + " with unknown special type " + specialType);
                             }
                         }
-                        throw new UncheckedDeephavenException(exceptionTextSupplier.get() + " with no special type or encoding metadata.");
+                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
+                        break;
                     default:
-                        throw new UncheckedDeephavenException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
+                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
+                        break;
                 }
             } else {
                 final Optional<Class<?>> optionalClass = logicalTypeAnnotation.accept(visitor);
