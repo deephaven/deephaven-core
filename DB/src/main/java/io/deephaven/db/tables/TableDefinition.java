@@ -72,16 +72,11 @@ public class TableDefinition extends DefaultTableDefinition {
     }
 
     public TableDefinition(@NotNull final List<Class> types, @NotNull final List<String> columnNames) {
-        this(null, getColumnDefinitions(types, columnNames));
+        this(getColumnDefinitions(types, columnNames));
     }
 
     public TableDefinition(@NotNull final List<ColumnDefinition> columnDefs) {
         this.setColumns(columnDefs.toArray(new ColumnDefinition[columnDefs.size()]));
-    }
-
-    public TableDefinition(final String name, @NotNull final ColumnDefinition[] columnDefs) {
-        this.name = name;
-        this.setColumns(columnDefs);
     }
 
     public TableDefinition(@NotNull final ColumnDefinition[] columnDefs) {
@@ -103,17 +98,13 @@ public class TableDefinition extends DefaultTableDefinition {
         }
     }
 
-    public static TableDefinition tableDefinition(final String name, @NotNull final Class<?>[] types, @NotNull final String[] columnNames) {
-        return new TableDefinition(name, getColumnDefinitions(types, columnNames));
-    }
-
     public static TableDefinition tableDefinition(@NotNull final Class<?>[] types, @NotNull final String[] columnNames) {
         return new TableDefinition(getColumnDefinitions(types, columnNames));
     }
 
     @Override
     public String toString() {
-        return super.toString() +  "|columns=" + Arrays.deepToString(columns);
+        return super.toString() + "|columns=" + Arrays.deepToString(columns);
     }
 
     @Override
