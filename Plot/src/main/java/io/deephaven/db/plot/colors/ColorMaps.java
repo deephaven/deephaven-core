@@ -19,7 +19,6 @@ import java.util.function.Predicate;
 
 /**
  * Functions for mapping between values and {@link Color}s or {@link Paint}s.
- * @IncludeAll
  */
 @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
 public class ColorMaps implements Serializable {
@@ -309,7 +308,6 @@ public class ColorMaps implements Serializable {
      * Serializable {@link Predicate}.
      *
      * @param <T> argument type
-     * @Include
      */
     public interface SerializablePredicate<T> extends Predicate<T>, Serializable {
     }

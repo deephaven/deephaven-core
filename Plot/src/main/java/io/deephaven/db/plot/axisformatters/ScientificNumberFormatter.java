@@ -15,8 +15,6 @@ import java.text.ParsePosition;
 /**
  * {@link NumberFormat} which formats numbers in scientific notation
  * if they are outside the given range.
- *
- * @IncludeAll
  */
 public class ScientificNumberFormatter extends NumberFormat {
     private static final int DEFAULT_NUMBER_OF_DECIMALS = Configuration.getInstance().getIntegerWithDefault("plot.axis.ticks.numdecimals", 3);

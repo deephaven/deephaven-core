@@ -8,8 +8,6 @@ import java.util.stream.Collectors;
 
 /**
  * Helper class for managing the sorted columns attribute.
- *
- * @IncludeAll
  */
 public class SortedColumnsAttribute {
     private SortedColumnsAttribute() {}

@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * <li>A {@link io.deephaven.util.reference.CleanupReferenceProcessor} or similar code invokes {@link #cleanup()} after
  * the manager is garbage-collected.</li>
  * </ol>
- *
- * @IncludeAll
  */
 final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakCleanupReference<TYPE> {
 

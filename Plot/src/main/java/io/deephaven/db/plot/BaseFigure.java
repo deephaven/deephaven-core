@@ -10,7 +10,6 @@ import java.io.Serializable;
 
 /**
  * Container for {@link Chart}s.
- * @IncludeAll
  */
 public interface BaseFigure extends Serializable {
 

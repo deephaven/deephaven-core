@@ -26,8 +26,6 @@ import java.util.Arrays;
 
 /**
  * {@link WritableChunk} implementation for Object data.
- *
- * @IncludeAll
  */
 public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATTR> implements WritableChunk<ATTR> {
 

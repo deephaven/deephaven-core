@@ -9,8 +9,6 @@ import java.time.Duration;
  * Converter from a stream of Kafka records to a table writer.
  *
  * Typically, this should be created by a factory that takes a {@link io.deephaven.tablelogger.TableWriter} as its input.
- *
- * @IncludeAll
  */
 @FunctionalInterface
 public interface ConsumerRecordToTableWriterAdapter {

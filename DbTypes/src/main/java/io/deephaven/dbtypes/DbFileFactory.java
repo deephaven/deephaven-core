@@ -2,8 +2,6 @@ package io.deephaven.dbtypes;
 
 /**
  * A factory for creating <code>DbFile</code>s.
- *
- * @IncludeAll
  */
 public interface DbFileFactory {
 

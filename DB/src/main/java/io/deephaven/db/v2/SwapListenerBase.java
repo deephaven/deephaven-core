@@ -26,8 +26,6 @@ import org.jetbrains.annotations.NotNull;
  * can return true.  We then set the currentListener, so that all future calls are forwarded to the listener.
  *
  * Use either {@link SwapListener} or {@link ShiftAwareSwapListener} depending on which Listener interface you are using.
- *
- * @IncludeAll
  */
 public abstract class SwapListenerBase <T extends ListenerBase> extends LivenessArtifact implements ListenerBase {
     protected static final boolean DEBUG = Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);

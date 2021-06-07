@@ -11,8 +11,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
- *
- * @IncludeAll
  */
 public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends ColumnLocation>
         extends SubscriptionAggregator<TableLocation.Listener>

@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 
 /**
  * Utilities for Deephaven date/time storage and manipulation.
- * @IncludeAll
  */
 @SuppressWarnings("UnusedDeclaration")
 public class DBTimeUtils {
@@ -321,25 +320,16 @@ public class DBTimeUtils {
         return checkUnderflowMinus(d1.getNanos(), d2.getNanos(), true);
     }
 
-    /**
-     * @Exclude
-     */
     @Deprecated
     public static long diff(DBDateTime d1, DBDateTime d2) {
         return diffNanos(d1,d2);
     }
 
-    /**
-     * @Exclude
-     */
     @Deprecated
     public static double yearDiff(DBDateTime start, DBDateTime end) {
         return diffYear(start, end);
     }
 
-    /**
-     * @Exclude
-     */
     @Deprecated
     public static double dayDiff(DBDateTime start, DBDateTime end) {
         return diffDay(start, end);
@@ -1178,14 +1168,8 @@ public class DBTimeUtils {
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the CachedCurrentDate to skip a map lookup.
-    /**
-     * @Exclude
-     */
     public static String currentDateNy = null;
 
-    /**
-     * @Exclude
-     */
     public static long endOfCurrentDateNy = 0;
 
     /**
@@ -1839,9 +1823,6 @@ public class DBTimeUtils {
                    1         2
     */
 
-    /**
-     * @Exclude
-     */
     @SuppressWarnings("WeakerAccess")
     public static DBDateTime convertJimDateTimeQuiet(String s) {
         int year = extractFourDigitNum(s, 0);
@@ -1857,9 +1838,6 @@ public class DBTimeUtils {
         return new DBDateTime(millisToNanos(d.getMillis()));
     }
 
-    /**
-     * @Exclude
-     */
     @SuppressWarnings("WeakerAccess")
     public static DBDateTime convertJimMicrosDateTimeQuiet(String s) {
         int year = extractFourDigitNum(s, 0);
@@ -1945,9 +1923,6 @@ public class DBTimeUtils {
     }
 
     // This function and the next are FAR faster than convertJimMicrosDateTimeQuiet provided you can reuse the time zone across calls. Helpful for log file parsing.
-    /**
-     * @Exclude
-     */
     public static DBDateTime convertJimMicrosDateTimeQuietFast(String s, DateTimeZone timeZone) {
         int year = extractFourDigitNum(s, 0);
         int month = extractTwoDigitNum(s, 5);
@@ -1961,9 +1936,6 @@ public class DBTimeUtils {
     }
 
     // This function is very slow. If you can call it once and reuse the result across many calls to the above, this is FAR faster than convertJimMicrosDateTimeQuiet
-    /**
-     * @Exclude
-     */
     public static DateTimeZone convertJimMicrosDateTimeQuietFastTz(String s) {
         int tzHours = (s.charAt(26) == '-' ? -1 : 1) * extractTwoDigitNum(s, 27);
         return DateTimeZone.forOffsetHours(tzHours);

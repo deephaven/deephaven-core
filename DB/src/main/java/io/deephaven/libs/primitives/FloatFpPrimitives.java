@@ -6,8 +6,6 @@ package io.deephaven.libs.primitives;
 
 /**
  * A set of commonly used floating point numeric functions that can be applied to Float types.
- *
- * @IncludeAll
  */
 @SuppressWarnings("WeakerAccess")
 public class FloatFpPrimitives {

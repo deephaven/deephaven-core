@@ -16,8 +16,6 @@ import java.util.Objects;
 /**
  * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but
  * you can easily run it from inside the JVM without having to send yourself a signal.
- *
- * @IncludeAll
  */
 public class ThreadDump {
     /**

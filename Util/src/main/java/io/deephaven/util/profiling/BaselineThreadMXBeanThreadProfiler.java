@@ -7,8 +7,6 @@ import java.lang.management.ThreadMXBean;
 /**
  * A concrete generic {@link ThreadMXBean}-based {@link ThreadProfiler} implementation, with support for baseline
  * measurements available on all JVMs <em>only</em>.
- *
- * @IncludeAll
  */
 public final class BaselineThreadMXBeanThreadProfiler extends ThreadMXBeanThreadProfiler<ThreadMXBean> {
 

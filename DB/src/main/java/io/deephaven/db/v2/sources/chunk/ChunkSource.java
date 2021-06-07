@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  * @param <ATTR> the attribute describing what kind of chunks are produced by this source
- *
- * @IncludeAll
  */
 public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMaker, GetContextMaker {
 
@@ -80,8 +78,6 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
 
     /**
      * Marker interface for {@link Context}s that are used in {@link #getChunk(GetContext, OrderedKeys)}.
-     *
-     * @IncludeAll
      */
     interface GetContext extends Context {
     }
@@ -89,8 +85,6 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
     /**
      * Marker interface for {@link Context}s that are used in
      * {@link #fillChunk(FillContext, WritableChunk, OrderedKeys)}.
-     *
-     * @IncludeAll
      */
     interface FillContext extends Context {
     }
@@ -99,8 +93,6 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
      * Sub-interface for ChunkSources that support previous value retrieval.
      *
      * @param <ATTR>
-     *
-     * @IncludeAll
      */
     interface WithPrev<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
         WithPrev [] ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY = new WithPrev[0];

@@ -16,8 +16,6 @@ import java.util.Map;
  *
  * To comply with the ISO-8601 standard for dates, Strings should
  * be of the form "yyyy-MM-dd",
- *
- * @IncludeAll
  */
 public interface BusinessCalendar extends Calendar {
 

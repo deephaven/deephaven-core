@@ -5,8 +5,6 @@ import io.deephaven.util.QueryConstants;
 
 /**
  * Interface for thread profiling utilities which may be platform or JVM dependent.
- *
- * @IncludeAll
  */
 public interface ThreadProfiler {
 

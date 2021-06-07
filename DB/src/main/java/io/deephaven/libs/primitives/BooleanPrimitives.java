@@ -12,8 +12,6 @@ import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 
 /**
  * A set of commonly used functions that can be applied to Boolean types.
- *
- * @IncludeAll
  */
 public class BooleanPrimitives {
     /**

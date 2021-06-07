@@ -16,7 +16,6 @@ import java.io.Serializable;
 
 /**
  * Represents an axis.
- * @IncludeAll
  */
 public interface Axis extends Serializable {
 

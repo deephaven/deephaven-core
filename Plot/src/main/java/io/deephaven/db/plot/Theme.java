@@ -15,7 +15,6 @@ import java.io.Serializable;
  *
  * Sets the default colors and fonts of various parts of a chart, such as
  * axes, gridlines, and background colors, axes and figure title fonts.
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public interface Theme extends Cloneable, Serializable {

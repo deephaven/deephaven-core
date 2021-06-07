@@ -28,8 +28,6 @@ import java.util.*;
  * Tools for managing and manipulating tables on disk.
  *
  * Most users will need {@link TableTools} and not {@link TableManagementTools}.
- *
- * @IncludeAll
  */
 @SuppressWarnings("WeakerAccess")
 public class TableManagementTools {

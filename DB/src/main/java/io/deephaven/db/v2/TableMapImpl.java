@@ -15,9 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
-/**
- * @IncludeAll
- */
 public abstract class TableMapImpl extends LivenessArtifact implements TableMap, DynamicNode {
 
     private final WeakReferenceManager<Listener> listeners = new WeakReferenceManager<>(true);

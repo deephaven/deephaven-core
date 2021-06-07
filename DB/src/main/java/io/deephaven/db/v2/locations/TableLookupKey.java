@@ -9,8 +9,6 @@ import java.io.Serializable;
 
 /**
  * A simple implementation of TableKey for use in hash lookups, or as a parent class for complex sub-classes.
- *
- * @IncludeAll
  */
 public abstract class TableLookupKey<NAME_TYPE extends CharSequence> implements TableKey, Serializable {
 
@@ -63,8 +61,6 @@ public abstract class TableLookupKey<NAME_TYPE extends CharSequence> implements 
 
     /**
      * An immutable TableLookupKey
-     *
-     * @IncludeAll
      */
     public static final class Immutable extends TableLookupKey<String> implements Serializable {
 

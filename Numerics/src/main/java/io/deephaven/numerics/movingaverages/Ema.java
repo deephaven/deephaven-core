@@ -8,8 +8,6 @@ import java.io.Serializable;
 
 /**
  * An EMA.
- *
- * @IncludeAll
  */
 public class Ema extends AbstractMa implements Serializable {
     private static final long serialVersionUID = 5997048575951664518L;

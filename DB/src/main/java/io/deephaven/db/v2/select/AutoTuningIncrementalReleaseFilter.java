@@ -78,8 +78,6 @@ import java.text.DecimalFormat;
  *
  * decorated = tradesFiltered.aj(quotesFiltered, "LocalCodeStr,MarketTimestamp", "QuoteTime=MarketTimestamp,Bid,BidSize,Ask,AskSize")
  * </pre>
- *
- * @IncludeAll
  */
 public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
     @NotNull

@@ -14,7 +14,6 @@ import io.deephaven.gui.shape.Shape;
 /**
  * {@link DataSeries} with two numerical components, x and y.
  * Data points are numbered and are accessed with an index.
- * @IncludeAll
  */
 public interface XYDataSeries extends DataSeries {
 

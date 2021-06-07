@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableReadOnlyChunk} implementation for float data.
- *
- * @IncludeAll
  */
 public final class ResettableFloatChunk<ATTR_UPPER extends Any> extends FloatChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 

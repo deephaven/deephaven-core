@@ -27,8 +27,6 @@ import java.util.function.UnaryOperator;
  * <p>
  * Provides utility methods for the ChunkedOperationAggregationHelper to manipulate and interrogate the operators, inputs
  * and outputs.
- *
- * @IncludeAll
  */
 class AggregationContext {
     /**

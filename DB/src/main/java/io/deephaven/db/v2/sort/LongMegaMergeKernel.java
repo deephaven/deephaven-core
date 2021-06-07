@@ -13,8 +13,6 @@ import static io.deephaven.db.v2.sources.chunk.Attributes.*;
  *
  * The intention is that you will use a Timsort kernel to sort maximally sized chunks, then merge the result into a
  * ColumnSource using the MegaMergeKernel only if necessary.
- *
- * @IncludeAll
  */
 public interface LongMegaMergeKernel<ATTR extends Any, KEY_INDICES extends Keys> extends Context {
     /**

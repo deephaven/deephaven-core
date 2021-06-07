@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableReadOnlyChunk} implementation for short data.
- *
- * @IncludeAll
  */
 public final class ResettableShortChunk<ATTR_UPPER extends Any> extends ShortChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 

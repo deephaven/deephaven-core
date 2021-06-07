@@ -9,7 +9,6 @@ import java.util.function.Function;
 
 /**
  * A serializable function.
- * @IncludeAll
  */
 public interface SerializableFunction<T,R> extends Function<T,R>, Serializable {
 }

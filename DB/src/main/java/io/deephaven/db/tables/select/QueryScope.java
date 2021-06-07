@@ -21,8 +21,6 @@ import java.util.*;
 
 /**
  * Variable scope used to resolve parameter values during query execution.
- *
- * @IncludeAll
  */
 public abstract class QueryScope implements LogOutputAppendable {
 
@@ -129,7 +127,6 @@ public abstract class QueryScope implements LogOutputAppendable {
     /**
      * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is not defined or,
      * more likely, has not been added to the scope.
-     * @IncludeAll
      */
     public static class MissingVariableException extends RuntimeException {
 

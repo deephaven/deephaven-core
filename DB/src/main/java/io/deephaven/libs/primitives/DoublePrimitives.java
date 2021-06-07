@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * A set of commonly used functions that can be applied to Double types.
- *
- * @IncludeAll
  */
 public class DoublePrimitives {
     /**

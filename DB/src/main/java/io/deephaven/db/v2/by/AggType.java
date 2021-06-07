@@ -2,8 +2,6 @@ package io.deephaven.db.v2.by;
 
 /**
  * Enumeration representing valid aggregation types for {@link ComboAggregateFactory} or {@link io.deephaven.db.v2.TotalsTableBuilder}.
- *
- * @IncludeAll
  */
 public enum AggType {
     /** Return the number of rows in each group. */

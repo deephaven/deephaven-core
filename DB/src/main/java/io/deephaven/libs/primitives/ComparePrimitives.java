@@ -11,8 +11,6 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 /**
  * A set of commonly used functions for comparing primitive pairs.
- *
- * @IncludeAll
  */
 public class ComparePrimitives {
     ///////////// byte  //////////////////

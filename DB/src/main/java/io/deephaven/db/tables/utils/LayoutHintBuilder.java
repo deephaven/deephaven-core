@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 /**
  * The builder class for use in assembling layout hints suitable for use with {@link io.deephaven.db.tables.Table#layoutHints(LayoutHintBuilder)} or
  * {@link io.deephaven.db.tables.Table#layoutHints(String)}.
- *
- * @IncludeAll
  */
 @ScriptApi
 public class LayoutHintBuilder {

@@ -24,8 +24,6 @@ import java.io.IOException;
  * It provides an optional retention cache, to prevent listeners from being garbage collected.
  *
  * For creating internally ticking table nodes, instead use {@link BaseTable.ShiftAwareListenerImpl}
- *
- * @IncludeAll
  */
 public abstract class InstrumentedShiftAwareListenerAdapter extends InstrumentedShiftAwareListener {
 

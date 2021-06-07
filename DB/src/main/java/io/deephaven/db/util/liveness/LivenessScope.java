@@ -5,8 +5,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link LivenessNode} implementation for providing external scope to one or more {@link LivenessReferent}s.
- *
- * @IncludeAll
  */
 public class LivenessScope extends ReferenceCountedLivenessNode implements ReleasableLivenessManager {
 

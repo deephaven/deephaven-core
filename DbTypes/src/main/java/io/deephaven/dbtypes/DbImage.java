@@ -6,8 +6,6 @@ import java.io.IOException;
 
 /**
  * An image which can be persisted.
- *
- * @IncludeAll
  */
 public interface DbImage extends DbFile {
 

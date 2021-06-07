@@ -8,8 +8,6 @@ import java.io.Serializable;
 
 /**
  * A sum where the values are decayed at an exponential rate to zero.
- *
- * @IncludeAll
  */
 public class ExponentiallyDecayedSum implements Serializable {
     private static final long serialVersionUID = -4569122361884129319L;

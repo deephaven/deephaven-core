@@ -33,8 +33,6 @@ import static io.deephaven.db.tables.Table.PREPARED_RLL_ATTRIBUTE;
  *  The TreeTableFilter takes a TreeTable and SelectFilters as input.  The original source table is filtered and
  *  any matching rows are included; as well as their ancestors.  The result table is then converted into a tree
  *  table using the original parameters.
- *
- * @Include
  */
 public class TreeTableFilter implements Function.Unary<Table,Table>, MemoizedOperationKey.Provider {
     private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance().getBooleanWithDefault("TreeTableFilter.debug", false);

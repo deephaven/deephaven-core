@@ -2,8 +2,6 @@ package io.deephaven.db.v2;
 
 /**
  * For hierarchical table display, identify the row index key that corresponds to a given logical key.
- *
- * @IncludeAll
  */
 public interface ReverseLookup {
     /**
@@ -35,8 +33,6 @@ public interface ReverseLookup {
 
     /**
      * A null implementation of a reverse lookup, suitable for a table without any key columns.
-     *
-     * @IncludeAll
      */
     class Null implements ReverseLookup {
         private final String[] keyColumns;

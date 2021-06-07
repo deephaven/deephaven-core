@@ -15,8 +15,6 @@ import java.util.PriorityQueue;
  * the lower priority item is replaced by the higher priority item.
  *
  * The element type must be usable in a hash map.
- *
- * @IncludeAll
  */
 public class KeyedPriorityBlockingQueue<E> {
 

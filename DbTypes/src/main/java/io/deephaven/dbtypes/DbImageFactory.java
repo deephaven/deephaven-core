@@ -4,8 +4,6 @@ import java.awt.image.BufferedImage;
 
 /**
  * A factory for creating <code>DbImage</code>s.
- *
- * @IncludeAll
  */
 public interface DbImageFactory {
 

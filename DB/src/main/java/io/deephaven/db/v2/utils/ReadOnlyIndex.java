@@ -15,8 +15,6 @@ import java.util.function.LongConsumer;
 
 /**
  * Read-only subset of the {@link Index} interface.
- *
- * @IncludeAll
  */
 public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     long NULL_KEY = -1L;
@@ -144,9 +142,6 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
 
     boolean hasGrouping(ColumnSource... keyColumns);
 
-    /**
-     * @IncludeAll
-     */
     interface RangeIterator extends SafeCloseable {
         void close();
         boolean hasNext();
@@ -218,16 +213,10 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
         };
     }
 
-    /**
-     * @IncludeAll
-     */
     interface Evaluator<T extends Comparable<T>> {
         T value(long key);
     }
 
-    /**
-     * @IncludeAll
-     */
     interface TargetComparator {
         int compareTargetTo(long rKey, int direction);
     }
@@ -289,9 +278,6 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
         });
     }
 
-    /**
-     * @IncludeAll
-     */
     interface SearchIterator extends Iterator {
         void close();
         boolean hasNext();

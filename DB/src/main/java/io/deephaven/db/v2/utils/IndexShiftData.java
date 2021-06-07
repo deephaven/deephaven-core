@@ -20,8 +20,6 @@ import java.io.Serializable;
  * will be invoked with shifts in an order that will preserve data when applied immediately using memmove semantics.
  * Internally the shifts are ordered by rangeStart. The {@link IndexShiftData.Builder} will verify that no two ranges
  * overlap before or after shifting and assert that the constructed {@code IndexShiftData} will be valid.
- *
- * @IncludeAll
  */
 public final class IndexShiftData implements Serializable {
 

@@ -152,8 +152,6 @@ import static io.deephaven.db.v2.utils.IndexUtilities.Comparator;
  *         return empty results, and are never actual stored in the spans array.  For details, please
  *         see the Container class definition and derived class hierarchy.</li>
  * </ul>
- *
- * @IncludeAll
  */
 public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 

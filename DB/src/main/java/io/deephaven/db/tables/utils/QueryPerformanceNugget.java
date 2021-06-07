@@ -17,7 +17,6 @@ import static io.deephaven.util.QueryConstants.*;
  * Per-operation instrumentation node for hierarchical performance recording.
  * Note that this class has an unusually intimate relationship with another class, {@link QueryPerformanceRecorder}.
  * Changes to either should take this lack of encapsulation into account.
- * @IncludeAll
  */
 public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
