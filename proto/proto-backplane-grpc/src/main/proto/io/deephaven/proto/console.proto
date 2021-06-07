@@ -210,7 +210,7 @@ message FigureDescriptor {
     message RepeatedInt32 {
         repeated int32 ids = 1;
     }
-    string title = 1;
+    optional string title = 1;
     string title_font = 2;
     string title_color = 3;
     //    bool resizable = 4;//unused?
@@ -218,7 +218,7 @@ message FigureDescriptor {
     //    Theme theme = 5;//unused?
     //    bool is_default_theme = 6;//unused?
 
-    double update_interval = 7;
+    int64 update_interval = 7;
 
     int32 cols = 8;
     int32 rows = 9;

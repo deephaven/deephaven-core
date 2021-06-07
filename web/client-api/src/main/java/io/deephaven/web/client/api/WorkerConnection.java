@@ -604,12 +604,6 @@ public class WorkerConnection {
                     request.setConsoleId(script);
                     request.setFigureName(figureName);
                     consoleServiceClient().fetchFigure(request, metadata(), c::apply);
-//                    if (script != null) {
-//                        getServer().fetchScriptFigure(script, figureName, c);
-//                    } else {
-//                        getServer().fetchFigure(figureName, c);
-//                    }
-                    throw new UnsupportedOperationException("getFigure");
                 }).refetch());
     }
 

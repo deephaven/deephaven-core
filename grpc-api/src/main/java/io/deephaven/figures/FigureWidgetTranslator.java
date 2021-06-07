@@ -66,9 +66,9 @@ public class FigureWidgetTranslator {
         FigureDescriptor.Builder clientFigure = FigureDescriptor.newBuilder();
 
         BaseFigureImpl figure = descriptor.getFigure().getFigure();
-        clientFigure.setTitle(figure.getTitle());
-        clientFigure.setTitleColor(toCssColorString(figure.getTitleColor()));
-        clientFigure.setTitleFont(toCssFont(figure.getTitleFont()));
+        assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
+        assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor, clientFigure::clearTitleColor); // clientFigure.setTitleColor(toCssColorString(figure.getTitleColor()));
+        assignOptionalField(toCssFont(figure.getTitleFont()), clientFigure::setTitleFont, clientFigure::clearTitleFont); // clientFigure.setTitleFont(toCssFont(figure.getTitleFont()));
 
         List<ChartImpl> charts = figure.getCharts().getCharts();
         int size = charts.size();
@@ -91,7 +91,7 @@ public class FigureWidgetTranslator {
         }
 
         clientFigure.addAllTableIds(tables);
-        List<RepeatedInt32> plotHandleIds = descriptor.getTableIds().stream().map(set -> RepeatedInt32.newBuilder().build()).collect(Collectors.toList());
+        List<RepeatedInt32> plotHandleIds = descriptor.getTableIds().stream().map(set -> RepeatedInt32.newBuilder().addAllIds(set).build()).collect(Collectors.toList());
         clientFigure.addAllPlotHandleIds(plotHandleIds);
 //
 //        clientFigure.setTableMaps(descriptor.getDeflatedTableMaps().stream().map(etmd -> {
@@ -103,6 +103,14 @@ public class FigureWidgetTranslator {
         clientFigure.addAllErrors(errorList);
 
         return clientFigure.build();
+    }
+
+    private <T> void assignOptionalField(T value, Consumer<T> setter, Runnable clear) {
+        if (value != null) {
+            setter.accept(value);
+        } else {
+            clear.run();
+        }
     }
 
     private FigureDescriptor.ChartDescriptor translate(ChartImpl chart) {
@@ -138,18 +146,18 @@ public class FigureWidgetTranslator {
                 clientAxis.setId(type.name() + axis.id());
                 clientAxis.setFormatType(AxisDescriptor.AxisFormatType.valueOf(axis.getType().name()));
                 clientAxis.setLog(axis.isLog());
-                clientAxis.setLabel(axis.getLabel());
-                clientAxis.setLabelFont(toCssFont(axis.getLabelFont()));
+                assignOptionalField(axis.getLabel(), clientAxis::setLabel, clientAxis::clearLabel); // clientAxis.setLabel(axis.getLabel());
+                assignOptionalField(toCssFont(axis.getLabelFont()), clientAxis::setLabelFont, clientAxis::clearLabelFont); // clientAxis.setLabelFont(toCssFont(axis.getLabelFont()));
 //                clientAxis.setFormat(axis.getFormat().toString());
-                clientAxis.setFormatPattern(axis.getFormatPattern());
-                clientAxis.setColor(toCssColorString(axis.getColor()));
+                assignOptionalField(axis.getFormatPattern(), clientAxis::setFormatPattern, clientAxis::clearFormatPattern); // clientAxis.setFormatPattern(axis.getFormatPattern());
+                assignOptionalField(toCssColorString(axis.getColor()), clientAxis::setColor, clientAxis::clearColor); // clientAxis.setColor(toCssColorString(axis.getColor()));
                 clientAxis.setMinRange(axis.getMinRange());
                 clientAxis.setMaxRange(axis.getMaxRange());
                 clientAxis.setMinorTicksVisible(axis.isMinorTicksVisible());
                 clientAxis.setMajorTicksVisible(axis.isMajorTicksVisible());
                 clientAxis.setMinorTickCount(axis.getMinorTickCount());
                 clientAxis.setGapBetweenMajorTicks(axis.getGapBetweenMajorTicks());
-                DoubleStream.of(axis.getMajorTickLocations()).forEach(clientAxis::addMajorTickLocations);
+                assignOptionalField(axis.getMajorTickLocations(), arr -> DoubleStream.of(arr).forEach(clientAxis::addMajorTickLocations), clientAxis::clearMajorTickLocations);
 //                clientAxis.setAxisTransform(axis.getAxisTransform().toString());
                 clientAxis.setTickLabelAngle(axis.getTickLabelAngle());
                 clientAxis.setInvert(axis.getInvert());
@@ -218,14 +226,14 @@ public class FigureWidgetTranslator {
 
                     AbstractDataSeries s = (AbstractDataSeries) seriesInternal;
 
-                    clientSeries.setLinesVisible(s.getLinesVisible());
-                    clientSeries.setShapesVisible(s.getPointsVisible());
+                    assignOptionalField(s.getLinesVisible(), clientSeries::setLinesVisible, clientSeries::clearLinesVisible); // clientSeries.setLinesVisible(s.getLinesVisible());
+                    assignOptionalField(s.getPointsVisible(), clientSeries::setShapesVisible, clientSeries::clearShapesVisible); // clientSeries.setShapesVisible(s.getPointsVisible());
                     clientSeries.setGradientVisible(s.getGradientVisible());
-                    clientSeries.setLineColor(toCssColorString(s.getLineColor()));
+                    assignOptionalField(toCssColorString(s.getLineColor()), clientSeries::setLineColor, clientSeries::clearLineColor); // clientSeries.setLineColor(toCssColorString(s.getLineColor()));
 //                            clientSeries.setLineStyle(s.getLineStyle().toString());
-                    clientSeries.setPointLabelFormat(s.getPointLabelFormat());
-                    clientSeries.setXToolTipPattern(s.getXToolTipPattern());
-                    clientSeries.setYToolTipPattern(s.getYToolTipPattern());
+                    assignOptionalField(s.getPointLabelFormat(), clientSeries::setPointLabelFormat, clientSeries::clearPointLabelFormat); // clientSeries.setPointLabelFormat(s.getPointLabelFormat());
+                    assignOptionalField(s.getXToolTipPattern(), clientSeries::setXToolTipPattern, clientSeries::clearXToolTipPattern); // clientSeries.setXToolTipPattern(s.getXToolTipPattern());
+                    assignOptionalField(s.getYToolTipPattern(), clientSeries::setYToolTipPattern, clientSeries::clearYToolTipPattern); // clientSeries.setYToolTipPattern(s.getYToolTipPattern());
 
                     // build the set of axes that the series is watching, and give each a type, starting
                     // with the x and y we have so far mapped to this
@@ -380,13 +388,13 @@ public class FigureWidgetTranslator {
 
         clientChart.setChartType(FigureDescriptor.ChartDescriptor.ChartType.valueOf(chart.getChartType().name()));
         clientChart.setColspan(chart.colSpan());
-        clientChart.setLegendColor(toCssColorString(chart.getLegendColor()));
-        clientChart.setLegendFont(toCssFont(chart.getLegendFont()));
+        assignOptionalField(toCssColorString(chart.getLegendColor()), clientChart::setLegendColor, clientChart::clearLegendColor); // clientChart.setLegendColor(toCssColorString(chart.getLegendColor()));
+        assignOptionalField(toCssFont(chart.getLegendFont()), clientChart::setLegendFont, clientChart::clearLegendFont); // clientChart.setLegendFont(toCssFont(chart.getLegendFont()));
         clientChart.setRowspan(chart.rowSpan());
         clientChart.setShowLegend(chart.isShowLegend());
-        clientChart.setTitle(chart.getTitle());
-        clientChart.setTitleColor(toCssColorString(chart.getTitleColor()));
-        clientChart.setTitleFont(toCssFont(chart.getTitleFont()));
+        assignOptionalField(chart.getTitle(), clientChart::setTitle, clientChart::clearTitle); // clientChart.setTitle(chart.getTitle());
+        assignOptionalField(toCssColorString(chart.getTitleColor()), clientChart::setTitleColor, clientChart::clearTitleColor); // clientChart.setTitleColor(toCssColorString(chart.getTitleColor()));
+        assignOptionalField(toCssFont(chart.getTitleFont()), clientChart::setTitleFont, clientChart::clearTitleFont); // clientChart.setTitleFont(toCssFont(chart.getTitleFont()));
 
         return clientChart.build();
     }
@@ -406,7 +414,7 @@ public class FigureWidgetTranslator {
             final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
             businessPeriod.setOpen(array[0]);
             businessPeriod.setClose(array[1]);
-            return businessPeriod.build();
+            return businessPeriod;
         }).forEach(businessCalendarDescriptor::addBusinessPeriods);
 
         businessCalendar.getHolidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).map(entry -> {
@@ -421,7 +429,7 @@ public class FigureWidgetTranslator {
                 final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                 businessPeriod.setOpen(open);
                 businessPeriod.setClose(close);
-                return businessPeriod.build();
+                return businessPeriod;
             }).forEach(holiday::addBusinessPeriods);
             holiday.setDate(localDate);
             return holiday.build();
