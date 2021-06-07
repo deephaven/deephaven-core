@@ -90,7 +90,7 @@ public class ParquetReaderUtil {
                             toString = (data) -> Arrays.toString((Object[]) convertArray((Binary[]) data, codec));
                             break;
                         case INT96:
-                            throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
+                            throw new UncheckedDeephavenException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
                     }
                     toString = applyRepetitionLevel(rg, column, toString);
                     Function<Object, String> finalToString = toString;
@@ -98,7 +98,7 @@ public class ParquetReaderUtil {
                 } else {
                     Optional<Object> result = logicalTypeAnnotation.accept(new ReadRowGroupVisitor(rg, column));
                     if (result.isPresent() && result.get() instanceof Exception) {
-                        throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath()), (Throwable) result.get());
+                        throw new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath()), (Throwable) result.get());
                     }
                 }
                 System.out.println((System.nanoTime() - start) * 1.0 / 1000000000);
@@ -137,9 +137,9 @@ public class ParquetReaderUtil {
                     if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                         return Optional.of(StringSet.class);
                     }
-                    throw new RuntimeException("Type " + column.getPrimitiveType()
+                    throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
                             + " for column " + Arrays.toString(column.getPath())
-                            + " with unknown special type " + specialType);
+                            + " with unknown or incompatible special type " + specialType);
                 } else {
                     return Optional.of(String.class);
                 }
@@ -177,7 +177,7 @@ public class ParquetReaderUtil {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-                errorString.setValue("timeLogicalType,isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
+                errorString.setValue("TimeLogicalType,isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
                 return Optional.empty();
             }
 
@@ -192,6 +192,7 @@ public class ParquetReaderUtil {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
+                // Ensure this stays in sync with ReadOnlyParquetTableLocation.LogicalTypeVisitor.
                 if (intLogicalType.isSigned()) {
                     switch (intLogicalType.getBitWidth()) {
                         case 64:
@@ -209,12 +210,11 @@ public class ParquetReaderUtil {
                     switch (intLogicalType.getBitWidth()) {
                         // uint16 maps to java's char;
                         // other unsigned types are promoted.
+                        case 8:
                         case 16:
                             return Optional.of(char.class);
                         case 32:
                             return Optional.of(long.class);
-                        case 8:
-                            return Optional.of(short.class);
                         default:
                             // fallthrough.
                     }
@@ -249,7 +249,7 @@ public class ParquetReaderUtil {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
-                errorString.setValue("MapLogicalType");
+                errorString.setValue("MapKeyValueType");
                 return Optional.empty();
             }
         };
@@ -260,12 +260,11 @@ public class ParquetReaderUtil {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
         }
 
-        int c = 0;
         for (ColumnDescriptor column : schema.getColumns()) {
             currentColumn.setValue(column);
             final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
-            final String colName = schema.getFieldName(c++);
-            final boolean isGroupinng = groupingCols.contains(colName);
+            final String colName = column.getPath()[0];
+            final boolean isGrouping = groupingCols.contains(colName);
             final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + colName);
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
             String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_DATA_TYPE_PREFIX_ + colName);
@@ -284,7 +283,7 @@ public class ParquetReaderUtil {
                                         " that can't be found in classloader:" + e, e);
                     }
                 }
-                colDefConsumer.accept(colName, dataType, componentType, isGroupinng, codecName, codecArgs);
+                colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs);
                 continue;
             }
             final boolean isArray = column.getMaxRepetitionLevel() > 0;
@@ -292,37 +291,37 @@ public class ParquetReaderUtil {
                 switch (column.getPrimitiveType().getPrimitiveTypeName()) {
                     case BOOLEAN:
                         if (isArray) {
-                            colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, Boolean.class, null, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, Boolean.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case INT32:
                         if (isArray) {
-                            colDefConsumer.accept(colName, int[].class, int.class, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, int[].class, int.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, int.class, null, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, int.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case INT64:
                         if (isArray) {
-                            colDefConsumer.accept(colName, long[].class, long.class, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, long[].class, long.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, long.class, null, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, long.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case DOUBLE:
                         if (isArray) {
-                            colDefConsumer.accept(colName, double[].class, double.class, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, double[].class, double.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, double.class, null, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, double.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case FLOAT:
                         if (isArray) {
-                            colDefConsumer.accept(colName, float[].class, float.class, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, float[].class, float.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, float.class, null, isGroupinng, codecName, codecArgs);
+                            colDefConsumer.accept(colName, float.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case BINARY:
@@ -333,21 +332,21 @@ public class ParquetReaderUtil {
                                     + " for column " + Arrays.toString(column.getPath());
                         if (specialType != null) {
                             if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                                colDefConsumer.accept(colName, StringSet.class, null, isGroupinng, codecName, codecArgs);
+                                colDefConsumer.accept(colName, StringSet.class, null, isGrouping, codecName, codecArgs);
                             } else {
-                                throw new RuntimeException(exceptionTextSupplier.get()
+                                throw new UncheckedDeephavenException(exceptionTextSupplier.get()
                                         + " with unknown special type " + specialType);
                             }
                         }
-                        throw new RuntimeException(exceptionTextSupplier.get() + " with no special type or encoding metadata.");
+                        throw new UncheckedDeephavenException(exceptionTextSupplier.get() + " with no special type or encoding metadata.");
                     default:
-                        throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
+                        throw new UncheckedDeephavenException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
                 }
             } else {
                 final Optional<Class<?>> optionalClass = logicalTypeAnnotation.accept(visitor);
                 if (!optionalClass.isPresent()) {
                     final String logicalTypeString = errorString.getValue();
-                    throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath())
+                    throw new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath())
                             + ((logicalTypeString != null)
                                 ? (logicalTypeString + " not supported")
                                 : "no mappeable logical type annotation found."));
@@ -356,9 +355,9 @@ public class ParquetReaderUtil {
                     final Class<?> componentType = optionalClass.get();
                     // On Java 12, replace by:  dataType = componentType.arrayType();
                     final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                    colDefConsumer.accept(colName, dataType, componentType, isGroupinng, codecName, codecArgs);
+                    colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs);
                 } else {
-                    colDefConsumer.accept(colName, optionalClass.get(), null, isGroupinng, codecName, codecArgs);
+                    colDefConsumer.accept(colName, optionalClass.get(), null, isGrouping, codecName, codecArgs);
                 }
             }
         }
@@ -420,13 +419,13 @@ public class ParquetReaderUtil {
                         readers.add(getRowGroupColumnPageReaders(rg, column.getPath()[0], null, random));
                         break;
                     case INT96:
-                        throw new RuntimeException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
+                        throw new UncheckedDeephavenException("Unsupported type " + column.getPrimitiveType() + " for column " + Arrays.toString(column.getPath()));
 
                 }
             } else {
                 Optional<Object> result = logicalTypeAnnotation.accept(new MaterializedVisitor(rg, column, readers, random));
                 if (result.isPresent() && result.get() instanceof Exception) {
-                    throw new RuntimeException("Unable to read column " + Arrays.toString(column.getPath()), (Throwable) result.get());
+                    throw new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath()), (Throwable) result.get());
                 }
             }
             System.out.println((System.nanoTime() - start) * 1.0 / 1000000000);
@@ -500,7 +499,7 @@ public class ParquetReaderUtil {
                // skip = !skip;
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new UncheckedDeephavenException(e);
         }
     }
 
@@ -512,7 +511,7 @@ public class ParquetReaderUtil {
                 result.add(it.next());
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new UncheckedDeephavenException(e);
         }
         System.out.println(result.size() + " pages");
         return new PageReaderMaterializer(random, nullValue, result.toArray(new ColumnPageReader[0]));
@@ -547,7 +546,7 @@ public class ParquetReaderUtil {
                         try {
                             materializers[random.nextInt(materializers.length)].readNext();
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            throw new UncheckedDeephavenException(e);
                         }
                     }
                     System.out.println(finalJ + ":" + (System.nanoTime() - start) * 0.001 / 1000);
@@ -580,32 +579,32 @@ public class ParquetReaderUtil {
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.MapLogicalTypeAnnotation mapLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + mapLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + mapLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.ListLogicalTypeAnnotation listLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + listLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + listLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + enumLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + enumLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + decimalLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + decimalLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + dateLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + dateLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + timeLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + timeLogicalType));
         }
 
         @Override
@@ -653,13 +652,13 @@ public class ParquetReaderUtil {
                             nullValue = Long.MIN_VALUE + 1;
                             break;
                         default:
-                            return Optional.of(new RuntimeException("Unsupported logical type " + intLogicalType));
+                            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intLogicalType));
                     }
                 } else if (intLogicalType.getBitWidth() == 16) {
                     nullValue = Short.MIN_VALUE + 1;
                     toString = (data) -> Arrays.toString((int[]) data);
                 } else {
-                    return Optional.of(new RuntimeException("Unsupported logical type " + intLogicalType));
+                    return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intLogicalType));
                 }
                 toString = applyRepetitionLevel(rg, column, toString);
                 Function<Object, String> finalToString = toString;
@@ -673,22 +672,22 @@ public class ParquetReaderUtil {
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.JsonLogicalTypeAnnotation jsonLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + jsonLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + jsonLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.BsonLogicalTypeAnnotation bsonLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + bsonLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + bsonLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.IntervalLogicalTypeAnnotation intervalLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + intervalLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intervalLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + mapKeyValueLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + mapKeyValueLogicalType));
         }
     }
 
@@ -713,32 +712,32 @@ public class ParquetReaderUtil {
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.MapLogicalTypeAnnotation mapLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + mapLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + mapLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.ListLogicalTypeAnnotation listLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + listLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + listLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + enumLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + enumLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + decimalLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + decimalLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + dateLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + dateLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + timeLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + timeLogicalType));
         }
 
         @Override
@@ -768,12 +767,12 @@ public class ParquetReaderUtil {
                         readers.add(getRowGroupColumnPageReaders(rg, column.getPath()[0], Byte.MIN_VALUE - 1, random));
                         break;
                     default:
-                        return Optional.of(new RuntimeException("Unsupported logical type " + intLogicalType));
+                        return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intLogicalType));
                 }
             } else if (intLogicalType.getBitWidth() == 16) {
                 readers.add(getRowGroupColumnPageReaders(rg, column.getPath()[0], Character.MIN_VALUE - 1, random));
             } else {
-                return Optional.of(new RuntimeException("Unsupported logical type " + intLogicalType));
+                return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intLogicalType));
             }
 
             return Optional.empty();
@@ -781,22 +780,22 @@ public class ParquetReaderUtil {
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.JsonLogicalTypeAnnotation jsonLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + jsonLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + jsonLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.BsonLogicalTypeAnnotation bsonLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + bsonLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + bsonLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.IntervalLogicalTypeAnnotation intervalLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + intervalLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + intervalLogicalType));
         }
 
         @Override
         public Optional<Object> visit(LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
-            return Optional.of(new RuntimeException("Unsupported logical type " + mapKeyValueLogicalType));
+            return Optional.of(new UncheckedDeephavenException("Unsupported logical type " + mapKeyValueLogicalType));
         }
     }
 
