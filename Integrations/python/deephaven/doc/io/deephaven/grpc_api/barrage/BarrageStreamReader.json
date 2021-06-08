@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageStreamReader",
+ "methods": {
+  "makeTag": ":param fieldNumber: int\n:param wireType: int\n:return: int",
+  "safelyParseFrom": "Converts an InputStream to a BarrageMessage in the context of the provided parameters.\n\n:param options: io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options\n:param columnChunkTypes: io.deephaven.db.v2.sources.chunk.ChunkType[]\n:param columnTypes: java.lang.Class<?>[]\n:param stream: java.io.InputStream\n:return: io.deephaven.db.backplane.barrage.BarrageMessage"
+ },
+ "path": "io.deephaven.grpc_api.barrage.BarrageStreamReader",
+ "typeName": "class"
+}

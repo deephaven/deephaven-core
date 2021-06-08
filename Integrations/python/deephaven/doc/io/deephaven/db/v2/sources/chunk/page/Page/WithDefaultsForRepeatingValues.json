@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.page.Page$WithDefaultsForRepeatingValues",
+ "methods": {
+  "fillChunk": "Populates the given destination chunk with data corresponding to the keys from the given OrderedKeys.\n\nNote: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super Page.WithDefaultsForRepeatingValues.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "fillChunkAppend": "**Incompatible overloads text - text from the first overload:**\n\nAppends the values repeating value length times to destination.\n\n*Overload 1*  \n  Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super Page.WithDefaultsForRepeatingValues.ATTR>\n  :param orderedKeysIterator: io.deephaven.db.v2.utils.OrderedKeys.Iterator\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super Page.WithDefaultsForRepeatingValues.ATTR>\n  :param length: int",
+  "lastRow": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param row: long\n:return: (long) the last row of this page, located in the same way as row.",
+  "length": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: (long) the length of this page."
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.page.Page.WithDefaultsForRepeatingValues",
+ "text": "This has helper defaults for columns that just represent a repeating value (such as null or partition columns).",
+ "typeName": "interface"
+}

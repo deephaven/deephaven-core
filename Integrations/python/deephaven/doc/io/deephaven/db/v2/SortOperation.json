@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.SortOperation",
+ "methods": {
+  "getDescription": ":return: (java.lang.String) the description of this operation",
+  "getLogPrefix": ":return: (java.lang.String) the log prefix of this operation",
+  "getMemoizedOperationKey": ":return: (io.deephaven.db.v2.MemoizedOperationKey) the key that should be used to memoize off of",
+  "initialize": "Initialize this operation.\n\n:param usePrev: boolean\n:param beforeClock: long\n:return: (io.deephaven.db.v2.QueryTable.Operation.Result) the result table / listener if successful, null if it should be retried.",
+  "newSwapListener": ":param queryTable: io.deephaven.db.v2.QueryTable\n:return: io.deephaven.db.v2.ShiftAwareSwapListener"
+ },
+ "path": "io.deephaven.db.v2.SortOperation",
+ "typeName": "class"
+}

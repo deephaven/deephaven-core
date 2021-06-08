@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.db.v2.utils.LongColumnSourceRedirectionIndex",
+ "methods": {
+  "fillChunk": "Lookup each element in OrderedKeys and write the result to mappedKeysOut\n\n:param fillContext: io.deephaven.db.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.db.v2.sources.chunk.WritableLongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>\n:param keysToMap: io.deephaven.db.v2.utils.OrderedKeys",
+  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext\n:param src: io.deephaven.db.v2.sources.chunk.Chunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "fillPrevChunk": ":param fillContext: io.deephaven.db.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.db.v2.sources.chunk.WritableLongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>\n:param keysToMap: io.deephaven.db.v2.utils.OrderedKeys",
+  "get": ":param key: long\n:return: long",
+  "getPrev": ":param key: long\n:return: long",
+  "makeFillContext": ":param chunkSize: int\n:param sharedContext: io.deephaven.db.v2.sources.chunk.SharedContext\n:return: io.deephaven.db.v2.utils.RedirectionIndex.FillContext",
+  "makeFillFromContext": "Provide a default, empty WritableChunkSink.FillFromContext for use with our default WritableSource.fillFromChunk(io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext, io.deephaven.db.v2.sources.chunk.Chunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>, io.deephaven.db.v2.utils.OrderedKeys).\n\n:param chunkCapacity: int\n:return: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext",
+  "put": ":param key: long\n:param index: long\n:return: long",
+  "putVoid": "Like put, but we do not care about a return value.\n\n:param key: long\n:param index: long",
+  "remove": ":param key: long\n:return: long",
+  "removeAll": ":param keys: io.deephaven.db.v2.utils.OrderedKeys",
+  "removeVoid": "Like remove, but we do not care about a return value.\n\n:param key: long"
+ },
+ "path": "io.deephaven.db.v2.utils.LongColumnSourceRedirectionIndex",
+ "typeName": "class"
+}

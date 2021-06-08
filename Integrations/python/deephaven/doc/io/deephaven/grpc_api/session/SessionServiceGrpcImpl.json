@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.grpc_api.session.SessionServiceGrpcImpl",
+ "methods": {
+  "closeSession": ":param request: io.deephaven.proto.backplane.grpc.HandshakeRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ReleaseResponse>",
+  "exportNotifications": ":param request: io.deephaven.proto.backplane.grpc.ExportNotificationRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportNotification>",
+  "newSession": ":param request: io.deephaven.proto.backplane.grpc.HandshakeRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.HandshakeResponse>",
+  "refreshSessionToken": ":param request: io.deephaven.proto.backplane.grpc.HandshakeRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.HandshakeResponse>",
+  "release": ":param request: io.deephaven.proto.backplane.grpc.Ticket\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ReleaseResponse>"
+ },
+ "path": "io.deephaven.grpc_api.session.SessionServiceGrpcImpl",
+ "typeName": "class"
+}

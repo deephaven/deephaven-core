@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.console.ConsoleModule",
+ "methods": {
+  "bindConsoleServiceImpl": ":param consoleService: io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl\n:return: io.grpc.BindableService"
+ },
+ "path": "io.deephaven.grpc_api.console.ConsoleModule",
+ "typeName": "interface"
+}

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$IndexShiftDataGenerator",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.IndexShiftDataGenerator",
+ "typeName": "class"
+}
