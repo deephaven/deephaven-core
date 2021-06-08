@@ -9,8 +9,7 @@
 package io.deephaven.db.plot;
 
 
-/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.
-*/
+/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue"})
 public interface Figure extends java.io.Serializable, io.deephaven.db.plot.BaseFigure, io.deephaven.db.plot.Chart, io.deephaven.db.plot.Axes, io.deephaven.db.plot.Axis, io.deephaven.db.plot.datasets.DataSeries, io.deephaven.db.plot.datasets.category.CategoryDataSeries, io.deephaven.db.plot.datasets.interval.IntervalXYDataSeries, io.deephaven.db.plot.datasets.ohlc.OHLCDataSeries, io.deephaven.db.plot.datasets.xy.XYDataSeries, io.deephaven.db.plot.datasets.multiseries.MultiSeries, io.deephaven.db.plot.datasets.xy.XYDataSeriesFunction, io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeries, io.deephaven.db.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries {
 
