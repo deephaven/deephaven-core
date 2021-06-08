@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.grpc_api.session.SessionState$ExportObject",
+ "methods": {
+  "cancel": "Releases this export; it will cancel the work and dependent exports proactively when possible.",
+  "dropReference": "Drop a previously-retained reference to this referent.",
+  "get": "WARNING! This method call is only valid inside of the exportMain callable / runnable.\n\n:return: (SessionState.ExportObject.T) the result of the computed export",
+  "getExportId": ":return: (long) the export id or NON_EXPORT_ID if it does not have one",
+  "getState": ":return: (io.deephaven.grpc_api.session.SessionState.ExportState) the current state of this export",
+  "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
+  "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.\n\nNote: Java generics information - io.deephaven.util.annotations.@VisibleForTesting",
+  "release": "Releases this export; it will wait for the work to complete before releasing.",
+  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: io.deephaven.db.util.liveness.LivenessReferent\n:return: (boolean) Whether the referent was in fact added",
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+ },
+ "path": "io.deephaven.grpc_api.session.SessionState.ExportObject",
+ "text": "This class represents one unit of content exported in the session.\n\n Note: we reuse ExportObject for non-exporting tasks that have export dependencies.",
+ "typeName": "class"
+}

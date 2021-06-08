@@ -29,7 +29,6 @@ import static io.deephaven.db.tables.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTR
  * the matches.</p>
  *
  * <p>This class should be used by calling {@link #promoteOrphans(Table, String, String)} method.</p>
- * @IncludeAll
  */
 public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     private final String idColumn;

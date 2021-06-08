@@ -13,8 +13,6 @@ import java.util.Map;
 /**
  * Data structure to represent a subset of columns, used for propagating modifications via
  * {@link ShiftAwareListener.Update} instances.
- *
- * @IncludeAll
  */
 public class ModifiedColumnSet {
 
@@ -221,8 +219,6 @@ public class ModifiedColumnSet {
 
     /**
      * A helper utility that simplifies propagating modified columns to a child table.
-     *
-     * @IncludeAll
      */
     public interface Transformer {
         /**

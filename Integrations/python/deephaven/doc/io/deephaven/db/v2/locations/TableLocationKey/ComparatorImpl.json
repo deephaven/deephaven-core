@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.locations.TableLocationKey$ComparatorImpl",
+ "methods": {
+  "compare": ":param tableLocationKey1: io.deephaven.db.v2.locations.TableLocationKey\n:param tableLocationKey2: io.deephaven.db.v2.locations.TableLocationKey\n:return: int"
+ },
+ "path": "io.deephaven.db.v2.locations.TableLocationKey.ComparatorImpl",
+ "typeName": "class"
+}

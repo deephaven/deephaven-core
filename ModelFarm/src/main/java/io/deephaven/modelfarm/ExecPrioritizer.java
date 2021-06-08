@@ -9,7 +9,6 @@ package io.deephaven.modelfarm;
  *
  * @param <KEYTYPE> unique ID key type
  * @param <DATATYPE> data type
- * @IncludeAll
  */
 public interface ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>> {
 

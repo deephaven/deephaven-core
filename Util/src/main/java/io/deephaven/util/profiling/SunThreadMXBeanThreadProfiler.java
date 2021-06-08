@@ -9,8 +9,6 @@ import java.lang.management.ThreadMXBean;
 /**
  * A {@link ThreadMXBean}-based {@link ThreadProfiler} implementation for use on Oracle and OpenJDK JVMs, adding support
  * for memory measurements.
- *
- * @IncludeAll
  */
 public final class SunThreadMXBeanThreadProfiler extends ThreadMXBeanThreadProfiler<com.sun.management.ThreadMXBean> {
 

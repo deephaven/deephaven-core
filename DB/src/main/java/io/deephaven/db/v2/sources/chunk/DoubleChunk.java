@@ -18,8 +18,6 @@ import java.nio.DoubleBuffer;
 
 /**
  * {@link Chunk} implementation for double data.
- *
- * @IncludeAll
  */
 public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

@@ -52,8 +52,6 @@ import java.util.stream.Collectors;
  * monotonically increasing for each key. Your underlying tables must make use of transactions such that all rows for
  * a given ID appear in a input table at once.  Please consult your Deephaven representative before deploying a query
  * that includes this filter to ensure that the assumptions are not violated.
- *
- * @IncludeAll
  */
 public class SyncTableFilter {
 
@@ -611,8 +609,6 @@ public class SyncTableFilter {
      * call is a TableMap with a String key that corresponds to the name of the input table.  When TableMaps are added,
      * the result is a TableMap with composite keys (SmartKeys) that are prefixed with the keys from the input TableMap,
      * with a last element that is the name of the source passed to the builder.</p>
-     *
-     * @IncludeAll
      */
     public static class Builder {
         private String defaultId;

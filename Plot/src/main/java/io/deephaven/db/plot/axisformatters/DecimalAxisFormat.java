@@ -12,8 +12,6 @@ import java.text.NumberFormat;
  *
  * For details on the supported patterns see the javadoc for
  * <a href="https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html">DecimalFormat</a>
- *
- * @IncludeAll
  */
 public class DecimalAxisFormat implements AxisFormat {
     private String pattern;

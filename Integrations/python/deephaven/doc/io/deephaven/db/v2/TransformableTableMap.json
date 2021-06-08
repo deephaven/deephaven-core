@@ -7,6 +7,6 @@
   "merge": "Merges all of the component tables into a single Table.\n\n:return: (io.deephaven.db.tables.Table) all of our component tables merged into a single Table."
  },
  "path": "io.deephaven.db.v2.TransformableTableMap",
- "text": "This object can be merged to produce a single coalesced Table.\n \n This is used by TableMap and TableMapProxyHandlers to expose the TransformableTableMap.merge() operation to users.",
+ "text": "This object can be merged to produce a single coalesced Table.\n \n This is used by TableMap and TableMapProxyHandlers to expose the merge() operation to users.",
  "typeName": "interface"
 }

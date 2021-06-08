@@ -11,7 +11,6 @@ import java.util.Map;
 
 /**
  * A color.
- * @IncludeAll
  * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 @SuppressWarnings("WeakerAccess")

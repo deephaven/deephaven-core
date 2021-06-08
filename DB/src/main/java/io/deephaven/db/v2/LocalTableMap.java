@@ -43,8 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A TableMap implementation backed by a Map.
- *
- * @IncludeAll
  */
 public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dependency, SystemicObject {
 

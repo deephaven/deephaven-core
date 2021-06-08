@@ -11,8 +11,6 @@ import java.io.Serializable;
 
 /**
  * Static chart title
- *
- * @IncludeAll
  */
 public class ChartTitle implements Serializable {
 

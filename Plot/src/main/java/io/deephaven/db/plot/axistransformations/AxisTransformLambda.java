@@ -17,7 +17,6 @@ import java.util.function.DoubleUnaryOperator;
  * For example, if the transform from dataset space to axis space
  * was defined as x^0.5, the dataset values 1, 4, and 9 would
  * be plotted as 1, 2, and 3,] creating a square root axis scale.
- * @IncludeAll
  */
 public class AxisTransformLambda implements AxisTransform, Serializable {
 

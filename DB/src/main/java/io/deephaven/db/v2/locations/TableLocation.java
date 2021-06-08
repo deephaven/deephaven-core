@@ -56,8 +56,6 @@ import org.jetbrains.annotations.NotNull;
  *<br> Future work may allow more fields from TableLocationKey or TableLocationState to be accessed as columns.
  *<br>
  *<br> =====================================================================================================================
- *
- * @IncludeAll
  */
 public interface TableLocation<CLT extends ColumnLocation> extends TableLocationKey, TableLocationState {
 

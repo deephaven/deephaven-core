@@ -8,8 +8,6 @@ import java.io.Serializable;
 
 /**
  * Base class for computing moving averages.
- *
- * @IncludeAll
  */
 abstract public class AbstractMa implements Serializable {
     private static final long serialVersionUID = -4154939937570732234L;

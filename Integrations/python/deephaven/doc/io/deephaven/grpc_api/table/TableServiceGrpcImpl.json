@@ -1,0 +1,32 @@
+{
+ "className": "io.deephaven.grpc_api.table.TableServiceGrpcImpl",
+ "methods": {
+  "batch": ":param request: io.deephaven.proto.backplane.grpc.BatchTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "buildTableCreationResponse": ":param tableRef: io.deephaven.proto.backplane.grpc.TableReference\n:param table: io.deephaven.db.tables.Table\n:return: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse",
+  "comboAggregate": ":param request: io.deephaven.proto.backplane.grpc.ComboAggregateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "dropColumns": ":param request: io.deephaven.proto.backplane.grpc.DropColumnsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "emptyTable": ":param request: io.deephaven.proto.backplane.grpc.EmptyTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "exportedTableUpdates": ":param request: io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage>",
+  "filter": ":param request: io.deephaven.proto.backplane.grpc.FilterTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "flatten": ":param request: io.deephaven.proto.backplane.grpc.FlattenRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "head": ":param request: io.deephaven.proto.backplane.grpc.HeadOrTailRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "headBy": ":param request: io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "joinTables": ":param request: io.deephaven.proto.backplane.grpc.JoinTablesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "lazyUpdate": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "mergeTables": ":param request: io.deephaven.proto.backplane.grpc.MergeTablesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "select": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "selectDistinct": ":param request: io.deephaven.proto.backplane.grpc.SelectDistinctRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "snapshot": ":param request: io.deephaven.proto.backplane.grpc.SnapshotTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "sort": ":param request: io.deephaven.proto.backplane.grpc.SortTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "tail": ":param request: io.deephaven.proto.backplane.grpc.HeadOrTailRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "tailBy": ":param request: io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "timeTable": ":param request: io.deephaven.proto.backplane.grpc.TimeTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "ungroup": ":param request: io.deephaven.proto.backplane.grpc.UngroupRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "unstructuredFilter": ":param request: io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "update": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "updateView": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "view": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>"
+ },
+ "path": "io.deephaven.grpc_api.table.TableServiceGrpcImpl",
+ "typeName": "class"
+}

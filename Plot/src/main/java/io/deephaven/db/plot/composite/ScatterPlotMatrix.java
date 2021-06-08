@@ -25,7 +25,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Creates a scatter plot matrix by graphing each variable against every other variable.
- * @IncludeAll
  */
 public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause {
 
@@ -39,9 +38,6 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
         this.numCols = numCols;
     }
 
-    /**
-     * @Exclude
-     */
     @Override
     public PlotInfo getPlotInfo() {
         return figure.getFigure().getPlotInfo();

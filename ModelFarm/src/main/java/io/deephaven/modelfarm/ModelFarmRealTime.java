@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @param <KEYTYPE>  unique ID key type
  * @param <DATATYPE> data type
- * @IncludeAll
  */
 public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>> extends RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> {
 

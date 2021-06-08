@@ -27,8 +27,6 @@ import java.nio.IntBuffer;
 
 /**
  * {@link WritableChunk} implementation for int data.
- *
- * @IncludeAll
  */
 public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implements WritableChunk<ATTR> {
 

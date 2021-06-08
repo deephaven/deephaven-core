@@ -29,8 +29,6 @@ import java.util.function.LongUnaryOperator;
  * The input must be sorted by Timestamp, or the resulting table is undefined.  Null timestamps are not permitted.
  *
  * For consistency, the last value of each partition is used to determine the threshold for that partition.
- *
- * @IncludeAll
  */
 public class TailInitializationFilter {
     /**

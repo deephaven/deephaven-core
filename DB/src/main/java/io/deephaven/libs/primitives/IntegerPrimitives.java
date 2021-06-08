@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * A set of commonly used functions that can be applied to Integer types.
- *
- * @IncludeAll
  */
 public class IntegerPrimitives {
     /**

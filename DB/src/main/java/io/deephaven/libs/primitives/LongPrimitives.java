@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A set of commonly used functions that can be applied to Long types.
- *
- * @IncludeAll
  */
 public class LongPrimitives {
     /**

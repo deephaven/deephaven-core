@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ToShortFunction",
+ "methods": {
+  "applyAsShort": ":param value: BoundedIntrusiveMappingCache.ToShortFunction.T\n:return: short"
+ },
+ "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToShortFunction",
+ "typeName": "interface"
+}

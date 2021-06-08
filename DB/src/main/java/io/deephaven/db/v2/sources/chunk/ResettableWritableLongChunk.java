@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableWritableChunk} implementation for long data.
- *
- * @IncludeAll
  */
 public final class ResettableWritableLongChunk<ATTR_BASE extends Any> extends WritableLongChunk implements ResettableWritableChunk<ATTR_BASE> {
 

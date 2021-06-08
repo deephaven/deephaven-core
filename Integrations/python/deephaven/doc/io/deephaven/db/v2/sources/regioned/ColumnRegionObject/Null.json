@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject$Null",
+ "methods": {
+  "getNativeType": ":return: (java.lang.Class<ColumnRegionObject.Null.T>) null",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: long\n:return: (ColumnRegionObject.Null.T) The object value at the specified element (object) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject.Null",
+ "typeName": "class"
+}

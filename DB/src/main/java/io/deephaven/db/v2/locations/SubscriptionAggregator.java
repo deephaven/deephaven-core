@@ -8,8 +8,6 @@ import org.jetbrains.annotations.Nullable;
  * Implement optional subscription support suitable for multiple TableDataService components.
  *
  * @param <LISTENER_TYPE> A bound on the type of listener supported by this aggregator's subscriptions
- *
- * @IncludeAll
  */
 public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDataListener> {
 

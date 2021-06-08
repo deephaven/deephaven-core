@@ -6,8 +6,6 @@ package io.deephaven.modelfarm;
 
 /**
  * A data driven model.
- *
- * @IncludeAll
  */
 public interface Model<T> {
 

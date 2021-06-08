@@ -15,8 +15,6 @@ import java.nio.CharBuffer;
 
 /**
  * {@link Chunk} implementation for char data.
- *
- * @IncludeAll
  */
 public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

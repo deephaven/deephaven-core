@@ -6,8 +6,6 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * A generalized Black-Scholes model for European options.
- *
- * @IncludeAll
  */
 public class BlackScholes {
     private BlackScholes() {

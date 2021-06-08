@@ -278,8 +278,6 @@ public class GroovyStaticImportGenerator {
         code += " * Functions statically imported into Groovy.\n";
         code += " *\n";
         code += " * @see io.deephaven.libs.primitives\n";
-        code += " *\n";
-        code += " * @IncludeAll\n";
         code += " */\n";
         code += "public class GroovyStaticImports {\n";
 

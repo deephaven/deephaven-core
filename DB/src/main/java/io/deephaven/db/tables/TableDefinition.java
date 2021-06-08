@@ -35,8 +35,6 @@ import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
 /**
  * Table definition for all Deephaven tables.
  * Adds non-stateful functionality to DefaultTableDefinition.
- *
- * @IncludeAll
  */
 public class TableDefinition extends DefaultTableDefinition {
 

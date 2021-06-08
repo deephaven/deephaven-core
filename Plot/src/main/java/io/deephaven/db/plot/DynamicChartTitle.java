@@ -20,8 +20,6 @@ import java.util.*;
  * In order to customize this format, (a {@link java.text.MessageFormat} instance), please refer <br/>
  * {@link io.deephaven.db.plot.Chart#chartTitle(String, Table, String...)} and<br/>
  * {@link io.deephaven.db.plot.Chart#chartTitle(String, SelectableDataSet, String...)}
- *
- * @IncludeAll
  */
 public abstract class DynamicChartTitle extends ChartTitle {
     /**

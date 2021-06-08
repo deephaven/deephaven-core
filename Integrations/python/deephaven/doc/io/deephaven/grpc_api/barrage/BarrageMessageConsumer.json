@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageMessageConsumer",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.barrage.BarrageMessageConsumer",
+ "typeName": "class"
+}

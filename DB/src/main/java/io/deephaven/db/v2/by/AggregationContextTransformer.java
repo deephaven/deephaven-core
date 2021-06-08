@@ -8,8 +8,6 @@ import java.util.function.ToIntFunction;
 
 /**
  * Transformer to adjust aggregation results for operation building.
- *
- * @IncludeAll
  */
 public interface AggregationContextTransformer {
 

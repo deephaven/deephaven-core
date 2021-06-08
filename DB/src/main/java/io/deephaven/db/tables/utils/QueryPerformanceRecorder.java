@@ -30,7 +30,6 @@ import static io.deephaven.db.tables.lang.DBLanguageFunctionUtil.plus;
  * <p>
  * Thread-safety note: This used to be thread-safe only by virtue of using a thread-local instance.
  *                     Now it's aggressively synchronized so we can abort it from outside the "owner" thread.
- * @IncludeAll
  */
 public class QueryPerformanceRecorder implements Serializable {
 

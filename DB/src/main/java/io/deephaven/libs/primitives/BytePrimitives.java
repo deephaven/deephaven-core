@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 /**
  * A set of commonly used functions that can be applied to Byte types.
- *
- * @IncludeAll
  */
 public class BytePrimitives {
     /**

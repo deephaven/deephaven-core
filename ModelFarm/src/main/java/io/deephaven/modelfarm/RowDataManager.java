@@ -11,8 +11,6 @@ import io.deephaven.db.v2.DynamicTable;
  *
  * @param <KEYTYPE> unique ID key type
  * @param <DATATYPE> data type
- *
- * @IncludeAll
  */
 public interface RowDataManager<KEYTYPE, DATATYPE> {
 

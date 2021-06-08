@@ -6,8 +6,6 @@ package io.deephaven.db.tables.utils;
 
 /**
  * Marker interface for dynamic GUI widgets.
- *
- * @IncludeAll
  */
 public interface LiveWidget {
 }

@@ -6,8 +6,6 @@ import io.deephaven.util.type.TypeUtils;
 
 /**
  * Convert an arbitrary chunk to a chunk of boxed objects.
- *
- * @IncludeAll
  */
 public class ChunkBoxer {
     /**

@@ -22,8 +22,6 @@ import java.util.Map;
  *
  * <p>Note for implementors: All {@link ColumnSource} implementations must map {@link Index#NULL_KEY} to a null value
  * for all {@code get} and {@code getPrev} methods.
- *
- * @IncludeAll
  */
 public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
 

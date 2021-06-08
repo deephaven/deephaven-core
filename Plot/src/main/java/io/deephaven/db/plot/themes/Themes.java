@@ -37,7 +37,6 @@ import java.util.function.Consumer;
  *
  * The constructed {@link Theme}s are held in a {@link Map}
  * with {@link Theme} names as keys.
- * @IncludeAll
  */
 public class Themes implements Map<String, Theme> {
     private static final Logger log = LoggerFactory.getLogger(Themes.class);

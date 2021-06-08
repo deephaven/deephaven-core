@@ -8,8 +8,6 @@ import io.deephaven.util.SafeCloseable;
  * A wrapper for a char chunk that allows you to resize the chunk to a capacity.
  *
  * @param <T> the chunk's attribute
- *
- * @IncludeAll
  */
 public final class SizedCharChunk<T extends Attributes.Any> implements SafeCloseable {
     private WritableCharChunk<T> chunk;

@@ -4,8 +4,6 @@ package io.deephaven.db.util.liveness;
  * Interface for {@link LivenessManager} instances that support a {@link #release} method to initiate retained referent
  * release callback invocation. It is the creator's responsibility to ensure that {@link #release()} is invoked before
  * this manager becomes unreachable.
- *
- * @IncludeAll
  */
 public interface ReleasableLivenessManager extends LivenessManager {
 

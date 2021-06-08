@@ -8,8 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A DB aware EMA which can compute "by" emas without grouping and then ungrouping.
- *
- * @IncludeAll
  */
 public class ByEmaSimple extends ByEma {
     private static final long serialVersionUID = -2162403525928154570L;

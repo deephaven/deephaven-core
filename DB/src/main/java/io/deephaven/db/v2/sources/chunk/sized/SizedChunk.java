@@ -9,8 +9,6 @@ import io.deephaven.util.SafeCloseable;
  * A dynamically typed chunk that can be resized.
  *
  * @param <T> the attribute of the chunk
- *
- * @IncludeAll
  */
 public class SizedChunk<T extends Attributes.Any> implements SafeCloseable {
     private final ChunkType chunkType;

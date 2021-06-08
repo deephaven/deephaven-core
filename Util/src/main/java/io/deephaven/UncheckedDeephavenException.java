@@ -2,8 +2,6 @@ package io.deephaven;
 
 /**
  * The root of all Unchecked Deephaven exceptions
- *
- * @IncludeAll
  */
 public class UncheckedDeephavenException extends RuntimeException {
     public UncheckedDeephavenException(String reason) {

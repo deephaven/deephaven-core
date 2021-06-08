@@ -12,8 +12,6 @@ import static io.deephaven.db.v2.sources.chunk.Attributes.*;
 
 /**
  * The SortKernel sorts a chunk of primitive value together with a parallel IntChunk of KeyIndices.
- *
- * @IncludeAll
  */
 public interface IntSortKernel<ATTR extends Any, KEY_INDICES extends Keys> extends Context {
     /**

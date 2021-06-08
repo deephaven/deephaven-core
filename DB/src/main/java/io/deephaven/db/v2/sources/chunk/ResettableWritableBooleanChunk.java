@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableWritableChunk} implementation for boolean data.
- *
- * @IncludeAll
  */
 public final class ResettableWritableBooleanChunk<ATTR_BASE extends Any> extends WritableBooleanChunk implements ResettableWritableChunk<ATTR_BASE> {
 

@@ -26,8 +26,6 @@ import java.io.IOException;
  * It provides an optional retention cache, to prevent listeners from being garbage collected.
  *
  * For creating internally ticking table nodes, instead use {@link BaseTable.ListenerImpl}
- *
- * @IncludeAll
  */
 public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
 

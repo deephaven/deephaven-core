@@ -14,8 +14,6 @@ import java.util.Collection;
 /**
  * SortedBy operations sort the values in each of the buckets according to a specified column.  The sortedFirstBy
  * returns the row with the lowest value and sortedLastBy returns the row with the greatest value.
- *
- * @IncludeAll
  */
 @ScriptApi
 public class SortedBy {

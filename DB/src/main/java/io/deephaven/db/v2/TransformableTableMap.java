@@ -8,8 +8,6 @@ import java.util.function.BiFunction;
  * This object can be merged to produce a single coalesced Table.
  * <p>
  * This is used by TableMap and TableMapProxyHandlers to expose the {@link TransformableTableMap#merge} operation to users.
- *
- * @IncludeAll
  */
 public interface TransformableTableMap {
 
@@ -77,8 +75,6 @@ public interface TransformableTableMap {
      * <p>
      * By default strict keys and join sanity check are enabled; but coalescing is not.  This gives you the safest
      * possible asTable call.
-     *
-     * @IncludeAll 
      */
     class AsTableBuilder {
         private final TransformableTableMap transformableTableMap;

@@ -40,8 +40,6 @@ import static io.deephaven.db.tables.lang.DBLanguageFunctionUtil.plus;
  * Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to
  *       getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live
  *       jobs synchronizer.
- *
- * @IncludeAll
  */
 public class UpdatePerformanceTracker {
 
@@ -274,8 +272,6 @@ public class UpdatePerformanceTracker {
 
     /**
      * Entry class for tracking the performance characteristics of a single recurring update event.
-     *
-     * @IncludeAll
      */
     public static class Entry implements LogOutputAppendable {
         private final int id;

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.page.Page",
+ "methods": {
+  "firstRow": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param row: (long) - Any row contained on this page.\n:return: (long) the first row of this page, located in the same way as row.",
+  "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n page.",
+  "getRowOffset": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param row: long\n:return: (long) the offset for the given row in this page, between [0, length()).",
+  "lastRow": ":param row: (long) - Any row contained on this page.\n:return: (long) the last row of this page, located in the same way as row.",
+  "length": ":return: (long) the length of this page."
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.page.Page",
+ "text": "This provides the ChunkSource interface to a contiguous block of data from\n the range [firstRowOffset(),firstRowOffset() + length()).\n\n Non overlapping pages can be collected together in a PageStore, which provides the ChunkSource\n interface to the collection of all of its Pages.\n\n There are two distinct use cases/types of pages.  The first use case are Pages which always have a\n length() > 0.  These store length() values, which can be assessed via the ChunkSource methods.\n Valid OrderedKeys passed to those methods will have their offset in the range\n [firstRowOffset(), firstRowOffset() + length()).  Passing OrderKeys with offsets outside of this range will have\n undefined results.\n\n The second use case will always have length() == 0 and firstRowOffset() == 0.  These represent \"Null\" regions\n which return a fixed value, typically a null value, for every OrderedKeys passed into the\n ChunkSource methods.   In order to have this use case, override length and override lastRow\n as maxRow.\n\n Though the ChunkSource methods ignore the non-offset portion of the rows in the OrderedKeys,\n then can assume they are identical for all the passed in elements of the OrderedKeys.  For instance,\n they can use the simple difference between the complete row value to determine a length.",
+ "typeName": "interface"
+}

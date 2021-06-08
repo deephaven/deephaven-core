@@ -25,7 +25,6 @@ import java.util.function.Predicate;
  * The inverse transform takes it back to standard epoch time.
  *
  * Data values outside of business hours are not visible.
- * @IncludeAll
  */
 public class AxisTransformBusinessCalendar implements AxisTransform, Serializable {
 

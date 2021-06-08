@@ -10,8 +10,6 @@ import java.nio.Buffer;
  * Data structure for a contiguous region of data that may be mutated.
  *
  * @param <ATTR> {@link Attributes} that apply to this chunk
- *
- * @IncludeAll
  */
 public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableChunk {
     @Override

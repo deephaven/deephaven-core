@@ -27,8 +27,6 @@ import java.nio.ShortBuffer;
 
 /**
  * {@link WritableChunk} implementation for short data.
- *
- * @IncludeAll
  */
 public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> implements WritableChunk<ATTR> {
 

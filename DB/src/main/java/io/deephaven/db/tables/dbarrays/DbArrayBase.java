@@ -16,9 +16,6 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
-/**
- * @IncludeAll
- */
 public interface DbArrayBase extends Serializable, LongSizedDataStructure {
     long serialVersionUID = -2429677814745466454L;
 

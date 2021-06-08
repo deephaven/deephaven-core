@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.remote.ConstructSnapshot$NoSnapshotAllowedException",
+ "methods": {},
+ "path": "io.deephaven.db.v2.remote.ConstructSnapshot.NoSnapshotAllowedException",
+ "typeName": "class"
+}

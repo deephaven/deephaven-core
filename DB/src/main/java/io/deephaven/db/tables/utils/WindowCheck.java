@@ -22,8 +22,6 @@ import java.util.*;
 
 /**
  * Adds a Boolean column that is true if a Timestamp is within the specified window.
- *
- * @IncludeAll
  */
 public class WindowCheck {
     private WindowCheck() {}
@@ -41,8 +39,6 @@ public class WindowCheck {
      * @param windowNanos how many nanoseconds in the past a timestamp can be before it is out of the window
      * @param inWindowColumn the name of the new Boolean column.
      * @return a new table that contains an in-window Boolean column
-     *
-     * @Include
      */
     @SuppressWarnings("unused")
     public static Table addTimeWindow(Table table, String timestampColumn, long windowNanos, String inWindowColumn) {

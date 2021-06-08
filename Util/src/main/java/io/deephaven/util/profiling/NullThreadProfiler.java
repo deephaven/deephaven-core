@@ -4,8 +4,6 @@ import io.deephaven.util.QueryConstants;
 
 /**
  * The "null" {@link ThreadProfiler} implementation, which supports no actual measurements.
- *
- * @IncludeAll
  */
 public final class NullThreadProfiler implements ThreadProfiler {
 

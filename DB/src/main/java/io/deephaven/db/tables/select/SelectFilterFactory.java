@@ -34,8 +34,6 @@ import static io.deephaven.db.tables.select.SelectFactoryConstants.*;
 
 /**
  * Given a user's filter string produce an appropriate SelectFilter instance.
- *
- * @IncludeAll
  */
 public class SelectFilterFactory {
 

@@ -28,8 +28,6 @@ import java.util.Collection;
  *
  * The column source is dense with keys from 0 to capacity, there can be no holes.  Arrays are divided into blocks
  * so that the column source can be incrementally expanded without copying data from one array to another.
- *
- * @IncludeAll
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class ArrayBackedColumnSource<T>
@@ -150,8 +148,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param type the type of the resulting column source
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(Collection<T> data, Class<T> type) {
         final ArrayBackedColumnSource<T> result = getMemoryColumnSource(data.size(), type);
@@ -169,8 +165,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param type the type of the resulting column source
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(T[] data, Class<T> type) {
         final ArrayBackedColumnSource<T> result = getMemoryColumnSource(data.length, type);
@@ -187,8 +181,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Byte> getMemoryColumnSource(byte[] data) {
         final ArrayBackedColumnSource<Byte> result = new ByteArraySource();
@@ -206,8 +198,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Character> getMemoryColumnSource(char[] data) {
         final ArrayBackedColumnSource<Character> result = new CharacterArraySource();
@@ -225,8 +215,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Double> getMemoryColumnSource(double[] data) {
         final ArrayBackedColumnSource<Double> result = new DoubleArraySource();
@@ -244,8 +232,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Float> getMemoryColumnSource(float[] data) {
         final ArrayBackedColumnSource<Float> result = new FloatArraySource();
@@ -263,8 +249,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Integer> getMemoryColumnSource(int[] data) {
         final ArrayBackedColumnSource<Integer> result = new IntegerArraySource();
@@ -282,8 +266,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Long> getMemoryColumnSource(long[] data) {
         final ArrayBackedColumnSource<Long> result = new LongArraySource();
@@ -302,8 +284,6 @@ public abstract class ArrayBackedColumnSource<T>
      *             the epoch
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<DBDateTime> getDateTimeMemoryColumnSource(long[] data) {
         final ArrayBackedColumnSource<DBDateTime> result = new DateTimeArraySource();
@@ -321,8 +301,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param data an array containing the data to insert into the ColumnSource.
      *
      * @return an in-memory column source with the requested data
-     *
-     * @Include
      */
     public static ArrayBackedColumnSource<Short> getMemoryColumnSource(short[] data) {
         final ArrayBackedColumnSource<Short> result = new ShortArraySource();
@@ -342,8 +320,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      *
      * @return an in-memory column source of the requested type
-     *
-     * @Include
      */
     public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(long size, Class<T> type) {
         return getMemoryColumnSource(size, type, null);
@@ -362,8 +338,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      *
      * @return an in-memory column source of the requested type
-     *
-     * @Include
      */
     public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(long size, Class<T> type, @Nullable Class componentType) {
         final ArrayBackedColumnSource result;
@@ -422,8 +396,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param dataArray the data to insert into the new column source
      *
      * @return a ColumnSource with the supplied data.
-     *
-     * @Include
      */
     public static WritableSource getMemoryColumnSource(Object dataArray) {
         if (dataArray instanceof boolean[]) {
@@ -470,8 +442,6 @@ public abstract class ArrayBackedColumnSource<T>
      *
      * @param dataArray The array to turn into a ColumnSource
      * @return An Immutable ColumnSource that directly wraps the input array.
-     *
-     * @Include
      */
     public static ColumnSource getImmutableMemoryColumnSource(@NotNull  Object dataArray) {
         final Class arrayType = dataArray.getClass().getComponentType();
@@ -491,8 +461,6 @@ public abstract class ArrayBackedColumnSource<T>
      * @param dataArray The array to turn into a ColumnSource
      *
      * @return An Immutable ColumnSource that directly wraps the input array.
-     *
-     * @Include
      */
     public static ColumnSource getImmutableMemoryColumnSource(Object dataArray, Class<?> type) {
         if (type == boolean.class) {
