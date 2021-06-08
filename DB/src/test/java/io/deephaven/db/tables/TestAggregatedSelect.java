@@ -61,9 +61,9 @@ public class TestAggregatedSelect extends TestCase {
             bidSize[ii] =  ii;
         }
 
-        TableManagementTools.writeTableToDir(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
 
-        tableToClose = TableManagementTools.readTableFromDir(tableDirectory);
+        tableToClose = TableManagementTools.readTable(tableDirectory);
         return tableToClose;
     }
 

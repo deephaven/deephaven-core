@@ -144,10 +144,10 @@ public class TestGroupingProviders {
 
         final TableKey tableKey = new TableLookupKey.Immutable(partitionedDataDefinition.getNamespace(), partitionedDataDefinition.getName(), TableType.STANDALONE_SPLAYED);
 
-        TableManagementTools.writeTableToDir(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTableToDir(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTableToDir(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTableToDir(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
         TableManagementTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
                 partitionedDataDefinition,

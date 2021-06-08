@@ -65,8 +65,8 @@ public class TestCodecColumns {
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
-            TableManagementTools.writeTableToDir(TABLE, dir, storageFormat);
-            final Table result = TableManagementTools.readTableFromDir(dir);
+            TableManagementTools.writeTable(TABLE, dir, storageFormat);
+            final Table result = TableManagementTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

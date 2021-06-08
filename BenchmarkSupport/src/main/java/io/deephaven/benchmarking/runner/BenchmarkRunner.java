@@ -95,7 +95,7 @@ public class BenchmarkRunner {
 
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark");
 
-        TableManagementTools.writeTableToDir(result, result.getDefinition(), outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(result, result.getDefinition(), outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
     }
 
     private static Table getMergedDetails() {

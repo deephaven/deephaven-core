@@ -82,9 +82,9 @@ public class TestMapCodecColumns {
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
-            TableManagementTools.writeTableToDir(TABLE, dir, storageFormat);
+            TableManagementTools.writeTable(TABLE, dir, storageFormat);
             // TODO (deephaven/deephaven-core/issues/322): Infer the definition
-            final Table result = TableManagementTools.readTableFromDir(dir);
+            final Table result = TableManagementTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

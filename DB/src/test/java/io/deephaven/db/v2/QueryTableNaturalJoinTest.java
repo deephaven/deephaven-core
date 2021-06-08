@@ -1331,8 +1331,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String [] leftSyms = new String[]{"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        TableManagementTools.writeTableToDir(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTableFromDir(leftDirectory);
+        TableManagementTools.writeTable(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
+        return TableManagementTools.readTable(leftDirectory);
     }
 
     @NotNull
@@ -1342,7 +1342,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ColumnDefinition.ofInt("RightSentinel"));
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        TableManagementTools.writeTableToDir(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTableFromDir(rightDirectory);
+        TableManagementTools.writeTable(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
+        return TableManagementTools.readTable(rightDirectory);
     }
 }

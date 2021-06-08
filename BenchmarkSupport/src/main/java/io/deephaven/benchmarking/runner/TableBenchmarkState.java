@@ -42,7 +42,7 @@ public class TableBenchmarkState {
                                      .resolve(BenchmarkTools.getDetailLogPrefix(benchmarkName));
 
         final Table output = outputBuilder.build();
-        TableManagementTools.writeTableToDir(output, RESULT_DEF, outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        TableManagementTools.writeTable(output, RESULT_DEF, outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
     }
 
     public void reset() {
@@ -69,6 +69,6 @@ public class TableBenchmarkState {
     }
 
     static Table readBin(File directory) {
-        return TableManagementTools.readTableFromDir(directory, RESULT_DEF);
+        return TableManagementTools.readTable(directory, RESULT_DEF);
     }
 }

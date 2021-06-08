@@ -60,8 +60,8 @@ public class TestAggregatedSelectV2 extends TestCase {
             bidSize[ii] =  ii;
         }
 
-        TableManagementTools.writeTableToDir(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTableFromDir(tableDirectory);
+        TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
+        return TableManagementTools.readTable(tableDirectory);
     }
 
     Table doAggregatedQuery() throws IOException

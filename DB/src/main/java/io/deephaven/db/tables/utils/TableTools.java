@@ -576,7 +576,7 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeCsv(String sourcePath, String destPath, DBTimeZone timeZone, boolean nullsAsEmpty, String... columns) throws IOException {
-        Table source = TableManagementTools.readTableFromDir(new File(sourcePath));
+        Table source = TableManagementTools.readTable(sourcePath);
         writeCsv(source, destPath, false, timeZone, nullsAsEmpty, columns);
     }
 

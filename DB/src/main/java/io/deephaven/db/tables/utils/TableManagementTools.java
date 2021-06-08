@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -23,6 +24,8 @@ import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 import java.io.File;
 import java.util.*;
@@ -60,14 +63,18 @@ public class TableManagementTools {
     /**
      * Reads in a table from disk.
      *
-     * @param path table location
+     * @param location table location; if it ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
      * @param tableDefinition table definition
      * @return table
      */
-    public static Table readTableFromDir(@NotNull final File path, @NotNull TableDefinition tableDefinition) {
+    public static Table readTable(@NotNull final File location, @NotNull TableDefinition tableDefinition) {
+        final String path = location.getPath();
+        if (path.endsWith(PARQUET_FILE_EXTENSION)) {
+            return readTableFromSingleParquetFile(location, tableDefinition);
+        }
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProvider(
                 StandaloneTableKey.getInstance(),
-                new StandaloneLocalTableLocationScanner(path),
+                new StandaloneLocalTableLocationScanner(location),
                 false,
                 TableDataRefreshService.getSharedRefreshService());
         return getTable("Stand-alone V2 table from " + path, tableDefinition, locationProvider);
@@ -85,31 +92,21 @@ public class TableManagementTools {
     /**
      * Reads in a table from disk.
      *
-     * @param sourceFilePath table location
+     * @param sourceFilePath table location; if it ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readTable(new File(sourceFilePath));
+        return readParquetTable(new File(sourceFilePath), !sourceFilePath.endsWith(PARQUET_FILE_EXTENSION));
     }
 
     /**
      * Reads in a table from disk.
      *
-     * @param sourceFile table location
+     * @param sourceFilePath table location; if its path ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
      * @return table
      */
-    public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetTable(sourceFile, false);
-    }
-
-    /**
-     * Reads in a table from disk.
-     *
-     * @param sourceDir table location
-     * @return table
-     */
-    public static Table readTableFromDir(@NotNull final File sourceDir) {
-        return readParquetTable(sourceDir, true);
+    public static Table readTable(@NotNull final File sourceFilePath) {
+        return readParquetTable(sourceFilePath, !sourceFilePath.getPath().endsWith(PARQUET_FILE_EXTENSION));
     }
 
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
@@ -132,45 +129,51 @@ public class TableManagementTools {
         }
         final TableDefinition def = new TableDefinition(cols);
         return isDirectory
-                ? readTableFromDir(source, def)
+                ? TableManagementTools.readTable(source, def)
                 : readTableFromSingleParquetFile(source, def)
                 ;
     }
 
     /**
-     * Write out a table to disk, to a single file, ignoring any grouping information.
+     * Write out a table to disk.
      *
      * @param sourceTable source table
-     * @param destFilePath destination file path
+     * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
      */
-    public static void writeTable(Table sourceTable, String destFilePath) {
-        try {
-            ParquetTableWriter.write(
-                    sourceTable, sourceTable.getDefinition(), destFilePath, Collections.emptyMap(), CompressionCodecName.SNAPPY);
-        } catch (Exception e) {
-            throw new RuntimeException("Error writing table to " + destFilePath + ": " + e, e);
-        }
+    public static void writeTable(Table sourceTable, String destPath) {
+        writeTable(sourceTable, destPath, StorageFormat.Parquet);
     }
 
     /**
      * Write out a table to disk.
      *
      * @param sourceTable source table
-     * @param destDir destination
+     * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
      */
-    public static void writeTableToDir(Table sourceTable, String destDir) {
-        writeTableToDir(sourceTable, destDir, StorageFormat.Parquet);
+    public static void writeTable(Table sourceTable, File dest) {
+        writeTable(sourceTable, dest, StorageFormat.Parquet);
     }
 
     /**
      * Write out a table to disk.
      *
      * @param sourceTable source table
-     * @param destDir destination
+     * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
      * @param storageFormat Format used for storage
      */
-    public static void writeTableToDir(Table sourceTable, String destDir, StorageFormat storageFormat) {
-        writeTableToDir(sourceTable, sourceTable.getDefinition(), new File(destDir), storageFormat);
+    public static void writeTable(Table sourceTable, String destPath, StorageFormat storageFormat) {
+        writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath), storageFormat);
+    }
+
+    /**
+     * Write out a table to disk.
+     *
+     * @param sourceTable source table
+     * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
+     * @param storageFormat Format used for storage
+     */
+    public static void writeTable(Table sourceTable, File dest, StorageFormat storageFormat) {
+        writeTable(sourceTable, sourceTable.getDefinition(), dest, storageFormat);
     }
 
     /**
@@ -178,36 +181,24 @@ public class TableManagementTools {
      *
      * @param sourceTable source table
      * @param definition table definition.  Will be written to disk as given.
-     * @param destDir destination
+     * @param destFile destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
      * @param storageFormat Format used for storage
      */
-    public static void writeTableToDir(Table sourceTable, TableDefinition definition, File destDir, StorageFormat storageFormat) {
-        if (storageFormat == StorageFormat.Parquet) {
-            writeParquetTable(sourceTable, definition, CompressionCodecName.SNAPPY, destDir, definition.getGroupingColumnNamesArray());
-        } else {
+    public static void writeTable(Table sourceTable, TableDefinition definition, File destFile, StorageFormat storageFormat) {
+        if (storageFormat != StorageFormat.Parquet) {
             throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
         }
-    }
-
-    /**
-     * Write out a table to disk.
-     *
-     * @param sourceTable source table
-     * @param destDir destination
-     */
-    public static void writeTableToDir(Table sourceTable, File destDir) {
-        writeTableToDir(sourceTable, destDir, StorageFormat.Parquet);
-    }
-
-    /**
-     * Write out a table to disk.
-     *
-     * @param sourceTable source table
-     * @param destDir destination
-     * @param storageFormat Format used for storage
-     */
-    public static void writeTableToDir(Table sourceTable, File destDir, StorageFormat storageFormat) {
-        writeTableToDir(sourceTable, sourceTable.getDefinition(), destDir, storageFormat);
+        try {
+            final String path = destFile.getPath();
+            if (path.endsWith(PARQUET_FILE_EXTENSION)) {
+                ParquetTableWriter.write(
+                        sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), CompressionCodecName.SNAPPY);
+            } else {
+                writeParquetTable(sourceTable, definition, CompressionCodecName.SNAPPY, destFile, definition.getGroupingColumnNamesArray());
+            }
+        } catch (Exception e) {
+            throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
+        }
     }
 
     /**

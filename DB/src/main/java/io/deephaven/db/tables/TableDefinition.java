@@ -16,7 +16,6 @@ import io.deephaven.dataobjects.persistence.DataObjectInputStream;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.ColumnHolder;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

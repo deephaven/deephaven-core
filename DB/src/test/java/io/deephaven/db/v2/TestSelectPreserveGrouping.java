@@ -84,9 +84,9 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             assertTrue(x.getDefinition().getColumn("Sym").isGrouping());
 
             System.out.println(x.getDefinition());
-            TableManagementTools.writeTableToDir(x, testDirectory);
+            TableManagementTools.writeTable(x, testDirectory);
 
-            final Table readBack = TableManagementTools.readTableFromDir(testDirectory);
+            final Table readBack = TableManagementTools.readTable(testDirectory);
             TableTools.showWithIndex(readBack);
 
             assertTrue(readBack.getIndex().hasGrouping(readBack.getColumnSource("Sym")));

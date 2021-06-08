@@ -69,7 +69,8 @@ public class ParquetTableWriter {
     public static final String BEGIN_POS = "__begin_pos__";
     public static final String END_POS = "__end_pos__";
     public static final String GROUPING_KEY = "__key__";
-    public static final String PARQUET_FILE_NAME = "table.parquet";
+    public static final String PARQUET_FILE_EXTENSION = ".parquet";
+    public static final String PARQUET_FILE_NAME = "table" + PARQUET_FILE_EXTENSION;
     public static Function<String, String> defaultGroupingFileName = columnName -> columnName + "_grouping.parquet";
 
 

@@ -30,9 +30,9 @@ public class TestAppendableColumn extends TestCase {
 
             final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
             Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
-            TableManagementTools.writeTableToDir(table, tableDefinition, directory, storageFormat);
+            TableManagementTools.writeTable(table, tableDefinition, directory, storageFormat);
 
-            Table tableR = TableManagementTools.readTableFromDir(directory);
+            Table tableR = TableManagementTools.readTable(directory);
             assertEquals(data.length, tableR.size());
             assertNotNull(tableR.getColumnSource("v").getGroupToRange());
             assertEquals(320000, tableR.getIndex().size());
