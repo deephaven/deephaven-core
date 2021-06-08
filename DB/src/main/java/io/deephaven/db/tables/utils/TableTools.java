@@ -780,28 +780,6 @@ public class TableTools {
     }
     //endregion
 
-    @ScriptApi
-    /**
-     * Reads a table from disk in Parquet format.
-     *
-     * @param sourceFilePath the path to the parquet file to read
-     * @return a Deephaven table
-     */
-    public static Table readParquet(final String sourceFilePath) {
-        return TableManagementTools.readTable(sourceFilePath);
-    }
-
-    /**
-     * Writes a table to disk in Parquet format.
-     *
-     * @param sourceTable the table to write
-     * @param destFilePath the destination file location
-     */
-    @ScriptApi
-    public static void writeParquet(final Table sourceTable, final String destFilePath) {
-        TableManagementTools.writeTable(sourceTable, destFilePath);
-    }
-
     /////////// Utilities for Creating Columns  ///////////
 
     /**
