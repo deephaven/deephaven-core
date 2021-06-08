@@ -119,7 +119,7 @@ public class TableManagementTools {
                     } else {
                         colDef = ColumnDefinition.fromGenericType(name, dbType, componentType);
                     }
-                    cols.add(colDef);
+                    cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);

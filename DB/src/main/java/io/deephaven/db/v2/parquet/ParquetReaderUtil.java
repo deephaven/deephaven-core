@@ -84,8 +84,8 @@ public class ParquetReaderUtil {
                         case FIXED_LEN_BYTE_ARRAY:
                             nullValue = null;
                             Map<String, String> keyValueMetaData = pm.getFileMetaData().getKeyValueMetaData();
-                            String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + column.getPath()[0]);
-                            String codecParams = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + column.getPath()[0]);
+                            String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + column.getPath()[0]);
+                            String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + column.getPath()[0]);
                             ObjectCodec<Object> codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                             toString = (data) -> Arrays.toString((Object[]) convertArray((Binary[]) data, codec));
                             break;
@@ -256,7 +256,7 @@ public class ParquetReaderUtil {
 
         final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING);
         Set<String> groupingCols = Collections.emptySet();
-        if (csvGroupingCols != null) {
+        if (csvGroupingCols != null && csvGroupingCols.length() > 0) {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
         }
 
@@ -265,12 +265,12 @@ public class ParquetReaderUtil {
             final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
             final String colName = column.getPath()[0];
             final boolean isGrouping = groupingCols.contains(colName);
-            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + colName);
-            final String codecArgs = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + colName);
-            String codecType = keyValueMetaData.get(ParquetTableWriter._CODEC_DATA_TYPE_PREFIX_ + colName);
+            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
+            final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
+            String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
-                final String codecComponentType = keyValueMetaData.get(ParquetTableWriter._CODEC_COMPONENT_TYPE_PREFIX_ + colName);
+                final String codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);
                 final Class<?> componentType;
                 if (codecComponentType == null || codecComponentType.isEmpty()) {
                     componentType = null;
@@ -345,27 +345,25 @@ public class ParquetReaderUtil {
                         break;
                 }
             } else {
-                final Optional<Class<?>> optionalClass = logicalTypeAnnotation.accept(visitor);
-                if (!optionalClass.isPresent()) {
+                final Class<?> typeFromVisitor = logicalTypeAnnotation.accept(visitor).orElseThrow(() -> {
                     final String logicalTypeString = errorString.getValue();
-                    throw new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath())
+                    return new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath())
                             + ((logicalTypeString != null)
-                                ? (logicalTypeString + " not supported")
-                                : "no mappeable logical type annotation found."));
-                }
-                if (isArray) {
-                    final Class<?> componentType = optionalClass.get();
+                            ? (logicalTypeString + " not supported")
+                            : "no mappable logical type annotation found."));});
+                if (!StringSet.class.isAssignableFrom(typeFromVisitor) && isArray) {
+                    final Class<?> componentType = typeFromVisitor;
                     // On Java 12, replace by:  dataType = componentType.arrayType();
                     final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
                     colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs);
                 } else {
-                    colDefConsumer.accept(colName, optionalClass.get(), null, isGrouping, codecName, codecArgs);
+                    colDefConsumer.accept(colName, typeFromVisitor, null, isGrouping, codecName, codecArgs);
                 }
             }
         }
     }
 
-    private static Object[] convertArray(Binary[] rawData, ObjectCodec codec) {
+    private static Object[] convertArray(Binary[] rawData, ObjectCodec<?> codec) {
         Object[] result = new Object[rawData.length];
         for (int i = 0; i < rawData.length; i++) {
             if (rawData[i] != null) {

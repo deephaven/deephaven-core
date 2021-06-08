@@ -59,16 +59,16 @@ public class ParquetTableWriter {
     private static final int PAGE_SIZE = 1 << 20;
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
     public static final String GROUPING = "grouping";
-    public static final String _CODEC_NAME_PREFIX_ = "__codec_name__";
-    public static final String _CODEC_ARGS_PREFIX_ = "__codec_args__";
-    public static final String _CODEC_DATA_TYPE_PREFIX_ = "__codec_data_type__";
-    public static final String _CODEC_COMPONENT_TYPE_PREFIX_ = "__codec_comp_type__";
-    public static final String SPECIAL_TYPE_NAME_PREFIX_ = "__special_type__";
+    public static final String CODEC_NAME_PREFIX = "dh_codec_name:";
+    public static final String CODEC_ARGS_PREFIX = "dh_codec_args:";
+    public static final String CODEC_DATA_TYPE_PREFIX = "dh_codec_data_type:";
+    public static final String CODEC_COMPONENT_TYPE_PREFIX = "dh_codec_comp_type:";
+    public static final String SPECIAL_TYPE_NAME_PREFIX_ = "dh_special_type:";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     private static final int LOCAL_CHUNK_SIZE = 1024;
-    public static final String BEGIN_POS = "__begin_pos__";
-    public static final String END_POS = "__end_pos__";
-    public static final String GROUPING_KEY = "__key__";
+    public static final String BEGIN_POS = "dh_begin_pos";
+    public static final String END_POS = "dh_end_pos";
+    public static final String GROUPING_KEY = "dh_key";
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
     public static final String PARQUET_FILE_NAME = "table" + PARQUET_FILE_EXTENSION;
     public static Function<String, String> defaultGroupingFileName = columnName -> columnName + "_grouping.parquet";
@@ -286,12 +286,12 @@ public class ParquetTableWriter {
             final String colName = column.getName();
             Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column);
             if (codecData != null) {
-                extraMetaData.put(_CODEC_NAME_PREFIX_ + colName, codecData.getLeft());
-                extraMetaData.put(_CODEC_ARGS_PREFIX_ + colName, codecData.getRight());
-                extraMetaData.put(_CODEC_DATA_TYPE_PREFIX_ + colName, column.getDataType().getName());
+                extraMetaData.put(CODEC_NAME_PREFIX + colName, codecData.getLeft());
+                extraMetaData.put(CODEC_ARGS_PREFIX + colName, codecData.getRight());
+                extraMetaData.put(CODEC_DATA_TYPE_PREFIX + colName, column.getDataType().getName());
                 final Class<?> componentType = column.getComponentType();
                 if (componentType != null) {
-                    extraMetaData.put(_CODEC_COMPONENT_TYPE_PREFIX_ + colName, column.getComponentType().getName());
+                    extraMetaData.put(CODEC_COMPONENT_TYPE_PREFIX + colName, column.getComponentType().getName());
                 }
             }
             if (StringSet.class.isAssignableFrom(column.getDataType())) {

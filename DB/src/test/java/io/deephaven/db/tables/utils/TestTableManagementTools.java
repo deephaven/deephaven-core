@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.TableDefinition;
@@ -227,7 +228,7 @@ public class TestTableManagementTools {
         try {
             TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"), storageFormat);
             TestCase.fail("Expected exception");
-        } catch (IllegalArgumentException e) {
+        } catch (UncheckedDeephavenException e) {
             //Expected
         }
 
