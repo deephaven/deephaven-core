@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 
-
 /**
  * Manage the lifecycle of exports that are Tables.
  *

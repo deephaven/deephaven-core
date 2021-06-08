@@ -15,6 +15,7 @@ import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -57,32 +59,20 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
  * TODO:
  * - cyclical dependency detection
  * - out-of-order dependency timeout
- * - wait ~30s and then remove a failed/cancelled/released export (this enables better out-of-order handling)
  *
  * Details Regarding Data Structure of ExportObjects:
  *
- * Together, exportMap, head, and tail, form a data structure not dissimilar to a linked hash set. We want to be
- * able to synchronize a listener with the existing state of all exported objects and to continue to receive updates
- * throughout the lifecycle of exports. The listener should receive a consistent stream of updates after the refresh
- * until it is removed.
+ * The exportMap map, exportListeners list, exportListenerVersion, and export object's exportListenerVersion work
+ * together to enable a listener to synchronize with outstanding exports in addition to sending the listener updates
+ * while they continue to subscribe.
  *
  * - SessionState::exportMap's purpose is to map from the export id to the export object
- * - SessionState::head is the head of the doubly linked list of outstanding exports
- * - SessionState::tail is the tail of the doubly linked list of outstanding exports
- * - ExportObject::prev is the previous export object node in the list; it is null for the head element
- * - ExportObject::next is the successive export object node in the list; it is null for the tail element
- *
- * Listeners must be added to the list of listeners prior to starting their refresh, or else they may miss an update.
- * Similarly, ExportObject's must be added to the list of ExportObjects prior to setting initial state. Changes to the
- * head / tail are done while holding the exportMap's lock. Note that it is not necessary to grab this lock to read the
- * head as long as the listener is added to the list before reading the head.
- *
- * Changes to ExportObject's prev/next must be synchronized on the ExportObject. Listeners can synchronize with all
- * outstanding exports by following the linked list from head to tail via the next pointers. It will not receive updates
- * or refreshes for exports that are already in terminal states when it receives its refresh.
+ * - SessionState::exportListener's purpose is to keep a list of active subscribers
+ * - SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
  * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the refresh has
- * completed.
+ * completed. A listener may see an update for an export before receiving the "refresh has completed" message. A listener
+ * should be prepared to receive duplicate/redundant updates.
  */
 public class SessionState extends LivenessArtifact {
     // Some work items will be dependent on other exports, but do not export anything themselves.
@@ -116,11 +106,12 @@ public class SessionState extends LivenessArtifact {
 
     // the list of active listeners
     private final ConcurrentLinkedQueue<ExportListener> exportListeners = new ConcurrentLinkedQueue<>();
+    private volatile int exportListenerVersion = 0;
+    private static final AtomicIntegerFieldUpdater<SessionState> EXPORT_LISTENER_VERSION_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "exportListenerVersion");
 
-    // modifications to head/tail must be done while synchronized on the exportMap
-    private volatile long nextInternalExportSequence = 0;
-    private volatile ExportObject<?> head = null;
-    private volatile ExportObject<?> tail = null;
+    // accumulate the set of used export id's; it is ideal if the api client uses few continuous ranges
+    private final Index usedExportIds = Index.CURRENT_FACTORY.getEmptyIndex();
 
     @AssistedInject
     public SessionState(final Scheduler scheduler, final LiveTableMonitor liveTableMonitor, @Assisted final AuthContext authContext) {
@@ -319,7 +310,9 @@ public class SessionState extends LivenessArtifact {
 
         log.info().append(logPrefix).append("outstanding exports released").endl();
         // note that export listeners are never published beyond this class; thus unmanaging them is sufficient
-        exportListeners.forEach(this::tryUnmanage);
+        synchronized (exportListeners) {
+            exportListeners.forEach(this::tryUnmanage);
+        }
         exportListeners.clear();
     }
 
@@ -399,9 +392,6 @@ public class SessionState extends LivenessArtifact {
         private final long exportId;
         private final String logIdentity;
 
-        // this sequence is used by a listener to create an internally consistent stream of updates
-        private final long internalSequence;
-
         // exported objects are strung together like a doubly linked-list; see details near EXPORT_OBJECT_VALUE_FACTORY
         private volatile ExportObject<?> next;
         private volatile ExportObject<?> prev;
@@ -409,6 +399,7 @@ public class SessionState extends LivenessArtifact {
         // final result of export
         private volatile T result;
         private volatile ExportState state = ExportState.UNKNOWN;
+        private volatile int exportListenerVersion = 0;
 
         // This indicates whether or not the LTM's exclusive lock should be held when executing the export
         private boolean requiresExclusiveLock;
@@ -432,12 +423,10 @@ public class SessionState extends LivenessArtifact {
 
         /**
          * @param exportId the export id for this export
-         * @param internalSequence the sequence that this export object gets in the context of the doubly-linked list
          */
-        private ExportObject(final long exportId, final long internalSequence) {
+        private ExportObject(final long exportId) {
             this.exportId = exportId;
             this.logIdentity = exportId == NON_EXPORT_ID ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
-            this.internalSequence = internalSequence;
             setState(ExportState.UNKNOWN);
         }
 
@@ -566,7 +555,8 @@ public class SessionState extends LivenessArtifact {
                         .append("' is ExportState.").append(state.name()).endl();
 
                 final ExportNotification notification = makeExportNotification();
-                exportListeners.forEach(listener -> listener.notify(internalSequence, notification));
+                exportListenerVersion = SessionState.this.exportListenerVersion;
+                exportListeners.forEach(listener -> listener.notify(notification));
             } else {
                 log.info().append(logPrefix).append("non-export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
@@ -813,17 +803,29 @@ public class SessionState extends LivenessArtifact {
     }
 
     public void addExportListener(final StreamObserver<ExportNotification> observer) {
+        if (isExpired()) {
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+
         final ExportListener listener = new ExportListener(observer);
         manage(listener);
-        synchronized (exportListeners) {
-            // throw exception if expired
-            exportListeners.add(listener);
+        exportListeners.add(listener);
+        final int versionId = EXPORT_LISTENER_VERSION_UPDATER.incrementAndGet(this);
+
+        // we must check one last time that the session has not already expired; will otherwise be cleaned up on expiration
+        if (isExpired()) {
+            removeExportListener(observer);
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
-        listener.initialize();
+        listener.initialize(versionId);
     }
 
     public void removeExportListener(final StreamObserver<ExportNotification> observer) {
-        exportListeners.stream().filter(l -> l.listener == observer).findFirst().ifPresent(this::tryUnmanage);
+        final Optional<ExportListener> listener = exportListeners.stream().filter(l -> l.listener == observer).findFirst();
+        if (listener.isPresent()) {
+            tryUnmanage(listener.get());
+            exportListeners.remove(listener.get());
+        }
     }
 
     @VisibleForTesting
@@ -832,51 +834,20 @@ public class SessionState extends LivenessArtifact {
     }
 
     private class ExportListener extends LivenessArtifact {
-        private boolean refreshing = true;
-        private long refreshSequence = -1;
-        private boolean recheckExport = false;
         private volatile boolean isClosed = false;
 
         private final StreamObserver<ExportNotification> listener;
-        private List<ExportNotification> pendingNotifications;
 
         private ExportListener(final StreamObserver<ExportNotification> listener) {
             this.listener = listener;
         }
 
         /**
-         * This is the state-change entry point. It must coordinate with the refresh to avoid sending out-of-order
-         * updates that might be confusing to the listener.
-         *
-         * @param exportSequence the internal sequence of this export in the doubly-linked list
-         * @param notification the notification to send
-         */
-        public synchronized void notify(final long exportSequence, final ExportNotification notification) {
-            if (isClosed) {
-                return;
-            }
-
-            if (refreshing) {
-                if (exportSequence < refreshSequence) {
-                    if (pendingNotifications == null) {
-                        pendingNotifications = new ArrayList<>();
-                    }
-                    pendingNotifications.add(notification);
-                } else if (exportSequence == refreshSequence) {
-                    recheckExport = true;
-                }
-                return;
-            }
-
-            doNotify(notification);
-        }
-
-        /**
-         * This notification is certified as valid to send.
+         * Propagate the change to the listener.
          *
          * @param notification the notification to send
          */
-        private void doNotify(final ExportNotification notification) {
+        public void notify(final ExportNotification notification) {
             if (isClosed) {
                 return;
             }
@@ -894,69 +865,48 @@ public class SessionState extends LivenessArtifact {
         /**
          * Perform the refresh and send initial export state to the listener.
          */
-        private void initialize() {
+        private void initialize(final int versionId) {
             final String id = Integer.toHexString(System.identityHashCode(this));
             log.info().append(logPrefix).append("refreshing listener ").append(id).endl();
 
-            ExportState lastState = null;
-            ExportObject<?> currNode = null;
-
-            while (true) {
-                synchronized (this) {
-                    if (recheckExport) {
-                        recheckExport = false;
-                    } else {
-                        lastState = null;
-                        if (currNode == null) {
-                            currNode = head;
-                        } else {
-                            currNode = currNode.next;
-                        }
-
-                        if (currNode == null) {
-                            refreshSequence = Long.MAX_VALUE;
-                            break;
-                        }
-
-                        refreshSequence = currNode.internalSequence;
-                    }
+            for (final ExportObject<?> export : exportMap) {
+                if (!tryManage(export)) {
+                    continue;
                 }
 
-                final ExportNotification notification;
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized (currNode) {
-                    final ExportState nodeState = currNode.getState();
-                    if (lastState == null && isExportStateTerminal(nodeState)) {
+                try {
+                    if (export.exportListenerVersion >= versionId) {
                         continue;
                     }
-                    if (lastState != nodeState) {
-                        lastState = nodeState;
-                        notification = currNode.makeExportNotification();
-                    } else {
-                        notification = null;
-                    }
-                }
 
-                if (notification != null) {
-                    doNotify(notification);
+                    // the export cannot change state while we are synchronized on it
+                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                    synchronized (export) {
+                        // check again because of race to the lock
+                        if (export.exportListenerVersion >= versionId) {
+                            continue;
+                        }
+
+                        // no need to notify on exports that can no longer be accessed
+                        if (isExportStateTerminal(export.getState())) {
+                            continue;
+                        }
+
+                        notify(export.makeExportNotification());
+                    }
+                } finally {
+                    unmanage(export);
                 }
             }
 
             synchronized (this) {
                 // notify that the refresh has completed
-                doNotify(ExportNotification.newBuilder()
+                notify(ExportNotification.newBuilder()
                         .setTicket(exportIdToTicket(NON_EXPORT_ID))
                         .setExportState(ExportNotification.State.EXPORTED)
                         .setContext("refresh is complete")
                         .build());
                 log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
-
-                if (pendingNotifications != null) {
-                    pendingNotifications.forEach(this::doNotify);
-                    pendingNotifications = null;
-                }
-
-                refreshing = false;
             }
         }
 
@@ -1005,7 +955,7 @@ public class SessionState extends LivenessArtifact {
             this.exportId = exportId;
 
             if (exportId == NON_EXPORT_ID) {
-                this.export = new ExportObject<>(NON_EXPORT_ID, NON_EXPORT_SEQUENCE);
+                this.export = new ExportObject<>(NON_EXPORT_ID);
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -1170,15 +1120,7 @@ public class SessionState extends LivenessArtifact {
                     throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                 }
 
-                final ExportObject<?> retval = new ExportObject<>(key, nextInternalExportSequence++);
-                if (tail == null) {
-                    head = tail = retval;
-                } else {
-                    retval.prev = tail;
-                    tail.next = retval;
-                    tail = retval;
-                }
-                return retval;
+                return new ExportObject<>(key);
             }
         }
     };

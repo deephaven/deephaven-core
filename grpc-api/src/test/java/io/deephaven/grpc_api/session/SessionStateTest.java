@@ -873,7 +873,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         listener.validateIsRefreshComplete(-1);
         listener.validateNotificationQueue(b1, UNKNOWN);
-        listener.validateNotificationQueue(b2, QUEUED);
+        listener.validateNotificationQueue(b2, PENDING, QUEUED); // PENDING is optional/racy w.r.t. spec
         listener.validateNotificationQueue(b3, UNKNOWN);
     }
 
@@ -898,7 +898,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         listener.validateIsRefreshComplete(-1);
         listener.validateNotificationQueue(b1, UNKNOWN);
-        listener.validateNotificationQueue(b2, UNKNOWN, QUEUED);
+        listener.validateNotificationQueue(b2, UNKNOWN, PENDING, QUEUED); // PENDING is optional/racy w.r.t. spec
         listener.validateNotificationQueue(b3, UNKNOWN);
     }
 
@@ -921,7 +921,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(3);
+        listener.validateIsRefreshComplete(5); // note that we receive refresh complete after receiving updates to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, PENDING, QUEUED);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -939,6 +939,22 @@ public class SessionStateTest {
         listener.validateIsRefreshComplete(3);
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, PENDING, QUEUED);
+        listener.validateNotificationQueue(b3, UNKNOWN);
+    }
+
+    @Test
+    public void testExportListenerTerminalBeforeListenerAdd() {
+        final SessionState.ExportBuilder<SessionState> b1 = session.newExport(nextExportId++);
+        final SessionState.ExportBuilder<SessionState> b2 = session.newExport(nextExportId++);
+        final SessionState.ExportBuilder<SessionState> b3 = session.newExport(nextExportId++);
+        b2.getExport().cancel();
+
+        final QueueingExportListener listener = new QueueingExportListener();
+
+        session.addExportListener(listener);
+        listener.validateIsRefreshComplete(-1);
+        listener.validateNotificationQueue(b1, UNKNOWN);
+        listener.validateNotificationQueue(b2);
         listener.validateNotificationQueue(b3, UNKNOWN);
     }
 
@@ -963,7 +979,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         listener.validateIsRefreshComplete(-1);
         listener.validateNotificationQueue(b1, UNKNOWN);
-        listener.validateNotificationQueue(b2);
+        listener.validateNotificationQueue(b2, CANCELLED); // CANCELLED is optional/racy w.r.t. spec
         listener.validateNotificationQueue(b3, UNKNOWN);
     }
 
@@ -1012,7 +1028,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(3);
+        listener.validateIsRefreshComplete(4); // note we receive refresh complete after the update to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, CANCELLED);
         listener.validateNotificationQueue(b3, UNKNOWN);
