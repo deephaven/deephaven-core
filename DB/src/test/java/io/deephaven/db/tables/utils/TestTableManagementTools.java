@@ -31,7 +31,8 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import static io.deephaven.db.tables.utils.TableTools.col;
+import static io.deephaven.db.tables.utils.TableTools.*;
+import static io.deephaven.db.tables.utils.TableTools.doubleCol;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
@@ -43,13 +44,10 @@ public class TestTableManagementTools {
 
     private final static String testRoot = Configuration.getInstance().getWorkspacePath() + File.separator + "TestTableManagementTools";
     private final static File testRootFile = new File(testRoot);
-    private static final Logger log = LoggerFactory.getLogger(TestTableManagementTools.class);
 
     private static Table table1;
-    private static Table table2;
     private static Table emptyTable;
     private static Table brokenTable;
-    private static Table table3;
 
 
     @BeforeClass
@@ -59,18 +57,6 @@ public class TestTableManagementTools {
                 new Object[]{
                         new String[]{"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
                         new int[]{1, 1, 2, 2, 2, 3, 3, 3, 3}
-                });
-        table2 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts"},
-                new Object[]{
-                        new String[]{"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
-                        new byte[]{1, 1, 2, 2, 2, 3, 3, 3, 3}
-                });
-        table3 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts"},
-                new Object[]{
-                        new String[]{"key11", "key11", "key11", "key11", "key21", "key21", "key22"},
-                        new int[]{1, 1, 2, 2, 2, 3, 3}
                 });
         emptyTable = new InMemoryTable(
                 new String[]{"Column1", "Column2"},
@@ -116,7 +102,7 @@ public class TestTableManagementTools {
         }
     }
 
-    public static enum TestEnum {
+    public enum TestEnum {
         a, b, s, d, f, e, tt, re, tr, ed, te;
     }
 
@@ -258,7 +244,7 @@ public class TestTableManagementTools {
     }
 
     @Test
-    public void testDeleteTable() throws IOException {
+    public void testDeleteTable() {
         if (System.getProperty("os.name").startsWith("Windows")) {
             //TODO: Remove when come up with a workaround for Windows file handling issues.
             return;

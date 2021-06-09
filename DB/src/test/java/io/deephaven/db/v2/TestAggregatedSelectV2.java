@@ -32,8 +32,7 @@ public class TestAggregatedSelectV2 extends TestCase {
         super("TestAggregatedSelect()");
     }
 
-    public Table createTestTable()
-    {
+    public Table createTestTable() {
         final File tableDirectory;
         try {
             tableDirectory = Files.createTempDirectory("TestAggregatedSelectV2").toFile();
@@ -53,8 +52,7 @@ public class TestAggregatedSelectV2 extends TestCase {
         double [] bid = new double[size];
         double [] bidSize = new double[size];
 
-        for (int ii = 0; ii < size; ++ii)
-        {
+        for (int ii = 0; ii < size; ++ii) {
             symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
             bid[ii] =  (ii < 15) ? 98 : 99;
             bidSize[ii] =  ii;
@@ -64,22 +62,20 @@ public class TestAggregatedSelectV2 extends TestCase {
         return TableManagementTools.readTable(tableDirectory);
     }
 
-    Table doAggregatedQuery() throws IOException
-    {
+    Table doAggregatedQuery() {
         Table t = createTestTable();
         Table t2 = t.by("USym", "Bid").by("USym");
         return t2;
     }
 
-    double avgConsecutive(int start, int end)
-    {
+    double avgConsecutive(int start, int end) {
         double count = (end - start) + 1;
         double sumEnd = (end*(end+1)) / 2;
         double sumStart = (start*(start+1)) / 2;
         return (sumEnd - sumStart) / count;
     }
 
-    public void testSelectType() throws IOException {
+    public void testSelectType() {
         Table table = createTestTable();
         Table selectedTable = table.select();
 
@@ -93,7 +89,7 @@ public class TestAggregatedSelectV2 extends TestCase {
         }
     }
 
-    public void testUngroup() throws IOException {
+    public void testUngroup() {
         Table freshTable = doAggregatedQuery();
 
         Table t1 = freshTable.dropColumns("BidSize");

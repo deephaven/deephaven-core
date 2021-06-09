@@ -256,7 +256,7 @@ public class ParquetReaderUtil {
 
         final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING);
         Set<String> groupingCols = Collections.emptySet();
-        if (csvGroupingCols != null && csvGroupingCols.length() > 0) {
+        if (csvGroupingCols != null && !csvGroupingCols.isEmpty()) {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
         }
 
