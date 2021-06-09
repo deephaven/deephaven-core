@@ -146,14 +146,14 @@ def _custom_writeParquetTables(sources, tableDefinition, codecName, destinations
                                               getFileObject(destinations), groupingColumns)
 
 
-def _custom_writeTableToDir(*args):
+def _custom_writeTable(*args):
     if len(args) == 2:
-        return _java_type_.writeTableToDir(args[0], getFileObject(args[1]))
+        return _java_type_.writeTable(args[0], getFileObject(args[1]))
     elif len(args) == 3:
         if _isStr(args[2]):
-            return _java_type_.writeTableToDir(args[0], getFileObject(args[1]), getattr(_storage_format_, args[2]))
+            return _java_type_.writeTable(args[0], getFileObject(args[1]), getattr(_storage_format_, args[2]))
         else:
-            return _java_type_.writeTableToDir(args[0], getFileObject(args[1]), args[2])
+            return _java_type_.writeTable(args[0], getFileObject(args[1]), args[2])
 
 
 def _custom_writeTables(sources, tableDefinition, destinations):
@@ -214,7 +214,7 @@ def writeParquetTables(sources, tableDefinition, codecName, destinations, groupi
 
 
 @_passThrough
-def writeTableToDir(*args):
+def writeTable(*args):
     """
     Write out a table to disk.
     
@@ -243,7 +243,7 @@ def writeTableToDir(*args):
       :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
     """
     
-    return _custom_writeTableToDir(*args)
+    return _custom_writeTable(*args)
 
 
 @_passThrough
@@ -268,7 +268,3 @@ def writeTables(*args):
 @_passThrough
 def readTable(file_path_string):
     return _java_type_.readTable(file_path_string)
-
-@_passThrough
-def writeTable(file_path_string):
-    return _java_type_.writeTable(file_path_string)
