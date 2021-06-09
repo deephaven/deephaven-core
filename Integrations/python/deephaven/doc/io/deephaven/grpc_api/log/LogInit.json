@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.log.LogInit",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.log.LogInit",
+ "typeName": "class"
+}

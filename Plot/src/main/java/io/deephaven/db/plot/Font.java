@@ -12,7 +12,6 @@ import java.util.Map;
 
 /**
  * A font used to represent text.
- * @IncludeAll
  */
 @SuppressWarnings("WeakerAccess")
 public class Font implements Serializable {
@@ -22,7 +21,6 @@ public class Font implements Serializable {
 
     /**
      * Style of font.
-     * @IncludeAll
      */
     public enum FontStyle {
         /**

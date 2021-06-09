@@ -22,6 +22,6 @@
   "validate": "Verify invariants of internal data structures hold."
  },
  "path": "io.deephaven.db.v2.utils.IndexShiftData",
- "text": "A set of sorted shifts. To apply shifts without losing data, use IndexShiftData.apply(Callback). The callback\n will be invoked with shifts in an order that will preserve data when applied immediately using memmove semantics.\n Internally the shifts are ordered by rangeStart. The IndexShiftData.Builder will verify that no two ranges\n overlap before or after shifting and assert that the constructed IndexShiftData will be valid.",
+ "text": "A set of sorted shifts. To apply shifts without losing data, use apply(Callback). The callback\n will be invoked with shifts in an order that will preserve data when applied immediately using memmove semantics.\n Internally the shifts are ordered by rangeStart. The IndexShiftData.Builder will verify that no two ranges\n overlap before or after shifting and assert that the constructed IndexShiftData will be valid.",
  "typeName": "class"
 }

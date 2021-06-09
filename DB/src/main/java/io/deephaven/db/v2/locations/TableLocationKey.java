@@ -12,8 +12,6 @@ import java.util.Comparator;
 
 /**
  * Interface that specifies key fields for any TableLocation.
- *
- * @IncludeAll
  */
 public interface TableLocationKey extends NamedImplementation, LogOutputAppendable {
 

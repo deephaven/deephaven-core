@@ -7,8 +7,6 @@ import java.util.Collection;
 
 /**
  * Discovery utility for table locations for a given table.
- *
- * @IncludeAll
  */
 public interface TableLocationProvider extends TableKey {
 

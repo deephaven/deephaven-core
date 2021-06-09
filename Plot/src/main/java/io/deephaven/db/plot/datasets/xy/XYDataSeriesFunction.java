@@ -9,7 +9,6 @@ import io.deephaven.libs.primitives.DoubleFpPrimitives;
  * By default, this calculates at least 200 data points inside the plot's existing range.
  * The number of points can be increased for a finer grained plot, or decreased if less resolution is needed.
  * The points are recomputed as the {@link Chart}'s x-range changes.
- * @IncludeAll
  */
 public interface XYDataSeriesFunction extends XYDataSeries {
 

@@ -23,8 +23,6 @@ import java.util.function.Function;
  * For example, the state could be the most recent valid result from a numerical model.
  * <p>
  * Active models are executed in their input order.
- *
- * @IncludeAll
  */
 public class ConditionalModels<DATA_TYPE, STATE_TYPE, KEY_TYPE> implements Models<DATA_TYPE> {
 

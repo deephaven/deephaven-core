@@ -26,8 +26,6 @@ import java.util.List;
  * For example, the array [20,5] creates a dash pattern with a 20 length dash and a 5 length gap.
  * This pattern is repeated till the end of the line.
  * </p>
- *
- * @IncludeAll
  */
 public class LineStyle implements Serializable {
 
@@ -39,7 +37,6 @@ public class LineStyle implements Serializable {
 
     /**
      * Style for shapes drawn at the end of a line.
-     * @IncludeAll
      */
     public enum LineEndStyle {
         /**
@@ -92,7 +89,6 @@ public class LineStyle implements Serializable {
 
     /**
      * Style for drawing the connections between line segments.
-     * @IncludeAll
      */
     public enum LineJoinStyle {
         /**

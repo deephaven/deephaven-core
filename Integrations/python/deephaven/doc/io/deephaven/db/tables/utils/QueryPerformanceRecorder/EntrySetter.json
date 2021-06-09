@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.tables.utils.QueryPerformanceRecorder$EntrySetter",
+ "methods": {
+  "set": ":param evaluationNumber: int\n:param operationNumber: int\n:param uninstrumented: boolean"
+ },
+ "path": "io.deephaven.db.tables.utils.QueryPerformanceRecorder.EntrySetter",
+ "typeName": "interface"
+}

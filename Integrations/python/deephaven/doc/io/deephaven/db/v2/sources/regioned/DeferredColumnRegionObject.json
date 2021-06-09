@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.DeferredColumnRegionObject",
+ "methods": {
+  "getObject": "Get a single object from this region.\n\n*Overload 1*  \n  :param elementIndex: long\n  :return: (DeferredColumnRegionObject.T) The object value at the specified element (object) index\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param elementIndex: long\n  :return: (DeferredColumnRegionObject.T) The object value at the specified element (object) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.DeferredColumnRegionObject",
+ "text": "ColumnRegionShort implementation for deferred regions, i.e. regions that will be properly constructed on\n first access.",
+ "typeName": "class"
+}

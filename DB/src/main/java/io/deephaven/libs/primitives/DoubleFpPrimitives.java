@@ -9,8 +9,6 @@ package io.deephaven.libs.primitives;
 
 /**
  * A set of commonly used doubleing point numeric functions that can be applied to Double types.
- *
- * @IncludeAll
  */
 @SuppressWarnings("WeakerAccess")
 public class DoubleFpPrimitives {

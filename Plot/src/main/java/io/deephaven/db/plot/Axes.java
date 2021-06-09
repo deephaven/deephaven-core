@@ -30,8 +30,6 @@ import java.util.function.DoubleUnaryOperator;
 
 /**
  * Chart's axes.
- *
- * @IncludeAll
  */
 public interface Axes extends Serializable {
 

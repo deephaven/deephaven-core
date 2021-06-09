@@ -15,8 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A column source that returns null for all keys.
- *
- * @IncludeAll
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements ShiftData.ShiftCallback {

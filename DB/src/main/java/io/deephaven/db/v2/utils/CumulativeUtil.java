@@ -15,8 +15,6 @@ import java.io.Serializable;
 
 /**
  * Utilities for cumulative and rolling aggregations.
- *
- * @IncludeAll
  */
 public class CumulativeUtil {
 

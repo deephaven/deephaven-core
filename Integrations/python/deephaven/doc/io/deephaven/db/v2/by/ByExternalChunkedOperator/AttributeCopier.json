@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.by.ByExternalChunkedOperator$AttributeCopier",
+ "methods": {
+  "copyAttributes": ":param parentTable: io.deephaven.db.v2.QueryTable\n:param subTable: io.deephaven.db.v2.QueryTable"
+ },
+ "path": "io.deephaven.db.v2.by.ByExternalChunkedOperator.AttributeCopier",
+ "typeName": "interface"
+}

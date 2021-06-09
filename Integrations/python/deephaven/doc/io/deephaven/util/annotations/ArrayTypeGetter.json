@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.util.annotations.ArrayTypeGetter",
+ "methods": {},
+ "path": "io.deephaven.util.annotations.ArrayTypeGetter",
+ "text": "This annotation marks a specific method within a class that has been annotated with ArrayType\n as the means to retrieve an array of the type indicated.  No guarantees are provided with respect to\n the mutability of the annotated type..",
+ "typeName": "class"
+}

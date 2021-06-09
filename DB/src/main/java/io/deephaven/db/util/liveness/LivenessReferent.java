@@ -6,8 +6,6 @@ import java.lang.ref.WeakReference;
 
 /**
  * Interface for objects that continue to "live" while retained by a {@link LivenessManager}.
- *
- * @IncludeAll
  */
 public interface LivenessReferent {
 

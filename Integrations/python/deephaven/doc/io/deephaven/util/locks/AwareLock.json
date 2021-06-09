@@ -4,6 +4,6 @@
   "isHeldByCurrentThread": "Query whether the current thread holds this lock.\n\n:return: (boolean) True if the current thread holds this lock, else false"
  },
  "path": "io.deephaven.util.locks.AwareLock",
- "text": "Extension to the Lock interface to make awareness of the current thread's state accessible.\nN",
+ "text": "Extension to the Lock interface to make awareness of the current thread's state accessible.",
  "typeName": "interface"
 }

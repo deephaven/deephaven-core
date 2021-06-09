@@ -27,8 +27,6 @@ import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
 /**
  * Column definition for all Deephaven columns.
  * Adds non-stateful functionality to DefaultColumnDefinition.
- *
- * @IncludeAll
  */
 public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
 

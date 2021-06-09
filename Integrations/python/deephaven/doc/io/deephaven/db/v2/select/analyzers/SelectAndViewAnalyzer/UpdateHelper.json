@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer$UpdateHelper",
+ "methods": {},
+ "path": "io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper",
+ "typeName": "class"
+}

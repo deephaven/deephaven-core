@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionSymbolTable",
+ "methods": {
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination.  orderKeys are assumed\n to be entirely contained on this Page.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super ParquetColumnRegionSymbolTable.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "getChunk": "Same as ChunkSource.getChunk(GetContext, OrderedKeys), except that you pass in the begin and last keys\n representing the begin and last (inclusive) keys of a single range rather than an OrderedKeys.\n Typically you want to call this only if you don't have an OrderedKeys, such as during an\n OrderedKeys.forAllLongRanges(LongRangeConsumer) call.  In this case, it allows you to avoid\n creating an intermediary OrderedKeys object.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n:param firstKey: long\n:param lastKey: long\n:return: io.deephaven.db.v2.sources.chunk.Chunk<? extends ParquetColumnRegionSymbolTable.ATTR>",
+  "getNativeType": ":return: java.lang.Class<?>",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: long\n:return: (ParquetColumnRegionSymbolTable.STRING_LIKE_TYPE) The object value at the specified element (object) index",
+  "length": ":return: (long) the length of this page."
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionSymbolTable",
+ "text": "ColumnRegionObject implementation for regions that support fetching symbols from a dictionary from a\n ObjectChunk.",
+ "typeName": "class"
+}

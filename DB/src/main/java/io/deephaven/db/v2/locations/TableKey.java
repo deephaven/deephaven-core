@@ -12,8 +12,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface that specifies key fields for any table-keyed object (i.e. TableLocationProvider).
- *
- * @IncludeAll
  */
 public interface TableKey extends NamedImplementation, LogOutputAppendable {
 

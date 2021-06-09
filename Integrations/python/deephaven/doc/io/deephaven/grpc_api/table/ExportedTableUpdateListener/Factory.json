@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.table.ExportedTableUpdateListener$Factory",
+ "methods": {
+  "create": ":param session: io.deephaven.grpc_api.session.SessionState\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage>\n:return: io.deephaven.grpc_api.table.ExportedTableUpdateListener"
+ },
+ "path": "io.deephaven.grpc_api.table.ExportedTableUpdateListener.Factory",
+ "typeName": "interface"
+}

@@ -6,8 +6,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableReadOnlyChunk} implementation for char data.
- *
- * @IncludeAll
  */
 public final class ResettableCharChunk<ATTR_UPPER extends Any> extends CharChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 

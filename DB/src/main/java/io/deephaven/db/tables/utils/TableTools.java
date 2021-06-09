@@ -45,8 +45,6 @@ import java.util.*;
 /**
  * Tools for working with tables.  This includes methods to examine tables, combine them, convert them to and from CSV files,
  * and create and manipulate columns.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class TableTools {

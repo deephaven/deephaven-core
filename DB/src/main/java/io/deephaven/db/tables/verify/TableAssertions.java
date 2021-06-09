@@ -17,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * The returned table may have attributes set which allow the query engine to more efficiently perform downstream
  * operations.
- *
- * @IncludeAll
  */
 public class TableAssertions {
     private TableAssertions() {}

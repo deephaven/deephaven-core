@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 /**
  * The style of a plot (e.g. line, bar, etc.).
- * @IncludeAll
  */
 public enum PlotStyle {
     /**

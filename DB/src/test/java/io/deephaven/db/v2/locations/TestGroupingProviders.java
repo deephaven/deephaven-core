@@ -43,7 +43,7 @@ public class TestGroupingProviders {
 
     @After
     public void tearDown() throws Exception {
-        QueryLibrary.endQuery();
+        QueryLibrary.resetLibrary();
 
         if (dataDirectory.exists()) {
             TrackedFileHandleFactory.getInstance().closeAll();

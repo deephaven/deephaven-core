@@ -207,7 +207,7 @@ public class GeneratePlottingConvenience {
         }
 
         code += "\n";
-        code += "/** \n* A library of methods for constructing plots.\n* @IncludeAll\n */\n";
+        code += "/** \n* A library of methods for constructing plots.\n */\n";
         code += "@SuppressWarnings(\"unused\")\n";
         code += "public class " + OUTPUT_CLASS_NAME_SHORT + " {\n";
 

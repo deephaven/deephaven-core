@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactory",
+ "methods": {
+  "createRegionedColumnSource": "Note: Java generics information - <DATA_TYPE>\n\n:param columnDefinition: io.deephaven.db.tables.ColumnDefinition<DATA_TYPE>\n:return: io.deephaven.db.v2.sources.regioned.RegionedColumnSource<DATA_TYPE>",
+  "getStringDecoder": "*Overload 1*  \n  Note: Java generics information - <DATA_TYPE>\n  \n  :param dataType: java.lang.Class<DATA_TYPE>\n  :param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n  :return: io.deephaven.util.codec.ObjectDecoder<DATA_TYPE>\n  \n*Overload 2*  \n  Note: Java generics information - <STRING_LIKE_TYPE extends java.lang.CharSequence>\n  \n  :param cache: io.deephaven.base.string.cache.StringCache<STRING_LIKE_TYPE>\n  :param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n  :return: io.deephaven.util.codec.ObjectDecoder<STRING_LIKE_TYPE>"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactory",
+ "text": "Factory interface for regioned source table components.",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.utils.metrics.IntMetric",
+ "methods": {
+  "sample": ":param v: int"
+ },
+ "path": "io.deephaven.db.v2.utils.metrics.IntMetric",
+ "typeName": "interface"
+}

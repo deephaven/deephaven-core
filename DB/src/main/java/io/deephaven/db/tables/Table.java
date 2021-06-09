@@ -34,8 +34,6 @@ import java.util.stream.Collectors;
 
 /**
  * A Deephaven table.
- *
- * @IncludeAll
  */
 public interface Table extends LongSizedDataStructure, LivenessNode {
 
@@ -627,9 +625,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return renameColumns(MatchPairFactory.getExpressions(columns));
     }
 
-    /**
-     * @IncludeAll
-     */
     @FunctionalInterface
     interface RenameFunction {
         String rename(String currentName);
@@ -831,8 +826,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     /**
      * GroupStrategy is used for joins and other operations that can choose one of several ways to make use of grouping
      * information.
-     *
-     * @IncludeAll
      */
     enum GroupStrategy {
         DEFAULT,
@@ -908,9 +901,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return exactJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
     }
 
-    /**
-     * @IncludeAll
-     */
     enum AsOfMatchRule {
         LESS_THAN_EQUAL,
         LESS_THAN,

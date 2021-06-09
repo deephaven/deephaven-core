@@ -10,8 +10,6 @@ import java.io.IOException;
 
 /**
  * Interface for writing table data out.
- *
- * @IncludeAll
  */
 public interface TableWriter<R extends Row> extends Row {
 

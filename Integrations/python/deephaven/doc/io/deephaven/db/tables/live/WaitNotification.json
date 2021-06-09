@@ -6,6 +6,6 @@
   "waitForSatisfaction": "Wait for all of the specified dependencies to be satisfied on the specified step.\n\n:param step: (long) - The step to wait for satisfaction on\n:param dependencies: (io.deephaven.db.tables.live.NotificationQueue.Dependency...) - The dependencies to wait for\n:return: (boolean) True if the dependencies became satisfied on the specified step, false if the cycle had already completed"
  },
  "path": "io.deephaven.db.tables.live.WaitNotification",
- "text": "One-shot NotificationQueue.Notification that can be delivered when a set of\n dependencies are satisfied.\n This allows for an external observer to wait for multiple dependencies to be satisfied using\n WaitNotification.waitForSatisfaction(long, NotificationQueue.Dependency...).",
+ "text": "One-shot NotificationQueue.Notification that can be delivered when a set of\n dependencies are satisfied.\n This allows for an external observer to wait for multiple dependencies to be satisfied using\n waitForSatisfaction(long, NotificationQueue.Dependency...).",
  "typeName": "class"
 }

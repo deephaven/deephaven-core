@@ -11,8 +11,6 @@ import io.deephaven.util.SafeCloseable;
  * A wrapper for a boolean chunk that allows you to resize the chunk to a capacity.
  *
  * @param <T> the chunk's attribute
- *
- * @IncludeAll
  */
 public final class SizedBooleanChunk<T extends Attributes.Any> implements SafeCloseable {
     private WritableBooleanChunk<T> chunk;

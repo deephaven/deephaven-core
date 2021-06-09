@@ -4,8 +4,6 @@ package io.deephaven.web.client.api.subscription;
 /**
  * Constants for null values within the Deephaven engine
  * From io.deephaven.util.QueryConstants
- *
- * @IncludeAll
  */
 public interface QueryConstants {
     char NULL_CHAR = Character.MAX_VALUE - 1;

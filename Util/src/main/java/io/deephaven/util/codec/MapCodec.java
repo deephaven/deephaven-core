@@ -17,8 +17,6 @@ import java.util.Map;
  * Each map is encoded as an integer length, followed by encoded pairs of key values.
  *
  * A null map is represented as an array of zero bytes.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {

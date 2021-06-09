@@ -18,8 +18,6 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 /**
  * A set of commonly used functions that can be applied to Character types.
- *
- * @IncludeAll
  */
 public class CharacterPrimitives {
     /**

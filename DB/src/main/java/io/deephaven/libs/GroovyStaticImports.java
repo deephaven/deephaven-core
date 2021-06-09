@@ -54,8 +54,6 @@ import java.lang.String;
  * Functions statically imported into Groovy.
  *
  * @see io.deephaven.libs.primitives
- *
- * @IncludeAll
  */
 public class GroovyStaticImports {
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#abs(byte) */

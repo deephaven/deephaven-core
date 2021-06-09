@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.locations.TableLocationProvider",
  "methods": {
-  "ensureInitialized": "Ensure that this location provider is initialized. Mainly useful in cases where it cannot be otherwise\n guaranteed that TableLocationProvider.refresh() or TableLocationProvider.subscribe(Listener) has been called prior to calls to\n the various table location fetch methods.\n\n:return: (io.deephaven.db.v2.locations.TableLocationProvider) this, to allow method chaining",
+  "ensureInitialized": "Ensure that this location provider is initialized. Mainly useful in cases where it cannot be otherwise\n guaranteed that refresh() or subscribe(Listener) has been called prior to calls to\n the various table location fetch methods.\n\n:return: (io.deephaven.db.v2.locations.TableLocationProvider) this, to allow method chaining",
   "getName": "allow TableLocationProvider instances to have names.\n\n:return: java.lang.String",
   "getTableLocation": "*Overload 1*  \n  :param internalPartition: (java.lang.String) - The internal partition\n  :param columnPartition: (java.lang.String) - The column partition\n  :return: (io.deephaven.db.v2.locations.TableLocation) The TableLocation matching the given partition names\n  \n*Overload 2*  \n  :param tableLocationKey: (io.deephaven.db.v2.locations.TableLocationKey) - A key specifying the location to get\n  :return: (io.deephaven.db.v2.locations.TableLocation) The TableLocation matching the given key",
   "getTableLocationIfPresent": ":param tableLocationKey: (io.deephaven.db.v2.locations.TableLocationKey) - A key specifying the location to get\n:return: (io.deephaven.db.v2.locations.TableLocation) The TableLocation matching the given key if present, else null",

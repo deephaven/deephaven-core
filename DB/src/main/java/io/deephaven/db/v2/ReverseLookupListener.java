@@ -33,8 +33,6 @@ import java.util.Set;
  * entire table.
  *
  * Note: The key column values must be unique.
- *
- * @IncludeAll
  */
 public class ReverseLookupListener extends LivenessArtifact implements ReverseLookup, DynamicNode, NotificationStepSource {
     private static final long NO_ENTRY_VALUE = -2;

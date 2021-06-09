@@ -11,8 +11,6 @@ import io.deephaven.db.v2.sources.ColumnSource;
 
 /**
  * Data to construct a data column.
- *
- * @IncludeAll
  */
 public class ColumnHolder {
     public static final ColumnHolder[] ZERO_LENGTH_COLUMN_HOLDER_ARRAY = new ColumnHolder[0];

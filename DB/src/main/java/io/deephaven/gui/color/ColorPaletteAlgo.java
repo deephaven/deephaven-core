@@ -12,7 +12,6 @@ import java.util.List;
 
 /**
  * Algorithmically generated {@link ColorPalette}.
- * @IncludeAll
  */
 public class ColorPaletteAlgo implements ColorPalette, Serializable {
 

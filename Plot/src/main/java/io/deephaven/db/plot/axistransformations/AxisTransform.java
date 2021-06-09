@@ -11,7 +11,6 @@ package io.deephaven.db.plot.axistransformations;
  *
  * For example, if the forward transform is x -> x^0.5,  a dataset value of 1 maps to 1 in Axis space; a dataset
  * value of 4 maps to 2. In the plot these values will be displayed close together.
- * @IncludeAll
  */
 public interface AxisTransform {
 

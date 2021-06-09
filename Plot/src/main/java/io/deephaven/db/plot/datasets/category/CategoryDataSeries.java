@@ -20,8 +20,6 @@ import java.util.function.Function;
 /**
  * Dataset with discrete and numeric components.
  * Discrete values must extend {@link Comparable} and are called categories.
- *
- * @IncludeAll
  */
 public interface CategoryDataSeries extends DataSeries {
 

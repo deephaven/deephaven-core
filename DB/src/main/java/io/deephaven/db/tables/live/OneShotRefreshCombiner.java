@@ -7,8 +7,6 @@ import java.util.Deque;
 
 /**
  * On refresh, each of the enqueued runnables is executed.
- *
- * @IncludeAll
  */
 public class OneShotRefreshCombiner implements LiveTable, LiveTableRegistrar {
     private final Deque<LiveTable> runnables = new ArrayDeque<>();

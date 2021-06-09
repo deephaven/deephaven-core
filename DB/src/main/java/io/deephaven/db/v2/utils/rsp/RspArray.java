@@ -152,8 +152,6 @@ import static io.deephaven.db.v2.utils.IndexUtilities.Comparator;
  *         return empty results, and are never actual stored in the spans array.  For details, please
  *         see the Container class definition and derived class hierarchy.</li>
  * </ul>
- *
- * @IncludeAll
  */
 public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
@@ -278,6 +276,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // set singleton span without calling modified(i).
     protected final void setSingletonSpanRaw(final int i, final long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("value=" + value);
+        }
         spans[i] = null;
         spanInfos[i] = value;
     }
@@ -299,12 +300,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // set full block span without calling modified(i).
     protected void setFullBlockSpanRaw(final int i, final long key, final long flen) {
-        setFullBlockSpanRaw(i, spanInfos, spans, key,flen);
+        setFullBlockSpanRaw(i, spanInfos, spans, key, flen);
     }
 
     protected static void setFullBlockSpanRaw(
             final int i, final long[] spanInfos, final Object[] spans,
             final long key, final long flen) {
+        if (key < 0 || flen <= 0) {
+            throw new IllegalArgumentException("i=" + i + ", key=" + key + ", flen=" + flen);
+        }
         final long lowflen = lowBitsAsInt(flen);
         if (lowflen == flen) {
             spanInfos[i] = key | lowflen;
@@ -1754,14 +1758,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final int leftIdx = ii - 1;
             // Note getFullBlockSpanLen(null) == 0.
             final long leftSpanInfo = spanInfos[leftIdx];
-            final long leftSpanLen = getFullBlockSpanLen(leftSpanInfo, spans[leftIdx]);
-            if (leftSpanLen > 0) {
-                final long leftKey = spanInfoToKey(leftSpanInfo);
-                final long keyDistance = distanceInBlocks(leftKey, newSpanKey);
-                if (leftSpanLen >= keyDistance) {
-                    firstKey = leftKey;
-                    firstIdx = leftIdx;
-                    newflen += keyDistance;
+            if (leftSpanInfo != -1) {  // it may have been marked for deletion.
+                final long leftSpanLen = getFullBlockSpanLen(leftSpanInfo, spans[leftIdx]);
+                if (leftSpanLen > 0) {
+                    final long leftKey = spanInfoToKey(leftSpanInfo);
+                    final long keyDistance = distanceInBlocks(leftKey, newSpanKey);
+                    if (leftSpanLen >= keyDistance) {
+                        firstKey = leftKey;
+                        firstIdx = leftIdx;
+                        newflen += keyDistance;
+                    }
                 }
             }
         }
@@ -3544,14 +3550,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     final long lastKey = getKeyForLastBlockInSpan(spanKey, flen);
                     if (uGreaterOrEqual(lastKey, andSpanKey)) {
                         final long newKey = uMax(andSpanKey, spanKey);
-                        buf.spanInfos[buf.size] = newKey;
                         long newLen = flen - distanceInBlocks(spanKey, newKey);
                         boolean bail = false;
                         if (uGreater(lastKey, andLastKey)) {
                             newLen -= distanceInBlocks(andLastKey, lastKey);
                             bail = true;
                         }
-                        buf.spans[buf.size] = newLen;
+                        setFullBlockSpanRaw(buf.size, buf.spanInfos, buf.spans, newKey, newLen);
                         ++buf.size;
                         if (bail) {
                             startPos = i;
@@ -4324,19 +4329,26 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             try (SpanView view = wd.borrowSpanView(this, i)) {
                 final long sInfo = view.getSpanInfo();
                 final long k = view.getKey();
+                if (k < 0) {
+                    if (doAssert) {
+                        final String m = str + ": i=" + i + ", k=" + k;
+                        Assert.assertion(false, m);
+                    }
+                    return false;
+                }
                 final Object s = spans[i];
                 if (s != null && s != FULL_BLOCK_SPAN_MARKER && !(s instanceof short[]) && (sInfo & BLOCK_LAST) != 0) {
-                    final String m = str + ": lower 16 bits of spanInfo non-zero i=" + i + ", sInfo=" + sInfo;
                     if (doAssert) {
+                        final String m = str + ": lower 16 bits of spanInfo non-zero i=" + i + ", sInfo=" + sInfo;
                         Assert.assertion(false, m);
                     }
                     return false;
                 }
                 if (!firstTime) {
                     if (!uLess(lastSpanLastBlockKey, k)) {
-                        final String m = str + ": non-increasing key found i=" + i + ", k=" + k +
-                                ", lastSpanLastBlockKey=" + lastSpanLastBlockKey + ", size=" + size;
                         if (doAssert) {
+                            final String m = str + ": non-increasing key found i=" + i + ", k=" + k +
+                                    ", lastSpanLastBlockKey=" + lastSpanLastBlockKey + ", size=" + size;
                             Assert.assertion(false, m);
                         }
                         return false;
@@ -4345,8 +4357,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 final long flen = view.getFullBlockSpanLen();
                 if (flen > 0) {
                     if (lastSpanWasFullBlock && k - lastSpanLastBlockKey <= BLOCK_SIZE) {
-                        final String m = str + ": consecutive full block spans found i=" + i + ", size=" + size;
                         if (doAssert) {
+                            final String m = str + ": consecutive full block spans found i=" + i + ", size=" + size;
                             Assert.assertion(false, m);
                         }
                         return false;
@@ -4355,31 +4367,31 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 } else {
                     if (s != null) {
                         if (!(s instanceof Container || s instanceof short[])) {
-                            final String m = str + ": can't cast s=" + s + " of class " + s.getClass().getSimpleName() +
-                                    " to Container or short[] when !(flen > 0).";
                             if (doAssert) {
+                                final String m = str + ": can't cast s=" + s + " of class " + s.getClass().getSimpleName() +
+                                        " to Container or short[] when !(flen > 0).";
                                 Assert.assertion(false, m);
                             }
                             return false;
                         }
                         final Container c = view.getContainer();
                         if (c.isEmpty()) {
-                            final String m = str + ": empty RB container found i=" + i + ", size=" + size;
                             if (doAssert) {
+                                final String m = str + ": empty RB container found i=" + i + ", size=" + size;
                                 Assert.assertion(false, m);
                             }
                             return false;
                         }
                         if (c.isAllOnes()) {
-                            final String m = str + ": full RB container found i=" + i + ", size=" + size;
                             if (doAssert) {
+                                final String m = str + ": full RB container found i=" + i + ", size=" + size;
                                 Assert.assertion(false, m);
                             }
                             return false;
                         }
                         if (c.isSingleElement()) {
-                            final String m = str + ": singleton container found i=" + i + ", type=" + c.getClass().getSimpleName();
                             if (doAssert) {
+                                final String m = str + ": singleton container found i=" + i + ", type=" + c.getClass().getSimpleName();
                                 Assert.assertion(false, m);
                             }
                             return false;

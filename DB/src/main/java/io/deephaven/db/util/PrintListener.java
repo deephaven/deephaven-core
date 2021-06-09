@@ -14,8 +14,6 @@ import io.deephaven.util.annotations.ScriptApi;
  * <p>Output is directed to stdout, thus this should not be enabled in production queries.</p>
  *
  * <p>After you are finished, call the {@link #stop()} method to remove this listener from the source table. </p>
- *
- * @IncludeAll
  */
 @ScriptApi
 public class PrintListener extends InstrumentedShiftAwareListener {

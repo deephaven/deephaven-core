@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.db.v2.SliceLikeOperation",
+ "methods": {
+  "getDescription": ":return: (java.lang.String) the description of this operation",
+  "getLogPrefix": ":return: (java.lang.String) the log prefix of this operation",
+  "headPct": ":param parent: io.deephaven.db.v2.QueryTable\n:param percent: double\n:return: io.deephaven.db.v2.SliceLikeOperation",
+  "initialize": "Initialize this operation.\n\n:param usePrev: boolean\n:param beforeClock: long\n:return: (io.deephaven.db.v2.QueryTable.Operation.Result) the result table / listener if successful, null if it should be retried.",
+  "slice": ":param parent: io.deephaven.db.v2.QueryTable\n:param firstPositionInclusive: long\n:param lastPositionExclusive: long\n:param op: java.lang.String\n:return: io.deephaven.db.v2.SliceLikeOperation",
+  "tailPct": ":param parent: io.deephaven.db.v2.QueryTable\n:param percent: double\n:return: io.deephaven.db.v2.SliceLikeOperation"
+ },
+ "path": "io.deephaven.db.v2.SliceLikeOperation",
+ "typeName": "class"
+}

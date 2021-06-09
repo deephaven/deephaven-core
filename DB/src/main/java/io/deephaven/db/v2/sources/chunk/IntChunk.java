@@ -18,8 +18,6 @@ import java.nio.IntBuffer;
 
 /**
  * {@link Chunk} implementation for int data.
- *
- * @IncludeAll
  */
 public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

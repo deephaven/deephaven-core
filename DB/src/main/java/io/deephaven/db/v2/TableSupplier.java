@@ -28,8 +28,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a filter method is called.<br>
- *
- * @Include
  */
 @ScriptApi
 public class TableSupplier extends LivenessArtifact implements InvocationHandler {
@@ -98,8 +96,6 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      *
      * @param sourceTable the source table
      * @return a Proxy that will supply a table
-     *
-     * @Include
      */
     @ScriptApi
     public static Table build(Table sourceTable) {
@@ -113,8 +109,6 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      *
      * @param maybeSupplier a Table that may be a supplier
      * @return a completed Supplier or unaltered Table
-     *
-     * @Include
      */
     @ScriptApi
     public static Table complete(Table maybeSupplier) {
@@ -127,8 +121,6 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      *
      * @param maybeSupplier a Table that may be a supplier
      * @return an applied empty table or an unaltered table
-     *
-     * @Include
      */
     @ScriptApi
     public static Table getAppliedEmptyTable(Table maybeSupplier) {

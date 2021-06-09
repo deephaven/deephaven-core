@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for objects that retainReference {@link LivenessReferent}s until such time as they are no longer necessary.
- *
- * @IncludeAll
  */
 public interface LivenessManager {
 
