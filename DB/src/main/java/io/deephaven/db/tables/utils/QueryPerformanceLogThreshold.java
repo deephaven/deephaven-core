@@ -5,8 +5,6 @@ import io.deephaven.configuration.Configuration;
 /**
  * This class encapsulates the parameters that control whether a given item (nugget or entry interval) is logged to
  * one of our three performance logs.
- *
- * @IncludeAll
  */
 public class QueryPerformanceLogThreshold {
     private final long minimumDurationNanos;

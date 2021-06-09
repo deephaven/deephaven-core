@@ -3,7 +3,6 @@ package io.deephaven.db.v2.locations;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
@@ -44,7 +43,7 @@ public class TestGroupingProviders {
 
     @After
     public void tearDown() throws Exception {
-        QueryLibrary.endQuery();
+        QueryLibrary.resetLibrary();
 
         if (dataDirectory.exists()) {
             TrackedFileHandleFactory.getInstance().closeAll();

@@ -8,8 +8,6 @@ import io.deephaven.db.util.LongSizedDataStructure;
 
 /**
  * Interface for positional column access to a Deephaven table column.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public interface DataColumn<TYPE> extends LongSizedDataStructure {

@@ -7,8 +7,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * {@link ReleasableLivenessManager} to manage exactly one object, passed at construction time or managed later.
- *
- * @IncludeAll
  */
 public class SingletonLivenessManager implements ReleasableLivenessManager {
 

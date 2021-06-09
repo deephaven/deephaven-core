@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.db.v2.utils.RefCountedCow",
+ "methods": {
+  "acquire": "Increase our reference count.",
+  "cowRef": "Obtain a new reference to this object; the reference count will increase.\n This operation is cheap and does not do a deep copy of the object's payload;\n if a mutator is called through this reference, the reference will make\n a copy of its payload first, before applying the mutation, to keep other\n read only accessor of the previously shared payload unnaffected.\n\n Note this assumes a pattern of use for derived classes where mutators return a reference,\n which may or may not point to the same object on which the mutation was called.\n\n Also note this is not thread safe.\n\n:return: (RefCountedCow.T) A reference that will copy-on-write on its payload if it is mutated.",
+  "deepCopy": "Get a deep copy of the current object, not shared with anybody.\n\n Note this is not thread safe.\n\n:return: (RefCountedCow.T) A full, deep copy of this object with a reference count of 1 (not shared).",
+  "getWriteRef": "Obtain a reference to this object that can be modified without affecting other\n references.\n Note this is not thread safe.\n\n:return: (RefCountedCow.T) If this object is shared, a deep copy of this object, otherwise the object itself.",
+  "refCount": "Note: Java generics information - io.deephaven.util.annotations.@VisibleForTesting\n\n:return: int",
+  "release": "Decrease our reference count.\n\n:return: (int) the resulting reference count value."
+ },
+ "path": "io.deephaven.db.v2.utils.RefCountedCow",
+ "text": "This class enables a pattern of use where objects can be shared from multiple references/identities\n while they are used read-only.\n\n Note this is not thread safe.\n\n A class derives from this class and users of it call getWriteRef() to obtain a reference that can be modified.\n That may return the same object (with an increased ref count), or may return a deep copy of it if other readers\n of the object exist.  Effectively this creates a copy-on-write sharing strategy.\n \n\n Example:\n \n\n {@Code\n\n   class MyType extends RefCountedCow {",
+ "typeName": "class"
+}

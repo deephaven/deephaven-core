@@ -2,8 +2,6 @@ package io.deephaven.db.plot;
 
 /**
  * A factory for creating a new Figure.
- *
- * @IncludeAll
  */
 public class FigureFactory {
     private FigureFactory() {

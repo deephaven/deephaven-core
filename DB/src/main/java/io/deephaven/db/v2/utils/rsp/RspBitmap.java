@@ -88,8 +88,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return (short) (val & BLOCK_LAST);
     }
 
-    public RspBitmap addValues(final long... dat) {
-        final RspBitmap rb = addN(dat, 0, dat.length);
+    @VisibleForTesting
+    RspBitmap addValues(final long... values) {
+        RspBitmap rb = this;
+        for (long value : values) {
+            rb = rb.add(value);
+        }
         return rb;
     }
 
@@ -107,51 +111,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         Container c; // The RB Container, or null if key corresponds to a full block span or single key.
     }
 
-    private void addAndPopulateCtx(final long val, final AddCtx ctx, final MutableObject<SortedRanges> sortedRangesMu) {
-        ctx.index = getSpanIndex(val);
-        if (ctx.index < 0) {
-            ctx.key = val;
-            ctx.index = -ctx.index - 1;
-            ctx.c = null;
-            insertSpanAtIndex(ctx.index, val, null);
-            return;
-        }
-        final Object span = spans[ctx.index];
-        final long flen = RspArray.getFullBlockSpanLen(span);
-        if (flen > 0) {
-            // if flen > 0 nothing to do, val is already there.
-            ctx.key = highBits(val);
-            ctx.c = null;
-            return;
-        }
-        final Container result;
-        Container container = null;
-        if (span == null) {
-            final long key = keys[ctx.index];
-            result = containerForTwoValues(key, val);
-            if (result == null) {
-                ctx.key = val;
-                return;
-            }
-            keys[ctx.index] = highBits(key);
-        } else {
-            container = (Container) span;
-            result = container.iset(lowBitsAsShort(val));
-        }
-        ctx.key = highBits(val);
-        if (result.isAllOnes()) {
-            setOrInsertFullBlockSpanAtIndex(ctx.index, ctx.key, 1, sortedRangesMu);
-            ctx.c = null;
-        } else {
-            if (result != container) {
-                setSpanAtIndex(ctx.index, result);
-            } else {
-                modifiedSpan(ctx.index);
-            }
-            ctx.c = result;
-        }
-    }
-
     static Container containerForTwoValues(final long v1, final long v2) {
         if (v1 == v2) {
             return null;
@@ -162,12 +121,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return Container.twoValues(lowBitsAsShort(v2), lowBitsAsShort(v1));
     }
 
-    public RspBitmap addN(final long[] dat, final int offset, final int n) {
-        final RspBitmap rb = addValuesUnsafe(dat, offset, n);
-        rb.finishMutations();
-        return rb;
-    }
-
     public RspBitmap addValuesUnsafe(final LongChunk<OrderedKeyIndices> values, final int offset, final int length) {
         final RspBitmap rb = writeCheck();
         rb.addValuesUnsafeNoWriteCheck(values, offset, length);
@@ -176,42 +129,44 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedKeyIndices> values, final int offset, final int length) {
         int lengthFromThisSpan;
-        final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject();
+        final WorkData wd = workDataPerThread.get();
+        final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
         int spanIndex = 0;
-        for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
-            final long value = values.get(vi + offset);
-            final long highBits = highBits(value);
-            lengthFromThisSpan = countContiguousHighBitsMatches(values, vi + offset + 1, length - vi - 1, highBits) + 1;
-            final int spanIndexRaw = getSpanIndex(spanIndex, highBits);
-            Container container = null;
-            boolean existing = false;
-            if (spanIndexRaw < 0) {
-                spanIndex = ~spanIndexRaw;
-            } else {
-                spanIndex = spanIndexRaw;
-                final Object existingSpan = spans[spanIndex];
-                if (getFullBlockSpanLen(existingSpan) >= 1) {
-                    continue;
-                }
-                container = (Container) existingSpan;
-                existing = true;
-            }
-            final Container result = createOrUpdateContainerForValues(values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
-            if (result != null && result.isAllOnes()) {
-                spanIndex = setOrInsertFullBlockSpanAtIndex(spanIndexRaw, highBits, 1, sortedRangesMu);
-            } else if (!existing) {
-                if (result == null) {
-                    insertSpanAtIndex(spanIndex, value, null);
+        try (SpanView ourView = wd.borrowSpanView()) {
+            for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
+                final long value = values.get(vi + offset);
+                final long highBits = highBits(value);
+                lengthFromThisSpan = countContiguousHighBitsMatches(
+                        values, vi + offset + 1, length - vi - 1, highBits) + 1;
+                final int spanIndexRaw = getSpanIndex(spanIndex, highBits);
+                Container container = null;
+                boolean existing = false;
+                if (spanIndexRaw < 0) {
+                    spanIndex = ~spanIndexRaw;
                 } else {
-                    insertSpanAtIndex(spanIndex, highBits, result);
+                    spanIndex = spanIndexRaw;
+                    final Object existingSpan = spans[spanIndex];
+                    final long existingSpanInfo = spanInfos[spanIndex];
+                    if (getFullBlockSpanLen(existingSpanInfo, existingSpan) >= 1) {
+                        continue;
+                    }
+                    ourView.init(this, spanIndex, existingSpanInfo, existingSpan);
+                    container = ourView.getContainer();
+                    existing = true;
                 }
-            } else if (container != result) {
-                setNotNullContainerAtIndex(spanIndex, result);
-                if (container == null) {
-                    keys[spanIndex] = highBits;
+                final Container result = createOrUpdateContainerForValues(
+                        values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
+                if (result != null && result.isAllOnes()) {
+                    spanIndex = setOrInsertFullBlockSpanAtIndex(spanIndexRaw, highBits, 1, sortedRangesMu);
+                } else if (!existing) {
+                    if (result == null) {
+                        insertSingletonAtIndex(spanIndex, value);
+                    } else {
+                        insertContainerAtIndex(spanIndex, highBits, result);
+                    }
+                } else {
+                    setContainerSpan(container, spanIndex, highBits, result);
                 }
-            } else {
-                modifiedSpan(spanIndex);
             }
         }
         collectRemovedIndicesIfAny(sortedRangesMu);
@@ -240,16 +195,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 return null;
             }
             if (container == null) {
-                final long key = keys[keyIdx];
-                if (firstValue == key) {
+                final long singletonValue = getSingletonSpanValue(keyIdx);
+                if (firstValue == singletonValue) {
                     return null;
                 }
                 final long left, right;
-                if (firstValue < key) {
+                if (firstValue < singletonValue) {
                     left = firstValue;
-                    right = key;
+                    right = singletonValue;
                 } else {
-                    left = key;
+                    left = singletonValue;
                     right = firstValue;
                 }
                 if (left + 1 == right) {
@@ -272,7 +227,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             }
             if (container == null) {
                 return new RunContainer(lowBitsAsInt(firstValue), lowBitsAsInt(lastValue) + 1)
-                        .iset(lowBitsAsShort(keys[keyIdx]));
+                        .iset(lowBitsAsShort(getSingletonSpanValue(keyIdx)));
             }
             return container.iadd(lowBitsAsInt(firstValue), lowBitsAsInt(lastValue) + 1);
         }
@@ -285,7 +240,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 return new ArrayContainer(3)
                         .iset(lowBitsAsShort(firstValue))
                         .iset(lowBitsAsShort(lastValue))
-                        .iset(lowBitsAsShort(keys[keyIdx]));
+                        .iset(lowBitsAsShort(spanInfos[keyIdx]));
             }
             return container.iset(lowBitsAsShort(firstValue)).iset(lowBitsAsShort(lastValue));
         }
@@ -294,7 +249,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return makeValuesContainer(values, offset, length).runOptimize();
         }
         if (container == null) {
-            container = Container.singleton(lowBitsAsShort(keys[keyIdx]));
+            container = Container.singleton(lowBitsAsShort(spanInfos[keyIdx]));
         }
         return addValuesToContainer(values, offset, length, container);
     }
@@ -327,58 +282,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return container;
     }
 
-    public RspBitmap addValuesUnsafe(final PrimitiveIterator.OfLong it) {
-        final RspBitmap rb = writeCheck();
-        rb.addValuesUnsafeNoWriteCheck(it);
-        return rb;
-    }
-
-    public void addValuesUnsafeNoWriteCheck(final PrimitiveIterator.OfLong it) {
-        final AddCtx ctx = new AddCtx();
-        ctx.index = -1;
-        final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject();
-        while (it.hasNext()) {
-            final long val = it.nextLong();
-            final long valHighBits = highBits(val);
-            if (ctx.index != -1 && highBits(ctx.key) == valHighBits) {
-                if (ctx.c == null) {
-                    final Container valCont = containerForTwoValues(ctx.key, val);
-                    ctx.key = keys[ctx.index] = valHighBits;
-                    ctx.c = valCont;
-                    setSpanAtIndex(ctx.index, valCont);
-                } else {
-                    final Container valCont = ctx.c.iset(lowBitsAsShort(val));
-                    if (valCont.isAllOnes()) {
-                        setOrInsertFullBlockSpanAtIndex(ctx.index, valHighBits, 1, sortedRangesMu);
-                        ctx.c = null;
-                    } else if (valCont != ctx.c) {
-                        setSpanAtIndex(ctx.index, valCont);
-                        ctx.c = valCont;
-                    } else {
-                        modifiedSpan(ctx.index);
-                    }
-                }
-            } else {
-                addAndPopulateCtx(val, ctx, sortedRangesMu);
-            }
-        }
-        collectRemovedIndicesIfAny(sortedRangesMu);
-    }
-
-    public RspBitmap addValuesUnsafe(final long[] dat, final int offset, final int n) {
-        final PrimitiveIterator.OfLong it = new PrimitiveIterator.OfLong() {
-            int j = offset;
-            final int end = offset + n;
-            @Override public boolean hasNext() {
-                return j < end;
-            }
-            @Override public long nextLong() {
-                return dat[j++];
-            }
-        };
-        return addValuesUnsafe(it);
-    }
-
     public RspBitmap add(final long val) {
         final RspBitmap rb = addUnsafe(val);
         rb.finishMutations();
@@ -394,7 +297,36 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     public void addUnsafeNoWriteCheck(final long val) {
-        addAndPopulateCtx(val, new AddCtx(), null);
+        int index = getSpanIndex(val);
+        if (index < 0) {
+            insertSingletonAtIndex(~index, val);
+            return;
+        }
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, index)) {
+            final long flen = view.getFullBlockSpanLen();
+            if (flen > 0) {
+                // if flen > 0 nothing to do, val is already there.
+                return;
+            }
+            final Container result;
+            Container container = null;
+            if (view.isSingletonSpan()) {
+                final long single = view.getSingletonSpanValue();
+                result = containerForTwoValues(single, val);
+                if (result == null) {
+                    return;
+                }
+            } else {
+                container = view.getContainer();
+                result = container.iset(lowBitsAsShort(val));
+            }
+            final long key = view.getKey();
+            if (result.isAllOnes()) {
+                setOrInsertFullBlockSpanAtIndex(index, key, 1, null);
+            } else {
+                setContainerSpan(container, index, key, result);
+            }
+        }
     }
 
     // Prerequisite: keyForLastBlock <= sHigh
@@ -417,7 +349,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 appendFullBlockSpan(sHighNext, 1);
             } else {
                 if (eLow == 0) {
-                    appendContainer(sHighNext, null);
+                    appendSingletonSpan(sHighNext);
                 } else {
                     appendContainer(sHighNext, Container.rangeOfOnes(0, eLow + 1));
                 }
@@ -427,7 +359,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (eLow < BLOCK_LAST) {
             appendFullBlockSpan(sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh));
             if (eLow == 0) {
-                appendContainer(eHigh, null);
+                appendSingletonSpan(eHigh);
             } else {
                 appendContainer(eHigh, Container.rangeOfOnes(0, eLow + 1));
             }
@@ -470,8 +402,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 return;
             }
             if (c.isSingleElement()) {
-                final long fullKey = k | c.first();
-                appendContainer(fullKey, null);
+                final long value = k | c.first();
+                appendSingletonSpan(value);
                 return;
             }
         }
@@ -480,303 +412,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     public void appendFullBlockSpanUnsafeNoWriteCheck(final long k, final long slen) {
         appendFullBlockSpan(k, slen);
-    }
-
-    private abstract static class AppendCtx {
-        final RspArray kvs;
-        long blockKey;
-        // the data below is a cache that may be kept up to date between flushes; lastSpanIndex = -1 signals a
-        // non-populated cache.
-        int lastSpanIndex = -1;
-        long lastSpanKey = -1;
-        Object lastSpan = null;
-        long lastSpanLen = -1;
-        long lastBlockKey = -1;
-        AppendCtx(final RspBitmap rb) {
-            kvs = rb;
-            blockKey = -1;
-        }
-        void loadLastSpan() {
-            if (kvs.isEmpty()) {
-                lastSpanIndex = -1;
-                lastBlockKey = -1;
-                return;
-            }
-            lastSpanIndex = kvs.getSize() - 1;
-            lastSpanKey = highBits(kvs.keys[lastSpanIndex]);
-            lastSpan = kvs.spans[lastSpanIndex];
-            lastSpanLen = getFullBlockSpanLen(lastSpan);
-            lastBlockKey = (lastSpanLen > 0) ?
-                    lastSpanKey + (lastSpanLen - 1)*BLOCK_SIZE :
-                    lastSpanKey;
-        }
-        void flushRuns() {
-            if (blockKey == -1) {
-                return;
-            }
-            if (lastSpanIndex == -1) {
-                loadLastSpan();
-            }
-            if (debug) {
-                Assert.geq(blockKey, "k", lastBlockKey, "lastKey");
-            }
-            // !(lastSpanLen > 0) {
-            if (blockKey > lastBlockKey) {
-                lastSpan = appendContainer();
-                ++lastSpanIndex;
-                lastSpanKey = lastBlockKey = blockKey;
-                lastSpanLen = 0;
-                blockKey = -1;
-                return;
-            }
-            final MutableBoolean isFullBlock = new MutableBoolean(false);
-            lastSpan = mergeContainer(isFullBlock);
-            if (isFullBlock.booleanValue()) {
-                lastSpanIndex = -1;
-            }
-            blockKey = -1;
-        }
-        void invalidateLastCache() {
-            lastSpanIndex = -1;
-        }
-        abstract Container appendContainer();
-        abstract Container mergeContainer(MutableBoolean isFullBlock);
-    }
-
-    private final static class AppendRangesCtx extends AppendCtx {
-        static final int runSz = 126;
-        short[] runs = null;
-        int nrunsTimesTwo = 0;
-        int cardinality = 0;
-        AppendRangesCtx(final RspBitmap rb) {
-            super(rb);
-        }
-        void appendRange(final long kHigh, final long start, final long end) {
-            if (this.blockKey != kHigh && nrunsTimesTwo != 0) {
-                flushRuns();
-            }
-            this.blockKey = kHigh;
-            if (runs == null) {
-                runs = new short[runSz];
-            }
-            final int s = lowBitsAsInt(start);
-            final int e = lowBitsAsInt(end);
-            if (nrunsTimesTwo > 0) {
-                final int lastStart = unsignedShortToInt(runs[nrunsTimesTwo - 2]);
-                final int lastEnd = lastStart + unsignedShortToInt(runs[nrunsTimesTwo - 1]);
-                if (lastEnd + 1 == s) {
-                    runs[nrunsTimesTwo - 1] = (short) (e - lastStart);
-                    return;
-                }
-            }
-            runs[nrunsTimesTwo++] = (short) s;
-            final int len = e - s;
-            runs[nrunsTimesTwo++] = (short) len;
-            cardinality += len + 1;
-            if (nrunsTimesTwo == runs.length) {
-                flushRuns();
-            }
-        }
-        Container tryImmutableContainer() {
-            if (!ImmutableContainer.ENABLED) {
-                return null;
-            }
-            final int nruns = nrunsTimesTwo/2;
-            if (nruns == 1) {
-                if (runs[1] == 0) {
-                    throw new IllegalStateException("singleton");
-                }
-                final int start = unsignedShortToInt(runs[0]);
-                final int endExclusive = start + unsignedShortToInt(runs[1]) + 1;
-                return Container.singleRange(start, endExclusive);
-            }
-            if (nruns == 2 && runs[1] == 0 && runs[3] == 0) {
-                return Container.twoValues(runs[0], runs[2]);
-            }
-            return null;
-        }
-        Container appendContainer() {
-            if (nrunsTimesTwo == 2 && runs[1] == 0) {
-                kvs.appendSingle(blockKey | unsignedShortToInt(runs[0]));
-                nrunsTimesTwo = 0;
-                return null;
-            }
-            Container c = tryImmutableContainer();
-            if (c == null) {
-                c = RunContainer.makeByWrapping(runs,nrunsTimesTwo /2, cardinality);
-                runs = null;
-            }
-            kvs.appendContainer(blockKey, c);
-            nrunsTimesTwo = 0;
-            cardinality = 0;
-            return c;
-        }
-        Container mergeContainer(final MutableBoolean isFullBlock) {
-            if (nrunsTimesTwo == 2) {
-                Container c = null;
-                if (lastSpan == null) {
-                    final int v = lowBitsAsInt(lastSpanKey);
-                    final int rs = unsignedShortToInt(runs[0]);
-                    final int re = rs + unsignedShortToInt(runs[1]);
-                    c = containerForLowValueAndRange(v, rs, re);
-                    if (c == null) {
-                        kvs.setNullContainerAtIndex(lastSpanIndex);
-                    } else {
-                        kvs.keys[lastSpanIndex] = highBits(lastSpanKey);
-                        kvs.setNotNullContainerAtIndex(lastSpanIndex, c);
-                    }
-                } else {
-                    c = (Container) lastSpan;
-                    final int rs = unsignedShortToInt(runs[0]);
-                    final int re = rs + unsignedShortToInt(runs[1]);
-                    c = c.iadd(rs, re + 1);
-                    if (c != lastSpan) {
-                        kvs.setNotNullContainerAtIndex(lastSpanIndex, c);
-                    } else {
-                        kvs.modifiedSpan(lastSpanIndex);
-                    }
-                }
-                nrunsTimesTwo = 0;
-                return c;
-            }
-            Container c = tryImmutableContainer();
-            if (c == null) {
-                c = RunContainer.makeByWrapping(runs, nrunsTimesTwo /2, cardinality);
-                runs = null;
-            }
-            nrunsTimesTwo = 0;
-            cardinality = 0;
-            return kvs.mergeContainer(lastSpanIndex, c, isFullBlock);
-        }
-    }
-
-    private final static class AppendValuesCtx extends AppendCtx {
-        static final int valuesSz = 254;
-        short[] values = null;
-        int iv = 0;
-        AppendValuesCtx(final RspBitmap rb) {
-            super(rb);
-        }
-        void appendValue(final long k, final long v) {
-            if (this.blockKey != k && iv != 0) {
-                flushRuns();
-            }
-            this.blockKey = k;
-            if (values == null) {
-                values = new short[valuesSz];
-            }
-            values[iv++] = lowBitsAsShort(v);
-            if (iv == values.length) {
-                flushRuns();
-            }
-        }
-        Container tryImmutableContainer() {
-            if (!ImmutableContainer.ENABLED) {
-                return null;
-            }
-            if (iv == 1) {
-                throw new IllegalStateException("singleton");
-            }
-            if (iv == 2) {
-                final int first = unsignedShortToInt(values[0]);
-                final int second = unsignedShortToInt(values[1]);
-                if (first + 1 == second) {
-                    return Container.singleRange(first, second + 1);
-                }
-                return Container.twoValues(values[0], values[1]);
-            }
-            return null;
-        }
-        @Override
-        Container appendContainer() {
-            if (iv == 1) {
-                kvs.appendSingle(blockKey | unsignedShortToInt(values[0]));
-                iv = 0;
-                return null;
-            }
-            Container c = tryImmutableContainer();
-            if (c == null) {
-                c = ArrayContainer.makeByCopying(values, 0, iv);
-            }
-            kvs.appendContainer(blockKey, c);
-            iv = 0;
-            return c;
-        }
-        @Override
-        Container mergeContainer(final MutableBoolean isFullBlock) {
-            if (iv == 1) {
-                Container c = null;
-                if (lastSpan == null) {
-                    final int kv = lowBitsAsInt(lastSpanKey);
-                    final int v = unsignedShortToInt(values[0]);
-                    c = containerForLowValueAndRange(kv, v, v);
-                    if (c == null) {
-                        kvs.setNullContainerAtIndex(lastSpanIndex);
-                    } else  {
-                        kvs.keys[lastSpanIndex] = highBits(lastSpanKey);
-                        kvs.setNotNullContainerAtIndex(lastSpanIndex, c);
-                    }
-                } else {
-                    c = (Container) lastSpan;
-                    c = c.iset(values[0]);
-                    if (c != lastSpan) {
-                        kvs.setNotNullContainerAtIndex(lastSpanIndex, c);
-                    } else {
-                        kvs.modifiedSpan(lastSpanIndex);
-                    }
-                }
-                iv = 0;
-                return c;
-            }
-            Container c = tryImmutableContainer();
-            if (c == null) {
-                c = ArrayContainer.makeByWrapping(values, iv);
-                values = null;
-            }
-            iv = 0;
-            return kvs.mergeContainer(lastSpanIndex, c, isFullBlock);
-        }
-    }
-
-    public RspBitmap appendRangesUnsafe(final LongRangeIterator rit) {
-        final RspBitmap rb = writeCheck();
-        rb.appendRangesUnsafeNoWriteCheck(rit);
-        return rb;
-    }
-
-    public void appendRangesUnsafeNoWriteCheck(final LongRangeIterator rit) {
-        final AppendRangesCtx ctx = new AppendRangesCtx(this);
-        while (rit.hasNext()) {
-            rit.next();
-            final long start = rit.start();
-            final long sHigh = highBits(start);
-            final long end = rit.end();
-            final long eHigh = highBits(end);
-            if (sHigh != eHigh) {
-                ctx.flushRuns();
-                appendRangeUnsafeNoWriteCheck(sHigh, start, eHigh, end);
-                ctx.invalidateLastCache();
-                continue;
-            }
-            ctx.appendRange(sHigh, start, end);
-        }
-        ctx.flushRuns();
-    }
-
-    public RspBitmap appendValuesUnsafe(final PrimitiveIterator.OfLong it) {
-        final RspBitmap rb = writeCheck();
-        rb.appendValuesUnsafeNoWriteCheck(it);
-        return rb;
-    }
-
-    public void appendValuesUnsafeNoWriteCheck(final PrimitiveIterator.OfLong it) {
-        final AppendValuesCtx ctx = new AppendValuesCtx(this);
-        while (it.hasNext()) {
-            final long v = it.nextLong();
-            final long k = highBits(v);
-            ctx.appendValue(k, v);
-        }
-        ctx.flushRuns();;
     }
 
     public RspBitmap append(final long v) {
@@ -798,43 +433,40 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         final short low = lowBits(v);
         long keyForLastBlock = 0;
         if (isEmpty() || (keyForLastBlock = keyForLastBlock()) < sHigh) {
-            appendSingle(v);
+            appendSingletonSpan(v);
             return;
         }
         if (keyForLastBlock != sHigh) {
             throw new IllegalArgumentException("Can't append v=" + v + " when keyForLastBlock=" + keyForLastBlock);
         }
 
-        final Object span = spans[size - 1];
-        if (getFullBlockSpanLen(span) > 0) {
-            // if it is a full block span we already have the value.
-            return;
-        }
-        final Container result;
-        Container container = null;
-        if (span == null) {
-            final long key = keys[size - 1];
-            if (key == v) {
+        final int lastIndex = size - 1;
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, lastIndex)) {
+            if (view.getFullBlockSpanLen() > 0) {
+                // if it is a full block span we already have the value.
                 return;
             }
-            if (key < v) {
-                result = Container.twoValues(lowBitsAsShort(key), lowBitsAsShort(v));
+            final Container result;
+            Container container = null;
+            if (view.isSingletonSpan()) {
+                final long single = view.getSingletonSpanValue();
+                if (single == v) {
+                    return;
+                }
+                if (single < v) {
+                    result = Container.twoValues(lowBitsAsShort(single), lowBitsAsShort(v));
+                } else {
+                    result = Container.twoValues(lowBitsAsShort(v), lowBitsAsShort(single));
+                }
             } else {
-                result = Container.twoValues(lowBitsAsShort(v), lowBitsAsShort(key));
+                container = view.getContainer();
+                result = container.iset(low);
             }
-            keys[size - 1] = highBits(key);
-        } else {
-            container = (Container) span;
-            result = container.iset(low);
-        }
-        if (result.isAllOnes()) {
-            setLastFullBlockSpan(sHigh, 1);
-            return;
-        }
-        if (result != container) {
-            replaceLastContainer(result);
-        } else {
-            modifiedLastSpan();
+            if (result.isAllOnes()) {
+                setLastFullBlockSpan(sHigh, 1);
+                return;
+            }
+            setContainerSpan(container, lastIndex, sHigh, result);
         }
     }
 
@@ -842,24 +474,25 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
      * Adds the provided (start, end) range, relative to the given key, to this array.
      *
      * @param startPos the initial index from which to start the search for k
-     * @param k the key to use for the range provided.
-     * @param start the start of the range to add.  0 <= start < BLOCK_SIZE
-     * @param end the end (inclusive) of the range to add.  0 <= end < BLOCK_SIZE
+     * @param startHighBits the high bits of the start position for the range provided.
+     * @param start the start position for the range provided.
+     * @param startLowBits the low bits of the start of the range to add.  0 <= start < BLOCK_SIZE
+     * @param endLowBits the low bits of the end (inclusive) of the range to add.  0 <= end < BLOCK_SIZE
      * @return the index of the span where the interval was added.
      */
     private int
-    singleBlockAddRange(final int startPos, final long kHigh, final long k, final int start, final int end) {
-        final int endExclusive = end + 1;
-        final int i = getSpanIndex(startPos, k);
-        if (endExclusive - start == BLOCK_SIZE) {
-            return setOrInsertFullBlockSpanAtIndex(i, kHigh, 1, null);
+    singleBlockAddRange(final int startPos, final long startHighBits, final long start, final int startLowBits, final int endLowBits) {
+        final int endExclusive = endLowBits + 1;
+        final int i = getSpanIndex(startPos, start);
+        if (endExclusive - startLowBits == BLOCK_SIZE) {
+            return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
         }
         if (i < 0) {
             final int j = -i - 1;
-            if (start == end) {
-                insertSpanAtIndex(j, k, null);
+            if (startLowBits == endLowBits) {
+                insertSingletonAtIndex(j, start);
             } else {
-                insertSpanAtIndex(j, kHigh, Container.rangeOfOnes(start, endExclusive));
+                insertContainerAtIndex(j, startHighBits, Container.rangeOfOnes(startLowBits, endExclusive));
             }
             return j;
         }
@@ -868,47 +501,44 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return i;
         }
         Container container = null;
+        SpanView view = null;
         final Container result;
-        if (span == null) {
-            final long key = keys[i];
-            final int keyLowAsInt = lowBitsAsInt(key);
-            if (start == end && start == keyLowAsInt) {
+        if (isSingletonSpan(span)) {
+            final long single = getSingletonSpanValue(i);
+            final int keyLowAsInt = lowBitsAsInt(single);
+            if (startLowBits == endLowBits && startLowBits == keyLowAsInt) {
                 return i;
             }
-            keys[i] = highBits(key);
-            if (keyLowAsInt + 1 < start) {
-                result = new RunContainer(keyLowAsInt, keyLowAsInt + 1, start, endExclusive);
-            } else if (keyLowAsInt + 1 == start) {
+            if (keyLowAsInt + 1 < startLowBits) {
+                result = new RunContainer(keyLowAsInt, keyLowAsInt + 1, startLowBits, endExclusive);
+            } else if (keyLowAsInt + 1 == startLowBits) {
                 if (endExclusive - keyLowAsInt == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, kHigh, 1, null);
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
                 }
                 result = Container.singleRange(keyLowAsInt, endExclusive);
-            } else if (end + 1 < keyLowAsInt) {
-                result = new RunContainer(start, endExclusive, keyLowAsInt, keyLowAsInt + 1);
-            } else if (end + 1 == keyLowAsInt) {
-                if (keyLowAsInt + 1 - start == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, kHigh, 1, null);
+            } else if (endLowBits + 1 < keyLowAsInt) {
+                result = new RunContainer(startLowBits, endExclusive, keyLowAsInt, keyLowAsInt + 1);
+            } else if (endLowBits + 1 == keyLowAsInt) {
+                if (keyLowAsInt + 1 - startLowBits == BLOCK_SIZE) {
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
                 }
-                result = Container.singleRange(start, keyLowAsInt + 1);
+                result = Container.singleRange(startLowBits, keyLowAsInt + 1);
             } else { // start <= key <= end
-                result = Container.singleRange(start, endExclusive);
+                result = Container.singleRange(startLowBits, endExclusive);
             }
         } else {
-            container = (Container) span;
-            result = container.iadd(start, endExclusive);
+            view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span);
+            container = view.getContainer();
+            result = container.iadd(startLowBits, endExclusive);
             if (result.isAllOnes()) {
-                return setOrInsertFullBlockSpanAtIndex(i, kHigh, 1, null);
+                view.close();
+                return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
             }
         }
-        if (result != container) {
-            if (container == null) {
-                keys[i] = kHigh;
-            }
-            setNotNullContainerAtIndex(i, result);
-        } else {
-            modifiedSpan(i);
+        try (SpanView ensureViewIsClosedIfNotNull = view) {
+            setContainerSpan(container, i, startHighBits, result);
+            return i;
         }
-        return i;
     }
 
 
@@ -928,7 +558,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (isEmpty() || (keyForLastBlock = keyForLastBlock()) < kHigh) {
             final int pos = size();
             if (start == end) {
-                appendSingle(k);
+                appendSingletonSpan(k);
             } else {
                 if (endExclusive - start == BLOCK_SIZE) {
                     final int insertIdx = -pos - 1;
@@ -944,23 +574,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             if (!RspArray.isFullBlockSpan(span)) {  // if it is a full block span, we already have the range.
                 final Container result;
                 Container container = null;
-                if (span == null) {
-                    final long key = keys[pos];
-                    result = containerForLowValueAndRange(lowBitsAsInt(key), start, end);
-                    if (result != null) {
-                        keys[pos] = highBits(key);
+                try (SpanView view = workDataPerThread.get().borrowSpanView(this, pos, spanInfos[pos], span)) {
+                    if (view.isSingletonSpan()) {
+                        final long single = view.getSingletonSpanValue();
+                        result = containerForLowValueAndRange(lowBitsAsInt(single), start, end);
+                    } else {
+                        container = view.getContainer();
+                        result = container.iadd(start, endExclusive);
                     }
-                } else {
-                    container = (Container) span;
-                    result = container.iadd(start, endExclusive);
-                }
-                if (result != null && result.isAllOnes()) {
-                    return setOrInsertFullBlockSpanAtIndex(pos, kHigh, 1, null);
-                }
-                if (result != container) {
-                    setSpanAtIndex(pos, result);
-                } else {
-                    modifiedSpan(pos);
+                    if (result != null && result.isAllOnes()) {
+                        return setOrInsertFullBlockSpanAtIndex(pos, kHigh, 1, null);
+                    }
+                    setContainerSpan(container, pos, kHigh, result);
                 }
             }
             return pos;
@@ -1004,11 +629,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     // Figure out where to insert for k, starting from index i
     private int getSetOrInsertIdx(final int startIdx, final long keyToInsert) {
         final Object startIdxSpan = spans[startIdx];
-        if (getFullBlockSpanLen(startIdxSpan) > 1) {
+        final long startIdxSpanInfo = spanInfos[startIdx];
+        if (getFullBlockSpanLen(startIdxSpanInfo, startIdxSpan) > 1) {
             return startIdx;
         }
         final int i = startIdx + 1;
-        if (i >= size() || highBits(keys[i]) > keyToInsert) {
+        if (i >= size() || getKey(i) > keyToInsert) {
             return -i - 1;
         }
         return i;
@@ -1074,12 +700,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     }
 
-    public RspBitmap addRangesUnsafe(final Index.RangeIterator it) {
-        final RspBitmap rb = writeCheck();
-        rb.addRangesUnsafeNoWriteCheck(it);
-        return rb;
-    }
-
     public void addRangesUnsafeNoWriteCheck(final Index.RangeIterator rit) {
         try {
             int i = 0;
@@ -1101,15 +721,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (i < 0) {
             return false;
         }
-        final Object s = spans[i];
-        if (RspArray.isFullBlockSpan(s)) {
+        final Object span = spans[i];
+        if (RspArray.isFullBlockSpan(span)) {
             return true;
         }
-        if (s == null) {
-            return keys[i] == val;
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span)) {
+            if (view.isSingletonSpan()) {
+                return view.getSingletonSpanValue() == val;
+            }
+            return view.getContainer().contains(lowBitsAsShort(val));
         }
-        final Container c = (Container) s;
-        return c.contains(lowBitsAsShort(val));
     }
 
     public RspBitmap remove(final long val) {
@@ -1140,34 +761,35 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     public void removeUnsafeNoWriteCheck(final long val, final long blockKey, final int i) {
         final Object s = spans[i];
-        final long flen = RspArray.getFullBlockSpanLen(s);
+        final long spanInfo = spanInfos[i];
+        final long flen = RspArray.getFullBlockSpanLen(spanInfo, s);
         if (flen == 0) {
-            if (s == null) {
-                final long key = keys[i];
-                if (val == key) {
+            if (isSingletonSpan(s)) {
+                final long single = spanInfoToSingletonSpanValue(spanInfo);
+                if (val == single) {
                     removeSpanAtIndex(i);
                 }
             } else {
-                final Container orig = (Container) s;
-                final Container result = orig.iunset(lowBitsAsShort(val));
-                if (result.isSingleElement()) {
-                    keys[i] = blockKey | result.first();
-                    setNullContainerAtIndex(i);
-                } else if (result.isEmpty()) {
-                    removeSpanAtIndex(i);
-                } else if (result != orig) {
-                    setNotNullContainerAtIndex(i, result);
-                } else {
-                    modifiedSpan(i);
+                try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfo, s)) {
+                    final Container orig = view.getContainer();
+                    final Container result = orig.iunset(lowBitsAsShort(val));
+                    if (result.isSingleElement()) {
+                        setSingletonSpan(i, blockKey | result.first());
+                    } else if (result.isEmpty()) {
+                        removeSpanAtIndex(i);
+                    } else {
+                        setContainerSpan(orig, i, blockKey, result);
+                    }
                 }
             }
             return;
         }
-        final long spanStartKey = keys[i];
+        // flen > 0.
+        final long spanStartKey = spanInfoToKey(spanInfo);
         final long spanEndKey = spanStartKey + BLOCK_SIZE *flen;  // exclusive
         final int low = lowBitsAsInt(val);
         final Container c;
-        long cKey = blockKey;
+        long singletonValue = 0;
         if (low == 0) {
             c = Container.rangeOfOnes(1, BLOCK_SIZE);
         } else if (low == BLOCK_LAST) {
@@ -1187,7 +809,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 c2 = c2.iadd(posStart, posEnd);
             }
             if (c2.isSingleElement()) {
-                cKey = blockKey | c2.first();
+                singletonValue = blockKey | c2.first();
                 c = null;
             } else {
                 c = c2;
@@ -1198,21 +820,42 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         final long posflen = RspArray.distanceInBlocks(posSpanFirstKey, spanEndKey);
         if (preflen > 0) {
             if (posflen > 0) {
-                replaceSpanAtIndex(i, spanStartKey, preflen, cKey, c, posSpanFirstKey, posflen);
+                final ArraysBuf buf = workDataPerThread.get().getArraysBuf(3);
+                buf.pushFullBlockSpan(spanStartKey, preflen);
+                if (c == null) {
+                    buf.pushSingletonSpan(singletonValue);
+                } else {
+                    buf.pushContainer(blockKey, c);
+                }
+                buf.pushFullBlockSpan(posSpanFirstKey, posflen);
+                replaceSpanAtIndex(i, buf);
                 return;
             }
-            replaceSpanAtIndex(i, spanStartKey, preflen, cKey, c);
+            final ArraysBuf buf = workDataPerThread.get().getArraysBuf(2);
+            buf.pushFullBlockSpan(spanStartKey, preflen);
+            if (c == null) {
+                buf.pushSingletonSpan(singletonValue);
+            } else {
+                buf.pushContainer(blockKey, c);
+            }
+            replaceSpanAtIndex(i, buf);
             return;
         }
         if (posflen > 0) {
-            replaceSpanAtIndex(i, cKey, c, posSpanFirstKey, posflen);
+            final ArraysBuf buf = workDataPerThread.get().getArraysBuf(2);
+            if (c == null) {
+                buf.pushSingletonSpan(singletonValue);
+            } else {
+                buf.pushContainer(blockKey, c);
+            }
+            buf.pushFullBlockSpan(posSpanFirstKey, posflen);
+            replaceSpanAtIndex(i, buf);
             return;
         }
         if (c == null) {
-            keys[i] = cKey;
-            setNullContainerAtIndex(i);
+            setSingletonSpan(i, singletonValue);
         } else {
-            setNotNullContainerAtIndex(i, c);
+            setContainerSpan(i, blockKey, c);
         }
     }
 
@@ -1291,12 +934,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
      * any operation depending on the cardinality cache being up to date are called.
      */
     public RspBitmap orEqualsUnsafe(final RspBitmap other) {
-        if (other.isEmpty()) {
-            return this;
-        }
-        final RspBitmap rb = writeCheck();
-        rb.orEqualsUnsafeNoWriteCheck(other);
-        return rb;
+        return orEqualsShiftedUnsafe(0, other);
     }
 
     /**
@@ -1504,23 +1142,44 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return rb;
     }
 
-    // lastPos is inclusive
-    public RspBitmap subrangeByPos(final long firstPos, final long lastPos) {
+    public RspBitmap subrangeByPos(final long firstPos, final long lastPos, final boolean returnNullIfEmptyResult) {
         final RspBitmap rb = subrangeByPosInternal(firstPos, lastPos);
-        if (rb == null) {
+        if (rb == null || rb.isEmpty()) {
+            if (returnNullIfEmptyResult) {
+                return null;
+            }
             return new RspBitmap();
         }
         return rb;
     }
 
-    // end is inclusive.
-    public RspBitmap subrangeByValue(final long start, final long end) {
-        if (isEmpty() || (start <= first() && last() <= end)) {
+    // lastPos is inclusive
+    public RspBitmap subrangeByPos(final long firstPos, final long lastPos) {
+        return subrangeByPos(firstPos, lastPos, false);
+    }
+
+    public RspBitmap subrangeByValue(final long start, final long end, final boolean returnNullIfEmptyResult) {
+        if (isEmpty()) {
+            if (returnNullIfEmptyResult) {
+                return null;
+            }
+            return cowRef();
+        }
+        if (start <= first() && last() <= end) {
             return cowRef();
         }
         final RspBitmap rb = subrangeByKeyInternal(start, end);
         rb.finishMutationsAndOptimize();
+        if (rb.isEmpty() && returnNullIfEmptyResult) {
+            return null;
+        }
+
         return rb;
+    }
+
+    // end is inclusive.
+    public RspBitmap subrangeByValue(final long start, final long end) {
+        return subrangeByValue(start, end, false);
     }
 
     public void invert(final LongRangeConsumer builder, final Index.RangeIterator it, final long maxPos) {
@@ -1531,86 +1190,91 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         it.next();
         int knownIdx = 0;
         long knownBeforeCard = 0;
-        SPANS_LOOP:
-        while (true) {
-            final long startHiBits = highBits(it.currentRangeStart());
-            final int i = getSpanIndex(startIndex, startHiBits);
-            if (i < 0) {
-                throw new IllegalArgumentException("invert for non-existing key:" + it.currentRangeStart());
-            }
-            final long prevCap;
-            if (acc == null) {
-                prevCap = cardinalityBeforeNoAcc(i, knownIdx, knownBeforeCard);
-                knownIdx = i;
-                knownBeforeCard = prevCap;
-            } else {
-                prevCap = cardinalityBeforeWithAcc(i);
-            }
-            if (prevCap - 1 >= maxPos) {
-                return;
-            }
-            final Object s = spans[i];
-            final long k = keys[i];
-            final long flen = getFullBlockSpanLen(s);
-            if (flen > 0) {
-                final long spanCard = flen * BLOCK_SIZE;
-                final long sLastPlusOne = k + spanCard;
-                while (true) {
-                    final long startPos = prevCap + it.currentRangeStart() - k;
-                    if (startPos > maxPos) {
-                        return;
-                    }
-                    final long end = uMin(sLastPlusOne - 1, it.currentRangeEnd());
-                    final long endPos = prevCap + end - k;
-                    if (endPos > maxPos) {
-                        builder.accept(startPos, maxPos);
-                        return;
-                    }
-                    builder.accept(startPos, endPos);
-                    if (it.currentRangeEnd() >= sLastPlusOne) {
-                        it.postpone(sLastPlusOne);
-                        startIndex = i + 1;
-                        if (acc == null) {
-                            knownIdx = startIndex;
-                            knownBeforeCard += spanCard;
+        try (SpanView view = workDataPerThread.get().borrowSpanView()) {
+            SPANS_LOOP:
+            while (true) {
+                final long startHiBits = highBits(it.currentRangeStart());
+                final int i = getSpanIndex(startIndex, startHiBits);
+                if (i < 0) {
+                    throw new IllegalArgumentException("invert for non-existing key:" + it.currentRangeStart());
+                }
+                final long prevCap;
+                if (acc == null) {
+                    prevCap = cardinalityBeforeNoAcc(i, knownIdx, knownBeforeCard);
+                    knownIdx = i;
+                    knownBeforeCard = prevCap;
+                } else {
+                    prevCap = cardinalityBeforeWithAcc(i);
+                }
+                if (prevCap - 1 >= maxPos) {
+                    return;
+                }
+                final Object span = spans[i];
+                final long spanInfo = spanInfos[i];
+                final long flen = getFullBlockSpanLen(spanInfo, span);
+                if (flen > 0) {
+                    final long k = spanInfoToKey(spanInfo);
+                    final long spanCard = flen * BLOCK_SIZE;
+                    final long sLastPlusOne = k + spanCard;
+                    while (true) {
+                        final long startPos = prevCap + it.currentRangeStart() - k;
+                        if (startPos > maxPos) {
+                            return;
                         }
-                        continue SPANS_LOOP;
-                    }
-                    if (!it.hasNext()) {
-                        return;
-                    }
-                    it.next();
-                    if (it.currentRangeStart() >= sLastPlusOne) {
-                        startIndex = i + 1;
-                        if (acc == null) {
-                            knownIdx = startIndex;
-                            knownBeforeCard += spanCard;
+                        final long end = uMin(sLastPlusOne - 1, it.currentRangeEnd());
+                        final long endPos = prevCap + end - k;
+                        if (endPos > maxPos) {
+                            builder.accept(startPos, maxPos);
+                            return;
                         }
-                        continue SPANS_LOOP;
+                        builder.accept(startPos, endPos);
+                        if (it.currentRangeEnd() >= sLastPlusOne) {
+                            it.postpone(sLastPlusOne);
+                            startIndex = i + 1;
+                            if (acc == null) {
+                                knownIdx = startIndex;
+                                knownBeforeCard += spanCard;
+                            }
+                            continue SPANS_LOOP;
+                        }
+                        if (!it.hasNext()) {
+                            return;
+                        }
+                        it.next();
+                        if (it.currentRangeStart() >= sLastPlusOne) {
+                            startIndex = i + 1;
+                            if (acc == null) {
+                                knownIdx = startIndex;
+                                knownBeforeCard += spanCard;
+                            }
+                            continue SPANS_LOOP;
+                        }
                     }
                 }
-            }
-            final Container c;
-            if (s == null) {
-                c = Container.singleton(lowBitsAsShort(k));
-            } else {
-                c = (Container) s;
-            }
-            final RangeConsumer rc = (final int rs, final int re) -> {
-                final long start = prevCap + rs;
-                final long end = prevCap + re;
-                builder.accept(start, end - 1);
-            };
-            final int rMaxPos = (int) uMin(maxPos - prevCap, BLOCK_SIZE);
-            final IndexRangeIteratorView rv = new IndexRangeIteratorView(it, startHiBits, startHiBits + BLOCK_SIZE);
-            final boolean maxReached = c.findRanges(rc, rv, rMaxPos);
-            if (maxReached || rv.underlyingIterFinished()) {
-                return;
-            }
-            startIndex = i + 1;
-            if (acc == null) {
-                knownIdx = startIndex;
-                knownBeforeCard += c.getCardinality();
+                final Container c;
+                if (isSingletonSpan(span)) {
+                    final long v = spanInfoToSingletonSpanValue(spanInfo);
+                    c = Container.singleton(lowBitsAsShort(v));
+                } else {
+                    view.init(this, i, spanInfo, span);
+                    c = view.getContainer();
+                }
+                final RangeConsumer rc = (final int rs, final int re) -> {
+                    final long start = prevCap + rs;
+                    final long end = prevCap + re;
+                    builder.accept(start, end - 1);
+                };
+                final int rMaxPos = (int) uMin(maxPos - prevCap, BLOCK_SIZE);
+                final IndexRangeIteratorView rv = new IndexRangeIteratorView(it, startHiBits, startHiBits + BLOCK_SIZE);
+                final boolean maxReached = c.findRanges(rc, rv, rMaxPos);
+                if (maxReached || rv.underlyingIterFinished()) {
+                    return;
+                }
+                startIndex = i + 1;
+                if (acc == null) {
+                    knownIdx = startIndex;
+                    knownBeforeCard += c.getCardinality();
+                }
             }
         }
     }
@@ -1802,7 +1466,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return TreeIndexImpl.EMPTY;
         }
         long effectiveStartPos = Math.max(0, startPos);
-        return subrangeByPos(effectiveStartPos, endPos);
+        final RspBitmap result = subrangeByPos(effectiveStartPos, endPos, true);
+        if (result == null) {
+            return TreeIndexImpl.EMPTY;
+        }
+        // subindexByPos tends to create small indices, it pays off to check for compacting the result.
+        return result.ixCompact();
     }
 
     @Override
@@ -1811,7 +1480,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return TreeIndexImpl.EMPTY;
         }
         startKey = Math.max(0, startKey);
-        return subrangeByValue(startKey, endKey);
+        final RspBitmap result = subrangeByValue(startKey, endKey, true);
+        if (result == null) {
+            return TreeIndexImpl.EMPTY;
+        }
+        // subindexByKey tends to create small indices, it pays off to check for compacting the result.
+        return result.ixCompact();
     }
 
     // API assumption: added and removed are disjoint.

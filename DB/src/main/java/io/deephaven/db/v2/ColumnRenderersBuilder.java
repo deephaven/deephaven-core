@@ -13,8 +13,6 @@ import static io.deephaven.db.tables.Table.COLUMN_RENDERERS_ATTRIBUTE;
 
 /**
  * Builds and parses the directive for Table.COLUMN_RENDERERS_ATTRIBUTE.
- *
- * @IncludeAll
  */
 @ScriptApi
 public class ColumnRenderersBuilder {

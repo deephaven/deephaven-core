@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link ColorPalette} specified by an array of {@link Color}s.
- * @IncludeAll
  */
 public class ColorPaletteArray implements ColorPalette, Serializable {
     private static final long serialVersionUID = -9146622322078165471L;

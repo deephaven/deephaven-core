@@ -16,12 +16,12 @@ import java.io.IOException;
 public class TestConditionFilterGeneration {
     @Before
     public void setUp() {
-        QueryLibrary.setCurrent(QueryLibrary.makeNewLibrary("DEFAULT"));
+        QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary("DEFAULT"));
     }
 
     @After
     public void tearDown() {
-        QueryLibrary.resetCurrent();
+        QueryLibrary.resetLibrary();
     }
 
     //    @Test
@@ -46,9 +46,9 @@ public class TestConditionFilterGeneration {
 
     @NotNull
     private static String getClassDefString() {
-        QueryScope.getDefaultInstance().putParam("p1", 10);
-        QueryScope.getDefaultInstance().putParam("p2", (float) 10);
-        QueryScope.getDefaultInstance().putParam("p3", "10");
+        QueryScope.getScope().putParam("p1", 10);
+        QueryScope.getScope().putParam("p2", (float) 10);
+        QueryScope.getScope().putParam("p3", "10");
         final Table t = TableTools.emptyTable(10).select("v1 = (short)1", "v2 = 1.1");
 
         final ConditionFilter conditionFilter = (ConditionFilter) ConditionFilter.createConditionFilter("`foo`.equals((p1+p2+v1+v2) + p3)");

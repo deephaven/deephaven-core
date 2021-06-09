@@ -28,8 +28,6 @@ import java.util.function.*;
 
 /**
  * A set of sorted long keys between 0 and Long.MAX_VALUE
- *
- * @IncludeAll
  */
 public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long>, LongSizedDataStructure{
     boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER = Configuration.getInstance().getBooleanWithDefault("Index.usePriorityQueueRandomBuilder", true);
@@ -158,14 +156,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      */
     void initializePreviousValue();
 
-    /**
-     * @IncludeAll
-     */
     interface RandomBuilder extends IndexBuilder { }
 
-    /**
-     * @IncludeAll
-     */
     interface SequentialBuilder extends TLongProcedure, LongRangeConsumer {
         /**
          * No obligation to call, but if called,
@@ -226,9 +218,6 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         }
     }
 
-    /**
-     * @IncludeAll
-     */
     interface Factory {
         /**
          * Get an {@link Index} containing the specified keys. All keys must be positive numbers

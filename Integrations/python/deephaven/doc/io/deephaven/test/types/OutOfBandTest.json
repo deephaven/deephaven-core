@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.test.types.OutOfBandTest",
+ "methods": {},
+ "path": "io.deephaven.test.types.OutOfBandTest",
+ "text": "An out-of-band test is a test that is not typically run on a commit-by-commit basis; usually\n because it is expensive and will delay the typical CI feedback cycle.",
+ "typeName": "interface"
+}

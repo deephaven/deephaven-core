@@ -4,8 +4,6 @@ import java.io.IOException;
 
 /**
  * An opaque array of bytes, intended to represent the contents of a file.
- *
- * @IncludeAll
  */
 public interface DbFile {
 

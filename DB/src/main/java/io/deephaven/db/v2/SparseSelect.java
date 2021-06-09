@@ -31,8 +31,6 @@ import java.util.concurrent.Future;
  * guarantees the original Table's index is preserved.  Formula columns are not supported, only the names of columns to
  * copy into the output table.  This means that each output column is independent of every other output column, which
  * enables column-level parallelism.</p>
- *
- * @IncludeAll
  */
 public class SparseSelect {
     /**

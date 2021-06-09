@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.FunctionalInterfaces$ThrowingBiConsumer",
+ "methods": {
+  "accept": ":param t: FunctionalInterfaces.ThrowingBiConsumer.T\n:param u: FunctionalInterfaces.ThrowingBiConsumer.U"
+ },
+ "path": "io.deephaven.util.FunctionalInterfaces.ThrowingBiConsumer",
+ "typeName": "interface"
+}

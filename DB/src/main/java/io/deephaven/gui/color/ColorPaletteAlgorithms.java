@@ -10,7 +10,6 @@ import java.util.function.UnaryOperator;
 
 /**
  * Pre-made {@link ColorPaletteAlgorithm}s.
- * @IncludeAll
  */
 public enum ColorPaletteAlgorithms implements ColorPaletteAlgorithm {
     //GOLDEN algorithm taken from http://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionObjectCodecFixed",
+ "methods": {
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination.  orderKeys are assumed\n to be entirely contained on this Page.\n\n:param fillContext: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super ColumnRegionObjectCodecFixed.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "getNativeType": ":return: java.lang.Class<ColumnRegionObjectCodecFixed.T>",
+  "getObject": "Get a single object from this region.\n\n*Overload 1*  \n  :param elementIndex: long\n  :return: (ColumnRegionObjectCodecFixed.T) The object value at the specified element (object) index\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param elementIndex: long\n  :return: (ColumnRegionObjectCodecFixed.T) The object value at the specified element (object) index",
+  "length": ":return: (long) the length of this page.",
+  "releaseCachedResources": "Release any resources held for caching purposes. Implementations need not guarantee that they are safe for\n normal use concurrently with invocations of this method."
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionObjectCodecFixed",
+ "typeName": "class"
+}

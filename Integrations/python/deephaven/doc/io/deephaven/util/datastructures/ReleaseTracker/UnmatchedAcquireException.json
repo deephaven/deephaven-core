@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.util.datastructures.ReleaseTracker$UnmatchedAcquireException",
+ "methods": {},
+ "path": "io.deephaven.util.datastructures.ReleaseTracker.UnmatchedAcquireException",
+ "typeName": "class"
+}

@@ -19,8 +19,6 @@ import java.util.Map;
  * A dynamically changing table.
  *
  * The DynamicTable interface provides support for listening for table changes and errors.
- *
- * @IncludeAll
  */
 public interface DynamicTable extends Table, NotificationQueue.Dependency, DynamicNode, SystemicObject {
     /**

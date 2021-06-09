@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.db.v2.select.python.ConditionFilterPython",
+ "methods": {
+  "canMemoize": "Can this filter operation be memoized?\n\n:return: (boolean) if this filter can be memoized",
+  "copy": "Create a copy of this SelectFilter.\n\n:return: (io.deephaven.db.v2.select.AbstractConditionFilter) an independent copy of this SelectFilter.",
+  "create": ":param dcf: io.deephaven.db.v2.select.python.DeephavenCompatibleFunction\n:return: io.deephaven.db.v2.select.python.ConditionFilterPython",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: io.deephaven.db.tables.TableDefinition",
+  "isRefreshing": "Is this filter refreshing?\n\n:return: (boolean) if this filter is refreshing",
+  "renameFilter": ":param renames: java.util.Map<java.lang.String,java.lang.String>\n:return: io.deephaven.db.v2.select.AbstractConditionFilter"
+ },
+ "path": "io.deephaven.db.v2.select.python.ConditionFilterPython",
+ "text": "A condition filter for python native code.",
+ "typeName": "class"
+}

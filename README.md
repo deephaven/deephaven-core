@@ -2,22 +2,22 @@
 
 ![Deephaven Data Labs Logo](docs/images/Deephaven_GH_Logo.svg)
 
-Deephaven Community Core is a real-time, time-series, column-oriented analytics engine 
+Deephaven Community Core is a real-time, time-series, column-oriented analytics engine
 with relational database features.
-Queries can seamlessly operate upon both historical and real-time data. 
-Deephaven includes an intuitive user experience and visualization tools. 
-It can ingest data from a variety of sources, apply computation and analysis algorithms 
+Queries can seamlessly operate upon both historical and real-time data.
+Deephaven includes an intuitive user experience and visualization tools.
+It can ingest data from a variety of sources, apply computation and analysis algorithms
 to that data, and build rich queries, dashboards, and representations with the results.
 
-Deephaven Community Core is an open version of [Deephaven Enterprise](https://deephaven.io), 
+Deephaven Community Core is an open version of [Deephaven Enterprise](https://deephaven.io),
 which functions as the data backbone for prominent hedge funds, banks, and financial exchanges.
 
-![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg)
-![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg)
-![Long Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/long-check-ci.yml/badge.svg)
-![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg)
-![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg)
-![Workflow Sync](https://github.com/deephaven/deephaven-core/actions/workflows/workflow-sync.yml/badge.svg)
+![Build CI](https://github.com/deephaven/deephaven-core/actions/workflows/build-ci.yml/badge.svg?branch=main)
+![Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/check-ci.yml/badge.svg?branch=main)
+![Docs CI](https://github.com/deephaven/deephaven-core/actions/workflows/docs-ci.yml/badge.svg?branch=main)
+![Long Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/long-check-ci.yml/badge.svg?branch=main)
+![Nightly Check CI](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-check-ci.yml/badge.svg?branch=main)
+![Nightly Benchmarks](https://github.com/deephaven/deephaven-core/actions/workflows/nightly-benchmarks.yml/badge.svg?branch=main)
 
 ## Supported Languages
 
@@ -50,9 +50,9 @@ Note that Deephaven Core will only run on Java 8; the instructions below will he
 
 <details>
   <summary>Installing Java...</summary>
-   
+
   Deephaven can be built with either [Oracle JDK](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html)
-   or [OpenJDK](https://openjdk.java.net/install/).  Java 8 is required.  To install Java, run  
+   or [OpenJDK](https://openjdk.java.net/install/).  Java 8 is required.  To install Java, run
   * Mac
       ```
       brew install openjdk@8
@@ -79,12 +79,12 @@ Note that Deephaven Core will only run on Java 8; the instructions below will he
 
 <details>
   <summary>Installing Docker...</summary>
- 
-  Instructions for installing and configuring Docker can be found at 
-  [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/).  Windows users should follow the WSL2 
+
+  Instructions for installing and configuring Docker can be found at
+  [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/).  Windows users should follow the WSL2
   instructions.
-  
-  Instructions for installing and configuring `docker-compose` can be found at 
+
+  Instructions for installing and configuring `docker-compose` can be found at
   [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/).
   Version 1.29 (or newer) is required.
 </details>
@@ -96,10 +96,10 @@ Note that Deephaven Core will only run on Java 8; the instructions below will he
   ```
   docker info | grep Memory
   ```
-  
+
   By default, Docker on Mac is configured with 2 GB of RAM.  If you need to increase the memory on your Mac, click
-  on the Docker icon on the top bar and navigate to `Preferences->Resources->Memory`. 
-  
+  on the Docker icon on the top bar and navigate to `Preferences->Resources->Memory`.
+
   ![alt_text](docs/images/DockerConfigMac.png "Docker Configuration on a Mac")
 </details>
 
@@ -131,8 +131,8 @@ Once all of the required dependencies are installed and functioning, run:
 These commands will create:
  1. a `deephaven-core` directory containing the source code.
  2. Docker images containing everything needed to launch Deephaven.
- 
-### Run Deephaven Database
+
+### Run Deephaven Database (Python)
 
 From the `deephaven-core` directory, run
 ```
@@ -140,7 +140,17 @@ From the `deephaven-core` directory, run
 ```
 This will start the database.  The console will fill with status and logging output.
 
-Killing the process (e.g. `Ctrl+C`) will stop Deephaven.  
+Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
+
+### Run Deephaven Database (Groovy)
+
+From the `deephaven-core` directory, run
+```
+    docker-compose --env-file default_groovy.env up
+```
+This will start the database.  The console will fill with status and logging output.
+
+Killing the process (e.g. `Ctrl+C`) will stop Deephaven.
 
 ### Run Deephaven IDE
 
@@ -148,7 +158,7 @@ Once Deephaven Database is running, you can launch a Deephaven IDE in your web b
 to interactively analyze data and develop new analytics.
 
 - If Deephaven Database is running locally,
-navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).  
+navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
 - If Deephaven Database is running remotely, navigate
 to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven Database is running on.
 
@@ -156,10 +166,10 @@ to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the mach
 
 # First Query
 
-From the Deephaven IDE, you can perform your first query.  
+From the Deephaven IDE, you can perform your first query.
 
-This script creates two small tables: one for employees and one for departments. 
-It joins the two tables on the DeptID column to show the name of the department 
+This script creates two small tables: one for employees and one for departments.
+It joins the two tables on the DeptID column to show the name of the department
 where each employee works.
 
 ```python
@@ -193,7 +203,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 ## Code Of Conduct
 
-This project has adopted the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/0/code_of_conduct/). 
+This project has adopted the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/0/code_of_conduct/).
 For more information see the [Code of Conduct](CODE_OF_CONDUCT.md) or contact [opencode@deephaven.io](mailto:opencode@deephaven.io)
 with any additional questions or comments.
 

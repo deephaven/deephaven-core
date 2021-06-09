@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource",
+ "methods": {
+  "getChunk": "**Incompatible overloads text - text from the first overload:**\n\nReturns a chunk of data corresponding to the keys from the given OrderedKeys.\n\n*Overload 1*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys\n  :return: (io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.ATTR>) A chunk of data corresponding to the keys from the given OrderedKeys\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param firstKey: long\n  :param lastKey: long\n  :return: io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.ATTR>",
+  "getChunkByFilling": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys\n:return: io.deephaven.db.v2.sources.chunk.Chunk<DefaultChunkSource.ATTR>",
+  "makeFillContext": "Allocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker,\n typically a ChunkSource.\n\n:param chunkCapacity: int\n:param sharedContext: io.deephaven.db.v2.sources.chunk.SharedContext\n:return: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) A context for use with fill operations",
+  "makeGetContext": "Allocate a new ChunkSource.GetContext for retrieving chunks from this GetContextMaker,\n typically a ChunkSource.\n\n:param chunkCapacity: int\n:param sharedContext: io.deephaven.db.v2.sources.chunk.SharedContext\n:return: (io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext) A context for use with get operations"
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource",
+ "typeName": "interface"
+}

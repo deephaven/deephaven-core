@@ -9,8 +9,6 @@ import java.text.NumberFormat;
 /**
  * Format for axis tick labels. For time values, this would be how the dates are formatted.
  * For numerical values, this would be the number of significant digits, etc.
- *
- * @IncludeAll
  */
 public interface AxisFormat {
 

@@ -11,8 +11,6 @@ import static io.deephaven.util.FunctionalInterfaces.ThrowingSupplier;
 /**
  * Extension to the {@link Lock} interface to enable locking for the duration of a lambda or other
  * {@link FunctionalInterface} invocation.
- *
- * @IncludeAll
  */
 public interface FunctionalLock extends Lock {
 

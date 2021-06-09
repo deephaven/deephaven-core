@@ -280,7 +280,7 @@ public class BenchmarkTools {
             throw new IllegalStateException("Sparsity must be in the range of 1 through 100");
         }
         Random random = new Random(seed);
-        QueryScope.getDefaultInstance().putParam("__random__", random);
+        QueryScope.getScope().putParam("__random__", random);
         return table.where("__random__.nextInt(100) < " + sparsity).head(size);
     }
 

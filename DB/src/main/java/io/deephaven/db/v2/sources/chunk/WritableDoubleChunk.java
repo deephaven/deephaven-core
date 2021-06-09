@@ -27,8 +27,6 @@ import java.nio.DoubleBuffer;
 
 /**
  * {@link WritableChunk} implementation for double data.
- *
- * @IncludeAll
  */
 public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> implements WritableChunk<ATTR> {
 

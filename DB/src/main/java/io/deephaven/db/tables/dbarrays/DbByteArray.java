@@ -18,9 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-/**
- * @IncludeAll
- */
 public interface DbByteArray extends DbArrayBase {
 
     long serialVersionUID = 8519130615638683196L;

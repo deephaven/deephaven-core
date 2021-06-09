@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencingImpl",
+ "methods": {
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination.  orderKeys are assumed\n to be entirely contained on this Page.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super ColumnRegionReferencingImpl.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "getNativeType": ":return: java.lang.Class<?>",
+  "getReferencedRegion": ":return: ColumnRegionReferencingImpl.REFERENCED_COLUMN_REGION",
+  "length": ":return: (long) the length of this page.",
+  "releaseCachedResources": "Release any resources held for caching purposes. Implementations need not guarantee that they are safe for\n normal use concurrently with invocations of this method."
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencingImpl",
+ "typeName": "class"
+}

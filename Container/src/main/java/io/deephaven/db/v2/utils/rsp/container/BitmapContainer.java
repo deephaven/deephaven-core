@@ -406,7 +406,7 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public BitmapContainer cowRef() {
-        shared = true;
+        setCopyOnWrite();
         return this;
     }
 

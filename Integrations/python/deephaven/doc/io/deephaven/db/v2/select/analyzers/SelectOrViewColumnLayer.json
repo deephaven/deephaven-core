@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.select.analyzers.SelectOrViewColumnLayer",
+ "methods": {},
+ "path": "io.deephaven.db.v2.select.analyzers.SelectOrViewColumnLayer",
+ "typeName": "class"
+}

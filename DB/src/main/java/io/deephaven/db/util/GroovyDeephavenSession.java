@@ -27,7 +27,6 @@ import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
 
-import javax.inject.Inject;
 import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
@@ -98,7 +97,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private final ArrayList<String> scriptImports = new ArrayList<>();
 
     private final Set<String> dynamicClasses = new HashSet<>();
-    private final QueryScope queryScope = new QueryScope.SynchronizedScriptSessionImpl(this);
     private final GroovyShell groovyShell = new GroovyShell(STATIC_LOADER) {
         protected synchronized String generateScriptName() {
             return GroovyDeephavenSession.this.generateScriptName();
@@ -134,8 +132,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public QueryScope getQueryScope() {
-        return queryScope;
+    public QueryScope newQueryScope() {
+        return new QueryScope.SynchronizedScriptSessionImpl(this);
     }
 
     public static InputStream findScript(String relativePath) throws IOException {
@@ -717,18 +715,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     public interface InitScript {
-
         String getScriptPath();
         int priority();
     }
 
     public static class Db implements InitScript {
-
-        @Inject
-        public Db() {
-
-        }
-
         @Override
         public String getScriptPath() {
             return "groovy/0-db.groovy";
@@ -741,12 +732,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     public static class PerformanceQueries implements InitScript {
-
-	    @Inject
-	    public PerformanceQueries() {
-
-	    }
-
 	    @Override
 	    public String getScriptPath() {
 	        return "groovy/1-performance.groovy";
@@ -762,7 +747,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     // present
     /*
     public static class Calendars implements InitScript {
-
         @Override
         public String getScriptPath() {
             return "groovy/2-calendars.groovy";
@@ -775,12 +759,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }*/
 
     public static class CountMetrics implements InitScript {
-
-        @Inject
-        public CountMetrics() {
-
-        }
-
         @Override
         public String getScriptPath() {
             return "groovy/4-count-metrics.groovy";

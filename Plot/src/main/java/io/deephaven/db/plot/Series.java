@@ -8,7 +8,6 @@ import java.io.Serializable;
 
 /**
  * Base series that all data series inherit from.
- * @IncludeAll
  */
 public interface Series extends Serializable {
 }

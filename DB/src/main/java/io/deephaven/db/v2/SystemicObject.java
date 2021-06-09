@@ -2,8 +2,6 @@ package io.deephaven.db.v2;
 
 /**
  * An object that can report if it is systemically important.
- *
- * @IncludeAll
  */
 public interface SystemicObject {
     /**

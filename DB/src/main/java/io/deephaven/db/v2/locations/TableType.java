@@ -10,8 +10,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 /**
  * The type of a table, which from a user perspective generally corresponds to System vs. User namespaces, and whether
  * the table is a historical (permanent) or intraday (ticking) table.
- *
- * @IncludeAll
  */
 public enum TableType implements LogOutputAppendable {
 

@@ -13,8 +13,6 @@ import java.util.function.Supplier;
  * If enabled, marks objects as systemically important.
  *
  * When enabled, only errors from systemically important objects are reported to the controller to terminate the query.
- *
- * @IncludeAll
  */
 public class SystemicObjectTracker {
     private static ThreadLocal<Boolean> SYSTEMIC_CREATION_THREAD = ThreadLocal.withInitial(() -> false);

@@ -111,7 +111,7 @@ public class MatchFilter extends SelectFilterImpl {
                 throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
             final List<Object> valueList = new ArrayList<>();
-            final QueryScope queryScope = QueryScope.getDefaultInstance();
+            final QueryScope queryScope = QueryScope.getScope();
             final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
             for(int valIdx = 0; valIdx < strValues.length; ++valIdx) {
                 if(queryScope.hasParamName(strValues[valIdx])) {

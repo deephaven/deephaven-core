@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A multithreaded resource to execute data driven models.
  *
  * @param <DATATYPE> data type
- * @IncludeAll
  */
 public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 

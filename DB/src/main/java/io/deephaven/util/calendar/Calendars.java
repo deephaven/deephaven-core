@@ -26,8 +26,6 @@ import java.util.function.BiConsumer;
 
 /**
  * A collection of business calendars.
- *
- * @IncludeAll
  */
 public class Calendars implements Map<String, BusinessCalendar> {
 

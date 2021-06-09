@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.Index;
 
 /**
  * Listener for table changes.
- *
- * @IncludeAll
  */
 public interface Listener extends ListenerBase {
     /**

@@ -10,8 +10,6 @@ import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 
 /**
  * Listener for table changes.
- *
- * @IncludeAll
  */
 public interface ListenerBase extends LivenessNode {
     /**

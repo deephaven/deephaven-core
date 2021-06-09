@@ -18,9 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-/**
- * @IncludeAll
- */
 public interface DbFloatArray extends DbArrayBase {
 
     long serialVersionUID = -1889118072737983807L;

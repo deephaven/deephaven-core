@@ -12,8 +12,6 @@ import java.util.Map;
  * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and value.
  *
  * A null map is represented as an array of zero bytes.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class StringStringMapCodec extends StringKeyedMapCodec<String> {

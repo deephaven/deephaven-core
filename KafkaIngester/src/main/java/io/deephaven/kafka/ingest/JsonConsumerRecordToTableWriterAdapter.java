@@ -19,8 +19,6 @@ import java.util.function.Function;
  * Converts a consumer record containing JSON serialized objects to a Deephaven row.
  *
  * <p></p>After processing explicit mappings for fields; the JSON record is searched for exact matches of the key.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
@@ -80,8 +78,6 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
 
     /**
      * A builder to map key and value fields to table columns.
-     *
-     * @IncludeAll
      */
     public static class Builder {
         private String kafkaPartitionColumnName;

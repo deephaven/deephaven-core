@@ -6,14 +6,17 @@ import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.utils.rsp.container.Container;
 import io.deephaven.db.v2.utils.rsp.container.SearchRangeIterator;
 import io.deephaven.db.v2.utils.rsp.container.SingletonContainer;
+import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.db.v2.utils.rsp.RspArray.*;
 import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_SIZE;
 
-public class RspRangeBatchIterator {
+public class RspRangeBatchIterator implements SafeCloseable {
     private RspArray.SpanCursorForward p;
     // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
     private SearchRangeIterator ri;
+    // To hold the container to which ri refers.
+    private SpanView riView;
     private boolean moreSpans;  // if true, p has not been exhausted yet.
 
     private static final int BUF_SZ = Configuration.getInstance().getIntegerForClassWithDefault(
@@ -32,29 +35,39 @@ public class RspRangeBatchIterator {
             moreSpans = false;
             return;
         }
+        riView = new SpanView(null);
         this.p = p;
         remaining = maxCount;
         moreSpans = true;
         p.next();
         Object s = p.span();
-        final long slen = getFullBlockSpanLen(s);
+        final long spanInfo = p.spanInfo();
+        final long slen = getFullBlockSpanLen(spanInfo, s);
         if (slen > 0) {
             pendingStartOffset = startOffset;
             return;
         }
-        if (s == null) {
+        if (isSingletonSpan(s)) {
             if (startOffset != 0) {
                 throw new IllegalStateException("null span and startOffset=" + startOffset);
             }
-            ri = Container.singleton(lowBits(p.spanKey())).getShortRangeIterator(0);
-            bufKey = highBits(p.spanKey());
+            final long singletonValue = spanInfoToSingletonSpanValue(spanInfo);
+            ri = Container.singleton(lowBits(singletonValue)).getShortRangeIterator(0);
+            bufKey = spanInfoToKey(spanInfo);
             return;
         }
-        final Container c = (Container) s;
-        ri = c.getShortRangeIterator((int) ((long) (Integer.MAX_VALUE) & startOffset));
-        bufKey = p.spanKey();
+        riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+        ri = riView.getContainer().getShortRangeIterator((int) ((long) (Integer.MAX_VALUE) & startOffset));
+        bufKey = spanInfoToKey(spanInfo);
         if (!ri.hasNext()) {
             throw new IllegalStateException("Illegal offset");
+        }
+    }
+
+    @Override
+    public void close() {
+        if (riView != null) {
+            riView.close();
         }
     }
 
@@ -90,6 +103,7 @@ public class RspRangeBatchIterator {
         final int rangesWritten = ri.next(buf, 0, BUF_SZ/2);
         bufCount = 2*rangesWritten;
         if (!ri.hasNext()) {
+            riView.reset();
             ri = null;
             if (!p.hasNext()) {
                 moreSpans = false;
@@ -179,9 +193,10 @@ public class RspRangeBatchIterator {
                 }
             }
             Object s = p.span();
-            final long slen = getFullBlockSpanLen(s);
+            long spanInfo = p.spanInfo();
+            final long slen = getFullBlockSpanLen(spanInfo, s);
             if (slen > 0) {
-                final long sk = p.spanKey();
+                final long sk = spanInfoToKey(spanInfo);
                 final long d;
                 // do we need to merge a previously stored span last range?
                 if (keyForPrevRangeEndAtSpanBoundary != -1 && keyForPrevRangeEndAtSpanBoundary == sk) {
@@ -214,13 +229,16 @@ public class RspRangeBatchIterator {
                 // Therefore at this point we know p.span() is an RB Container.
                 s = p.span();
             }
-            if (s == null) {
-                ri = new SingletonContainer.SearchRangeIter(lowBits(p.spanKey()));
-                bufKey = highBits(p.spanKey());
+            spanInfo = p.spanInfo();
+            bufKey = spanInfoToKey(spanInfo);
+            if (isSingletonSpan(s)) {
+                final long singletonValue = spanInfoToSingletonSpanValue(spanInfo);
+                final short lowBitsValue = lowBits(singletonValue);
+                riView.reset();
+                ri = new SingletonContainer.SearchRangeIter(lowBitsValue);
             } else {
-                final Container c = (Container) s;
-                ri = c.getShortRangeIterator(0);
-                bufKey = p.spanKey();
+                riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+                ri = riView.getContainer().getShortRangeIterator(0);
             }
         }
     }

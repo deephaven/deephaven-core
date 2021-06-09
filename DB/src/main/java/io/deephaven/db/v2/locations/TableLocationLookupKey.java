@@ -9,8 +9,6 @@ import java.io.Serializable;
 
 /**
  * A simple implementation of TableLocationKey for use in hash lookups.
- *
- * @IncludeAll
  */
 @SuppressWarnings("WeakerAccess")
 public abstract class TableLocationLookupKey<TYPE extends CharSequence> implements TableLocationKey, Serializable {

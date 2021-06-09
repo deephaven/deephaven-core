@@ -5,8 +5,6 @@ import io.deephaven.util.annotations.ScriptApi;
 
 /**
  * Tools to obtain internal, Deephaven logs as tables.  These tables include query logs and performance logs.
- *
- * @IncludeAll
  */
 public class TableLoggers {
     /**

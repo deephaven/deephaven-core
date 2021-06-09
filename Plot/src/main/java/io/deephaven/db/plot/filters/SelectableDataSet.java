@@ -15,7 +15,6 @@ import java.util.function.Function;
 
 /**
  * A {@link Table} with a view on a selectable subset.
- * @IncludeAll
  */
 public interface SelectableDataSet<KEY_TYPE,VALUE_TYPE> {
 

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource$WithPrev",
+ "methods": {
+  "getPrevChunk": "**Incompatible overloads text - text from the first overload:**\n\nReturns a chunk of previous data corresponding to the keys from the given OrderedKeys.\n\n*Overload 1*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys\n  :return: (io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.WithPrev.ATTR>) A chunk of data corresponding to the keys from the given OrderedKeys\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param firstKey: long\n  :param lastKey: long\n  :return: io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.WithPrev.ATTR>",
+  "getPrevChunkByFilling": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys\n:return: io.deephaven.db.v2.sources.chunk.Chunk<DefaultChunkSource.WithPrev.ATTR>",
+  "getPrevSource": ":return: (io.deephaven.db.v2.sources.chunk.ChunkSource<DefaultChunkSource.WithPrev.ATTR>) a chunk source which accesses the previous values."
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource.WithPrev",
+ "typeName": "interface"
+}

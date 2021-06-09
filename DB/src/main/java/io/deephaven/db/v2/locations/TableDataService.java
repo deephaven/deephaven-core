@@ -9,8 +9,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Service responsible for table location discovery.
- *
- * @IncludeAll
  */
 public interface TableDataService {
 

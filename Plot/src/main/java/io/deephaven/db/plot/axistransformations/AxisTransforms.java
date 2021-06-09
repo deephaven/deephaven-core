@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 /**
  * Common {@link AxisTransform}s.
- * @IncludeAll
  */
 public enum  AxisTransforms implements AxisTransform, Serializable {
     /**

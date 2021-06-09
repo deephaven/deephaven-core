@@ -13,8 +13,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>They must not modify their inputs in any way, retain references to their inputs, or return results that retain
  * references to their inputs.</li>
  * </ol>
- *
- * @IncludeAll
  */
 public interface ObjectDecoder<TYPE> {
     /**

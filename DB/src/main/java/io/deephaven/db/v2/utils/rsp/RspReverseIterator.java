@@ -3,13 +3,16 @@ package io.deephaven.db.v2.utils.rsp;
 import io.deephaven.db.v2.utils.rsp.container.Container;
 import io.deephaven.db.v2.utils.rsp.container.ShortAdvanceIterator;
 import io.deephaven.db.v2.utils.rsp.container.SingletonContainer;
+import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.db.v2.utils.rsp.RspArray.*;
 
-public class RspReverseIterator {
+public class RspReverseIterator implements SafeCloseable {
     private RspArray.SpanCursor rp;
     // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
     private ShortAdvanceIterator ri;
+    // Resource to hold the container that ri points to.
+    private SpanView riView;
     // Current start and end values.
     long current = -1;
     long next;
@@ -22,6 +25,7 @@ public class RspReverseIterator {
             setEnded();
             return;
         }
+        riView = new SpanView(null);
         rp.next();
         computeNext();
     }
@@ -43,6 +47,7 @@ public class RspReverseIterator {
                 nextValid = true;
                 return;
             }
+            riView.reset();
             ri = null;
             if (!rp.hasNext()) {
                 setEnded();
@@ -54,21 +59,23 @@ public class RspReverseIterator {
     }
 
     private void updateNextFromSpanCursor() {
-        final long k = rp.spanKey();
+        final long spanInfo = rp.spanInfo();
+        final long k = spanInfoToKey(spanInfo);
         final Object s = rp.span();
-        long flen = getFullBlockSpanLen(s);
+        long flen = getFullBlockSpanLen(spanInfo, s);
         if (flen > 0) {
             next = k + BLOCK_SIZE * flen - 1;
             fullBlockSpanKey = k;
             nextValid = true;
             return;
         }
-        final Container c;
-        if (s == null) {
-            ri = new SingletonContainer.ReverseIter(lowBits(k));
+        if (isSingletonSpan(s)) {
+            riView.reset();
+            final long singletonValue = spanInfoToSingletonSpanValue(spanInfo);
+            ri = new SingletonContainer.ReverseIter(lowBits(singletonValue));
         } else {
-            c = (Container) s;
-            ri = c.getReverseShortIterator();
+            riView.init(rp.arr(), rp.arrIdx(), spanInfo, s);
+            ri = riView.getContainer().getReverseShortIterator();
         }
         nextValid = true;
         next = unsignedShortToLong(ri.next()) | k;
@@ -120,21 +127,24 @@ public class RspReverseIterator {
 
     private void setAdvanceOverranState() {
         final Object span = rp.span();
-        if (span == null) {
-            current = rp.spanKey();
+        final long spanInfo = rp.spanInfo();
+        if (isSingletonSpan(span)) {
+            current = spanInfoToSingletonSpanValue(spanInfo);
             return;
         }
-        final long flen = getFullBlockSpanLen(span);
+        final long flen = getFullBlockSpanLen(spanInfo, span);
+        final long key = spanInfoToKey(spanInfo);
         if (flen > 0) {
-            current = rp.spanKey();
+            current = key;
         } else {
-            final Container c = (Container) span;
-            current = rp.spanKey() | c.first();
+            try (SpanView res = workDataPerThread.get().borrowSpanView(rp.arr(), rp.arrIdx(), spanInfo, span)) {
+                current = key | res.getContainer().first();
+            }
         }
     }
 
     private boolean tryCurrentSpanForAdvance(final long v) {
-        final long kb = highBits(rp.spanKey());
+        final long kb = rp.spanKey();
         if (v < kb) {
             return false;
         }
@@ -149,6 +159,7 @@ public class RspReverseIterator {
             computeNext();
             return true;
         }
+        riView.reset();
         ri = null;
         if (!rp.hasNext()) {
             setAdvanceOverranState();
@@ -188,6 +199,7 @@ public class RspReverseIterator {
         if (rp == null) {
             return false;
         }
+        riView.reset();
         ri = null;
         nextValid = false;
         final boolean valid = rp.advance(v);
@@ -205,10 +217,18 @@ public class RspReverseIterator {
     }
 
     public void release() {
+        if (riView != null) {
+            riView.close();
+        }
         ri = null;
         if (rp != null) {
             rp.release();
         }
         rp = null;
+    }
+
+    @Override
+    public void close() {
+        release();
     }
 }

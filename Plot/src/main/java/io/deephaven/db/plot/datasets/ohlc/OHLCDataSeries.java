@@ -9,7 +9,6 @@ import io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal;
 
 /**
  * {@link XYDataSeriesInternal} for open-high-low-close charts.
- * @IncludeAll
  */
 public interface OHLCDataSeries extends XYDataSeries {
 }

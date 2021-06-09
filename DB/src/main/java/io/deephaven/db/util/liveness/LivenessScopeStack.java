@@ -11,8 +11,6 @@ import java.util.Deque;
  * <p>Support for a thread-local stack of {@link LivenessScope}s to allow the preferred programming model for scoping
  * of {@link LivenessArtifact}s.
  * <p>Instances expect to be used on exactly one thread, and hence do not take any measures to ensure thread safety.
- *
- * @IncludeAll
  */
 public class LivenessScopeStack {
 

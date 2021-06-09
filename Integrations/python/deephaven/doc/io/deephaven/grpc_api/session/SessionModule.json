@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.session.SessionModule",
+ "methods": {
+  "bindSessionServiceGrpcImpl": ":param sessionServiceGrpc: io.deephaven.grpc_api.session.SessionServiceGrpcImpl\n:return: io.grpc.BindableService",
+  "bindSessionServiceInterceptor": ":param sessionServiceInterceptor: io.deephaven.grpc_api.session.SessionServiceGrpcImpl.AuthServerInterceptor\n:return: io.grpc.ServerInterceptor"
+ },
+ "path": "io.deephaven.grpc_api.session.SessionModule",
+ "typeName": "interface"
+}

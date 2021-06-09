@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionChar",
+ "methods": {
+  "getChar": "Get a single char from this region.\n\n*Overload 1*  \n  :param elementIndex: long\n  :return: (char) The char value at the specified element (char) index\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param elementIndex: long\n  :return: (char) The char value at the specified element (char) index",
+  "getChunkPageContaining": ":param elementIndex: long\n:return: io.deephaven.db.v2.sources.chunk.page.ChunkPage<ATTR>"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionChar",
+ "text": "ColumnRegionChar implementation for regions that support fetching primitive chars from a\n ColumnChunkPageStore.",
+ "typeName": "class"
+}

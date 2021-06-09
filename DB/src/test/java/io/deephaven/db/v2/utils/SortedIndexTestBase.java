@@ -663,7 +663,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         final boolean [] subSet = new boolean[maxSize];
 
         final long seed = 42;
-        System.out.println("Seed: " + seed);
+        final String m1 = "seed==" + seed;
 
         final Random generator = new Random(seed);
         // initialize the arrays
@@ -675,22 +675,25 @@ public abstract class SortedIndexTestBase extends TestCase {
         final Index fullIndex = getSortedIndex(booleanSetToKeys(fullSet));
         final Index subIndex = getSortedIndex(booleanSetToKeys(subSet));
 
-        for (int iterations = 0; iterations < 100; ++iterations) {
-            System.out.println("Iteration: " + iterations);
+        for (int iteration = 0; iteration < 100; ++iteration) {
+            final String m2 = m1 + " && iteration==" + iteration;
             int rangeCount = generator.nextInt(numRanges);
             for (int ii = 0; ii < rangeCount; ++ii) {
+                final String m3 = m2 + " && ii=" + ii;
                 final boolean value = generator.nextBoolean();
                 final int rangeStart = generator.nextInt(maxSize);
                 final int rangeEnd = rangeStart + generator.nextInt(maxSize - rangeStart);
 
                 if (value) {
                     fullIndex.insertRange(rangeStart, rangeEnd);
+                    assertTrue(m3, fullIndex.containsRange(rangeStart, rangeEnd));
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         fullSet[jj] = true;
                     }
                 } else {
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         fullIndex.remove(jj);
+                        assertFalse(m3 + " && jj==" + jj, fullIndex.find(jj) >= 0);
                         fullSet[jj] = false;
                     }
                 }
@@ -698,12 +701,14 @@ public abstract class SortedIndexTestBase extends TestCase {
 
             rangeCount = generator.nextInt(numRanges);
             for (int ii = 0; ii < rangeCount; ++ii) {
+                final String m3 = m2 + " && ii==" + ii;
                 final boolean value = generator.nextBoolean();
                 final int rangeStart = generator.nextInt(maxSize);
                 final int rangeEnd = rangeStart + generator.nextInt(maxSize - rangeStart);
 
                 if (value) {
                     subIndex.insertRange(rangeStart, rangeEnd);
+                    assertTrue(m3, subIndex.containsRange(rangeStart, rangeEnd));
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         subSet[jj] = true;
                     }
@@ -711,13 +716,14 @@ public abstract class SortedIndexTestBase extends TestCase {
                     for (int jj = rangeStart; jj <= rangeEnd; ++jj) {
                         subSet[jj] = false;
                         subIndex.remove(jj);
+                        assertFalse(m3 + " && jj==" + jj, subIndex.find(jj) >= 0);
                     }
                 }
             }
 
             final Index result = fullIndex.minus(subIndex);
 
-            compareIndexAndKeyValues(result, doMinusSimple(booleanSetToKeys(fullSet), booleanSetToKeys(subSet)));
+            compareIndexAndKeyValues(m2, result, doMinusSimple(booleanSetToKeys(fullSet), booleanSetToKeys(subSet)));
         }
     }
 
