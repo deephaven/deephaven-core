@@ -880,8 +880,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             downsampleRequest.setPixelCount(pixelCount);
             if (zoomRange != null) {
                 ZoomRange zoom = new ZoomRange();
-                zoom.setMaxDateNanos(Long.toString(zoomRange[0].getWrapped()));
-                zoom.setMinDateNanos(Long.toString(zoomRange[1].getWrapped()));
+                zoom.setMinDateNanos(Long.toString(zoomRange[0].getWrapped()));
+                zoom.setMaxDateNanos(Long.toString(zoomRange[1].getWrapped()));
                 downsampleRequest.setZoomRange(zoom);
             }
             downsampleRequest.setXColumnName(xCol);
