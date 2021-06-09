@@ -16,7 +16,7 @@ import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage;
+import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
@@ -53,15 +53,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private final SessionService sessionService;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
-    private final ExportedTableUpdateListener.Factory updateListenerFactory;
 
     @Inject
     public TableServiceGrpcImpl(final SessionService sessionService,
-                                final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap,
-                                final ExportedTableUpdateListener.Factory updateListenerFactory) {
+                                final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
         this.sessionService = sessionService;
         this.operationMap = operationMap;
-        this.updateListenerFactory = updateListenerFactory;
     }
 
     private <T> GrpcTableOperation<T> getOp(final BatchTableRequest.Operation.OpCase op) {
@@ -257,10 +254,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void exportedTableUpdates(final ExportedTableUpdatesRequest request, final StreamObserver<ExportedTableUpdateBatchMessage> responseObserver) {
+    public void exportedTableUpdates(final ExportedTableUpdatesRequest request, final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final ExportedTableUpdateListener listener = updateListenerFactory.create(session, responseObserver);
+            final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
         });
     }

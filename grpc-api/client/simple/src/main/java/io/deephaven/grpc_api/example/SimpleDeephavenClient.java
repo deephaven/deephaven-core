@@ -21,7 +21,6 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
@@ -133,8 +132,8 @@ public class SimpleDeephavenClient {
                         .build());
 
         tableService.exportedTableUpdates(ExportedTableUpdatesRequest.getDefaultInstance(),
-                new ResponseBuilder<ExportedTableUpdateBatchMessage>()
-                        .onNext(this::onTableUpdateBatch)
+                new ResponseBuilder<ExportedTableUpdateMessage>()
+                        .onNext(this::onTableUpdate)
                         .onError((err) -> log.error().append("table update listener error: ").append(err).endl())
                         .onComplete(() -> log.error().append("table update listener completed").endl())
                         .build());
@@ -302,18 +301,18 @@ public class SimpleDeephavenClient {
         }
     }
 
-    private void onTableUpdateBatch(final ExportedTableUpdateBatchMessage batch) {
-        log.info().append("Received ExportedTableUpdatedBatchMessage:").endl();
-        for (final ExportedTableUpdateMessage msg : batch.getUpdatesList()) {
-            final LogEntry entry = log.info().append("\tid=").append(SessionState.ticketToExportId(msg.getExportId()))
-                    .append(" size=").append(msg.getSize());
+    private void onTableUpdate(final ExportedTableUpdateMessage msg) {
+        log.info().append("Received ExportedTableUpdatedMessage:").endl();
 
-            if (!msg.getUpdateFailureMessage().isEmpty()) {
-                entry.append(" error='").append(msg.getUpdateFailureMessage()).append("'");
-            }
+        final LogEntry entry = log.info().append("\tid=")
+                .append(SessionState.ticketToExportId(msg.getExportId()))
+                .append(" size=").append(msg.getSize());
 
-            entry.endl();
+        if (!msg.getUpdateFailureMessage().isEmpty()) {
+            entry.append(" error='").append(msg.getUpdateFailureMessage()).append("'");
         }
+
+        entry.endl();
     }
 
     private void onNewHandshakeResponse(final HandshakeResponse result) {

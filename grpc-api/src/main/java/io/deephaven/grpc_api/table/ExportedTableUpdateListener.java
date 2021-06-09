@@ -1,29 +1,23 @@
 package io.deephaven.grpc_api.table;
 
-import io.deephaven.hash.KeyedLongObjectHashMap;
-import io.deephaven.hash.KeyedLongObjectKey;
-import io.deephaven.io.logger.Logger;
 import com.google.rpc.Code;
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.InstrumentedShiftAwareListener;
 import io.deephaven.db.v2.NotificationStepReceiver;
 import io.deephaven.db.v2.ShiftAwareSwapListener;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.TerminalNotification;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.util.annotations.ReferentialIntegrity;
-import dagger.assisted.Assisted;
-import dagger.assisted.AssistedFactory;
-import dagger.assisted.AssistedInject;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.hash.KeyedLongObjectHashMap;
+import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -36,42 +30,27 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
  *
  * Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer
  * of existing table sizes for both static tables and tables that won't tick frequently. When the refresh is
- * complete we are sent a notification for exportId == 0 (which is otherwise an invalid export id). Until we see
- * that this refresh was complete we will also queue any ticking updates into the refresh batch.
- *
- * When the refresh is complete, we wait until the end of the current LTM cycle to flush
+ * complete we are sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
 public class ExportedTableUpdateListener extends LivenessArtifact implements StreamObserver<ExportNotification> {
-    @AssistedFactory
-    public interface Factory {
-        ExportedTableUpdateListener create(SessionState session, StreamObserver<ExportedTableUpdateBatchMessage> responseObserver);
-    }
 
     private static final Logger log = LoggerFactory.getLogger(ExportedTableUpdateListener.class);
 
-    private final LiveTableMonitor liveTableMonitor;
     private final SessionState session;
 
     private final String logPrefix;
-    private final StreamObserver<ExportedTableUpdateBatchMessage> responseObserver;
-    private final TerminalNotification flushNotification = new FlushNotification();
+    private final StreamObserver<ExportedTableUpdateMessage> responseObserver;
     private final KeyedLongObjectHashMap<ListenerImpl> updateListenerMap = new KeyedLongObjectHashMap<>(EXPORT_KEY);
 
     private volatile boolean isDestroyed = false;
-    private ExportedTableUpdateBatchMessage.Builder nextMessage;
 
-    @AssistedInject
     public ExportedTableUpdateListener(
-            final LiveTableMonitor liveTableMonitor,
-            @Assisted final SessionState session,
-            @Assisted final StreamObserver<ExportedTableUpdateBatchMessage> responseObserver) {
-        this.liveTableMonitor = liveTableMonitor;
+            final SessionState session,
+            final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         this.session = session;
         this.logPrefix = "ExportedTableUpdateListener(" + Integer.toHexString(System.identityHashCode(this)) + ") ";
         this.responseObserver = responseObserver;
 
-        // initial refresh of table sizes is flushed when our export refresh is finished
-        this.nextMessage = ExportedTableUpdateBatchMessage.newBuilder();
         session.manage(this);
     }
 
@@ -87,11 +66,6 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
 
         final Ticket ticket = notification.getTicket();
         final long exportId = SessionState.ticketToExportId(ticket);
-
-        if (exportId == 0) {
-            liveTableMonitor.addNotification(flushNotification);
-            return;
-        }
 
         try {
             final ExportNotification.State state = notification.getExportState();
@@ -156,14 +130,16 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             return;
         }
 
+        // we may receive duplicate creation messages
+        if (updateListenerMap.contains(exportId)) {
+            return;
+        }
+
         final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(table);
         swapListener.subscribeForUpdates();
         final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
         manage(listener);
-
-        if (updateListenerMap.put(exportId, listener) != null) {
-            throw new IllegalStateException("Duplicate ExportId Found: " + exportId);
-        }
+        updateListenerMap.put(exportId, listener);
 
         final MutableLong initSize = new MutableLong();
         table.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
@@ -188,11 +164,6 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             return;
         }
 
-        if (nextMessage == null) {
-            nextMessage = ExportedTableUpdateBatchMessage.newBuilder();
-            liveTableMonitor.addNotification(flushNotification);
-        }
-
         final ExportedTableUpdateMessage.Builder update = ExportedTableUpdateMessage.newBuilder()
                 .setExportId(ticket).setSize(size);
 
@@ -200,7 +171,13 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             update.setUpdateFailureMessage(GrpcUtil.securelyWrapError(log, error).getMessage());
         }
 
-        nextMessage.addUpdates(update);
+        try {
+            responseObserver.onNext(update.build());
+        } catch (final RuntimeException err) {
+            log.error().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
+            session.unmanageNonExport(this);
+            destroy();
+        }
     }
 
     /**
@@ -239,27 +216,6 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             }
             destroyed = true;
             table.removeUpdateListener(swapListener);
-        }
-    }
-
-    /**
-     * At the end of the LTM cycle we flush all of the update messages that were aggregated that LTM cycle.
-     */
-    private class FlushNotification extends TerminalNotification {
-        @Override
-        public void run() {
-            if (isDestroyed) {
-                return;
-            }
-
-            try {
-                responseObserver.onNext(nextMessage.build());
-            } catch (final Error | RuntimeException error) {
-                log.error().append(logPrefix).append("failed to notify listener of state change: ").append(error).endl();
-                session.unmanageNonExport(ExportedTableUpdateListener.this);
-                destroy();
-            }
-            nextMessage = null;
         }
     }
 
