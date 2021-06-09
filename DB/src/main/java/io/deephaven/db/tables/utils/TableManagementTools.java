@@ -110,10 +110,15 @@ public class TableManagementTools {
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
-                (final String name, final Class<?> dbType, Class<?> componentType, final boolean isGrouping, final String codecName, final String codecArgs) -> {
+                (final String name, final Class<?> dbType, Class<?> componentType, final boolean isGrouping,
+                 final String codecName, final String codecArgs, final int objectWidth) -> {
                     final ColumnDefinition<?> colDef;
                     if (codecName != null) {
-                        colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, componentType, codecName, codecArgs);
+                        if (objectWidth != -1) {
+                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dbType, componentType, codecName, codecArgs, objectWidth);
+                        } else {
+                            colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, componentType, codecName, codecArgs);
+                        }
                     } else {
                         colDef = ColumnDefinition.fromGenericType(name, dbType, componentType);
                     }

@@ -139,7 +139,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
             final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name);
-            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + name);
+            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
             final boolean isCodec = codecName != null;
