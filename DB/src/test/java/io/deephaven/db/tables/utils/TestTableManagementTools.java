@@ -254,4 +254,31 @@ public class TestTableManagementTools {
         TableManagementTools.deleteTable(path);
         TestCase.assertFalse(path.exists());
     }
+
+    private Table getAggregatedResultTable() {
+        final int size = 40;
+        final String [] symbol = new String[size];
+        final double [] bid = new double[size];
+        final double [] bidSize = new double[size];
+        for (int ii = 0; ii < size; ++ii) {
+            symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
+            bid[ii] =  (ii < 15) ? 98 : 99;
+            bidSize[ii] =  ii;
+        }
+        final Table baseTable = newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize));
+        return baseTable.by("USym", "Bid").by("USym");
+    }
+    @Test
+    public void testWriteAggregatedTable() {
+        String path = testRoot + File.separator + "testWriteAggregatedTable";
+        final Table table = getAggregatedResultTable();
+        final TableDefinition def = table.getDefinition();
+        TableManagementTools.writeTable(table, def, new File(path), TableManagementTools.StorageFormat.Parquet);
+        Table readBackTable = TableManagementTools.readTable(new File(path), def);
+        TableTools.show(readBackTable);
+        TableTools.show(table);
+        final long sz = table.size();
+        TestTableTools.tableRangesAreEqual(table, readBackTable,0, 0, sz);
+        readBackTable.close();
+    }
 }
