@@ -120,7 +120,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                 }
 
                 if (decoder != null) {
-                    return new RegionedColumnSourceObject.AsValues<>(dataType, decoder);
+                    return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
                 } else {
                     throw new UnsupportedOperationException("Unable to supply a column source for " + columnDefinition);
                 }

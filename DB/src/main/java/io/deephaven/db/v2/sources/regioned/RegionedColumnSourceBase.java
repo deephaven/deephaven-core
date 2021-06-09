@@ -6,6 +6,7 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Partial implementation of {@link RegionedColumnSource} for array-backed and delegating implementations to extend.
@@ -14,8 +15,12 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
         extends AbstractDeferredGroupingColumnSource<DATA_TYPE>
         implements RegionedPageStore<Attributes.Values, ATTR, REGION_TYPE>, RegionedColumnSource<DATA_TYPE> {
 
-    RegionedColumnSourceBase(Class<DATA_TYPE> type) {
-        super(type);
+    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> componentType) {
+        super(type, componentType);
+    }
+
+    RegionedColumnSourceBase(@NotNull final Class<DATA_TYPE> type) {
+        this(type, null);
     }
 
     /**
