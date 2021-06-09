@@ -268,7 +268,7 @@ public class ParquetReaderUtil {
             final boolean isGrouping = groupingCols.contains(colName);
             final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
-            String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
+            final String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
                 final String codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);

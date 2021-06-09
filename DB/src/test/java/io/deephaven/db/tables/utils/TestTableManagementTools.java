@@ -8,7 +8,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.StringSetWrapper;
 import io.deephaven.db.tables.Table;
@@ -16,7 +15,6 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.internal.log.LoggerFactory;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +30,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
-import static io.deephaven.db.tables.utils.TableTools.doubleCol;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
