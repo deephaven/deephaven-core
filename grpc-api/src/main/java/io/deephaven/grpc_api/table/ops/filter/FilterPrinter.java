@@ -250,6 +250,9 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 } else if (Double.isNaN(doubleVal)) {
                     sb.append("Double.NaN");
                 } else {
+                    // Cast the double value to a long, then test to see if they actually compare to the same
+                    // value - if they do not, we have some decimal value and need the entire double to be
+                    // appended, if they do, then we just append the integer instead.
                     long longVal = (long) doubleVal;
                     if (longVal - doubleVal != 0) {
                         // has a decimal value

@@ -42,10 +42,10 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         }
 
         // make type info available
-        //TODO
+        //TODO (deephaven-core#733)
 
         // validate based on the table structure and available invocations
-        //TODO
+        //TODO (deephaven-core#733)
 
         // rewrite unnecessary NOT expressions away
         filter = NormalizeNots.exec(filter);
@@ -63,17 +63,17 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
 
         // replace any EQ-type expression with its corresponding IN-type expression. this preserves the changes
         // made above, could be moved earlier in this list, but must come before "in"/"not in"s are merged
-        //TODO
+        //TODO (deephaven-core#733)
 
         // within each OR/AND, find any comparable "in"/"not in" expression referring to the same column
         // on the left side and merge them into one match
-        //TODO
+        //TODO (deephaven-core#733)
 
         // rewrite any expressions which "should" be safe from the client needing to add null checks
         filter = MakeExpressionsNullSafe.exec(filter);
 
         // get a top array of filters to convert into SelectFilters
-        //TODO
+        //TODO (deephaven-core#733)
 
         List<Condition> finishedConditions = Collections.singletonList(filter);
 

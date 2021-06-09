@@ -223,6 +223,7 @@ public class FilterValue {
 
     @Override
     public String toString() {
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
         return descriptor.toString();
     }
 }

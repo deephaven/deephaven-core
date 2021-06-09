@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
  */
 public class NormalizeFilterUtil {
     private static List<Condition> visitChildren(List<Condition> children, FilterVisitor<Condition> visitor) {
-        // note: don't bother with the possibility of null returns anymore because it doesn't really make sense IMO
         return children.stream().map(c -> FilterVisitor.accept(c, visitor)).collect(Collectors.toList());
     }
 

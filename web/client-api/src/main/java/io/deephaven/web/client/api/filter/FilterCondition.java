@@ -57,7 +57,8 @@ public class FilterCondition {
 
     @JsIgnore
     protected static FilterCondition createAndValidate(Condition descriptor) {
-        //TODO can we validate?
+        //TODO (deephaven-core#723) re-introduce client-side validation so that a client knows right away when
+        //                          they build something invalid
         return new FilterCondition(descriptor);
     }
 
@@ -90,6 +91,7 @@ public class FilterCondition {
 
     @JsMethod
     public String toString() {
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
         return descriptor.toString();
     }
 
