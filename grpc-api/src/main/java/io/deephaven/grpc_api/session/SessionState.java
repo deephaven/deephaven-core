@@ -463,8 +463,8 @@ public class SessionState extends LivenessArtifact {
         /**
          * @return the export id or NON_EXPORT_ID if it does not have one
          */
-        public long getExportId() {
-            return exportId;
+        public Ticket getExportId() {
+            return exportIdToTicket(exportId);
         }
 
         /**
