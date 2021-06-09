@@ -12,6 +12,7 @@ import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.auth.AuthContext;
@@ -218,8 +219,8 @@ public class ExportTableUpdateListenerTest {
         });
 
         final ExportedTableUpdateMessage msg = expectBatch(1).getUpdates(0);
-        final long updateId = SessionState.ticketToExportId(msg.getExportId());
-        Assert.eq(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
+        final Ticket updateId = msg.getExportId();
+        Assert.equals(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
         Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
 
@@ -320,12 +321,12 @@ public class ExportTableUpdateListenerTest {
         });
     }
 
-    private void expectBatchWithSizes(final long exportId, final long... sizes) {
+    private void expectBatchWithSizes(final Ticket exportId, final long... sizes) {
         final ExportedTableUpdateBatchMessage batch = expectBatch(sizes.length);
         for (int i = 0; i < sizes.length; ++i) {
             final ExportedTableUpdateMessage msg = batch.getUpdates(i);
-            final long updateId = SessionState.ticketToExportId(msg.getExportId());
-            Assert.eq(updateId, "updateId", exportId, "exportId");
+            final Ticket updateId = msg.getExportId();
+            Assert.equals(updateId, "updateId", exportId, "exportId");
             Assert.eq(msg.getSize(), "msg.getSize()", sizes[i]);
             Assert.eqTrue(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
         }
