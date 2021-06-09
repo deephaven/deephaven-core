@@ -148,28 +148,27 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
 
             // check if this is a filter that uses a numba vectorized function
-            for (Param param : params) {
-                if (param.getValue().getClass() == NumbaCallableWrapper.class) {
-                    /*
-                     * numba vectorized function must be used alone as an entire expression, and that should have been
-                     * checked in the DBLanguageParser already, this is a sanity check
-                     */
-                    if (params.length != 1) {
-                        throw new UncheckedDeephavenException("internal error - misuse of numba vectorized functions wasn't detected.");
-                    }
-
-                    NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
-                    DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
-                            numbaCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]),
-                            true);
-                    checkReturnType(result, dcf.getReturnedType());
-                    setFilter(new ConditionFilter.ChunkFilter(
-                            dcf.toFilterKernel(),
-                            dcf.getColumnNames().toArray(new String[0]),
-                            ConditionFilter.CHUNK_SIZE));
-                    initialized = true;
-                    return;
+            Optional<Param> paramOptional = Arrays.stream(params).filter(p -> p.getValue() instanceof NumbaCallableWrapper).findFirst();
+            if (paramOptional.isPresent()) {
+                /*
+                 * numba vectorized function must be used alone as an entire expression, and that should have been
+                 * checked in the DBLanguageParser already, this is a sanity check
+                 */
+                if (params.length != 1) {
+                    throw new UncheckedDeephavenException("internal error - misuse of numba vectorized functions wasn't detected.");
                 }
+
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) paramOptional.get().getValue();
+                DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
+                        numbaCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]),
+                        true);
+                checkReturnType(result, dcf.getReturnedType());
+                setFilter(new ConditionFilter.ChunkFilter(
+                        dcf.toFilterKernel(),
+                        dcf.getColumnNames().toArray(new String[0]),
+                        ConditionFilter.CHUNK_SIZE));
+                initialized = true;
+                return;
             }
 
             final Class resultType = result.getType();
@@ -209,6 +208,14 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     }
 
     protected abstract Filter getFilter(Table table, Index fullSet) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
+
+    /**
+     * When numba vectorized functions are used to evaluate query filters, we need to create a special ChunkFilter
+     * that can handle packing and unpacking arrays required/returned by the vectorized function, essentially bypass the
+     * regular code generation process which isn't able to support such use cases without needing some major rework.
+     *
+     * @param filter
+     */
     protected abstract void setFilter(Filter filter);
 
     @Override

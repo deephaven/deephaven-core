@@ -1576,6 +1576,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
     }
 
     private void checkPyNumbaVectorizedFunc(MethodCallExpr n, Expression[] expressions, Class[] expressionTypes) {
+        // numba vectorized functions return arrays of primitive types. This will break the generated expression
+        // evaluation code that expects singular values. This check makes sure that numba vectorized functions must be
+        // used alone (or with cast only) as the entire expression.
         if (n.getParentNode() != null && (n.getParentNode().getClass() != CastExpr.class || n.getParentNode().getParentNode() != null)) {
             throw new RuntimeException("Numba vectorized function can't be used in an expression.");
         }
