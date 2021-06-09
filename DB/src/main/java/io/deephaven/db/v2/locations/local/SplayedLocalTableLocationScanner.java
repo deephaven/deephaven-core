@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 /**
  * Local table location scanner that can handle a simple splayed table.
  */
-public class SplayedLocalTableLocationScanner implements LocalTableLocationProvider.Scanner {
+public class SplayedLocalTableLocationScanner implements LocalTableLocationProviderByScanner.Scanner {
 
     private final File tableLocationDirectory; // final possible location of the table file
     private boolean locationExists; // true if the location has been known to exist

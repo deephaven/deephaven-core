@@ -11,7 +11,6 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import gnu.trove.list.TIntList;
@@ -701,7 +700,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]");
         try {
             TableManagementTools.writeTable(source, definition, testDirectory, TableManagementTools.StorageFormat.Parquet);
-            final Table table = TableManagementTools.readTable(testDirectory, definition);
+            final Table table = TableManagementTools.readTable(testDirectory);
             testFunction.accept(table);
             table.close();
         } finally {

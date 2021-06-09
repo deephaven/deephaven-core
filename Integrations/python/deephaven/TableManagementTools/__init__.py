@@ -118,11 +118,11 @@ def _custom_getAllDbDirs(tableName, rootDir, levelsDepth):
     return [el.getAbsolutePath() for el in _java_type_.getAllDbDirs(tableName, getFileObject(rootDir), levelsDepth).toArray()]
 
 
-def _custom_readTable(*args):
+def _custom_readTableFromDir(*args):
     if len(args) == 1:
-        return _java_type_.readTable(getFileObject(args[0]))
+        return _java_type_.readTableFromDir(getFileObject(args[0]))
     else:
-        return _java_type_.readTable(getFileObject(args[0]), *args[1:])
+        return _java_type_.readTableFromDir(getFileObject(args[0]), *args[1:])
 
 
 def _custom_renameColumns(*args):
@@ -178,7 +178,7 @@ def deleteTable(path):
 
 
 @_passThrough
-def readTable(*args):
+def readTableFromDir(*args):
     """
     Reads in a table from disk.
     
@@ -192,7 +192,7 @@ def readTable(*args):
       :return: (io.deephaven.db.tables.Table) table
     """
     
-    return _custom_readTable(*args)
+    return _custom_readTableFromDir(*args)
 
 
 @_passThrough
@@ -264,3 +264,7 @@ def writeTables(*args):
     """
     
     return _custom_writeTables(*args)
+
+@_passThrough
+def readTable(file_path_string):
+    return _java_type_.readTable(file_path_string)

@@ -82,18 +82,25 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
             @NotNull final String name, @NotNull final Class<T> dataType,
             @Nullable final String codecName) {
-        return ofVariableWidthCodec(name, dataType, null, codecName);
+        return ofVariableWidthCodec(name, dataType, null, codecName, null);
     }
 
     public static <T> ColumnDefinition<T> ofVariableWidthCodec(
             @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
             @Nullable final String codecName) {
+        return ofVariableWidthCodec(name, dataType, componentType, codecName, null);
+    }
+
+    public static <T> ColumnDefinition<T> ofVariableWidthCodec(
+            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
+            @Nullable final String codecName, @Nullable final String codecArgs) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
         Objects.requireNonNull(codecName);
         final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
         maybeSetComponentType(cd, dataType, componentType);
         cd.setObjectCodecClass(codecName);
+        cd.setObjectCodecArguments(codecArgs);
         return cd;
     }
 
@@ -227,6 +234,16 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         if (updatedComponentType != null) {
             columnDefinition.setComponentType(updatedComponentType);
         }
+    }
+
+    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType, int columnType, Class<?> componentType) {
+        Objects.requireNonNull(dataType);
+        ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType, columnType);
+        if (componentType == null) {
+            return cd;
+        }
+        cd.setComponentType(componentType);
+        return cd;
     }
 
     // needed for deserialization
