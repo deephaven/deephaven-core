@@ -22,6 +22,9 @@ import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.util.codec.CodecCache;
+import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.codec.ObjectDecoder;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 
@@ -112,12 +115,14 @@ public class TableManagementTools {
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
-                (final String name, final Class<?> dbType, Class<?> componentType, final boolean isGrouping,
-                 final String codecName, final String codecArgs, final int objectWidth) -> {
+                (final String name, final Class<?> dbType, Class<?> componentType,
+                 final boolean isGrouping, final String codecName, final String codecArgs) -> {
                     final ColumnDefinition<?> colDef;
                     if (codecName != null) {
-                        if (objectWidth != -1) {
-                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dbType, componentType, codecName, codecArgs, objectWidth);
+                        final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
+                        final int width = codec.expectedObjectWidth();
+                        if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
+                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dbType, componentType, codecName, codecArgs, width);
                         } else {
                             colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, componentType, codecName, codecArgs);
                         }

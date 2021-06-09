@@ -8,10 +8,8 @@ import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.dataobjects.DataObjectColumnSet;
 import io.deephaven.dataobjects.persistence.ColumnsetConversionSchema;
 import io.deephaven.dataobjects.persistence.PersistentInputStream;
-import io.deephaven.dataobjects.persistence.PersistentOutputStream;
 import io.deephaven.dataobjects.persistence.DataObjectInputStream;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -602,6 +600,7 @@ public class TableDefinition extends DefaultTableDefinition {
         return result;
     }
 
+    // TODO: DELETE THESE OVERRIDES AND RELATED CODE IN persist.*() METHODS (SEE NOTES BELOW)
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ColumnsetConversionSchema conversionSchema = null;

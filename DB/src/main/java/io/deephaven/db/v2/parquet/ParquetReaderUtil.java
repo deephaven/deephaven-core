@@ -109,7 +109,7 @@ public class ParquetReaderUtil {
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
         // objectWidth == -1 means not present.
-        void accept(String name, Class<?> dataType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs, int objectWidth);
+        void accept(String name, Class<?> dataType, Class<?> componentType, boolean isGroupingColumn, String codecName, String codecArgs);
     }
 
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
@@ -269,7 +269,6 @@ public class ParquetReaderUtil {
             final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
             String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
-            int objectWidth = -1;
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
                 final String codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);
@@ -285,17 +284,7 @@ public class ParquetReaderUtil {
                                         " that can't be found in classloader:" + e, e);
                     }
                 }
-                final String objectWidthMetadataKey = ParquetTableWriter.CODEC_OBJECT_WIDTH_PREFIX + colName;
-                final String objectWidthStr = keyValueMetaData.get(objectWidthMetadataKey);
-                if (objectWidthStr != null && !objectWidthStr.isEmpty()) {
-                    try {
-                        objectWidth = Integer.parseInt(objectWidthStr);
-                    } catch (NumberFormatException e) {
-                        throw new UncheckedDeephavenException("Invalid value for metadata key " + objectWidthMetadataKey + "=" + objectWidthStr +
-                                " when trying to read column " + colName);
-                    }
-                }
-                colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs, objectWidth);
+                colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs);
                 continue;
             }
             final boolean isArray = column.getMaxRepetitionLevel() > 0;
@@ -303,37 +292,37 @@ public class ParquetReaderUtil {
                 switch (column.getPrimitiveType().getPrimitiveTypeName()) {
                     case BOOLEAN:
                         if (isArray) {
-                            colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, Boolean.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, Boolean.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case INT32:
                         if (isArray) {
-                            colDefConsumer.accept(colName, int[].class, int.class, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, int[].class, int.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, int.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, int.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case INT64:
                         if (isArray) {
-                            colDefConsumer.accept(colName, long[].class, long.class, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, long[].class, long.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, long.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, long.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case DOUBLE:
                         if (isArray) {
-                            colDefConsumer.accept(colName, double[].class, double.class, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, double[].class, double.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, double.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, double.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case FLOAT:
                         if (isArray) {
-                            colDefConsumer.accept(colName, float[].class, float.class, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, float[].class, float.class, isGrouping, codecName, codecArgs);
                         } else {
-                            colDefConsumer.accept(colName, float.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                            colDefConsumer.accept(colName, float.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
                     case BINARY:
@@ -344,16 +333,16 @@ public class ParquetReaderUtil {
                                     + " for column " + Arrays.toString(column.getPath());
                         if (specialType != null) {
                             if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                                colDefConsumer.accept(colName, StringSet.class, null, isGrouping, codecName, codecArgs, objectWidth);
+                                colDefConsumer.accept(colName, StringSet.class, null, isGrouping, codecName, codecArgs);
                             } else {
                                 throw new UncheckedDeephavenException(exceptionTextSupplier.get()
                                         + " with unknown special type " + specialType);
                             }
                         }
-                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs, objectWidth);
+                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
                     default:
-                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs, objectWidth);
+                        colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
                 }
             } else {
@@ -367,9 +356,9 @@ public class ParquetReaderUtil {
                     final Class<?> componentType = typeFromVisitor;
                     // On Java 12, replace by:  dataType = componentType.arrayType();
                     final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                    colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs, objectWidth);
+                    colDefConsumer.accept(colName, dataType, componentType, isGrouping, codecName, codecArgs);
                 } else {
-                    colDefConsumer.accept(colName, typeFromVisitor, null, isGrouping, codecName, codecArgs, objectWidth);
+                    colDefConsumer.accept(colName, typeFromVisitor, null, isGrouping, codecName, codecArgs);
                 }
             }
         }
