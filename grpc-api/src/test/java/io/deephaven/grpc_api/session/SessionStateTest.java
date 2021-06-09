@@ -84,7 +84,7 @@ public class SessionStateTest {
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.eq(exportObj.getExportId(), "exportObj.getExportId()", nextExportId - 1, "nextExportId - 1");
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", SessionState.exportIdToTicket(nextExportId - 1), "nextExportId - 1");
 
         // release
         exportObj.release();
@@ -127,7 +127,7 @@ public class SessionStateTest {
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.eq(exportObj.getExportId(), "exportObj.getExportId()", nextExportId - 1, "nextExportId - 1");
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", SessionState.exportIdToTicket(nextExportId - 1), "nextExportId - 1");
 
         // release
         session.onExpired();
