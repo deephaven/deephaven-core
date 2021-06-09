@@ -138,7 +138,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
             session.nonExport()
-                    .requireExclusiveLock()
+                    .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver::onError)
                     .submit(() -> {

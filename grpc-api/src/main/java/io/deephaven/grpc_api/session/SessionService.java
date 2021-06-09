@@ -92,7 +92,11 @@ public class SessionService extends LivenessArtifact {
                 expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
-            session.setExpiration(expiration, initialToken);
+            if (initialToken) {
+                session.initializeExpiration(expiration);
+            } else {
+                session.updateExpiration(expiration);
+            }
         }
         outstandingCookies.addLast(expiration);
 
@@ -152,7 +156,7 @@ public class SessionService extends LivenessArtifact {
         if (session.isExpired()) {
             return;
         }
-        unmanage(session);
+        tryUnmanage(session);
         session.onExpired();
     }
 

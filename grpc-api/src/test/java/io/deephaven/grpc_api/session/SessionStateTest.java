@@ -54,7 +54,7 @@ public class SessionStateTest {
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session), true);
+        session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session));
         nextExportId = 1;
     }
 
@@ -158,10 +158,10 @@ public class SessionStateTest {
         final Object export = new Object();
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++).submit(() -> export);
         expectException(IllegalStateException.class, exportObj::get);
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eq(exportObj.get(), "exportObj.get()", export, "export");
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
@@ -171,10 +171,10 @@ public class SessionStateTest {
                 .onError(err -> errored.setTrue())
                 .submit(() -> { throw new RuntimeException("submit exception"); });
         Assert.eqFalse(errored.booleanValue(), "errored.booleanValue()");
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.FAILED);
     }
 
     @Test
@@ -187,26 +187,26 @@ public class SessionStateTest {
                     throw new RuntimeException("submit exception");
                 });
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.FAILED);
     }
 
     @Test
     public void testCancelBeforeDefined() {
         final SessionState.ExportObject<Object> exportObj = session.getExport(nextExportId);
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.UNKNOWN);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.UNKNOWN);
 
         exportObj.cancel();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> submitObj = session.newExport(nextExportId++).submit(submitted::setTrue);
         Assert.eq(submitObj, "submitObj", exportObj, "exportObj");
         scheduler.runUntilQueueEmpty();
 
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -219,12 +219,12 @@ public class SessionStateTest {
                 .require(d1)
                 .submit(submitted::setTrue);
 
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.PENDING);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.PENDING);
         exportObj.cancel();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
         scheduler.runUntilQueueEmpty();
 
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -239,7 +239,7 @@ public class SessionStateTest {
                 });
 
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
         if (export.getValue().tryRetainReference()) {
             throw new IllegalStateException("this should be destroyed");
@@ -258,7 +258,7 @@ public class SessionStateTest {
         }
 
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
 
         if (!export.getValue().tryRetainReference()) {
             throw new IllegalStateException("this should be live");
@@ -266,7 +266,7 @@ public class SessionStateTest {
         export.getValue().dropReference();
 
         exportObj.cancel();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.RELEASED);
         if (export.getValue().tryRetainReference()) {
             throw new IllegalStateException("this should be destroyed");
         }
@@ -282,7 +282,7 @@ public class SessionStateTest {
 
         d1.cancel();
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -298,7 +298,7 @@ public class SessionStateTest {
                 .submit(() -> { throw new RuntimeException("I fail."); });
 
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -308,14 +308,14 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> d1 = session.newExport(nextExportId++)
                 .submit(() -> { throw new RuntimeException("I fail."); });
         scheduler.runUntilQueueEmpty();
-        Assert.eq(d1.getState(), "d1.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(d1.getState(), "d1.getState()", ExportNotification.State.FAILED);
 
         final SessionState.ExportObject<Object> exportObj = session.newExport(nextExportId++)
                 .require(d1)
                 .submit(submitted::setTrue);
 
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -327,15 +327,15 @@ public class SessionStateTest {
                 .require(d1)
                 .submit(submitted::setTrue);
 
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.PENDING);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.PENDING);
 
         session.newExport(d1.getExportId())
                 .submit(() -> {});
         scheduler.runOne(); // d1
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.QUEUED);
 
         scheduler.runOne(); // d1
-        Assert.eq(exportObj.getState(), "exportObj.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
@@ -350,24 +350,24 @@ public class SessionStateTest {
                 .require(e2)
                 .submit(submitted::setTrue);
 
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.PENDING);
-        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.PENDING);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.QUEUED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.PENDING);
+        Assert.eq(e3.getState(), "e3.getState()", ExportNotification.State.PENDING);
         scheduler.runOne();
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
 
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.QUEUED);
-        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.PENDING);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.QUEUED);
+        Assert.eq(e3.getState(), "e3.getState()", ExportNotification.State.PENDING);
         scheduler.runOne();
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
 
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
-        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.EXPORTED);
+        Assert.eq(e3.getState(), "e3.getState()", ExportNotification.State.QUEUED);
         scheduler.runOne();
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
-        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e3.getState(), "e3.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
@@ -381,15 +381,15 @@ public class SessionStateTest {
         }
 
         scheduler.runOne();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
 
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
                 .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
-        Assert.eq(e2.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.QUEUED);
 
         e1.release();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
 
         Assert.gt(export.refCount, "e1.get().refCount", 0);
         scheduler.runOne();
@@ -407,9 +407,9 @@ public class SessionStateTest {
         }
 
         scheduler.runOne();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
         e1.release();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
 
         final MutableBoolean errored = new MutableBoolean();
         expectException(LivenessStateException.class, () -> {
@@ -431,9 +431,9 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {});
         scheduler.runUntilQueueEmpty();
         e1.release();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {});
-        Assert.eq(e2.getState(), "e1.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.DEPENDENCY_FAILED);
     }
 
     @Test
@@ -509,7 +509,7 @@ public class SessionStateTest {
                 .submit(() -> {});
         session.newExport(e1.getExportId()).submit(() -> { throw new RuntimeException(); });
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_FAILED);
     }
 
     @Test
@@ -521,21 +521,21 @@ public class SessionStateTest {
         session.newExport(e1.getExportId()).submit(() -> {});
         e1.cancel();
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED); // cancels propagate
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED); // cancels propagate
     }
 
     @Test
     public void testDependencyAlreadyFailed() {
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> { throw new RuntimeException(); });
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
         expectException(IllegalStateException.class, e1::get);
 
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
                 .submit(() -> {});
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_FAILED);
         expectException(IllegalStateException.class, e2::get);
     }
 
@@ -549,7 +549,7 @@ public class SessionStateTest {
                 .require(e1)
                 .submit(() -> {});
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED); // cancels propagate
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED); // cancels propagate
         expectException(IllegalStateException.class, e2::get);
     }
 
@@ -561,9 +561,9 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
                 .require(e1)
                 .submit(() -> {});
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.QUEUED);
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
@@ -583,11 +583,11 @@ public class SessionStateTest {
                 });
 
         e1obj.release();
-        Assert.eq(e1obj.getState(), "e1obj.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(e1obj.getState(), "e1obj.getState()", ExportNotification.State.RELEASED);
 
         scheduler.runUntilQueueEmpty();
         Assert.eq(e1.refCount, "e1.refCount", 0);
-        Assert.eq(e2obj.getState(), "e2obj.getState()", SessionState.ExportState.EXPORTED);
+        Assert.eq(e2obj.getState(), "e2obj.getState()", ExportNotification.State.EXPORTED);
     }
 
     @Test
@@ -595,10 +595,10 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> {});
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {});
         e2.cancel();
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED);
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e1.getState(), "e2.getState()", SessionState.ExportState.EXPORTED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.CANCELLED);
+        Assert.eq(e1.getState(), "e2.getState()", ExportNotification.State.EXPORTED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED);
     }
 
     @Test
@@ -611,8 +611,8 @@ public class SessionStateTest {
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session);
-        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration, true));
-        expectException(IllegalArgumentException.class, () -> this.session.setExpiration(expiration, false));
+        expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
+        expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }
 
     @Test
@@ -625,7 +625,7 @@ public class SessionStateTest {
 
     @Test
     public void testExpiredByTime() {
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session), false);
+        session.updateExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session) );
         Assert.eqNull(session.getExpiration(), "session.getExpiration()"); // already expired
         expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
         expectException(StatusRuntimeException.class, () -> session.nonExport());
@@ -643,10 +643,10 @@ public class SessionStateTest {
         final MutableBoolean submitted = new MutableBoolean();
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(submitted::setTrue);
         e1.release();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.QUEUED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.QUEUED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.RELEASED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
         Assert.eqTrue(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -656,8 +656,8 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e2 = session.getExport(nextExportId++);
         session.newExport(e1.getExportId()).require(e2).submit(() -> {});
         session.newExport(e2.getExportId()).require(e1).submit(() -> {});
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
     }
 
     @Test @Ignore // TODO (core#33)
@@ -668,9 +668,9 @@ public class SessionStateTest {
         session.newExport(e1.getExportId()).require(e2).submit(() -> {});
         session.newExport(e2.getExportId()).require(e3).submit(() -> {});
         session.newExport(e3.getExportId()).require(e1).submit(() -> {});
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
-        Assert.eq(e3.getState(), "e3.getState()", SessionState.ExportState.FAILED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
+        Assert.eq(e3.getState(), "e3.getState()", ExportNotification.State.FAILED);
     }
 
     @Test @Ignore // TODO (core#33)
@@ -680,9 +680,9 @@ public class SessionStateTest {
         final SessionState.ExportObject<Object> e3 = session.newExport(nextExportId++).require(e1, e2).submit(() -> {});
         session.newExport(e1.getExportId()).require(e2).submit(() -> {});
         session.newExport(e2.getExportId()).require(e1).submit(() -> {});
-        Assert.eq(e1.getState(), "e1.getState()", SessionState.ExportState.FAILED);
-        Assert.eq(e2.getState(), "e2.getState()", SessionState.ExportState.FAILED);
-        Assert.eq(e3.getState(), "e2.getState()", SessionState.ExportState.DEPENDENCY_FAILED);
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.FAILED);
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.FAILED);
+        Assert.eq(e3.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_FAILED);
     }
 
     @Test @Ignore // TODO (core#33)
@@ -693,9 +693,9 @@ public class SessionStateTest {
         b1.require(b2.getExport()).submit(() -> {});
         b2.require(b3.getExport()).submit(() -> {});
         b3.require(b1.getExport()).submit(() -> {});
-        Assert.eq(b1.getExport().getState(), "b1.getExport().getState()", SessionState.ExportState.FAILED);
-        Assert.eq(b2.getExport().getState(), "b2.getExport().getState()", SessionState.ExportState.FAILED);
-        Assert.eq(b3.getExport().getState(), "b3.getExport().getState()", SessionState.ExportState.FAILED);
+        Assert.eq(b1.getExport().getState(), "b1.getExport().getState()", ExportNotification.State.FAILED);
+        Assert.eq(b2.getExport().getState(), "b2.getExport().getState()", ExportNotification.State.FAILED);
+        Assert.eq(b3.getExport().getState(), "b3.getExport().getState()", ExportNotification.State.FAILED);
     }
 
     @Test
@@ -726,7 +726,7 @@ public class SessionStateTest {
         final LivenessScope sessionScope = new LivenessScope();
         LivenessScopeStack.push(sessionScope);
         session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
-        session.setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session), true);
+        session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session) );
         LivenessScopeStack.pop(sessionScope);
 
         final QueueingExportListener listener = new QueueingExportListener();

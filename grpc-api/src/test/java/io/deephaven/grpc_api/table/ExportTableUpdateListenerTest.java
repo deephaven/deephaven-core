@@ -339,7 +339,7 @@ public class ExportTableUpdateListenerTest {
     public class TestSessionState extends SessionState {
         public TestSessionState() {
             super(scheduler, liveTableMonitor, AUTH_CONTEXT);
-            setExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), this), true);
+            initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }
     }
 

@@ -120,9 +120,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExport(request);
-            final SessionState.ExportState currState = export.getState();
+            final ExportNotification.State currState = export.getState();
             export.release();
-            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(currState != SessionState.ExportState.UNKNOWN).build());
+            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(currState != ExportNotification.State.UNKNOWN).build());
             responseObserver.onCompleted();
         });
     }
