@@ -1,9 +1,12 @@
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -15,11 +18,20 @@ import static org.junit.Assert.*;
 
 public class TestDbArrayUngroup {
 
+    private static File dataDirectory;
+
+    @Before
+    public void setUp() throws IOException {
+         dataDirectory = Files.createTempDirectory(Paths.get(""), "TestDbArrayUngroup-").toFile();
+    }
+
+    @After
+    public void tearDown() {
+        FileUtils.deleteRecursively(dataDirectory);
+    }
+
     @Test
     public void testUngroup() throws IOException {
-        final String namespace = getClass().getSimpleName();
-        final String tableName = "testUngroup";
-
         final Table theTable = TableTools.emptyTable(20).update("A=`a`+i%10", "B=`b`+i%5", "C=`i`+i");
         assertEquals(String.class, theTable.getDefinition().getColumn("C").getDataType());
 
@@ -29,9 +41,6 @@ public class TestDbArrayUngroup {
 
         final Table ungroupedTable = groupedTable.ungroup();
         assertEquals(String.class, ungroupedTable.getDefinition().getColumn("C").getDataType());
-
-        final File dataDirectory = Files.createTempDirectory(Paths.get(""), "TestDbArrayUngroup-").toFile();
-        dataDirectory.deleteOnExit();
 
         TableManagementTools.writeTable(groupedTable, dataDirectory);
         final Table actual = TableManagementTools.readTable(dataDirectory, groupedTable.getDefinition());
