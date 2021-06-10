@@ -113,19 +113,19 @@ public class TableManagementTools {
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
-                (final String name, final Class<?> dbType, Class<?> componentType,
+                (final String name, final Class<?> dataType, Class<?> componentType,
                  final boolean isGrouping, final String codecName, final String codecArgs) -> {
                     final ColumnDefinition<?> colDef;
                     if (codecName != null) {
                         final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
                         final int width = codec.expectedObjectWidth();
                         if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
-                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dbType, componentType, codecName, codecArgs, width);
+                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dataType, componentType, codecName, codecArgs, width);
                         } else {
-                            colDef = ColumnDefinition.ofVariableWidthCodec(name, dbType, componentType, codecName, codecArgs);
+                            colDef = ColumnDefinition.ofVariableWidthCodec(name, dataType, componentType, codecName, codecArgs);
                         }
                     } else {
-                        colDef = ColumnDefinition.fromGenericType(name, dbType, componentType);
+                        colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
                     }
                     cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
