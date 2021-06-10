@@ -1,9 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.StringSetArrayWrapper;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.*;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
@@ -21,10 +18,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.codec.SerializableCodec;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.parquet.ColumnWriter;
@@ -39,7 +33,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -308,9 +301,9 @@ public class ParquetTableWriter {
         Index lengthIndex = null;
         int targetSize = getTargetSize(columnSource.getType());
         Supplier<Integer> rowStepGetter;
-        Supplier<Integer> valuesStepGetter = null;
+        Supplier<Integer> valuesStepGetter;
         int stepsCount;
-        if (columnSource.getComponentType() != null && columnDefinition.getObjectCodecType() == ColumnDefinition.ObjectCodecType.DEFAULT) {
+        if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource> columns = new HashMap<>();
             columns.put("array", columnSource);
@@ -546,7 +539,7 @@ public class ParquetTableWriter {
     }
 
 
-    private static TransferObject getDestinationBuffer(ColumnSource columnSource, ColumnDefinition columnDefinition, int targetSize, Class columnType) {
+    private static <DATA_TYPE> TransferObject getDestinationBuffer(ColumnSource<DATA_TYPE> columnSource, ColumnDefinition<DATA_TYPE> columnDefinition, int targetSize, Class<DATA_TYPE> columnType) {
         if (int.class.equals(columnType)) {
             int[] array = new int[targetSize];
             WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(array);
@@ -576,20 +569,8 @@ public class ParquetTableWriter {
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, targetSize);
         }
-
-        String objectCodecClass = columnDefinition.getObjectCodecClass();
-        final ObjectCodec<Object> codec;
-        if (objectCodecClass != null && !objectCodecClass.equals(ColumnDefinition.ObjectCodecType.DEFAULT.name())) {
-            codec = CodecCache.DEFAULT.getCodec(objectCodecClass, columnDefinition.getObjectCodecArguments());
-        } else if (Externalizable.class.isAssignableFrom(columnDefinition.getDataType())) {
-            codec = CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(), columnDefinition.getDataType().getName());
-        } else {
-            codec = CodecCache.DEFAULT.getCodec(SerializableCodec.class.getName(), "");
-        }
+        final ObjectCodec<DATA_TYPE> codec = CodecLookup.lookup(columnDefinition);
         return new CodecTransfer(columnSource, codec, targetSize);
-
-
-        // throw new UnsupportedOperationException("Unsupported primitive type " + columnType.getName());
     }
 
     interface TransferObject<B> extends Context{

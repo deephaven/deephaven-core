@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
+import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.libs.StringSet;
@@ -60,7 +61,7 @@ class TypeInfos {
     }
 
     private static TypeInfo lookupTypeInfo(ColumnDefinition column) {
-        if (column.getComponentType() != null && column.getObjectCodecType() == ColumnDefinition.ObjectCodecType.DEFAULT) {
+        if (column.getComponentType() != null && !CodecLookup.explicitCodecPresent(column)) {
             return lookupTypeInfo(column.getComponentType()).orElseGet(() -> new CodecType());
         }
         if (StringSet.class.isAssignableFrom(column.getDataType())) {
@@ -70,10 +71,9 @@ class TypeInfos {
     }
 
     static Pair<String, String> getCodecAndArgs(ColumnDefinition columnDefinition) {
-        final String objectCodecClass = columnDefinition.getObjectCodecClass();
         // Explicit codecs always take precedence
-        if (objectCodecClass != null && !objectCodecClass.equals(ColumnDefinition.ObjectCodecType.DEFAULT.name())) {
-            return new ImmutablePair<>(objectCodecClass, columnDefinition.getObjectCodecArguments());
+        if (CodecLookup.explicitCodecPresent(columnDefinition)) {
+            return new ImmutablePair<>(columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
         }
         // No need to impute a codec for any basic formats we already understand
         final Class<?> dataType = columnDefinition.getDataType();
@@ -98,13 +98,6 @@ class TypeInfos {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), columnDefinition.getDataType().getName());
         }
         return new ImmutablePair<>(SerializableCodec.class.getName(), "");
-
-    }
-
-    static TypeInfo getTypeInfo(ColumnSource column) throws SchemaMappingException {
-        return lookupTypeInfo(column).orElseThrow(() -> new SchemaMappingException(
-                "Unable to find TypeInfo for ColumnSource of type " + column
-                        .getType()));
     }
 
     static TypeInfo getTypeInfo(ColumnDefinition column) throws SchemaMappingException {
@@ -336,7 +329,7 @@ class TypeInfos {
         default Type createSchemaType(ColumnDefinition columnDefinition) {
             PrimitiveBuilder<PrimitiveType> builder;
             boolean isRepeating = true;
-            if (columnDefinition.getComponentType() != null && columnDefinition.getObjectCodecType() == ColumnDefinition.ObjectCodecType.DEFAULT) {
+            if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition)) {
                 builder = getBuilder(isRequired(columnDefinition), false, columnDefinition.getComponentType());
             } else if (StringSet.class.isAssignableFrom(columnDefinition.getDataType())) {
                 builder = getBuilder(isRequired(columnDefinition), false, String.class);

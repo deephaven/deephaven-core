@@ -381,20 +381,14 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
             if (getEncodingInfo(encoding) != getEncodingInfo(other.encoding)) {
                 differences.add(prefix + lhs + " encoding '" + getEncodingInfo(encoding) + "' does not match " + rhs + " encoding '" + getEncodingInfo(other.encoding) + "'");
             }
-            if (getObjectCodecType() != other.getObjectCodecType()) {
-                differences.add(prefix + lhs + " object codec type '" + getObjectCodecType() + "' does not match " + rhs + " object codec type '" + other.getObjectCodecType() + "'");
-            } else {
-                if (getObjectCodecType() == ObjectCodecType.CLASS) {
-                    if (!Objects.equals(getObjectCodecClass(), other.getObjectCodecClass())) {
-                        differences.add(prefix + lhs + " object codec class '" + getObjectCodecClass() + "' does not match " + rhs + " object codec class '" + other.getObjectCodecClass() + "'");
-                    }
-                    if (!Objects.equals(getObjectCodecArguments(), other.getObjectCodecArguments())) {
-                        differences.add(prefix + lhs + " object codec arguments '" + getObjectCodecArguments() + "' does not match " + rhs + " object codec arguments '" + other.getObjectCodecArguments() + "'");
-                    }
-                }
-                if (getObjectWidth() != other.getObjectWidth()) {
-                    differences.add(prefix + lhs + " object width " + getObjectWidth() + " does not match " + rhs + " object width " + other.getObjectWidth());
-                }
+            if (!Objects.equals(getObjectCodecClass(), other.getObjectCodecClass())) {
+                differences.add(prefix + lhs + " object codec class '" + getObjectCodecClass() + "' does not match " + rhs + " object codec class '" + other.getObjectCodecClass() + "'");
+            }
+            if (!Objects.equals(getObjectCodecArguments(), other.getObjectCodecArguments())) {
+                differences.add(prefix + lhs + " object codec arguments '" + getObjectCodecArguments() + "' does not match " + rhs + " object codec arguments '" + other.getObjectCodecArguments() + "'");
+            }
+            if (getObjectWidth() != other.getObjectWidth()) {
+                differences.add(prefix + lhs + " object width " + getObjectWidth() + " does not match " + rhs + " object width " + other.getObjectWidth());
             }
         }
     }
@@ -410,10 +404,8 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
                 Objects.equals(componentType, otherCD.componentType) &&
                 columnType == otherCD.columnType &&
                 getEncodingInfo(encoding) == getEncodingInfo(otherCD.encoding) &&
-                getObjectCodecType() == otherCD.getObjectCodecType() &&
-                (getObjectCodecType() != ObjectCodecType.CLASS ||
-                        Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass()) &&
-                        Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments())) &&
+                Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass()) &&
+                Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments()) &&
                 getObjectWidth() == otherCD.getObjectWidth();
     }
 
@@ -478,41 +470,6 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
             case ENCODING_UTF_16LE:   return EncodingInfo.UTF_16LE;
             default:                  return EncodingInfo.ISO_8859_1; // Should be 0, or Integer.MIN_VALUE (null).
         }
-    }
-
-    /**
-     * Object codec types, allowing us to specify whether a "built-in" behavior should be used, or a codec class.
-     */
-    public enum ObjectCodecType {
-
-        DEFAULT,
-        SERIALIZABLE,
-        EXTERNALIZABLE,
-        CLASS;
-
-        private static final EnumSet<ObjectCodecType> BUILT_IN_CODECS = EnumSet.complementOf(EnumSet.of(CLASS));
-
-        /**
-         * Determine the appropriate ObjectCodecType for the supplied "ObjectCodecClass" value.
-         *
-         * @param valueToLookup The name to lookup
-         * @return The matching constant, or null if none was found
-         */
-        public static ObjectCodecType lookup(@Nullable final String valueToLookup) {
-            if (valueToLookup == null) {
-                return DEFAULT;
-            }
-            return BUILT_IN_CODECS.stream().filter(bic -> bic.name().equalsIgnoreCase(valueToLookup)).findFirst().orElse(CLASS);
-        }
-    }
-
-    /**
-     * Get the appropriate ObjectCodecType for this column definition.
-     *
-     * @return The ObjectCodecType
-     */
-    public ObjectCodecType getObjectCodecType() {
-        return ObjectCodecType.lookup(objectCodecClass);
     }
 
     public boolean isFixedWidthObjectType() {

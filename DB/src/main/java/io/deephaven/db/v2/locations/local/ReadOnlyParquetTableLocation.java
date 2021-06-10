@@ -1,6 +1,7 @@
 package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
@@ -142,7 +143,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
-            final boolean isCodec = codecName != null;
+            final boolean isCodec = CodecLookup.explicitCodecPresent(codecName);
 
             if (isArray && columnChunkReader.getMaxRl() > 1) {
                 throw new TableDataException("No support for nested repeated parquet columns.");
@@ -200,9 +201,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
                 if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                     toPage = ToStringSetPage.create(dataType, toPage);
-                }
-
-                if (isArray && !isCodec) {
+                } else if (isArray) {
                     if (DbArrayBase.class.isAssignableFrom(dataType)) {
                         toPage = ToDbArrayPage.create(dataType, componentType, toPage);
                     } else if (dataType.isArray()) {
