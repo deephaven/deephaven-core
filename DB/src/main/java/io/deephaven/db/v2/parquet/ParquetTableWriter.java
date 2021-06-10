@@ -306,7 +306,7 @@ public class ParquetTableWriter {
         Supplier<Integer> rowStepGetter;
         Supplier<Integer> valuesStepGetter;
         int stepsCount;
-        if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition) && !CodecLookup.codecRequired(columnDefinition)) {
+        if (columnSource.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition) && !CodecLookup.codecRequired(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource> columns = new HashMap<>();
             columns.put("array", columnSource);
