@@ -8,8 +8,6 @@ import java.io.*;
 
 /**
  * An opaque array of bytes, intended to represent the contents of a file.
- *
- * @IncludeAll
  */
 public class DbFileImpl implements DbFile, Externalizable {
 

@@ -351,6 +351,20 @@ public class CompilerTools {
         return defaultContext;
     }
 
+    /**
+     * Sets the default context.
+     *
+     * @param context the script session's compiler context
+     * @throws IllegalStateException if default context is already set
+     * @throws NullPointerException if context is null
+     */
+    public static synchronized void setDefaultContext(final Context context) {
+        if (defaultContext != null) {
+            throw new IllegalStateException("It's too late to set default context; it's already set to: " + defaultContext);
+        }
+        defaultContext = Objects.requireNonNull(context);
+    }
+
     private static final ThreadLocal<Context> currContext = ThreadLocal.withInitial(CompilerTools::getDefaultContext);
 
     public static void resetContext() {
@@ -358,7 +372,7 @@ public class CompilerTools {
     }
 
     public static void setContext(@Nullable Context context) {
-        if(context == null) {
+        if (context == null) {
             currContext.remove();
         } else {
             currContext.set(context);

@@ -40,6 +40,7 @@ import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -58,15 +59,18 @@ public class ParquetTableWriter {
     private static final int PAGE_SIZE = 1 << 20;
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
     public static final String GROUPING = "grouping";
-    public static final String _CODEC_NAME_PREFIX_ = "__codec_name__";
-    public static final String _CODEC_ARGS_PREFIX_ = "__codec_args__";
-    public static final String SPECIAL_TYPE_NAME_PREFIX_ = "__special_type__";
+    public static final String CODEC_NAME_PREFIX = "dh_codec_name:";
+    public static final String CODEC_ARGS_PREFIX = "dh_codec_args:";
+    public static final String CODEC_DATA_TYPE_PREFIX = "dh_codec_data_type:";
+    public static final String CODEC_COMPONENT_TYPE_PREFIX = "dh_codec_comp_type:";
+    public static final String SPECIAL_TYPE_NAME_PREFIX = "dh_special_type:";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     private static final int LOCAL_CHUNK_SIZE = 1024;
-    public static final IntBuffer EMPTY_INT_BUFFER = IntBuffer.allocate(0);
-    public static final String BEGIN_POS = "__begin_pos__";
-    public static final String END_POS = "__end_pos__";
-    public static final String GROUPING_KEY = "__key__";
+    public static final String BEGIN_POS = "dh_begin_pos";
+    public static final String END_POS = "dh_end_pos";
+    public static final String GROUPING_KEY = "dh_key";
+    public static final String PARQUET_FILE_EXTENSION = ".parquet";
+    public static final String PARQUET_FILE_NAME = "table" + PARQUET_FILE_EXTENSION;
     public static Function<String, String> defaultGroupingFileName = columnName -> columnName + "_grouping.parquet";
 
 
@@ -135,7 +139,7 @@ public class ParquetTableWriter {
 
             Map<String, String> tableMeta = new HashMap<>();
             tableMeta.put(GROUPING, String.join(",", definition.getGroupingColumnNamesArray()));
-            writers[i] = getParquetFileWriter(tablesToWrite[i], definition, destinationInfo.getOutputPath() + "/table.parquet", tableMeta, codecName);
+            writers[i] = getParquetFileWriter(tablesToWrite[i], definition, destinationInfo.getOutputPath() + File.separator + PARQUET_FILE_NAME, tableMeta, codecName);
             rowGroupWriters[i] = writers[i].addRowGroup(tablesToWrite[i].size());
             tablesToWrite[i] = pretransformTable(tablesToWrite[i], definition);
             for (Map.Entry<String, Map<?, long[]>> columnGrouping : destinationInfo.columnNameToGroupToRange.entrySet()) {
@@ -189,7 +193,9 @@ public class ParquetTableWriter {
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
-    public static void write(Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns) throws SchemaMappingException, IOException {
+    public static void write(
+            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns
+    ) throws SchemaMappingException, IOException {
         write(t, path, incomingMeta, CompressionCodecName.UNCOMPRESSED, t.getDefinition(), groupingPathFactory, groupingColumns);
     }
 
@@ -210,7 +216,10 @@ public class ParquetTableWriter {
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
-    public static void write(Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName, TableDefinition definition, Function<String, String> groupingPathFactory, String... groupingColumns) throws SchemaMappingException, IOException {
+    public static void write(
+            Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName,
+            TableDefinition definition, Function<String, String> groupingPathFactory, String... groupingColumns
+    ) throws SchemaMappingException, IOException {
         Map<String, String> tableMeta = new HashMap<>(incomingMeta);
         Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
         tableMeta.put(GROUPING, String.join(",", groupingColumns));
@@ -274,13 +283,19 @@ public class ParquetTableWriter {
         MappedSchema mappedSchema = MappedSchema.create(definition);
         Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (ColumnDefinition column : definition.getColumns()) {
+            final String colName = column.getName();
             Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column);
             if (codecData != null) {
-                extraMetaData.put(_CODEC_NAME_PREFIX_ + column.getName(), codecData.getLeft());
-                extraMetaData.put(_CODEC_ARGS_PREFIX_ + column.getName(), codecData.getRight());
+                extraMetaData.put(CODEC_NAME_PREFIX + colName, codecData.getLeft());
+                extraMetaData.put(CODEC_ARGS_PREFIX + colName, codecData.getRight());
+                extraMetaData.put(CODEC_DATA_TYPE_PREFIX + colName, column.getDataType().getName());
+                final Class<?> componentType = column.getComponentType();
+                if (componentType != null) {
+                    extraMetaData.put(CODEC_COMPONENT_TYPE_PREFIX + colName, column.getComponentType().getName());
+                }
             }
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX_ + column.getName(), STRING_SET_SPECIAL_TYPE);
+                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX + colName, STRING_SET_SPECIAL_TYPE);
             }
         }
         return new ParquetFileWriter(path, new LocalFSChannelProvider(), PAGE_SIZE,
@@ -897,7 +912,7 @@ public class ParquetTableWriter {
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         Map<?, Index> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
         RangeCollector collector;
-        QueryScope.getDefaultInstance().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
+        QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
         Table firstOfTheKey = tableToSave.view(columnName).where("__range_collector_" + columnName + "__.next(" + columnName + ")");
 
         Table contiguousOccurrences = firstOfTheKey.countBy("c", columnName).where("c != 1");

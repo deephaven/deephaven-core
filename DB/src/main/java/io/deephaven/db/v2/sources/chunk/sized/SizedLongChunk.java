@@ -11,8 +11,6 @@ import io.deephaven.util.SafeCloseable;
  * A wrapper for a long chunk that allows you to resize the chunk to a capacity.
  *
  * @param <T> the chunk's attribute
- *
- * @IncludeAll
  */
 public final class SizedLongChunk<T extends Attributes.Any> implements SafeCloseable {
     private WritableLongChunk<T> chunk;

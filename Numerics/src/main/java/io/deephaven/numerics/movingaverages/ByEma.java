@@ -15,8 +15,6 @@ import java.util.Map;
 
 /**
  * A DB aware EMA which can compute "by" emas without grouping and then ungrouping.
- *
- * @IncludeAll
  */
 public abstract class ByEma implements Serializable {
 

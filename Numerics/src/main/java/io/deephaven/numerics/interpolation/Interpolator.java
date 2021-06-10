@@ -12,8 +12,6 @@ import io.deephaven.util.QueryConstants;
 
 /**
  * A clean interface for performing interpolations.
- *
- * @IncludeAll
  */
 public class Interpolator {
 

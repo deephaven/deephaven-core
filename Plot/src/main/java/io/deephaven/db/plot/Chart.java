@@ -15,8 +15,6 @@ import static io.deephaven.db.plot.DynamicChartTitle.DynamicChartTitleTable.defa
 
 /**
  * Represents a graph. Contains {@link Axes} objects.
- *
- * @IncludeAll
  */
 public interface Chart extends Serializable {
 

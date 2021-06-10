@@ -13,7 +13,6 @@ import java.util.function.Function;
 
 /**
  * A parent data series that spawns a {@link DataSeries} for each unique key in the parent series.
- * @IncludeAll
  */
 public interface MultiSeries extends Series {
     // add functions to modify multiseries here (e.g. color)

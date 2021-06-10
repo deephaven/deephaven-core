@@ -1583,7 +1583,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class, DBLangu
             throw new RuntimeException("Numba vectorized function can't be used in an expression.");
         }
 
-        final QueryScope queryScope = QueryScope.getDefaultInstance();
+        final QueryScope queryScope = QueryScope.getScope();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getName())) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();

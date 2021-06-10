@@ -24,8 +24,6 @@ import java.util.Arrays;
 
 /**
  * {@link WritableChunk} implementation for boolean data.
- *
- * @IncludeAll
  */
 public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> implements WritableChunk<ATTR> {
 

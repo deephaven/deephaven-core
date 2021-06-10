@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Provides convenience methods to facilitate parsing of a JSON String and extraction of typed values.
- * @IncludeAll
  */
 public class JsonRecord {
 

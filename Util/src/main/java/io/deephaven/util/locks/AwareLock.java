@@ -4,8 +4,6 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * Extension to the {@link Lock} interface to make awareness of the current thread's state accessible.
- *N
- * @IncludeAll
  */
 public interface AwareLock extends Lock {
 

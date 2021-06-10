@@ -20,7 +20,6 @@ import java.util.List;
  * sorted by the {@link DBDateTime} column to be used for binning rows.<p></p>
  * <p>Usage is of the form:
  * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DBTimeUtils.MINUTE));}</p>
- * @IncludeAll
  */
 
 public class DownsampledWhereFilter extends SelectFilterImpl {

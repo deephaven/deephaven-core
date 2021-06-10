@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource$SupportsContiguousGet",
+ "methods": {
+  "getChunk": "**Incompatible overloads text - text from the first overload:**\n\nReturns a chunk of data corresponding to the keys from the given OrderedKeys.\n\n*Overload 1*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys\n  :return: (io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.SupportsContiguousGet.ATTR>) A chunk of data corresponding to the keys from the given OrderedKeys\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext\n  :param firstKey: long\n  :param lastKey: long\n  :return: io.deephaven.db.v2.sources.chunk.Chunk<? extends DefaultChunkSource.SupportsContiguousGet.ATTR>"
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.DefaultChunkSource.SupportsContiguousGet",
+ "text": "An alternative set of defaults which may typically be used by ChunkSources which support a get\n method which only works for contiguous ranges.  They should just implement\n getChunk(GetContext, long, long).",
+ "typeName": "interface"
+}

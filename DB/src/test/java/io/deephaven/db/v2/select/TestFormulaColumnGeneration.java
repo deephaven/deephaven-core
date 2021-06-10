@@ -34,12 +34,12 @@ public class TestFormulaColumnGeneration {
 
     @Before
     public void setUp() {
-        QueryLibrary.setCurrent(QueryLibrary.makeNewLibrary("DEFAULT"));
+        QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary("DEFAULT"));
     }
 
     @After
     public void tearDown() {
-        QueryLibrary.resetCurrent();
+        QueryLibrary.resetLibrary();
     }
 
     @Test

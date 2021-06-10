@@ -26,8 +26,6 @@ import java.util.Map;
  *
  * To create a TimeTable, you should use the {@link io.deephaven.db.tables.utils.TableTools#timeTable} family of
  * methods.
- *
- * @IncludeAll
  */
 public class TimeTable extends QueryTable implements LiveTable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);

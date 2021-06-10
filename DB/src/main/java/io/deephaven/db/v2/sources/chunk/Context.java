@@ -5,8 +5,6 @@ import io.deephaven.util.SafeCloseable;
 /**
  * Base interface for state/mutable data that needs to be kept over the course of an evaluation session for a
  * Chunk Source, Functor or Sink.
- *
- * @IncludeAll
  */
 public interface Context extends SafeCloseable {
     /**

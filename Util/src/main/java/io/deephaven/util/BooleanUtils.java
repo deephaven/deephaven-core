@@ -6,8 +6,6 @@ package io.deephaven.util;
 
 /**
  * Utilities for translating boxed {@link Boolean}s to/from primitive bytes.
- *
- * @IncludeAll
  */
 public class BooleanUtils {
 

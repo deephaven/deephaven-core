@@ -8,6 +8,7 @@ import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;
 import io.grpc.stub.StreamObserver;
@@ -550,10 +551,10 @@ public class SessionStateTest {
         }
 
         private void validateNotificationQueue(final SessionState.ExportObject<?> export, final ExportNotification.State... states) {
-            final long exportId = export.getExportId();
+            final Ticket exportId = export.getExportId();
 
             final List<ExportNotification.State> foundStates = notifications.stream()
-                    .filter(n -> getExportId(n) == exportId)
+                    .filter(n -> n.getTicket().equals(exportId))
                     .map(ExportNotification::getExportState)
                     .collect(Collectors.toList());
             boolean error = foundStates.size() != states.length;

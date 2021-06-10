@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl$LazyUpdateGrpcImpl",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl.LazyUpdateGrpcImpl",
+ "typeName": "class"
+}

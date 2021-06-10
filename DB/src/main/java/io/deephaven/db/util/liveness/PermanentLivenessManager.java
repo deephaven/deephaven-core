@@ -6,8 +6,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * <p>A {@link LivenessManager} implementation that will never release its referents.
  * <p>Instances expect to be used on exactly one thread, and hence do not take any measures to ensure thread safety.
- *
- * @IncludeAll
  */
 public final class PermanentLivenessManager implements LivenessManager {
 

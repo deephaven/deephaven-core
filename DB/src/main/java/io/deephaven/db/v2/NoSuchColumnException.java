@@ -7,8 +7,6 @@ import java.util.Collections;
 
 /**
  * Exception thrown when a column is not found.
- *
- * @IncludeAll
  */
 public class NoSuchColumnException extends IllegalArgumentException {
     /**

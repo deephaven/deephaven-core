@@ -6,7 +6,6 @@ package io.deephaven.gui.color;
 
 /**
  * Color abstraction.
- * @Include
  */
 public interface Paint {
 

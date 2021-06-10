@@ -6,8 +6,6 @@ package io.deephaven.gui.color;
 
 /**
  * Palette of {@link Color}s.
- *
- * @IncludeAll
  */
 public interface ColorPalette {
 

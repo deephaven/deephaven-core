@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.db.v2.sources.LongArraySource",
+ "methods": {
+  "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<java.lang.Long>\n:param sourceKey: long\n:param destKey: long",
+  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.db.v2.sources.chunk.Chunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>) - The source of the data orderedKeys\n:param orderedKeys: (io.deephaven.db.v2.utils.OrderedKeys) - An OrderedKeys representing the keys to be written",
+  "fillPrevChunk": "Populates the given destination chunk with data corresponding to the keys from the given OrderedKeys.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super io.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "get": ":param index: long\n:return: java.lang.Long",
+  "getCapacity": "Get the capacity of this column source. This number is one higher than the highest key that\n may be accessed (read or written).\n\n:return: (long) The capacity of this column source",
+  "getPrev": ":param index: long\n:return: java.lang.Long",
+  "makeFillContext": "Allocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker,\n typically a ChunkSource.\n\n:param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n:param sharedContext: (io.deephaven.db.v2.sources.chunk.SharedContext) - Shared store of intermediate results.\n:return: (io.deephaven.db.v2.sources.ArraySourceHelper.FillContext) A context for use with fill operations",
+  "makeFillFromContext": "Provide a default, empty WritableChunkSink.FillFromContext for use with our default WritableSource.fillFromChunk(io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext, io.deephaven.db.v2.sources.chunk.Chunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>, io.deephaven.db.v2.utils.OrderedKeys).\n\n:param chunkCapacity: int\n:return: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext",
+  "set": ":param key: long\n:param value: java.lang.Long"
+ },
+ "path": "io.deephaven.db.v2.sources.LongArraySource",
+ "text": "Simple array source for Long.",
+ "typeName": "class"
+}

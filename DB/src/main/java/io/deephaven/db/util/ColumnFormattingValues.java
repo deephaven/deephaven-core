@@ -2,8 +2,6 @@ package io.deephaven.db.util;
 
 /**
  * Container for magic String values used to indicate formatted rows
- *
- * @IncludeAll
  */
 public interface ColumnFormattingValues {
     String ROW_FORMAT_NAME = "__ROWFORMATTED";

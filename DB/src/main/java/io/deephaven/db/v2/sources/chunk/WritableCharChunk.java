@@ -24,8 +24,6 @@ import java.nio.CharBuffer;
 
 /**
  * {@link WritableChunk} implementation for char data.
- *
- * @IncludeAll
  */
 public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> implements WritableChunk<ATTR> {
 

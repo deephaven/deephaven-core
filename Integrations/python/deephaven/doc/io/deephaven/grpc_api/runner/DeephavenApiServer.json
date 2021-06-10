@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.runner.DeephavenApiServer",
+ "methods": {
+  "startMain": ":param out: java.io.PrintStream\n:param err: java.io.PrintStream"
+ },
+ "path": "io.deephaven.grpc_api.runner.DeephavenApiServer",
+ "typeName": "class"
+}

@@ -1,8 +1,8 @@
 package io.deephaven.db.plot.util;
 
+import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.dataobjects.ClassUtil;
 import io.deephaven.db.plot.util.functions.ClosureFunction;
 import io.deephaven.db.tables.Table;
 import io.deephaven.libs.GroovyStaticImportGenerator;

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.sort.megamerge.IntLongMegaMergeKernel",
+ "methods": {
+  "createContext": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any,KEY_INDICES extends io.deephaven.db.v2.sources.chunk.Attributes.Keys>\n\n:return: io.deephaven.db.v2.sort.megamerge.IntLongMegaMergeKernel.IntLongMegaMergeKernelContext<ATTR,KEY_INDICES>",
+  "merge": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any,KEY_INDICES extends io.deephaven.db.v2.sources.chunk.Attributes.Keys>\n\n:param destinationKeys: io.deephaven.db.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.db.v2.sources.IntegerArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.db.v2.sources.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.db.v2.sources.chunk.IntChunk<ATTR>"
+ },
+ "path": "io.deephaven.db.v2.sort.megamerge.IntLongMegaMergeKernel",
+ "typeName": "class"
+}

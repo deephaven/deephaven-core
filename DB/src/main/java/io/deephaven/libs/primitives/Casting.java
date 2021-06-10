@@ -10,8 +10,6 @@ import static io.deephaven.util.QueryConstants.*;
 
 /**
  * A set of commonly used functions for casting between types.
- *
- * @IncludeAll
  */
 public class Casting {
 
@@ -309,7 +307,6 @@ public class Casting {
      *
      * @param values values
      * @return cast array.
-     * @Exclude
      */
     @Deprecated
     public static double[] intToDouble(int[] values){
@@ -321,7 +318,6 @@ public class Casting {
      *
      * @param values values
      * @return cast array.
-     * @Exclude
      */
     @Deprecated
     public static double[] longToDouble(long[] values){
@@ -333,7 +329,6 @@ public class Casting {
      *
      * @param values values
      * @return cast array.
-     * @Exclude
      */
     @Deprecated
     public static DbDoubleArray intToDouble(final DbIntArray values){
@@ -345,7 +340,6 @@ public class Casting {
      *
      * @param values values
      * @return cast array.
-     * @Exclude
      */
     @Deprecated
     public static DbDoubleArray longToDouble(final DbLongArray values){

@@ -6,8 +6,6 @@ package io.deephaven.db.v2.select;
 
 /**
  * This will filter a table starting off with the first N rows, and then adding new rows to the table on each refresh.
- *
- * @IncludeAll
  */
 public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
     private final long sizeIncrement;

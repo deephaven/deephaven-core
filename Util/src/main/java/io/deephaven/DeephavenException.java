@@ -2,8 +2,6 @@ package io.deephaven;
 
 /**
  * The root of all Checked Deephaven exceptions.
- *
- * @IncludeAll
  */
 public class DeephavenException extends Exception {
     public DeephavenException() {

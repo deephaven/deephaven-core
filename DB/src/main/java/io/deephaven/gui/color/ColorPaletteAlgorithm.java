@@ -6,7 +6,6 @@ package io.deephaven.gui.color;
 
 /**
  * Algorithm for generating a sequence of {@link Color}s.
- * @IncludeAll
  */
 public interface ColorPaletteAlgorithm {
 

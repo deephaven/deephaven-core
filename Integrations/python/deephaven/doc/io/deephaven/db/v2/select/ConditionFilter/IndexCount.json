@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.select.ConditionFilter$IndexCount",
+ "methods": {
+  "getContext": ":param chunkSize: int\n:return: io.deephaven.db.v2.select.ConditionFilter.IndexCount.Context"
+ },
+ "path": "io.deephaven.db.v2.select.ConditionFilter.IndexCount",
+ "typeName": "class"
+}

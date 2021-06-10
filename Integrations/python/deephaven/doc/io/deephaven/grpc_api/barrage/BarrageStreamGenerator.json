@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator",
+ "methods": {
+  "getMessage": ":return: (io.deephaven.db.backplane.barrage.BarrageMessage) the BarrageMessage that this generator is operating on",
+  "getSubView": "Obtain a View of this StreamGenerator that can be sent to a single subscriber.\n\n:param options: io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options\n:param isInitialSnapshot: boolean\n:param viewport: io.deephaven.db.v2.utils.Index\n:param keyspaceViewport: io.deephaven.db.v2.utils.Index\n:param subscribedColumns: java.util.BitSet\n:return: (io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View) a view wrapping the input parameters in the context of this generator",
+  "wrapInMessage": ":param builder: com.google.flatbuffers.FlatBufferBuilder\n:param headerOffset: int\n:param headerType: byte\n:return: int"
+ },
+ "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator",
+ "typeName": "class"
+}

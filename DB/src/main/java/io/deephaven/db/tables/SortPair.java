@@ -5,8 +5,6 @@ import java.util.Objects;
 
 /**
  * A pair representing a column to sort by and its direction.
- *
- * @IncludeAll 
  */
 public class SortPair {
     public static SortPair[] ZERO_LENGTH_SORT_PAIR_ARRAY = new SortPair[0];

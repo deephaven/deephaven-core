@@ -10,8 +10,6 @@ import java.lang.ref.WeakReference;
 
 /**
  * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
- *
- * @IncludeAll
  */
 abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements LivenessNode {
 

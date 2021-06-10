@@ -27,8 +27,6 @@ import java.nio.FloatBuffer;
 
 /**
  * {@link WritableChunk} implementation for float data.
- *
- * @IncludeAll
  */
 public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> implements WritableChunk<ATTR> {
 

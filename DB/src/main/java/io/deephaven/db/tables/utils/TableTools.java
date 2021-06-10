@@ -45,8 +45,6 @@ import java.util.*;
 /**
  * Tools for working with tables.  This includes methods to examine tables, combine them, convert them to and from CSV files,
  * and create and manipulate columns.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class TableTools {
@@ -576,7 +574,7 @@ public class TableTools {
      */
     @ScriptApi
     public static void writeCsv(String sourcePath, String destPath, DBTimeZone timeZone, boolean nullsAsEmpty, String... columns) throws IOException {
-        Table source = TableManagementTools.readTable(new File(sourcePath));
+        Table source = TableManagementTools.readTable(sourcePath);
         writeCsv(source, destPath, false, timeZone, nullsAsEmpty, columns);
     }
 

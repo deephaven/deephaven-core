@@ -32,8 +32,6 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
  * timepoint is stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT).  This
  * provides a range from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC.  The minimum long
  * value is reserved for {@link QueryConstants#NULL_LONG} and therefore is not permitted as a valid DBDateTime.</p>
- *
- * @IncludeAll
  */
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.db.v2.utils.AbstractFactory",
+ "methods": {
+  "getFlatIndex": "Get a flat Index containing the range [0, size), or an empty index if the\n specified size is <= 0.\n\n:param size: long\n:return: (io.deephaven.db.v2.utils.Index) A flat index containing the keys [0, size) or an empty index if the size is <= 0",
+  "getIndexByRange": "Create an Index containing the continuous range [firstKey, lastKey]\n\n:param firstKey: long\n:param lastKey: long\n:return: (io.deephaven.db.v2.utils.Index) An index containing the specified range",
+  "getIndexByValues": "**Incompatible overloads text - text from the first overload:**\n\nGet an Index containing the specified keys.\n\n The provided list is sorted, and then passed to a sequential builder.\n\n*Overload 1*  \n  :param keys: long...\n  :return: (io.deephaven.db.v2.utils.Index) An index containing the specified keys\n  \n*Overload 2*  \n  :param key: long\n  :return: (io.deephaven.db.v2.utils.Index) a new Index containing key\n  \n*Overload 3*  \n  :param list: gnu.trove.list.array.TLongArrayList\n  :return: (io.deephaven.db.v2.utils.Index) an Index containing the values from list"
+ },
+ "path": "io.deephaven.db.v2.utils.AbstractFactory",
+ "text": "This is the base class for factories that construct Indexes.",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing",
+ "methods": {
+  "getReferencedRegion": ":return: ColumnRegionReferencing.REFERENCED_COLUMN_REGION"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing",
+ "typeName": "interface"
+}

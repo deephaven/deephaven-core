@@ -337,7 +337,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testView() {
-        QueryScope.setDefaultInstance(new QueryScope.StandaloneImpl());
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("indexMinEdge",2.0);
         QueryScope.addParam("IsIndex",true);
         QueryScope.addParam("MEF",1.0);
@@ -2681,7 +2681,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]").by("Symbol").ungroup();
         try {
             TableManagementTools.writeTable(source, definition, testDirectory, TableManagementTools.StorageFormat.Parquet);
-            final Table table = TableManagementTools.readTable(testDirectory, definition);
+            final Table table = TableManagementTools.readTable(testDirectory);
             testFunction.accept(table);
             table.close();
         } finally {

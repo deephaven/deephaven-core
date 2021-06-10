@@ -10,15 +10,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for notification of table changes.
- *
- * @IncludeAll
  */
 public interface NotificationQueue {
 
     /**
      * A notification that may be enqueued.
-     *
-     * @IncludeAll
      */
     interface Notification extends Runnable, LogOutputAppendable, IntrusiveDoublyLinkedNode<Notification> {
         /**

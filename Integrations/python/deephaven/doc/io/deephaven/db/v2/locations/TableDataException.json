@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.locations.TableDataException",
+ "methods": {
+  "wasInterrupted": ":return: (boolean) Whether this exception was caused by an interrupt"
+ },
+ "path": "io.deephaven.db.v2.locations.TableDataException",
+ "text": "Exception thrown by various sub-systems for data access.",
+ "typeName": "class"
+}

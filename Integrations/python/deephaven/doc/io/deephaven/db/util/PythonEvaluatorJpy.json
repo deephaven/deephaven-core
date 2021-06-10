@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.db.util.PythonEvaluatorJpy",
+ "methods": {
+  "evalScript": "Evaluate the provided statements.\n\n If you've got a multi-line script; you must use this version.\n\n:param s: java.lang.String",
+  "evalStatement": "Evaluate the provided statement.\n\n Not suitable for use with scripts; because multiple statements will be ignored.\n\n:param s: java.lang.String",
+  "getPythonVersion": "Gets the Python interpreter version string.\n\n:return: (java.lang.String) The Python interpreter version string.",
+  "getScope": ":return: io.deephaven.db.util.PythonScopeJpyImpl",
+  "runScript": "Runs a Python script.\n\n:param scriptFile: java.lang.String",
+  "set": "Sets the variable within our session.\n\n:param name: java.lang.String\n:param value: java.lang.Object",
+  "withGlobalCopy": ":return: io.deephaven.db.util.PythonEvaluatorJpy"
+ },
+ "path": "io.deephaven.db.util.PythonEvaluatorJpy",
+ "text": "The sole implementation of the PythonEvaluator, using Jpy to create a cpython interpreter instance inside of our JVM.\n\n Each evaluator has their own copy of the globals.",
+ "typeName": "class"
+}

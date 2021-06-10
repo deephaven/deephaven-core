@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.by.ssmminmax.LongSetResult",
+ "methods": {
+  "setResult": ":param ssm: io.deephaven.db.v2.ssms.SegmentedSortedMultiSet\n:param destination: long\n:return: boolean",
+  "setResultNull": ":param destination: long\n:return: boolean"
+ },
+ "path": "io.deephaven.db.v2.by.ssmminmax.LongSetResult",
+ "typeName": "class"
+}

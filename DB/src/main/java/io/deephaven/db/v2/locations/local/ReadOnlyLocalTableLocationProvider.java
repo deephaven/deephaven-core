@@ -13,49 +13,27 @@ import java.io.File;
 /**
  * Location provider for read-only table locations.
  */
-public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProvider {
+public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProviderByScanner {
 
     private static final String PARQUET_FILE_NAME = "table.parquet";
 
-    private final TableDataRefreshService refreshService;
-
-    private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
-
-    public ReadOnlyLocalTableLocationProvider(@NotNull final TableKey tableKey,
-                                              @NotNull final Scanner scanner,
-                                              final boolean supportsSubscriptions,
-                                              @NotNull final TableDataRefreshService refreshService) {
-        super(tableKey, scanner, supportsSubscriptions);
-        this.refreshService = refreshService;
+    public ReadOnlyLocalTableLocationProvider(
+            @NotNull final TableKey tableKey,
+            @NotNull final Scanner scanner,
+            final boolean supportsSubscriptions,
+            @NotNull final TableDataRefreshService refreshService) {
+        super(tableKey, scanner, supportsSubscriptions, refreshService);
     }
 
     @Override
     public String getImplementationName() {
-        return "ReadOnlyLocalTableLocationProvider";
+        return ReadOnlyLocalTableLocationProvider.class.getSimpleName();
     }
 
     @Override
     public void refresh() {
         scanner.scanAll(this::handleTableLocationKey);
         setInitialized();
-    }
-
-    @Override
-    protected void activateUnderlyingDataSource() {
-        subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this);
-    }
-
-    @Override
-    protected void deactivateUnderlyingDataSource() {
-        if (subscriptionToken != null) {
-            subscriptionToken.cancel();
-            subscriptionToken = null;
-        }
-    }
-
-    @Override
-    protected <T> boolean matchSubscriptionToken(final T token) {
-        return token == subscriptionToken;
     }
 
     @Override

@@ -15,8 +15,6 @@ import java.util.List;
 
 /**
  * Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives, FloatNumericPrimitives, and FlotFpPrimitives).
- *
- * @Exclude
  */
 public class Replicate {
     public static void main(String[] args) throws IOException {

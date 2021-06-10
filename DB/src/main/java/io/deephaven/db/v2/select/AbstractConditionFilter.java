@@ -82,7 +82,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
         try {
             final Map<String, Param> possibleParams = new HashMap<>();
-            final QueryScope queryScope = QueryScope.getDefaultInstance();
+            final QueryScope queryScope = QueryScope.getScope();
             for (Param param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
                 possibleVariables.put(param.getName(), param.getDeclaredType());

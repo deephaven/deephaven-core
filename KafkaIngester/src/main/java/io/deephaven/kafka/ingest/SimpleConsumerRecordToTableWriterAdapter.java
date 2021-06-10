@@ -13,8 +13,6 @@ import java.util.function.Function;
 
 /**
  * An adapter that maps keys and values to single Deephaven columns.  Each Kafka record produces one Deephaven row.
- *
- * @IncludeAll
  */
 public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
     private final TableWriter writer;

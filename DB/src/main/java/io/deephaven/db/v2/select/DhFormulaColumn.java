@@ -208,7 +208,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     String generateClassBody() {
         if (params == null) {
-            params = QueryScope.getDefaultInstance().getParams(userParams);
+            params = QueryScope.getScope().getParams(userParams);
         }
 
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);

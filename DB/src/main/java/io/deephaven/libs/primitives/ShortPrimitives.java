@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 /**
  * A set of commonly used functions that can be applied to Short types.
- *
- * @IncludeAll
  */
 public class ShortPrimitives {
     /**

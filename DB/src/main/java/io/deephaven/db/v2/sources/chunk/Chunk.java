@@ -9,8 +9,6 @@ import java.nio.Buffer;
  * Data structure for a contiguous region of data.
  *
  * @param <ATTR> {@link Attributes} that apply to this chunk
- *
- * @IncludeAll
  */
 public interface Chunk<ATTR extends Any> {
     /**

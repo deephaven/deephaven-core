@@ -27,8 +27,6 @@ import java.nio.ByteBuffer;
 
 /**
  * {@link WritableChunk} implementation for byte data.
- *
- * @IncludeAll
  */
 public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> implements WritableChunk<ATTR> {
 

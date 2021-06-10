@@ -15,9 +15,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
-/**
- * @IncludeAll
- */
 public interface DbArray<T> extends DbArrayBase {
 
     long serialVersionUID = 2691131699080413017L;
