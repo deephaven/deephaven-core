@@ -1,6 +1,7 @@
 package io.deephaven.grpc_api.runner;
 
 import io.deephaven.db.util.AbstractScriptSession;
+import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -9,6 +10,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;
@@ -80,12 +82,18 @@ public class DeephavenApiServer {
     private final Server server;
     private final LiveTableMonitor ltm;
     private final LogInit logInit;
+    private final ConsoleServiceGrpcImpl consoleService;
 
     @Inject
-    public DeephavenApiServer(final Server server, final LiveTableMonitor ltm, final LogInit logInit) {
+    public DeephavenApiServer(
+            final Server server,
+            final LiveTableMonitor ltm,
+            final LogInit logInit,
+            final ConsoleServiceGrpcImpl consoleService) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
+        this.consoleService = consoleService;
     }
 
     private void start() throws IOException {
@@ -96,6 +104,9 @@ public class DeephavenApiServer {
 
         log.info().append("Creating/Clearing Script Cache...").endl();
         AbstractScriptSession.createScriptCache();
+
+        log.info().append("Initializing Script Session...").endl();
+        consoleService.initializeGlobalScriptSession();
 
         log.info().append("Starting LTM...").endl();
         ltm.start();
