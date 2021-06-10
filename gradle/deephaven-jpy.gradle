@@ -24,27 +24,6 @@ project(':deephaven-jpy') {
   // For OSS, we need to currently move fast, and will prefer to make edits directly in py/jpy.
   // These can be backported to jpy proper in the future if necessary.
 
-  /**
-   * We don't want to enable the jpy building on all environments yet
-   * because it requires the ability of the running machine to build/install python.
-   *
-   * https://github.com/JetBrains/gradle-python-envs
-   * https://github.com/pyenv/pyenv/wiki/common-build-problems
-   * https://github.com/pyenv/pyenv/wiki
-   */
-  if (PyEnv.pythonEnabled(project)) {
-    PyEnv.getEnv(project)
-    gradle.buildFinished {
-      // the double-compilation of jpy by gradle and maven can confuse jenkins jacoco plugin.
-      // rather than require all configurations of jacoco to filter out the maven results,
-      // we'll just delete them here.  We can remove this once we remove dependency on mvn.
-      // maven is junky and rebuilds on every invocation anyway, so deleting this won't be "expensive" anyway.
-      // Remove this once IDO-438 merges
-      new File(rootDir, 'py/jpy/target').deleteDir()
-      
-    }
-  }
-
   task prepareDocker(type: Sync) {
     from(project.projectDir) {
       exclude 'build'
@@ -66,8 +45,3 @@ project(':deephaven-jpy') {
     target.set('build')
   }
 }
-// temporary cleanup of old python installation directory.
-// we'll leave this in for the sultan release to help automatically reclaim disk space
-// for the few developers / machines which have been building python using the prototype.
-// It can be safely removed when we also remove maven.
-new File(rootDir, 'py/bootstrap').deleteDir()

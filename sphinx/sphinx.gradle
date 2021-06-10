@@ -16,61 +16,24 @@ def docBuildDir = "$buildDir/docs"
 
 TaskProvider<? extends Task> pyDoc
 
-// TODO core#430 remove this if, always follow this path
-if (!PyEnv.pythonEnabled(project)) {
-    pyDoc = Docker.registerDockerTask(project, "pythonDocs") {
-        copyIn {
-            from 'docker'
-            from(sourceDir) {
-                into 'source'
-            }
+pyDoc = Docker.registerDockerTask(project, "pythonDocs") {
+    copyIn {
+        from 'docker'
+        from(sourceDir) {
+            into 'source'
         }
+    }
 //        dockerfile = project.file('Dockerfile') // not needed with the above from 'docker'
-        parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
-        imageName = 'deephaven/sphinx:local-build'
-        containerOutPath = '/build'
-        copyOut {
-            into docBuildDir
-        }
+    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+    imageName = 'deephaven/sphinx:local-build'
+    containerOutPath = '/build'
+    copyOut {
+        into docBuildDir
     }
 }
-//TODO core#430 remove this path entirely
-if (java8 && PyEnv.pythonEnabled(project)) {
 
-    PyEnv env = PyEnv.getEnv(project)
-    /**
-     * This task converts the already-expanded README file into the notebook format
-     */
-    Venv venv = env.getVenv(PythonVersion.PY_37, VenvType.RUN_SPHINX)
-    dependsList += venv.installDhAndDhJpyWheels()
-    // uncomment below for faster iterations during development (skip rerunning :Generators:tasks)
-//    dependsList = [venv.installDhAndDhJpyWheels()] // DO NOT MERGE WITH THIS UNCOMMENTED
-
-    pyDoc = project.tasks.register 'pythonDocs', Exec, {
-        Exec pythonDocs ->
-
-            pythonDocs.commandLine("$venv.dir/bin/sphinx-build", '-b', 'html', sourceDir, docBuildDir)
-            pythonDocs.environment("LC_CTYPE", "en_US.UTF-8")
-
-            pythonDocs.dependsOn(dependsList)
-            pythonDocs.workingDir("$venv.dir/")
-            def saw_bz2 = false
-            pythonDocs.ignoreExitValue = true
-            pythonDocs.logging.addStandardErrorListener({ txt ->
-                if (txt.contains('_bz2')) {
-                    saw_bz2 = true
-                }
-            } as StandardOutputListener)
-            pythonDocs.doLast {
-                if (saw_bz2) {
-                    throw new GradleException("\n\nYou must install libbz2-dev / bzip2-devel on your OS and then rm -rf $venv.install.installRootDir/$venv.pv.name to run sphinx\n")
-                } else if (pythonDocs.state.failure) {
-                    throw pythonDocs.state.failure
-                } else if (pythonDocs?.execResult?.exitValue != 0) {
-                    throw new GradleException("Sphinx failed while generating docs; you may want to rm -rf $venv.dir.")
-                }
-            } as Action
-    }
+pyDoc.configure {
+    dependsOn dependsList
 }
 
 project.tasks.register 'pythonDocsTar', Tar, {
