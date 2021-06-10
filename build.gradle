@@ -328,16 +328,18 @@ String javaDocOverviewLocation = 'build/docs/overview.html'
 tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
         jdoc.javadocTool = javaToolchains.javadocToolFor{it ->
-            languageVersion = JavaLanguageVersion.of(11)
+            // Javadoc version >=11 is needed for search
+            // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
+            languageVersion = JavaLanguageVersion.of(15)
         }
         jdoc.inputs.file javaDocOverviewLocation
         jdoc.options.encoding = 'UTF-8'
         jdoc.options.tags = ['apiNote', 'implNote']
         // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
         jdoc.options.overview = new File("$rootDir", javaDocOverviewLocation)
+        // Link to javadoc 11 API, because it is closer to java 8, which we actually use to build and run
         jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
         jdoc.options.addStringOption('Xdoclint:none', '-quiet')
-        jdoc.options.addBooleanOption('-no-module-directories', true)
 
         //add to as javadoc gets completed
         String [] exportedProjects = [

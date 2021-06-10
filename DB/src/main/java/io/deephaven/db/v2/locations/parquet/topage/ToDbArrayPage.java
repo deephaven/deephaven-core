@@ -24,7 +24,7 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT> extends ToPage.W
         if (!componentType.isAssignableFrom(columnComponentType)) {
             throw new IllegalArgumentException("The component type, " + componentType.getCanonicalName() + ", for the" +
                     " native array type " + nativeType.getCanonicalName() +
-                    "is not compatible with the column's component type " + columnComponentType);
+                    " is not compatible with the column's component type " + columnComponentType);
         }
 
         return new ToDbArrayPage<>(nativeType, toPage);

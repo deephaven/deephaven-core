@@ -27,18 +27,20 @@ import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
 
+@Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
     public static final String WORKER_CONSOLE_TYPE = Configuration.getInstance().getStringWithDefault("io.deephaven.console.type", "python");
 
-    private final ScriptSession globalSession;
+    private volatile ScriptSession globalSession;
 
     private final Map<String, Provider<ScriptSession>> scriptTypes;
     private final SessionService sessionService;
@@ -55,7 +57,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
             throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
+    }
 
+    public synchronized void initializeGlobalScriptSession() {
+        if (globalSession != null) {
+            throw new IllegalStateException("global session already initialized");
+        }
         globalSession = scriptTypes.get(WORKER_CONSOLE_TYPE).get();
     }
 
