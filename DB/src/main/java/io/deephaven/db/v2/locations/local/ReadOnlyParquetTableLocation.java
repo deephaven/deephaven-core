@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.locations.local;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -182,6 +183,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                         case FIXED_LEN_BYTE_ARRAY:
                             if (isCodec) {
                                 final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
+                                //noinspection rawtypes
                                 final ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                                 //noinspection unchecked
                                 toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
@@ -200,8 +202,10 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                 }
 
                 if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    Assert.assertion(isArray, "isArray");
                     toPage = ToStringSetPage.create(dataType, toPage);
                 } else if (isArray) {
+                    Assert.assertion(!isCodec, "!isCodec");
                     if (DbArrayBase.class.isAssignableFrom(dataType)) {
                         toPage = ToDbArrayPage.create(dataType, componentType, toPage);
                     } else if (dataType.isArray()) {

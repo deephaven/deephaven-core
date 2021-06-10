@@ -273,14 +273,17 @@ public class ParquetTableWriter {
 
     @NotNull
     private static ParquetFileWriter getParquetFileWriter(Table t, TableDefinition definition, String path, Map<String, String> tableMeta, CompressionCodecName codecName) throws SchemaMappingException, IOException {
-        MappedSchema mappedSchema = MappedSchema.create(definition);
-        Map<String, String> extraMetaData = new HashMap<>(tableMeta);
-        for (ColumnDefinition column : definition.getColumns()) {
+        final MappedSchema mappedSchema = MappedSchema.create(definition);
+        final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
+        for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
             Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column);
             if (codecData != null) {
                 extraMetaData.put(CODEC_NAME_PREFIX + colName, codecData.getLeft());
-                extraMetaData.put(CODEC_ARGS_PREFIX + colName, codecData.getRight());
+                final String codecArgs = codecData.getRight();
+                if (codecArgs != null) {
+                    extraMetaData.put(CODEC_ARGS_PREFIX + colName, codecArgs);
+                }
                 extraMetaData.put(CODEC_DATA_TYPE_PREFIX + colName, column.getDataType().getName());
                 final Class<?> componentType = column.getComponentType();
                 if (componentType != null) {
@@ -303,7 +306,7 @@ public class ParquetTableWriter {
         Supplier<Integer> rowStepGetter;
         Supplier<Integer> valuesStepGetter;
         int stepsCount;
-        if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition)) {
+        if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition) && !CodecLookup.codecRequired(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource> columns = new HashMap<>();
             columns.put("array", columnSource);
@@ -440,7 +443,7 @@ public class ParquetTableWriter {
                 }
             }
         } else {
-            try (final TransferObject transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType)) {
+            try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType)) {
                 boolean supportNulls = supportNulls(columnType);
                 Object bufferToWrite = transferObject.getBuffer();
                 Object nullValue = getNullValue(columnType);
@@ -459,11 +462,7 @@ public class ParquetTableWriter {
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), nullValue);
                             repeatCount.clear();
                         } else if (supportNulls) {
-                            try {
-                                columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
-                            } catch (Exception e) {
-                                throw e;
-                            }
+                            columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
                         } else {
                             columnWriter.addPageNoNulls(bufferToWrite, transferObject.rowCount());
                         }

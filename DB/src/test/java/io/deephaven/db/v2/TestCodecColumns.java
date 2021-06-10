@@ -6,10 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.util.codec.BigIntegerCodec;
-import io.deephaven.util.codec.ByteArrayCodec;
-import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.CodecCacheException;
+import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -46,6 +43,11 @@ public class TestCodecColumns {
         VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ColumnDefinition.class);
     }
 
+    private static final ColumnDefinition<ColumnDefinition> VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC;
+    static {
+        VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC = ColumnDefinition.ofVariableWidthCodec("VWCD", ColumnDefinition.class, null, ExternalizableCodec.class.getName(), ColumnDefinition.class.getName());
+    }
+
     private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
     static {
         FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, byte.class, ByteArrayCodec.class.getName(), "9,notnull", 9);
@@ -61,12 +63,24 @@ public class TestCodecColumns {
         VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S = ColumnDefinition.fromGenericType("VWBIS", BigInteger.class);
     }
 
+    private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC;
+    static {
+        VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC = ColumnDefinition.ofVariableWidthCodec("VWBIS", BigInteger.class, SerializableCodec.class.getName());
+    }
+
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
             VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
             VARIABLE_WIDTH_COLUMN_DEFINITION_2,
             FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S);
+
+    private static final TableDefinition EXPECTED_RESULT_DEFINITION = TableDefinition.of(
+            VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
+            VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC,
+            FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
+            VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
+            VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC);
 
     private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
             TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
@@ -83,7 +97,7 @@ public class TestCodecColumns {
             TableManagementTools.writeTable(TABLE, dir, storageFormat);
             final Table result = TableManagementTools.readTable(dir);
             TableTools.show(result);
-            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+            TestCase.assertEquals(EXPECTED_RESULT_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);
         } finally {
             FileUtils.deleteRecursively(dir);

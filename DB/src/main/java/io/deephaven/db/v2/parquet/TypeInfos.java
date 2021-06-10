@@ -2,15 +2,12 @@ package io.deephaven.db.v2.parquet;
 
 import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.parquet.io.api.RecordConsumer;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -18,6 +15,7 @@ import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 
+import javax.validation.constraints.NotNull;
 import java.io.Externalizable;
 import java.util.*;
 
@@ -40,10 +38,10 @@ class TypeInfos {
             DBDateTimeType.INSTANCE
     };
 
-    private static final Map<Class, TypeInfo> BY_CLASS;
+    private static final Map<Class<?>, TypeInfo> BY_CLASS;
 
     static {
-        Map<Class, TypeInfo> fa = new HashMap<>();
+        Map<Class<?>, TypeInfo> fa = new HashMap<>();
         for (TypeInfo typeInfo : TYPE_INFOS) {
             for (Class<?> type : typeInfo.getTypes()) {
                 fa.put(type, typeInfo);
@@ -52,59 +50,47 @@ class TypeInfos {
         BY_CLASS = Collections.unmodifiableMap(fa);
     }
 
-    private static Optional<TypeInfo> lookupTypeInfo(Class clazz) {
+    private static Optional<TypeInfo> lookupTypeInfo(@NotNull final Class<?> clazz) {
         return Optional.ofNullable(BY_CLASS.get(clazz));
     }
 
-    private static Optional<TypeInfo> lookupTypeInfo(ColumnSource column) {
-        return lookupTypeInfo(column.getType());
+    private static TypeInfo lookupTypeInfo(@NotNull final ColumnDefinition<?> column) {
+        if (CodecLookup.codecRequired(column) || CodecLookup.explicitCodecPresent(column)) {
+            return new CodecType<>();
+        }
+        final Class<?> componentType = column.getComponentType();
+        if (componentType != null) {
+            return lookupTypeInfo(componentType).orElseThrow(IllegalStateException::new);
+        }
+        final Class<?> dataType = column.getDataType();
+        if (StringSet.class.isAssignableFrom(dataType)) {
+            return lookupTypeInfo(String.class).orElseThrow(IllegalStateException::new);
+        }
+        return lookupTypeInfo(dataType).orElseThrow(IllegalStateException::new);
     }
 
-    private static TypeInfo lookupTypeInfo(ColumnDefinition column) {
-        if (column.getComponentType() != null && !CodecLookup.explicitCodecPresent(column)) {
-            return lookupTypeInfo(column.getComponentType()).orElseGet(() -> new CodecType());
-        }
-        if (StringSet.class.isAssignableFrom(column.getDataType())) {
-            return lookupTypeInfo(String.class).get();
-        }
-        return lookupTypeInfo(column.getDataType()).orElseGet(() -> new CodecType());
-    }
-
-    static Pair<String, String> getCodecAndArgs(ColumnDefinition columnDefinition) {
+    static Pair<String, String> getCodecAndArgs(ColumnDefinition<?> columnDefinition) {
         // Explicit codecs always take precedence
         if (CodecLookup.explicitCodecPresent(columnDefinition)) {
             return new ImmutablePair<>(columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
         }
         // No need to impute a codec for any basic formats we already understand
-        final Class<?> dataType = columnDefinition.getDataType();
-        if (dataType.isPrimitive() || dataType == String.class || StringSet.class.isAssignableFrom(dataType) || dataType == Boolean.class || dataType == DBDateTime.class) {
+        if (!CodecLookup.codecRequired(columnDefinition)) {
             return null;
         }
-        if (dataType.isArray() || DbArrayBase.class.isAssignableFrom(dataType)) {
-            final Class<?> componentType = columnDefinition.getComponentType();
-            if (componentType.isPrimitive() || componentType == Boolean.class) {
-                return null;
-            }
-        }
-        /* TODO (deephaven/deephaven-core/issues/622):
-         *   1. We should maybe distinguish between "imputed codec" like this and "specified codec", although that may be
-         *      less relevant if we remove codec information from the ColumnDefinition.
-         *   2. We need to come up with a strategy to describe nested codecs (e.g. arrays of codec'd things). Right now
-         *      we can either codec the whole thing, or codec the components, and we haven't defined this well. DHE
-         *      would only apply it to the entire thing, but maybe an alternative option makes sense here.
-         *   3. We need to write down data type and component type.
-         */
+        // Impute an appropriate codec for the data type
+        final Class<?> dataType = columnDefinition.getDataType();
         if (Externalizable.class.isAssignableFrom(dataType)) {
-            return new ImmutablePair<>(ExternalizableCodec.class.getName(), columnDefinition.getDataType().getName());
+            return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }
-        return new ImmutablePair<>(SerializableCodec.class.getName(), "");
+        return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static TypeInfo getTypeInfo(ColumnDefinition column) throws SchemaMappingException {
+    static TypeInfo getTypeInfo(ColumnDefinition<?> column) throws SchemaMappingException {
         return lookupTypeInfo(column);
     }
 
-    private static boolean isRequired(ColumnDefinition columnDefinition) {
+    private static boolean isRequired(ColumnDefinition<?> columnDefinition) {
         return false;//TODO change this when adding optionals support
     }
 
@@ -326,50 +312,38 @@ class TypeInfos {
             return getTypes().contains(clazz);
         }
 
-        default Type createSchemaType(ColumnDefinition columnDefinition) {
-            PrimitiveBuilder<PrimitiveType> builder;
-            boolean isRepeating = true;
-            if (columnDefinition.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition)) {
-                builder = getBuilder(isRequired(columnDefinition), false, columnDefinition.getComponentType());
-            } else if (StringSet.class.isAssignableFrom(columnDefinition.getDataType())) {
+        default Type createSchemaType(@NotNull final ColumnDefinition<?> columnDefinition) {
+            final Class<?> dataType = columnDefinition.getDataType();
+            final Class<?> componentType = columnDefinition.getComponentType();
+
+            final PrimitiveBuilder<PrimitiveType> builder;
+            final boolean isRepeating;
+            if (CodecLookup.explicitCodecPresent(columnDefinition) || CodecLookup.codecRequired(columnDefinition)) {
+                builder = getBuilder(isRequired(columnDefinition), false, dataType);
+                isRepeating = false;
+            } else if (componentType != null) {
+                builder = getBuilder(isRequired(columnDefinition), false, componentType);
+                isRepeating = true;
+            } else if (StringSet.class.isAssignableFrom(dataType)) {
                 builder = getBuilder(isRequired(columnDefinition), false, String.class);
+                isRepeating = true;
             } else {
-                builder = getBuilder(isRequired(columnDefinition), false, columnDefinition.getDataType());
+                builder = getBuilder(isRequired(columnDefinition), false, dataType);
                 isRepeating = false;
             }
             if (!isRepeating) {
                 return builder.named(columnDefinition.getName());
-            } else {
-                return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
-                        Types.buildGroup(Type.Repetition.REPEATED).addField(
-                                builder.named("item")).named(columnDefinition.getName())
-                ).as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
             }
+            return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
+                    Types.buildGroup(Type.Repetition.REPEATED).addField(
+                            builder.named("item")).named(columnDefinition.getName())
+            ).as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
         }
 
         PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);
     }
 
-    /**
-     * Maps data from {@link ColumnSource} to {@link org.apache.parquet.io.api.RecordConsumer}
-     */
-    static abstract class FieldAdapter {
-
-        final ColumnSource column;
-        final String fieldName;
-        final int fieldIndex;
-
-        FieldAdapter(ColumnSource column, String fieldName, int fieldIndex) {
-            this.column = column;
-            this.fieldName = fieldName;
-            this.fieldIndex = fieldIndex;
-        }
-
-        abstract void write(RecordConsumer context, long tableIndex);
-    }
-
     private static class CodecType<T> implements TypeInfo {
-
 
         CodecType() {
         }
@@ -385,5 +359,4 @@ class TypeInfos {
             return type(PrimitiveTypeName.BINARY, required, repeating);
         }
     }
-
 }
