@@ -5,6 +5,7 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
@@ -92,42 +93,11 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                 return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
                         RegionedTableComponentFactory.getStringDecoder(String.class, columnDefinition));
             } else {
-                ObjectDecoder<DATA_TYPE> decoder = null;
-
-                if (columnDefinition.isFixedWidthObjectType()) {
-                    decoder = CodecCache.DEFAULT.getCodec(columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
-                    if (decoder != null) {
-                        decoder.checkWidth(columnDefinition.getObjectWidth());
-                    }
-                } else {
-                    switch (columnDefinition.getObjectCodecType()) {
-                        case DEFAULT:
-                            if (Externalizable.class.isAssignableFrom(dataType)) {
-                                decoder = CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(), dataType.getName());
-                                break;
-                            }
-                            // Fall through
-                        case SERIALIZABLE:
-                            decoder = SerializableCodec.create();
-                            break;
-                        case EXTERNALIZABLE:
-                            decoder = CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(), dataType.getName());
-                            break;
-                        case CLASS:
-                            decoder = CodecCache.DEFAULT.getCodec(columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
-                            break;
-                    }
-                }
-
-                if (decoder != null) {
-                    return new RegionedColumnSourceObject.AsValues<>(dataType, decoder);
-                } else {
-                    throw new UnsupportedOperationException("Unable to supply a column source for " + columnDefinition);
-                }
+                final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition);
+                return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
             }
         } catch (IllegalArgumentException except) {
             throw new UnsupportedOperationException("Can't create column for " + dataType + " in column definition " + columnDefinition, except);
         }
     }
-
 }

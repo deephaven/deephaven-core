@@ -16,13 +16,13 @@ import static io.deephaven.db.v2.parquet.TypeInfos.getTypeInfo;
 class MappedSchema {
 
     static MappedSchema create(TableDefinition definition, ColumnDefinition... extraColumns) throws SchemaMappingException {
-        MessageTypeBuilder builder = Types.buildMessage();
-        for (ColumnDefinition columnDefinition : definition.getColumnList()) {
+        final MessageTypeBuilder builder = Types.buildMessage();
+        for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             TypeInfos.TypeInfo typeInfo = getTypeInfo(columnDefinition);
             Type schemaType = typeInfo.createSchemaType(columnDefinition);
             builder.addField(schemaType);
         }
-        for (ColumnDefinition extraColumn : extraColumns) {
+        for (final ColumnDefinition<?> extraColumn : extraColumns) {
             builder.addField(getTypeInfo(extraColumn).createSchemaType(extraColumn));
         }
         MessageType schema = builder.named("root");
