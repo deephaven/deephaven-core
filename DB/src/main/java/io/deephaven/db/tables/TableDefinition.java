@@ -8,22 +8,15 @@ import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.dataobjects.DataObjectColumnSet;
 import io.deephaven.dataobjects.persistence.ColumnsetConversionSchema;
 import io.deephaven.dataobjects.persistence.PersistentInputStream;
-import io.deephaven.dataobjects.persistence.PersistentOutputStream;
 import io.deephaven.dataobjects.persistence.DataObjectInputStream;
-import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.ColumnHolder;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,13 +33,9 @@ public class TableDefinition extends DefaultTableDefinition {
 
     public static final EnumFormatter STORAGE_TYPE_FORMATTER = new EnumFormatter(getColumnSetStatic().getColumn("StorageType").getEnums());
 
-    private static final DataObjectColumnSet[] CACHED_CONVERTED_COLUMN_SETS = PersistentOutputStream.createConvertedColSets(getColumnSetStatic(), ColumnDefinition.getColumnSetStatic());
-
     private static final long serialVersionUID = -120432133075760976L;
 
     public static final String DEFAULT_FILE_SUFFIX = ".tbl";
-
-    public static final String DEFAULT_FILE_NAME = "table" + DEFAULT_FILE_SUFFIX; // Default table definition file is "table.tbl"
 
     private static final String NEW_LINE = System.getProperty("line.separator");
 
@@ -96,17 +85,13 @@ public class TableDefinition extends DefaultTableDefinition {
         }
     }
 
-    public static TableDefinition datePartitionedTableDefinition(@NotNull final Class[] types, @NotNull final String[] columnNames) {
-        return new TableDefinition(getColumnDefinitions(types, columnNames, ColumnDefinition.ofString("Date").withPartitioning()));
-    }
-
-    public static TableDefinition tableDefinition(@NotNull final Class[] types, @NotNull final String[] columnNames) {
+    public static TableDefinition tableDefinition(@NotNull final Class<?>[] types, @NotNull final String[] columnNames) {
         return new TableDefinition(getColumnDefinitions(types, columnNames));
     }
 
     @Override
     public String toString() {
-        return super.toString() +  "|columns=" + Arrays.deepToString(columns);
+        return super.toString() + "|columns=" + Arrays.deepToString(columns);
     }
 
     @Override
@@ -531,127 +516,6 @@ public class TableDefinition extends DefaultTableDefinition {
 
     // TODO: Keep cleaning up.  ImmutableColumnDefinition, or ImmutableADO?  Builder pattern?
 
-    /**
-     * Persist the supplied TableDefinition to the supplied file.
-     *
-     * @param definition  The definition
-     * @param destination The destination file
-     * @throws UncheckedIOException if the method fails in some way
-     */
-    private static void persistDefinitionImpl(@NotNull final TableDefinition definition, @NotNull final File destination) {
-        Assert.eqFalse(ColumnDefinition.doingPersistentSerialization(), "ColumnDefinition.doingPersistentSerialization()");
-        final File tempDestination;
-        try {
-            tempDestination = File.createTempFile(destination.getName(), null, destination.getParentFile());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to create temporary destination while persisting TableDefinition to " + destination.getAbsolutePath(), e);
-        }
-        AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
-            try {
-                ColumnDefinition.beginPersistentSerialization();
-                try (final FileOutputStream fileOut = new FileOutputStream(tempDestination.getAbsolutePath());
-                     final ObjectOutput out = new PersistentOutputStream(fileOut, false, CACHED_CONVERTED_COLUMN_SETS)) {
-                    out.writeObject(definition);
-                    out.flush();
-                    fileOut.getChannel().force(true);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Failed to persist TableDefinition to " + destination.getAbsolutePath(), e);
-                } finally {
-                    ColumnDefinition.endPersistentSerialization();
-                }
-                if (!tempDestination.renameTo(destination)) {
-                    throw new UncheckedIOException(new IOException("Persisted TableDefinition to " + tempDestination.getAbsolutePath()
-                            + ", but failed to move to permanent destination " + destination.getAbsolutePath()));
-                }
-            } finally {
-                //noinspection ResultOfMethodCallIgnored
-                tempDestination.delete();
-            }
-            return null;
-        });
-    }
-
-    /**
-     * Persist the supplied TableDefinition to the default file for the supplied directory and table name.
-     * @param definition The definition
-     * @param destinationDirectory The destination directory
-     * @param tableName The table name
-     */
-    public static void persistDefinition(@NotNull final TableDefinition definition, @NotNull final File destinationDirectory, @NotNull final String tableName) {
-        persistDefinitionImpl(definition, new File(destinationDirectory, DEFAULT_FILE_NAME));
-    }
-
-    /**
-     * Load a TableDefinition from the supplied file.
-     * @param source The file to find the definition in
-     * @return The TableDefinition object
-     * @throws UncheckedIOException or other RuntimeException if the file is not found or read fails
-     */
-    public static TableDefinition loadDefinition(@NotNull final File source) {
-        return loadDefinitionImpl(source, false);
-    }
-
-    /**
-     * Load a TableDefinition from the supplied file.
-     * @param source The file to find the definition in
-     * @param allowMissing Whether to return null if the file is not found, rather than throwing an exception
-     * @return The TableDefinition object, or null if not found and {@code allowMissing}
-     * @throws UncheckedIOException or other RuntimeException if the file is not found and !allowMissing, or read fails
-     */
-    private static TableDefinition loadDefinitionImpl(@NotNull final File source, final boolean allowMissing) {
-        try (final InputStream fileIn = new FileInputStream(source);
-             final InputStream bufferedIn = new BufferedInputStream(fileIn);
-             final ObjectInput in = new PersistentInputStream(bufferedIn, CompilerTools.getContext().getClassLoader())) {
-            return (TableDefinition) in.readObject();
-        } catch (FileNotFoundException e) {
-            if (allowMissing) {
-                return null;
-            }
-            throw new UncheckedIOException("Failed to find table definition file " + source.getAbsolutePath(), e);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed load table definition from " + source.getAbsolutePath(), e);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Class resolution issue for " + source.getAbsolutePath(), e);
-        }
-    }
-
-    /**
-     * Load a TableDefinition from the default file for the supplied directory and table name.
-     * @param sourceDirectory The directory to find the definition file in
-     * @param tableName The table name to use when determining the definition file name
-     * @return The TableDefinition object
-     * @throws UncheckedIOException or other RuntimeException if the file is not found or read fails
-     */
-    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory, @NotNull final String tableName) {
-        return loadDefinition(sourceDirectory, tableName, false);
-    }
-
-    /**
-     * Load a TableDefinition from the default file for the supplied directory and table name.
-     * @param sourceDirectory The directory to find the definition file in
-     * @param tableName The table name to use when determining the definition file name
-     * @param allowMissing Whether to return null if the file is not found, rather than throwing an exception
-     * @return The TableDefinition object, or null if not found and {@code allowMissing}
-     * @throws UncheckedIOException or other RuntimeException if the file is not found and !allowMissing, or read fails
-     */
-    @Nullable
-    public static TableDefinition loadDefinition(@NotNull final File sourceDirectory, @NotNull final String tableName, final boolean allowMissing) {
-        final File primaryFile = new File(sourceDirectory, DEFAULT_FILE_NAME);
-        if (primaryFile.exists()) {
-            return loadDefinitionImpl(primaryFile, allowMissing);
-        }
-        final File secondaryFile = new File(sourceDirectory, tableName + DEFAULT_FILE_SUFFIX);
-        if (secondaryFile.exists()) {
-            return loadDefinitionImpl(secondaryFile, allowMissing);
-        }
-        if (allowMissing) {
-            return null;
-        }
-        final String message = String.format("Failed to find table definition file for table %s as '%s' or '%s'",
-                tableName, primaryFile.getAbsolutePath(), secondaryFile.getAbsolutePath());
-        throw new UncheckedIOException(message, new FileNotFoundException(message));
-    }
-
     public Table getColumnDefinitionsTable() {
         List<String> columnTableNamespaces = new ArrayList<>();
         List<String> columnTableNames = new ArrayList<>();
@@ -735,9 +599,6 @@ public class TableDefinition extends DefaultTableDefinition {
     }
 
     // TODO: DELETE THESE OVERRIDES AND RELATED CODE IN persist.*() METHODS (SEE NOTES BELOW)
-    // NB: Cleanup requires solving the problem of persistent TableInputHandler objects that were written without
-    //     ColumnSet conversion information
-
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ColumnsetConversionSchema conversionSchema = null;
@@ -809,22 +670,5 @@ public class TableDefinition extends DefaultTableDefinition {
         public IncompatibleTableDefinitionException(Throwable cause) {
             super(cause);
         }
-    }
-
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println("Usage io.deephaven.db.tables.TableDefinition definitionFileName [definitionFileNames...]");
-            return;
-        }
-        Stream.of(args).forEach(defFilename -> {
-            System.out.println("\nProcessing " + defFilename);
-            try {
-                final TableDefinition def = TableDefinition.loadDefinition(new File(defFilename));
-                System.out.println(def);
-            } catch (Exception e) {
-                System.out.println("Failed to load definition from " + defFilename);
-                e.printStackTrace(System.out);
-            }
-        });
     }
 }

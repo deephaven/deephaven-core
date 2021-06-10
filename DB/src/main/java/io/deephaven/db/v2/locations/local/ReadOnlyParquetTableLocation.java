@@ -3,7 +3,6 @@ package io.deephaven.db.v2.locations.local;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
-import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.parquet.*;
@@ -11,7 +10,6 @@ import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
@@ -19,7 +17,6 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
-import io.deephaven.util.codec.SerializableCodec;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -141,8 +138,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
-            final String codecName = keyValueMetaData.get(ParquetTableWriter._CODEC_NAME_PREFIX_ + name);
-            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX_ + name);
+            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name);
+            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
             final boolean isCodec = codecName != null;
@@ -183,7 +180,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                         case BINARY:
                         case FIXED_LEN_BYTE_ARRAY:
                             if (isCodec) {
-                                final String codecParams = keyValueMetaData.get(ParquetTableWriter._CODEC_ARGS_PREFIX_ + name);
+                                final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
                                 final ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                                 //noinspection unchecked
                                 toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
@@ -265,12 +262,16 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             return Optional.of(ToShortPageFromInt.create(componentType));
                         case 32:
                             return Optional.of(ToIntPage.create(componentType));
+                        case 64:
+                            return Optional.of(ToLongPage.create(componentType));
                     }
                 } else {
                     switch (intLogicalType.getBitWidth()) {
                         case 8:
                         case 16:
                             return Optional.of(ToCharPageFromInt.create(componentType));
+                        case 32:
+                            return Optional.of(ToLongPage.create(componentType));
                     }
                 }
 
