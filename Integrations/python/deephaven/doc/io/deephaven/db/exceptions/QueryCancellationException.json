@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.exceptions.QueryCancellationException",
+ "methods": {},
+ "path": "io.deephaven.db.exceptions.QueryCancellationException",
+ "typeName": "class"
+}

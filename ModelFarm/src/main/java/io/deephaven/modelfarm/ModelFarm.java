@@ -8,8 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A multithreaded resource to execute data driven models.
- *
- * @IncludeAll
  */
 public interface ModelFarm {
 

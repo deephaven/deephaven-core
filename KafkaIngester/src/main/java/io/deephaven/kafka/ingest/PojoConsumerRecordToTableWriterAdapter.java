@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
  * @param <K> the type of the key record
  * @param <V> the type of the value record
  *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRecordToTableWriterAdapter {
@@ -365,8 +364,6 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
 
     /**
      * A builder for the PojoConsumerRecordToTableWriterAdapter.
-     *
-     * @IncludeAll
      */
     public static class Builder {
         private String offsetColumnName;

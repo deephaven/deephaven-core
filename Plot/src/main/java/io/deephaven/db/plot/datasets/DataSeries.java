@@ -16,8 +16,6 @@ import java.util.function.Function;
 
 /**
  * A generic data series.
- *
- * @IncludeAll
  */
 public interface DataSeries extends Series, Serializable {
 

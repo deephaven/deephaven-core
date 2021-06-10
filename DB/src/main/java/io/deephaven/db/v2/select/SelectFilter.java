@@ -15,16 +15,12 @@ import java.util.List;
 
 /**
  * Interface for individual filters within a where clause.
- *
- * @IncludeAll
  */
 public interface SelectFilter {
     /**
      * Users of SelectFilter may implement this interface if they must react to the filter fundamentally changing.
      *
      * @see DynamicWhereFilter
-     *
-     * @IncludeAll
      */
     interface RecomputeListener {
         /**

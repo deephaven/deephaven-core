@@ -29,7 +29,7 @@ docker {
 
   javaApplication {
     mainClassName = 'io.deephaven.grpc_api.runner.Main'
-    images = [ "${project.property('grpc-api-docker.imageName')}:latest" ]
+    images = [ "${project.property('grpc-api-docker.imageName')}" ]
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
     ports = [ 8080 ]
@@ -39,8 +39,8 @@ docker {
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
-	// Add for debugging, select port to match what you expect from your debugger/IDE side.
-	// '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
+	    // Add for debugging, select port to match what you expect from your debugger/IDE side.
+	    // '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
 
         // Settings based on the cgroup limits:
         // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
@@ -70,20 +70,6 @@ docker {
 
     volume("/data")
     volume("/cache")
-
-    // https://github.com/opencontainers/image-spec/blob/master/annotations.md#pre-defined-annotation-keys
-    label([
-        'org.opencontainers.image.vendor': "${project.property('grpc-api-docker.vendor')}",
-        'org.opencontainers.image.title': "${project.property('grpc-api-docker.title')}",
-        'org.opencontainers.image.description': "${project.property('grpc-api-docker.description')}",
-        'org.opencontainers.image.source': "${project.property('grpc-api-docker.source')}",
-        'org.opencontainers.image.licenses': "${project.property('grpc-api-docker.licenses')}",
-        'org.opencontainers.image.version': "${project.version}",
-        //'org.opencontainers.image.revision': "${sha}",
-        // todo: do we even want this? causes invalidation every single build, and makes builds non-reproducible
-        // consider sourcing this from a file instead?
-        //'org.opencontainers.image.created': "${Instant.now()}"
-    ])
   }
 }
 

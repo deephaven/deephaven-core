@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Common interface for classes that can register/deregister LiveTables.
- *
- * @IncludeAll
  */
 public interface LiveTableRegistrar {
 

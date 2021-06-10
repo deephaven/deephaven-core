@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.util.thread.NamingThreadFactory",
+ "methods": {
+  "newThread": ":param r: java.lang.Runnable\n:return: java.lang.Thread"
+ },
+ "path": "io.deephaven.util.thread.NamingThreadFactory",
+ "typeName": "class"
+}

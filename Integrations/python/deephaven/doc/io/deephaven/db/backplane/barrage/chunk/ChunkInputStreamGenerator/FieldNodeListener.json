@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator$FieldNodeListener",
+ "methods": {
+  "noteLogicalFieldNode": ":param numElements: int\n:param nullCount: int"
+ },
+ "path": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.FieldNodeListener",
+ "typeName": "interface"
+}

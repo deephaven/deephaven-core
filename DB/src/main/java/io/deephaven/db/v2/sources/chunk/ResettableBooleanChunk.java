@@ -9,8 +9,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * {@link ResettableReadOnlyChunk} implementation for boolean data.
- *
- * @IncludeAll
  */
 public final class ResettableBooleanChunk<ATTR_UPPER extends Any> extends BooleanChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 

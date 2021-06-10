@@ -1,13 +1,12 @@
 package io.deephaven.db.v2;
 
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.live.NotificationQueue;
 import io.deephaven.db.v2.utils.Index;
 
 public class SwapListener extends SwapListenerBase<Listener> implements Listener {
 
-    public SwapListener(Logger log, BaseTable sourceTable) {
-        super(log, sourceTable);
+    public SwapListener(BaseTable sourceTable) {
+        super(sourceTable);
     }
 
     @Override

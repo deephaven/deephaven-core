@@ -12,9 +12,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-/**
- * @IncludeAll
- */
 public class QueryLibrary {
 
     private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
@@ -40,8 +37,33 @@ public class QueryLibrary {
         updateVersionString();
     }
 
-    private final static QueryLibrary defaultInstance = makeNewLibrary();
-    private final static ThreadLocal<QueryLibrary> ql = ThreadLocal.withInitial(() -> defaultInstance);
+    private static volatile QueryLibrary defaultLibrary = null;
+    private final static ThreadLocal<QueryLibrary> currLibrary = ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
+
+    private static QueryLibrary getDefaultLibrary() {
+        if (defaultLibrary == null) {
+            synchronized (QueryLibrary.class) {
+                if (defaultLibrary == null) {
+                    defaultLibrary = makeNewLibrary();
+                }
+            }
+        }
+        return defaultLibrary;
+    }
+
+    /**
+     * Sets the default library.
+     *
+     * @param library the script session's query library
+     * @throws IllegalStateException if default library is already set
+     * @throws NullPointerException if library is null
+     */
+    public static synchronized void setDefaultLibrary(final QueryLibrary library) {
+        if (defaultLibrary != null) {
+            throw new IllegalStateException("It's too late to set default library; it's already set to: " + defaultLibrary);
+        }
+        defaultLibrary = Objects.requireNonNull(library);
+    }
 
     public void updateVersionString() {
         versionString = UuidCreator.toString(UuidCreator.getRandomBased());
@@ -58,30 +80,22 @@ public class QueryLibrary {
         return ql;
     }
 
-    public static void startQuery() {
-        setCurrent(makeNewLibrary());
+    public static void resetLibrary() {
+        setLibrary(makeNewLibrary());
     }
 
-    public static void endQuery() {
-        ql.remove();
+    public static void setLibrary(QueryLibrary library) {
+        currLibrary.set(library);
     }
 
-    public static void resetCurrent() {
-        setCurrent(makeNewLibrary());
-    }
-
-    public static void setCurrent(QueryLibrary library) {
-        ql.set(library);
-    }
-
-    public static QueryLibrary getCurrent() {
-        return ql.get();
+    public static QueryLibrary getLibrary() {
+        return currLibrary.get();
     }
 
     public static void importPackage(Package aPackage) {
         // Any dynamically-added package, class, or static import may alter the meaning of the Java code
         // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
-        final QueryLibrary lql = ql.get();
+        final QueryLibrary lql = currLibrary.get();
         final Package previous = lql.packageImports.put(aPackage.getName(), aPackage);
         if (aPackage != previous) {
             lql.updateVersionString();
@@ -91,7 +105,7 @@ public class QueryLibrary {
     public static void importClass(Class aClass) {
         // Any dynamically-added package, class, or static import may alter the meaning of the Java code
         // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
-        final QueryLibrary lql = ql.get();
+        final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.classImports.put(aClass.getCanonicalName(), aClass);
         if (aClass.getClassLoader() instanceof GroovyClassLoader) {
             if (aClass != previous) {
@@ -103,7 +117,7 @@ public class QueryLibrary {
     public static void importStatic(Class aClass) {
         // Any dynamically-added package, class, or static import may alter the meaning of the Java code
         // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
-        final QueryLibrary lql = ql.get();
+        final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.staticImports.put(aClass.getCanonicalName(), aClass);
         if (aClass.getClassLoader() instanceof GroovyClassLoader) {
             if (aClass != previous) {
@@ -114,7 +128,7 @@ public class QueryLibrary {
 
     public static CodeGenerator getImportStatement() {
         final List<String> imports = new ArrayList<>();
-        final QueryLibrary lql = ql.get();
+        final QueryLibrary lql = currLibrary.get();
         imports.add("// QueryLibrary internal version number: " + lql.versionString);
         for (final Package packageImport : lql.packageImports.values()) {
             imports.add("import " + packageImport.getName() + ".*;");
@@ -133,14 +147,14 @@ public class QueryLibrary {
     }
 
     public static Collection<Package> getPackageImports() {
-        return Collections.unmodifiableCollection(ql.get().packageImports.values());
+        return Collections.unmodifiableCollection(currLibrary.get().packageImports.values());
     }
 
     public static Collection<Class> getClassImports() {
-        return Collections.unmodifiableCollection(ql.get().classImports.values());
+        return Collections.unmodifiableCollection(currLibrary.get().classImports.values());
     }
 
     public static Collection<Class> getStaticImports() {
-        return Collections.unmodifiableCollection(ql.get().staticImports.values());
+        return Collections.unmodifiableCollection(currLibrary.get().staticImports.values());
     }
 }

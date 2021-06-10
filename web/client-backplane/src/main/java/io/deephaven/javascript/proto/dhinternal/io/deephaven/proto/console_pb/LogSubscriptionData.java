@@ -21,7 +21,7 @@ public class LogSubscriptionData {
     }
 
     @JsProperty
-    String getLoglevel();
+    String getLogLevel();
 
     @JsProperty
     String getMessage();
@@ -30,7 +30,7 @@ public class LogSubscriptionData {
     double getMicros();
 
     @JsProperty
-    void setLoglevel(String loglevel);
+    void setLogLevel(String logLevel);
 
     @JsProperty
     void setMessage(String message);
@@ -47,7 +47,7 @@ public class LogSubscriptionData {
     }
 
     @JsProperty
-    String getLoglevel();
+    String getLogLevel();
 
     @JsProperty
     String getMessage();
@@ -56,7 +56,7 @@ public class LogSubscriptionData {
     double getMicros();
 
     @JsProperty
-    void setLoglevel(String loglevel);
+    void setLogLevel(String logLevel);
 
     @JsProperty
     void setMessage(String message);
@@ -75,7 +75,7 @@ public class LogSubscriptionData {
   public static native LogSubscriptionData.ToObjectReturnType toObject(
       boolean includeInstance, LogSubscriptionData msg);
 
-  public native String getLoglevel();
+  public native String getLogLevel();
 
   public native String getMessage();
 
@@ -83,7 +83,7 @@ public class LogSubscriptionData {
 
   public native Uint8Array serializeBinary();
 
-  public native void setLoglevel(String value);
+  public native void setLogLevel(String value);
 
   public native void setMessage(String value);
 

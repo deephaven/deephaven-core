@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 /**
  * Local table location scanner that wraps a {@link TableLocationMetadataIndex}.
  */
-public class IndexedLocalTableLocationScanner implements LocalTableLocationProvider.Scanner {
+public class IndexedLocalTableLocationScanner implements LocalTableLocationProviderByScanner.Scanner {
 
     private final File tableRootDirectory;
     private final TableLocationMetadataIndex tableLocationMetadataIndex;

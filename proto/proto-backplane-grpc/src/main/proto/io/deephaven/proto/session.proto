@@ -14,25 +14,25 @@ service SessionService {
    * Handshake between client and server to create a new session. The response includes a metadata header name and the
    * token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
    */
-  rpc newSession(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc NewSession(HandshakeRequest) returns (HandshakeResponse) {}
 
   /*
    * Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
    * token that should replace the existing token for subsequent requests.
    */
-  rpc refreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {}
+  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {}
 
   /*
    * Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
    * unreleased exports will be automatically released.
    */
-  rpc closeSession(HandshakeRequest) returns (ReleaseResponse) {}
+  rpc CloseSession(HandshakeRequest) returns (ReleaseResponse) {}
 
   /*
    * Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
    * responsibility to release all resources they no longer want the server to hold on to.
    */
-  rpc release(Ticket) returns (ReleaseResponse) {}
+  rpc Release(Ticket) returns (ReleaseResponse) {}
 
   /*
    * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
@@ -41,7 +41,7 @@ service SessionService {
    * for all live exports. After the refresh of existing state, subscribers will receive notifications of new and
    * updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
    */
-  rpc exportNotifications(ExportNotificationRequest) returns (stream ExportNotification) {}
+  rpc ExportNotifications(ExportNotificationRequest) returns (stream ExportNotification) {}
 }
 
 /*
@@ -140,7 +140,7 @@ message ExportNotification {
     DEPENDENCY_FAILED = 7; // One of this item's dependencies had an internal error before it exported.
     DEPENDENCY_NEVER_FOUND = 8; // One of this item's dependencies was already released or never submitted within the out-of-order window.
   }
-  State exportState = 2;
+  State export_state = 2;
 
   /*
    * any errors will include an id that can be used to find details of the error in the logs
@@ -150,5 +150,5 @@ message ExportNotification {
   /*
    * will be set to an identifier of the dependency that cascaded the error if applicable
    */
-  string dependentHandle = 4;
+  string dependent_handle = 4;
 }

@@ -1,8 +1,6 @@
 name: Build CI
 
 on:
-  pull_request:
-    branches: [ workflow ]
   push:
     branches: [ 'main', 'build/**' ]
     tags: [ 'v*' ]
@@ -23,54 +21,38 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/grpc-api
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
-            org.opencontainers.image.title=deephaven/grpc-api
-            org.opencontainers.image.description=Deephaven grpc-api
+          images: ghcr.io/${{ github.repository_owner }}/grpc-api
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Core
+            org.opencontainers.image.description=Deephaven Core
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v1.3.0
         with:
           install: true
-
-          # By default, the driver is "docker-container".
-          # We want to use the "docker" driver, so that the tagged images from one step can be used
-          # by subsequent steps.
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v1.9.0
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
-
-# Docker cache doesn't seem to be working. Not sure why.
-# During the export cache step for Docker build, we are getting
-# level=error msg="(*service).Write failed" error="rpc error: code = Canceled desc = context canceled" expected="sha256:e1cf0ed900810d12941c8478ee6c6f8d159db5bb6c3afeeb7863c798f29cc37a" ref="sha256:e1cf0ed900810d12941c8478ee6c6f8d159db5bb6c3afeeb7863c798f29cc37a" total=2214
-# And during the start for next Docker build, we are getting
-# level=warning msg="local cache import at /tmp/.buildx-cache not found due to err: could not read /tmp/.buildx-cache/index.json: open /tmp/.buildx-cache/index.json: no such file or directory"
-#      - name: Cache Docker layers
-#        uses: actions/cache@v2
-#        with:
-#          path: /tmp/.buildx-cache
-#          key: ${{ runner.os }}-buildx-grpc-api-${{ github.sha }}
-#          restore-keys: |
-#            ${{ runner.os }}-buildx-grpc-api-
-#            ${{ runner.os }}-buildx-
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Create Dockerfile and context
         uses: burrunan/gradle-cache-action@v1
@@ -83,19 +65,13 @@ jobs:
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/buildx/pull/535
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-api/server/docker/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
-
-      # Workaround for https://github.com/docker/build-push-action/issues/252
-#      - name: Move cache
-#        run:
-#          rm -rf /tmp/.buildx-cache
-#          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   grpc-proxy:
     runs-on: ubuntu-20.04
@@ -111,32 +87,37 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/grpc-proxy
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
+          images: ghcr.io/${{ github.repository_owner }}/grpc-proxy
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven gRPC Web Proxy
+            org.opencontainers.image.description=Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy
+            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v1.3.0
         with:
           install: true
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v1.9.0
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Create Dockerfile and context
         uses: burrunan/gradle-cache-action@v1
@@ -146,7 +127,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -168,35 +149,37 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/envoy
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
-            org.opencontainers.image.title=deephaven/envoy
-            org.opencontainers.image.description=Deephaven Envoy
+          images: ghcr.io/${{ github.repository_owner }}/envoy
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Envoy
+            org.opencontainers.image.description=Deephaven envoy proxy
+            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v1.3.0
         with:
           install: true
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v1.9.0
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Create Dockerfile and context
         uses: burrunan/gradle-cache-action@v1
@@ -206,7 +189,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -222,16 +205,19 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v3.3.0
         with:
-          images: ghcr.io/deephaven/web
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
-            org.opencontainers.image.title=deephaven/web
+          images: ghcr.io/${{ github.repository_owner }}/web
+          tags: |
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Web
             org.opencontainers.image.description=Deephaven web
- 
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
+
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
         id: setup-java
@@ -241,28 +227,23 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v1.3.0
         with:
           install: true
-
-          # By default, the driver is "docker-container".
-          # We want to use the "docker" driver, so that the tagged images from one step can be used
-          # by subsequent steps.
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v1.9.0
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Create Dockerfile and context
         uses: burrunan/gradle-cache-action@v1
@@ -272,7 +253,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -280,45 +261,12 @@ jobs:
           context: ./web/client-ide/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
 
-  deephaven-jpy:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
 
-      - name: Docker meta
-        id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
-        with:
-          images: ghcr.io/deephaven/jpy
-          tag-semver: |
-            {{version}}
-            {{major}}.{{minor}}
-          label-custom: |
-            org.opencontainers.image.title=deephaven/jpy
-            org.opencontainers.image.description=Deephaven jpy
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          install: true
-
-      - name: Login to ghcr.io
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_PAT }}
-
-      - name: Docker build
-        uses: docker/build-push-action@v2
-        with:
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./py/jpy
-          push: ${{ github.event_name != 'pull_request' }}
-          build-args: |
-            DEEPHAVEN_VERSION=${{ steps.docker_meta.outputs.version }}
+### Notes about `driver: docker`
+###
+### By default, the driver used is `docker-container`. This does not allow the Dockerfile to
+### reference images that were built in earlier steps. Since our grpc-api and web Dockerfiles
+### reference earlier images (built during the gradle step), we need to change the driver to
+### `docker`.
+###
+### See https://github.com/docker/buildx/blob/master/docs/reference/buildx_create.md#driver

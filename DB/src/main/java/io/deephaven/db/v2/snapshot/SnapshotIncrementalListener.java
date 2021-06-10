@@ -1,6 +1,5 @@
 package io.deephaven.db.v2.snapshot;
 
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.v2.ListenerRecorder;
 import io.deephaven.db.v2.MergedListener;
 import io.deephaven.db.v2.QueryTable;
@@ -26,9 +25,9 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final Index lastRightIndex;
     private boolean firstSnapshot = true;
 
-    public SnapshotIncrementalListener(Logger log, QueryTable triggerTable, QueryTable resultTable, Map<String, SparseArrayColumnSource> resultColumns,
+    public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable, Map<String, SparseArrayColumnSource> resultColumns,
                                        ListenerRecorder rightListener, ListenerRecorder leftListener, QueryTable rightTable, Map<String, ? extends ColumnSource> leftColumns) {
-        super(log, Arrays.asList(rightListener, leftListener), Collections.emptyList(), "snapshotIncremental", resultTable);
+        super(Arrays.asList(rightListener, leftListener), Collections.emptyList(), "snapshotIncremental", resultTable);
         this.triggerTable = triggerTable;
         this.resultTable = resultTable;
         this.resultColumns = resultColumns;

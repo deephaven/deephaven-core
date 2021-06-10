@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.select.DateTimeRangeFilter",
+ "methods": {
+  "copy": "Create a copy of this SelectFilter.\n\n:return: (io.deephaven.db.v2.select.DateTimeRangeFilter) an independent copy of this SelectFilter.",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: io.deephaven.db.tables.TableDefinition",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.db.v2.select.DateTimeRangeFilter",
+ "typeName": "class"
+}

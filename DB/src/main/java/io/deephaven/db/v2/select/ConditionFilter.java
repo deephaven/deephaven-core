@@ -46,7 +46,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     private Class<?> filterKernelClass = null;
     private List<Pair<String, Class>> usedInputs; //that is columns and special variables
     private String classBody;
-
+    private Filter filter = null;
 
     private ConditionFilter(@NotNull String formula) {
         super(formula, false);
@@ -74,7 +74,6 @@ public class ConditionFilter extends AbstractConditionFilter {
     String getClassBodyStr() {
         return classBody;
     }
-
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
 
@@ -517,9 +516,17 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     protected Filter getFilter(Table table, Index fullSet) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        if (filter != null) {
+            return filter;
+        }
         final FilterKernel filterKernel = (FilterKernel) filterKernelClass.getConstructor(Table.class, Index.class, Param[].class).newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+    }
+
+    @Override
+    protected void setFilter(Filter filter) {
+        this.filter = filter;
     }
 
     @Override

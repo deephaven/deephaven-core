@@ -17,8 +17,6 @@ import static io.deephaven.util.QueryConstants.*;
 
 /**
  * A set of commonly used numeric functions that can be applied to Byte types.
- *
- * @IncludeAll
  */
 public class ByteNumericPrimitives {
 

@@ -4,8 +4,6 @@ import io.deephaven.db.tables.live.NotificationQueue;
 
 /**
  * Elements of a Deephaven query DAG that can supply their notification step.
- *
- * @IncludeAll
  */
 public interface NotificationStepSource extends NotificationQueue.Dependency {
 

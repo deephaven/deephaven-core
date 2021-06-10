@@ -16,9 +16,3 @@ RUN set -eux; \
 EXPOSE 8080 8443
 
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
-
-LABEL org.opencontainers.image.vendor="Deephaven Data Labs" \
-  org.opencontainers.image.title="Deephaven gRPC web proxy" \
-  org.opencontainers.image.description="Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy" \
-  org.opencontainers.image.source="https://github.com/deephaven/deephaven-core" \
-  org.opencontainers.image.licenses="Apache-2.0"

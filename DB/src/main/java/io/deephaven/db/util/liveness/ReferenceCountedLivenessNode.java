@@ -1,24 +1,29 @@
 package io.deephaven.db.util.liveness;
 
 
-import io.deephaven.util.referencecounting.ReferenceCounted;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 
 /**
  * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
- *
- * @IncludeAll
  */
 abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements LivenessNode {
 
+    final boolean enforceStrongReachability;
+
     transient RetainedReferenceTracker<ReferenceCountedLivenessNode> tracker;
 
+    /**
+     * @param enforceStrongReachability Whether this {@link LivenessManager} should maintain strong references to its
+     *                                  referents
+     */
     @SuppressWarnings("WeakerAccess") // Needed in order to deserialize Serializable subclass instances
-    protected ReferenceCountedLivenessNode() {
+    protected ReferenceCountedLivenessNode(final boolean enforceStrongReachability) {
+        this.enforceStrongReachability = enforceStrongReachability;
         initializeTransientFieldsForLiveness();
     }
 
@@ -31,7 +36,7 @@ abstract class ReferenceCountedLivenessNode extends ReferenceCounted implements 
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }
-        tracker = new RetainedReferenceTracker<>(this);
+        tracker = new RetainedReferenceTracker<>(this, enforceStrongReachability);
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Created tracker ").append(Utils.REFERENT_FORMATTER, tracker).append(" for ").append(Utils.REFERENT_FORMATTER, this).endl();
         }

@@ -12,5 +12,5 @@ task prepareDocker(type: Sync) {
 
 Docker.registerDockerImage(project, 'buildDocker') {
     dependsOn prepareDocker
-    images.add('deephaven/protoc')
+    images.add('deephaven/protoc:local-build')
 }

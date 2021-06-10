@@ -8,8 +8,6 @@ import java.io.Serializable;
 
 /**
  * An array of EMAs with different timescales.
- *
- * @IncludeAll
  */
 public class EmaArray implements Serializable {
     private static final long serialVersionUID = 2127279097359961192L;

@@ -68,7 +68,7 @@ public class TextDocumentContentChangeEvent {
     TextDocumentContentChangeEvent.ToObjectReturnType.RangeFieldType getRange();
 
     @JsProperty
-    double getRangelength();
+    double getRangeLength();
 
     @JsProperty
     String getText();
@@ -77,7 +77,7 @@ public class TextDocumentContentChangeEvent {
     void setRange(TextDocumentContentChangeEvent.ToObjectReturnType.RangeFieldType range);
 
     @JsProperty
-    void setRangelength(double rangelength);
+    void setRangeLength(double rangeLength);
 
     @JsProperty
     void setText(String text);
@@ -136,7 +136,7 @@ public class TextDocumentContentChangeEvent {
     TextDocumentContentChangeEvent.ToObjectReturnType0.RangeFieldType getRange();
 
     @JsProperty
-    double getRangelength();
+    double getRangeLength();
 
     @JsProperty
     String getText();
@@ -145,7 +145,7 @@ public class TextDocumentContentChangeEvent {
     void setRange(TextDocumentContentChangeEvent.ToObjectReturnType0.RangeFieldType range);
 
     @JsProperty
-    void setRangelength(double rangelength);
+    void setRangeLength(double rangeLength);
 
     @JsProperty
     void setText(String text);
@@ -166,7 +166,7 @@ public class TextDocumentContentChangeEvent {
 
   public native DocumentRange getRange();
 
-  public native double getRangelength();
+  public native double getRangeLength();
 
   public native String getText();
 
@@ -178,7 +178,7 @@ public class TextDocumentContentChangeEvent {
 
   public native void setRange(DocumentRange value);
 
-  public native void setRangelength(double value);
+  public native void setRangeLength(double value);
 
   public native void setText(String value);
 

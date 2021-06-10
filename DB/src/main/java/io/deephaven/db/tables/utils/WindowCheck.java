@@ -4,8 +4,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTable;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -24,8 +22,6 @@ import java.util.*;
 
 /**
  * Adds a Boolean column that is true if a Timestamp is within the specified window.
- *
- * @IncludeAll
  */
 public class WindowCheck {
     private WindowCheck() {}
@@ -43,12 +39,10 @@ public class WindowCheck {
      * @param windowNanos how many nanoseconds in the past a timestamp can be before it is out of the window
      * @param inWindowColumn the name of the new Boolean column.
      * @return a new table that contains an in-window Boolean column
-     *
-     * @Include
      */
     @SuppressWarnings("unused")
     public static Table addTimeWindow(Table table, String timestampColumn, long windowNanos, String inWindowColumn) {
-        return addTimeWindowInternal(ProcessEnvironment.getDefaultLog(), null, table, timestampColumn, windowNanos, inWindowColumn, true).first;
+        return addTimeWindowInternal(null, table, timestampColumn, windowNanos, inWindowColumn, true).first;
     }
 
     private static class WindowListenerRecorder extends ListenerRecorder {
@@ -64,7 +58,7 @@ public class WindowCheck {
      * @param addToMonitor should we add this to the LiveTableMonitor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(Logger log, TimeProvider timeProvider, Table table, String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
+    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table, String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
@@ -81,7 +75,7 @@ public class WindowCheck {
         if (table instanceof DynamicTable) {
             final DynamicTable dynamicSource = (DynamicTable) table;
             final WindowListenerRecorder recorder = new WindowListenerRecorder(dynamicSource, result);
-            final TimeWindowListener timeWindowListener = new TimeWindowListener(log, inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
+            final TimeWindowListener timeWindowListener = new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
             recorder.setMergedListener(timeWindowListener);
             dynamicSource.listenForUpdates(recorder);
             table.getIndex().forAllLongs(timeWindowListener::addIndex);
@@ -148,9 +142,9 @@ public class WindowCheck {
          * @param source the source table
          * @param result our initialized result table
          */
-        private TimeWindowListener(final Logger log, final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
+        private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
                                    final ListenerRecorder recorder, final DynamicTable source, final QueryTable result) {
-            super(log, Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
+            super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
             this.inWindowColumnSource = inWindowColumnSource;

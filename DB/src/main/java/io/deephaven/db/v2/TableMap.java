@@ -15,8 +15,6 @@ import java.util.Collection;
 
 /**
  * A map of tables.
- *
- * @IncludeAll
  */
 public interface TableMap extends TransformableTableMap, LivenessNode {
 

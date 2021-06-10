@@ -33,11 +33,8 @@ import java.util.Set;
  * entire table.
  *
  * Note: The key column values must be unique.
- *
- * @IncludeAll
  */
 public class ReverseLookupListener extends LivenessArtifact implements ReverseLookup, DynamicNode, NotificationStepSource {
-    private static final Logger log = ProcessEnvironment.getDefaultLog(ReverseLookupListener.class);
     private static final long NO_ENTRY_VALUE = -2;
     private static final long REMOVED_ENTRY_VALUE = -3;
 
@@ -168,7 +165,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
     public static ReverseLookupListener makeReverseLookupListenerWithSnapshot(BaseTable source, String... columns) {
         final SwapListener swapListener;
         if (source.isRefreshing()) {
-            swapListener = new SwapListener(log, source);
+            swapListener = new SwapListener(source);
             source.listenForUpdates(swapListener);
         } else {
             swapListener = null;

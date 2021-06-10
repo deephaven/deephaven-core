@@ -18,31 +18,31 @@ public class SnapshotTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LeftidFieldType {
+    public interface LeftIdFieldType {
       @JsOverlay
-      static SnapshotTableRequest.ToObjectReturnType.LeftidFieldType create() {
+      static SnapshotTableRequest.ToObjectReturnType.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SnapshotTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(
+        static SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -69,21 +69,21 @@ public class SnapshotTableRequest {
       }
 
       @JsOverlay
-      static SnapshotTableRequest.ToObjectReturnType.ResultidFieldType create() {
+      static SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SnapshotTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SnapshotTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -91,7 +91,7 @@ public class SnapshotTableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>
+                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -102,69 +102,69 @@ public class SnapshotTableRequest {
     }
 
     @JsProperty
-    SnapshotTableRequest.ToObjectReturnType.LeftidFieldType getLeftid();
+    SnapshotTableRequest.ToObjectReturnType.LeftIdFieldType getLeftId();
 
     @JsProperty
-    SnapshotTableRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    Object getRightid();
+    Object getRightId();
 
     @JsProperty
-    JsArray<String> getStampcolumnsList();
+    JsArray<String> getStampColumnsList();
 
     @JsProperty
-    boolean isDoinitialsnapshot();
+    boolean isDoInitialSnapshot();
 
     @JsProperty
-    void setDoinitialsnapshot(boolean doinitialsnapshot);
+    void setDoInitialSnapshot(boolean doInitialSnapshot);
 
     @JsProperty
-    void setLeftid(SnapshotTableRequest.ToObjectReturnType.LeftidFieldType leftid);
+    void setLeftId(SnapshotTableRequest.ToObjectReturnType.LeftIdFieldType leftId);
 
     @JsProperty
-    void setResultid(SnapshotTableRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setRightid(Object rightid);
+    void setRightId(Object rightId);
 
     @JsProperty
-    void setStampcolumnsList(JsArray<String> stampcolumnsList);
+    void setStampColumnsList(JsArray<String> stampColumnsList);
 
     @JsOverlay
-    default void setStampcolumnsList(String[] stampcolumnsList) {
-      setStampcolumnsList(Js.<JsArray<String>>uncheckedCast(stampcolumnsList));
+    default void setStampColumnsList(String[] stampColumnsList) {
+      setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
     }
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LeftidFieldType {
+    public interface LeftIdFieldType {
       @JsOverlay
-      static SnapshotTableRequest.ToObjectReturnType0.LeftidFieldType create() {
+      static SnapshotTableRequest.ToObjectReturnType0.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(
+        static SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -191,21 +191,21 @@ public class SnapshotTableRequest {
       }
 
       @JsOverlay
-      static SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -213,7 +213,7 @@ public class SnapshotTableRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>
+                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -224,38 +224,38 @@ public class SnapshotTableRequest {
     }
 
     @JsProperty
-    SnapshotTableRequest.ToObjectReturnType0.LeftidFieldType getLeftid();
+    SnapshotTableRequest.ToObjectReturnType0.LeftIdFieldType getLeftId();
 
     @JsProperty
-    SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    Object getRightid();
+    Object getRightId();
 
     @JsProperty
-    JsArray<String> getStampcolumnsList();
+    JsArray<String> getStampColumnsList();
 
     @JsProperty
-    boolean isDoinitialsnapshot();
+    boolean isDoInitialSnapshot();
 
     @JsProperty
-    void setDoinitialsnapshot(boolean doinitialsnapshot);
+    void setDoInitialSnapshot(boolean doInitialSnapshot);
 
     @JsProperty
-    void setLeftid(SnapshotTableRequest.ToObjectReturnType0.LeftidFieldType leftid);
+    void setLeftId(SnapshotTableRequest.ToObjectReturnType0.LeftIdFieldType leftId);
 
     @JsProperty
-    void setResultid(SnapshotTableRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setRightid(Object rightid);
+    void setRightId(Object rightId);
 
     @JsProperty
-    void setStampcolumnsList(JsArray<String> stampcolumnsList);
+    void setStampColumnsList(JsArray<String> stampColumnsList);
 
     @JsOverlay
-    default void setStampcolumnsList(String[] stampcolumnsList) {
-      setStampcolumnsList(Js.<JsArray<String>>uncheckedCast(stampcolumnsList));
+    default void setStampColumnsList(String[] stampColumnsList) {
+      setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
     }
   }
 
@@ -269,55 +269,55 @@ public class SnapshotTableRequest {
   public static native SnapshotTableRequest.ToObjectReturnType toObject(
       boolean includeInstance, SnapshotTableRequest msg);
 
-  public native String addStampcolumns(String value, double index);
+  public native String addStampColumns(String value, double index);
 
-  public native String addStampcolumns(String value);
+  public native String addStampColumns(String value);
 
-  public native void clearLeftid();
+  public native void clearLeftId();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearRightid();
+  public native void clearRightId();
 
-  public native void clearStampcolumnsList();
+  public native void clearStampColumnsList();
 
-  public native boolean getDoinitialsnapshot();
+  public native boolean getDoInitialSnapshot();
 
-  public native TableReference getLeftid();
+  public native TableReference getLeftId();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getRightid();
+  public native TableReference getRightId();
 
-  public native JsArray<String> getStampcolumnsList();
+  public native JsArray<String> getStampColumnsList();
 
-  public native boolean hasLeftid();
+  public native boolean hasLeftId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasRightid();
+  public native boolean hasRightId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setDoinitialsnapshot(boolean value);
+  public native void setDoInitialSnapshot(boolean value);
 
-  public native void setLeftid();
+  public native void setLeftId();
 
-  public native void setLeftid(TableReference value);
+  public native void setLeftId(TableReference value);
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setRightid();
+  public native void setRightId();
 
-  public native void setRightid(TableReference value);
+  public native void setRightId(TableReference value);
 
-  public native void setStampcolumnsList(JsArray<String> value);
+  public native void setStampColumnsList(JsArray<String> value);
 
   @JsOverlay
-  public final void setStampcolumnsList(String[] value) {
-    setStampcolumnsList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setStampColumnsList(String[] value) {
+    setStampColumnsList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
   public native SnapshotTableRequest.ToObjectReturnType0 toObject();

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$ByteArrayGenerator",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.ByteArrayGenerator",
+ "typeName": "class"
+}

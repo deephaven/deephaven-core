@@ -2,7 +2,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.SortingOrder;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
@@ -37,12 +36,12 @@ public class AsOfJoinHelper {
 
     private AsOfJoinHelper() {} // static use only
 
-    static Table asOfJoin(@SuppressWarnings("SameParameterValue") Logger log, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+    static Table asOfJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
         final JoinControl joinControl = new JoinControl();
-        return asOfJoin(log, joinControl, leftTable, rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch);
+        return asOfJoin(joinControl, leftTable, rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch);
     }
 
-    static Table asOfJoin(Logger log, JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+    static Table asOfJoin(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
         if (columnsToMatch.length == 0) {
             throw new IllegalArgumentException("aj() requires at least one column to match!");
         }
@@ -78,12 +77,12 @@ public class AsOfJoinHelper {
 
         final RedirectionIndex redirectionIndex = makeRedirectionIndex(control, leftTable);
         if (keyColumnCount == 0) {
-            return zeroKeyAj(log, control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
+            return zeroKeyAj(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
         }
 
         if (rightTable.isLive()) {
             if (leftTable.isLive()) {
-                return bothIncrementalAj(log,control, leftTable, rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch, stampPair,
+                return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch, stampPair,
                         leftSources, rightSources, leftStampSource, rightStampSource, redirectionIndex);
             }
             return rightTickingLeftStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch, stampPair, leftSources, rightSources, leftStampSource, rightStampSource, redirectionIndex);
@@ -474,9 +473,9 @@ public class AsOfJoinHelper {
         return redirectionIndex;
     }
 
-    private static Table zeroKeyAj(Logger log, JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
+    private static Table zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
         if (rightTable.isLive() && leftTable.isLive()) {
-            return zeroKeyAjBothIncremental(log, control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
+            return zeroKeyAjBothIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
         } else if (rightTable.isLive())  {
             return zeroKeyAjRightIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
         } else {
@@ -798,8 +797,7 @@ public class AsOfJoinHelper {
     public interface SsaFactory extends Function<Index, SegmentedSortedArray>, SafeCloseable {
     }
 
-    private static Table bothIncrementalAj(Logger log,
-                                           JoinControl control,
+    private static Table bothIncrementalAj(JoinControl control,
                                            QueryTable leftTable,
                                            QueryTable rightTable,
                                            MatchPair[] columnsToMatch,
@@ -906,7 +904,7 @@ public class AsOfJoinHelper {
         final JoinListenerRecorder leftRecorder = new JoinListenerRecorder(true, listenerDescription, leftTable, result);
         final JoinListenerRecorder rightRecorder = new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
-        final BucketedChunkedAjMergedListener mergedJoinListener = new BucketedChunkedAjMergedListener(log, leftRecorder, rightRecorder,
+        final BucketedChunkedAjMergedListener mergedJoinListener = new BucketedChunkedAjMergedListener(leftRecorder, rightRecorder,
                 listenerDescription, result, leftTable, rightTable, columnsToMatch, stampPair, columnsToAdd, leftSources,
                 rightSources, leftStampSource, rightStampSource,
                 leftSsaFactory, rightSsaFactory, order, disallowExactMatch,
@@ -926,7 +924,7 @@ public class AsOfJoinHelper {
         return result;
     }
 
-    private static Table zeroKeyAjBothIncremental(Logger log, JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
+    private static Table zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -947,7 +945,7 @@ public class AsOfJoinHelper {
         final JoinListenerRecorder leftRecorder = new JoinListenerRecorder(true, listenerDescription, leftTable, result);
         final JoinListenerRecorder rightRecorder = new JoinListenerRecorder(false, listenerDescription, rightTable, result);
 
-        final ZeroKeyChunkedAjMergedListener mergedJoinListener = new ZeroKeyChunkedAjMergedListener(log, leftRecorder, rightRecorder,
+        final ZeroKeyChunkedAjMergedListener mergedJoinListener = new ZeroKeyChunkedAjMergedListener(leftRecorder, rightRecorder,
                 listenerDescription, result, leftTable, rightTable, stampPair, columnsToAdd,
                 leftStampSource, rightStampSource, order, disallowExactMatch,
                 ssaSsaStamp, leftSsa, rightSsa, redirectionIndex, control);

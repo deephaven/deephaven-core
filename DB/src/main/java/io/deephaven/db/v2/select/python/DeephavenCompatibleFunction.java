@@ -11,7 +11,7 @@ import java.util.Objects;
 
 /**
  * A Deephaven-compatible functions holds a native python function with associated typing
- * information, used to help implement {@link io.deephaven.db.v2.select.python.ConditionFilterPython} and {@link FormulaColumnPython}.
+ * information, used to help implement {@link io.deephaven.db.v2.select.AbstractConditionFilter} and {@link FormulaColumnPython}.
  */
 public class DeephavenCompatibleFunction {
 

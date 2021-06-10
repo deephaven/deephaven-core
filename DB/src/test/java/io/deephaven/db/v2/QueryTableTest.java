@@ -9,7 +9,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.primitives.Ints;
-import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
@@ -40,7 +39,6 @@ import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -339,7 +337,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testView() {
-        QueryScope.setDefaultInstance(new QueryScope.StandaloneImpl());
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("indexMinEdge",2.0);
         QueryScope.addParam("IsIndex",true);
         QueryScope.addParam("MEF",1.0);
@@ -358,7 +356,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
-        table2.listenForUpdates(new ListenerWithGlobals(table2));
+        final Listener table2Listener = new ListenerWithGlobals(table2);
+        table2.listenForUpdates(table2Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table1, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -409,7 +408,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table3 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable)table3.view("z = x", "x = z + 1", "t = x - 3");
-        table4.listenForUpdates(new ListenerWithGlobals(table4));
+        final Listener table4Listener = new ListenerWithGlobals(table4);
+        table4.listenForUpdates(table4Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table3, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -989,8 +989,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testReverseClipping() {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
 
-        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(table);
-        ((QueryTable)table.reverse()).listenForUpdates(listener);
+        final QueryTable reverseTable = (QueryTable)table.reverse();
+        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(reverseTable);
+        reverseTable.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
@@ -1675,7 +1676,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable snapshot = (QueryTable)left.snapshotIncremental(right, true);
         final TableUpdateValidator validator = TableUpdateValidator.make(snapshot);
         final QueryTable validatorTable = validator.getResultTable();
-        validatorTable.listenForUpdates(new InstrumentedShiftAwareListenerAdapter(validatorTable) {
+        final ShiftAwareListener validatorTableListener = new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
             @Override
             public void onUpdate(Update upstream) {}
 
@@ -1683,7 +1684,8 @@ public class QueryTableTest extends QueryTableTestBase {
             public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
                 TestCase.fail(originalException.getMessage());
             }
-        });
+        };
+        validatorTable.listenForUpdates(validatorTableListener);
 
         System.out.println("Initial table:");
         show(snapshot);
@@ -2255,7 +2257,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
             final TableUpdateValidator validator = TableUpdateValidator.make(t1);
             final QueryTable validatorTable = validator.getResultTable();
-            validatorTable.listenForUpdates(new InstrumentedShiftAwareListenerAdapter(validatorTable) {
+            final ShiftAwareListener validatorTableListener = new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
                 @Override
                 public void onUpdate(Update upstream) {}
 
@@ -2263,7 +2265,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
                     TestCase.fail(originalException.getMessage());
                 }
-            });
+            };
+            validatorTable.listenForUpdates(validatorTableListener);
 
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2678,7 +2681,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]").by("Symbol").ungroup();
         try {
             TableManagementTools.writeTable(source, definition, testDirectory, TableManagementTools.StorageFormat.Parquet);
-            final Table table = TableManagementTools.readTable(testDirectory, definition);
+            final Table table = TableManagementTools.readTable(testDirectory);
             testFunction.accept(table);
             table.close();
         } finally {

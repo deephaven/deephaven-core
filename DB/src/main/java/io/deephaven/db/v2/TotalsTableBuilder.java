@@ -26,8 +26,6 @@ import static io.deephaven.db.tables.Table.TOTALS_TABLE_ATTRIBUTE;
  *
  * <p>The builder is intended to be passed to the {@link Table#setTotalsTable(TotalsTableBuilder)} operation after the
  * operations are applied.</p>
- *
- * @IncludeAll
  */
 @ScriptApi
 public class TotalsTableBuilder implements Serializable  {

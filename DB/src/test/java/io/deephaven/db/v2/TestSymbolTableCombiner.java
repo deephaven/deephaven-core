@@ -59,7 +59,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
             assertEquals(expected, uniqueId);
         }
 
-        symbolTable.listenForUpdates(new InstrumentedShiftAwareListenerAdapter("SymbolTableCombiner Adapter", symbolTable) {
+        final ShiftAwareListener symbolTableListener = new InstrumentedShiftAwareListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
             @Override
             public void onUpdate(final Update upstream) {
                 assertIndexEquals(i(), upstream.removed);
@@ -75,7 +75,8 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
                 TestCase.fail(originalException.getMessage());
                 super.onFailureInternal(originalException, sourceEntry);
             }
-        });
+        };
+        symbolTable.listenForUpdates(symbolTableListener);
 
         for (int step = 0; step < 750; step++) {
             if (LiveTableTestCase.printTableUpdates) {

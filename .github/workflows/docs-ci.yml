@@ -28,15 +28,14 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-11.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan -PincludeJavadoc=true allJavadoc
+          arguments: --scan allJavadoc
           gradle-version: wrapper
 
       - name: Upload Javadocs
@@ -71,9 +70,8 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          mkdir -p $HOME/.gradle
-          cp .github/env/${{ runner.os }}/gradle.properties $HOME/.gradle/gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> $HOME/.gradle/gradle.properties
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
       - name: Generate Python Docs
         uses: burrunan/gradle-cache-action@v1

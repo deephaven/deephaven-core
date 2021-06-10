@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.db.v2.sources.chunk.ResettableFloatChunkChunk",
+ "methods": {
+  "makeResettableChunk": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.chunk.ResettableFloatChunkChunk<ATTR>",
+  "resetFromArray": "Reset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n:param array: java.lang.Object\n:param offset: int\n:param capacity: int",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified ChunkChunk.\n\n:param other: io.deephaven.db.v2.sources.chunk.ChunkChunk<ResettableFloatChunkChunk.ATTR>\n:param offset: int\n:param capacity: int",
+  "resetFromTypedArray": ":param data: io.deephaven.db.v2.sources.chunk.FloatChunk<ResettableFloatChunkChunk.ATTR>[]\n:param offset: int\n:param capacity: int",
+  "resetFromTypedChunk": ":param other: io.deephaven.db.v2.sources.chunk.FloatChunkChunk<ResettableFloatChunkChunk.ATTR>\n:param offset: int\n:param capacity: int",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.db.v2.sources.chunk.ResettableFloatChunkChunk<ResettableFloatChunkChunk.ATTR>"
+ },
+ "path": "io.deephaven.db.v2.sources.chunk.ResettableFloatChunkChunk",
+ "typeName": "class"
+}

@@ -8,8 +8,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * A set of commonly used functions which are not associated with a specific type.
- *
- * @IncludeAll
  */
 public class SpecialPrimitives {
 

@@ -232,10 +232,10 @@ public class SessionService {
     void setService(Object service);
   }
 
-  public static SessionService.CloseSessionType closeSession;
-  public static SessionService.ExportNotificationsType exportNotifications;
-  public static SessionService.NewSessionType newSession;
-  public static SessionService.RefreshSessionTokenType refreshSessionToken;
-  public static SessionService.ReleaseType release;
+  public static SessionService.CloseSessionType CloseSession;
+  public static SessionService.ExportNotificationsType ExportNotifications;
+  public static SessionService.NewSessionType NewSession;
+  public static SessionService.RefreshSessionTokenType RefreshSessionToken;
+  public static SessionService.ReleaseType Release;
   public static String serviceName;
 }

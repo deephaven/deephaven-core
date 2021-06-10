@@ -2,6 +2,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.live.NotificationQueue;
 import io.deephaven.db.tables.live.NullIndexUpdateNotification;
@@ -25,14 +26,12 @@ import org.jetbrains.annotations.NotNull;
  * can return true.  We then set the currentListener, so that all future calls are forwarded to the listener.
  *
  * Use either {@link SwapListener} or {@link ShiftAwareSwapListener} depending on which Listener interface you are using.
- *
- * @IncludeAll
  */
 public abstract class SwapListenerBase <T extends ListenerBase> extends LivenessArtifact implements ListenerBase {
     protected static final boolean DEBUG = Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
     static final boolean DEBUG_NOTIFICATIONS = Configuration.getInstance().getBooleanWithDefault("SwapListener.debugNotifications", false);
 
-    final Logger log;
+    private static final Logger log = LoggerFactory.getLogger(SwapListenerBase.class);
 
     /**
      * The listener that will be called if this operation is successful.  If we have a successful snapshot, then success is set to true.
@@ -51,8 +50,7 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
      */
     final BaseTable sourceTable;
 
-    public SwapListenerBase(final Logger log, final BaseTable sourceTable) {
-        this.log = log;
+    public SwapListenerBase(final BaseTable sourceTable) {
         this.sourceTable = sourceTable;
         manage(sourceTable);
     }

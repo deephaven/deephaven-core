@@ -4,8 +4,6 @@ import io.deephaven.UncheckedDeephavenException;
 
 /**
  * This exception is thrown when there is a failure to consume a Kafka record during Kafka to Deephaven ingestion.
- *
- * @IncludeAll
  */
 public class KafkaIngesterException extends UncheckedDeephavenException {
     /**

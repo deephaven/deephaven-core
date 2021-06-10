@@ -14,8 +14,6 @@ package io.deephaven.db.tables.utils;
  * <p>If widgets do not implement this interface, they are visible to all users of the query.</p>
  *
  * <p>Unlike tables, limiting the visibility of one widget does not affect the visibility of other widgets.</p>
- *
- * @IncludeAll
  */
 public interface LiveWidgetVisibilityProvider {
     /**

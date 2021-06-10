@@ -1,6 +1,12 @@
 {
  "className": "io.deephaven.db.v2.TreeTableFilter",
- "methods": {},
+ "methods": {
+  "call": ":param table: io.deephaven.db.tables.Table\n:return: io.deephaven.db.tables.Table",
+  "filterTree": "*Overload 1*  \n  :param tree: io.deephaven.db.tables.Table\n  :param filters: java.lang.String...\n  :return: io.deephaven.db.tables.Table\n  \n*Overload 2*  \n  :param tree: io.deephaven.db.tables.Table\n  :param filters: io.deephaven.db.v2.select.SelectFilter[]\n  :return: io.deephaven.db.tables.Table",
+  "getMemoKey": ":return: io.deephaven.db.v2.MemoizedOperationKey",
+  "rawFilterTree": "*Overload 1*  \n  :param tree: io.deephaven.db.tables.Table\n  :param filters: java.lang.String...\n  :return: io.deephaven.db.tables.Table\n  \n*Overload 2*  \n  :param tree: io.deephaven.db.tables.Table\n  :param filters: io.deephaven.db.v2.select.SelectFilter[]\n  :return: io.deephaven.db.tables.Table",
+  "toTreeTable": ":param rawTable: io.deephaven.db.tables.Table\n:param originalTree: io.deephaven.db.tables.Table\n:return: io.deephaven.db.tables.Table"
+ },
  "path": "io.deephaven.db.v2.TreeTableFilter",
  "text": "Apply filters, preserving parents.\n\n  The TreeTableFilter takes a TreeTable and SelectFilters as input.  The original source table is filtered and\n  any matching rows are included; as well as their ancestors.  The result table is then converted into a tree\n  table using the original parameters.",
  "typeName": "class"

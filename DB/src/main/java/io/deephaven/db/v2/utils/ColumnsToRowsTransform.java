@@ -53,8 +53,6 @@ import java.util.*;
  * SPY       |Banana    |         4|                10.1
  * SPY       |Canteloupe|         6|               12.12</pre>
  * </p>
- *
- * @IncludeAll
  */
 public class ColumnsToRowsTransform {
     /**

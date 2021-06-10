@@ -14,6 +14,8 @@ import org.junit.Test;
 import io.deephaven.db.v2.utils.rsp.container.Container;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -44,18 +46,20 @@ public class RspBitmapTest {
             assertTrue(rb.contains(i));
         }
     }
+
     private void assertContainerAt(final int pos, final RspBitmap rb) {
-        assertTrue(rb.getKvs().getSpans()[pos] instanceof Container);
+        final Object span = rb.getKvs().getSpans()[pos];
+        assertTrue(span instanceof Container || span instanceof short[]);
     }
-    private Container getContainer(final int pos, final RspBitmap rb) {
-        return (Container) rb.getKvs().getSpans()[pos];
+
+    private long getContainerCardinality(final int pos, final RspBitmap rb) {
+        try (RspArray.SpanView view = new RspArray.WorkData().borrowSpanView(rb, pos)) {
+            return view.getContainer().getCardinality();
+        }
     }
 
     private void assertFullBlocksSpanAt(final int pos, final RspBitmap rb, final long flen) {
-        final Object s = rb.getKvs().getSpans()[pos];
-        assertTrue(s instanceof Long);
-        final Long sl = (Long) s;
-        assertEquals(flen, (long) sl);
+        assertEquals(flen, rb.getFullBlockSpanLenAt(pos));
     }
 
     @Test public void testSimpleAddFirst2SpansThen1() {
@@ -78,7 +82,7 @@ public class RspBitmapTest {
         assertEquals(2, ra.getSize());
         assertFullBlocksSpanAt(0, rb, 1);
         assertContainerAt(1, rb);
-        assertEquals((1 << 16) - 1, getContainer(1, rb).getCardinality());
+        assertEquals((1 << 16) - 1, getContainerCardinality(1, rb));
         rb.add(2 * (1 << 16) - 1);
         assertEquals(1, ra.getSize());
         assertFullBlocksSpanAt(0, rb, 2);
@@ -101,7 +105,7 @@ public class RspBitmapTest {
         assertEquals(tgtflen, rb.getKvs().getSize());
         for (int i = 0; i < tgtflen; ++i) {
             assertContainerAt(i, rb);
-            assertEquals(BLOCK_SIZE - 1, getContainer(i, rb).getCardinality());
+            assertEquals(BLOCK_SIZE - 1, getContainerCardinality(i, rb));
         }
 
         // For each block except first and last, add the single missing element that would make it full.
@@ -1262,9 +1266,11 @@ public class RspBitmapTest {
                         final String m2 = m + " && start==" + start + " && end==" + end;
                         final RspBitmap rbCopy = rb.deepCopy();
                         rbCopy.removeRange(start, end);
+                        assertFalse(rbCopy.containsRange(start, end));
                         rbCopy.validate(m2);
                         final RspBitmap range = new RspBitmap(start, end);
                         final RspBitmap minus = RspBitmap.andNot(rb, range);
+                        assertFalse(minus.containsRange(start, end));
                         assertEquals(m2, minus, rbCopy);
                     }
                 }
@@ -3067,8 +3073,8 @@ public class RspBitmapTest {
             final RspBitmap rbMinus = populateRandom(pfxMsg, r, count/10, 1, 10*count, clusterWidth, jumpOneIn);
             rbPlus.andNotEquals(rbMinus);
             final String m = pfxMsg + ", i=" + i;
-            // final RspBitmap preCheck = rbPlus.copy().andEquals(rbMinus);
-            // assertTrue(m, preCheck.isEmpty());
+            final RspBitmap preCheck = rbPlus.deepCopy().andEquals(rbMinus);
+            assertTrue(m, preCheck.isEmpty());
             rbPlus.validate();
             rb1.andNotEquals(rbMinus);
             rb1.orEquals(rbPlus);
@@ -3227,42 +3233,12 @@ public class RspBitmapTest {
 
     @Test
     @Category(OutOfBandTest.class)
-    public void testAppendRanges() {
-        randomizedTest(RspBitmapTest::doTestAppendRanges);
-    }
-
-    private static void doTestAppendRanges(final int seed) {
-        doTestBatchBuilderOp(seed, "appendRanges", (out, in) -> out.appendRangesUnsafeNoWriteCheck(in.getRangeIterator()));
-    }
-
-    @Test
-    @Category(OutOfBandTest.class)
     public void testAddRanges() {
         randomizedTest(RspBitmapTest::doTestAddRanges);
     }
 
     private static void doTestAddRanges(final int seed) {
         doTestBatchBuilderOp(seed, "appendRanges", (out, in) -> out.addRangesUnsafeNoWriteCheck(in.ixRangeIterator()));
-    }
-
-    @Test
-    @Category(OutOfBandTest.class)
-    public void testAppendValues() {
-        randomizedTest(RspBitmapTest::doTestAppendValues);
-    }
-
-    private static void doTestAppendValues(final int seed) {
-        doTestBatchBuilderOp(seed, "appendValues", (out, in) -> out.appendValuesUnsafeNoWriteCheck(in.getIterator()));
-    }
-
-    @Test
-    @Category(OutOfBandTest.class)
-    public void testAddValues() {
-        randomizedTest(RspBitmapTest::doTestAddValues);
-    }
-
-    private static void doTestAddValues(final int seed) {
-        doTestBatchBuilderOp(seed, "addValues", (out, in) -> out.addValuesUnsafeNoWriteCheck(in.getIterator()));
     }
 
     @Test public void testRangeConstructor() {
@@ -3566,16 +3542,6 @@ public class RspBitmapTest {
             p = v;
         }
         assertEquals(count, rb.getCardinality());
-    }
-
-    @Test
-    public void testAppendRangesRegression0() {
-        final RspBitmap ranges = new RspBitmap(3, 3);
-        final RspBitmap rb = new RspBitmap();
-        rb.appendRangesUnsafe(ranges.getRangeIterator());
-        rb.finishMutations();
-        assertEquals(1, rb.getCardinality());
-        assertTrue(rb.contains(3));
     }
 
     @Test
@@ -3915,20 +3881,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    public void testMergeContainerCoverage() {
-        final long p0 = BLOCK_SIZE;
-        final long p1 = p0 + BLOCK_SIZE / 2;
-        final long p2 = p1 + 10;
-        RspBitmap r0 = RspBitmap.makeSingleRange(p0, p1);
-        RspBitmap r1 = RspBitmap.makeSingleRange(p1 + 1, p2);
-        r1 = r1.addRange(p2 + 1, BLOCK_SIZE + BLOCK_LAST);
-        r0.appendRangesUnsafeNoWriteCheck(r1.getRangeIterator());
-        r0.finishMutations();
-        final RspBitmap r3 = RspBitmap.makeSingleRange(BLOCK_SIZE, BLOCK_SIZE + BLOCK_LAST);
-        assertEquals(r3, r0);
-    }
-
-    @Test
     public void testSubsetOfRegression0() {
         RspBitmap r0 = RspBitmap.makeSingleRange(BLOCK_SIZE, BLOCK_SIZE + BLOCK_LAST);
         RspBitmap r1 = RspBitmap.makeSingleRange(BLOCK_SIZE + 3, BLOCK_SIZE + 4);
@@ -4244,5 +4196,58 @@ public class RspBitmapTest {
         chunk.add(BLOCK_SIZE + 10);
         // we saw: "java.lang.IllegalStateException: iv1=3, iv2=4"
         rb.addValuesUnsafeNoWriteCheck(chunk, 0, 2);
+    }
+
+    private RspBitmap fromBlocksAsBits(final int nblocks, final int bits) {
+        RspBitmap r = RspBitmap.makeEmpty();
+        for (int b = 0; b < nblocks; ++b) {
+            if ((bits & (1 << b)) != 0) {
+                final long blockFirst = BLOCK_SIZE * (long) b;
+                final long blockLast = blockFirst + BLOCK_LAST;
+                r = r.addRange(blockFirst, blockLast);
+            }
+        }
+        r.validate();
+        return r;
+    }
+
+    @Test
+    public void testBinaryOpsWithFullSpans() {
+        final Map<String, BiFunction<RspBitmap, RspBitmap, RspBitmap>> ops = new HashMap<>();
+        ops.put("andNotEquals", RspBitmap::andNotEquals);
+        ops.put("andEquals", RspBitmap::andEquals);
+        ops.put("orEquals", RspBitmap::orEquals);
+        final int nblocks = 9;
+        final int maxBlocksAsBitsSpec = 1 << nblocks;
+        for (String opName : ops.keySet()) {
+            final BiFunction<RspBitmap, RspBitmap, RspBitmap> op = ops.get(opName);
+            for (int firstBlocksAsBitsSpec = 0; firstBlocksAsBitsSpec < maxBlocksAsBitsSpec; ++firstBlocksAsBitsSpec) {
+                for (int secondBlocksAsBitsSpec = 0; secondBlocksAsBitsSpec < maxBlocksAsBitsSpec; ++secondBlocksAsBitsSpec) {
+                    final RspBitmap r1 = fromBlocksAsBits(nblocks, firstBlocksAsBitsSpec);
+                    final RspBitmap r2 = fromBlocksAsBits(nblocks, secondBlocksAsBitsSpec);
+                    final RspBitmap result = op.apply(r1, r2);
+                    final String msg = opName
+                            + " && firstBlocksAsBitsSpec==" + firstBlocksAsBitsSpec
+                            + " && secondBlocksAsBitsSpec==" + secondBlocksAsBitsSpec;
+                    result.validate(msg);
+                    final int resultBits;
+                    switch(opName) {
+                        case "andNotEquals":
+                            resultBits = firstBlocksAsBitsSpec & ~secondBlocksAsBitsSpec;
+                            break;
+                        case "andEquals":
+                            resultBits = firstBlocksAsBitsSpec & secondBlocksAsBitsSpec;
+                            break;
+                        case "orEquals":
+                            resultBits = firstBlocksAsBitsSpec | secondBlocksAsBitsSpec;
+                            break;
+                        default:
+                            throw new IllegalStateException();
+                    }
+                    final RspBitmap expected = fromBlocksAsBits(nblocks, resultBits);
+                    assertEquals(msg, expected, result);
+                }
+            }
+        }
     }
 }

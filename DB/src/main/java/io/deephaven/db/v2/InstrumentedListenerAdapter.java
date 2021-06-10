@@ -4,16 +4,18 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.db.util.liveness.Liveness;
+import io.deephaven.db.util.liveness.PermanentLivenessManager;
 import io.deephaven.db.v2.utils.AsyncErrorLogger;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -24,48 +26,37 @@ import java.io.IOException;
  * It provides an optional retention cache, to prevent listeners from being garbage collected.
  *
  * For creating internally ticking table nodes, instead use {@link BaseTable.ListenerImpl}
- *
- * @IncludeAll
  */
 public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
 
     private static final RetentionCache<InstrumentedListenerAdapter> RETENTION_CACHE = new RetentionCache<>();
 
+    private final boolean retain;
+
     @ReferentialIntegrity
     protected final DynamicTable source;
 
     /**
-     * Create an instrumented listener for source.
+     * Create an instrumented listener for source. No description is provided.
      *
-     * The listener will be retained and no description is provided.
-     *
-     * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
+     * @param source The source table this listener will subscribe to - needed for preserving referential integrity
+     * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
+     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(DynamicTable source) {
-        this(null, source, true);
-    }
-
-    /**
-     * Create an instrumented listener for source.
-     *
-     * The listener will be retained and no description is provided.
-     *
-     * @param description A description for the UpdatePerformanceTracker to append to its entry description.
-     * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
-     */
-    public InstrumentedListenerAdapter(@Nullable String description, DynamicTable source) {
-        this(description, source, true);
+    public InstrumentedListenerAdapter(@NotNull final DynamicTable source, final boolean retain) {
+        this(null, source, retain);
     }
 
     /**
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table this listener will subscribe to - needed for preserving referential integrity.
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
+     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(@Nullable String description, DynamicTable source, boolean retain) {
+    public InstrumentedListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source, final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
-        if(retain) {
+        if (this.retain = retain) {
             RETENTION_CACHE.retain(this);
             if(Liveness.DEBUG_MODE_ENABLED) {
                 Liveness.log.info().append("LivenessDebug: InstrumentedListenerAdapter ").append(Utils.REFERENT_FORMATTER, this).append(" created with retention enabled").endl();
@@ -102,5 +93,8 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     protected void destroy() {
         source.removeUpdateListener(this);
         source.removeDirectUpdateListener(this);
+        if (retain) {
+            RETENTION_CACHE.forget(this);
+        }
     }
 }

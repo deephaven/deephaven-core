@@ -27,8 +27,6 @@ import java.util.function.UnaryOperator;
 
 /**
  * A chunked, iterative operator that processes indices and/or data from one input column to produce one or more output columns.
- *
- * @IncludeAll
  */
 public interface IterativeChunkedAggregationOperator {
 
@@ -322,16 +320,12 @@ public interface IterativeChunkedAggregationOperator {
 
     /**
      * Context interface for bucketed operator updates.
-     *
-     * @IncludeAll
      */
     interface BucketedContext extends SafeCloseable {
     }
 
     /**
      * Context interface for singleton (that is, one aggregation state) operator updates.
-     *
-     * @IncludeAll
      */
     interface SingletonContext extends SafeCloseable {
     }

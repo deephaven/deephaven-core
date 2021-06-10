@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.hashing.ToIntegerCast",
+ "methods": {
+  "apply": "Apply this function to the input chunk, returning an output chunk.\n\n The result is owned by this Context.\n\n:param input: io.deephaven.db.v2.sources.chunk.Chunk<? extends ToIntegerCast.T>\n:return: (io.deephaven.db.v2.sources.chunk.IntChunk<? extends ToIntegerCast.T>) the result IntChunk",
+  "makeToIntegerCast": "Create an IntFunctor that casts the values in an input chunk to an int.  An optional offset is applied to each\n value after the cast.\n\nNote: Java generics information - <T extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param type: io.deephaven.db.v2.sources.chunk.ChunkType\n:param size: int\n:param offset: int\n:return: (io.deephaven.db.v2.hashing.ToIntFunctor<T>) a ToIntFunctor that can be applied to chunks of type in order to produce an IntChunk of values"
+ },
+ "path": "io.deephaven.db.v2.hashing.ToIntegerCast",
+ "typeName": "interface"
+}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionInt",
+ "methods": {
+  "getChunkPageContaining": ":param elementIndex: long\n:return: io.deephaven.db.v2.sources.chunk.page.ChunkPage<ATTR>",
+  "getInt": "Get a single int from this region.\n\n*Overload 1*  \n  :param elementIndex: long\n  :return: (int) The int value at the specified element (int) index\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param elementIndex: long\n  :return: (int) The int value at the specified element (int) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionInt",
+ "text": "ColumnRegionInt implementation for regions that support fetching primitive ints from a\n ColumnChunkPageStore.",
+ "typeName": "class"
+}

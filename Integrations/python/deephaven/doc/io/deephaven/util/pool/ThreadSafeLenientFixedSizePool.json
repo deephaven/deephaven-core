@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.util.pool.ThreadSafeLenientFixedSizePool",
+ "methods": {
+  "give": ":param item: ThreadSafeLenientFixedSizePool.T",
+  "take": ":return: ThreadSafeLenientFixedSizePool.T",
+  "takeMaybeNull": ":return: ThreadSafeLenientFixedSizePool.T",
+  "tryTake": "Take an item if immediately available, else return null.\n\n:return: (ThreadSafeLenientFixedSizePool.T) a pool item or null"
+ },
+ "path": "io.deephaven.util.pool.ThreadSafeLenientFixedSizePool",
+ "text": "A pool that\n \n holds at least size items,\n  creates size items in the pool immediately,\n  creates a new item when the pool underflows,\n  discards the item when the pool overflows,\n  optionally clears the items given to it, and\n  IS thread-safe",
+ "typeName": "class"
+}

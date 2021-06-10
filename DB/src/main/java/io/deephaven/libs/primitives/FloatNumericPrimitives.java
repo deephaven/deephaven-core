@@ -15,8 +15,6 @@ import static io.deephaven.libs.primitives.FloatPrimitives.unbox;
 
 /**
  * A set of commonly used numeric functions that can be applied to Float types.
- *
- * @IncludeAll
  */
 public class FloatNumericPrimitives {
 

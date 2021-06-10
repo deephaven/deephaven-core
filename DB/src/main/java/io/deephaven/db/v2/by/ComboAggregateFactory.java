@@ -61,8 +61,6 @@ import java.util.stream.Stream;
  *
  * <p>For example, to produce a table with several aggregations on the LastPrice of a Trades table:
  * {@code ohlc=trades.by(AggCombo(AggFirst("Open=LastPrice"), AggLast("Close=LastPrice"), AggMax("High=LastPrice"), AggMin("Low=LastPrice"), AggSum("Volume=Size"), AggWAvg("Size", "VWAP=LastPrice"), "Symbol")}</p>
- *
- * @Include
  */
 public class ComboAggregateFactory implements AggregationStateFactory {
     static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
@@ -85,8 +83,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param aggregations the aggregations to compute
      *
      * @return a new table with the specified aggregations.
-     *
-     * @Include
      */
     public static ComboAggregateFactory AggCombo(ComboBy... aggregations) {
         return new ComboAggregateFactory(aggregations);
@@ -100,8 +96,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggFormula(String formula, String formulaParam, final String... matchPairs) {
         return new ComboByImpl(new AggregationFormulaStateFactory(formula, formulaParam), matchPairs);
@@ -113,8 +107,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggMin(final String... matchPairs) {
         return Agg(AggType.Min, matchPairs);
@@ -126,8 +118,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggMax(final String... matchPairs) {
         return Agg(AggType.Max, matchPairs);
@@ -139,8 +129,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggSum(final String... matchPairs) {
         return Agg(AggType.Sum, matchPairs);
@@ -152,8 +140,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggAbsSum(final String... matchPairs) {
         return Agg(AggType.AbsSum, matchPairs);
@@ -165,8 +151,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggVar(final String... matchPairs) {
         return Agg(AggType.Var, matchPairs);
@@ -178,8 +162,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggAvg(final String... matchPairs) {
         return Agg(AggType.Avg, matchPairs);
@@ -192,8 +174,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggWAvg(final String weight, final String... matchPairs) {
         return Agg(new WeightedAverageStateFactoryImpl(weight), matchPairs);
@@ -206,8 +186,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggWSum(final String weight, final String... matchPairs) {
         return Agg(new WeightedSumStateFactoryImpl(weight), matchPairs);
@@ -219,8 +197,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggMed(final String... matchPairs) {
         return AggPct(0.50d, true, matchPairs);
@@ -232,8 +208,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggStd(final String... matchPairs) {
         return Agg(AggType.Std, matchPairs);
@@ -245,8 +219,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggFirst(final String... matchPairs) {
         return Agg(AggType.First, matchPairs);
@@ -258,8 +230,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggLast(final String... matchPairs) {
         return Agg(AggType.Last, matchPairs);
@@ -272,8 +242,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggSortedFirst(final String sortColumn, final String... matchPairs) {
         return Agg(new SortedFirstBy(sortColumn), matchPairs);
@@ -286,8 +254,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggSortedLast(final String sortColumn, final String... matchPairs) {
         return Agg(new SortedLastBy(sortColumn), matchPairs);
@@ -300,8 +266,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggSortedFirst(final String [] sortColumns, final String... matchPairs) {
         return Agg(new SortedFirstBy(sortColumns), matchPairs);
@@ -314,8 +278,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggSortedLast(final String [] sortColumns, final String... matchPairs) {
         return Agg(new SortedLastBy(sortColumns), matchPairs);
@@ -327,8 +289,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggArray(final String... matchPairs) {
         return Agg(AggType.Array, matchPairs);
@@ -340,8 +300,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param resultColumn the name of the result column containing the count of each group
      *
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggCount(final String resultColumn) {
         return new CountComboBy(resultColumn);
@@ -355,8 +313,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}.  Null values are not counted.
-     *
-     * @Include
      */
     public static ComboBy AggCountDistinct(final String... matchPairs) { return AggCountDistinct(false, matchPairs); }
 
@@ -369,8 +325,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggCountDistinct(boolean countNulls, final String... matchPairs) {
         return Agg(new CountDistinctStateFactory(countNulls), matchPairs);
@@ -385,8 +339,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}.  Null values are ignored.
-     *
-     * @Include
      */
     public static ComboBy AggDistinct(final String... matchPairs) { return AggDistinct(false, matchPairs); }
 
@@ -401,8 +353,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggDistinct(boolean countNulls, final String... matchPairs) {
         return Agg(new DistinctStateFactory(countNulls), matchPairs);
@@ -421,8 +371,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggUnique(final String... matchPairs) {
         return Agg(new UniqueStateFactory(false), matchPairs);
@@ -443,8 +391,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}.  Output columns contain null if
      *          there are no values present or there are more than 1 distinct values present.
-     *
-     * @Include
      */
     public static ComboBy AggUnique(boolean countNulls, final String... matchPairs) {
         return AggUnique(countNulls, null, null, matchPairs);
@@ -466,8 +412,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggUnique(boolean countNulls, Object noKeyValue, Object nonUniqueValue, final String... matchPairs) {
         return Agg(new UniqueStateFactory(countNulls, noKeyValue, nonUniqueValue), matchPairs);
@@ -480,8 +424,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggPct(double percentile, final String... matchPairs) {
         return Agg(new PercentileByStateFactoryImpl(percentile), matchPairs);
@@ -497,8 +439,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy AggPct(double percentile, boolean averageMedian, final String... matchPairs) {
         return Agg(new PercentileByStateFactoryImpl(percentile, averageMedian), matchPairs);
@@ -511,8 +451,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy Agg(AggregationStateFactory factory, final String... matchPairs) {
         return new ComboByImpl(factory, matchPairs);
@@ -525,8 +463,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
-     *
-     * @Include
      */
     public static ComboBy Agg(AggType factoryType, final String... matchPairs) {
         final AggregationStateFactory factory;

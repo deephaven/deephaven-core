@@ -19,8 +19,6 @@ import java.util.function.Consumer;
  * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the LTM.
  *
  * The table is not keyed, all rows are added to the end of the table.  Deletions and edits are not permitted.
- *
- * @IncludeAll
  */
 public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     static final String DEFAULT_DESCRIPTION = "Append Only In-Memory Input Table";

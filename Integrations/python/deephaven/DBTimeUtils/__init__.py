@@ -279,7 +279,7 @@ def currentDate(timeZone):
 @_passThrough
 def currentDateNy():
     """
-    Provides a String representing the current date in the New York time zone or, if a custom DBTimeUtils.currentDateNyOverride
+    Provides a String representing the current date in the New York time zone or, if a custom currentDateNyOverride
      has been set, the date provided by that override.
     
     :return: (java.lang.String) A String in yyyy-MM-dd format.
@@ -291,7 +291,7 @@ def currentDateNy():
 @_passThrough
 def currentTime():
     """
-    Provides the current date/time, or, if a custom DBTimeUtils.timeProvider has been configured, provides the
+    Provides the current date/time, or, if a custom timeProvider has been configured, provides the
      current time according to the custom provider.
     
     :return: (io.deephaven.db.tables.utils.DBDateTime) A DBDateTime of the current date and time from the system or from the configured alternate
@@ -718,7 +718,7 @@ def isBefore(d1, d2):
 def lastBusinessDateNy(*args):
     """
     Provides a String representing the previous business date in the New York time zone using the NYSE calendar, or,
-     if a custom DBTimeUtils.lastBusinessDayNyOverride has been set, the date provided by that override.
+     if a custom lastBusinessDayNyOverride has been set, the date provided by that override.
     
     *Overload 1*  
       :return: (java.lang.String) A String in yyyy-MM-dd format.
@@ -1181,8 +1181,8 @@ def nanosToTime(nanos):
 @_passThrough
 def overrideLastBusinessDateNyFromCurrentDateNy():
     """
-    Sets the DBTimeUtils.lastBusinessDayNyOverride to the previous business day from a currently set
-     DBTimeUtils.currentDateNyOverride value. If DBTimeUtils.currentDateNyOverride has not been set, this
+    Sets the lastBusinessDayNyOverride to the previous business day from a currently set
+     currentDateNyOverride value. If currentDateNyOverride has not been set, this
      method has no effect.
     """
     

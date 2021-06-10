@@ -39,7 +39,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
 
         final Table result;
         if (!request.getForceCombo() && request.getAggregatesCount() == 1
-                && request.getAggregates(0).getType() != ComboAggregateRequest.AggType.Percentile
+                && request.getAggregates(0).getType() != ComboAggregateRequest.AggType.PERCENTILE
                 && request.getAggregates(0).getMatchPairsCount() == 0) {
             // This is a special case with a special operator that can be invoked right off of the table api.
             result = singleAggregateHelper(parent, groupByColumns, request.getAggregates(0));
@@ -51,31 +51,31 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
 
     private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns, final ComboAggregateRequest.Aggregate aggregate) {
         switch (aggregate.getType()) {
-            case Sum:
+            case SUM:
                 return parent.sumBy(groupByColumns);
-            case AbsSum:
+            case ABS_SUM:
                 return parent.absSumBy(groupByColumns);
-            case Array:
+            case ARRAY:
                 return parent.by(groupByColumns);
-            case Avg:
+            case AVG:
                 return parent.avgBy(groupByColumns);
-            case Count:
+            case COUNT:
                 return parent.countBy(aggregate.getColumnName(), groupByColumns);
-            case First:
+            case FIRST:
                 return parent.firstBy(groupByColumns);
-            case Last:
+            case LAST:
                 return parent.lastBy(groupByColumns);
-            case Min:
+            case MIN:
                 return parent.minBy(groupByColumns);
-            case Max:
+            case MAX:
                 return parent.maxBy(groupByColumns);
-            case Median:
+            case MEDIAN:
                 return parent.medianBy(groupByColumns);
-            case Std:
+            case STD:
                 return parent.stdBy(groupByColumns);
-            case Var:
+            case VAR:
                 return parent.varBy(groupByColumns);
-            case WeightedAvg:
+            case WEIGHTED_AVG:
                 return parent.wavgBy(aggregate.getColumnName(), groupByColumns);
             default:
                 throw new UnsupportedOperationException("Unsupported aggregate: " + aggregate.getType());
@@ -96,7 +96,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 // if not specified, we apply the aggregate to all columns not "otherwise involved"
                 matchPairs = Arrays.stream(parent.getColumns())
                         .map(DataColumn::getName)
-                        .filter(n -> !(groupByColumnSet.contains(n) || (agg.getType() == ComboAggregateRequest.AggType.WeightedAvg && agg.getColumnName().equals(n))))
+                        .filter(n -> !(groupByColumnSet.contains(n) || (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG && agg.getColumnName().equals(n))))
                         .toArray(String[]::new);
             } else {
                 matchPairs = agg.getMatchPairsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -106,33 +106,33 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
 
             final Supplier<ComboAggregateFactory.ComboBy> comboMapper = () -> {
                 switch (agg.getType()) {
-                    case Sum:
+                    case SUM:
                         return ComboAggregateFactory.AggSum(matchPairs);
-                    case AbsSum:
+                    case ABS_SUM:
                         return ComboAggregateFactory.AggAbsSum(matchPairs);
-                    case Array:
+                    case ARRAY:
                         return ComboAggregateFactory.AggArray(matchPairs);
-                    case Avg:
+                    case AVG:
                         return ComboAggregateFactory.AggAvg(matchPairs);
-                    case Count:
+                    case COUNT:
                         return ComboAggregateFactory.AggCount(agg.getColumnName());
-                    case First:
+                    case FIRST:
                         return ComboAggregateFactory.AggFirst(matchPairs);
-                    case Last:
+                    case LAST:
                         return ComboAggregateFactory.AggLast(matchPairs);
-                    case Min:
+                    case MIN:
                         return ComboAggregateFactory.AggMin(matchPairs);
-                    case Max:
+                    case MAX:
                         return ComboAggregateFactory.AggMax(matchPairs);
-                    case Median:
+                    case MEDIAN:
                         return ComboAggregateFactory.AggMed(matchPairs);
-                    case Percentile:
+                    case PERCENTILE:
                         return ComboAggregateFactory.AggPct(agg.getPercentile(), agg.getAvgMedian(), matchPairs);
-                    case Std:
+                    case STD:
                         return ComboAggregateFactory.AggStd(matchPairs);
-                    case Var:
+                    case VAR:
                         return ComboAggregateFactory.AggVar(matchPairs);
-                    case WeightedAvg:
+                    case WEIGHTED_AVG:
                         return ComboAggregateFactory.AggWAvg(agg.getColumnName(), matchPairs);
                     default:
                         throw new UnsupportedOperationException("Unsupported aggregate: " + agg.getType());

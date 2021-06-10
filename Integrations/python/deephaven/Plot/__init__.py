@@ -592,7 +592,7 @@ def color(color):
      second two digits set the Green component; third two the Blue.
      Hex values must have a "#" in front, e.g. "#001122"
     
-     For available names, see Color and Color.colorNames()
+     For available names, see Color and colorNames()
     
     :param color: (java.lang.String) - color; may be hex representation or case-insensitive color name
     :return: (io.deephaven.gui.color.Color) Color instance represented by the color String

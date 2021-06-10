@@ -24,7 +24,8 @@ public class PerformanceQueries {
      * </ul>
      * </p>
      *
-     * @return a table.
+     * @param evaluationNumber evaluation number
+     * @return query performance table.
      */
     @ScriptApi
     public static Table queryPerformance(final long evaluationNumber) {
@@ -60,7 +61,8 @@ public class PerformanceQueries {
      * consumption while each was executing.
      * </p>
      *
-     * @return a table.
+     * @param evaluationNumber evaluation number
+     * @return query operation performance table.
      */
     @ScriptApi
     public static Table queryOperationPerformance(final long evaluationNumber) {
@@ -77,6 +79,14 @@ public class PerformanceQueries {
         return queryOps;
     }
 
+    /**
+     * Gets the information for a process.
+     *
+     * @param processInfoId id
+     * @param type type
+     * @param key key
+     * @return process information
+     */
     public static String processInfo(final String processInfoId, final String type, final String key) {
         final Table processInfo = TableLoggers.processInfoLog()
                 .where("Id = `" + processInfoId + "`", "Type = `" + type + "`", "Key = `" + key + "`")
@@ -91,7 +101,8 @@ public class PerformanceQueries {
     /**
      * Takes in a query id and returns a view for that query's update performance data.
      *
-     * @return a table.
+     * @param evaluationNumber evaluation number
+     * @return query update performance table.
      */
     @ScriptApi
     public static Table queryUpdatePerformance(final long evaluationNumber) {
@@ -120,6 +131,12 @@ public class PerformanceQueries {
         return queryUpdatePerformance;
     }
 
+    /**
+     * Creates a map of query update performance tables.
+     *
+     * @param evaluationNumber evaluation number
+     * @return map of query update performance tables.
+     */
     public static Map<String, Table> queryUpdatePerformanceMap(final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
         final Table qup = queryUpdatePerformance(evaluationNumber);

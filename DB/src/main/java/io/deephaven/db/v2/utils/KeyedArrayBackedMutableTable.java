@@ -22,8 +22,6 @@ import java.util.stream.Stream;
  * An in-memory table that has keys for each row, which can be updated on the LTM.
  *
  * This is used to implement in-memory editable table columns from web plugins.
- *
- * @IncludeAll
  */
 public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";

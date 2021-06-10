@@ -16,58 +16,66 @@ import "io/deephaven/proto/table.proto";
  * Console interaction service
 */
 service ConsoleService {
-    rpc startConsole(StartConsoleRequest) returns (StartConsoleResponse) {}
+    rpc GetConsoleTypes(GetConsoleTypesRequest) returns (GetConsoleTypesResponse) {}
+    rpc StartConsole(StartConsoleRequest) returns (StartConsoleResponse) {}
 
-    rpc subscribeToLogs(LogSubscriptionRequest) returns (stream LogSubscriptionData) {}
+    rpc SubscribeToLogs(LogSubscriptionRequest) returns (stream LogSubscriptionData) {}
 
-    rpc executeCommand(ExecuteCommandRequest) returns (ExecuteCommandResponse) {}
-    rpc cancelCommand(CancelCommandRequest) returns (CancelCommandResponse) {}
+    rpc ExecuteCommand(ExecuteCommandRequest) returns (ExecuteCommandResponse) {}
+    rpc CancelCommand(CancelCommandRequest) returns (CancelCommandResponse) {}
 
-    rpc bindTableToVariable(BindTableToVariableRequest) returns (BindTableToVariableResponse) {}
+    rpc BindTableToVariable(BindTableToVariableRequest) returns (BindTableToVariableResponse) {}
 
-    rpc openDocument(OpenDocumentRequest) returns (OpenDocumentResponse) {}
-    rpc changeDocument(ChangeDocumentRequest) returns (ChangeDocumentResponse) {}
-    rpc getCompletionItems(GetCompletionItemsRequest) returns (GetCompletionItemsResponse) {}
-    rpc closeDocument(CloseDocumentRequest) returns (CloseDocumentResponse) {}
+    rpc OpenDocument(OpenDocumentRequest) returns (OpenDocumentResponse) {}
+    rpc ChangeDocument(ChangeDocumentRequest) returns (ChangeDocumentResponse) {}
+    rpc GetCompletionItems(GetCompletionItemsRequest) returns (GetCompletionItemsResponse) {}
+    rpc CloseDocument(CloseDocumentRequest) returns (CloseDocumentResponse) {}
 
-    rpc fetchTable(FetchTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
-    rpc fetchPandasTable(FetchPandasTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
-    rpc fetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
-    rpc fetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
+    rpc FetchTable(FetchTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
+    rpc FetchPandasTable(FetchPandasTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
+    rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
+    rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 }
 
+
+message GetConsoleTypesRequest {
+    // left empty for future compatibility
+}
+message GetConsoleTypesResponse {
+    repeated string console_types = 1;
+}
 
 message StartConsoleRequest {
-    io.deephaven.proto.backplane.grpc.Ticket resultId = 1;
-    string sessionType = 2;
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+    string session_type = 2;
 }
 message StartConsoleResponse {
-    io.deephaven.proto.backplane.grpc.Ticket resultId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
 
     // TOOD i think these are unused without an init script thingie
-    repeated string tableNames = 2;
-    repeated string widgetNames = 3;
+    repeated string table_names = 2;
+    repeated string widget_names = 3;
 }
 
 message LogSubscriptionRequest {
     // presently you get _all_ logs, not just your console
-//    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    int64 lastSeenLogTimestamp = 1;
-    repeated string level = 2;
+//    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    int64 last_seen_log_timestamp = 1;
+    repeated string levels = 2;
 }
 message LogSubscriptionData {
-//    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+//    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     int64 micros = 1;
-    string logLevel = 2;
+    string log_level = 2;
     string message = 3;
 }
 message ExecuteCommandRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;
     string code = 3;
 }
 message ExecuteCommandResponse {
-    string errorMessage = 1;
+    string error_message = 1;
     repeated VariableDefinition created = 2;
     repeated VariableDefinition updated = 3;
     repeated VariableDefinition removed = 4;
@@ -77,29 +85,29 @@ message VariableDefinition {
     string type = 2;
 }
 message BindTableToVariableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;
-    string variableName = 3;
-    io.deephaven.proto.backplane.grpc.Ticket tableId = 4;
+    string variable_name = 3;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 4;
 }
 message BindTableToVariableResponse {
 }
 
 message CancelCommandRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    io.deephaven.proto.backplane.grpc.Ticket commandId = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket command_id = 2;
 }
 message CancelCommandResponse {
 
 }
 
 message OpenDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    TextDocumentItem textDocument = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    TextDocumentItem text_document = 2;
 }
 message TextDocumentItem {
     string uri = 1;
-    string languageId = 2;
+    string language_id = 2;
     int32 version = 3;
     string text = 4;
 }
@@ -108,21 +116,21 @@ message OpenDocumentResponse {
 }
 
 message CloseDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    VersionedTextDocumentIdentifier textDocument = 2;//TODO actually just uri?
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
 }
 message CloseDocumentResponse {
 
 }
 
 message ChangeDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    VersionedTextDocumentIdentifier textDocument = 2;//TODO actually just uri?
-    repeated TextDocumentContentChangeEvent contentChanges = 3;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    repeated TextDocumentContentChangeEvent content_changes = 3;
 
     message TextDocumentContentChangeEvent {
         DocumentRange range = 1;
-        int32 rangeLength = 2;
+        int32 range_length = 2;
         string text = 3;
     }
 }
@@ -142,15 +150,15 @@ message ChangeDocumentResponse {
 
 }
 message GetCompletionItemsRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
 
     CompletionContext context = 2;
-    VersionedTextDocumentIdentifier textDocument = 3;
+    VersionedTextDocumentIdentifier text_document = 3;
     Position position = 4;
 }
 message CompletionContext {
-    int32 triggerKind = 1;
-    string triggerCharacter = 2;
+    int32 trigger_kind = 1;
+    string trigger_character = 2;
 }
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
@@ -164,12 +172,12 @@ message CompletionItem {
     string documentation = 6;
     bool deprecated = 7;
     bool preselect = 8;
-    TextEdit textEdit = 9;
-    string sortText = 10;
-    string filterText = 11;
-    int32 insertTextFormat = 12;
-    repeated TextEdit additionalTextEdits = 13;
-    repeated string commitCharacters = 14;
+    TextEdit text_edit = 9;
+    string sort_text = 10;
+    string filter_text = 11;
+    int32 insert_text_format = 12;
+    repeated TextEdit additional_text_edits = 13;
+    repeated string commit_characters = 14;
 }
 message TextEdit {
     DocumentRange range = 1;
@@ -177,20 +185,20 @@ message TextEdit {
 }
 
 message FetchTableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    io.deephaven.proto.backplane.grpc.Ticket tableId = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
 
-    string tableName = 3;
+    string table_name = 3;
 }
 
 message FetchPandasTableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
-    io.deephaven.proto.backplane.grpc.Ticket tableId = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
 
 }
 
 message FetchFigureRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;
 
 }
@@ -199,7 +207,7 @@ message FetchFigureResponse {
 }
 
 message FetchTableMapRequest {
-    io.deephaven.proto.backplane.grpc.Ticket consoleId = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;
 
 }

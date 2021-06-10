@@ -2,8 +2,6 @@ package io.deephaven.db.v2;
 
 /**
  * Used by {@link SwapListenerBase swap listeners} to set the notification step of elements in our DAG.
- *
- * @IncludeAll
  */
 public interface NotificationStepReceiver {
 

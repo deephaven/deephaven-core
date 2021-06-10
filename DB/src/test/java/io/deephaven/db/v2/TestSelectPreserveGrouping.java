@@ -4,7 +4,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
@@ -87,7 +86,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             System.out.println(x.getDefinition());
             TableManagementTools.writeTable(x, testDirectory);
 
-            final Table readBack = TableManagementTools.readTable(testDirectory, x.getDefinition());
+            final Table readBack = TableManagementTools.readTable(testDirectory);
             TableTools.showWithIndex(readBack);
 
             assertTrue(readBack.getIndex().hasGrouping(readBack.getColumnSource("Sym")));

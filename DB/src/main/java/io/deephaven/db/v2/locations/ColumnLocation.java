@@ -16,8 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Per-TableLocation, per-column key and state object.
- *
- * @IncludeAll
  */
 public interface ColumnLocation<TLT extends TableLocation> extends StringUtils.StringKeyedObject, NamedImplementation, LogOutputAppendable {
 

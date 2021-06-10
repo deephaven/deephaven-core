@@ -18,8 +18,6 @@ import java.util.List;
  * Base class for filters that will release more rows of a table on each LTM cycle.
  *
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing capacity.
- *
- * @IncludeAll
  */
 public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessArtifactImpl implements LiveTable {
     private final long initialSize;

@@ -17,17 +17,12 @@ import java.util.function.BiConsumer;
 
 /**
  * Shift-aware listener for table changes.
- *
- * @IncludeAll
  */
 public interface ShiftAwareListener extends ListenerBase {
 
     /**
      * A shift aware update structure, containing the rows and columns that were added, modified, removed, and shifted
      * on a given cycle.
-     *
-     * @Include
-     * @IncludeAll
      */
     class Update implements LogOutputAppendable {
         /**

@@ -10,14 +10,13 @@ import java.util.Collection;
 /**
  * A query engine artifact that is also a {@link LivenessNode}. These referents are added to the current top of the
  * {@link LivenessScopeStack} on construction or deserialization.
- *
- * @IncludeAll
  */
 public class LivenessArtifact extends ReferenceCountedLivenessNode implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     protected LivenessArtifact() {
+        super(false);
         manageWithCurrentScope();
     }
 

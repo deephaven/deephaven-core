@@ -5,7 +5,6 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.SortPair;
 import io.deephaven.db.tables.SortingOrder;
 import io.deephaven.db.v2.hashing.HashMapK4V4;
@@ -71,8 +70,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @Override
-    public ShiftAwareSwapListener newSwapListener(Logger log, QueryTable queryTable) {
-        return new ShiftAwareSwapListener(log, queryTable) {
+    public ShiftAwareSwapListener newSwapListener(QueryTable queryTable) {
+        return new ShiftAwareSwapListener(queryTable) {
             @Override
             public synchronized boolean end(long clockCycle) {
                 final boolean success = super.end(clockCycle);

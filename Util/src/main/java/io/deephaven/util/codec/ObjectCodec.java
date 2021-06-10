@@ -14,8 +14,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>They should provide a public constructor that takes a single String argument, in order to allow
  * configuration-driven reflective instantiation.</li>
  * </ol>
- *
- * @IncludeAll
  */
 public interface ObjectCodec<TYPE> extends ObjectDecoder<TYPE> {
 

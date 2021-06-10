@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.join.dupexpand.BooleanDupExpandKernel",
+ "methods": {
+  "expandDuplicates": "Expands entries values from chunkToExpand in-place, using keyRunLengths to determine how many copies.\n The keyRunLengths chunk is parallel to the original chunkToExpand; it is never modified.\n\n*Overload 1*  \n  :param expandedSize: int\n  :param chunkToExpand: io.deephaven.db.v2.sources.chunk.WritableChunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n  :param keyRunLengths: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>\n  \n*Overload 2*  \n  :param expandedSize: int\n  :param chunkToExpand: io.deephaven.db.v2.sources.chunk.WritableBooleanChunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n  :param keyRunLengths: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>"
+ },
+ "path": "io.deephaven.db.v2.join.dupexpand.BooleanDupExpandKernel",
+ "typeName": "class"
+}

@@ -9,7 +9,6 @@ import io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal;
 
 /**
  * {@link XYDataSeriesInternal} suitable for bar charts.
- * @IncludeAll
  */
 public interface IntervalXYDataSeries extends XYDataSeries {
 }

@@ -18,8 +18,6 @@ import java.nio.LongBuffer;
 
 /**
  * {@link Chunk} implementation for long data.
- *
- * @IncludeAll
  */
 public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

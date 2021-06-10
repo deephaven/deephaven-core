@@ -15,9 +15,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * @IncludeAll
- */
 @Deprecated
 public interface DbBooleanArray extends DbArrayBase {
     Boolean get(long i);

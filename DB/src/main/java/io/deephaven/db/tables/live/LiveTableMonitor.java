@@ -62,8 +62,6 @@ import java.util.function.Supplier;
  * <ul>
  *   <li><b>LiveTableMonitor.targetcycletime</b> <i>(optional)</i> - The default target cycle time in ms (1000 if not defined)</li>
  * </ul>
- *
- * @IncludeAll
  */
 public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, NotificationQueue.Dependency {
     DEFAULT;
@@ -281,8 +279,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * lock if you need to wait on events that are driven by refresh processing.
      *
      * @return The shared lock for this {@link LiveTableMonitor}
-     *
-     * @Include
      */
     public AwareFunctionalLock sharedLock() {
         return lock.sharedLock();
@@ -297,8 +293,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * <p>This lock does support {@link java.util.concurrent.locks.Lock#newCondition()}.
      *
      * @return The exclusive lock for this {@link LiveTableMonitor}
-     *
-     * @Include
      */
     public AwareFunctionalLock exclusiveLock() {
         return lock.exclusiveLock();
@@ -326,8 +320,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * <p>If you are sure that you know what you are doing better than the query engine, you may call
      * {@link #setCheckTableOperations(boolean)} to set a thread local variable bypassing this check.</p>
-     *
-     * @Include
      */
     public void checkInitiateTableOperation() {
         if (!getCheckTableOperations() || exclusiveLock().isHeldByCurrentThread() || sharedLock().isHeldByCurrentThread() || isRefreshThread()) {
@@ -345,8 +337,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * @param value the new value of check table operations
      * @return the old value of check table operations
-     *
-     * @Include
      */
     @SuppressWarnings("unused")
     public boolean setCheckTableOperations(boolean value) {
@@ -361,8 +351,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * @param supplier the function to run
      * @return the result of supplier
-     *
-     * @Include
      */
     @SuppressWarnings("unused")
     public <T> T doUnchecked(Supplier<T> supplier) {
@@ -379,8 +367,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * Execute the supplied code while table operations are unchecked.
      *
      * @param runnable the function to run
-     *
-     * @Include
      */
     @SuppressWarnings("unused")
     public void doUnchecked(Runnable runnable) {
@@ -554,8 +540,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * @implNote  This will do nothing in {@link #enableUnitTestMode() unit test} mode other than mark the table as refreshing.
      * @param table The table to be added to the refresh list
-     *
-     * @Include
      */
     @Override
     public void addTable(@NotNull final LiveTable table) {
@@ -580,8 +564,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * @implNote This will <i>not</i> set the tables as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
      * @param tablesToRemove The tables to remove from the list of refreshing tables
-     *
-     * @Include
      */
     public void removeTables(final Collection<LiveTable> tablesToRemove) {
         tables.removeAll(tablesToRemove);
@@ -595,8 +577,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @param notification The notification to enqueue
      * @see NotificationQueue.Notification#isTerminal()
      * @see LogicalClock.State
-     *
-     * @Include
      */
     @Override
     public void addNotification(@NotNull final Notification notification) {
@@ -655,8 +635,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @param notifications The notification to enqueue
      *
      * @see #addNotification(Notification)
-     *
-     * @Include
      */
     public void addNotifications(@NotNull final Collection<Notification> notifications) {
         synchronized (pendingNormalNotifications) {
@@ -685,7 +663,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      *
      * @param liveTable      The {@link LiveTable} that we would like to refresh
      * @param onlyIfHaveLock If true, check that the lock is held first and do nothing if it is not
-     * @Include
      */
     @Override
     public void maybeRefreshTable(@NotNull final LiveTable liveTable, final boolean onlyIfHaveLock) {
@@ -700,7 +677,6 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * <p>The update will occur on the LTM thread, but will not necessarily wait for the next scheduled cycle.</p>
      *
      * @param liveTable The {@link LiveTable live table} to refresh
-     * @Include
      */
     @Override
     public void requestRefresh(@NotNull final LiveTable liveTable) {
@@ -716,13 +692,26 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
-     * @param after Whether this is *after* a unit test completed, and hence whether held locks should result in an exception
+     *
+     * @param after Whether this is *after* a unit test completed. If true, held locks should result in an exception and
+     *              the LivenessScopeStack will be cleared.
      */
     @TestUseOnly
     public void resetForUnitTests(final boolean after) {
         resetForUnitTests(after, false, 0, 0, 0, 0);
     }
 
+    /**
+     * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
+     *
+     * @param after                    Whether this is *after* a unit test completed. If true, held locks should result
+     *                                in an exception and the LivenessScopeStack will be cleared.
+     * @param randomizedNotifications   Whether the notification processor should randomize the order of delivery
+     * @param seed                     Seed for randomized notification delivery order and delays
+     * @param maxRandomizedThreadCount Maximum number of threads handling randomized notification delivery
+     * @param notificationStartDelay    Maximum randomized notification start delay
+     * @param notificationAdditionDelay Maximum randomized notification addition delay
+     */
     public void resetForUnitTests(boolean after,
                                   final boolean randomizedNotifications, final int seed, final int maxRandomizedThreadCount,
                                   final int notificationStartDelay, final int notificationAdditionDelay) {
@@ -748,12 +737,13 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         tablesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
 
         refreshScope = null;
-        LivenessManager stackTop;
-        while ((stackTop = LivenessScopeStack.peek()) instanceof LivenessScope) {
-            LivenessScopeStack.pop((LivenessScope) stackTop);
+        if (after) {
+            LivenessManager stackTop;
+            while ((stackTop = LivenessScopeStack.peek()) instanceof LivenessScope) {
+                LivenessScopeStack.pop((LivenessScope) stackTop);
+            }
+            CleanupReferenceProcessorInstance.resetAllForUnitTests();
         }
-
-        CleanupReferenceProcessorInstance.resetAllForUnitTests();
 
         ensureUnlocked("unit test reset thread", errors);
 
@@ -833,9 +823,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     @TestUseOnly
     private void completeCycleForUnitTestsInternal() {
-        try {
-            flushNotificationsAndCompleteCycle();
-        } finally {
+        try (final SafeCloseable ignored = () -> {
             if (refreshScope != null) {
                 LivenessScopeStack.pop(refreshScope);
                 refreshScope.release();
@@ -844,6 +832,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
             LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
             isRefreshThread.remove();
+        }) {
+            flushNotificationsAndCompleteCycle();
         }
     }
 

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.grpc_api.util.GrpcUtil",
+ "methods": {
+  "byteStringToLong": ":param value: com.google.protobuf.ByteString\n:return: long",
+  "longToByteString": ":param value: long\n:return: com.google.protobuf.ByteString",
+  "rpcWrapper": "*Overload 1*  \n  :param log: io.deephaven.io.logger.Logger\n  :param response: io.grpc.stub.StreamObserver<?>\n  :param lambda: java.lang.Runnable\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param log: io.deephaven.io.logger.Logger\n  :param response: io.grpc.stub.StreamObserver<?>\n  :param lambda: java.util.concurrent.Callable<T>\n  :return: T",
+  "safelyExecute": "Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.\n\n:param runner: (io.deephaven.util.FunctionalInterfaces.ThrowingRunnable<java.lang.Exception>) - the runnable to execute safely",
+  "safelyExecuteLocked": "Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.\n\n:param lockedObject: java.lang.Object\n:param runner: (io.deephaven.util.FunctionalInterfaces.ThrowingRunnable<java.lang.Exception>) - the runnable to execute safely",
+  "securelyWrapError": "*Overload 1*  \n  :param log: io.deephaven.io.logger.Logger\n  :param err: java.lang.Throwable\n  :return: io.grpc.StatusRuntimeException\n  \n*Overload 2*  \n  :param log: io.deephaven.io.logger.Logger\n  :param err: java.lang.Throwable\n  :param statusCode: com.google.rpc.Code\n  :return: io.grpc.StatusRuntimeException",
+  "statusRuntimeException": ":param statusCode: com.google.rpc.Code\n:param details: java.lang.String\n:return: io.grpc.StatusRuntimeException",
+  "wrapOnNext": "Note: Java generics information - <T,V>\n\n:param delegate: io.grpc.stub.StreamObserver<V>\n:param wrap: java.util.function.Function<T,V>\n:return: io.grpc.stub.StreamObserver<T>"
+ },
+ "path": "io.deephaven.grpc_api.util.GrpcUtil",
+ "typeName": "class"
+}

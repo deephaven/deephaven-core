@@ -20,5 +20,5 @@ task prepareDocker(type: Sync) {
 
 task buildDocker(type: DockerBuildImage) {
     dependsOn prepareDocker
-    images.add('deephaven/envoy')
+    images.add('deephaven/envoy:local-build')
 }

@@ -2,8 +2,6 @@ package io.deephaven.util;
 
 /**
  * {@link AutoCloseable} sub-interface that does not throw a checked exception.
- *
- * @IncludeAll
  */
 public interface SafeCloseable extends AutoCloseable {
 

@@ -8,8 +8,6 @@ import java.util.Objects;
  * Divide a table evenly into slices and put the slices into a TableMap.
  *
  * This enables the use of parallelism on a table without the full cost of a byExternal operation.
- *
- * @IncludeAll
  */
 public class EvenlyDividedTableMap {
     private EvenlyDividedTableMap() {} // static use only

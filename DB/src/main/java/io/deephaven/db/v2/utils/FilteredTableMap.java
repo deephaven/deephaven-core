@@ -15,8 +15,6 @@ import java.util.function.Predicate;
 
 /**
  * A TableMap that filters and optionally transforms the keys of another TableMap.
- *
- * @IncludeAll
  */
 public class FilteredTableMap extends LocalTableMap {
     @ReferentialIntegrity

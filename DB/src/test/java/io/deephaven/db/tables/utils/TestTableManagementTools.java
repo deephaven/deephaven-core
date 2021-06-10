@@ -4,10 +4,10 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.StringSetWrapper;
 import io.deephaven.db.tables.Table;
@@ -15,7 +15,6 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.internal.log.LoggerFactory;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +29,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import static io.deephaven.db.tables.utils.TableTools.col;
+import static io.deephaven.db.tables.utils.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
@@ -42,13 +41,10 @@ public class TestTableManagementTools {
 
     private final static String testRoot = Configuration.getInstance().getWorkspacePath() + File.separator + "TestTableManagementTools";
     private final static File testRootFile = new File(testRoot);
-    private static final Logger log = LoggerFactory.getLogger(TestTableManagementTools.class);
 
     private static Table table1;
-    private static Table table2;
     private static Table emptyTable;
     private static Table brokenTable;
-    private static Table table3;
 
 
     @BeforeClass
@@ -58,18 +54,6 @@ public class TestTableManagementTools {
                 new Object[]{
                         new String[]{"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
                         new int[]{1, 1, 2, 2, 2, 3, 3, 3, 3}
-                });
-        table2 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts"},
-                new Object[]{
-                        new String[]{"key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"},
-                        new byte[]{1, 1, 2, 2, 2, 3, 3, 3, 3}
-                });
-        table3 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts"},
-                new Object[]{
-                        new String[]{"key11", "key11", "key11", "key11", "key21", "key21", "key22"},
-                        new int[]{1, 1, 2, 2, 2, 3, 3}
                 });
         emptyTable = new InMemoryTable(
                 new String[]{"Column1", "Column2"},
@@ -115,7 +99,7 @@ public class TestTableManagementTools {
         }
     }
 
-    public static enum TestEnum {
+    public enum TestEnum {
         a, b, s, d, f, e, tt, re, tr, ed, te;
     }
 
@@ -140,9 +124,10 @@ public class TestTableManagementTools {
     }
 
     @Test
-    public void testWriteTable() throws IOException {
-        TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "Table1"), storageFormat);
-        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Table1"), table1.getDefinition());
+    public void testWriteTable() {
+        String path = testRoot + File.separator + "Table1";
+        TableManagementTools.writeTable(table1, path);
+        Table result = TableManagementTools.readTable(new File(path));
         TableTools.show(result);
         TableTools.show(table1);
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -155,8 +140,9 @@ public class TestTableManagementTools {
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
                 "toS(enumC_[(i+1)% 10]))");
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table2"), storageFormat);
-        Table test2 = TableManagementTools.readTable(new File(testRoot + File.separator + "Table2"), test.getDefinition());
+        path = testRoot + File.separator + "Table2";
+        TableManagementTools.writeTable(test, path);
+        Table test2 = TableManagementTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))), Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
@@ -167,10 +153,10 @@ public class TestTableManagementTools {
         }
         test2.close();
 
-
         test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table3"), storageFormat);
-        test2 = TableManagementTools.readTable(new File(testRoot + File.separator + "Table3"), test.getDefinition());
+        path = testRoot + File.separator + "Table3";
+        TableManagementTools.writeTable(test, path);
+        test2 = TableManagementTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)), Arrays.asList(test2.getColumn("enumC").get(0, 10)));
@@ -182,17 +168,18 @@ public class TestTableManagementTools {
             ColumnDefinition.ofString("aString").withGrouping()),
             col("anInt", 1, 2, 3),
             col("aString", "ab", "ab", "bc"));
-        TableManagementTools.writeTable(test, new File(testRoot + File.separator + "Table4"), storageFormat);
-        test2 = TableManagementTools.readTable(new File(testRoot + File.separator + "Table4"), test.getDefinition());
+        path = testRoot + File.separator + "Table4";
+        TableManagementTools.writeTable(test, path);
+        test2 = TableManagementTools.readTable(new File(path));
         assertNotNull(test2.getColumnSource("aString").getGroupToRange());
         test2.close();
     }
 
 
     @Test
-    public void testWriteTableEmpty() throws IOException {
+    public void testWriteTableEmpty() {
         TableManagementTools.writeTable(emptyTable, new File(testRoot + File.separator + "Empty"), storageFormat);
-        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Empty"), emptyTable.getDefinition());
+        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Empty"));
         TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
     }
@@ -213,7 +200,7 @@ public class TestTableManagementTools {
 //                "DT   = (DBDateTime) null"
 //        );
 //        TableManagementTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{new File(testRoot + File.separator + "Null")});
-//        final Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Null"), nullTable.getDefinition());
+//        final Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Null"));
 //        TstUtils.assertTableEquals(nullTable, result);
 //        result.close();
     }
@@ -224,7 +211,7 @@ public class TestTableManagementTools {
         try {
             TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"), storageFormat);
             TestCase.fail("Expected exception");
-        } catch (IllegalArgumentException e) {
+        } catch (UncheckedDeephavenException e) {
             //Expected
         }
 
@@ -254,14 +241,14 @@ public class TestTableManagementTools {
     }
 
     @Test
-    public void testDeleteTable() throws IOException {
+    public void testDeleteTable() {
         if (System.getProperty("os.name").startsWith("Windows")) {
             //TODO: Remove when come up with a workaround for Windows file handling issues.
             return;
         }
         File path = new File(testRoot + File.separator + "Table1");
         TableManagementTools.writeTable(table1, path, storageFormat);
-        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Table1"), table1.getDefinition());
+        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Table1"));
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
         TableManagementTools.deleteTable(path);

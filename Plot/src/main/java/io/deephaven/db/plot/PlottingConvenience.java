@@ -40,7 +40,6 @@ import java.util.function.DoubleUnaryOperator;
 
 /** 
 * A library of methods for constructing plots.
-* @IncludeAll
  */
 @SuppressWarnings("unused")
 public class PlottingConvenience {

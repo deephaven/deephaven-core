@@ -17,8 +17,8 @@ public interface AggTypeMap {
     return Js.uncheckedCast(JsPropertyMap.of());
   }
 
-  @JsProperty(name = "ABSSUM")
-  double getABSSUM();
+  @JsProperty(name = "ABS_SUM")
+  double getABS_SUM();
 
   @JsProperty(name = "ARRAY")
   double getARRAY();
@@ -56,11 +56,11 @@ public interface AggTypeMap {
   @JsProperty(name = "VAR")
   double getVAR();
 
-  @JsProperty(name = "WEIGHTEDAVG")
-  double getWEIGHTEDAVG();
+  @JsProperty(name = "WEIGHTED_AVG")
+  double getWEIGHTED_AVG();
 
-  @JsProperty(name = "ABSSUM")
-  void setABSSUM(double ABSSUM);
+  @JsProperty(name = "ABS_SUM")
+  void setABS_SUM(double ABS_SUM);
 
   @JsProperty(name = "ARRAY")
   void setARRAY(double ARRAY);
@@ -98,6 +98,6 @@ public interface AggTypeMap {
   @JsProperty(name = "VAR")
   void setVAR(double VAR);
 
-  @JsProperty(name = "WEIGHTEDAVG")
-  void setWEIGHTEDAVG(double WEIGHTEDAVG);
+  @JsProperty(name = "WEIGHTED_AVG")
+  void setWEIGHTED_AVG(double WEIGHTED_AVG);
 }

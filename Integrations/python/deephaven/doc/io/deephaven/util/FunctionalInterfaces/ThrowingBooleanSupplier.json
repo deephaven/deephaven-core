@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.util.FunctionalInterfaces$ThrowingBooleanSupplier",
+ "methods": {
+  "get": ":return: boolean"
+ },
+ "path": "io.deephaven.util.FunctionalInterfaces.ThrowingBooleanSupplier",
+ "text": "Represents an operation that accepts no input and returns a boolean result, throwing an exception.",
+ "typeName": "interface"
+}

@@ -14,8 +14,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Comparators that handle DB null values.
- *
- * @Exclude
  */
 class Comparators {
 

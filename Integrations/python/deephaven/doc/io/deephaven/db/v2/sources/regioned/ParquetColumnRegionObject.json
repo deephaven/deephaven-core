@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionObject",
+ "methods": {
+  "getChunkPageContaining": ":param elementIndex: long\n:return: io.deephaven.db.v2.sources.chunk.page.ChunkPage<ATTR>",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: long\n:return: (ParquetColumnRegionObject.T) The object value at the specified element (object) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionObject",
+ "text": "ColumnRegionObject implementation for regions that support fetching objects from a\n ColumnChunkPageStore.",
+ "typeName": "class"
+}

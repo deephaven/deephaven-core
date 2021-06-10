@@ -10,8 +10,6 @@ import java.util.Collections;
 /**
  * Combines multiple {@link LiveTable}s into a single one, in order to allow for update parallelization within the
  * {@link LiveTableMonitor}.
- *
- * @IncludeAll
  */
 public class LiveTableRefreshCombiner extends LivenessArtifact implements LiveTable, LiveTableRegistrar {
 

@@ -18,8 +18,6 @@ import java.nio.ShortBuffer;
 
 /**
  * {@link Chunk} implementation for short data.
- *
- * @IncludeAll
  */
 public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

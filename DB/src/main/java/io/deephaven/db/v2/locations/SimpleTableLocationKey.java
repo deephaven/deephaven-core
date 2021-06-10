@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Table location key for simple (i.e. unpartitioned) tables.
- *
- * @IncludeAll
  */
 public final class SimpleTableLocationKey implements TableLocationKey {
 

@@ -27,8 +27,6 @@ import java.nio.LongBuffer;
 
 /**
  * {@link WritableChunk} implementation for long data.
- *
- * @IncludeAll
  */
 public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> implements WritableChunk<ATTR> {
 

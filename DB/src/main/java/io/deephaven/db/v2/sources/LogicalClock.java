@@ -17,8 +17,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * and the current {@link #currentValue() value} is incremented by one.</p>
  *
  * <p>When {@link #completeUpdateCycle()} is called, the clock transitions back to Idle.</p>
- *
- * @IncludeAll
  */
 public enum LogicalClock {
 
@@ -26,8 +24,6 @@ public enum LogicalClock {
 
     /**
      * The state component of a logical timestamp.
-     *
-     * @IncludeAll
      */
     public enum State {
 

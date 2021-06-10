@@ -21,8 +21,6 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 /**
  * A set of commonly used functions that can be applied to Float types.
- *
- * @IncludeAll
  */
 public class FloatPrimitives {
     /**

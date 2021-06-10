@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.select.analyzers.PreserveColumnLayer",
+ "methods": {
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: io.deephaven.db.v2.ShiftAwareListener.Update\n:param toClear: io.deephaven.db.v2.utils.ReadOnlyIndex\n:param helper: io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper"
+ },
+ "path": "io.deephaven.db.v2.select.analyzers.PreserveColumnLayer",
+ "text": "A layer that copies a column from our input to our output.",
+ "typeName": "class"
+}

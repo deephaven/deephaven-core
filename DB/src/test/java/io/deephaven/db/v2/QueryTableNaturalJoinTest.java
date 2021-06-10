@@ -13,7 +13,6 @@ import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.test.types.OutOfBandTest;
@@ -249,17 +248,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final EvalNugget[] en = new EvalNugget[]{
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, rightTable, MatchPairFactory.getExpressions("I1"), MatchPairFactory.getExpressions("LI1=I1","LC1=C1","LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("I1"), MatchPairFactory.getExpressions("LI1=I1","LC1=C1","LC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, rightTable, MatchPairFactory.getExpressions("C1","I1"), MatchPairFactory.getExpressions("LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("C1","I1"), MatchPairFactory.getExpressions("LC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(log, leftTable, (QueryTable)rightTable.update("Exists=true"), MatchPairFactory.getExpressions("C1","C2","I1"), MatchPairFactory.getExpressions("Exists"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable)rightTable.update("Exists=true"), MatchPairFactory.getExpressions("C1","C2","I1"), MatchPairFactory.getExpressions("Exists"), false, control);
                     }
                 },
         };
@@ -1333,7 +1332,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
         TableManagementTools.writeTable(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(leftDirectory, leftDefinition);
+        return TableManagementTools.readTable(leftDirectory);
     }
 
     @NotNull
@@ -1344,6 +1343,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
         TableManagementTools.writeTable(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(rightDirectory, rightDefinition);
+        return TableManagementTools.readTable(rightDirectory);
     }
 }

@@ -1,5 +1,7 @@
 package io.deephaven.db.v2.select;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.db.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -18,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.util.*;
 
+import static io.deephaven.db.util.PythonScopeJpyImpl.*;
 import static io.deephaven.db.v2.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends SelectFilterImpl {
@@ -79,7 +82,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
         try {
             final Map<String, Param> possibleParams = new HashMap<>();
-            final QueryScope queryScope = QueryScope.getDefaultInstance();
+            final QueryScope queryScope = QueryScope.getScope();
             for (Param param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
                 possibleVariables.put(param.getName(), param.getDeclaredType());
@@ -117,14 +120,6 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             usedColumns = new ArrayList<>();
             usedColumnArrays = new ArrayList<>();
 
-            final Class resultType = result.getType();
-            if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
-                throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
-                        "Formula              : " + truncateLongFormula(formula) + '\n' +
-                        "Converted Expression : " + truncateLongFormula(result.getConvertedExpression()) + '\n' +
-                        "Expression Type      : " + resultType.getName());
-            }
-
             final List<Param> paramsList = new ArrayList<>();
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
@@ -152,10 +147,46 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             }
             params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
 
+            // check if this is a filter that uses a numba vectorized function
+            Optional<Param> paramOptional = Arrays.stream(params).filter(p -> p.getValue() instanceof NumbaCallableWrapper).findFirst();
+            if (paramOptional.isPresent()) {
+                /*
+                 * numba vectorized function must be used alone as an entire expression, and that should have been
+                 * checked in the DBLanguageParser already, this is a sanity check
+                 */
+                if (params.length != 1) {
+                    throw new UncheckedDeephavenException("internal error - misuse of numba vectorized functions wasn't detected.");
+                }
+
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) paramOptional.get().getValue();
+                DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
+                        numbaCallableWrapper.getReturnType(), usedColumns.toArray(new String[0]),
+                        true);
+                checkReturnType(result, dcf.getReturnedType());
+                setFilter(new ConditionFilter.ChunkFilter(
+                        dcf.toFilterKernel(),
+                        dcf.getColumnNames().toArray(new String[0]),
+                        ConditionFilter.CHUNK_SIZE));
+                initialized = true;
+                return;
+            }
+
+            final Class resultType = result.getType();
+            checkReturnType(result, resultType);
+
             generateFilterCode(tableDefinition, timeConversionResult, result);
             initialized = true;
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+        }
+    }
+
+    private void checkReturnType(DBLanguageParser.Result result, Class resultType) {
+        if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
+            throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
+                    "Formula              : " + truncateLongFormula(formula) + '\n' +
+                    "Converted Expression : " + truncateLongFormula(result.getConvertedExpression()) + '\n' +
+                    "Expression Type      : " + resultType.getName());
         }
     }
 
@@ -177,6 +208,15 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     }
 
     protected abstract Filter getFilter(Table table, Index fullSet) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
+
+    /**
+     * When numba vectorized functions are used to evaluate query filters, we need to create a special ChunkFilter
+     * that can handle packing and unpacking arrays required/returned by the vectorized function, essentially bypassing the
+     * regular code generation process which isn't able to support such use cases without needing some major rework.
+     *
+     * @param filter
+     */
+    protected abstract void setFilter(Filter filter);
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {

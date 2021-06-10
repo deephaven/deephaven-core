@@ -18,11 +18,11 @@ public class UngroupRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static UngroupRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType of(Object o) {
+        static UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -48,46 +48,46 @@ public class UngroupRequest {
       }
 
       @JsOverlay
-      static UngroupRequest.ToObjectReturnType.ResultidFieldType create() {
+      static UngroupRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      UngroupRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType getId();
+      UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(UngroupRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType id);
+      void setId(UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<UngroupRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<UngroupRequest.ToObjectReturnType.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static UngroupRequest.ToObjectReturnType.SourceidFieldType create() {
+      static UngroupRequest.ToObjectReturnType.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -99,43 +99,43 @@ public class UngroupRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnstoungroupList();
+    JsArray<String> getColumnsToUngroupList();
 
     @JsProperty
-    UngroupRequest.ToObjectReturnType.ResultidFieldType getResultid();
+    UngroupRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
-    UngroupRequest.ToObjectReturnType.SourceidFieldType getSourceid();
+    UngroupRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
     @JsProperty
-    boolean isNullfill();
+    boolean isNullFill();
 
     @JsProperty
-    void setColumnstoungroupList(JsArray<String> columnstoungroupList);
+    void setColumnsToUngroupList(JsArray<String> columnsToUngroupList);
 
     @JsOverlay
-    default void setColumnstoungroupList(String[] columnstoungroupList) {
-      setColumnstoungroupList(Js.<JsArray<String>>uncheckedCast(columnstoungroupList));
+    default void setColumnsToUngroupList(String[] columnsToUngroupList) {
+      setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
     }
 
     @JsProperty
-    void setNullfill(boolean nullfill);
+    void setNullFill(boolean nullFill);
 
     @JsProperty
-    void setResultid(UngroupRequest.ToObjectReturnType.ResultidFieldType resultid);
+    void setResultId(UngroupRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(UngroupRequest.ToObjectReturnType.SourceidFieldType sourceid);
+    void setSourceId(UngroupRequest.ToObjectReturnType.SourceIdFieldType sourceId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultidFieldType {
+    public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static UngroupRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType of(Object o) {
+        static UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -161,46 +161,46 @@ public class UngroupRequest {
       }
 
       @JsOverlay
-      static UngroupRequest.ToObjectReturnType0.ResultidFieldType create() {
+      static UngroupRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      UngroupRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType getId();
+      UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(UngroupRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType id);
+      void setId(UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
-            Js.<UngroupRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
 
       @JsOverlay
       default void setId(Uint8Array id) {
         setId(
-            Js.<UngroupRequest.ToObjectReturnType0.ResultidFieldType.GetIdUnionType>uncheckedCast(
+            Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
                 id));
       }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceidFieldType {
+    public interface SourceIdFieldType {
       @JsOverlay
-      static UngroupRequest.ToObjectReturnType0.SourceidFieldType create() {
+      static UngroupRequest.ToObjectReturnType0.SourceIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getBatchoffset();
+      double getBatchOffset();
 
       @JsProperty
       Object getTicket();
 
       @JsProperty
-      void setBatchoffset(double batchoffset);
+      void setBatchOffset(double batchOffset);
 
       @JsProperty
       void setTicket(Object ticket);
@@ -212,33 +212,33 @@ public class UngroupRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnstoungroupList();
+    JsArray<String> getColumnsToUngroupList();
 
     @JsProperty
-    UngroupRequest.ToObjectReturnType0.ResultidFieldType getResultid();
+    UngroupRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
-    UngroupRequest.ToObjectReturnType0.SourceidFieldType getSourceid();
+    UngroupRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
     @JsProperty
-    boolean isNullfill();
+    boolean isNullFill();
 
     @JsProperty
-    void setColumnstoungroupList(JsArray<String> columnstoungroupList);
+    void setColumnsToUngroupList(JsArray<String> columnsToUngroupList);
 
     @JsOverlay
-    default void setColumnstoungroupList(String[] columnstoungroupList) {
-      setColumnstoungroupList(Js.<JsArray<String>>uncheckedCast(columnstoungroupList));
+    default void setColumnsToUngroupList(String[] columnsToUngroupList) {
+      setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
     }
 
     @JsProperty
-    void setNullfill(boolean nullfill);
+    void setNullFill(boolean nullFill);
 
     @JsProperty
-    void setResultid(UngroupRequest.ToObjectReturnType0.ResultidFieldType resultid);
+    void setResultId(UngroupRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
-    void setSourceid(UngroupRequest.ToObjectReturnType0.SourceidFieldType sourceid);
+    void setSourceId(UngroupRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
   }
 
   public static native UngroupRequest deserializeBinary(Uint8Array bytes);
@@ -251,46 +251,46 @@ public class UngroupRequest {
   public static native UngroupRequest.ToObjectReturnType toObject(
       boolean includeInstance, UngroupRequest msg);
 
-  public native String addColumnstoungroup(String value, double index);
+  public native String addColumnsToUngroup(String value, double index);
 
-  public native String addColumnstoungroup(String value);
+  public native String addColumnsToUngroup(String value);
 
-  public native void clearColumnstoungroupList();
+  public native void clearColumnsToUngroupList();
 
-  public native void clearResultid();
+  public native void clearResultId();
 
-  public native void clearSourceid();
+  public native void clearSourceId();
 
-  public native JsArray<String> getColumnstoungroupList();
+  public native JsArray<String> getColumnsToUngroupList();
 
-  public native boolean getNullfill();
+  public native boolean getNullFill();
 
-  public native Ticket getResultid();
+  public native Ticket getResultId();
 
-  public native TableReference getSourceid();
+  public native TableReference getSourceId();
 
-  public native boolean hasResultid();
+  public native boolean hasResultId();
 
-  public native boolean hasSourceid();
+  public native boolean hasSourceId();
 
   public native Uint8Array serializeBinary();
 
-  public native void setColumnstoungroupList(JsArray<String> value);
+  public native void setColumnsToUngroupList(JsArray<String> value);
 
   @JsOverlay
-  public final void setColumnstoungroupList(String[] value) {
-    setColumnstoungroupList(Js.<JsArray<String>>uncheckedCast(value));
+  public final void setColumnsToUngroupList(String[] value) {
+    setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setNullfill(boolean value);
+  public native void setNullFill(boolean value);
 
-  public native void setResultid();
+  public native void setResultId();
 
-  public native void setResultid(Ticket value);
+  public native void setResultId(Ticket value);
 
-  public native void setSourceid();
+  public native void setSourceId();
 
-  public native void setSourceid(TableReference value);
+  public native void setSourceId(TableReference value);
 
   public native UngroupRequest.ToObjectReturnType0 toObject();
 

@@ -6,8 +6,6 @@ import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
 /**
  * {@link Chunk} that may have its backing storage reset to a slice of that belonging to another {@link Chunk} or a
  * native array.
- *
- * @IncludeAll
  */
 public interface ResettableReadOnlyChunk<ATTR_BASE extends Any> extends ResettableChunk<ATTR_BASE>, PoolableChunk {
 

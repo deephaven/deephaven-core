@@ -92,7 +92,7 @@ public class FuzzerTest {
 
     @After
     public void tearDown() throws Exception {
-        QueryScope.setDefaultInstance(new QueryScope.StandaloneImpl());
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
         cleanupPersistence();
         framework.tearDown();
     }
@@ -103,7 +103,7 @@ public class FuzzerTest {
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(RunScripts.serviceLoader());
-        QueryScope.setDefaultInstance(session.getQueryScope());
+        QueryScope.setScope(session.newQueryScope());
         return session;
     }
 
@@ -188,7 +188,7 @@ public class FuzzerTest {
 //    public void testLargeFuzzerSeed() throws IOException, InterruptedException {
 //        final int segmentSize = 50;
 //        for (int firstRun = 0; firstRun < 100; firstRun += segmentSize) {
-//            LiveTableMonitor.DEFAULT.resetForUnitTests();
+//            LiveTableMonitor.DEFAULT.resetForUnitTests(false);
 //            final int lastRun = firstRun + segmentSize - 1;
 //            System.out.println("Performing runs " + firstRun + " to " + lastRun);
 ////            runLargeFuzzerSetWithSeed(1583849877513833000L, firstRun, lastRun);
@@ -208,7 +208,7 @@ public class FuzzerTest {
         final long seed1 = DBDateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
-                LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+                LiveTableMonitor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;

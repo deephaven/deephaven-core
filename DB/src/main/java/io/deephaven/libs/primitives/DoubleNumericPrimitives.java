@@ -18,8 +18,6 @@ import static io.deephaven.libs.primitives.DoublePrimitives.unbox;
 
 /**
  * A set of commonly used numeric functions that can be applied to Double types.
- *
- * @IncludeAll
  */
 public class DoubleNumericPrimitives {
 

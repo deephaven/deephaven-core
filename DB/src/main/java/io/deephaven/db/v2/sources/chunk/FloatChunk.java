@@ -18,8 +18,6 @@ import java.nio.FloatBuffer;
 
 /**
  * {@link Chunk} implementation for float data.
- *
- * @IncludeAll
  */
 public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

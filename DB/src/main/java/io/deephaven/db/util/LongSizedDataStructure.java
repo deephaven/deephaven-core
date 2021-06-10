@@ -5,8 +5,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Common interface for Deephaven DB structures with a long (64-bit signed integer) size.
- *
- * @IncludeAll
  */
 public interface LongSizedDataStructure {
 

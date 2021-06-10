@@ -11,8 +11,6 @@ import java.nio.ByteBuffer;
  * Each map is encoded as an integer length, followed by UTF-8 encoded strings for each key and the value.
  *
  * A null map is represented as an array of zero bytes.
- *
- * @IncludeAll
  */
 @SuppressWarnings("unused")
 public class StringFloatMapCodec extends StringKeyedMapCodec<Float> {

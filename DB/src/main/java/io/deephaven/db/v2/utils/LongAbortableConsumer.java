@@ -3,7 +3,6 @@ package io.deephaven.db.v2.utils;
 /**
  * Note this is similar to java.util.function.LongPredicate; we don't use that
  * since it could create confusion as for intended semantics for use.
- * @IncludeAll
  */
 @FunctionalInterface
 public interface LongAbortableConsumer {

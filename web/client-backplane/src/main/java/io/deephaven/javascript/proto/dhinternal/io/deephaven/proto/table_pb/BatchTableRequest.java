@@ -18,23 +18,23 @@ public class BatchTableRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OpListFieldType {
+    public interface OpsListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ComboaggregateFieldType {
+      public interface ComboAggregateFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface AggregatesListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
                   .AggregatesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
-          JsArray<String> getMatchpairsList();
+          JsArray<String> getMatchPairsList();
 
           @JsProperty
           double getPercentile();
@@ -43,20 +43,20 @@ public class BatchTableRequest {
           double getType();
 
           @JsProperty
-          boolean isAvgmedian();
+          boolean isAvgMedian();
 
           @JsProperty
-          void setAvgmedian(boolean avgmedian);
+          void setAvgMedian(boolean avgMedian);
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
 
           @JsProperty
-          void setMatchpairsList(JsArray<String> matchpairsList);
+          void setMatchPairsList(JsArray<String> matchPairsList);
 
           @JsOverlay
-          default void setMatchpairsList(String[] matchpairsList) {
-            setMatchpairsList(Js.<JsArray<String>>uncheckedCast(matchpairsList));
+          default void setMatchPairsList(String[] matchPairsList) {
+            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
           }
 
           @JsProperty
@@ -67,134 +67,134 @@ public class BatchTableRequest {
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
                     .AggregatesListFieldType>
             getAggregatesList();
 
         @JsProperty
-        JsArray<String> getGroupbycolumnsList();
+        JsArray<String> getGroupByColumnsList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        boolean isForcecombo();
+        boolean isForceCombo();
 
         @JsOverlay
         default void setAggregatesList(
-            BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
                         .AggregatesListFieldType
                     []
                 aggregatesList) {
           setAggregatesList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType.OpListFieldType
-                              .ComboaggregateFieldType.AggregatesListFieldType>>
+                          BatchTableRequest.ToObjectReturnType.OpsListFieldType
+                              .ComboAggregateFieldType.AggregatesListFieldType>>
                       uncheckedCast(aggregatesList));
         }
 
         @JsProperty
         void setAggregatesList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
                         .AggregatesListFieldType>
                 aggregatesList);
 
         @JsProperty
-        void setForcecombo(boolean forcecombo);
+        void setForceCombo(boolean forceCombo);
 
         @JsProperty
-        void setGroupbycolumnsList(JsArray<String> groupbycolumnsList);
+        void setGroupByColumnsList(JsArray<String> groupByColumnsList);
 
         @JsOverlay
-        default void setGroupbycolumnsList(String[] groupbycolumnsList) {
-          setGroupbycolumnsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnsList));
+        default void setGroupByColumnsList(String[] groupByColumnsList) {
+          setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface DropcolumnsFieldType {
+      public interface DropColumnsFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface SourceidFieldType {
+        public interface SourceIdFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType
-                  .SourceidFieldType
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType
+                  .SourceIdFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          double getBatchoffset();
+          double getBatchOffset();
 
           @JsProperty
           Object getTicket();
 
           @JsProperty
-          void setBatchoffset(double batchoffset);
+          void setBatchOffset(double batchOffset);
 
           @JsProperty
           void setTicket(Object ticket);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType.SourceidFieldType
-            getSourceid();
+        BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType.SourceIdFieldType
+            getSourceId();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(
-            BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType
-                    .SourceidFieldType
-                sourceid);
+        void setSourceId(
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType
+                    .SourceIdFieldType
+                sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface EmptytableFieldType {
+      public interface EmptyTableFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface ResultidFieldType {
+        public interface ResultIdFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
           public interface GetIdUnionType {
             @JsOverlay
-            static BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                    .ResultidFieldType.GetIdUnionType
+            static BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                    .ResultIdFieldType.GetIdUnionType
                 of(Object o) {
               return Js.cast(o);
             }
@@ -221,29 +221,29 @@ public class BatchTableRequest {
           }
 
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                  .ResultidFieldType
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                  .ResultIdFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType.ResultidFieldType
-                  .GetIdUnionType
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                  .ResultIdFieldType.GetIdUnionType
               getId();
 
           @JsProperty
           void setId(
-              BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                      .ResultidFieldType.GetIdUnionType
+              BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                      .ResultIdFieldType.GetIdUnionType
                   id);
 
           @JsOverlay
           default void setId(String id) {
             setId(
                 Js
-                    .<BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                            .ResultidFieldType.GetIdUnionType>
+                    .<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                            .ResultIdFieldType.GetIdUnionType>
                         uncheckedCast(id));
           }
 
@@ -251,51 +251,51 @@ public class BatchTableRequest {
           default void setId(Uint8Array id) {
             setId(
                 Js
-                    .<BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                            .ResultidFieldType.GetIdUnionType>
+                    .<BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                            .ResultIdFieldType.GetIdUnionType>
                         uncheckedCast(id));
           }
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        JsArray<String> getColumntypesList();
+        JsArray<String> getColumnTypesList();
 
         @JsProperty
-        BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType.ResultidFieldType
-            getResultid();
+        BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType
+            getResultId();
 
         @JsProperty
         String getSize();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setColumntypesList(JsArray<String> columntypesList);
+        void setColumnTypesList(JsArray<String> columnTypesList);
 
         @JsOverlay
-        default void setColumntypesList(String[] columntypesList) {
-          setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
+        default void setColumnTypesList(String[] columnTypesList) {
+          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
         }
 
         @JsProperty
-        void setResultid(
-            BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType
-                    .ResultidFieldType
-                resultid);
+        void setResultId(
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType
+                    .ResultIdFieldType
+                resultId);
 
         @JsProperty
         void setSize(String size);
@@ -306,7 +306,7 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface FiltersListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                   .FiltersListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -316,25 +316,25 @@ public class BatchTableRequest {
           JsArray<Object> getChildrenList();
 
           @JsProperty
-          double getDoublevalue();
+          double getDoubleValue();
 
           @JsProperty
-          double getFilterop();
+          double getFilterOp();
 
           @JsProperty
-          double getLongvalue();
+          double getLongValue();
 
           @JsProperty
-          double getNanotimevalue();
+          double getNanoTimeValue();
 
           @JsProperty
-          String getStringvalue();
+          String getStringValue();
 
           @JsProperty
-          boolean isBoolvalue();
+          boolean isBoolValue();
 
           @JsProperty
-          void setBoolvalue(boolean boolvalue);
+          void setBoolValue(boolean boolValue);
 
           @JsProperty
           void setChildrenList(JsArray<Object> childrenList);
@@ -345,48 +345,48 @@ public class BatchTableRequest {
           }
 
           @JsProperty
-          void setDoublevalue(double doublevalue);
+          void setDoubleValue(double doubleValue);
 
           @JsProperty
-          void setFilterop(double filterop);
+          void setFilterOp(double filterOp);
 
           @JsProperty
-          void setLongvalue(double longvalue);
+          void setLongValue(double longValue);
 
           @JsProperty
-          void setNanotimevalue(double nanotimevalue);
+          void setNanoTimeValue(double nanoTimeValue);
 
           @JsProperty
-          void setStringvalue(String stringvalue);
+          void setStringValue(String stringValue);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                     .FiltersListFieldType>
             getFiltersList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsOverlay
         default void setFiltersList(
-            BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                         .FiltersListFieldType
                     []
                 filtersList) {
           setFiltersList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType
+                          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                               .FiltersListFieldType>>
                       uncheckedCast(filtersList));
         }
@@ -394,257 +394,257 @@ public class BatchTableRequest {
         @JsProperty
         void setFiltersList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType
                         .FiltersListFieldType>
                 filtersList);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface FlattenFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.FlattenFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.FlattenFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface HeadByFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getGroupByColumnSpecsList();
+
+        @JsProperty
+        String getNumRows();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getSourceId();
+
+        @JsProperty
+        void setGroupByColumnSpecsList(JsArray<String> groupByColumnSpecsList);
+
+        @JsOverlay
+        default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
+          setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+        }
+
+        @JsProperty
+        void setNumRows(String numRows);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface HeadFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getNumrows();
+        String getNumRows();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setNumrows(String numrows);
+        void setNumRows(String numRows);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface HeadbyFieldType {
-        @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadbyFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        JsArray<String> getGroupbycolumnspecsList();
-
-        @JsProperty
-        String getNumrows();
-
-        @JsProperty
-        Object getResultid();
-
-        @JsProperty
-        Object getSourceid();
-
-        @JsProperty
-        void setGroupbycolumnspecsList(JsArray<String> groupbycolumnspecsList);
-
-        @JsOverlay
-        default void setGroupbycolumnspecsList(String[] groupbycolumnspecsList) {
-          setGroupbycolumnspecsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnspecsList));
-        }
-
-        @JsProperty
-        void setNumrows(String numrows);
-
-        @JsProperty
-        void setResultid(Object resultid);
-
-        @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface JoinFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.JoinFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnstoaddList();
+        JsArray<String> getColumnsToAddList();
 
         @JsProperty
-        JsArray<String> getColumnstomatchList();
+        JsArray<String> getColumnsToMatchList();
 
         @JsProperty
-        double getJointype();
+        double getJoinType();
 
         @JsProperty
-        Object getLeftid();
+        Object getLeftId();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getRightid();
+        Object getRightId();
 
         @JsProperty
-        void setColumnstoaddList(JsArray<String> columnstoaddList);
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
 
         @JsOverlay
-        default void setColumnstoaddList(String[] columnstoaddList) {
-          setColumnstoaddList(Js.<JsArray<String>>uncheckedCast(columnstoaddList));
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
         }
 
         @JsProperty
-        void setColumnstomatchList(JsArray<String> columnstomatchList);
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
 
         @JsOverlay
-        default void setColumnstomatchList(String[] columnstomatchList) {
-          setColumnstomatchList(Js.<JsArray<String>>uncheckedCast(columnstomatchList));
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
         }
 
         @JsProperty
-        void setJointype(double jointype);
+        void setJoinType(double joinType);
 
         @JsProperty
-        void setLeftid(Object leftid);
+        void setLeftId(Object leftId);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setRightid(Object rightid);
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface MergeFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.MergeFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getKeycolumn();
+        String getKeyColumn();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        JsArray<Object> getSourceidsList();
+        JsArray<Object> getSourceIdsList();
 
         @JsProperty
-        void setKeycolumn(String keycolumn);
+        void setKeyColumn(String keyColumn);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceidsList(JsArray<Object> sourceidsList);
+        void setSourceIdsList(JsArray<Object> sourceIdsList);
 
         @JsOverlay
-        default void setSourceidsList(Object[] sourceidsList) {
-          setSourceidsList(Js.<JsArray<Object>>uncheckedCast(sourceidsList));
+        default void setSourceIdsList(Object[] sourceIdsList) {
+          setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
         }
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface SelectdistinctFieldType {
+      public interface SelectDistinctFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.SelectdistinctFieldType
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SnapshotFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.SnapshotFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getLeftid();
+        Object getLeftId();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getRightid();
+        Object getRightId();
 
         @JsProperty
-        JsArray<String> getStampcolumnsList();
+        JsArray<String> getStampColumnsList();
 
         @JsProperty
-        boolean isDoinitialsnapshot();
+        boolean isDoInitialSnapshot();
 
         @JsProperty
-        void setDoinitialsnapshot(boolean doinitialsnapshot);
+        void setDoInitialSnapshot(boolean doInitialSnapshot);
 
         @JsProperty
-        void setLeftid(Object leftid);
+        void setLeftId(Object leftId);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setRightid(Object rightid);
+        void setRightId(Object rightId);
 
         @JsProperty
-        void setStampcolumnsList(JsArray<String> stampcolumnsList);
+        void setStampColumnsList(JsArray<String> stampColumnsList);
 
         @JsOverlay
-        default void setStampcolumnsList(String[] stampcolumnsList) {
-          setStampcolumnsList(Js.<JsArray<String>>uncheckedCast(stampcolumnsList));
+        default void setStampColumnsList(String[] stampColumnsList) {
+          setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
         }
       }
 
@@ -653,348 +653,348 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SortsListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType
                   .SortsListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
           double getDirection();
 
           @JsProperty
-          boolean isIsabsolute();
+          boolean isIsAbsolute();
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
 
           @JsProperty
           void setDirection(double direction);
 
           @JsProperty
-          void setIsabsolute(boolean isabsolute);
+          void setIsAbsolute(boolean isAbsolute);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType
                     .SortsListFieldType>
             getSortsList();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
         void setSortsList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType
                         .SortsListFieldType>
                 sortsList);
 
         @JsOverlay
         default void setSortsList(
-            BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType.SortsListFieldType[]
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType.SortsListFieldType[]
                 sortsList) {
           setSortsList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType
+                          BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType
                               .SortsListFieldType>>
                       uncheckedCast(sortsList));
         }
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TimetableFieldType {
+      public interface TimeTableFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.TimetableFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.TimeTableFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getPeriodnanos();
+        String getPeriodNanos();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        String getStarttimenanos();
+        String getStartTimeNanos();
 
         @JsProperty
-        void setPeriodnanos(String periodnanos);
+        void setPeriodNanos(String periodNanos);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setStarttimenanos(String starttimenanos);
+        void setStartTimeNanos(String startTimeNanos);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface UngroupFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.UngroupFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UngroupFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnstoungroupList();
+        JsArray<String> getColumnsToUngroupList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        boolean isNullfill();
+        boolean isNullFill();
 
         @JsProperty
-        void setColumnstoungroupList(JsArray<String> columnstoungroupList);
+        void setColumnsToUngroupList(JsArray<String> columnsToUngroupList);
 
         @JsOverlay
-        default void setColumnstoungroupList(String[] columnstoungroupList) {
-          setColumnstoungroupList(Js.<JsArray<String>>uncheckedCast(columnstoungroupList));
+        default void setColumnsToUngroupList(String[] columnsToUngroupList) {
+          setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
         }
 
         @JsProperty
-        void setNullfill(boolean nullfill);
+        void setNullFill(boolean nullFill);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface UnstructuredfilterFieldType {
+      public interface UnstructuredFilterFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.UnstructuredfilterFieldType
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UnstructuredFilterFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getFilterList();
+        JsArray<String> getFiltersList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setFilterList(JsArray<String> filterList);
+        void setFiltersList(JsArray<String> filtersList);
 
         @JsOverlay
-        default void setFilterList(String[] filterList) {
-          setFilterList(Js.<JsArray<String>>uncheckedCast(filterList));
+        default void setFiltersList(String[] filtersList) {
+          setFiltersList(Js.<JsArray<String>>uncheckedCast(filtersList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface UpdateFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpListFieldType.UpdateFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnspecsList();
+        JsArray<String> getColumnSpecsList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setColumnspecsList(JsArray<String> columnspecsList);
+        void setColumnSpecsList(JsArray<String> columnSpecsList);
 
         @JsOverlay
-        default void setColumnspecsList(String[] columnspecsList) {
-          setColumnspecsList(Js.<JsArray<String>>uncheckedCast(columnspecsList));
+        default void setColumnSpecsList(String[] columnSpecsList) {
+          setColumnSpecsList(Js.<JsArray<String>>uncheckedCast(columnSpecsList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsOverlay
-      static BatchTableRequest.ToObjectReturnType.OpListFieldType create() {
+      static BatchTableRequest.ToObjectReturnType.OpsListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
-          getComboaggregate();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
+          getComboAggregate();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType getDropcolumns();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType getDropColumns();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType getEmptytable();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType getEmptyTable();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType getFilter();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType getFilter();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.FlattenFieldType getFlatten();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.FlattenFieldType getFlatten();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadFieldType getHead();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadFieldType getHead();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadbyFieldType getHeadby();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType getHeadBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.JoinFieldType getJoin();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType getJoin();
 
       @JsProperty
-      Object getLazyupdate();
+      Object getLazyUpdate();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.MergeFieldType getMerge();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType getMerge();
 
       @JsProperty
       Object getSelect();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.SelectdistinctFieldType
-          getSelectdistinct();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType
+          getSelectDistinct();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.SnapshotFieldType getSnapshot();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType getSnapshot();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType getSort();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType getSort();
 
       @JsProperty
       Object getTail();
 
       @JsProperty
-      Object getTailby();
+      Object getTailBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.TimetableFieldType getTimetable();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.TimeTableFieldType getTimeTable();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.UngroupFieldType getUngroup();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.UngroupFieldType getUngroup();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.UnstructuredfilterFieldType
-          getUnstructuredfilter();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.UnstructuredFilterFieldType
+          getUnstructuredFilter();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpListFieldType.UpdateFieldType getUpdate();
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType getUpdate();
 
       @JsProperty
-      Object getUpdateview();
+      Object getUpdateView();
 
       @JsProperty
       Object getView();
 
       @JsProperty
-      void setComboaggregate(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.ComboaggregateFieldType
-              comboaggregate);
+      void setComboAggregate(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
+              comboAggregate);
 
       @JsProperty
-      void setDropcolumns(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.DropcolumnsFieldType dropcolumns);
+      void setDropColumns(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType dropColumns);
 
       @JsProperty
-      void setEmptytable(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.EmptytableFieldType emptytable);
+      void setEmptyTable(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType emptyTable);
 
       @JsProperty
-      void setFilter(BatchTableRequest.ToObjectReturnType.OpListFieldType.FilterFieldType filter);
+      void setFilter(BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType filter);
 
       @JsProperty
       void setFlatten(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.FlattenFieldType flatten);
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.FlattenFieldType flatten);
 
       @JsProperty
-      void setHead(BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadFieldType head);
+      void setHead(BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadFieldType head);
 
       @JsProperty
-      void setHeadby(BatchTableRequest.ToObjectReturnType.OpListFieldType.HeadbyFieldType headby);
+      void setHeadBy(BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType headBy);
 
       @JsProperty
-      void setJoin(BatchTableRequest.ToObjectReturnType.OpListFieldType.JoinFieldType join);
+      void setJoin(BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType join);
 
       @JsProperty
-      void setLazyupdate(Object lazyupdate);
+      void setLazyUpdate(Object lazyUpdate);
 
       @JsProperty
-      void setMerge(BatchTableRequest.ToObjectReturnType.OpListFieldType.MergeFieldType merge);
+      void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
 
       @JsProperty
       void setSelect(Object select);
 
       @JsProperty
-      void setSelectdistinct(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.SelectdistinctFieldType
-              selectdistinct);
+      void setSelectDistinct(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType
+              selectDistinct);
 
       @JsProperty
       void setSnapshot(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.SnapshotFieldType snapshot);
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.SnapshotFieldType snapshot);
 
       @JsProperty
-      void setSort(BatchTableRequest.ToObjectReturnType.OpListFieldType.SortFieldType sort);
+      void setSort(BatchTableRequest.ToObjectReturnType.OpsListFieldType.SortFieldType sort);
 
       @JsProperty
       void setTail(Object tail);
 
       @JsProperty
-      void setTailby(Object tailby);
+      void setTailBy(Object tailBy);
 
       @JsProperty
-      void setTimetable(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.TimetableFieldType timetable);
+      void setTimeTable(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.TimeTableFieldType timeTable);
 
       @JsProperty
       void setUngroup(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.UngroupFieldType ungroup);
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.UngroupFieldType ungroup);
 
       @JsProperty
-      void setUnstructuredfilter(
-          BatchTableRequest.ToObjectReturnType.OpListFieldType.UnstructuredfilterFieldType
-              unstructuredfilter);
+      void setUnstructuredFilter(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.UnstructuredFilterFieldType
+              unstructuredFilter);
 
       @JsProperty
-      void setUpdate(BatchTableRequest.ToObjectReturnType.OpListFieldType.UpdateFieldType update);
+      void setUpdate(BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateFieldType update);
 
       @JsProperty
-      void setUpdateview(Object updateview);
+      void setUpdateView(Object updateView);
 
       @JsProperty
       void setView(Object view);
@@ -1006,38 +1006,39 @@ public class BatchTableRequest {
     }
 
     @JsProperty
-    JsArray<BatchTableRequest.ToObjectReturnType.OpListFieldType> getOpList();
+    JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType> getOpsList();
 
     @JsProperty
-    void setOpList(JsArray<BatchTableRequest.ToObjectReturnType.OpListFieldType> opList);
+    void setOpsList(JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType> opsList);
 
     @JsOverlay
-    default void setOpList(BatchTableRequest.ToObjectReturnType.OpListFieldType[] opList) {
-      setOpList(
-          Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpListFieldType>>uncheckedCast(opList));
+    default void setOpsList(BatchTableRequest.ToObjectReturnType.OpsListFieldType[] opsList) {
+      setOpsList(
+          Js.<JsArray<BatchTableRequest.ToObjectReturnType.OpsListFieldType>>uncheckedCast(
+              opsList));
     }
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OpListFieldType {
+    public interface OpsListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface ComboaggregateFieldType {
+      public interface ComboAggregateFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface AggregatesListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
                   .AggregatesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
-          JsArray<String> getMatchpairsList();
+          JsArray<String> getMatchPairsList();
 
           @JsProperty
           double getPercentile();
@@ -1046,20 +1047,20 @@ public class BatchTableRequest {
           double getType();
 
           @JsProperty
-          boolean isAvgmedian();
+          boolean isAvgMedian();
 
           @JsProperty
-          void setAvgmedian(boolean avgmedian);
+          void setAvgMedian(boolean avgMedian);
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
 
           @JsProperty
-          void setMatchpairsList(JsArray<String> matchpairsList);
+          void setMatchPairsList(JsArray<String> matchPairsList);
 
           @JsOverlay
-          default void setMatchpairsList(String[] matchpairsList) {
-            setMatchpairsList(Js.<JsArray<String>>uncheckedCast(matchpairsList));
+          default void setMatchPairsList(String[] matchPairsList) {
+            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
           }
 
           @JsProperty
@@ -1070,134 +1071,136 @@ public class BatchTableRequest {
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
                     .AggregatesListFieldType>
             getAggregatesList();
 
         @JsProperty
-        JsArray<String> getGroupbycolumnsList();
+        JsArray<String> getGroupByColumnsList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        boolean isForcecombo();
+        boolean isForceCombo();
 
         @JsOverlay
         default void setAggregatesList(
-            BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
                         .AggregatesListFieldType
                     []
                 aggregatesList) {
           setAggregatesList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType0.OpListFieldType
-                              .ComboaggregateFieldType.AggregatesListFieldType>>
+                          BatchTableRequest.ToObjectReturnType0.OpsListFieldType
+                              .ComboAggregateFieldType.AggregatesListFieldType>>
                       uncheckedCast(aggregatesList));
         }
 
         @JsProperty
         void setAggregatesList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
                         .AggregatesListFieldType>
                 aggregatesList);
 
         @JsProperty
-        void setForcecombo(boolean forcecombo);
+        void setForceCombo(boolean forceCombo);
 
         @JsProperty
-        void setGroupbycolumnsList(JsArray<String> groupbycolumnsList);
+        void setGroupByColumnsList(JsArray<String> groupByColumnsList);
 
         @JsOverlay
-        default void setGroupbycolumnsList(String[] groupbycolumnsList) {
-          setGroupbycolumnsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnsList));
+        default void setGroupByColumnsList(String[] groupByColumnsList) {
+          setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupByColumnsList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface DropcolumnsFieldType {
+      public interface DropColumnsFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface SourceidFieldType {
+        public interface SourceIdFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType
-                  .SourceidFieldType
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType
+                  .SourceIdFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          double getBatchoffset();
+          double getBatchOffset();
 
           @JsProperty
           Object getTicket();
 
           @JsProperty
-          void setBatchoffset(double batchoffset);
+          void setBatchOffset(double batchOffset);
 
           @JsProperty
           void setTicket(Object ticket);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType
+            create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType.SourceidFieldType
-            getSourceid();
+        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType
+                .SourceIdFieldType
+            getSourceId();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(
-            BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType
-                    .SourceidFieldType
-                sourceid);
+        void setSourceId(
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType
+                    .SourceIdFieldType
+                sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface EmptytableFieldType {
+      public interface EmptyTableFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface ResultidFieldType {
+        public interface ResultIdFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
           public interface GetIdUnionType {
             @JsOverlay
-            static BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                    .ResultidFieldType.GetIdUnionType
+            static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                    .ResultIdFieldType.GetIdUnionType
                 of(Object o) {
               return Js.cast(o);
             }
@@ -1224,29 +1227,29 @@ public class BatchTableRequest {
           }
 
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                  .ResultidFieldType
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                  .ResultIdFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                  .ResultidFieldType.GetIdUnionType
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                  .ResultIdFieldType.GetIdUnionType
               getId();
 
           @JsProperty
           void setId(
-              BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                      .ResultidFieldType.GetIdUnionType
+              BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                      .ResultIdFieldType.GetIdUnionType
                   id);
 
           @JsOverlay
           default void setId(String id) {
             setId(
                 Js
-                    .<BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                            .ResultidFieldType.GetIdUnionType>
+                    .<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                            .ResultIdFieldType.GetIdUnionType>
                         uncheckedCast(id));
           }
 
@@ -1254,51 +1257,51 @@ public class BatchTableRequest {
           default void setId(Uint8Array id) {
             setId(
                 Js
-                    .<BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                            .ResultidFieldType.GetIdUnionType>
+                    .<BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                            .ResultIdFieldType.GetIdUnionType>
                         uncheckedCast(id));
           }
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        JsArray<String> getColumntypesList();
+        JsArray<String> getColumnTypesList();
 
         @JsProperty
-        BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType.ResultidFieldType
-            getResultid();
+        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType
+            getResultId();
 
         @JsProperty
         String getSize();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setColumntypesList(JsArray<String> columntypesList);
+        void setColumnTypesList(JsArray<String> columnTypesList);
 
         @JsOverlay
-        default void setColumntypesList(String[] columntypesList) {
-          setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
+        default void setColumnTypesList(String[] columnTypesList) {
+          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
         }
 
         @JsProperty
-        void setResultid(
-            BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType
-                    .ResultidFieldType
-                resultid);
+        void setResultId(
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType
+                    .ResultIdFieldType
+                resultId);
 
         @JsProperty
         void setSize(String size);
@@ -1309,7 +1312,7 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface FiltersListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                   .FiltersListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -1319,25 +1322,25 @@ public class BatchTableRequest {
           JsArray<Object> getChildrenList();
 
           @JsProperty
-          double getDoublevalue();
+          double getDoubleValue();
 
           @JsProperty
-          double getFilterop();
+          double getFilterOp();
 
           @JsProperty
-          double getLongvalue();
+          double getLongValue();
 
           @JsProperty
-          double getNanotimevalue();
+          double getNanoTimeValue();
 
           @JsProperty
-          String getStringvalue();
+          String getStringValue();
 
           @JsProperty
-          boolean isBoolvalue();
+          boolean isBoolValue();
 
           @JsProperty
-          void setBoolvalue(boolean boolvalue);
+          void setBoolValue(boolean boolValue);
 
           @JsProperty
           void setChildrenList(JsArray<Object> childrenList);
@@ -1348,48 +1351,48 @@ public class BatchTableRequest {
           }
 
           @JsProperty
-          void setDoublevalue(double doublevalue);
+          void setDoubleValue(double doubleValue);
 
           @JsProperty
-          void setFilterop(double filterop);
+          void setFilterOp(double filterOp);
 
           @JsProperty
-          void setLongvalue(double longvalue);
+          void setLongValue(double longValue);
 
           @JsProperty
-          void setNanotimevalue(double nanotimevalue);
+          void setNanoTimeValue(double nanoTimeValue);
 
           @JsProperty
-          void setStringvalue(String stringvalue);
+          void setStringValue(String stringValue);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                     .FiltersListFieldType>
             getFiltersList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsOverlay
         default void setFiltersList(
-            BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                         .FiltersListFieldType
                     []
                 filtersList) {
           setFiltersList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType
+                          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                               .FiltersListFieldType>>
                       uncheckedCast(filtersList));
         }
@@ -1397,257 +1400,257 @@ public class BatchTableRequest {
         @JsProperty
         void setFiltersList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType
                         .FiltersListFieldType>
                 filtersList);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface FlattenFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.FlattenFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FlattenFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface HeadByFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getGroupByColumnSpecsList();
+
+        @JsProperty
+        String getNumRows();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getSourceId();
+
+        @JsProperty
+        void setGroupByColumnSpecsList(JsArray<String> groupByColumnSpecsList);
+
+        @JsOverlay
+        default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
+          setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+        }
+
+        @JsProperty
+        void setNumRows(String numRows);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface HeadFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getNumrows();
+        String getNumRows();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setNumrows(String numrows);
+        void setNumRows(String numRows);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface HeadbyFieldType {
-        @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadbyFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        JsArray<String> getGroupbycolumnspecsList();
-
-        @JsProperty
-        String getNumrows();
-
-        @JsProperty
-        Object getResultid();
-
-        @JsProperty
-        Object getSourceid();
-
-        @JsProperty
-        void setGroupbycolumnspecsList(JsArray<String> groupbycolumnspecsList);
-
-        @JsOverlay
-        default void setGroupbycolumnspecsList(String[] groupbycolumnspecsList) {
-          setGroupbycolumnspecsList(Js.<JsArray<String>>uncheckedCast(groupbycolumnspecsList));
-        }
-
-        @JsProperty
-        void setNumrows(String numrows);
-
-        @JsProperty
-        void setResultid(Object resultid);
-
-        @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface JoinFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.JoinFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnstoaddList();
+        JsArray<String> getColumnsToAddList();
 
         @JsProperty
-        JsArray<String> getColumnstomatchList();
+        JsArray<String> getColumnsToMatchList();
 
         @JsProperty
-        double getJointype();
+        double getJoinType();
 
         @JsProperty
-        Object getLeftid();
+        Object getLeftId();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getRightid();
+        Object getRightId();
 
         @JsProperty
-        void setColumnstoaddList(JsArray<String> columnstoaddList);
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
 
         @JsOverlay
-        default void setColumnstoaddList(String[] columnstoaddList) {
-          setColumnstoaddList(Js.<JsArray<String>>uncheckedCast(columnstoaddList));
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
         }
 
         @JsProperty
-        void setColumnstomatchList(JsArray<String> columnstomatchList);
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
 
         @JsOverlay
-        default void setColumnstomatchList(String[] columnstomatchList) {
-          setColumnstomatchList(Js.<JsArray<String>>uncheckedCast(columnstomatchList));
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
         }
 
         @JsProperty
-        void setJointype(double jointype);
+        void setJoinType(double joinType);
 
         @JsProperty
-        void setLeftid(Object leftid);
+        void setLeftId(Object leftId);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setRightid(Object rightid);
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface MergeFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.MergeFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getKeycolumn();
+        String getKeyColumn();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        JsArray<Object> getSourceidsList();
+        JsArray<Object> getSourceIdsList();
 
         @JsProperty
-        void setKeycolumn(String keycolumn);
+        void setKeyColumn(String keyColumn);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceidsList(JsArray<Object> sourceidsList);
+        void setSourceIdsList(JsArray<Object> sourceIdsList);
 
         @JsOverlay
-        default void setSourceidsList(Object[] sourceidsList) {
-          setSourceidsList(Js.<JsArray<Object>>uncheckedCast(sourceidsList));
+        default void setSourceIdsList(Object[] sourceIdsList) {
+          setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
         }
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface SelectdistinctFieldType {
+      public interface SelectDistinctFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.SelectdistinctFieldType
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnnamesList();
+        JsArray<String> getColumnNamesList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setColumnnamesList(JsArray<String> columnnamesList);
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default void setColumnnamesList(String[] columnnamesList) {
-          setColumnnamesList(Js.<JsArray<String>>uncheckedCast(columnnamesList));
+        default void setColumnNamesList(String[] columnNamesList) {
+          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SnapshotFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.SnapshotFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getLeftid();
+        Object getLeftId();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getRightid();
+        Object getRightId();
 
         @JsProperty
-        JsArray<String> getStampcolumnsList();
+        JsArray<String> getStampColumnsList();
 
         @JsProperty
-        boolean isDoinitialsnapshot();
+        boolean isDoInitialSnapshot();
 
         @JsProperty
-        void setDoinitialsnapshot(boolean doinitialsnapshot);
+        void setDoInitialSnapshot(boolean doInitialSnapshot);
 
         @JsProperty
-        void setLeftid(Object leftid);
+        void setLeftId(Object leftId);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setRightid(Object rightid);
+        void setRightId(Object rightId);
 
         @JsProperty
-        void setStampcolumnsList(JsArray<String> stampcolumnsList);
+        void setStampColumnsList(JsArray<String> stampColumnsList);
 
         @JsOverlay
-        default void setStampcolumnsList(String[] stampcolumnsList) {
-          setStampcolumnsList(Js.<JsArray<String>>uncheckedCast(stampcolumnsList));
+        default void setStampColumnsList(String[] stampColumnsList) {
+          setStampColumnsList(Js.<JsArray<String>>uncheckedCast(stampColumnsList));
         }
       }
 
@@ -1656,348 +1659,349 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SortsListFieldType {
           @JsOverlay
-          static BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType
                   .SortsListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
-          String getColumnname();
+          String getColumnName();
 
           @JsProperty
           double getDirection();
 
           @JsProperty
-          boolean isIsabsolute();
+          boolean isIsAbsolute();
 
           @JsProperty
-          void setColumnname(String columnname);
+          void setColumnName(String columnName);
 
           @JsProperty
           void setDirection(double direction);
 
           @JsProperty
-          void setIsabsolute(boolean isabsolute);
+          void setIsAbsolute(boolean isAbsolute);
         }
 
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
         JsArray<
-                BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType
                     .SortsListFieldType>
             getSortsList();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
         void setSortsList(
             JsArray<
-                    BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType
                         .SortsListFieldType>
                 sortsList);
 
         @JsOverlay
         default void setSortsList(
-            BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType.SortsListFieldType[]
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType.SortsListFieldType
+                    []
                 sortsList) {
           setSortsList(
               Js
                   .<JsArray<
-                          BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType
+                          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType
                               .SortsListFieldType>>
                       uncheckedCast(sortsList));
         }
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TimetableFieldType {
+      public interface TimeTableFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.TimetableFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.TimeTableFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        String getPeriodnanos();
+        String getPeriodNanos();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        String getStarttimenanos();
+        String getStartTimeNanos();
 
         @JsProperty
-        void setPeriodnanos(String periodnanos);
+        void setPeriodNanos(String periodNanos);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setStarttimenanos(String starttimenanos);
+        void setStartTimeNanos(String startTimeNanos);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface UngroupFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.UngroupFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UngroupFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnstoungroupList();
+        JsArray<String> getColumnsToUngroupList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        boolean isNullfill();
+        boolean isNullFill();
 
         @JsProperty
-        void setColumnstoungroupList(JsArray<String> columnstoungroupList);
+        void setColumnsToUngroupList(JsArray<String> columnsToUngroupList);
 
         @JsOverlay
-        default void setColumnstoungroupList(String[] columnstoungroupList) {
-          setColumnstoungroupList(Js.<JsArray<String>>uncheckedCast(columnstoungroupList));
+        default void setColumnsToUngroupList(String[] columnsToUngroupList) {
+          setColumnsToUngroupList(Js.<JsArray<String>>uncheckedCast(columnsToUngroupList));
         }
 
         @JsProperty
-        void setNullfill(boolean nullfill);
+        void setNullFill(boolean nullFill);
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface UnstructuredfilterFieldType {
+      public interface UnstructuredFilterFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.UnstructuredfilterFieldType
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UnstructuredFilterFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getFilterList();
+        JsArray<String> getFiltersList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setFilterList(JsArray<String> filterList);
+        void setFiltersList(JsArray<String> filtersList);
 
         @JsOverlay
-        default void setFilterList(String[] filterList) {
-          setFilterList(Js.<JsArray<String>>uncheckedCast(filterList));
+        default void setFiltersList(String[] filtersList) {
+          setFiltersList(Js.<JsArray<String>>uncheckedCast(filtersList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface UpdateFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpListFieldType.UpdateFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<String> getColumnspecsList();
+        JsArray<String> getColumnSpecsList();
 
         @JsProperty
-        Object getResultid();
+        Object getResultId();
 
         @JsProperty
-        Object getSourceid();
+        Object getSourceId();
 
         @JsProperty
-        void setColumnspecsList(JsArray<String> columnspecsList);
+        void setColumnSpecsList(JsArray<String> columnSpecsList);
 
         @JsOverlay
-        default void setColumnspecsList(String[] columnspecsList) {
-          setColumnspecsList(Js.<JsArray<String>>uncheckedCast(columnspecsList));
+        default void setColumnSpecsList(String[] columnSpecsList) {
+          setColumnSpecsList(Js.<JsArray<String>>uncheckedCast(columnSpecsList));
         }
 
         @JsProperty
-        void setResultid(Object resultid);
+        void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceid(Object sourceid);
+        void setSourceId(Object sourceId);
       }
 
       @JsOverlay
-      static BatchTableRequest.ToObjectReturnType0.OpListFieldType create() {
+      static BatchTableRequest.ToObjectReturnType0.OpsListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
-          getComboaggregate();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
+          getComboAggregate();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType getDropcolumns();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType getDropColumns();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType getEmptytable();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType getEmptyTable();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType getFilter();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType getFilter();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.FlattenFieldType getFlatten();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FlattenFieldType getFlatten();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadFieldType getHead();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadFieldType getHead();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadbyFieldType getHeadby();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType getHeadBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.JoinFieldType getJoin();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType getJoin();
 
       @JsProperty
-      Object getLazyupdate();
+      Object getLazyUpdate();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.MergeFieldType getMerge();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType getMerge();
 
       @JsProperty
       Object getSelect();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.SelectdistinctFieldType
-          getSelectdistinct();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType
+          getSelectDistinct();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.SnapshotFieldType getSnapshot();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType getSnapshot();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType getSort();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType getSort();
 
       @JsProperty
       Object getTail();
 
       @JsProperty
-      Object getTailby();
+      Object getTailBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.TimetableFieldType getTimetable();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.TimeTableFieldType getTimeTable();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.UngroupFieldType getUngroup();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UngroupFieldType getUngroup();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.UnstructuredfilterFieldType
-          getUnstructuredfilter();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UnstructuredFilterFieldType
+          getUnstructuredFilter();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpListFieldType.UpdateFieldType getUpdate();
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType getUpdate();
 
       @JsProperty
-      Object getUpdateview();
+      Object getUpdateView();
 
       @JsProperty
       Object getView();
 
       @JsProperty
-      void setComboaggregate(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.ComboaggregateFieldType
-              comboaggregate);
+      void setComboAggregate(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
+              comboAggregate);
 
       @JsProperty
-      void setDropcolumns(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.DropcolumnsFieldType dropcolumns);
+      void setDropColumns(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType dropColumns);
 
       @JsProperty
-      void setEmptytable(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.EmptytableFieldType emptytable);
+      void setEmptyTable(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType emptyTable);
 
       @JsProperty
-      void setFilter(BatchTableRequest.ToObjectReturnType0.OpListFieldType.FilterFieldType filter);
+      void setFilter(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType filter);
 
       @JsProperty
       void setFlatten(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.FlattenFieldType flatten);
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FlattenFieldType flatten);
 
       @JsProperty
-      void setHead(BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadFieldType head);
+      void setHead(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadFieldType head);
 
       @JsProperty
-      void setHeadby(BatchTableRequest.ToObjectReturnType0.OpListFieldType.HeadbyFieldType headby);
+      void setHeadBy(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType headBy);
 
       @JsProperty
-      void setJoin(BatchTableRequest.ToObjectReturnType0.OpListFieldType.JoinFieldType join);
+      void setJoin(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType join);
 
       @JsProperty
-      void setLazyupdate(Object lazyupdate);
+      void setLazyUpdate(Object lazyUpdate);
 
       @JsProperty
-      void setMerge(BatchTableRequest.ToObjectReturnType0.OpListFieldType.MergeFieldType merge);
+      void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
 
       @JsProperty
       void setSelect(Object select);
 
       @JsProperty
-      void setSelectdistinct(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.SelectdistinctFieldType
-              selectdistinct);
+      void setSelectDistinct(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType
+              selectDistinct);
 
       @JsProperty
       void setSnapshot(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.SnapshotFieldType snapshot);
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SnapshotFieldType snapshot);
 
       @JsProperty
-      void setSort(BatchTableRequest.ToObjectReturnType0.OpListFieldType.SortFieldType sort);
+      void setSort(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SortFieldType sort);
 
       @JsProperty
       void setTail(Object tail);
 
       @JsProperty
-      void setTailby(Object tailby);
+      void setTailBy(Object tailBy);
 
       @JsProperty
-      void setTimetable(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.TimetableFieldType timetable);
+      void setTimeTable(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.TimeTableFieldType timeTable);
 
       @JsProperty
       void setUngroup(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.UngroupFieldType ungroup);
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UngroupFieldType ungroup);
 
       @JsProperty
-      void setUnstructuredfilter(
-          BatchTableRequest.ToObjectReturnType0.OpListFieldType.UnstructuredfilterFieldType
-              unstructuredfilter);
+      void setUnstructuredFilter(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UnstructuredFilterFieldType
+              unstructuredFilter);
 
       @JsProperty
-      void setUpdate(BatchTableRequest.ToObjectReturnType0.OpListFieldType.UpdateFieldType update);
+      void setUpdate(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateFieldType update);
 
       @JsProperty
-      void setUpdateview(Object updateview);
+      void setUpdateView(Object updateView);
 
       @JsProperty
       void setView(Object view);
@@ -2009,15 +2013,16 @@ public class BatchTableRequest {
     }
 
     @JsProperty
-    JsArray<BatchTableRequest.ToObjectReturnType0.OpListFieldType> getOpList();
+    JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType> getOpsList();
 
     @JsProperty
-    void setOpList(JsArray<BatchTableRequest.ToObjectReturnType0.OpListFieldType> opList);
+    void setOpsList(JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType> opsList);
 
     @JsOverlay
-    default void setOpList(BatchTableRequest.ToObjectReturnType0.OpListFieldType[] opList) {
-      setOpList(
-          Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpListFieldType>>uncheckedCast(opList));
+    default void setOpsList(BatchTableRequest.ToObjectReturnType0.OpsListFieldType[] opsList) {
+      setOpsList(
+          Js.<JsArray<BatchTableRequest.ToObjectReturnType0.OpsListFieldType>>uncheckedCast(
+              opsList));
     }
   }
 
@@ -2031,23 +2036,23 @@ public class BatchTableRequest {
   public static native BatchTableRequest.ToObjectReturnType toObject(
       boolean includeInstance, BatchTableRequest msg);
 
-  public native Operation addOp();
+  public native Operation addOps();
 
-  public native Operation addOp(Operation value, double index);
+  public native Operation addOps(Operation value, double index);
 
-  public native Operation addOp(Operation value);
+  public native Operation addOps(Operation value);
 
-  public native void clearOpList();
+  public native void clearOpsList();
 
-  public native JsArray<Operation> getOpList();
+  public native JsArray<Operation> getOpsList();
 
   public native Uint8Array serializeBinary();
 
-  public native void setOpList(JsArray<Operation> value);
+  public native void setOpsList(JsArray<Operation> value);
 
   @JsOverlay
-  public final void setOpList(Operation[] value) {
-    setOpList(Js.<JsArray<Operation>>uncheckedCast(value));
+  public final void setOpsList(Operation[] value) {
+    setOpsList(Js.<JsArray<Operation>>uncheckedCast(value));
   }
 
   public native BatchTableRequest.ToObjectReturnType0 toObject();

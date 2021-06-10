@@ -33,9 +33,6 @@ import java.time.DayOfWeek;
  * This can be slower than methods written explicitly for DBDateTimes.
  * If performance is an issue, consider overriding these
  * methods with other behavior.
- *
- *
- * @IncludeAll
  */
 public interface Calendar {
 

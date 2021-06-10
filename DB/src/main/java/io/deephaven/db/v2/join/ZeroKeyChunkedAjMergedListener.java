@@ -1,6 +1,5 @@
 package io.deephaven.db.v2.join;
 
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.SortingOrder;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.v2.*;
@@ -52,8 +51,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
     private final ModifiedColumnSet resultModifiedColumnSet;
 
-    public ZeroKeyChunkedAjMergedListener(Logger log,
-                                          JoinListenerRecorder leftRecorder,
+    public ZeroKeyChunkedAjMergedListener(JoinListenerRecorder leftRecorder,
                                           JoinListenerRecorder rightRecorder,
                                           String listenerDescription,
                                           QueryTable result,
@@ -70,7 +68,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                           SegmentedSortedArray rightSsa,
                                           RedirectionIndex redirectionIndex,
                                           JoinControl joinControl) {
-        super(log, Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
+        super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
         this.leftTable = leftTable;

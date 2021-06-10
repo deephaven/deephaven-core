@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
  * {@link NotificationQueue.Dependency dependencies} are satisfied.
  * This allows for an external observer to wait for multiple dependencies to be satisfied using
  * {@link #waitForSatisfaction(long, NotificationQueue.Dependency...)}.
- *
- * @IncludeAll
  */
 public final class WaitNotification extends AbstractNotification {
 

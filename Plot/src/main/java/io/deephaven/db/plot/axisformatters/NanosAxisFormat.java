@@ -18,7 +18,6 @@ import java.time.format.DateTimeFormatter;
  *
  * For details on the supported patterns see the javadoc for
  * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html">DateTimeFormatter</a>
- * @IncludeAll
  */
 public class NanosAxisFormat implements AxisFormat, Serializable {
 
@@ -66,7 +65,6 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
     /**
      * Formatter for DBDateTime values.
-     * @Exclude
      */
     public class NanosFormat extends NumberFormat {
         private static final long serialVersionUID = 6037426284760469353L;

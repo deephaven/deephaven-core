@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.table.ops.HeadOrTailGrpcImpl$TailGrpcImpl",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.table.ops.HeadOrTailGrpcImpl.TailGrpcImpl",
+ "typeName": "class"
+}

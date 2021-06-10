@@ -8,7 +8,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.tables.utils.TableManagementTools;
-import java.util.Collections;
 import junit.framework.TestCase;
 
 import java.io.File;
@@ -33,7 +32,7 @@ public class TestAppendableColumn extends TestCase {
             Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
             TableManagementTools.writeTable(table, tableDefinition, directory, storageFormat);
 
-            Table tableR = TableManagementTools.readTable(directory, tableDefinition);
+            Table tableR = TableManagementTools.readTable(directory);
             assertEquals(data.length, tableR.size());
             assertNotNull(tableR.getColumnSource("v").getGroupToRange());
             assertEquals(320000, tableR.getIndex().size());

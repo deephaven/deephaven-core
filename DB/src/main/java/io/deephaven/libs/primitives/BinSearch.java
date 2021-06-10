@@ -6,8 +6,6 @@ package io.deephaven.libs.primitives;
 
 /**
  * Algorithm used to resolve ties when performing a binary search.
- *
- * @IncludeAll
  */
 public enum BinSearch {
     /**

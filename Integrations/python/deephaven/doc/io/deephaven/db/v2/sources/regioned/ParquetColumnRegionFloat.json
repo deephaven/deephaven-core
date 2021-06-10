@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionFloat",
+ "methods": {
+  "getChunkPageContaining": ":param elementIndex: long\n:return: io.deephaven.db.v2.sources.chunk.page.ChunkPage<ATTR>",
+  "getFloat": "Get a single float from this region.\n\n*Overload 1*  \n  :param elementIndex: long\n  :return: (float) The float value at the specified element (float) index\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param elementIndex: long\n  :return: (float) The float value at the specified element (float) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionFloat",
+ "text": "ColumnRegionFloat implementation for regions that support fetching primitive floats from a\n ColumnChunkPageStore.",
+ "typeName": "class"
+}

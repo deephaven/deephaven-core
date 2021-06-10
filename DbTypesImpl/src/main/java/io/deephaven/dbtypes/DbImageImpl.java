@@ -10,8 +10,6 @@ import java.io.*;
 
 /**
  * An image which can be persisted.
- *
- * @IncludeAll
  */
 public class DbImageImpl implements DbImage, Externalizable {
 

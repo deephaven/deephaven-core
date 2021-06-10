@@ -16,8 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link Chunk} implementation for boolean data.
- *
- * @IncludeAll
  */
 public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

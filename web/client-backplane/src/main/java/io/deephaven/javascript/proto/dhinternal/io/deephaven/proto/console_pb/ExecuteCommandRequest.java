@@ -17,11 +17,11 @@ public class ExecuteCommandRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType of(
+        static ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -48,21 +48,21 @@ public class ExecuteCommandRequest {
       }
 
       @JsOverlay
-      static ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType create() {
+      static ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType getId();
+      ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType id);
+      void setId(ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -70,7 +70,7 @@ public class ExecuteCommandRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType.GetIdUnionType>
+                .<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -84,23 +84,23 @@ public class ExecuteCommandRequest {
     String getCode();
 
     @JsProperty
-    ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType getConsoleid();
+    ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
     void setCode(String code);
 
     @JsProperty
-    void setConsoleid(ExecuteCommandRequest.ToObjectReturnType.ConsoleidFieldType consoleid);
+    void setConsoleId(ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleidFieldType {
+    public interface ConsoleIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetIdUnionType {
         @JsOverlay
-        static ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType of(
+        static ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -127,21 +127,21 @@ public class ExecuteCommandRequest {
       }
 
       @JsOverlay
-      static ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType create() {
+      static ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType getId();
+      ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType getId();
 
       @JsProperty
-      void setId(ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType id);
+      void setId(ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType id);
 
       @JsOverlay
       default void setId(String id) {
         setId(
             Js
-                .<ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
 
@@ -149,7 +149,7 @@ public class ExecuteCommandRequest {
       default void setId(Uint8Array id) {
         setId(
             Js
-                .<ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType.GetIdUnionType>
+                .<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetIdUnionType>
                     uncheckedCast(id));
       }
     }
@@ -163,13 +163,13 @@ public class ExecuteCommandRequest {
     String getCode();
 
     @JsProperty
-    ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType getConsoleid();
+    ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
     void setCode(String code);
 
     @JsProperty
-    void setConsoleid(ExecuteCommandRequest.ToObjectReturnType0.ConsoleidFieldType consoleid);
+    void setConsoleId(ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
   }
 
   public static native ExecuteCommandRequest deserializeBinary(Uint8Array bytes);
@@ -182,21 +182,21 @@ public class ExecuteCommandRequest {
   public static native ExecuteCommandRequest.ToObjectReturnType toObject(
       boolean includeInstance, ExecuteCommandRequest msg);
 
-  public native void clearConsoleid();
+  public native void clearConsoleId();
 
   public native String getCode();
 
-  public native Ticket getConsoleid();
+  public native Ticket getConsoleId();
 
-  public native boolean hasConsoleid();
+  public native boolean hasConsoleId();
 
   public native Uint8Array serializeBinary();
 
   public native void setCode(String value);
 
-  public native void setConsoleid();
+  public native void setConsoleId();
 
-  public native void setConsoleid(Ticket value);
+  public native void setConsoleId(Ticket value);
 
   public native ExecuteCommandRequest.ToObjectReturnType0 toObject();
 

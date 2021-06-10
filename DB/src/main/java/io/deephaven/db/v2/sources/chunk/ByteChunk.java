@@ -19,8 +19,6 @@ import java.nio.ByteBuffer;
 
 /**
  * {@link Chunk} implementation for byte data.
- *
- * @IncludeAll
  */
 public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 

@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl",
+ "methods": {
+  "bindTableToVariable": ":param request: io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse>",
+  "cancelCommand": ":param request: io.deephaven.proto.backplane.script.grpc.CancelCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.CancelCommandResponse>",
+  "executeCommand": ":param request: io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse>",
+  "fetchTable": ":param request: io.deephaven.proto.backplane.script.grpc.FetchTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "getConsoleTypes": ":param request: io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse>",
+  "startConsole": ":param request: io.deephaven.proto.backplane.script.grpc.StartConsoleRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.StartConsoleResponse>",
+  "subscribeToLogs": ":param request: io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.LogSubscriptionData>"
+ },
+ "path": "io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl",
+ "typeName": "class"
+}

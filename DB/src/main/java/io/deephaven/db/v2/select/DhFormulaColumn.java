@@ -11,6 +11,8 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.db.util.PythonScopeJpyImpl;
+import io.deephaven.db.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import io.deephaven.db.util.caching.C14nUtil;
 import io.deephaven.db.v2.select.codegen.FormulaAnalyzer;
 import io.deephaven.db.v2.select.codegen.JavaKernelBuilder;
@@ -18,6 +20,8 @@ import io.deephaven.db.v2.select.codegen.RichType;
 import io.deephaven.db.v2.select.formula.FormulaFactory;
 import io.deephaven.db.v2.select.formula.FormulaKernelFactory;
 import io.deephaven.db.v2.select.formula.FormulaSourceDescriptor;
+import io.deephaven.db.v2.select.python.DeephavenCompatibleFunction;
+import io.deephaven.db.v2.select.python.FormulaColumnPython;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.codegen.CodeGenerator;
@@ -50,6 +54,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private FormulaAnalyzer.Result analyzedFormula;
     private String timeInstanceVariables;
     private Map<String, Class> timeNewVariables = null;
+
+    public FormulaColumnPython getFormulaColumnPython() {
+        return formulaColumnPython;
+    }
+
+    private FormulaColumnPython formulaColumnPython;
 
     /**
      * Create a formula column for the given formula string.
@@ -178,13 +188,27 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formulaString, e);
         }
+
+        // check if this is a column to be created with a numba vectorized function
+        for (Param param : params) {
+            if (param.getValue().getClass() == NumbaCallableWrapper.class) {
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
+                formulaColumnPython = FormulaColumnPython.create(this.columnName,
+                        DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
+                                numbaCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                                true));
+                formulaColumnPython.initDef(columnDefinitionMap);
+                return formulaColumnPython.usedColumns;
+            }
+        }
+
         return usedColumns;
     }
 
     @NotNull
     String generateClassBody() {
         if (params == null) {
-            params = QueryScope.getDefaultInstance().getParams(userParams);
+            params = QueryScope.getScope().getParams(userParams);
         }
 
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);

@@ -94,8 +94,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION =
-            TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

@@ -2,6 +2,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -32,19 +33,17 @@ import static io.deephaven.db.tables.Table.PREPARED_RLL_ATTRIBUTE;
  *  The TreeTableFilter takes a TreeTable and SelectFilters as input.  The original source table is filtered and
  *  any matching rows are included; as well as their ancestors.  The result table is then converted into a tree
  *  table using the original parameters.
- *
- * @Include
  */
 public class TreeTableFilter implements Function.Unary<Table,Table>, MemoizedOperationKey.Provider {
     private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance().getBooleanWithDefault("TreeTableFilter.debug", false);
 
-    private final Logger log;
+    private static final Logger log = LoggerFactory.getLogger(TreeTableFilter.class);
+
     private final SelectFilter[] filters;
     private final TableDefinition origTableDefinition;
 
-    private TreeTableFilter(Logger log, Table source, SelectFilter[] filters) {
+    private TreeTableFilter(Table source, SelectFilter[] filters) {
         this.filters = filters;
-        this.log = log;
         this.origTableDefinition = source.getDefinition();
 
         for (final SelectFilter filter : filters) {
@@ -123,7 +122,7 @@ public class TreeTableFilter implements Function.Unary<Table,Table>, MemoizedOpe
             idSource = source.getColumnSource(treeTableInfo.idColumn);
 
             if (source.isRefreshing()) {
-                swapListener = new SwapListenerWithRLL(log, source, reverseLookupListener);
+                swapListener = new SwapListenerWithRLL(source, reverseLookupListener);
                 source.listenForUpdates(swapListener);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source)+": ",
                         swapListener.makeSnapshotControl(),
@@ -468,14 +467,12 @@ public class TreeTableFilter implements Function.Unary<Table,Table>, MemoizedOpe
 
     private static final class SwapListenerWithRLL extends ShiftAwareSwapListener {
         private final ReverseLookupListener rll;
-        private final Logger log;
 
         private long rllLastNotificationStep;
 
-        SwapListenerWithRLL(Logger log, BaseTable sourceTable, ReverseLookupListener rll) {
-            super(log, sourceTable);
+        SwapListenerWithRLL(BaseTable sourceTable, ReverseLookupListener rll) {
+            super(sourceTable);
             this.rll = rll;
-            this.log = log;
         }
 
         @Override
@@ -574,19 +571,19 @@ public class TreeTableFilter implements Function.Unary<Table,Table>, MemoizedOpe
         return rawTable.treeTable(treeTableInfo.idColumn, treeTableInfo.parentColumn);
     }
 
-    public static Table rawFilterTree(Logger log, Table tree, String... filters) {
-        return rawFilterTree(log, tree, SelectFilterFactory.getExpressions(filters));
+    public static Table rawFilterTree(Table tree, String... filters) {
+        return rawFilterTree(tree, SelectFilterFactory.getExpressions(filters));
     }
 
-    public static Table rawFilterTree(Logger log, Table tree, SelectFilter[] filters) {
-        return tree.apply(new TreeTableFilter(log, tree, filters));
+    public static Table rawFilterTree(Table tree, SelectFilter[] filters) {
+        return tree.apply(new TreeTableFilter(tree, filters));
     }
 
-    public static Table filterTree(Logger log, Table tree, String... filters) {
-        return filterTree(log, tree, SelectFilterFactory.getExpressions(filters));
+    public static Table filterTree(Table tree, String... filters) {
+        return filterTree(tree, SelectFilterFactory.getExpressions(filters));
     }
 
-    public static Table filterTree(Logger log, Table tree, SelectFilter[] filters) {
-        return toTreeTable(rawFilterTree(log, tree, filters), tree);
+    public static Table filterTree(Table tree, SelectFilter[] filters) {
+        return toTreeTable(rawFilterTree(tree, filters), tree);
     }
 }

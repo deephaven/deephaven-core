@@ -5,8 +5,6 @@ import io.deephaven.db.v2.utils.ChunkUtils;
 
 /**
  * A generic object intended to serve as a thin wrapper around an array region.
- *
- * @IncludeAll
  */
 public abstract class ChunkBase<ATTR extends Any> implements Chunk<ATTR> {
     /**

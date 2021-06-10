@@ -20,8 +20,6 @@ import java.util.stream.Stream;
 
 /**
  * {@link LocalTableMap} of single-location {@link SourceTable}s keyed by {@link TableLocationKey}.
- *
- * @IncludeAll
  */
 class SourceTableMap extends LocalTableMap {
 

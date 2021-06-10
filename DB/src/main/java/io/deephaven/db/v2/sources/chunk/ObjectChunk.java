@@ -16,8 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link Chunk} implementation for Object data.
- *
- * @IncludeAll
  */
 public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
 
