@@ -211,7 +211,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
     /**
      * When numba vectorized functions are used to evaluate query filters, we need to create a special ChunkFilter
-     * that can handle packing and unpacking arrays required/returned by the vectorized function, essentially bypass the
+     * that can handle packing and unpacking arrays required/returned by the vectorized function, essentially bypassing the
      * regular code generation process which isn't able to support such use cases without needing some major rework.
      *
      * @param filter
