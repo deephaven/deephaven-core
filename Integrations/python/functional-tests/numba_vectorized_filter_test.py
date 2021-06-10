@@ -27,7 +27,7 @@ class TestClass(unittest.TestCase):
     def test_filter(self):
         t = TableTools.emptyTable(10).view("I=ii", "J=(ii * 2)").where("vectorized_func(I, J)")
         html_output = TableTools.html(t)
-        self.assertIn("<td>9</td>", html_output)
+        self.assertIn("<td>5</td><td>10</td>", html_output)
 
 
 if __name__ == "__main__":
