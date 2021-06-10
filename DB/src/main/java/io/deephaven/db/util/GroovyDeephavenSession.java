@@ -119,6 +119,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private transient SourceClosure sourceOnceClosure;
 
     public GroovyDeephavenSession(final RunScripts runScripts) throws IOException {
+        this(runScripts, false);
+    }
+
+    public GroovyDeephavenSession(final RunScripts runScripts, boolean isDefaultScriptSession) throws IOException {
+        super(isDefaultScriptSession);
+
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         groovyShell.setVariable("__groovySession", this);

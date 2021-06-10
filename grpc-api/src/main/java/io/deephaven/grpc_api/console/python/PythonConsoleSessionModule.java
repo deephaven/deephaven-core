@@ -22,7 +22,7 @@ public class PythonConsoleSessionModule {
     @Provides
     PythonDeephavenSession bindPythonSession() {
         try {
-            return new PythonDeephavenSession(true);
+            return new PythonDeephavenSession(true, true);
         } catch (IOException e) {
             //can't happen since we pass false
             throw new UncheckedIOException(e);

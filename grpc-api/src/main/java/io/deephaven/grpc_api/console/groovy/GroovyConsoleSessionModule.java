@@ -23,7 +23,7 @@ public class GroovyConsoleSessionModule {
     @Provides
     GroovyDeephavenSession bindGroovySession(final RunScripts runScripts) {
         try {
-            return new GroovyDeephavenSession(runScripts);
+            return new GroovyDeephavenSession(runScripts, true);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

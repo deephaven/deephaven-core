@@ -46,7 +46,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
 
-    protected AbstractScriptSession() {
+    protected AbstractScriptSession(boolean isDefaultScriptSession) {
         manage(livenessScope);
         final UUID scriptCacheId = UuidCreator.getRandomBased();
         classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
@@ -69,12 +69,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
             }
         };
 
-        //
-        // This is a temporary work around to other short comings related to {@link QueryScope},
-        // {@link io.deephaven.compilertools.CompilerTools.Context}, and {@link io.deephaven.db.tables.libs.QueryLibrary}
-        // not yet able to consistently support multiple-script-sessions.
-        //
-        if (!(this instanceof NoLanguageDeephavenSession)) {
+        if (isDefaultScriptSession) {
             CompilerTools.setDefaultContext(compilerContext);
             QueryScope.setDefaultScope(queryScope);
             QueryLibrary.setDefaultLibrary(queryLibrary);
