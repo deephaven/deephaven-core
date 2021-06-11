@@ -247,8 +247,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
         @Override
         public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
 
-            if (timestampLogicalType.isAdjustedToUTC() && timestampLogicalType.getUnit() == LogicalTypeAnnotation.TimeUnit.NANOS) {
-                return Optional.of(ToDBDateTimePage.create(componentType));
+            if (timestampLogicalType.isAdjustedToUTC()) {
+                return Optional.of(ToDBDateTimePage.create(componentType, timestampLogicalType.getUnit()));
             }
 
             throw new TableDataException("Timestamp column is not UTC or is not nanoseconds " + name);
