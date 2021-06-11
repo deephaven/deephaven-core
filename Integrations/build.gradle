@@ -132,7 +132,6 @@ if (PyEnv.pythonEnabled(project)) {
     SourceSet test = java.sourceSets.maybeCreate('test')
 
     def runInDocker = { String name, List<String> command ->
-//    def pyTest = Docker.registerDockerTask(project, "test-py-37") {
         Docker.registerDockerTask(project, name) {
             copyIn {
                 from('python') {
