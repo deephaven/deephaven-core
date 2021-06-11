@@ -52,6 +52,9 @@ services:
     image: deephaven/web:local-build
     expose:
       - "80"
+    # TODO: Adding this volume to the web for notebooks... maybe want a different path?
+    volumes:
+      - ./docker/core/data:/data
     deploy:
       resources:
         limits:
