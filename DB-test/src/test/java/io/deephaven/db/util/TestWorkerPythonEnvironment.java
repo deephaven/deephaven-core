@@ -43,7 +43,8 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testTimeTable() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("tt = timeTable(\"00:00:01\")");
+        WorkerPythonEnvironment.DEFAULT.eval("TableTools = jpy.get_type(\"io.deephaven.db.tables.utils.TableTools\")");
+        WorkerPythonEnvironment.DEFAULT.eval("tt = TableTools.timeTable(\"00:00:01\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("tt");
         assertTrue(result instanceof Table);
         Table tt = (Table) result;

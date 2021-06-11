@@ -33,6 +33,8 @@ dependencies {
   // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
   testRuntime project(':Numerics')
   testRuntime project(':suanshu-extension')
+
+  testRuntimeOnly project(':log-to-slf4j')
 }
 
 def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->

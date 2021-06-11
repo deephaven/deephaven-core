@@ -6,6 +6,8 @@ plugins {
 test.classpath = fileTree('/classpath/').plus(files('/classpath'))
 test.testClassesDirs = files('/classes')
 
+test.forkEvery = 1;
+
 test.systemProperties([
         'jpy.jpyLib':'/usr/local/lib/python3.7/dist-packages/jpy.cpython-37m-x86_64-linux-gnu.so',
         'jpy.jdlLib':'/usr/local/lib/python3.7/dist-packages/jdl.cpython-37m-x86_64-linux-gnu.so',
@@ -15,5 +17,14 @@ test.systemProperties([
         // when necessary.
         // TODO issue #651 to see if we can remove this
         'PyObject.cleanup_on_thread':'false',
-//        'jpy.debug':'true'
+//        'jpy.debug':'true',
+
+        // deephaven-specific properties, required for the test to run
+        'Configuration.rootFile': 'dh-tests.prop',
+        'devroot': "$rootDir",
+        'workspace': "$rootDir/tmp/workspace",
+        'log4j.configuration': 'log4j.teamcity.xml',
+        'disable.pdsport.rotate': 'true',
+        'configuration.quiet': 'true',
+        'java.awt.headless': 'true'
 ])
