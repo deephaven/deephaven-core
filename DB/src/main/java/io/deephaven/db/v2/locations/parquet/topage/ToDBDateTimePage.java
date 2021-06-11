@@ -52,7 +52,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     private static final ToDBDateTimePage<?> MICROS_INSTANCE = fromUnitToNanos(DBTimeUtils::microsToNanos);
     private static final ToDBDateTimePage<?> NANOS_INSTANCE = fromUnitToNanos(ToDBDateTimePage::longIdentity);
 
-    public static ToDBDateTimePage<?> create(@NotNull final Class<?> nativeType, final LogicalTypeAnnotation.TimeUnit unit) {
+    public static ToDBDateTimePage create(@NotNull final Class<?> nativeType, final LogicalTypeAnnotation.TimeUnit unit) {
         if (DBDateTime.class.equals(nativeType)) {
             switch(unit) {
                 case MILLIS:

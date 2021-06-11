@@ -246,7 +246,6 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-
             if (timestampLogicalType.isAdjustedToUTC()) {
                 return Optional.of(ToDBDateTimePage.create(componentType, timestampLogicalType.getUnit()));
             }
