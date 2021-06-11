@@ -50,6 +50,9 @@ public class PlotUtils {
     private PlotUtils() {
     }
 
+    /** Instances of ColorPaletteArray have some state, so this is kept privat. */
+    private static final ColorPaletteArray MATPLOT_COLORS = new ColorPaletteArray(ColorPaletteArray.Palette.MATPLOTLIB);
+
     private static final Random rng = new Random();
 
     private static final int[] EMPTY_INT_ARRAY = new int[0];
@@ -99,7 +102,7 @@ public class PlotUtils {
     }
 
     public static Paint intToColor(final Integer color) {
-        return color == null || color == NULL_INT || color < 0 ? null : new ColorPaletteArray(ColorPaletteArray.Palette.MATPLOTLIB).get(color);
+        return color == null || color == NULL_INT || color < 0 ? null : MATPLOT_COLORS.get(color);
     }
 
     /**
