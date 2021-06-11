@@ -191,7 +191,6 @@ public class ParquetReaderUtil {
                         case NANOS:
                             return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
                     }
-                    return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
                 }
                 errorString.setValue("TimestampLogicalType,isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ",unit=" + timestampLogicalType.getUnit());
                 return Optional.empty();
