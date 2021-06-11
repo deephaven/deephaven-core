@@ -1,28 +1,35 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Partial TableDataService implementation for use by TableDataService implementations.
+ * Partial {@link TableDataService} implementation.
  */
-public abstract class AbstractTableDataService implements TableDataService {
+public abstract class AbstractTableDataService<TKT extends TableKey, TLKT extends TableLocationKey> implements TableDataService<TKT, TLKT> {
 
     private final String name;
-    private final KeyedObjectHashMap<TableKey, TableLocationProvider> tableLocationProviders = new KeyedObjectHashMap<>(TableKey.getKeyedObjectKey());
 
-    protected AbstractTableDataService(String name) {
+    private final KeyedObjectHashMap<TKT, TableLocationProvider<TKT, TLKT>> tableLocationProviders;
+
+    /**
+     * Construct an AbstractTableDataService.
+     *
+     * @param name         Optional service name
+     */
+    protected AbstractTableDataService(@Nullable final String name) {
         this.name = name;
+        this.tableLocationProviders = new KeyedObjectHashMap<>(new ProviderKeyDefinition<>());
     }
 
     //------------------------------------------------------------------------------------------------------------------
     // TableDataService implementation
     //------------------------------------------------------------------------------------------------------------------
 
-    // TODO: Consider overriding getTableLocationProvider(ns,tn,tt) to use a ThreadLocal<TableLookupKey.Reusable>
-
     @Override
-    public @NotNull final TableLocationProvider getTableLocationProvider(@NotNull final TableKey tableKey) {
+    public @NotNull final TableLocationProvider<TKT, TLKT> getTableLocationProvider(@NotNull final TKT tableKey) {
         return tableLocationProviders.putIfAbsent(tableKey, this::makeTableLocationProvider);
     }
 
@@ -32,14 +39,26 @@ public abstract class AbstractTableDataService implements TableDataService {
     }
 
     @Override
-    public void reset(TableKey key) {
+    public void reset(@NotNull final TKT key) {
         tableLocationProviders.remove(key);
     }
 
-    protected abstract @NotNull TableLocationProvider makeTableLocationProvider(@NotNull TableKey tableKey);
+    protected abstract @NotNull TableLocationProvider<TKT, TLKT> makeTableLocationProvider(@NotNull TKT tableKey);
 
     @Override
     public String getName() {
         return name;
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Default key definition implementation
+    //------------------------------------------------------------------------------------------------------------------
+
+    private static final class ProviderKeyDefinition<TKT extends TableKey, TLKT extends TableLocationKey> extends KeyedObjectKey.Basic<TKT, TableLocationProvider<TKT, TLKT>> {
+
+        @Override
+        public TKT getKey(@NotNull final TableLocationProvider<TKT, TLKT> tableLocationProvider) {
+            return tableLocationProvider.getKey();
+        }
     }
 }

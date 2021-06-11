@@ -1,14 +1,22 @@
 package io.deephaven.db.v2.locations;
 
+import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
 /**
- * Discovery utility for table locations for a given table.
+ * Discovery utility for {@link TableLocation}s for a given table.
  */
-public interface TableLocationProvider extends TableKey {
+public interface TableLocationProvider<TKT extends TableKey, TLKT extends TableLocationKey> extends NamedImplementation {
+
+    /**
+     * Get a {@link TableKey} for the locations this provides.
+     *
+     * @return The {@link TableKey}
+     */
+    TKT getKey();
 
     /**
      * Listener interface for anything that wants to know about new/updated table locations.
@@ -67,7 +75,7 @@ public interface TableLocationProvider extends TableKey {
      *
      * @return this, to allow method chaining
      */
-    TableLocationProvider ensureInitialized();
+    TableLocationProvider<TKT, TLKT> ensureInitialized();
 
     /**
      * Get this provider's currently available locations.  Locations returned may have null size - that is, they may not
@@ -79,21 +87,11 @@ public interface TableLocationProvider extends TableKey {
     Collection<TableLocation> getTableLocations();
 
     /**
-     * @param internalPartition The internal partition
-     * @param columnPartition   The column partition
-     * @return The TableLocation matching the given partition names
-     */
-    @NotNull
-    default TableLocation getTableLocation(@NotNull final String internalPartition, @NotNull final String columnPartition) {
-        return getTableLocation(new TableLocationLookupKey.Immutable(internalPartition, columnPartition));
-    }
-
-    /**
      * @param tableLocationKey A key specifying the location to get
      * @return The TableLocation matching the given key
      */
     @NotNull
-    default TableLocation getTableLocation(@NotNull TableLocationKey tableLocationKey) {
+    default TableLocation getTableLocation(@NotNull TLKT tableLocationKey) {
         final TableLocation tableLocation = getTableLocationIfPresent(tableLocationKey);
         if (tableLocation == null) {
             throw new TableDataException(this + ": Unknown table location " + tableLocationKey);
@@ -106,7 +104,7 @@ public interface TableLocationProvider extends TableKey {
      * @return The TableLocation matching the given key if present, else null
      */
     @Nullable
-    TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey);
+    TableLocation getTableLocationIfPresent(@NotNull TLKT tableLocationKey);
 
     /**
      * allow TableLocationProvider instances to have names.

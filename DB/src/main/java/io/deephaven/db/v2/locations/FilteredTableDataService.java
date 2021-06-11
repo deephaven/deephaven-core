@@ -6,6 +6,7 @@ package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.reference.WeakReferenceWrapper;
 import io.deephaven.base.verify.Require;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,9 +19,9 @@ import java.util.stream.Collectors;
 /**
  * TableDataService implementation with support to filter the provided TableLocations.
  */
-public class FilteredTableDataService extends AbstractTableDataService implements NamedImplementation {
+public class FilteredTableDataService<TKT extends TableKey, TLKT extends TableLocationKey> extends AbstractTableDataService<TKT, TLKT> implements NamedImplementation {
 
-    private final TableDataService serviceToFilter;
+    private final TableDataService<TKT, TLKT> serviceToFilter;
     private final LocationFilter locationFilter;
 
     @FunctionalInterface
@@ -32,15 +33,14 @@ public class FilteredTableDataService extends AbstractTableDataService implement
          * @param location The location
          * @return True if the location should be visible, false otherwise
          */
-        boolean accept(@NotNull TableLocation location);
+        boolean accept(@NotNull TableLocation<?> location);
     }
 
     /**
      * @param serviceToFilter The service that's being filtered.
      * @param locationFilter  The filter function.
      */
-    @SuppressWarnings("WeakerAccess")
-    public FilteredTableDataService(@NotNull final TableDataService serviceToFilter,
+    public FilteredTableDataService(@NotNull final TableDataService<TKT, TLKT> serviceToFilter,
                                     @NotNull final LocationFilter locationFilter) {
         super("Filtered-" + Require.neqNull(serviceToFilter, "serviceToFilter").getName());
         this.serviceToFilter = Require.neqNull(serviceToFilter, "serviceToFilter");
@@ -54,19 +54,19 @@ public class FilteredTableDataService extends AbstractTableDataService implement
     }
 
     @Override
-    public void reset(TableKey key) {
+    public void reset(@NotNull final TableKey key) {
         super.reset(key);
         serviceToFilter.reset(key);
     }
 
     @Override
-    protected @NotNull TableLocationProvider makeTableLocationProvider(@NotNull TableKey tableKey) {
+    protected @NotNull TableLocationProvider<TKT, TLKT> makeTableLocationProvider(@NotNull final TKT tableKey) {
         return new TableLocationProviderImpl(serviceToFilter.getTableLocationProvider(tableKey));
     }
 
     private class TableLocationProviderImpl implements TableLocationProvider {
 
-        private final TableLocationProvider inputProvider;
+        private final TableLocationProvider<TKT, TLKT> inputProvider;
 
         private final String implementationName;
         private final Map<Listener, FilteringListener> listeners = new WeakHashMap<>();
