@@ -124,9 +124,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO auth hook, ensure the user can do this (owner of worker or admin). same rights as creating a console
 //            session.getAuthContext().requirePrivilege(LogBuffer);
 
-            LogBufferStreamAdapter listener = new LogBufferStreamAdapter(request, responseObserver, session::unmanageNonExport);
+            LogBufferStreamAdapter listener = new LogBufferStreamAdapter(request, responseObserver);
             ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(listener::destroy);
-            session.manage(listener);
+            session.attachLivenessReferent(listener);
             logBuffer.subscribe(listener);
         });
     }
@@ -224,13 +224,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private class LogBufferStreamAdapter extends LivenessArtifact implements LogBufferRecordListener {
         private final LogSubscriptionRequest request;
         private final StreamObserver<LogSubscriptionData> responseObserver;
-        private final Consumer<LivenessReferent> unmanageLambda;
         private boolean isClosed = false;
 
-        public LogBufferStreamAdapter(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver, Consumer<LivenessReferent> unmanageLambda) {
+        public LogBufferStreamAdapter(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
             this.request = request;
             this.responseObserver = responseObserver;
-            this.unmanageLambda = unmanageLambda;
         }
 
         @Override
@@ -242,7 +240,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 isClosed = true;
             }
 
-            safelyExecute(() -> unmanageLambda.accept(this));
             safelyExecute(() -> logBuffer.unsubscribe(this));
             safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
         }

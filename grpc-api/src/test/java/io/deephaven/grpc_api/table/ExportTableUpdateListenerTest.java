@@ -161,10 +161,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testSessionClose() {
         // recreate session so we can close it
-        final LivenessScope sessionScope = new LivenessScope();
-        LivenessScopeStack.push(sessionScope);
         session = new TestSessionState();
-        LivenessScopeStack.pop(sessionScope);
 
         // create and export the table
         final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
@@ -185,8 +182,8 @@ public class ExportTableUpdateListenerTest {
         expectSizes(t1.getExportId(), 84);
 
         // release session && validate export object is not dead
-        sessionScope.release();
-        Assert.eqFalse(session.tryRetainReference(), "session.tryRetainReference()");
+        session.onExpired();
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eqTrue(t1.tryRetainReference(), "t1.tryRetainReference()");
         t1.dropReference();
 
@@ -338,7 +335,7 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, liveTableMonitor, AUTH_CONTEXT);
+            super(scheduler, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }
     }

@@ -2,7 +2,6 @@ package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
@@ -53,7 +52,7 @@ public class SessionStateTest {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
-        session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
+        session = new SessionState(scheduler, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session));
         nextExportId = 1;
     }
@@ -282,7 +281,7 @@ public class SessionStateTest {
 
         d1.cancel();
         scheduler.runUntilQueueEmpty();
-        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
+        Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.DEPENDENCY_CANCELLED);
         Assert.eqFalse(submitted.booleanValue(), "submitted.booleanValue()");
     }
 
@@ -433,7 +432,7 @@ public class SessionStateTest {
         e1.release();
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
         final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(e1).submit(() -> {});
-        Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.DEPENDENCY_FAILED);
+        Assert.eq(e2.getState(), "e1.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
     }
 
     @Test
@@ -513,18 +512,6 @@ public class SessionStateTest {
     }
 
     @Test
-    public void testDependencyCanceled() {
-        final SessionState.ExportObject<Object> e1 = session.getExport(nextExportId++);
-        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
-                .require(e1)
-                .submit(() -> {});
-        session.newExport(e1.getExportId()).submit(() -> {});
-        e1.cancel();
-        scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED); // cancels propagate
-    }
-
-    @Test
     public void testDependencyAlreadyFailed() {
         final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++).submit(() -> { throw new RuntimeException(); });
         scheduler.runUntilQueueEmpty();
@@ -549,7 +536,7 @@ public class SessionStateTest {
                 .require(e1)
                 .submit(() -> {});
         scheduler.runUntilQueueEmpty();
-        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.CANCELLED); // cancels propagate
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_CANCELLED); // cancels propagate
         expectException(IllegalStateException.class, e2::get);
     }
 
@@ -609,7 +596,7 @@ public class SessionStateTest {
 
     @Test
     public void testVerifyExpirationSession() {
-        final SessionState session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
+        final SessionState session = new SessionState(scheduler, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
@@ -717,25 +704,6 @@ public class SessionStateTest {
         }
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
         session.onExpired();
-        Assert.eqTrue(listener.isComplete, "listener.isComplete");
-    }
-
-    @Test
-    public void testExportListenerOnCompleteOnSessionRelease() {
-        // recreate session in controllable scope
-        final LivenessScope sessionScope = new LivenessScope();
-        LivenessScopeStack.push(sessionScope);
-        session = new SessionState(scheduler, LiveTableMonitor.DEFAULT, AUTH_CONTEXT);
-        session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session) );
-        LivenessScopeStack.pop(sessionScope);
-
-        final QueueingExportListener listener = new QueueingExportListener();
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            session.addExportListener(listener);
-        }
-        Assert.eqFalse(listener.isComplete, "listener.isComplete");
-        sessionScope.release();
-        Assert.eqFalse(session.tryRetainReference(), "session.tryRetainReference");
         Assert.eqTrue(listener.isComplete, "listener.isComplete");
     }
 

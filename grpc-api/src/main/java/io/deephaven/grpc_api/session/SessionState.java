@@ -8,14 +8,13 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
+import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
@@ -41,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -68,14 +66,14 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
  * while they continue to subscribe.
  *
  * - SessionState::exportMap's purpose is to map from the export id to the export object
- * - SessionState::exportListener's purpose is to keep a list of active subscribers
+ * - SessionState::exportListeners' purpose is to keep a list of active subscribers
  * - SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
  * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the refresh has
  * completed. A listener may see an update for an export before receiving the "refresh has completed" message. A listener
  * should be prepared to receive duplicate/redundant updates.
  */
-public class SessionState extends LivenessArtifact {
+public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.
     public static final long NON_EXPORT_ID = 0;
 
@@ -88,7 +86,6 @@ public class SessionState extends LivenessArtifact {
 
     private final String logPrefix;
     private final Scheduler scheduler;
-    private final LiveTableMonitor liveTableMonitor;
     private final AuthContext authContext;
 
     private final String sessionId;
@@ -110,15 +107,15 @@ public class SessionState extends LivenessArtifact {
     private static final AtomicIntegerFieldUpdater<SessionState> EXPORT_LISTENER_VERSION_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "exportListenerVersion");
 
-    // accumulate the set of used export id's; it is ideal if the api client uses few continuous ranges
-    private final Index usedExportIds = Index.CURRENT_FACTORY.getEmptyIndex();
+    // Usually, export life cycles are managed explicitly with the life cycle of the session state. However, we need
+    // to be able to close non-exports that are not in the map but are otherwise satisfying outstanding gRPC requests.
+    private final LivenessScope nonExportsToClose = new LivenessScope();
 
     @AssistedInject
-    public SessionState(final Scheduler scheduler, final LiveTableMonitor liveTableMonitor, @Assisted final AuthContext authContext) {
+    public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
-        this.liveTableMonitor = liveTableMonitor;
         this.authContext = authContext;
         log.info().append(logPrefix).append("session initialized").endl();
     }
@@ -245,9 +242,9 @@ public class SessionState extends LivenessArtifact {
         }
 
         final long exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
+
         //noinspection unchecked
         final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-        manage(result); // since we never `setWork` the session would otherwise not manage this EXPORTED export
         result.setResult(export);
         return result;
     }
@@ -292,12 +289,12 @@ public class SessionState extends LivenessArtifact {
     }
 
     /**
-     * Some streaming response observers are liveness artifacts that have a life cycle as determined by grpc. We also
-     * manage them as part of the session state so that they are closed when the session is expired.
-     * @param nonExportReferent the referent that no longer needs management
+     * Attach a non-export to the liveness scope bound to the session.
+     *
+     * @param referent the object to manage
      */
-    public void unmanageNonExport(final LivenessReferent nonExportReferent) {
-        tryUnmanage(nonExportReferent);
+    public void attachLivenessReferent(final LivenessReferent referent) {
+        nonExportsToClose.manage(referent);
     }
 
     /**
@@ -324,26 +321,19 @@ public class SessionState extends LivenessArtifact {
         exportMap.clear();
 
         log.info().append(logPrefix).append("outstanding exports released").endl();
-        // note that export listeners are never published beyond this class; thus unmanaging them is sufficient
         synchronized (exportListeners) {
-            exportListeners.forEach(this::tryUnmanage);
+            exportListeners.forEach(ExportListener::onRemove);
         }
         exportListeners.clear();
-    }
-
-    /**
-     * Destroy this session state.
-     */
-    @Override
-    protected void destroy() {
-        onExpired();
     }
 
     /**
      * @return true iff the provided export state is a failure state
      */
     public static boolean isExportStateFailure(final ExportNotification.State state) {
-        return state == ExportNotification.State.FAILED || state == ExportNotification.State.CANCELLED || state == ExportNotification.State.DEPENDENCY_FAILED;
+        return state == ExportNotification.State.FAILED || state == ExportNotification.State.CANCELLED
+                || state == ExportNotification.State.DEPENDENCY_FAILED || state == ExportNotification.State.DEPENDENCY_NEVER_FOUND
+                || state == ExportNotification.State.DEPENDENCY_RELEASED || state == ExportNotification.State.DEPENDENCY_CANCELLED;
     }
 
     /**
@@ -359,11 +349,12 @@ public class SessionState extends LivenessArtifact {
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      * @param <T> Is context sensitive depending on the export.
      */
-    public final class ExportObject<T> extends LivenessArtifact {
+    public final static class ExportObject<T> extends LivenessArtifact {
         // ExportId may be 0, if this is a task that has exported dependencies, but does not export anything itself.
         // Non-exports do not publish state changes.
         private final long exportId;
         private final String logIdentity;
+        private final SessionState session;
 
         // final result of export
         private volatile T result;
@@ -384,7 +375,10 @@ public class SessionState extends LivenessArtifact {
         private List<ExportObject<?>> parents = Collections.emptyList();
 
         // used to detect when this object is ready for export (is visible for atomic int field updater)
-        protected volatile int dependentCount = -1;
+        private volatile int dependentCount = -1;
+        @SuppressWarnings("unchecked")
+        private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
 
         // used to identify and propagate error details
         private String errorId;
@@ -393,7 +387,8 @@ public class SessionState extends LivenessArtifact {
         /**
          * @param exportId the export id for this export
          */
-        private ExportObject(final long exportId) {
+        private ExportObject(final SessionState session, final long exportId) {
+            this.session = session;
             this.exportId = exportId;
             this.logIdentity = exportId == NON_EXPORT_ID ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
@@ -432,8 +427,6 @@ public class SessionState extends LivenessArtifact {
                 return;
             }
 
-            SessionState.this.manage(this);
-
             this.exportMain = exportMain;
             this.errorHandler = errorHandler;
 
@@ -458,7 +451,7 @@ public class SessionState extends LivenessArtifact {
          * @return the result of the computed export
          */
         public T get() {
-            if (isExpired()) {
+            if (session.isExpired()) {
                 throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
 
@@ -520,14 +513,14 @@ public class SessionState extends LivenessArtifact {
 
             // Send an export notification before possibly notifying children of our state change.
             if (exportId != NON_EXPORT_ID) {
-                log.info().append(logPrefix).append("export '").append(logIdentity)
+                log.info().append(session.logPrefix).append("export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
 
                 final ExportNotification notification = makeExportNotification();
-                exportListenerVersion = SessionState.this.exportListenerVersion;
-                exportListeners.forEach(listener -> listener.notify(notification));
+                exportListenerVersion = session.exportListenerVersion;
+                session.exportListeners.forEach(listener -> listener.notify(notification));
             } else {
-                log.info().append(logPrefix).append("non-export '").append(logIdentity)
+                log.info().append(session.logPrefix).append("non-export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
             }
 
@@ -545,7 +538,7 @@ public class SessionState extends LivenessArtifact {
             }
 
             if (isExportStateTerminal(state)) {
-                SessionState.this.tryUnmanage(this);
+                dropReference();
             }
         }
 
@@ -569,10 +562,11 @@ public class SessionState extends LivenessArtifact {
                         final String errorDetails;
                         switch (parent.state) {
                             case RELEASED:
+                                terminalState = ExportNotification.State.DEPENDENCY_RELEASED;
                                 errorDetails = "dependency released by user.";
                                 break;
                             case CANCELLED:
-                                terminalState = ExportNotification.State.CANCELLED;
+                                terminalState = ExportNotification.State.DEPENDENCY_CANCELLED;
                                 errorDetails = "dependency cancelled by user.";
                                 break;
                             default:
@@ -613,9 +607,9 @@ public class SessionState extends LivenessArtifact {
             }
 
             if (requiresSerialQueue) {
-                scheduler.runSerially(this::doExport);
+                session.scheduler.runSerially(this::doExport);
             } else {
-                scheduler.runImmediately(this::doExport);
+                session.scheduler.runImmediately(this::doExport);
             }
         }
 
@@ -624,7 +618,7 @@ public class SessionState extends LivenessArtifact {
          */
         private void doExport() {
             synchronized (this) {
-                if (state != ExportNotification.State.QUEUED || isExpired()) {
+                if (state != ExportNotification.State.QUEUED || session.isExpired()) {
                     return; // had a cancel race with client
                 }
             }
@@ -636,7 +630,7 @@ public class SessionState extends LivenessArtifact {
                 queryProcessingResults = new QueryProcessingResults(
                         QueryPerformanceRecorder.getInstance());
 
-                evaluationNumber = QueryPerformanceRecorder.getInstance().startQuery("session=" + sessionId + ",exportId=" + logIdentity);
+                evaluationNumber = QueryPerformanceRecorder.getInstance().startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
                 try {
                     setResult(exportMain.call());
                 } finally {
@@ -694,14 +688,26 @@ public class SessionState extends LivenessArtifact {
                 throw new IllegalStateException("cannot setResult twice!");
             }
 
-            this.result = result;
-            synchronized (this) {
-                if (!isExportStateTerminal(state) && !isExpired()) {
-                    if (this.result instanceof LivenessReferent) {
-                        tryManage((LivenessReferent) result);
+            // result is cleared on destroy; so don't set if it won't be called
+            if (!tryRetainReference()) {
+                return;
+            }
+
+            try {
+                this.result = result;
+
+                synchronized (this) {
+                    // the export may
+                    if (!isExportStateTerminal(state)) {
+                        if (this.result instanceof LivenessReferent) {
+                            tryManage((LivenessReferent) result);
+                        }
+
+                        setState(ExportNotification.State.EXPORTED);
                     }
-                    setState(ExportNotification.State.EXPORTED);
                 }
+            } finally {
+                dropReference();
             }
         }
 
@@ -712,7 +718,7 @@ public class SessionState extends LivenessArtifact {
             if (state == ExportNotification.State.EXPORTED) {
                 setState(ExportNotification.State.RELEASED);
             } else if (!isExportStateTerminal(state)){
-                nonExport().require(this).submit(this::release);
+                session.nonExport().require(this).submit(this::release);
             }
         }
 
@@ -729,7 +735,6 @@ public class SessionState extends LivenessArtifact {
 
         @Override
         protected synchronized void destroy() {
-            cancel();
             result = null;
         }
 
@@ -739,7 +744,7 @@ public class SessionState extends LivenessArtifact {
         private synchronized ExportNotification makeExportNotification() {
             final ExportNotification.Builder builder = ExportNotification.newBuilder()
                     .setTicket(exportIdToTicket(exportId))
-                    .setExportStateValue(state.ordinal());
+                    .setExportState(state);
 
             if (errorId != null) {
                 builder.setContext(errorId);
@@ -758,7 +763,6 @@ public class SessionState extends LivenessArtifact {
         }
 
         final ExportListener listener = new ExportListener(observer);
-        manage(listener);
         exportListeners.add(listener);
         final int versionId = EXPORT_LISTENER_VERSION_UPDATER.incrementAndGet(this);
 
@@ -771,11 +775,7 @@ public class SessionState extends LivenessArtifact {
     }
 
     public void removeExportListener(final StreamObserver<ExportNotification> observer) {
-        final Optional<ExportListener> listener = exportListeners.stream().filter(l -> l.listener == observer).findFirst();
-        if (listener.isPresent()) {
-            tryUnmanage(listener.get());
-            exportListeners.remove(listener.get());
-        }
+        exportListeners.stream().filter(l -> l.listener == observer).findFirst().ifPresent(ExportListener::onRemove);
     }
 
     @VisibleForTesting
@@ -783,7 +783,7 @@ public class SessionState extends LivenessArtifact {
         return exportListeners.size();
     }
 
-    private class ExportListener extends LivenessArtifact {
+    private class ExportListener {
         private volatile boolean isClosed = false;
 
         private final StreamObserver<ExportNotification> listener;
@@ -808,7 +808,7 @@ public class SessionState extends LivenessArtifact {
                 }
             } catch (final RuntimeException | Error e) {
                 log.error().append("Failed to notify listener: ").append(e).endl();
-                SessionState.this.tryUnmanage(this);
+
             }
         }
 
@@ -820,7 +820,7 @@ public class SessionState extends LivenessArtifact {
             log.info().append(logPrefix).append("refreshing listener ").append(id).endl();
 
             for (final ExportObject<?> export : exportMap) {
-                if (!tryManage(export)) {
+                if (!export.tryRetainReference()) {
                     continue;
                 }
 
@@ -845,23 +845,20 @@ public class SessionState extends LivenessArtifact {
                         notify(export.makeExportNotification());
                     }
                 } finally {
-                    unmanage(export);
+                    export.dropReference();
                 }
             }
 
-            synchronized (this) {
-                // notify that the refresh has completed
-                notify(ExportNotification.newBuilder()
-                        .setTicket(exportIdToTicket(NON_EXPORT_ID))
-                        .setExportState(ExportNotification.State.EXPORTED)
-                        .setContext("refresh is complete")
-                        .build());
-                log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
-            }
+            // notify that the refresh has completed
+            notify(ExportNotification.newBuilder()
+                    .setTicket(exportIdToTicket(NON_EXPORT_ID))
+                    .setExportState(ExportNotification.State.EXPORTED)
+                    .setContext("refresh is complete")
+                    .build());
+            log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
         }
 
-        @Override
-        protected synchronized void destroy() {
+        protected synchronized void onRemove() {
             if (isClosed) {
                 return;
             }
@@ -905,7 +902,8 @@ public class SessionState extends LivenessArtifact {
             this.exportId = exportId;
 
             if (exportId == NON_EXPORT_ID) {
-                this.export = new ExportObject<>(NON_EXPORT_ID);
+                this.export = new ExportObject<>(SessionState.this, NON_EXPORT_ID);
+                nonExportsToClose.manage(this.export);
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -1048,11 +1046,6 @@ public class SessionState extends LivenessArtifact {
         return GrpcUtil.byteStringToLong(ticket.getId());
     }
 
-    // used to detect when the export object is ready for export
-    @SuppressWarnings("unchecked")
-    private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
-
     private static final KeyedLongObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY = new KeyedLongObjectKey.BasicStrict<ExportObject<?>>() {
         @Override
         public long getLongKey(final ExportObject<?> exportObject) {
@@ -1063,15 +1056,13 @@ public class SessionState extends LivenessArtifact {
     private final KeyedLongObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY = new KeyedLongObjectHash.ValueFactory.Strict<ExportObject<?>>() {
         @Override
         public ExportObject<?> newValue(final long key) {
-            // technically we're already synchronized on the exportMap; but IJ doesn't understand that
-            synchronized (exportMap) {
-                // there is a race since we last checked
-                if (isExpired()) {
-                    throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-                }
-
-                return new ExportObject<>(key);
+            if (isExpired()) {
+                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
+
+            final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
+            retval.retainReference();
+            return retval;
         }
     };
 }

@@ -124,7 +124,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
             this.myPrefix = "SubscriptionObserver{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.session = session;
             this.listener = listenerAdapter.adapt(responseObserver);
-            session.manage(this); // attach the liveness of this subscription to the session
+            this.session.attachLivenessReferent(this);
         }
 
         @Override
@@ -248,14 +248,12 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
         @Override
         public void onError(final Throwable t) {
             log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ").append(t).endl();
-            session.unmanageNonExport(this);
             destroy(); // destroy may not be called via unmanageNonExport if this subscription is also exported
         }
 
         @Override
         public void onCompleted() {
             log.error().append(myPrefix).append("client stream closed subscription").endl();
-            session.unmanageNonExport(this);
             destroy(); // destroy may not be called via unmanageNonExport if this subscription is also exported
         }
 

@@ -1,7 +1,6 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.InstrumentedShiftAwareListener;
 import io.deephaven.db.v2.NotificationStepReceiver;
@@ -32,7 +31,7 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
  * of existing table sizes for both static tables and tables that won't tick frequently. When the refresh is
  * complete we are sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
-public class ExportedTableUpdateListener extends LivenessArtifact implements StreamObserver<ExportNotification> {
+public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
 
     private static final Logger log = LoggerFactory.getLogger(ExportedTableUpdateListener.class);
 
@@ -50,8 +49,6 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
         this.session = session;
         this.logPrefix = "ExportedTableUpdateListener(" + Integer.toHexString(System.identityHashCode(this)) + ") ";
         this.responseObserver = responseObserver;
-
-        session.manage(this);
     }
 
     /**
@@ -84,8 +81,7 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             } else if (SessionState.isExportStateTerminal(state)) {
                 final ListenerImpl listener = updateListenerMap.remove(exportId);
                 if (listener != null) {
-                    tryUnmanage(listener);
-                    listener.destroy();
+                    listener.dropReference();
                 }
             }
         } catch (final StatusRuntimeException ignored) {
@@ -95,16 +91,11 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
 
     @Override
     public void onError(final Throwable t) {
-        destroy();
+        onCompleted();
     }
 
     @Override
-    public void onCompleted() {
-        destroy();
-    }
-
-    @Override
-    public synchronized void destroy() {
+    public synchronized void onCompleted() {
         if (isDestroyed) {
             return;
         }
@@ -138,7 +129,7 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
         final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(table);
         swapListener.subscribeForUpdates();
         final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
-        manage(listener);
+        listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);
 
         final MutableLong initSize = new MutableLong();
@@ -175,8 +166,7 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
             responseObserver.onNext(update.build());
         } catch (final RuntimeException err) {
             log.error().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
-            session.unmanageNonExport(this);
-            destroy();
+            session.removeExportListener(this);
         }
     }
 
@@ -186,7 +176,6 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
     private class ListenerImpl extends InstrumentedShiftAwareListener {
         final private BaseTable table;
         final private long exportId;
-        private volatile boolean destroyed = false;
 
         @ReferentialIntegrity
         final ShiftAwareSwapListener swapListener;
@@ -210,11 +199,8 @@ public class ExportedTableUpdateListener extends LivenessArtifact implements Str
         }
 
         @Override
-        public synchronized void destroy() {
-            if (destroyed) {
-                return;
-            }
-            destroyed = true;
+        public void destroy() {
+            super.destroy();
             table.removeUpdateListener(swapListener);
         }
     }

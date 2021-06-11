@@ -4,7 +4,6 @@ import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
@@ -20,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Singleton
-public class SessionService extends LivenessArtifact {
+public class SessionService {
 
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds
 
@@ -60,7 +59,6 @@ public class SessionService extends LivenessArtifact {
     public SessionState newSession(final AuthContext authContext) {
         final SessionState session = sessionFactory.create(authContext);
         refreshToken(session, true);
-        manage(session);
         return session;
     }
 
@@ -156,17 +154,13 @@ public class SessionService extends LivenessArtifact {
         if (session.isExpired()) {
             return;
         }
-        tryUnmanage(session);
         session.onExpired();
     }
 
     public void closeAllSessions() {
         for (final TokenExpiration token : outstandingCookies) {
-            // let's take the opportunity to close all LivenessReferents held on to by the session
+            // close all exports/resources acquired by the session
             token.session.onExpired();
-
-            // we manage each session exactly once, but there may be more than one token per session outstanding
-            tryUnmanage(token.session);
         }
     }
 
@@ -209,7 +203,6 @@ public class SessionService extends LivenessArtifact {
                 synchronized (next.session) {
                     if (next.session.getExpiration() != null && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
                         next.session.onExpired();
-                        unmanage(next.session);
                     }
                 }
             } while (true);
