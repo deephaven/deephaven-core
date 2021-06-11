@@ -191,6 +191,32 @@ public interface ChunkerMixin {
             }
         }
 
+        class CheckerNewline implements Checker {
+
+            private final boolean required;
+            private boolean sawNl;
+
+            public CheckerNewline(boolean required) {
+                this.required = required;
+            }
+
+            @Override
+            public int check(char c) {
+                if (c == '\n') {
+                    sawNl = true;
+                }
+                return c == '\n' ? MORE : required && !sawNl ? FAILURE : NEXT;
+            }
+        }
+
+        class CheckerEmptyLine implements Checker {
+
+            @Override
+            public int check(char c) {
+                return Character.isWhitespace(c) ? c == '\n' || c == '\r' ? SUCCESS : MORE : FAILURE;
+            }
+        }
+
         private final ChunkerMixin chunker;
         private final List<Checker> matchers;
 
@@ -204,6 +230,21 @@ public interface ChunkerMixin {
             return this;
         }
 
+        public PeekStream whitespace(boolean required) {
+            matchers.add(ws(required));
+            return this;
+        }
+
+        public PeekStream newline(boolean required) {
+            matchers.add(nl(required));
+            return this;
+        }
+
+        public PeekStream emptyLine() {
+            matchers.add(new CheckerEmptyLine());
+            return this;
+        }
+
         PeekStream nextChar(Predicate<Character> matcher) {
             matchers.add(c->matcher.test(c) ? SUCCESS : FAILURE);
             return this;
@@ -211,6 +252,10 @@ public interface ChunkerMixin {
 
         public Checker ws() {
             return ws(false);
+        }
+
+        public Checker nl(boolean required) {
+            return new CheckerNewline(required);
         }
 
         public Checker ws(boolean required) {
@@ -288,13 +333,52 @@ public interface ChunkerMixin {
             return this;
         }
 
+        private PeekStream withTokens(String ... tokens) {
+            class TokenChecker implements Checker {
+                Checker[] tokenChecker;
+                int best = FAILURE;
+                boolean succeeded;
+                @Override
+                public int check(final char c) {
+                    if (Character.isWhitespace(c)) {
+                        tokenChecker = null;
+                        return MORE;
+                    }
+                    if (tokenChecker == null) {
+                        tokenChecker = new Checker[tokens.length];
+                        for (int i = 0; i < tokens.length; i++) {
+                            tokenChecker[i] = is(tokens[i]);
+                        }
+                    }
+                    for (int i = 0; i < tokenChecker.length; i++) {
+                        int result = tokenChecker[i].check(c);
+                        switch (result) {
+                            case FAILURE:
+                                tokenChecker[i] = Checker.FAILED;
+                                break;
+                            case NEXT:
+                                throw new IllegalStateException("NEXT is not a valid response for token checker");
+                            case SUCCESS:
+                                return result;
+                            case MORE:
+                                best = MORE;
+                        }
+                    }
+                    return best;
+                }
+            }
+            matchers.add(new TokenChecker());
+            return this;
+        }
+
         private Checker any(Checker ... checkers) {
 
             class AnyChecker implements Checker {
 
+                int best = FAILURE;
+
                 @Override
                 public int check(char c) {
-                    int best = FAILURE;
                     for (int i = 0; i < checkers.length; i++) {
                         int result = checkers[i].check(c);
                         switch (result) {
@@ -436,6 +520,9 @@ public interface ChunkerMixin {
                 private int pntr;
                 @Override
                 public int check(char c) {
+//                    if (s.length() <= pntr){
+//                        return FAILURE;
+//                    }
                     if (c == s.charAt(pntr)) {
                         pntr ++;
                         return pntr >= s.length() ? SUCCESS : MORE;
@@ -632,6 +719,18 @@ public interface ChunkerMixin {
             .matches(true);
     }
 
+    default boolean isTypeParam() {
+        return peek().whitespace(false).typeParams(true).matches(true);
+    }
+
+    default boolean isReturnTypeThenInvoke() {
+        final PeekStream matcher = peek().whitespace();
+        matcher.identifier(ALLOW_TYPE_PARAMS).whitespace();
+        matcher.typeParams(false).whitespace();
+        matcher.identifier(ALLOW_PAREN).whitespace();
+
+        return matcher.eofOr('(').matches(true);
+    }
     default boolean isTypedInvoke(boolean ctor) {
         final PeekStream matcher = peek()
             .whitespace();
@@ -648,11 +747,59 @@ public interface ChunkerMixin {
             .matches(true);
     }
 
+    default boolean isMethodDecl() {
+        final PeekStream matcher = peek();
+        matcher.whitespace()
+            .withTokens(
+                    // blech. this is ...ugly AF. We might need to delete this, and make actual productions for GroovyMethodDecl
+                "public",
+                "private",
+                "protected",
+                "static",
+                "final",
+                "strictfp",
+                "default"
+        );
+        matcher.typeParams(false).whitespace();
+        matcher.identifier(ALLOW_PAREN).whitespace();
+
+        return matcher
+            .eofOr('(')
+            .matches(true);
+    }
+
     default boolean isClassDecl() {
         return peek()
-            .whitespace()
+            .whitespace(false)
             .exact("class")
             .whitespace()
+            .matches(true);
+    }
+
+    default boolean isDef() {
+        final boolean result = peek()
+                .whitespace(false)
+                .exact("def")
+                .whitespace()
+                .matches(true);
+        return result;
+    }
+
+    default boolean isPythonSized(int numIndent) {
+        StringBuilder expected = new StringBuilder();
+        for (int i = numIndent; i-->0;) {
+            expected.append(" ");
+        }
+        boolean result = peek()
+                .newline(false)
+                .exact(expected.toString())
+                .matches(true);
+        return result;
+    }
+
+    default boolean isEmptyLine() {
+        return peek()
+            .emptyLine()
             .matches(true);
     }
 
@@ -690,6 +837,13 @@ public interface ChunkerMixin {
 
     Token token();
 
+    default void eatEmptyLines() {
+        final PeekStream peek = peek();
+        // loop while current line contains only whitespace; throw away chars iff whole line matches.
+        while (true) {
+            if (!peek.emptyLine().matches(false)) break;
+        }
+    }
     default Token eatJunk() {
         final Token token = token();
         Token root = new Token(0, "");

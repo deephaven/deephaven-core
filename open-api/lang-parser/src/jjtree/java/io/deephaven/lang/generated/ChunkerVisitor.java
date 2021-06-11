@@ -5,8 +5,11 @@ public interface ChunkerVisitor
 {
   public Object visit(SimpleNode node, Object data);
   public Object visitChunkerDocument(ChunkerDocument node, Object data);
+  public Object visitChunkerGroovyMethodDef(ChunkerGroovyMethodDef node, Object data);
+  public Object visitChunkerPythonMethod(ChunkerPythonMethod node, Object data);
   public Object visitChunkerStatement(ChunkerStatement node, Object data);
   public Object visitChunkerJavaClassDecl(ChunkerJavaClassDecl node, Object data);
+  public Object visitChunkerPythonClassDecl(ChunkerPythonClassDecl node, Object data);
   public Object visitChunkerAssign(ChunkerAssign node, Object data);
   public Object visitChunkerTypedAssign(ChunkerTypedAssign node, Object data);
   public Object visitChunkerTypeDecl(ChunkerTypeDecl node, Object data);
@@ -20,11 +23,14 @@ public interface ChunkerVisitor
   public Object visitChunkerNew(ChunkerNew node, Object data);
   public Object visitChunkerAnnotation(ChunkerAnnotation node, Object data);
   public Object visitChunkerInvoke(ChunkerInvoke node, Object data);
+  public Object visitChunkerPythonFunctionSig(ChunkerPythonFunctionSig node, Object data);
   public Object visitChunkerParam(ChunkerParam node, Object data);
   public Object visitChunkerClosure(ChunkerClosure node, Object data);
+  public Object visitChunkerPythonLambda(ChunkerPythonLambda node, Object data);
+  public Object visitChunkerDict(ChunkerDict node, Object data);
   public Object visitChunkerArray(ChunkerArray node, Object data);
   public Object visitChunkerBinaryExpression(ChunkerBinaryExpression node, Object data);
   public Object visitChunkerString(ChunkerString node, Object data);
   public Object visitChunkerEof(ChunkerEof node, Object data);
 }
-/* JavaCC - OriginalChecksum=ff9a6ba343263aa4beec307860ccc209 (do not edit this line) */
+/* JavaCC - OriginalChecksum=f7f68a975f795ed36da39666214e09fe (do not edit this line) */

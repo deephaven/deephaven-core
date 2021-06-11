@@ -20,4 +20,4 @@ class ChunkerTypeDecl extends SimpleNode {
     visitor.visitChunkerTypeDecl(this, data);
   }
 }
-/* JavaCC - OriginalChecksum=e3a1c09e75c3e7f0fafb7b00f3d58034 (do not edit this line) */
+/* JavaCC - OriginalChecksum=4e4d2c6e526bdd6f7fb06223e30e48a7 (do not edit this line) */

@@ -27,6 +27,7 @@ PARSER_BEGIN(Chunker)
 package io.deephaven.lang.generated;
 
 import static io.deephaven.lang.shared.lsp.DiagnosticCode.*;
+import static io.deephaven.lang.parse.api.Languages.*;
 import static java.util.Collections.singletonList;
 
 import io.deephaven.lang.api.ChunkerInvokable;
@@ -48,9 +49,12 @@ public class Chunker implements ChunkerMixin {
     private final ParseState root = new ParseState(null);
     private volatile ParseState current = root;
     private final Stack<ParseState> stack = new Stack<ParseState>();
+    private static int pythonDepth = -1, pythonIndent = 4;
     private final IdentityHashMap<Node, ParseState> states = new IdentityHashMap<Node, ParseState>();
     private Messenger messenger;
     private ChunkerInvokable invoker;
+    private String language;
+    boolean groovy = true, python = false;
 
     public static void main(String[] args) throws Exception {
         final Chunker ast;
@@ -60,6 +64,16 @@ public class Chunker implements ChunkerMixin {
             ast = new Chunker(new StreamProvider(new java.io.StringReader(args[0])));
         }
         ast.Document();
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+        groovy = LANGUAGE_GROOVY.equals(language);
+        python = LANGUAGE_PYTHON.equals(language);
+    }
+
+    public String getLanguage() {
+        return language;
     }
 
     public synchronized Messenger setMessenger(Messenger messenger) {
@@ -129,7 +143,7 @@ public class Chunker implements ChunkerMixin {
     // until the moment we are actually creating the tokens protected by a peeker method.
 
 
-    jj_ntk = -1; // erase knowledge of any existing tokens.
+      jj_ntk = -1; // erase knowledge of any existing tokens.
 
       jj_lastpos = jj_scanpos;
       jj_la = 1;
@@ -351,16 +365,19 @@ TOKEN:
 < DEFAULT >
 TOKEN:
 {
-    // Tokens suitable for identifiers
    < NEW: "new" >
 |  < EXTENDS: "extends" >
 |  < IMPLEMENTS: "implements" >
-|  < CLASS: ("class" | "interface" | "enum" | "@interface") >
+|  < CLASS: ("class" | "interface" | "enum" | "@interface") ( <WHITESPACE> | <NEWLINE> ) >
+|  < METHOD_MOD: ( ( "public" | "protected" | "private" | "default" | "static" | "final" | "strictfp" ) ( <WHITESPACE> | <NEWLINE> ) )+ >
 |  < SUPER: "super" >
+|  < DEF: "def" >
+    // Tokens suitable for identifiers
 |  < ID:
     ["A"-"Z","a"-"z", "_", "$" ]
     (["A"-"Z","a"-"z","0"-"9", "_", "$" ])*
     >
+|  < PY_LAMBDA: ( <WHITESPACE> )* "lambda" <WHITESPACE> <ID> ( ( <WHITESPACE> )* "," ( <WHITESPACE>)* <ID> )+ ( <WHITESPACE> )* ":" >
 | < #DIGIT: [ "0"-"9" ] ( [ "0"-"9", "_" ] )* >
 | < #SCIENTIFIC: [ "e", "E" ] ( "-" )? <DIGIT>  >
 | < NUM:
@@ -486,8 +503,15 @@ ChunkerDocument Document() :
 Node n = jjtThis;
 }
 {
-   // Grab as many statements as we can.
-   EatStatements(true)
+  (
+     // Grab as many statements as we can.
+     LOOKAHEAD({ groovy })
+     EatGroovyStatements()
+     |
+     LOOKAHEAD({ python })
+     EatPythonTopLevel()
+  )
+  Eof()
     {
       // document is done.  Fill in backlinks.
       jjtThis.jjtGetFirstToken().addBackLinks();
@@ -508,6 +532,18 @@ Node EatStatements(boolean persistent) #void:
          // and we don't want to pay for LL(2+).
          // for now, we can easily search to the left of Statement()'s first token,
          // so we'll avoid any leading whitespace in any production.
+         LOOKAHEAD( { isClassDecl() } )
+         (
+           LOOKAHEAD( { python } )
+           n = PythonClassDecl()
+           |
+           n = JavaClassDecl()
+         )
+         | LOOKAHEAD( { python && isDef() })
+             n = PythonMethod()
+         | LOOKAHEAD( { groovy && isDef() })
+             n = PythonMethod()
+         |
          n = Whitespace() |
          n = Statement()
        )
@@ -521,9 +557,194 @@ Node EatStatements(boolean persistent) #void:
          if (!persistent) {
            return n;
          }
+
        }
      )*
   { return n; }
+}
+
+Node EatGroovyStatements() #void:
+{
+        Node n = null;
+        ChunkerAssign assign = null;
+ }
+{
+  (
+    Whitespace()
+    |
+    Newline()
+    |
+    LOOKAHEAD( <CLASS> )
+    JavaClassDecl()
+    |
+    <METHOD_MOD>
+    (
+        LOOKAHEAD( <CLASS> )
+        JavaClassDecl()
+        |
+        // A<Typed> field
+        LOOKAHEAD( { isTypedAssign() } )
+        assign = TypedAssign()
+        [ n = Values() {
+                  assign.setValue(n);
+                  assign.setValue(n);
+              }]
+        |
+        // AnUntyped field
+        LOOKAHEAD( { isAssign() } )
+        assign = Assign()
+        [ n = Values() {
+                  assign.setValue(n);
+              }]
+        |
+        // Hm, probably need to handle "public List<Blah> fieldName", which is NOT an assign, above, before handling method def, below
+        GroovyMethodDef()
+    )
+    |
+    LOOKAHEAD( <CLASS> )
+    JavaClassDecl()
+    |
+    // Need to handle top-level assignments before we consider methods (to avoid ambiguity w/ method definitions)
+    LOOKAHEAD( { isTypedAssign() } )
+    assign = TypedAssign()
+    [ n = Values() {
+              assign.setValue(n);
+          }]
+    |
+    LOOKAHEAD( { isAssign() } )
+    assign = Assign()
+    [ n = Values() {
+              assign.setValue(n);
+          }]
+    |
+    // gahhhh, soooo hard to detect method definitions...
+    // since we've eliminated public|private|default, etc, we can now reduce our lookahead to:
+    // [ <TypeParams> ] ReturnType[<More, Params>] name(
+    LOOKAHEAD( { isTypeParam() })
+    GroovyMethodDef()
+    |
+    // Now, to find method defs from just `ReturnType [<TypeParams>] name(`
+    LOOKAHEAD( { isReturnTypeThenInvoke() })
+    GroovyMethodDef()
+    |
+    Statement()
+  )*
+  { return n; }
+}
+
+ChunkerGroovyMethodDef GroovyMethodDef():
+{}
+{
+[ TypeParams() {
+  // TODO record method type parameters
+} Whitespace() ]
+// TODO: a better production for returnType, like List< String>
+[ Ident() [ TypeParams() ] Whitespace() ]
+Invoke()
+// This isn't great by any means, but it should work. We can break it up into something different for method bodies
+// Note: in groovy, it is NOT legal to put a class inside a closure or method body.
+Closure()
+
+{return jjtThis;}
+}
+
+Node EatPythonTopLevel() #void:
+{
+    int numIndent = Math.max(0, pythonDepth) * pythonIndent;
+    Node n = null;
+}
+{
+    (
+    LOOKAHEAD( <DEF> )
+    n = PythonMethod() |
+    LOOKAHEAD( <CLASS> )
+    n = PythonClassDecl() |
+    n = Newline() |
+    n = Statement()
+    )*
+
+    {return n;}
+}
+Node EatPythonStatements() #void:
+{
+        // TODO: this should actually form a block of python statements (same indent)
+        int numIndent = Math.max(0, pythonDepth) * pythonIndent;
+        Node n = null;
+        eatEmptyLines();
+}
+{
+  (
+     try {
+       { if (!isPythonSized(numIndent)) {
+           return n;
+       } }
+       <WHITESPACE> {
+          int numWs = token.image.length();
+          // put the whitespace all back, our children need to eat it.
+//            back(numWs, -1);
+          if (numWs < numIndent) {
+              // incorrect whitespace. TODO: check for even multiples in case this is an error on amount of whitespace
+              // for now, we'll bail. a `def function_def:` statement should be calling EatPythonStatements again,
+              // so we shouldn't create any additional structure within this production.
+              // put the whitespace back, in case anybody cares about it.
+              if ((numWs % pythonIndent) != 0) {
+                  // This is an error case. The indent should always be an even multiple of first detected pythonIndent
+              }
+              return n;
+          }
+       }
+       // ok, correct whitespace indent. Eat functions, classes and statements
+       (
+           LOOKAHEAD( <DEF> )
+           n = PythonMethod() |
+           LOOKAHEAD( <CLASS> )
+           n = PythonClassDecl() |
+           n = Newline() |
+           n = Statement() {
+               if (n.jjtGetLastToken().kind == NEWLINE) {
+                   if (!isPythonSized(numIndent)) {
+                      putBack(n.jjtGetLastToken());
+                      return n;
+                   }
+               }
+           }
+       )
+       } catch (ParseException e) {
+         // Whenever there is an unhandled parse exception,
+         // gobble up the rest of the line and attach to previous node.
+         if (n != null) {
+           token = n.addJunk(eatJunk());
+         }
+         fixState(token);
+         if (numIndent > 0) {
+             return n;
+         }
+       }
+     )*
+  { return n; }
+}
+
+ChunkerPythonMethod PythonMethod():
+{
+        int numIndent = Math.max(0, pythonDepth) * pythonIndent;
+        Node n = null;
+        ChunkerWhitespace ws = null;
+        eatEmptyLines();
+}
+{
+  <DEF>
+  [ <WHITESPACE> ]
+  [ PythonFunctionSig() {
+      // TODO: move the contents of this ChunkerInvoke into the python function definition.
+      numIndent += pythonIndent;
+      pythonDepth++;
+  } ]
+  LOOKAHEAD({ isPythonSized(numIndent) })
+  EatPythonStatements()
+  {
+  pythonDepth--;
+  return jjtThis;
+  }
 }
 
 
@@ -555,8 +776,13 @@ checkInterrupts();
     )
     | LOOKAHEAD( { isClassDecl() } )
     (
+      LOOKAHEAD( { python } )
+      expr = PythonClassDecl()
+      |
       expr = JavaClassDecl()
     )
+    | LOOKAHEAD( { python && isDef() })
+        expr = PythonMethod()
     | (
         // special handling for python `from .name` imports
         [<FROM_LOCAL>]
@@ -571,6 +797,7 @@ checkInterrupts();
           [ expr = Values() ]
         ]
       )
+    | expr = Expression()
   )
   [ Whitespace() {
     expr.adopt(jjtree.popNode());
@@ -583,7 +810,7 @@ checkInterrupts();
     // This will be useful for groovy closure and python set detection.
     expr.addToken(token);
   } | <COLON> {
-    // we'll want something better than this for python ... later.
+    // we'll want something better than this for python ... probably pythonDepth++;
     expr.addToken(token);
   } | <CLOSURE_START> {
     ignore = token;
@@ -599,10 +826,20 @@ checkInterrupts();
     } ) // optional semi-colon delimiter
    } catch (ParseException e) {
      // Whenever there is an unhandled parse exception,
-     // gobble up the rest of the line and attach to previous node.
+     // gobble up the rest of the line and attach to previous node...
+     // unless the current item on the stack ends w/ a valid statement terminator
      if (expr != null) {
-       token = expr.addJunk(eatJunk());
-       fixState(token);
+       Token tok = expr.jjtGetLastToken();
+//       switch(tok.kind) {
+//           case NEWLINE:
+//           case SEMI:
+//               back(tok.image.length(), -1);
+//               // TODO: handle removing the token too?
+//               break;
+//           default:
+               token = expr.addJunk(eatJunk());
+               fixState(token);
+//       }
      }
    }
 
@@ -621,42 +858,40 @@ ChunkerJavaClassDecl JavaClassDecl() :
 boolean wellFormed = false;
 }
 {
-  // This is brutish, but we don't inspect these ast nodes at all right now...
-  // and likely not for quite a while... we'd be much better off to defer to native parsers here.
+  // METHOD_MOD handles things not really legal for class, but we're not worrying about such errors just yet.
+  [ <METHOD_MOD> ]
   <CLASS>
-  [ <WHITESPACE>
+  [
+    // TODO: handle well-formed-ness and associated warnings / suggestions when that fails.
+    TypeDecl()
+    [ <WHITESPACE> ]
     [
-      // TODO: handle well-formed-ness and associated warnings / suggestions when that fails.
-      TypeDecl()
+      <EXTENDS>
+      [
+        <WHITESPACE>
+        TypeDecl()
+        (
+          [ <WHITESPACE> ]
+          <COMMA>
+          [ <WHITESPACE> ]
+          [ TypeDecl() ]
+        )*
+      ]
       [ <WHITESPACE> ]
+    ]
+    [
+      <IMPLEMENTS>
       [
-        <EXTENDS>
-        [
-          <WHITESPACE>
-          TypeDecl()
-          (
-            [ <WHITESPACE> ]
-            <COMMA>
-            [ <WHITESPACE> ]
-            [ TypeDecl() ]
-          )*
-        ]
-        [ <WHITESPACE> ]
+        <WHITESPACE>
+        TypeDecl()
+        (
+          [ <WHITESPACE> ]
+          <COMMA>
+          [ <WHITESPACE> ]
+          [ TypeDecl() ]
+        )*
       ]
-      [
-        <IMPLEMENTS>
-        [
-          <WHITESPACE>
-          TypeDecl()
-          (
-            [ <WHITESPACE> ]
-            <COMMA>
-            [ <WHITESPACE> ]
-            [ TypeDecl() ]
-          )*
-        ]
-        [ <WHITESPACE> ]
-      ]
+      [ <WHITESPACE> ]
     ]
   ]
   [ <WHITESPACE> ]
@@ -664,7 +899,7 @@ boolean wellFormed = false;
     (
       <CLOSURE_START>
       // TODO something which actually eats member declarations... and arbitrary `{ statementBlocks() }`
-      EatStatements(false)
+      EatGroovyStatements()
       [ <CLOSURE_END> {
         wellFormed = true;
 
@@ -674,6 +909,51 @@ boolean wellFormed = false;
   ]
 
   {
+    jjtThis.setWellFormed(wellFormed);
+    return jjtThis;
+  }
+}
+
+ChunkerPythonClassDecl PythonClassDecl() :
+// a
+// class ClsName(Super, Type: list[of], ): -> dict[ret, type]
+{
+boolean wellFormed = false;
+ChunkerPythonFunctionSig invoke = null;
+int numSpace = pythonIndent;
+}
+{
+  <CLASS>
+  (
+      // class ClsName(Super: Type[info]):
+      invoke = PythonFunctionSig() {
+        // TODO: extract the class name
+        // TODO: extract the parameters as arguments w/ optional type annotations
+      }
+      |
+      // class ClsName:
+      (Ident() {
+        // TODO: extract the class name
+      }
+       [ <COLON> {
+            wellFormed = true;
+       } ]
+      )
+  )
+
+   {
+     if (pythonDepth == -1) {
+            // This is the very first indention. Record the whitespace depth.
+            pythonIndent = numSpace;
+            // double increment, so we never have a == -1 case again.
+            pythonDepth++;
+        }
+     pythonDepth ++;
+ }
+   EatPythonStatements()
+
+  {
+    pythonDepth--;
     jjtThis.setWellFormed(wellFormed);
     return jjtThis;
   }
@@ -704,7 +984,7 @@ ChunkerTypedAssign TypedAssign() :
 ChunkerTypeDecl TypeDecl():
 {}
 {
-  <ID>
+  ( <ID> | <DEF> )
   [ <WHITESPACE> ]
   [ TypeParams() ]
   { return jjtThis; }
@@ -768,7 +1048,7 @@ ChunkerTypeParam TypeParam(boolean canWildcard) :
 ChunkerIdent Ident() :
 {}
 {
-  <ID>
+  ( <ID> | <DEF> )
   { return jjtThis; }
 }
 
@@ -1070,20 +1350,7 @@ ChunkerInvoke Invoke():
         <CLOSE_PAREN> {
           wellFormed = true;
         }
-        // technically, this should be reserved only for method declarations, not invocations,
-        // but we currently are not differentiating, and are generally allowing all malformed syntax,
-        // so, here it goes...
         [ <WHITESPACE> ]
-        [
-          <ARROW>
-          [ Values() ]
-          {
-            wellFormed = false;
-          }
-          [ <COLON> {
-            wellFormed = true;
-          } ]
-        ]
       )
       | Newline() {
         // we want to let newline end the final statement of source,
@@ -1108,6 +1375,34 @@ ChunkerInvoke Invoke():
   }
 }
 
+ChunkerPythonFunctionSig PythonFunctionSig():
+{
+ boolean wellFormed = false;
+}
+{
+Invoke() {
+}
+[ <WHITESPACE> ]
+[
+  <ARROW>
+  [ <WHITESPACE> ]
+  [ Values() ]
+]
+[ <COLON> {
+    wellFormed = true;
+} ]
+[ Whitespace() ]
+[
+  Newline()
+  | Eof()
+]
+  {
+      jjtThis.setWellFormed(wellFormed);
+//      jjtThis.setName(name);
+      return jjtThis;
+  }
+}
+
 ChunkerParam Param():
 {
   List<IsScope> scope;
@@ -1115,41 +1410,40 @@ ChunkerParam Param():
 
 }
 {
-  (
-    [
-      LOOKAHEAD( { isScope() } )
-      scope = Scope() {
-        for (IsScope ident : scope) {
-          jjtThis.addChild(ident);
-        }
+  [
+    LOOKAHEAD( { isScope() } )
+    scope = Scope() {
+      for (IsScope ident : scope) {
+        jjtThis.addChild(ident);
       }
-    ]
-    Ident()
-    [ <WHITESPACE> ]
-    [ <COLON> // python support
-        Values()
-    ]
-    [ TypeParams() ]
-    [ <WHITESPACE> ]
-    [ Array() ]
+    }
+  ]
+  Ident()
+  [ <WHITESPACE> ]
+  [ <COLON> // python support
+      // TODO: instead of matching here, we should get class Rules: and def function() -> rules:
+      Values()
+  ]
+  [ TypeParams() ]
+  [ <WHITESPACE> ]
+  [ Array() ]
+  [
+    <WHITESPACE>
     [
-      <WHITESPACE>
-      [
-         (
-           LOOKAHEAD( { isAssign() } )
-           // try to gobble up assigns first...
-           assign = Assign()
-           ( <WHITESPACE> | <NEWLINE> )*
-           [ value = Expression() {
-             assign.setValue(value);
-           }]
-         )
-           // settle for a plain identifier
-         | Ident()
-      ]
+       (
+         LOOKAHEAD( { isAssign() } )
+         // try to gobble up assigns first...
+         assign = Assign()
+         ( <WHITESPACE> | <NEWLINE> )*
+         [ value = Expression() {
+           assign.setValue(value);
+         }]
+       )
+         // settle for a plain identifier
+       | Ident()
     ]
-    [ <WHITESPACE> ]
-  )
+  ]
+  [ <WHITESPACE> ]
   {return jjtThis;}
 }
 
@@ -1169,9 +1463,7 @@ ChunkerClosure Closure():
     n = ClosureParams() [ <ARROW> ]
   ]
   ( Whitespace() | Newline() )*
-   EatStatements(false)
-  ( Whitespace() | Newline() )*
-
+  EatStatements(true)
   try {
     (
       (
@@ -1180,6 +1472,61 @@ ChunkerClosure Closure():
           jjtree.popNode();
          }]
         [ Invoke() ]
+      )
+      | Eof() {
+        jjtThis.setWellFormed(false);
+      }
+    )
+  } catch (ParseException e) {
+     // This invocation is malformed; recover here so we can continue
+     Node node = jjtree.nodeArity() > 0 ? jjtree.peekNode() : jjtThis;
+     Token junk = eatJunk();
+     node.addToken(junk);
+  }
+  {
+      jjtThis.setWellFormed(wellFormed);
+      return jjtThis;
+  }
+}
+ChunkerPythonLambda PythonLambda():
+{}
+{
+    <PY_LAMBDA>
+    { return jjtThis; }
+}
+
+ChunkerDict Dict():
+{
+  boolean wellFormed = false, hasType = false, hadComma = false;
+  Node key = null, value = null;
+  List<IsScope> scope;
+  List<ChunkerParam> params;
+}
+{
+  <CLOSURE_START>
+    // TODO: consider python dictionaries before getting here (i.e. make a method that peeks for dictionary syntax)
+   (
+        ( Whitespace() | Newline() )*
+        // look for key-value pairs
+        key = Expression() {
+            wellFormed = false;
+        }
+        ( <WHITESPACE> | <NEWLINE> )*
+        [ <COLON>
+            ( <WHITESPACE> | <NEWLINE> )*
+            value = Expression() {
+                wellFormed = true;
+            }
+            ( <WHITESPACE> | <NEWLINE> )*
+            [ <COMMA> ]
+        ]
+   ) *
+  ( Whitespace() | Newline() )*
+
+  try {
+    (
+      (
+        <CLOSURE_END> { wellFormed = true; }
       )
       | Eof() {
         jjtThis.setWellFormed(false);
@@ -1261,7 +1608,13 @@ Node Expression() #void:
       // | expr = ClassDef()
       // | expr = FuncDef() // more python-y stuff...
       (
+        LOOKAHEAD({ groovy })
         expr = Closure()
+      ) | (
+        LOOKAHEAD({ python })
+        expr = Dict()
+      ) | (
+        expr = PythonLambda()
       ) | (
         expr = Array()
       ) | (
@@ -1415,6 +1768,10 @@ ChunkerBinaryExpression BinaryExpression(Node left) :
       }
       | <LT> {
         wellFormed = false; // not legal to have this w/out a followup expression
+        joiner = token;
+        jjtThis.setJoiner(joiner);
+      }
+      | <DEF> {
         joiner = token;
         jjtThis.setJoiner(joiner);
       }

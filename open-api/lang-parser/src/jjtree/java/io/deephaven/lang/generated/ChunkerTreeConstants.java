@@ -5,34 +5,43 @@ public interface ChunkerTreeConstants
 {
   public int JJTDOCUMENT = 0;
   public int JJTVOID = 1;
-  public int JJTSTATEMENT = 2;
-  public int JJTJAVACLASSDECL = 3;
-  public int JJTASSIGN = 4;
-  public int JJTTYPEDASSIGN = 5;
-  public int JJTTYPEDECL = 6;
-  public int JJTTYPEPARAMS = 7;
-  public int JJTTYPEPARAM = 8;
-  public int JJTIDENT = 9;
-  public int JJTNUM = 10;
-  public int JJTWHITESPACE = 11;
-  public int JJTMETHODNAME = 12;
-  public int JJTNEWLINE = 13;
-  public int JJTNEW = 14;
-  public int JJTANNOTATION = 15;
-  public int JJTINVOKE = 16;
-  public int JJTPARAM = 17;
-  public int JJTCLOSURE = 18;
-  public int JJTARRAY = 19;
-  public int JJTBINARYEXPRESSION = 20;
-  public int JJTSTRING = 21;
-  public int JJTEOF = 22;
+  public int JJTGROOVYMETHODDEF = 2;
+  public int JJTPYTHONMETHOD = 3;
+  public int JJTSTATEMENT = 4;
+  public int JJTJAVACLASSDECL = 5;
+  public int JJTPYTHONCLASSDECL = 6;
+  public int JJTASSIGN = 7;
+  public int JJTTYPEDASSIGN = 8;
+  public int JJTTYPEDECL = 9;
+  public int JJTTYPEPARAMS = 10;
+  public int JJTTYPEPARAM = 11;
+  public int JJTIDENT = 12;
+  public int JJTNUM = 13;
+  public int JJTWHITESPACE = 14;
+  public int JJTMETHODNAME = 15;
+  public int JJTNEWLINE = 16;
+  public int JJTNEW = 17;
+  public int JJTANNOTATION = 18;
+  public int JJTINVOKE = 19;
+  public int JJTPYTHONFUNCTIONSIG = 20;
+  public int JJTPARAM = 21;
+  public int JJTCLOSURE = 22;
+  public int JJTPYTHONLAMBDA = 23;
+  public int JJTDICT = 24;
+  public int JJTARRAY = 25;
+  public int JJTBINARYEXPRESSION = 26;
+  public int JJTSTRING = 27;
+  public int JJTEOF = 28;
 
 
   public String[] jjtNodeName = {
     "Document",
     "void",
+    "GroovyMethodDef",
+    "PythonMethod",
     "Statement",
     "JavaClassDecl",
+    "PythonClassDecl",
     "Assign",
     "TypedAssign",
     "TypeDecl",
@@ -46,12 +55,15 @@ public interface ChunkerTreeConstants
     "New",
     "Annotation",
     "Invoke",
+    "PythonFunctionSig",
     "Param",
     "Closure",
+    "PythonLambda",
+    "Dict",
     "Array",
     "BinaryExpression",
     "String",
     "Eof",
   };
 }
-/* JavaCC - OriginalChecksum=7266a1d57b5468f7b89627acb8a0ca47 (do not edit this line) */
+/* JavaCC - OriginalChecksum=d0990211d5031122f2150088aeaa072c (do not edit this line) */

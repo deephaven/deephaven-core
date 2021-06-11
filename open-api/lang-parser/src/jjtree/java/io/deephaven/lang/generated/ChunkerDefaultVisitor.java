@@ -12,10 +12,19 @@ public class ChunkerDefaultVisitor implements ChunkerVisitor{
   public Object visitChunkerDocument(ChunkerDocument node, Object data){
     return defaultVisit(node, data);
   }
+  public Object visitChunkerGroovyMethodDef(ChunkerGroovyMethodDef node, Object data){
+    return defaultVisit(node, data);
+  }
+  public Object visitChunkerPythonMethod(ChunkerPythonMethod node, Object data){
+    return defaultVisit(node, data);
+  }
   public Object visitChunkerStatement(ChunkerStatement node, Object data){
     return defaultVisit(node, data);
   }
   public Object visitChunkerJavaClassDecl(ChunkerJavaClassDecl node, Object data){
+    return defaultVisit(node, data);
+  }
+  public Object visitChunkerPythonClassDecl(ChunkerPythonClassDecl node, Object data){
     return defaultVisit(node, data);
   }
   public Object visitChunkerAssign(ChunkerAssign node, Object data){
@@ -57,10 +66,19 @@ public class ChunkerDefaultVisitor implements ChunkerVisitor{
   public Object visitChunkerInvoke(ChunkerInvoke node, Object data){
     return defaultVisit(node, data);
   }
+  public Object visitChunkerPythonFunctionSig(ChunkerPythonFunctionSig node, Object data){
+    return defaultVisit(node, data);
+  }
   public Object visitChunkerParam(ChunkerParam node, Object data){
     return defaultVisit(node, data);
   }
   public Object visitChunkerClosure(ChunkerClosure node, Object data){
+    return defaultVisit(node, data);
+  }
+  public Object visitChunkerPythonLambda(ChunkerPythonLambda node, Object data){
+    return defaultVisit(node, data);
+  }
+  public Object visitChunkerDict(ChunkerDict node, Object data){
     return defaultVisit(node, data);
   }
   public Object visitChunkerArray(ChunkerArray node, Object data){
@@ -76,4 +94,4 @@ public class ChunkerDefaultVisitor implements ChunkerVisitor{
     return defaultVisit(node, data);
   }
 }
-/* JavaCC - OriginalChecksum=88e6e84e83ac32de335bcdb7db53a00e (do not edit this line) */
+/* JavaCC - OriginalChecksum=25c8d5f8102d9e263717c23126e96808 (do not edit this line) */

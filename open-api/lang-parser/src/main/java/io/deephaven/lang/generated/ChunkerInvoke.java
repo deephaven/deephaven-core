@@ -24,7 +24,6 @@ class ChunkerInvoke extends AbstractChunkerInvokable implements IsScope {
 
   /** Accept the visitor. **/
   public Object jjtAccept(ChunkerVisitor visitor, Object data) {
-
     return
     visitor.visitChunkerInvoke(this, data);
   }

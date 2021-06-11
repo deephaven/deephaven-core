@@ -3,7 +3,11 @@
 package io.deephaven.lang.generated;
 
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 /**
  * NOTE : This generated class can be safely deleted if installing in a GWT installation (use StringProvider instead)
@@ -51,4 +55,4 @@ public class StreamProvider implements Provider {
 
 }
 
-/* JavaCC - OriginalChecksum=b2709660d21892620e206290370928f6 (do not edit this line) */
+/* JavaCC - OriginalChecksum=2d0acd1652895cd709f8f851ccd24046 (do not edit this line) */

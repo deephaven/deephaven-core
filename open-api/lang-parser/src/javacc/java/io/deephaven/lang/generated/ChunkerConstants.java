@@ -51,61 +51,67 @@ public interface ChunkerConstants {
   /** RegularExpression Id. */
   int CLASS = 26;
   /** RegularExpression Id. */
-  int SUPER = 27;
+  int METHOD_MOD = 27;
   /** RegularExpression Id. */
-  int ID = 28;
+  int SUPER = 28;
   /** RegularExpression Id. */
-  int DIGIT = 29;
+  int DEF = 29;
   /** RegularExpression Id. */
-  int SCIENTIFIC = 30;
+  int ID = 30;
   /** RegularExpression Id. */
-  int NUM = 31;
+  int PY_LAMBDA = 31;
   /** RegularExpression Id. */
-  int NUM_OP = 32;
+  int DIGIT = 32;
   /** RegularExpression Id. */
-  int DOUBLE_EQ = 33;
+  int SCIENTIFIC = 33;
   /** RegularExpression Id. */
-  int ASSIGN = 34;
+  int NUM = 34;
   /** RegularExpression Id. */
-  int INVOKE = 35;
+  int NUM_OP = 35;
   /** RegularExpression Id. */
-  int CLOSURE_START = 36;
+  int DOUBLE_EQ = 36;
   /** RegularExpression Id. */
-  int COLON = 37;
+  int ASSIGN = 37;
   /** RegularExpression Id. */
-  int CLOSURE_END = 38;
+  int INVOKE = 38;
   /** RegularExpression Id. */
-  int AT = 39;
+  int CLOSURE_START = 39;
   /** RegularExpression Id. */
-  int ARRAY_START = 40;
+  int COLON = 40;
   /** RegularExpression Id. */
-  int ARRAY_END = 41;
+  int CLOSURE_END = 41;
   /** RegularExpression Id. */
-  int ARROW = 42;
+  int AT = 42;
   /** RegularExpression Id. */
-  int LT = 43;
+  int ARRAY_START = 43;
   /** RegularExpression Id. */
-  int GT = 44;
+  int ARRAY_END = 44;
   /** RegularExpression Id. */
-  int QUEST = 45;
+  int ARROW = 45;
   /** RegularExpression Id. */
-  int AMP = 46;
+  int LT = 46;
   /** RegularExpression Id. */
-  int STARS = 47;
+  int GT = 47;
   /** RegularExpression Id. */
-  int LOGIC = 48;
+  int QUEST = 48;
   /** RegularExpression Id. */
-  int ACCESS = 49;
+  int AMP = 49;
   /** RegularExpression Id. */
-  int TRIPLE_QUOTES = 50;
+  int STARS = 50;
   /** RegularExpression Id. */
-  int TRIPLE_APOS = 51;
+  int LOGIC = 51;
   /** RegularExpression Id. */
-  int COMMA = 52;
+  int ACCESS = 52;
   /** RegularExpression Id. */
-  int SEMI = 53;
+  int TRIPLE_QUOTES = 53;
   /** RegularExpression Id. */
-  int CLOSE_PAREN = 54;
+  int TRIPLE_APOS = 54;
+  /** RegularExpression Id. */
+  int COMMA = 55;
+  /** RegularExpression Id. */
+  int SEMI = 56;
+  /** RegularExpression Id. */
+  int CLOSE_PAREN = 57;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -147,8 +153,11 @@ public interface ChunkerConstants {
     "\"extends\"",
     "\"implements\"",
     "<CLASS>",
+    "<METHOD_MOD>",
     "\"super\"",
+    "\"def\"",
     "<ID>",
+    "<PY_LAMBDA>",
     "<DIGIT>",
     "<SCIENTIFIC>",
     "<NUM>",
