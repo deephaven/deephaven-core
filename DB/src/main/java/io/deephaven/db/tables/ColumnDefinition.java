@@ -490,86 +490,25 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         // the columns I've removed.
         // This is further complicated by new additions in some cases, so we've overloaded the old formula (String)
         // field as a "version number" for the externalized object -- see writeExternal() for format documentation.
-        final int versionStringUtfLen = in.readUnsignedShort();
-        final byte versionNumber;
-        if (versionStringUtfLen != 2) {
-            // This captures most possible "real" values (of which I think there are exactly 0 in use in persisted
-            // ColumnDefinitions "in the wild").
-            versionNumber = 0;
-            in.skipBytes(versionStringUtfLen);
-        } else if (in.readByte() != MAGIC_NUMBER) {
-            // We have the null case ("\0", which is encoded with 2 bytes for no reason I can, understand) or a
-            // "real" value of length 2.  We know it's impossible for a real, valid 2-byte UTF-8 sequence to start
-            // with the magic number constant we're using.
-            versionNumber = 0;
-            in.skipBytes(1); // versionStringUtfLen - 1 == 1
-        } else {
-            // Magic number was found, it's OK to read our version number byte.
-            versionNumber = in.readByte();
-        }
-
         dataType = (Class)in.readObject();
         componentType = (Class)in.readObject();
         columnType = in.readInt();
         isVarSizeString = (Boolean)in.readObject();
-
-        if (versionNumber < STRING_ENCODING_VERSION) {
-            encoding = ENCODING_ISO_8859_1;
-        } else {
-            encoding = in.readInt();
-        }
-
-        if (versionNumber < OBJECT_CODEC_VERSION) {
-            objectCodecClass = null;
-            objectCodecArguments = null;
-            objectWidth = Integer.MIN_VALUE;
-        } else {
-            objectCodecClass = readAdoString(in);
-            objectCodecArguments = readAdoString(in);
-            objectWidth = in.readInt();
-        }
-    }
-
-    /**
-     * This is temporary, while I need backwards-compatibility for wire-format serialization of TableDefinition and
-     * ColumnDefinition.
-     */
-    private static final ThreadLocal<Boolean> PERSISTENT_SERIALIZATION = new ThreadLocal<>();
-
-    public static void beginPersistentSerialization() {
-        PERSISTENT_SERIALIZATION.set(Boolean.TRUE);
-    }
-
-    public static void endPersistentSerialization() {
-        PERSISTENT_SERIALIZATION.set(Boolean.FALSE);
-    }
-
-    public static boolean doingPersistentSerialization() {
-        return PERSISTENT_SERIALIZATION.get() == Boolean.TRUE;
+        encoding = in.readInt();
+        objectCodecClass = readAdoString(in);
+        objectCodecArguments = readAdoString(in);
+        objectWidth = in.readInt();
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         writeAdoString(out, name);
 
-        if (!doingPersistentSerialization()) {
-            // PersistentOutputStream provides ColumnSets for ADO backwards-compatibility.  If we don't have one, we
-            // need to write null placeholder values for "legacy" fields that I've removed from the ColumnSet/ADO.
-            // We've since re-used the placeholder for the "formula" field as a single byte "version number" value.
-            // This is written as 2 bytes for the "UTF length", a single byte "magic number" that *should* cause an
-            // exception if something tries to parse it naively as UTF-8, and a byte to represent the version number.
-            out.writeShort(2);
-            out.writeByte(MAGIC_NUMBER);
-            out.writeByte(CURRENT_VERSION);
-        }
-
         out.writeObject(dataType);
         out.writeObject(componentType);
         out.writeInt(columnType);
         out.writeObject(isVarSizeString);
-
         out.writeInt(encoding);
-
         writeAdoString(out, objectCodecClass);
         writeAdoString(out, objectCodecArguments);
         out.writeInt(objectWidth);
