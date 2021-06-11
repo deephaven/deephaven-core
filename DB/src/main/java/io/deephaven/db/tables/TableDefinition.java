@@ -4,7 +4,6 @@
 
 package io.deephaven.db.tables;
 
-import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -19,17 +18,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.db.tables.DataObjectUtils.readAdoString;
-import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
-
 /**
  * Table definition for all Deephaven tables.
  * Adds non-stateful functionality to DefaultTableDefinition.
  */
 public class TableDefinition extends DefaultTableDefinition {
-
-    public static final EnumFormatter STORAGE_TYPE_FORMATTER = new EnumFormatter(getColumnSetStatic().getColumn("StorageType").getEnums());
-
     private static final long serialVersionUID = -120432133075760976L;
 
     private static final String NEW_LINE = System.getProperty("line.separator");
