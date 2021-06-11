@@ -263,8 +263,6 @@ public abstract class SourceTable extends RedefinableTable {
                     //noinspection unchecked
                     return new EmptyToNullStringRegionedColumnSource(source, () ->
                             log.info().append("EMPTY-TO-NULL-CONVERSION: ")
-                                    .append(getDefinition().getNamespace()).append('.')
-                                    .append(getDefinition().getName()).append('.')
                                     .append(name)
                                     .endl());
                 },
