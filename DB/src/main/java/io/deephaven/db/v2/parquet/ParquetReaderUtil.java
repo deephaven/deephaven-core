@@ -184,8 +184,13 @@ public class ParquetReaderUtil {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-                if (timestampLogicalType.isAdjustedToUTC() && timestampLogicalType.getUnit().equals(LogicalTypeAnnotation.TimeUnit.NANOS)) {
-                    return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
+                if (timestampLogicalType.isAdjustedToUTC()) {
+                    switch(timestampLogicalType.getUnit()) {
+                        case MILLIS:
+                        case MICROS:
+                        case NANOS:
+                            return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
+                    }
                 }
                 errorString.setValue("TimestampLogicalType,isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ",unit=" + timestampLogicalType.getUnit());
                 return Optional.empty();
