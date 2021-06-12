@@ -8,51 +8,21 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.LongFunction;
 import java.util.function.LongUnaryOperator;
 
 public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLongPage<ATTR> {
 
-    private static <ATTR extends Attributes.Any> ToDBDateTimePage<ATTR> fromUnitToNanos(final LongUnaryOperator convertUnitToNanos) {
-        return new ToDBDateTimePage<ATTR>() {
-            private long toNanos(final long v) {
-                return convertUnitToNanos.applyAsLong(v);
-            }
+    @SuppressWarnings("rawtypes")
+    private static final ToDBDateTimePage MILLIS_INSTANCE = new ToDBDateTimePageFromMillis();
+    @SuppressWarnings("rawtypes")
+    private static final ToDBDateTimePage MICROS_INSTANCE = new ToDBDateTimePageFromMicros();
+    @SuppressWarnings("rawtypes")
+    private static final ToDBDateTimePage NANOS_INSTANCE = new ToDBDateTimePageFromNanos();
 
-            @Override
-            public final long[] convertResult(@NotNull final Object result) {
-                final long[] resultLongs = (long[]) result;
-
-                final int resultLength = resultLongs.length;
-                for (int ri = 0; ri < resultLength; ++ri) {
-                    resultLongs[ri] = toNanos(resultLongs[ri]);
-                }
-
-                return resultLongs;
-            }
-
-            @Override
-            @NotNull
-            public DbArray<DBDateTime> makeDbArray(long[] result) {
-                DBDateTime[] to = new DBDateTime[result.length];
-
-                for (int i = 0; i < result.length; ++i) {
-                    to[i] = new DBDateTime(toNanos(result[i]));
-                }
-
-                return new DbArrayDirect<>(to);
-            }
-        };
-    }
-
-    private static long longIdentity(final long v) {
-        return v;
-    }
-
-    private static final ToDBDateTimePage<?> MILLIS_INSTANCE = fromUnitToNanos(DBTimeUtils::millisToNanos);
-    private static final ToDBDateTimePage<?> MICROS_INSTANCE = fromUnitToNanos(DBTimeUtils::microsToNanos);
-    private static final ToDBDateTimePage<?> NANOS_INSTANCE = fromUnitToNanos(ToDBDateTimePage::longIdentity);
-
-    public static ToDBDateTimePage create(@NotNull final Class<?> nativeType, final LogicalTypeAnnotation.TimeUnit unit) {
+    @SuppressWarnings("unchecked")
+    public static <ATTR extends Attributes.Any>
+    ToPage<ATTR, DBDateTime[]> create(@NotNull final Class<?> nativeType, final LogicalTypeAnnotation.TimeUnit unit) {
         if (DBDateTime.class.equals(nativeType)) {
             switch(unit) {
                 case MILLIS:
@@ -71,9 +41,59 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
 
     protected ToDBDateTimePage() {}
 
+    protected static DbArray<DBDateTime> makeDbArrayHelper(final long[] result, final LongFunction<DBDateTime> unitToTime) {
+        DBDateTime[] to = new DBDateTime[result.length];
+
+        for (int i = 0; i < result.length; ++i) {
+            to[i] = unitToTime.apply(result[i]);
+        }
+        return new DbArrayDirect<>(to);
+    }
+
+    protected static long[] convertResultHelper(@NotNull final Object result, final LongUnaryOperator unitToNanos) {
+        final long[] resultLongs = (long[]) result;
+        final int resultLength = resultLongs.length;
+        for (int ri = 0; ri < resultLength; ++ri) {
+            resultLongs[ri] = unitToNanos.applyAsLong(resultLongs[ri]);
+        }
+        return resultLongs;
+    }
+
     @Override
     @NotNull
     public final Class<DBDateTime> getNativeComponentType() {
         return DBDateTime.class;
+    }
+
+    private static final class ToDBDateTimePageFromNanos<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
+        @Override
+        @NotNull
+        public DbArray<DBDateTime> makeDbArray(long[] result) {
+            return makeDbArrayHelper(result, DBTimeUtils::nanosToTime);
+        }
+    }
+
+    private static final class ToDBDateTimePageFromMicros<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
+        @Override
+        @NotNull
+        public DbArray<DBDateTime> makeDbArray(long[] result) {
+            return makeDbArrayHelper(result, DBTimeUtils::microsToTime);
+        }
+        @Override
+        public final long[] convertResult(@NotNull final Object result) {
+            return convertResultHelper(result, DBTimeUtils::microsToNanos);
+        }
+    }
+
+    private static final class ToDBDateTimePageFromMillis<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
+        @Override
+        @NotNull
+        public DbArray<DBDateTime> makeDbArray(long[] result) {
+            return makeDbArrayHelper(result, DBTimeUtils::millisToTime);
+        }
+        @Override
+        public final long[] convertResult(@NotNull final Object result) {
+            return convertResultHelper(result, DBTimeUtils::millisToNanos);
+        }
     }
 }
