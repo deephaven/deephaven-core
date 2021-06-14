@@ -24,7 +24,7 @@ import org.junit.Test;
 /**
  * Test MatchFilters that reference Python lists.
  */
-@Ignore
+@Ignore// TODO (deephaven-core#734)
 public class PythonMatchFilterTest extends PythonTest {
 
     @Before
