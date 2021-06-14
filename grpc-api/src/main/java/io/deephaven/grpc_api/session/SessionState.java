@@ -35,9 +35,11 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.management.NotificationListener;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -811,13 +813,22 @@ public class SessionState {
      * @return The item if it was removed, else null
      */
     public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
+        final MutableObject<ExportListener> wrappedListener = new MutableObject<>();
         final boolean found = exportListeners.removeIf(wrap -> {
+            if (wrappedListener.getValue() != null) {
+                return false;
+            }
+
             final boolean matches = wrap.listener == observer;
             if (matches) {
-                wrap.onRemove();
-            };
+                wrappedListener.setValue(wrap);
+            }
             return matches;
         });
+
+        if (found) {
+            wrappedListener.getValue().onRemove();
+        }
 
         return found ? observer : null;
     }
