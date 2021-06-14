@@ -122,12 +122,15 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
 
         private final StreamObserver<View> listener;
 
+        private boolean isClosed = false;
+        private SessionState.ExportObject<SubscriptionObserver> subscriptionExport;
+
         public SubscriptionObserver(final SessionState session, final StreamObserver<InputStream> responseObserver) {
             this.myPrefix = "SubscriptionObserver{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.session = session;
             this.listener = listenerAdapter.adapt(responseObserver);
             this.session.addOnCloseCallback(this);
-            ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::close);
+            ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::tryClose);
         }
 
         @Override
@@ -203,11 +206,15 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
             }
 
             log.info().append(myPrefix).append("awaiting parent table").endl();
-            exportBuilder
+            subscriptionExport = exportBuilder
                     .require(parent)
                     .onError(listener::onError)
                     .submit(() -> {
                         synchronized (SubscriptionObserver.this) {
+                            if (isClosed) {
+                                return null;
+                            }
+
                             final Object export = parent.get();
                             if (export instanceof QueryTable) {
                                 final QueryTable table = (QueryTable) export;
@@ -251,24 +258,40 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
         @Override
         public void onError(final Throwable t) {
             log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ").append(t).endl();
-            close();
+            tryClose();
         }
 
         @Override
         public void onCompleted() {
             log.error().append(myPrefix).append("client stream closed subscription").endl();
-            close();
+            tryClose();
         }
 
         @Override
         public void close() {
-            if (bmp == null) {
-                return;
+            synchronized (this) {
+                if (isClosed) {
+                    return;
+                }
+
+                isClosed = true;
             }
 
-            bmp.removeSubscription(listener);
+            if (subscriptionExport != null) {
+                subscriptionExport.cancel();
+            }
+
+            if (bmp != null) {
+                bmp.removeSubscription(listener);
+                bmp = null;
+            }
             release();
-            bmp = null;
+        }
+
+        private void tryClose() {
+            if (session.removeOnCloseCallback(this) != null) {
+                close();
+            }
         }
     }
 }

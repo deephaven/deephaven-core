@@ -35,6 +35,7 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import com.google.flatbuffers.FlatBufferBuilder;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -259,6 +260,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState session = sessionService.getCurrentSession();
             final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
+            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(() -> {
+                session.removeExportListener(listener);
+            });
         });
     }
 

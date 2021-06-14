@@ -100,7 +100,6 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
         isDestroyed = true;
-        session.removeExportListener(this);
         safelyExecute(responseObserver::onCompleted);
         updateListenerMap.forEach(ListenerImpl::dropReference);
         updateListenerMap.clear();

@@ -4,7 +4,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.SystemicObjectTracker;
-import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.QueryTable;
@@ -160,9 +159,6 @@ public class ExportTableUpdateListenerTest {
 
     @Test
     public void testSessionClose() {
-        // recreate session so we can close it
-        session = new TestSessionState();
-
         // create and export the table
         final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
         // create t1 in global query scope

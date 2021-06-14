@@ -109,7 +109,7 @@ public class GrpcUtil {
     public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
             runner.run();
-        } catch (final Exception | Error err) {
+        } catch (final Exception err) {
             log.error().append("Internal Error: ").append(err).endl();
         }
     }
@@ -125,7 +125,7 @@ public class GrpcUtil {
             synchronized (lockedObject) {
                 runner.run();
             }
-        } catch (final Exception | Error err) {
+        } catch (final Exception err) {
             log.error().append("Internal Error: ").append(err).endl();
         }
     }

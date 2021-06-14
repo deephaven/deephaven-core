@@ -44,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -105,14 +104,14 @@ public class SessionState {
     private final KeyedLongObjectHashMap<ExportObject<?>> exportMap = new KeyedLongObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
 
     // the list of active listeners
-    private final ConcurrentLinkedQueue<ExportListener> exportListeners = new ConcurrentLinkedQueue<>();
+    private final List<ExportListener> exportListeners = new ArrayList<>();
     private volatile int exportListenerVersion = 0;
     private static final AtomicIntegerFieldUpdater<SessionState> EXPORT_LISTENER_VERSION_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "exportListenerVersion");
 
     // Usually, export life cycles are managed explicitly with the life cycle of the session state. However, we need
     // to be able to close non-exports that are not in the map but are otherwise satisfying outstanding gRPC requests.
-    private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
+    private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks = new SimpleReferenceManager<>(WeakSimpleReference::new);
 
     @AssistedInject
     public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
@@ -185,7 +184,8 @@ public class SessionState {
      * @return whether or not this session is expired
      */
     public boolean isExpired() {
-        return expiration == null || expiration.deadline.compareTo(scheduler.currentTime()) <= 0;
+        final SessionService.TokenExpiration currToken = expiration;
+        return currToken == null || currToken.deadline.compareTo(scheduler.currentTime()) <= 0;
     }
 
     /**
@@ -296,20 +296,25 @@ public class SessionState {
      *
      * @param onClose the callback to invoke at end-of-life
      */
-    public synchronized void addOnCloseCallback(final Closeable onClose) {
-        if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+    public void addOnCloseCallback(final Closeable onClose) {
+        synchronized (onCloseCallbacks) {
+            if (isExpired()) {
+                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            }
+            onCloseCallbacks.add(onClose);
         }
-        onCloseCallbacks.add(onClose);
     }
 
     /**
      * Remove an on-close callback bound to the life of the session.
      *
      * @param onClose the callback to no longer invoke at end-of-life
+     * @return The item if it was removed, else null
      */
-    public void removeOnCloseCallback(final Closeable onClose) {
-        onCloseCallbacks.remove(onClose);
+    public Closeable removeOnCloseCallback(final Closeable onClose) {
+        synchronized (onCloseCallbacks) {
+            return onCloseCallbacks.remove(onClose);
+        }
     }
 
     /**
@@ -338,8 +343,8 @@ public class SessionState {
         log.info().append(logPrefix).append("outstanding exports released").endl();
         synchronized (exportListeners) {
             exportListeners.forEach(ExportListener::onRemove);
+            exportListeners.clear();
         }
-        exportListeners.clear();
 
         synchronized (onCloseCallbacks) {
             onCloseCallbacks.forEach((ref, callback) -> {
@@ -349,8 +354,8 @@ public class SessionState {
                     log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
                 }
             });
+            onCloseCallbacks.clear();
         }
-        onCloseCallbacks.clear();
     }
 
     /**
@@ -784,24 +789,47 @@ public class SessionState {
     }
 
     public void addExportListener(final StreamObserver<ExportNotification> observer) {
-        if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        final int versionId;
+        final ExportListener listener;
+        synchronized (exportListeners) {
+            if (isExpired()) {
+                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            }
+
+            listener = new ExportListener(observer);
+            exportListeners.add(listener);
+            versionId = EXPORT_LISTENER_VERSION_UPDATER.incrementAndGet(this);
         }
 
-        final ExportListener listener = new ExportListener(observer);
-        exportListeners.add(listener);
-        final int versionId = EXPORT_LISTENER_VERSION_UPDATER.incrementAndGet(this);
-
-        // we must check one last time that the session has not already expired; will otherwise be cleaned up on expiration
-        if (isExpired()) {
-            removeExportListener(observer);
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
         listener.initialize(versionId);
     }
 
-    public void removeExportListener(final StreamObserver<ExportNotification> observer) {
-        exportListeners.stream().filter(l -> l.listener == observer).findFirst().ifPresent(ExportListener::onRemove);
+    /**
+     * Remove an on-close callback bound to the life of the session.
+     *
+     * @param observer the observer to no longer be subscribed
+     * @return The item if it was removed, else null
+     */
+    public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
+        synchronized (exportListeners) {
+            int off = 0;
+            for (; off < exportListeners.size(); ++off) {
+                if (exportListeners.get(off).listener == observer) {
+                    break;
+                }
+            }
+
+            if (off == exportListeners.size()) {
+                // not found
+                return null;
+            }
+
+            final int finalOff = exportListeners.size() - 1;
+            exportListeners.set(off, exportListeners.get(finalOff));
+            exportListeners.remove(finalOff).onRemove();
+        }
+
+        return observer;
     }
 
     @VisibleForTesting
@@ -832,9 +860,9 @@ public class SessionState {
                 synchronized (listener) {
                     listener.onNext(notification);
                 }
-            } catch (final RuntimeException | Error e) {
+            } catch (final RuntimeException e) {
                 log.error().append("Failed to notify listener: ").append(e).endl();
-
+                removeExportListener(listener);
             }
         }
 
@@ -884,14 +912,15 @@ public class SessionState {
             log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
         }
 
-        protected synchronized void onRemove() {
-            if (isClosed) {
-                return;
+        protected void onRemove() {
+            synchronized (this) {
+                if (isClosed) {
+                    return;
+                }
+                isClosed = true;
             }
 
-            isClosed = true;
             safelyExecuteLocked(listener, listener::onCompleted);
-            exportListeners.remove(this);
         }
     }
 

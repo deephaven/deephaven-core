@@ -230,7 +230,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             this.request = request;
             this.responseObserver = responseObserver;
             session.addOnCloseCallback(this);
-            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(this::close);
+            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(this::tryClose);
         }
 
         @Override
@@ -244,7 +244,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             safelyExecute(() -> logBuffer.unsubscribe(this));
             safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
-            session.removeOnCloseCallback(this);
+        }
+
+        private void tryClose () {
+            if (session.removeOnCloseCallback(this) != null) {
+                close();
+            }
         }
 
         @Override
@@ -275,7 +280,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 }
             } catch (Throwable t) {
                 // we are ignoring exceptions here deliberately, and just shutting down
-                close();
+                tryClose();
             }
         }
     }
