@@ -211,6 +211,8 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
                     .onError(listener::onError)
                     .submit(() -> {
                         synchronized (SubscriptionObserver.this) {
+                            subscriptionExport = null;
+
                             if (isClosed) {
                                 return null;
                             }
@@ -279,6 +281,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
 
             if (subscriptionExport != null) {
                 subscriptionExport.cancel();
+                subscriptionExport = null;
             }
 
             if (bmp != null) {

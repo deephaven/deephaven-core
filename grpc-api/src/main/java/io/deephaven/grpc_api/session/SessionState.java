@@ -34,6 +34,7 @@ import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -44,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -104,14 +106,12 @@ public class SessionState {
     private final KeyedLongObjectHashMap<ExportObject<?>> exportMap = new KeyedLongObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
 
     // the list of active listeners
-    private final List<ExportListener> exportListeners = new ArrayList<>();
+    private final List<ExportListener> exportListeners = new CopyOnWriteArrayList<>();
     private volatile int exportListenerVersion = 0;
-    private static final AtomicIntegerFieldUpdater<SessionState> EXPORT_LISTENER_VERSION_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "exportListenerVersion");
 
     // Usually, export life cycles are managed explicitly with the life cycle of the session state. However, we need
     // to be able to close non-exports that are not in the map but are otherwise satisfying outstanding gRPC requests.
-    private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks = new SimpleReferenceManager<>(WeakSimpleReference::new);
+    private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks = new SimpleReferenceManager<>(WeakSimpleReference::new, false);
 
     @AssistedInject
     public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
@@ -798,7 +798,7 @@ public class SessionState {
 
             listener = new ExportListener(observer);
             exportListeners.add(listener);
-            versionId = EXPORT_LISTENER_VERSION_UPDATER.incrementAndGet(this);
+            versionId = ++exportListenerVersion;
         }
 
         listener.initialize(versionId);
@@ -811,25 +811,17 @@ public class SessionState {
      * @return The item if it was removed, else null
      */
     public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
+        final MutableBoolean found = new MutableBoolean();
         synchronized (exportListeners) {
-            int off = 0;
-            for (; off < exportListeners.size(); ++off) {
-                if (exportListeners.get(off).listener == observer) {
-                    break;
-                }
-            }
-
-            if (off == exportListeners.size()) {
-                // not found
-                return null;
-            }
-
-            final int finalOff = exportListeners.size() - 1;
-            exportListeners.set(off, exportListeners.get(finalOff));
-            exportListeners.remove(finalOff).onRemove();
+            exportListeners.stream().filter((wrap) -> wrap.listener == observer).findFirst().ifPresent(wrap -> {
+                if (exportListeners.remove(wrap)) {
+                    found.setTrue();
+                    wrap.onRemove();
+                };
+            });
         }
 
-        return observer;
+        return found.booleanValue() ? observer : null;
     }
 
     @VisibleForTesting
