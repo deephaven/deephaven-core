@@ -142,9 +142,9 @@ public class JsFigure extends HasEventHandling {
             plotHandlesToTableMaps = tableFetchData.plotHandlesToTableMaps;
             onClose = tableFetchData.onClose;
 
-            for (int i = 0; i < descriptor.getTableIdsList().length; i++) {
+            for (int i = 0; i < descriptor.getTablesList().length; i++) {
                 JsTable table = tables[i];
-                registerTableWithId(table, descriptor.getPlotHandleIdsList().getAt(i).getIdsList());
+                registerTableWithId(table, Js.cast(JsArray.of((double)i)));
             }
             Arrays.stream(charts)
                     .flatMap(c -> Arrays.stream(c.getSeries()))
@@ -630,7 +630,7 @@ public class JsFigure extends HasEventHandling {
             JsTable[] tables;
 
 //            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
-            TableMap[] tableMaps = new TableMap[descriptor.getTableMapIdsList().length];
+            TableMap[] tableMaps = new TableMap[0];//new TableMap[descriptor.getTableMapIdsList().length];
 //            Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];
             Map<Integer, TableMap> plotHandlesToTableMaps = new HashMap<>();
 //            for (int i = 0; i < descriptor.getTablemapsList().length; i++) {
@@ -659,10 +659,10 @@ public class JsFigure extends HasEventHandling {
 //            }
 
             // iterate through the table handles we're supposed to have and prep TableHandles for them
-            tables = new JsTable[descriptor.getTableIdsList().length];
+            tables = new JsTable[descriptor.getTablesList().length];
 
-            for (int i = 0; i < descriptor.getTableIdsList().length; i++) {
-                ClientTableState clientTableState = connection.newStateFromUnsolicitedTable(descriptor.getTableIdsList().getAt(i), "table " + i + " for plot");
+            for (int i = 0; i < descriptor.getTablesList().length; i++) {
+                ClientTableState clientTableState = connection.newStateFromUnsolicitedTable(descriptor.getTablesList().getAt(i), "table " + i + " for plot");
                 JsTable table = new JsTable(connection, clientTableState);
                 // never attempt a reconnect, since we might have a different figure schema entirely
                 table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());

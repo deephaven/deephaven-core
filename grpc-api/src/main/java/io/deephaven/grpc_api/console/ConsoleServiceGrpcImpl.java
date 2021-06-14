@@ -368,7 +368,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         //TODO acls
                         FigureWidget widget = (FigureWidget) result;
 
-                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget.makeDescriptor(), session);
+                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session);
 
                         responseObserver.onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
                         responseObserver.onCompleted();

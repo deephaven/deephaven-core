@@ -26,10 +26,6 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
         figure.getFigure().consolidateTableMaps();
     }
 
-    public DisplayableFigureDescriptor makeDescriptor() {
-        return new DisplayableFigureDescriptor(this);
-    }
-
     @ScriptApi
     @Override
     public String[] getValidGroups() {

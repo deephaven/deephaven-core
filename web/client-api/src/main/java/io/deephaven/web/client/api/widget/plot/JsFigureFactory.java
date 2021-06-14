@@ -115,17 +115,8 @@ public class JsFigureFactory {
         JsArray<JsTable> tables = jsDescriptor.getTables();
         // The only thing used by the Figure with the tableIds (outside of the default fetchTables function) is the
         // length of these tableIds.
-        descriptor.setTableIdsList(new JsArray<>());
-        descriptor.getTableIdsList().length = tables.length;
-
-        // There's just a straight mapping of plot handles to table ids
-        JsArray<RepeatedInt32> plotHandleIds = new JsArray<>();
-        for (int i = 0; i < tables.length; i++) {
-            RepeatedInt32 repeatedInt32 = new RepeatedInt32();
-            repeatedInt32.addIds(i);
-            plotHandleIds.push(repeatedInt32);
-        }
-        descriptor.setPlotHandleIdsList(plotHandleIds);
+        descriptor.setTablesList(new JsArray<>());
+        descriptor.getTablesList().length = tables.length;
 
         JsArray<JsChartDescriptor> charts = jsDescriptor.charts;
         ChartDescriptor[] chartDescriptors = new ChartDescriptor[charts.length];

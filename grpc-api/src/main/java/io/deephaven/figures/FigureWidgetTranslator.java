@@ -1,5 +1,6 @@
 package io.deephaven.figures;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.db.plot.*;
 import io.deephaven.db.plot.Font;
 import io.deephaven.db.plot.axistransformations.AxisTransform;
@@ -25,12 +26,13 @@ import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.tables.*;
 import io.deephaven.db.plot.util.tables.TableHandle;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.v2.TableMap;
+import io.deephaven.db.v2.TableMapSupplier;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.*;
@@ -56,35 +58,48 @@ public class FigureWidgetTranslator {
     private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
 
     private final List<String> errorList = new ArrayList<>();
-    private final Map<Table, Integer> tablePositionMap = new HashMap<>();
+    private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
+    private final Map<TableMapHandle, Integer> tableMapPositionMap = new HashMap<>();
 
     private FigureWidgetTranslator() {
     }
 
-    public static FigureDescriptor translate(DisplayableFigureDescriptor descriptor, SessionState sessionState) {
-        return new FigureWidgetTranslator().translateFigure(descriptor, sessionState);
+    public static FigureDescriptor translate(FigureWidget figure, SessionState sessionState) {
+        return new FigureWidgetTranslator().translateFigure(figure, sessionState);
     }
-    private FigureDescriptor translateFigure(DisplayableFigureDescriptor descriptor, SessionState sessionState) {
+    private FigureDescriptor translateFigure(FigureWidget f, SessionState sessionState) {
         FigureDescriptor.Builder clientFigure = FigureDescriptor.newBuilder();
+        BaseFigureImpl figure = f.getFigure();
 
         // translate tables first, so we can use them to look up tables as needed
-        for (int i = 0; i < descriptor.getTables().size(); i++) {
-            Table table = descriptor.getTables().get(i);
-            tablePositionMap.put(table, i);
+        int i = 0;
+        for (Map.Entry<Table, List<TableHandle>> entry : figure.getTableHandles().stream().collect(Collectors.groupingBy(TableHandle::getTable)).entrySet()) {
+            Set<String> relevantColumns = entry.getValue().stream().map(TableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
+            Table table = entry.getKey().view(Selectable.from(relevantColumns));
+
+            for (TableHandle handle : entry.getValue()) {
+                tablePositionMap.put(handle, i);
+            }
+            i++;
+
             SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(table);
             clientFigure.addTables(TableServiceGrpcImpl.buildTableCreationResponse(TableReference.newBuilder().setTicket(tableExportObject.getExportId()).build(), table));
         }
 
-//        List<RepeatedInt32> plotHandleIds = descriptor.getTableIds().stream().map(set -> RepeatedInt32.newBuilder().addAllIds(set).build()).collect(Collectors.toList());
-//        clientFigure.addAllPlotHandleIds(plotHandleIds);
+//        i = 0;
+//        for (Map.Entry<TableMap, List<TableMapHandle>> entry : figure.getTableMapHandles().stream().collect(Collectors.groupingBy(TableMapHandle::getTableMap)).entrySet()) {
+//            Set<String> relevantColumns = entry.getValue().stream().map(TableMapHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
+//            TableMap tableMap = new TableMapSupplier(entry.getKey(), Collections.singletonList(t -> t.view(relevantColumns)));
 //
-//        clientFigure.setTableMaps(descriptor.getDeflatedTableMaps().stream().map(etmd -> {
-//            ExportedTableMapHandleManager.Descriptor tableMapDescriptor = (ExportedTableMapHandleManager.Descriptor) etmd;
-//            return new TableMapHandle(tableMapDescriptor.handleId);
-//        }).toArray(TableMapHandle[]::new));
-//        clientFigure.setTableMapIds(descriptor.getDeflatedTableMapIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new));
+//            for (TableMapHandle handle : entry.getValue()) {
+//                tableMapPositionMap.put(handle, i);
+//            }
+//            i++;
+//
+//            SessionState.ExportObject<TableMap> tableExportObject = sessionState.newServerSideExport(tableMap);
+//            clientFigure.addTableMap(TODO)
+//        }
 
-        BaseFigureImpl figure = descriptor.getFigure().getFigure();
         assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
         assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor, clientFigure::clearTitleColor); // clientFigure.setTitleColor(toCssColorString(figure.getTitleColor()));
         assignOptionalField(toCssFont(figure.getTitleFont()), clientFigure::setTitleFont, clientFigure::clearTitleFont); // clientFigure.setTitleFont(toCssFont(figure.getTitleFont()));
@@ -193,7 +208,7 @@ public class FigureWidgetTranslator {
         Stream.Builder<SeriesDescriptor> clientSeriesCollection = Stream.builder();
         Stream.Builder<FigureDescriptor.MultiSeriesDescriptor> clientMultiSeriesCollection = Stream.builder();
 
-        chart.getAxes().stream().forEach(axesImpl -> {
+        chart.getAxes().forEach(axesImpl -> {
 
             // assign some bookkeeping axis instances just once
             AxisDescriptor xAxis = axes.get("X" + axesImpl.xAxis().id());
@@ -570,7 +585,7 @@ public class FigureWidgetTranslator {
         SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
 
         source.setColumnName(columnName);
-        source.setTableId(tablePositionMap.get(tableHandle.getTable()));
+        source.setTableId(tablePositionMap.get(tableHandle));
         source.setAxisId(axis.getId());
         source.setType(sourceType);
 
@@ -605,7 +620,7 @@ public class FigureWidgetTranslator {
             ColumnHandlerFactory.ColumnHandler columnHandler = ((IndexableNumericDataTable) data).getColumnHandler();
 
             source.setColumnName(columnHandler.getColumnName());
-            source.setTableId(tablePositionMap.get(columnHandler.getTableHandle().getTable()));
+            source.setTableId(tablePositionMap.get(columnHandler.getTableHandle()));
         } else if (data instanceof IndexableNumericDataSwappableTable) {
             IndexableNumericDataSwappableTable swappableTable = (IndexableNumericDataSwappableTable) data;
             if (swappableTable.getSwappableTable() instanceof SwappableTableOneClickAbstract) {
