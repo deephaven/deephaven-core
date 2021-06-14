@@ -68,7 +68,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             final ExportNotification.State state = notification.getExportState();
             if (state == ExportNotification.State.EXPORTED) {
                 final SessionState.ExportObject<?> export = session.getExport(exportId);
-                if (export.tryIncrementReferenceCount()) {
+                if (export.tryRetainReference()) {
                     try {
                         final Object obj = export.get();
                         if (obj instanceof BaseTable) {
@@ -102,9 +102,9 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         isDestroyed = true;
         session.removeExportListener(this);
         safelyExecute(responseObserver::onCompleted);
-        updateListenerMap.forEach(ListenerImpl::destroy);
+        updateListenerMap.forEach(ListenerImpl::dropReference);
         updateListenerMap.clear();
-        log.info().append(logPrefix).append("has been destroyed").endl();
+        log.info().append(logPrefix).append("is complete").endl();
     }
 
     /**
@@ -196,12 +196,6 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         @Override
         public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
             sendUpdateMessage(SessionState.exportIdToTicket(exportId), table.size(), error);
-        }
-
-        @Override
-        public void destroy() {
-            super.destroy();
-            table.removeUpdateListener(swapListener);
         }
     }
 

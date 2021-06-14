@@ -8,8 +8,6 @@ import io.deephaven.db.tables.remote.preview.ColumnPreviewManager;
 import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
@@ -28,8 +26,8 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
@@ -124,10 +122,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO auth hook, ensure the user can do this (owner of worker or admin). same rights as creating a console
 //            session.getAuthContext().requirePrivilege(LogBuffer);
 
-            LogBufferStreamAdapter listener = new LogBufferStreamAdapter(request, responseObserver);
-            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(listener::destroy);
-            session.attachLivenessReferent(listener);
-            logBuffer.subscribe(listener);
+            logBuffer.subscribe(new LogBufferStreamAdapter(session, request, responseObserver));
         });
     }
 
@@ -221,18 +216,25 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private class LogBufferStreamAdapter extends LivenessArtifact implements LogBufferRecordListener {
+    private class LogBufferStreamAdapter implements Closeable, LogBufferRecordListener {
+        private final SessionState session;
         private final LogSubscriptionRequest request;
         private final StreamObserver<LogSubscriptionData> responseObserver;
         private boolean isClosed = false;
 
-        public LogBufferStreamAdapter(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
+        public LogBufferStreamAdapter(
+                final SessionState session,
+                final LogSubscriptionRequest request,
+                final StreamObserver<LogSubscriptionData> responseObserver) {
+            this.session = session;
             this.request = request;
             this.responseObserver = responseObserver;
+            session.addOnCloseCallback(this);
+            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(this::close);
         }
 
         @Override
-        protected void destroy() {
+        public void close() {
             synchronized (this) {
                 if (isClosed) {
                     return;
@@ -242,6 +244,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             safelyExecute(() -> logBuffer.unsubscribe(this));
             safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
+            session.removeOnCloseCallback(this);
         }
 
         @Override
@@ -272,7 +275,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 }
             } catch (Throwable t) {
                 // we are ignoring exceptions here deliberately, and just shutting down
-                destroy();
+                close();
             }
         }
     }

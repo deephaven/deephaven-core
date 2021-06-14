@@ -6,6 +6,7 @@ import com.google.rpc.Status;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
@@ -13,7 +14,6 @@ import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -30,12 +30,15 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
+import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,7 +112,7 @@ public class SessionState {
 
     // Usually, export life cycles are managed explicitly with the life cycle of the session state. However, we need
     // to be able to close non-exports that are not in the map but are otherwise satisfying outstanding gRPC requests.
-    private final LivenessScope nonExportsToClose = new LivenessScope();
+    private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
 
     @AssistedInject
     public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
@@ -289,12 +292,24 @@ public class SessionState {
     }
 
     /**
-     * Attach a non-export to the liveness scope bound to the session.
+     * Attach an on-close callback bound to the life of the session.
      *
-     * @param referent the object to manage
+     * @param onClose the callback to invoke at end-of-life
      */
-    public void attachLivenessReferent(final LivenessReferent referent) {
-        nonExportsToClose.manage(referent);
+    public synchronized void addOnCloseCallback(final Closeable onClose) {
+        if (isExpired()) {
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+        onCloseCallbacks.add(onClose);
+    }
+
+    /**
+     * Remove an on-close callback bound to the life of the session.
+     *
+     * @param onClose the callback to no longer invoke at end-of-life
+     */
+    public void removeOnCloseCallback(final Closeable onClose) {
+        onCloseCallbacks.remove(onClose);
     }
 
     /**
@@ -325,6 +340,17 @@ public class SessionState {
             exportListeners.forEach(ExportListener::onRemove);
         }
         exportListeners.clear();
+
+        synchronized (onCloseCallbacks) {
+            onCloseCallbacks.forEach((ref, callback) -> {
+                try {
+                    callback.close();
+                } catch (final IOException e) {
+                    log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
+                }
+            });
+        }
+        onCloseCallbacks.clear();
     }
 
     /**
@@ -694,11 +720,11 @@ public class SessionState {
             }
 
             try {
-                this.result = result;
-
                 synchronized (this) {
-                    // the export may
+                    // client may race a cancel with setResult
                     if (!isExportStateTerminal(state)) {
+                        this.result = result;
+
                         if (this.result instanceof LivenessReferent) {
                             tryManage((LivenessReferent) result);
                         }
@@ -903,7 +929,6 @@ public class SessionState {
 
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this, NON_EXPORT_ID);
-                nonExportsToClose.manage(this.export);
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
