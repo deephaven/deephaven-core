@@ -67,6 +67,7 @@ public class TestConditionFilter extends PythonTest {
         CompilerTools.setLogEnabled(compilerToolsLogEnabledInitial);
     }
 
+    @Ignore
     @Test
     public void testTrueFalse() {
         String expression;
@@ -124,6 +125,7 @@ public class TestConditionFilter extends PythonTest {
         check(expression, test);
     }
 
+    @Ignore
     @Test
     public void testComparison() {
         String expression;
@@ -278,6 +280,7 @@ public class TestConditionFilter extends PythonTest {
         }
     }
 
+    @Ignore
     @Test
     public void testLoadNumpyTwice() {
         Assert.assertNotNull(PyModule.importModule("deephaven/numba"));
@@ -288,6 +291,7 @@ public class TestConditionFilter extends PythonTest {
         Assert.assertNotNull(PyModule.importModule("deephaven.lang.vectorize_simple"));
     }
 
+    @Ignore
     @Test
     public void testPython() {
         PyObject.executeCode("from numba.npyufunc import vectorize\n" +
@@ -305,9 +309,9 @@ public class TestConditionFilter extends PythonTest {
         },true,false);
     }
 
+    @Ignore
     @Test
     public void testIIIK() {
-
         check("i > 1", m -> {
             Integer i = (Integer) m.get("actualI");
             return i > 1;
