@@ -811,17 +811,15 @@ public class SessionState {
      * @return The item if it was removed, else null
      */
     public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
-        final MutableBoolean found = new MutableBoolean();
-        synchronized (exportListeners) {
-            exportListeners.stream().filter((wrap) -> wrap.listener == observer).findFirst().ifPresent(wrap -> {
-                if (exportListeners.remove(wrap)) {
-                    found.setTrue();
-                    wrap.onRemove();
-                };
-            });
-        }
+        final boolean found = exportListeners.removeIf(wrap -> {
+            final boolean matches = wrap.listener == observer;
+            if (matches) {
+                wrap.onRemove();
+            };
+            return matches;
+        });
 
-        return found.booleanValue() ? observer : null;
+        return found ? observer : null;
     }
 
     @VisibleForTesting
