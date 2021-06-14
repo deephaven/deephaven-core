@@ -18,7 +18,7 @@ import org.junit.Ignore;
 /**
  * Test various Jpy related overloading methods.
  */
-@Ignore
+@Ignore// TODO (deephaven-core#734)
 public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
