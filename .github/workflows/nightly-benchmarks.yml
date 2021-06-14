@@ -8,6 +8,7 @@ on:
 
 jobs:
   setup:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: [benchmark]
     steps:
       - name: Checkout
@@ -33,6 +34,7 @@ jobs:
           gradle-version: wrapper
 
   benchmarks:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     needs: setup
     runs-on: [benchmark]
     steps:
@@ -51,6 +53,7 @@ jobs:
           gradle-version: wrapper
 
   archive:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     needs: benchmarks
     runs-on: [benchmark]
     steps:  
@@ -62,6 +65,7 @@ jobs:
           retention-days: 90
 
   publish-metrics:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     needs: benchmarks
     runs-on: [benchmark]
     steps:
