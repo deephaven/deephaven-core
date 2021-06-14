@@ -102,7 +102,6 @@ public class JsFigure extends HasEventHandling {
     private JsChart[] charts;
 
     private JsTable[] tables;
-    private Map<JsTable, Set<Integer>> tablesToPlotHandles;
     private Map<Integer, JsTable> plotHandlesToTables;
 
     private TableMap[] tableMaps;
@@ -127,7 +126,6 @@ public class JsFigure extends HasEventHandling {
 
     @JsIgnore
     public Promise<JsFigure> refetch() {
-        tablesToPlotHandles = new HashMap<>();
         plotHandlesToTables = new HashMap<>();
 
         return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
@@ -539,7 +537,6 @@ public class JsFigure extends HasEventHandling {
     private void registerTableWithId(JsTable table, JsArray<Double> plotTableHandles) {
         for (int j = 0; j < plotTableHandles.length; j++) {
             plotHandlesToTables.put((int) (double) plotTableHandles.getAt(j), table);
-            tablesToPlotHandles.computeIfAbsent(table, ignore2 -> new HashSet<>()).add((int) (double) plotTableHandles.getAt(j));
         }
     }
 

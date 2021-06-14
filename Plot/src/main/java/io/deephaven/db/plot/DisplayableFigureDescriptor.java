@@ -19,7 +19,6 @@ public class DisplayableFigureDescriptor {
 
     private final List<Table> tables = new ArrayList<>();
     private final List<TableMap> tableMaps = new ArrayList<>();
-    private final List<Set<Integer>> tableIds = new ArrayList<>();
     private final List<Set<Integer>> tableMapIds = new ArrayList<>();
 
     public DisplayableFigureDescriptor(final FigureImpl figure) {
@@ -31,22 +30,19 @@ public class DisplayableFigureDescriptor {
         // region Table Consolidation
         // The first step here is to figure out all of the needed columns for all possible table handles, then
         // reduce the column set to the needed columns.
-        final Map<Table, Set<Integer>> tableIdMap = new IdentityHashMap<>();
         final Map<Table, Set<String>> tableColumnMap = new IdentityHashMap<>();
 
         for (final TableHandle h : tableHandles) {
             tableColumnMap.computeIfAbsent(h.getTable(), t -> new HashSet<>()).addAll(h.getColumns());
-            tableIdMap.computeIfAbsent(h.getTable(), t -> new HashSet<>()).add(h.id());
         }
 
-        for (final Map.Entry<Table, Set<Integer>> entry : tableIdMap.entrySet()) {
+        for (final Map.Entry<Table, Set<String>> entry : tableColumnMap.entrySet()) {
             Table table = entry.getKey();
 
-            final Set<String> relevantColumns = tableColumnMap.get(table);
+            final Set<String> relevantColumns = entry.getValue();
             table = table.view(Selectable.from(relevantColumns));
 
             tables.add(table);
-            tableIds.add(entry.getValue());
         }
         //endregion
 
@@ -86,10 +82,6 @@ public class DisplayableFigureDescriptor {
 
     public List<TableMap> getTableMaps() {
         return tableMaps;
-    }
-
-    public List<Set<Integer>> getTableIds() {
-        return tableIds;
     }
 
     public List<Set<Integer>> getTableMapIds() {
