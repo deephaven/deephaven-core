@@ -10,7 +10,13 @@ public abstract class NaturalJoinTable extends TableBase {
 
     public abstract Table right();
 
-    public abstract List<String> matches();
+    public abstract List<JoinMatch> matches();
 
-    public abstract List<String> additions();
+    public abstract List<JoinAddition> additions();
+
+    @Override
+    public final <V extends Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
 }

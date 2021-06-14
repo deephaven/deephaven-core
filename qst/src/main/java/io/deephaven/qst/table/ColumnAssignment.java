@@ -1,16 +1,16 @@
 package io.deephaven.qst.table;
 
-import java.util.List;
-import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-@Immutable
-public abstract class WhereTable extends TableBase implements SingleParentTable {
+@Immutable(builder = false, copy = false)
+public abstract class ColumnAssignment implements JoinAddition {
 
-    public abstract Table parent();
+    @Parameter
+    public abstract ColumnName newColumn();
 
-    public abstract List<String> filters();
+    @Parameter
+    public abstract ColumnName existingColumn();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

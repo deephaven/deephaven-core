@@ -5,7 +5,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
-public abstract class EmptyTable extends TableBase {
+public abstract class EmptyTable extends TableBase implements SourceTable {
 
     public static EmptyTable of(long size) {
         return ImmutableEmptyTable.of(size, TableHeader.empty());
@@ -20,6 +20,12 @@ public abstract class EmptyTable extends TableBase {
 
     @Parameter
     public abstract TableHeader header();
+
+    @Override
+    public final <V extends Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
 
     @Check
     final void checkSize() {

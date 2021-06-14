@@ -8,6 +8,11 @@ import java.util.stream.Collectors;
 public abstract class TableBase implements Table {
 
     @Override
+    public final Table toTable() {
+        return this;
+    }
+
+    @Override
     public final HeadTable head(long size) {
         return ImmutableHeadTable.of(this, size);
     }
@@ -18,18 +23,31 @@ public abstract class TableBase implements Table {
     }
 
     @Override
+    public final Table where(String... filters) {
+        return ImmutableWhereTable.builder().parent(this).addFilters(filters).build();
+    }
+
+    @Override
     public final WhereTable where(Collection<String> filters) {
         return ImmutableWhereTable.builder().parent(this).addAllFilters(filters).build();
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
+    public final NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return ImmutableNaturalJoinTable.builder()
             .left(this)
             .right(rightTable)
             .addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd)
             .build();
+    }
+
+    @Override
+    public final NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
+        return naturalJoin2(
+            rightTable,
+            columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
+            columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
     }
 
     @Override
@@ -48,13 +66,21 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
+    public final ExactJoinTable exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return ImmutableExactJoinTable.builder()
             .left(this)
             .right(rightTable)
             .addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd)
             .build();
+    }
+
+    @Override
+    public final ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
+        return exactJoin2(
+            rightTable,
+            columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
+            columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
     }
 
     @Override

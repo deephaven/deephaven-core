@@ -9,7 +9,7 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
-public abstract class NewTable extends TableBase {
+public abstract class NewTable extends TableBase implements SourceTable {
 
     public static NewTable empty(TableHeader header) {
         ImmutableNewTable.Builder builder = ImmutableNewTable.builder().size(0);
@@ -56,6 +56,12 @@ public abstract class NewTable extends TableBase {
             .addAllColumns(columns())
             .addColumns(column)
             .build();
+    }
+
+    @Override
+    public final <V extends Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
     }
 
     @Check

@@ -27,6 +27,8 @@ import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.qst.TableOperations;
+import io.deephaven.qst.table.JoinAddition;
+import io.deephaven.qst.table.JoinMatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,6 +41,10 @@ import java.util.stream.Collectors;
 public interface Table extends LongSizedDataStructure, LivenessNode, TableOperations<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
+    static Table of(io.deephaven.qst.table.Table table) {
+        return TableCreationImpl.create(table);
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -886,6 +892,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
+    default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        throw new UnsupportedOperationException("TODO");
+    }
+
     default Table exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
         return exactJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
     }
@@ -1112,6 +1122,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
+
+    default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        throw new UnsupportedOperationException("TODO");
+    }
 
     default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
         return naturalJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
@@ -2466,4 +2480,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
+
+    @Override
+    default Table toTable() {
+        return this;
+    }
 }
