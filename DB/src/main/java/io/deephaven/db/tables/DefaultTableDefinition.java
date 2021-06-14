@@ -5,13 +5,11 @@
 package io.deephaven.db.tables;
 
 import java.io.*;
-import io.deephaven.dataobjects.*;
-import io.deephaven.dataobjects.persistence.*;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.base.log.*;
 import io.deephaven.base.*;
 
-public class DefaultTableDefinition implements Externalizable, DataObjectStreamConstants, LogOutputAppendable, Copyable<DefaultTableDefinition> {
+public class DefaultTableDefinition implements Externalizable, LogOutputAppendable, Copyable<DefaultTableDefinition> {
 
     private static final long serialVersionUID = 5684394895950293942L;
 
@@ -21,20 +19,6 @@ public class DefaultTableDefinition implements Externalizable, DataObjectStreamC
 
     public DefaultTableDefinition(DefaultTableDefinition source) {
         copyValues(source);
-    }
-
-    public static final String columnSetName_ = "TableDefinition";
-    public static String getColumnSetName() { return columnSetName_; }
-    public static DataObjectColumnSet getColumnSetStatic() {
-        return DataObjectColumnSetManager.getInstance().getColumnSet(columnSetName_);
-    }
-    public DataObjectColumnSet columnSet_=null;
-    public DataObjectColumnSet getColumnSet() {
-        if (columnSet_==null){
-            columnSet_=getColumnSetStatic();
-        }
-
-        return columnSet_;
     }
 
     protected io.deephaven.db.tables.ColumnDefinition[] columns;
