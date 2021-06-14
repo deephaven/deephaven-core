@@ -168,8 +168,8 @@ public class JsFigure extends HasEventHandling {
             fireEvent(EVENT_RECONNECTFAILED, init);
             suppressEvents();
 
-            //noinspection unchecked
-            return (Promise) Promise.reject(fetchError);
+            //noinspection unchecked,rawtypes
+            return (Promise<JsFigure>) (Promise) Promise.reject(fetchError);
         });
     }
 

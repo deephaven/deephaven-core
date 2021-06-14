@@ -113,12 +113,18 @@ public class JsSeries {
 
     @JsProperty(name = "isLinesVisible")
     public Boolean getLinesVisible() {
-        return descriptor.getLinesVisible();
+        if (descriptor.hasLinesVisible()) {
+            return descriptor.getLinesVisible();
+        }
+        return null;
     }
 
     @JsProperty(name = "isShapesVisible")
     public Boolean getShapesVisible() {
-        return descriptor.getShapesVisible();
+        if (descriptor.hasShapesVisible()) {
+            return descriptor.getShapesVisible();
+        }
+        return null;
     }
 
     @JsProperty
@@ -159,7 +165,10 @@ public class JsSeries {
 
     @JsProperty
     public Double getShapeSize() {
-        return descriptor.getShapeSize();
+        if (descriptor.hasShapeSize()) {
+            return descriptor.getShapeSize();
+        }
+        return null;
     }
 
     @JsProperty
