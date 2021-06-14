@@ -524,11 +524,11 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
     public void start() {
-        log.info().append("LiveTableMonitor starting with ").append(updateThreads).append(" notification processing threads").endl();
         Assert.eqFalse(unitTestMode, "unitTestMode");
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
             if (!refreshThread.isAlive()) {
+                log.info().append("LiveTableMonitor starting with ").append(updateThreads).append(" notification processing threads").endl();
                 refreshThread.start();
             }
         }

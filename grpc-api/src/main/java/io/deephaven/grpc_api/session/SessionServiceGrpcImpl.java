@@ -20,6 +20,7 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
@@ -120,9 +121,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExport(request);
-            final SessionState.ExportState currState = export.getState();
+            final ExportNotification.State currState = export.getState();
             export.release();
-            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(currState != SessionState.ExportState.UNKNOWN).build());
+            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(currState != ExportNotification.State.UNKNOWN).build());
             responseObserver.onCompleted();
         });
     }
@@ -130,7 +131,12 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     @Override
     public void exportNotifications(final ExportNotificationRequest request, final StreamObserver<ExportNotification> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            service.getCurrentSession().addExportListener(responseObserver);
+            final SessionState session = service.getCurrentSession();
+
+            session.addExportListener(responseObserver);
+            ((ServerCallStreamObserver<ExportNotification>) responseObserver).setOnCancelHandler(() -> {
+                session.removeExportListener(responseObserver);
+            });
         });
     }
 
