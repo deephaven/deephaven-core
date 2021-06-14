@@ -1,6 +1,9 @@
 package io.deephaven.qst.table;
 
-public interface Table {
+import io.deephaven.qst.TableOperations;
+import java.util.Collection;
+
+public interface Table extends TableOperations<Table, Table> {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -10,7 +13,63 @@ public interface Table {
         return EmptyTable.of(size, header);
     }
 
+    @Override
     HeadTable head(long size);
 
+    @Override
     TailTable tail(long size);
+
+    @Override
+    WhereTable where(Collection<String> filters);
+
+    @Override
+    NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
+
+    @Override
+    NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch);
+
+    @Override
+    NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch);
+
+    @Override
+    NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
+
+    @Override
+    ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
+
+    @Override
+    ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch);
+
+    @Override
+    ExactJoinTable exactJoin(Table rightTable, String columnsToMatch);
+
+    @Override
+    ExactJoinTable exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
+
+    @Override
+    ViewTable view(String... columns);
+
+    @Override
+    ViewTable view(Collection<String> columns);
+
+    @Override
+    UpdateViewTable updateView(String... columns);
+
+    @Override
+    UpdateViewTable updateView(Collection<String> columns);
+
+    @Override
+    UpdateTable update(String... columns);
+
+    @Override
+    UpdateTable update(Collection<String> columns);
+
+    @Override
+    SelectTable select();
+
+    @Override
+    SelectTable select(String... columns);
+
+    @Override
+    SelectTable select(Collection<String> columns);
 }

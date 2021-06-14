@@ -26,6 +26,7 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.qst.TableOperations;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 /**
  * A Deephaven table.
  */
-public interface Table extends LongSizedDataStructure, LivenessNode {
+public interface Table extends LongSizedDataStructure, LivenessNode, TableOperations<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 

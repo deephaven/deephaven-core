@@ -57,6 +57,7 @@ dependencies {
             project(':proto:proto-backplane-grpc'),
             project(':log-factory'),
             project(':Container'),
+            project(':qst'),
             "org.flywaydb:flyway-core:5.2.4",
             'org.apache.arrow:arrow-vector:1.0.1',
             'io.deephaven.barrage:barrage-format:0.1.1',
