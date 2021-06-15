@@ -9,14 +9,15 @@ import java.util.Collection;
 /**
  * Discovery utility for {@link TableLocation}s for a given table.
  */
-public interface TableLocationProvider<TKT extends TableKey, TLKT extends TableLocationKey> extends NamedImplementation {
+public interface TableLocationProvider extends NamedImplementation {
 
     /**
-     * Get a {@link TableKey} for the locations this provides.
+     * Get the {@link TableKey} associated with this provider. May be null, for providers not associated with a
+     * {@link TableDataService}.
      *
-     * @return The {@link TableKey}
+     * @return The associated {@link TableKey}, or null if there is none
      */
-    TKT getKey();
+    TableKey getKey();
 
     /**
      * Listener interface for anything that wants to know about new/updated table locations.
@@ -75,7 +76,7 @@ public interface TableLocationProvider<TKT extends TableKey, TLKT extends TableL
      *
      * @return this, to allow method chaining
      */
-    TableLocationProvider<TKT, TLKT> ensureInitialized();
+    TableLocationProvider ensureInitialized();
 
     /**
      * Get this provider's currently available locations.  Locations returned may have null size - that is, they may not
@@ -91,7 +92,7 @@ public interface TableLocationProvider<TKT extends TableKey, TLKT extends TableL
      * @return The TableLocation matching the given key
      */
     @NotNull
-    default TableLocation getTableLocation(@NotNull TLKT tableLocationKey) {
+    default TableLocation getTableLocation(@NotNull TableLocationKey tableLocationKey) {
         final TableLocation tableLocation = getTableLocationIfPresent(tableLocationKey);
         if (tableLocation == null) {
             throw new TableDataException(this + ": Unknown table location " + tableLocationKey);
@@ -104,7 +105,7 @@ public interface TableLocationProvider<TKT extends TableKey, TLKT extends TableL
      * @return The TableLocation matching the given key if present, else null
      */
     @Nullable
-    TableLocation getTableLocationIfPresent(@NotNull TLKT tableLocationKey);
+    TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey);
 
     /**
      * allow TableLocationProvider instances to have names.

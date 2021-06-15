@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service responsible for {@link TableLocation} discovery.
  */
-public interface TableDataService<TKT extends TableKey, TLKT extends TableLocationKey> {
+public interface TableDataService {
 
     /**
      * Request a {@link TableLocationProvider} from this service.
@@ -19,7 +19,7 @@ public interface TableDataService<TKT extends TableKey, TLKT extends TableLocati
      * @return A {@link TableLocationProvider} for the specified {@link TableKey}
      */
     @NotNull
-    TableLocationProvider<TKT, TLKT> getTableLocationProvider(@NotNull TKT tableKey);
+    TableLocationProvider getTableLocationProvider(@NotNull TableKey tableKey);
 
     /**
      * Forget all state for subsequent requests for all tables.
@@ -29,9 +29,9 @@ public interface TableDataService<TKT extends TableKey, TLKT extends TableLocati
     /**
      * Forget all state for subsequent requests for a single table.
      *
-     * @param key {@link TableKey} to forget state for
+     * @param tableKey {@link TableKey} to forget state for
      */
-    void reset(@NotNull TKT key);
+    void reset(@NotNull TableKey tableKey);
 
     /**
      * Get an optional name for this service, or null if no name is defined.

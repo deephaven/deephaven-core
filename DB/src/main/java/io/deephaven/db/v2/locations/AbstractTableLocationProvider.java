@@ -1,7 +1,7 @@
 package io.deephaven.db.v2.locations;
 
-import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.base.verify.Require;
+import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,7 +9,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Partial TableLocationProvider implementation for use by TableDataService implementations.
+ * Partial {@link TableLocationProvider} implementation for use standalone or as part of {@link TableDataService}
+ * implementations.
  * <p>
  * It implements an interface similar to TableLocationProvider.Listener for implementation classes to use when
  * communicating with the parent.
@@ -32,45 +33,22 @@ public abstract class AbstractTableLocationProvider
     private boolean locationCreatedRecorder;
 
     /**
-     * @param tableKey              A key whose field values will be deep-copied to this provider
      * @param supportsSubscriptions Whether this provider should support subscriptions
+     * @param tableKey              A key that will be used by this provider. Must be effectively immutable, or null
      */
-    protected AbstractTableLocationProvider(@NotNull final TableKey tableKey,
-                                            final boolean supportsSubscriptions) {
+    protected AbstractTableLocationProvider(final boolean supportsSubscriptions, @Nullable final TableKey tableKey) {
         super(supportsSubscriptions);
         this.tableKey = TableLookupKey.getImmutableKey(Require.neqNull(tableKey, "tableKey"));
     }
 
     @Override
     public final String toString() {
-        return toStringHelper();
+        return getClass().getName() + '[' + tableKey + ']';
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    // TableKey implementation
-    //------------------------------------------------------------------------------------------------------------------
-
-    @NotNull
-    protected final TableLookupKey<String> getTableKey() {
+    @Nullable
+    public final TableLookupKey<String> getKey() {
         return tableKey;
-    }
-
-    @Override
-    public @NotNull
-    final CharSequence getNamespace() {
-        return tableKey.getNamespace();
-    }
-
-    @Override
-    public @NotNull
-    final CharSequence getTableName() {
-        return tableKey.getTableName();
-    }
-
-    @Override
-    public @NotNull
-    final TableType getTableType() {
-        return tableKey.getTableType();
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -161,8 +139,6 @@ public abstract class AbstractTableLocationProvider
     final Collection<TableLocation> getTableLocations() {
         return unmodifiableTableLocations;
     }
-
-    // TODO: Consider overriding getTableLocation(ip,cp) to use a ThreadLocal<TableLocationLookupKey.Reusable>
 
     @Override
     public @Nullable

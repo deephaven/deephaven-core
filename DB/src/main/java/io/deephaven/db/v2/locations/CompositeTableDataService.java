@@ -4,9 +4,9 @@
 
 package io.deephaven.db.v2.locations;
 
-import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.Formatter;
+import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Routing TableDataService that applies a selector function to pick service(s) for each request.
+ * Routing {@link TableDataService} that applies a selector function to pick service(s) for each request.
  * It is assumed that each service will provide access to a non-overlapping set of table locations for any table key.
  */
 public class CompositeTableDataService extends AbstractTableDataService {
@@ -23,22 +23,28 @@ public class CompositeTableDataService extends AbstractTableDataService {
     private final ServiceSelector serviceSelector;
 
     public interface ServiceSelector {
-        TableDataService[] call(TableKey tableKey);
+
+        TableDataService[] call(@NotNull TableKey tableKey);
+
         void resetServices();
-        void resetServices(TableKey key);
+
+        void resetServices(@NotNull TableKey key);
 
         /**
-         * Like toString, but with more detail.
-         * @return a description string
+         * Get a detailed description string.
+         *
+         * @return A description string
+         * @implNote Defaults to {@link #toString()}
          */
-        String describe();
+        default String describe() {
+            return toString();
+        }
     }
 
     /**
      * @param name            optional name for this service
      * @param serviceSelector Function to map a table key to a set of services that should be queried.
      */
-    @SuppressWarnings("WeakerAccess")
     public CompositeTableDataService(@NotNull String name, @NotNull final ServiceSelector serviceSelector) {
         super(name);
         this.serviceSelector = Require.neqNull(serviceSelector, "serviceSelector");
@@ -51,14 +57,15 @@ public class CompositeTableDataService extends AbstractTableDataService {
     }
 
     @Override
-    public void reset(TableKey key) {
+    public void reset(@NotNull final TableKey key) {
         super.reset(key);
         serviceSelector.resetServices(key);
     }
 
     @Override
-    protected @NotNull TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
-        final TableDataService services[] = serviceSelector.call(tableKey);
+    @NotNull
+    protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
+        final TableDataService[] services = serviceSelector.call(tableKey);
         if (services == null || services.length == 0) {
             throw new TableDataException("No services found for " + tableKey + " in " + serviceSelector);
         }
@@ -78,7 +85,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
         private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices, @NotNull final TableKey tableKey) {
             this.tableKey = TableLookupKey.getImmutableKey(tableKey);
             inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey)).collect(Collectors.toList());
-            implementationName = "Composite-" + inputProviders.toString();
+            implementationName = "Composite-" + inputProviders;
         }
 
         @Override
@@ -87,18 +94,8 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @NotNull CharSequence getNamespace() {
-            return tableKey.getNamespace();
-        }
-
-        @Override
-        public @NotNull CharSequence getTableName() {
-            return tableKey.getTableName();
-        }
-
-        @Override
-        public @NotNull TableType getTableType() {
-            return tableKey.getTableType();
+        public TableKey getKey() {
+            return tableKey;
         }
 
         @Override
@@ -139,7 +136,8 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public  @NotNull Collection<TableLocation> getTableLocations() {
+        @NotNull
+        public Collection<TableLocation> getTableLocations() {
             final Set<TableLocation> locations = new KeyedObjectHashSet<>(TableLocationKey.getKeyedObjectKey());
 
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
@@ -163,7 +161,8 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @Nullable TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
+        @Nullable
+        public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
             // hang onto the first location and provider, so we can report well on any duplicates
             TableLocation location = null;
             TableLocationProvider provider = null;
@@ -173,7 +172,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
                     final TableLocation candidateLocation = tlp.getTableLocationIfPresent(tableLocationKey);
                     if (candidateLocation != null) {
                         if (location != null) {
-                            throw new TableDataException("Data Routing Configuration error: TableDataService elements " + provider.getName() +
+                            throw new TableDataException("TableDataService elements " + provider.getName() +
                                     " and " + tlp.getName() + " overlap at location " + location.toGenericString() +
                                     ". Full TableDataService configuration:\n" +
                                     Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
@@ -185,6 +184,11 @@ public class CompositeTableDataService extends AbstractTableDataService {
             }
             return location;
         }
+    }
+
+    @Override
+    public String getImplementationName() {
+        return "CompositeTableDataService";
     }
 
     @Override

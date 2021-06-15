@@ -12,7 +12,7 @@ public abstract class LocalTableLocationProvider extends AbstractTableLocationPr
     LocalTableLocationProvider(@NotNull final TableKey tableKey,
                                final boolean supportsSubscriptions,
                                @NotNull final TableDataRefreshService refreshService) {
-        super(tableKey, supportsSubscriptions);
+        super(supportsSubscriptions, tableKey);
         this.refreshService = refreshService;
     }
 
@@ -33,6 +33,4 @@ public abstract class LocalTableLocationProvider extends AbstractTableLocationPr
     protected <T> boolean matchSubscriptionToken(final T token) {
         return token == subscriptionToken;
     }
-
-
 }
