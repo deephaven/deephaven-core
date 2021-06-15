@@ -65,7 +65,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         this.columnNameMap = other.columnNameMap;
     }
 
-    public static TableDefinition tableDefinition(@NotNull final Class[] types, @NotNull final String[] columnNames) {
+    public static TableDefinition tableDefinition(@NotNull final Class<?>[] types, @NotNull final String[] columnNames) {
         return new TableDefinition(getColumnDefinitions(types, columnNames));
     }
 
@@ -547,7 +547,6 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return new TableDefinition(columnDefs);
     }
 
-    // TODO: DELETE THESE OVERRIDES AND RELATED CODE IN persist.*() METHODS (SEE NOTES BELOW)
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         columns = (ColumnDefinition<?>[])in.readObject();

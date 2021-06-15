@@ -73,7 +73,8 @@ class SourceTableMap extends LocalTableMap {
             subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
             pendingLocationStates = new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
             readyLocationStates = new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
-            processNewLocationsLiveTable = new InstrumentedLiveTable(SourceTableMap.class.getSimpleName() + "-processPendingLocations") {
+            processNewLocationsLiveTable = new InstrumentedLiveTable(
+                    SourceTableMap.class.getSimpleName() + '[' + tableLocationProvider + ']' + "-processPendingLocations") {
                 @Override
                 protected void instrumentedRefresh() {
                     processPendingLocations();

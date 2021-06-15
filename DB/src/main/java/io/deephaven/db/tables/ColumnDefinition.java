@@ -264,7 +264,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     private ColumnDefinition(String name, Class<TYPE> dataType, int columnType, boolean isVarSizeString) {
-        this.name = name;
+        this.name = Objects.requireNonNull(name);
         setDataType(Objects.requireNonNull(dataType));
         setColumnType(columnType);
         setIsVarSizeString(isVarSizeString);
@@ -477,11 +477,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return objectWidth != ObjectCodec.VARIABLE_WIDTH_SENTINEL;
     }
 
-    // TODO: DELETE THESE OVERRIDES (SEE NOTES IN TableDefinition)
-
-    static final byte MAGIC_NUMBER = (byte)0b10001111;
-
-    protected String name;
+    private String name;
     public String getName() {
         return name;
     }
@@ -490,7 +486,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.name=name;
     }
 
-    protected Class dataType;
+    private Class dataType;
     public Class getDataType() {
         return dataType;
     }
@@ -499,7 +495,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.dataType=dataType;
     }
 
-    protected Class componentType;
+    private Class componentType;
     public Class getComponentType() {
         return componentType;
     }
@@ -508,7 +504,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.componentType=componentType;
     }
 
-    protected int columnType=Integer.MIN_VALUE;
+    private int columnType=Integer.MIN_VALUE;
     public int getColumnType() {
         return columnType;
     }
@@ -517,7 +513,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.columnType=columnType;
     }
 
-    protected Boolean isVarSizeString;
+    private Boolean isVarSizeString;
     public Boolean getIsVarSizeString() {
         return isVarSizeString;
     }
@@ -526,7 +522,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.isVarSizeString=isVarSizeString;
     }
 
-    protected int encoding=Integer.MIN_VALUE;
+    private int encoding=Integer.MIN_VALUE;
     public int getEncoding() {
         return encoding;
     }
@@ -535,7 +531,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.encoding=encoding;
     }
 
-    protected String objectCodecClass;
+    private String objectCodecClass;
     public String getObjectCodecClass() {
         return objectCodecClass;
     }
@@ -544,7 +540,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.objectCodecClass=objectCodecClass;
     }
 
-    protected String objectCodecArguments;
+    private String objectCodecArguments;
     public String getObjectCodecArguments() {
         return objectCodecArguments;
     }
@@ -553,7 +549,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.objectCodecArguments=objectCodecArguments;
     }
 
-    protected int objectWidth=Integer.MIN_VALUE;
+    private int objectWidth=Integer.MIN_VALUE;
     public int getObjectWidth() {
         return objectWidth;
     }

@@ -34,7 +34,7 @@ public class NestedPartitionedDiskBackedTable extends PartitionAwareSourceTable 
                                             Set<String> internalPartitions) {
         //noinspection unchecked
         super(checkTableDefinitionRequirements(tableDefinition),
-                NestedPartitionedDiskBackedTable.class.getSimpleName(),
+                NestedPartitionedDiskBackedTable.class.getSimpleName() + '[' + locationProvider + ']',
                 componentFactory,
                 locationProvider,
                 liveTableRegistrar,
