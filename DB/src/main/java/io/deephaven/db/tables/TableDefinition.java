@@ -5,7 +5,6 @@
 package io.deephaven.db.tables;
 
 import io.deephaven.base.Copyable;
-import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -24,7 +23,6 @@ import java.util.stream.Stream;
 
 /**
  * Table definition for all Deephaven tables.
- * Adds non-stateful functionality to DefaultTableDefinition.
  */
 public class TableDefinition implements Externalizable, LogOutputAppendable, Copyable<TableDefinition> {
     private static final long serialVersionUID = -120432133075760976L;

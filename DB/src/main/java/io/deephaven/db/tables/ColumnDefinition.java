@@ -25,7 +25,6 @@ import java.util.*;
 
 /**
  * Column definition for all Deephaven columns.
- * Adds non-stateful functionality to DefaultColumnDefinition.
  */
 public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition> {
 

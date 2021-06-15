@@ -1032,12 +1032,12 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression="java.util.Arrays.asList(5)";
         check(expression, resultExpression, List.class, new String[]{});
 
-        expression="io.deephaven.db.tables.DefaultColumnDefinition.COLUMNTYPE_NORMAL";
-        resultExpression="io.deephaven.db.tables.DefaultColumnDefinition.COLUMNTYPE_NORMAL";
+        expression="io.deephaven.db.tables.ColumnDefinition.COLUMNTYPE_NORMAL";
+        resultExpression="io.deephaven.db.tables.ColumnDefinition.COLUMNTYPE_NORMAL";
         check(expression, resultExpression, int.class, new String[]{});
 
-        expression="DefaultColumnDefinition.COLUMNTYPE_NORMAL";
-        resultExpression="DefaultColumnDefinition.COLUMNTYPE_NORMAL";
+        expression="ColumnDefinition.COLUMNTYPE_NORMAL";
+        resultExpression="ColumnDefinition.COLUMNTYPE_NORMAL";
         check(expression, resultExpression, int.class, new String[]{});
 
         expression="Color.BLUE";
