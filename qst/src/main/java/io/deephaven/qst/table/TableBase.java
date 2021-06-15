@@ -55,9 +55,15 @@ public abstract class TableBase implements Table {
     @Override
     public final NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch,
         Collection<String> columnsToAdd) {
-        return naturalJoin2(rightTable,
-            columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
-            columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
+        ImmutableNaturalJoinTable.Builder builder =
+            ImmutableNaturalJoinTable.builder().left(this).right(rightTable);
+        for (String toMatch : columnsToMatch) {
+            builder.addMatches(JoinMatch.parse(toMatch));
+        }
+        for (String toAdd : columnsToAdd) {
+            builder.addAdditions(JoinAddition.parse(toAdd));
+        }
+        return builder.build();
     }
 
     @Override
@@ -86,9 +92,15 @@ public abstract class TableBase implements Table {
     @Override
     public final ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch,
         Collection<String> columnsToAdd) {
-        return exactJoin2(rightTable,
-            columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
-            columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
+        ImmutableExactJoinTable.Builder builder =
+            ImmutableExactJoinTable.builder().left(this).right(rightTable);
+        for (String toMatch : columnsToMatch) {
+            builder.addMatches(JoinMatch.parse(toMatch));
+        }
+        for (String toAdd : columnsToAdd) {
+            builder.addAdditions(JoinAddition.parse(toAdd));
+        }
+        return builder.build();
     }
 
     @Override
