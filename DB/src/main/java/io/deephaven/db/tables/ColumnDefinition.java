@@ -9,7 +9,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.base.formatters.EnumFormatter;
-import io.deephaven.dataobjects.persistence.DataObjectStreamConstants;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.utils.DBDateTime;
@@ -28,7 +27,7 @@ import java.util.*;
  * Column definition for all Deephaven columns.
  * Adds non-stateful functionality to DefaultColumnDefinition.
  */
-public class ColumnDefinition<TYPE> implements Externalizable, DataObjectStreamConstants, LogOutputAppendable, Copyable<ColumnDefinition> {
+public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition> {
 
     private static final long serialVersionUID = 3656456077670712362L;
 

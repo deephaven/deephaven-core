@@ -6,7 +6,6 @@ package io.deephaven.db.plot.util.functions;
 
 import io.deephaven.base.classloaders.MapBackedClassLoader;
 import io.deephaven.base.verify.Require;
-import io.deephaven.dataobjects.persistence.CustomClassLoaderObjectInputStream;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import groovy.lang.Closure;
 
@@ -66,5 +65,30 @@ public class SerializableClosure<T> implements Serializable {
         cl.addClassData(closureClassName, closureCode);
         final ObjectInputStream objectStream = new CustomClassLoaderObjectInputStream<>(new ByteArrayInputStream(closureData), cl);
         closure = (Closure) objectStream.readObject();
+    }
+
+    private static class CustomClassLoaderObjectInputStream<CLT extends ClassLoader> extends ObjectInputStream {
+
+        private final CLT classLoader;
+
+        public CustomClassLoaderObjectInputStream(InputStream inputStream, CLT classLoader) throws IOException {
+            super(inputStream);
+            this.classLoader = classLoader;
+        }
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException, IOException {
+            if (classLoader != null) {
+                try {
+                    return Class.forName(desc.getName(), false, classLoader);
+                } catch (ClassNotFoundException cnfe) {
+                    /* The default implementation in ObjectInputStream handles primitive types with a map from name to class.
+                     * Rather than duplicate the functionality, we are delegating to the super method for all failures that
+                     * may be of this kind, as well as any case where the passed in ClassLoader fails to find the class.
+                     */
+                }
+            }
+            return super.resolveClass(desc);
+        }
     }
 }

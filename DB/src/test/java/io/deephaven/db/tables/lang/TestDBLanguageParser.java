@@ -6,7 +6,6 @@ package io.deephaven.db.tables.lang;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
-import io.deephaven.dataobjects.DataObjectColumnSetManager;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.*;
@@ -28,10 +27,6 @@ import static io.deephaven.db.tables.lang.DBLanguageParser.isWideningPrimitiveCo
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
 public class TestDBLanguageParser extends BaseArrayTestCase {
-    static {
-        DataObjectColumnSetManager.getInstance();  //takes a while so lets do it here...
-    }
-
     private final HashSet<Package> packageImports = new HashSet<>();
     private final HashSet<Class> classImports = new HashSet<>();
     private final HashSet<Class> staticImports = new HashSet<>();

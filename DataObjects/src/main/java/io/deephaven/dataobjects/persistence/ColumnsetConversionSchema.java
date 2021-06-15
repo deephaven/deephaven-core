@@ -4,7 +4,7 @@
 
 package io.deephaven.dataobjects.persistence;
 
-import io.deephaven.dataobjects.AbstractDataObject;
+    import io.deephaven.dataobjects.AbstractDataObject;
 import io.deephaven.dataobjects.DataObjectColumn;
 import io.deephaven.dataobjects.DataObjectColumnSet;
 import io.deephaven.dataobjects.DataObjectColumnSetManager;
