@@ -9,7 +9,6 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.lang.DBLanguageFunctionUtil;
 import io.deephaven.db.tables.lang.DBLanguageParser.QueryLanguageParseException;
@@ -240,7 +239,7 @@ public class TestFormulaColumn {
             checkPrimitive(row, expression, result);
 
             expression = "io.deephaven.db.tables.DefaultColumnDefinition.COLUMNTYPE_NORMAL";
-            result = DefaultColumnDefinition.COLUMNTYPE_NORMAL;
+            result = ColumnDefinition.COLUMNTYPE_NORMAL;
             checkPrimitive(row, expression, result);
 
             expression = "CountDownLatch.class"; // (testing a package import)

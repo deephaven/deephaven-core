@@ -1,7 +1,7 @@
 package io.deephaven.db.v2.by;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.DefaultColumnDefinition;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.NotificationQueue;
@@ -106,7 +106,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             final Set<String> keyColumnNameSet = Arrays.stream(keyColumnNames).collect(Collectors.toSet());
             final Set<String> unadjustedParentColumnNameSet = new LinkedHashSet<>(unadjustedParentTable.getDefinition().getColumnNames());
             final String[] retainedResultColumnNames = parentTable.getDefinition().getColumnStream()
-                    .map(DefaultColumnDefinition::getName)
+                    .map(ColumnDefinition::getName)
                     .filter(cn -> !keyColumnNameSet.contains(cn))
                     .filter(unadjustedParentColumnNameSet::contains)
                     .toArray(String[]::new);

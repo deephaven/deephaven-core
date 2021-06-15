@@ -604,7 +604,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     @AsyncMethod
     default Table dropColumnFormats() {
         String[] columnAry = getDefinition().getColumnStream()
-                .map(DefaultColumnDefinition::getName)
+                .map(ColumnDefinition::getName)
                 .filter(ColumnFormattingValues::isFormattingColumn)
                 .toArray(String[]::new);
         return dropColumns(columnAry);

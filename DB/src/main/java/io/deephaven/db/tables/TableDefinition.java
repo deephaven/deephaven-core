@@ -5,6 +5,7 @@
 package io.deephaven.db.tables;
 
 import io.deephaven.base.Copyable;
+import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -346,9 +347,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
             return false;
         }
         final Iterator<ColumnDefinition<?>> thisColumns =
-                getColumnStream().sorted(Comparator.comparing(DefaultColumnDefinition::getName)).iterator();
+                getColumnStream().sorted(Comparator.comparing(ColumnDefinition::getName)).iterator();
         final Iterator<ColumnDefinition<?>> otherColumns =
-                other.getColumnStream().sorted(Comparator.comparing(DefaultColumnDefinition::getName)).iterator();
+                other.getColumnStream().sorted(Comparator.comparing(ColumnDefinition::getName)).iterator();
         while (thisColumns.hasNext()) {
             if (!thisColumns.next().equals(otherColumns.next())) {
                 return false;
@@ -588,6 +589,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
         return columns;
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     public TableDefinition clone() {
         return new TableDefinition(this);

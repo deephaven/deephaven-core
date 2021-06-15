@@ -4,8 +4,13 @@
 
 package io.deephaven.db.tables;
 
+import io.deephaven.base.Copyable;
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.base.formatters.EnumFormatter;
+import io.deephaven.dataobjects.persistence.DataObjectStreamConstants;
+import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -13,28 +18,33 @@ import io.deephaven.util.codec.ObjectCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.*;
 
-import static io.deephaven.db.tables.DataObjectUtils.readAdoString;
-import static io.deephaven.db.tables.DataObjectUtils.writeAdoString;
-
 /**
  * Column definition for all Deephaven columns.
  * Adds non-stateful functionality to DefaultColumnDefinition.
  */
-public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
-
-    public static final ColumnDefinition[] ZERO_LENGTH_COLUMN_DEFINITION_ARRAY = new ColumnDefinition[0];
+public class ColumnDefinition<TYPE> implements Externalizable, DataObjectStreamConstants, LogOutputAppendable, Copyable<ColumnDefinition> {
 
     private static final long serialVersionUID = 3656456077670712362L;
 
-    public static final EnumFormatter COLUMN_TYPE_FORMATTER =
-            new EnumFormatter(getColumnSetStatic().getColumn("ColumnType").getEnums());
-    public static final EnumFormatter ENCODING_FORMATTER =
-                new EnumFormatter(getColumnSetStatic().getColumn("Encoding").getEnums());
+    public static final EnumFormatter COLUMN_TYPE_FORMATTER = new EnumFormatter(new String[]{"Normal", "Grouping", "Partitioning", "Virtual"});
+
+    public static final int COLUMNTYPE_NORMAL=1;
+    public static final int COLUMNTYPE_GROUPING=2;
+    public static final int COLUMNTYPE_PARTITIONING=4;
+    public static final int COLUMNTYPE_VIRTUAL=8;
+
+    public static final int ENCODING_ISO_8859_1=1;
+    public static final int ENCODING_UTF_8=2;
+    public static final int ENCODING_US_ASCII=4;
+    public static final int ENCODING_UTF_16=8;
+    public static final int ENCODING_UTF_16BE=16;
+    public static final int ENCODING_UTF_16LE=32;
 
     public static ColumnDefinition<Boolean> ofBoolean(@NotNull final String name) {
         return new ColumnDefinition<>(name, Boolean.class);
@@ -256,14 +266,14 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
     }
 
     private ColumnDefinition(String name, Class<TYPE> dataType, int columnType, boolean isVarSizeString) {
-        super(Objects.requireNonNull(name));
+        this.name = name;
         setDataType(Objects.requireNonNull(dataType));
         setColumnType(columnType);
         setIsVarSizeString(isVarSizeString);
     }
 
     private ColumnDefinition(ColumnDefinition source) {
-        super.copyValues(source);
+        copyValues(source);
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -300,12 +310,6 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
         ColumnDefinition clone = clone();
         clone.setIsVarSizeString(true);
         return clone;
-    }
-
-    @Override
-    public Class<TYPE> getDataType() {
-        //noinspection unchecked
-        return super.getDataType();
     }
 
     public boolean isGrouping() {
@@ -483,34 +487,165 @@ public class ColumnDefinition<TYPE> extends DefaultColumnDefinition {
 
     static final byte MAGIC_NUMBER = (byte)0b10001111;
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = readAdoString(in);
+    protected String name;
+    public String getName() {
+        return name;
+    }
 
-        // This read isn't using PersistentInputStream's ColumnSet conversion - need to consume stream elements for
-        // the columns I've removed.
-        // This is further complicated by new additions in some cases, so we've overloaded the old formula (String)
-        // field as a "version number" for the externalized object -- see writeExternal() for format documentation.
+    void setName(String name) {
+        this.name=name;
+    }
+
+    protected Class dataType;
+    public Class getDataType() {
+        return dataType;
+    }
+
+    void setDataType(Class dataType) {
+        this.dataType=dataType;
+    }
+
+    protected Class componentType;
+    public Class getComponentType() {
+        return componentType;
+    }
+
+    void setComponentType(Class componentType) {
+        this.componentType=componentType;
+    }
+
+    protected int columnType=Integer.MIN_VALUE;
+    public int getColumnType() {
+        return columnType;
+    }
+
+    void setColumnType(int columnType) {
+        this.columnType=columnType;
+    }
+
+    protected Boolean isVarSizeString;
+    public Boolean getIsVarSizeString() {
+        return isVarSizeString;
+    }
+
+    void setIsVarSizeString(Boolean isVarSizeString) {
+        this.isVarSizeString=isVarSizeString;
+    }
+
+    protected int encoding=Integer.MIN_VALUE;
+    public int getEncoding() {
+        return encoding;
+    }
+
+    void setEncoding(int encoding) {
+        this.encoding=encoding;
+    }
+
+    protected String objectCodecClass;
+    public String getObjectCodecClass() {
+        return objectCodecClass;
+    }
+
+    void setObjectCodecClass(String objectCodecClass) {
+        this.objectCodecClass=objectCodecClass;
+    }
+
+    protected String objectCodecArguments;
+    public String getObjectCodecArguments() {
+        return objectCodecArguments;
+    }
+
+    void setObjectCodecArguments(String objectCodecArguments) {
+        this.objectCodecArguments=objectCodecArguments;
+    }
+
+    protected int objectWidth=Integer.MIN_VALUE;
+    public int getObjectWidth() {
+        return objectWidth;
+    }
+
+    void setObjectWidth(int objectWidth) {
+        this.objectWidth=objectWidth;
+    }
+
+    @Override
+    public void copyValues(ColumnDefinition x) {
+        name = x.name;
+        dataType = x.dataType;
+        componentType = x.componentType;
+        columnType = x.columnType;
+        isVarSizeString = x.isVarSizeString;
+        encoding = x.encoding;
+        objectCodecClass = x.objectCodecClass;
+        objectCodecArguments = x.objectCodecArguments;
+        objectWidth = x.objectWidth;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder("ColumnDefinition : ");
+
+        builder.append("name=").append(name);
+        builder.append("|dataType=").append(dataType);
+        builder.append("|componentType=").append(componentType);
+        builder.append("|columnType=").append(columnType);
+        builder.append("|isVarSizeString=").append(isVarSizeString);
+        builder.append("|encoding=").append(encoding);
+        builder.append("|objectCodecClass=").append(objectCodecClass);
+        builder.append("|objectCodecArguments=").append(objectCodecArguments);
+        builder.append("|objectWidth=").append(objectWidth);
+
+        return builder.toString();
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        logOutput.append("ColumnDefinition : ");
+
+        logOutput.append("name=").append(String.valueOf(name));
+        logOutput.append("|dataType=").append(String.valueOf(dataType));
+        logOutput.append("|componentType=").append(String.valueOf(componentType));
+        logOutput.append("|columnType=").append(columnType);
+        logOutput.append("|isVarSizeString=").append(isVarSizeString);
+        logOutput.append("|encoding=").append(encoding);
+        logOutput.append("|objectCodecClass=").append(String.valueOf(objectCodecClass));
+        logOutput.append("|objectCodecArguments=").append(String.valueOf(objectCodecArguments));
+        logOutput.append("|objectWidth=").append(objectWidth);
+
+        return logOutput;
+    }
+
+    public int hashCode() {
+        return HashCodeUtil.toHashCode(name);
+    }
+
+    @Override
+    public ColumnDefinition safeClone() {
+        return clone();
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        name = in.readUTF(); name = "\0".equals(name) ? null : name;
         dataType = (Class)in.readObject();
         componentType = (Class)in.readObject();
         columnType = in.readInt();
         isVarSizeString = (Boolean)in.readObject();
         encoding = in.readInt();
-        objectCodecClass = readAdoString(in);
-        objectCodecArguments = readAdoString(in);
+        objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
+        objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
         objectWidth = in.readInt();
     }
 
-    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        writeAdoString(out, name);
-
+        if (name == null) { out.writeUTF("\0"); } else { out.writeUTF(name); }
         out.writeObject(dataType);
         out.writeObject(componentType);
         out.writeInt(columnType);
         out.writeObject(isVarSizeString);
         out.writeInt(encoding);
-        writeAdoString(out, objectCodecClass);
-        writeAdoString(out, objectCodecArguments);
+        if (objectCodecClass == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecClass); }
+        if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
         out.writeInt(objectWidth);
     }
+
 }
