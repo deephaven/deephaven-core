@@ -1134,6 +1134,37 @@ public class SessionStateTest {
         listener.validateNotificationQueue(e2, UNKNOWN, EXPORTED);
     }
 
+    @Test
+    public void testNonExportWithDependencyFails() {
+        final SessionState.ExportObject<Object> e1 =
+                session.newExport(nextExportId++).submit(() -> session);
+        final SessionState.ExportObject<Object> n1 =
+                session.nonExport()
+                .require(e1)
+                .submit(() -> { throw new RuntimeException("this should not reach test framework"); });
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(n1.getState(), "n1.getState()", FAILED, "FAILED");
+    }
+
+    @Test
+    public void testNonExportWithDependencyReleaseOnExport() {
+        final CountingLivenessReferent clr = new CountingLivenessReferent();
+
+        final SessionState.ExportObject<Object> e1;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            e1 = session.newExport(nextExportId++).submit(() -> clr);
+        }
+        final SessionState.ExportBuilder<Object> n1 = session.nonExport().require(e1);
+        e1.release();
+        scheduler.runUntilQueueEmpty();
+        // should retain it still for the builder
+        Assert.gt(clr.refCount, "clr.refCount", 0);
+
+        n1.submit(() -> {});
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(clr.refCount, "clr.refCount", 0);
+    }
+
     private static long getExportId(final ExportNotification notification) {
         return SessionState.ticketToExportId(notification.getTicket());
     }
