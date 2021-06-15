@@ -66,16 +66,25 @@ public interface Table extends TableOperations<Table, Table> {
     ViewTable view(Collection<String> columns);
 
     @Override
+    ViewTable view2(Collection<Selectable> columns);
+
+    @Override
     UpdateViewTable updateView(String... columns);
 
     @Override
     UpdateViewTable updateView(Collection<String> columns);
 
     @Override
+    UpdateViewTable updateView2(Collection<Selectable> columns);
+
+    @Override
     UpdateTable update(String... columns);
 
     @Override
     UpdateTable update(Collection<String> columns);
+
+    @Override
+    UpdateTable update2(Collection<Selectable> columns);
 
     @Override
     SelectTable select();
@@ -85,6 +94,9 @@ public interface Table extends TableOperations<Table, Table> {
 
     @Override
     SelectTable select(Collection<String> columns);
+
+    @Override
+    SelectTable select2(Collection<Selectable> columns);
 
     <V extends Visitor> V walk(V visitor);
 

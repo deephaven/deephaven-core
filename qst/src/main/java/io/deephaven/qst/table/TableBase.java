@@ -96,31 +96,72 @@ public abstract class TableBase implements Table {
 
     @Override
     public final ViewTable view(String... columns) {
-        return ImmutableViewTable.builder().parent(this).addColumns(columns).build();
+        final ImmutableViewTable.Builder builder = ImmutableViewTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
     }
 
     @Override
     public final ViewTable view(Collection<String> columns) {
+        final ImmutableViewTable.Builder builder = ImmutableViewTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final ViewTable view2(Collection<Selectable> columns) {
         return ImmutableViewTable.builder().parent(this).addAllColumns(columns).build();
     }
 
     @Override
     public final UpdateViewTable updateView(String... columns) {
-        return ImmutableUpdateViewTable.builder().parent(this).addColumns(columns).build();
+        final ImmutableUpdateViewTable.Builder builder =
+            ImmutableUpdateViewTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
     }
 
     @Override
     public final UpdateViewTable updateView(Collection<String> columns) {
+        final ImmutableUpdateViewTable.Builder builder =
+            ImmutableUpdateViewTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final UpdateViewTable updateView2(Collection<Selectable> columns) {
         return ImmutableUpdateViewTable.builder().parent(this).addAllColumns(columns).build();
     }
 
     @Override
     public final UpdateTable update(String... columns) {
-        return ImmutableUpdateTable.builder().parent(this).addColumns(columns).build();
+        final ImmutableUpdateTable.Builder builder = ImmutableUpdateTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
     }
 
     @Override
     public final UpdateTable update(Collection<String> columns) {
+        final ImmutableUpdateTable.Builder builder = ImmutableUpdateTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final UpdateTable update2(Collection<Selectable> columns) {
         return ImmutableUpdateTable.builder().parent(this).addAllColumns(columns).build();
     }
 
@@ -131,11 +172,24 @@ public abstract class TableBase implements Table {
 
     @Override
     public final SelectTable select(String... columns) {
-        return ImmutableSelectTable.builder().parent(this).addColumns(columns).build();
+        final ImmutableSelectTable.Builder builder = ImmutableSelectTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
     }
 
     @Override
     public final SelectTable select(Collection<String> columns) {
+        final ImmutableSelectTable.Builder builder = ImmutableSelectTable.builder().parent(this);
+        for (String column : columns) {
+            builder.addColumns(Selectable.parse(column));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final SelectTable select2(Collection<Selectable> columns) {
         return ImmutableSelectTable.builder().parent(this).addAllColumns(columns).build();
     }
 

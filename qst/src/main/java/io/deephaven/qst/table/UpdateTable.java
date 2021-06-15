@@ -9,7 +9,7 @@ public abstract class UpdateTable extends TableBase implements SingleParentTable
 
     public abstract Table parent();
 
-    public abstract List<String> columns();
+    public abstract List<Selectable> columns();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

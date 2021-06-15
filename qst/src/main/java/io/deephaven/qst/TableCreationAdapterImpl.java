@@ -62,17 +62,17 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
 
     @Override
     public void visit(ViewTable viewTable) {
-        out = parent(viewTable).view(viewTable.columns());
+        out = parent(viewTable).view2(viewTable.columns());
     }
 
     @Override
     public void visit(UpdateViewTable updateViewTable) {
-        out = parent(updateViewTable).updateView(updateViewTable.columns());
+        out = parent(updateViewTable).updateView2(updateViewTable.columns());
     }
 
     @Override
     public void visit(UpdateTable updateTable) {
-        out = parent(updateTable).update(updateTable.columns());
+        out = parent(updateTable).update2(updateTable.columns());
     }
 
     @Override
@@ -81,7 +81,7 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
         if (selectTable.isSelectAll()) {
             out = parent(selectTable).select();
         } else {
-            out = parent(selectTable).select(selectTable.columns());
+            out = parent(selectTable).select2(selectTable.columns());
         }
     }
 

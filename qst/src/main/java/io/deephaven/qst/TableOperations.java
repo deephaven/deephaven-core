@@ -2,6 +2,7 @@ package io.deephaven.qst;
 
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
+import io.deephaven.qst.table.Selectable;
 import java.util.Collection;
 
 public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABLE> {
@@ -24,17 +25,23 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
 
     SELF view(Collection<String> columns);
 
+    SELF view2(Collection<Selectable> columns);
+
     // -------------------------------------------------------------------------------------------
 
     SELF updateView(String... columns);
 
     SELF updateView(Collection<String> columns);
 
+    SELF updateView2(Collection<Selectable> columns);
+
     // -------------------------------------------------------------------------------------------
 
     SELF update(String... columns);
 
     SELF update(Collection<String> columns);
+
+    SELF update2(Collection<Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -43,6 +50,8 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
     SELF select(String... columns);
 
     SELF select(Collection<String> columns);
+
+    SELF select2(Collection<Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 

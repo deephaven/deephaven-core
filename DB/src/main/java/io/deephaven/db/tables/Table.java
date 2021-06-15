@@ -29,6 +29,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.qst.TableOperations;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
+import io.deephaven.qst.table.Selectable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -514,6 +515,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return select(getDefinition().getColumnNamesArray());
     }
 
+    @Override
+    default Table select2(Collection<Selectable> columns) {
+        return select(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+    }
+
     @AsyncMethod
     Table selectDistinct(SelectColumn... columns);
 
@@ -540,6 +546,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     default Table update(Collection<String> newColumns) {
         return update(SelectColumnFactory.getExpressions(newColumns));
+    }
+
+    @Override
+    default Table update2(Collection<Selectable> columns) {
+        return update(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
     }
 
     /**
@@ -592,6 +603,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return view(SelectColumnFactory.getExpressions(columns));
     }
 
+    @Override
+    @AsyncMethod
+    default Table view2(Collection<Selectable> columns) {
+        return view(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+    }
+
     @AsyncMethod
     Table updateView(SelectColumn... newColumns);
 
@@ -603,6 +620,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @AsyncMethod
     default Table updateView(Collection<String> newColumns) {
         return updateView(SelectColumnFactory.getExpressions(newColumns));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table updateView2(Collection<Selectable> columns) {
+        return updateView(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
     }
 
     @AsyncMethod
@@ -2491,4 +2514,5 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table toTable() {
         return this;
     }
+
 }
