@@ -23,7 +23,7 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final Table where(String... filters) {
+    public final WhereTable where(String... filters) {
         return ImmutableWhereTable.builder().parent(this).addFilters(filters).build();
     }
 

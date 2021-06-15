@@ -20,6 +20,9 @@ public interface Table extends TableOperations<Table, Table> {
     TailTable tail(long size);
 
     @Override
+    WhereTable where(String... filters);
+
+    @Override
     WhereTable where(Collection<String> filters);
 
     @Override
