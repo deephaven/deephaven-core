@@ -421,8 +421,12 @@ public class SessionState {
         private ExportObject(final SessionState session, final long exportId) {
             this.session = session;
             this.exportId = exportId;
-            this.logIdentity = exportId == NON_EXPORT_ID ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
+            this.logIdentity = isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
+        }
+
+        private boolean isNonExport() {
+            return exportId == NON_EXPORT_ID;
         }
 
         /**
@@ -456,6 +460,11 @@ public class SessionState {
             if (isExportStateTerminal(this.state)) {
                 // nothing to do because dependency already failed; hooray??
                 return;
+            }
+
+            if (isNonExport()) {
+                // exports are retained via the exportMap; non-exports need to be retained while their work is outstanding
+                retainReference();
             }
 
             this.exportMain = exportMain;
@@ -537,7 +546,7 @@ public class SessionState {
          * @param state the new state for this export
          */
         private synchronized void setState(final ExportNotification.State state) {
-            if (isExportStateTerminal(this.state)) {
+            if ((this.state == ExportNotification.State.EXPORTED && isNonExport()) || isExportStateTerminal(this.state)) {
                 throw new IllegalStateException("cannot change state if export is already in terminal state");
             }
             this.state = state;
@@ -568,7 +577,7 @@ public class SessionState {
                 errorHandler = null;
             }
 
-            if (isExportStateTerminal(state)) {
+            if ((state == ExportNotification.State.EXPORTED && isNonExport()) || isExportStateTerminal(state)) {
                 dropReference();
             }
         }
@@ -747,6 +756,9 @@ public class SessionState {
          */
         public synchronized void release() {
             if (state == ExportNotification.State.EXPORTED) {
+                if (isNonExport()) {
+                    return;
+                }
                 setState(ExportNotification.State.RELEASED);
             } else if (!isExportStateTerminal(state)){
                 session.nonExport().require(this).submit(this::release);
@@ -758,6 +770,9 @@ public class SessionState {
          */
         public synchronized void cancel() {
             if (state == ExportNotification.State.EXPORTED) {
+                if (isNonExport()) {
+                    return;
+                }
                 setState(ExportNotification.State.RELEASED);
             } else if (!isExportStateTerminal(state)) {
                 setState(ExportNotification.State.CANCELLED);
