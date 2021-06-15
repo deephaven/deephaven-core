@@ -1,5 +1,5 @@
 dependencies {
-    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':DataObjects'),
+    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'),
             project(':FishUtil')
 
     testCompile project(path: ':Base', configuration: 'tests')
