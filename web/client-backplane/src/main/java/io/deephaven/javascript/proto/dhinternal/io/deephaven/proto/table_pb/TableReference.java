@@ -178,7 +178,7 @@ public class TableReference {
 
   public native void clearTicket();
 
-  public native double getBatchOffset();
+  public native int getBatchOffset();
 
   public native int getRefCase();
 
@@ -190,7 +190,7 @@ public class TableReference {
 
   public native Uint8Array serializeBinary();
 
-  public native void setBatchOffset(double value);
+  public native void setBatchOffset(int value);
 
   public native void setTicket();
 
