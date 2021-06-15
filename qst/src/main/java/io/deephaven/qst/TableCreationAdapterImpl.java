@@ -3,6 +3,7 @@ package io.deephaven.qst;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.SelectTable;
@@ -115,6 +116,13 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
         final BUILDER right = of(tableCreation, exactJoinTable.right());
         out =
             left.exactJoin2(right.toTable(), exactJoinTable.matches(), exactJoinTable.additions());
+    }
+
+    @Override
+    public void visit(JoinTable joinTable) {
+        final BUILDER left = of(tableCreation, joinTable.left());
+        final BUILDER right = of(tableCreation, joinTable.right());
+        out = left.join2(right.toTable(), joinTable.matches(), joinTable.additions());
     }
 
     private BUILDER parent(SingleParentTable table) {

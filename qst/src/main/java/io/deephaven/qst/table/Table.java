@@ -75,6 +75,20 @@ public interface Table extends TableOperations<Table, Table> {
     ExactJoinTable exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
     @Override
+    JoinTable join2(Table rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
+    @Override
+    JoinTable join(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd);
+
+    @Override
+    JoinTable join(Table rightTable, String columnsToMatch);
+
+    @Override
+    JoinTable join(Table rightTable, String columnsToMatch, String columnsToAdd);
+
+    @Override
     ViewTable view(String... columns);
 
     @Override
@@ -133,6 +147,8 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(NaturalJoinTable naturalJoinTable);
 
         void visit(ExactJoinTable exactJoinTable);
+
+        void visit(JoinTable joinTable);
 
         void visit(ViewTable viewTable);
 

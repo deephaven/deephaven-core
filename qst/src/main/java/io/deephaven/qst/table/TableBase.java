@@ -153,6 +153,37 @@ public abstract class TableBase implements Table {
     }
 
     @Override
+    public final JoinTable join2(Table rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd) {
+        return ImmutableJoinTable.builder().left(this).right(rightTable)
+            .addAllMatches(columnsToMatch).addAllAdditions(columnsToAdd).build();
+    }
+
+    @Override
+    public final JoinTable join(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd) {
+        ImmutableJoinTable.Builder builder =
+            ImmutableJoinTable.builder().left(this).right(rightTable);
+        for (String toMatch : columnsToMatch) {
+            builder.addMatches(JoinMatch.parse(toMatch));
+        }
+        for (String toAdd : columnsToAdd) {
+            builder.addAdditions(JoinAddition.parse(toAdd));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final JoinTable join(Table rightTable, String columnsToMatch) {
+        return join(rightTable, split(columnsToMatch), Collections.emptyList());
+    }
+
+    @Override
+    public final JoinTable join(Table rightTable, String columnsToMatch, String columnsToAdd) {
+        return join(rightTable, split(columnsToMatch), split(columnsToAdd));
+    }
+
+    @Override
     public final ViewTable view(String... columns) {
         final ImmutableViewTable.Builder builder = ImmutableViewTable.builder().parent(this);
         for (String column : columns) {

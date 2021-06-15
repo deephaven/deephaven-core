@@ -4,7 +4,6 @@ import io.deephaven.qst.table.Filter;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
 import io.deephaven.qst.table.Selectable;
-import io.deephaven.qst.table.Table;
 import java.util.Collection;
 
 public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABLE> {
@@ -96,6 +95,17 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
     SELF exactJoin(TABLE rightTable, String columnsToMatch);
 
     SELF exactJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd);
+
+    // -------------------------------------------------------------------------------------------
+
+    SELF join2(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
+    SELF join(TABLE rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
+
+    SELF join(TABLE rightTable, String columnsToMatch);
+
+    SELF join(TABLE rightTable, String columnsToMatch, String columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
 
