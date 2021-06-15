@@ -46,6 +46,39 @@ public abstract class TableBase implements Table {
     }
 
     @Override
+    public final WhereInTable whereIn(Table rightTable, String... columnsToMatch) {
+        ImmutableWhereInTable.Builder builder =
+            ImmutableWhereInTable.builder().left(this).right(rightTable);
+        for (String toMatch : columnsToMatch) {
+            builder.addMatches(JoinMatch.parse(toMatch));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final WhereInTable whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+        return ImmutableWhereInTable.builder().left(this).right(rightTable)
+            .addAllMatches(columnsToMatch).build();
+    }
+
+    @Override
+    public final WhereNotInTable whereNotIn(Table rightTable, String... columnsToMatch) {
+        ImmutableWhereNotInTable.Builder builder =
+            ImmutableWhereNotInTable.builder().left(this).right(rightTable);
+        for (String toMatch : columnsToMatch) {
+            builder.addMatches(JoinMatch.parse(toMatch));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final WhereNotInTable whereNotIn(Table rightTable,
+        Collection<JoinMatch> columnsToMatch) {
+        return ImmutableWhereNotInTable.builder().left(this).right(rightTable)
+            .addAllMatches(columnsToMatch).build();
+    }
+
+    @Override
     public final NaturalJoinTable naturalJoin2(Table rightTable,
         Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return ImmutableNaturalJoinTable.builder().left(this).right(rightTable)

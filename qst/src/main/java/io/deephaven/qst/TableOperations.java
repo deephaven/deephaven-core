@@ -4,6 +4,7 @@ import io.deephaven.qst.table.Filter;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
 import io.deephaven.qst.table.Selectable;
+import io.deephaven.qst.table.Table;
 import java.util.Collection;
 
 public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABLE> {
@@ -15,6 +16,18 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
     SELF where(Collection<String> filters);
 
     SELF where2(Collection<Filter> filters);
+
+    // -------------------------------------------------------------------------------------------
+
+    SELF whereIn(TABLE rightTable, String... columnsToMatch);
+
+    SELF whereIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
+
+    // -------------------------------------------------------------------------------------------
+
+    SELF whereNotIn(TABLE rightTable, String... columnsToMatch);
+
+    SELF whereNotIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
 

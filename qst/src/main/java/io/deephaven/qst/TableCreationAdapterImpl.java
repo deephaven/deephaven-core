@@ -13,6 +13,8 @@ import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
+import io.deephaven.qst.table.WhereInTable;
+import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
 import java.util.Objects;
 
@@ -58,6 +60,20 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
     @Override
     public void visit(WhereTable whereTable) {
         out = parent(whereTable).where2(whereTable.filters());
+    }
+
+    @Override
+    public void visit(WhereInTable whereInTable) {
+        final BUILDER left = of(tableCreation, whereInTable.left());
+        final BUILDER right = of(tableCreation, whereInTable.right());
+        out = left.whereIn(right.toTable(), whereInTable.matches());
+    }
+
+    @Override
+    public void visit(WhereNotInTable whereNotInTable) {
+        final BUILDER left = of(tableCreation, whereNotInTable.left());
+        final BUILDER right = of(tableCreation, whereNotInTable.right());
+        out = left.whereNotIn(right.toTable(), whereNotInTable.matches());
     }
 
     @Override

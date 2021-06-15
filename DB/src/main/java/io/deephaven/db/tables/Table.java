@@ -441,6 +441,16 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return whereIn(groupStrategy, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
     }
 
+    @Override
+    default Table whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+        return whereIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+    }
+
+    @Override
+    default Table whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+        return whereNotIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+    }
+
     /**
      * Use the whereIn method call instead.
      */

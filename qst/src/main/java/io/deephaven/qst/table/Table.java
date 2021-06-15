@@ -29,6 +29,18 @@ public interface Table extends TableOperations<Table, Table> {
     WhereTable where2(Collection<Filter> filters);
 
     @Override
+    WhereInTable whereIn(Table rightTable, String... columnsToMatch);
+
+    @Override
+    WhereInTable whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch);
+
+    @Override
+    WhereNotInTable whereNotIn(Table rightTable, String... columnsToMatch);
+
+    @Override
+    WhereNotInTable whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch);
+
+    @Override
     NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,
         Collection<JoinAddition> columnsToAdd);
 
@@ -113,6 +125,10 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(TailTable tailTable);
 
         void visit(WhereTable whereTable);
+
+        void visit(WhereInTable whereInTable);
+
+        void visit(WhereNotInTable whereNotInTable);
 
         void visit(NaturalJoinTable naturalJoinTable);
 
