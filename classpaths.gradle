@@ -94,8 +94,6 @@ dependencies {
 
     fishConfig project(':Configuration')
 
-    fishData project(':DataObjects')
-
     fishUtil project(':FishUtil')
 
     fishStats project(':Net'),

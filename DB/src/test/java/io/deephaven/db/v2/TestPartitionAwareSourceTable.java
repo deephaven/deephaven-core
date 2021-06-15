@@ -8,7 +8,6 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -424,7 +423,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             will(returnValue(Index.FACTORY.getEmptyIndex()));
             oneOf(columnSourceManager).getColumnSources();
             will(returnValue(
-                    Arrays.stream(includedColumns1).collect(Collectors.toMap(DefaultColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
+                    Arrays.stream(includedColumns1).collect(Collectors.toMap(ColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
         }});
         assertEquals(NUM_COLUMNS - 1, dropColumnsResult1.getColumnSources().size());
         assertIsSatisfied();
@@ -460,7 +459,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             will(returnValue(Index.FACTORY.getEmptyIndex()));
             oneOf(columnSourceManager).getColumnSources();
             will(returnValue(
-                    Arrays.stream(includedColumns2).collect(Collectors.toMap(DefaultColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
+                    Arrays.stream(includedColumns2).collect(Collectors.toMap(ColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
         }});
         assertEquals(NUM_COLUMNS - 2, dropColumnsResult2.getColumnSources().size());
         assertIsSatisfied();
@@ -505,7 +504,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             will(returnValue(Index.FACTORY.getEmptyIndex()));
             oneOf(columnSourceManager).getColumnSources();
             will(returnValue(
-                    Arrays.stream(includedColumns3).collect(Collectors.toMap(DefaultColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
+                    Arrays.stream(includedColumns3).collect(Collectors.toMap(ColumnDefinition::getName, cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked, LinkedHashMap::new))));
         }});
         assertEquals(NUM_COLUMNS - 4, viewResult1.getColumnSources().size());
         assertIsSatisfied();

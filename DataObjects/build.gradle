@@ -1,8 +1,0 @@
-dependencies {
-    compile project(':Base'), project(':IO'), project(':DataStructures'), project(':Configuration')
-    compile depJdom2
-
-    //testCompile project(path: ':Base', configuration: 'tests')
-
-    //testCompile project(':Base:BaseTest'), project(':IO:IOTest')
-}
