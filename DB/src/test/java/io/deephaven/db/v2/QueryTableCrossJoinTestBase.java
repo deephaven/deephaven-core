@@ -9,10 +9,8 @@ import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
@@ -20,10 +18,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.longCol;
@@ -37,7 +32,19 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         this.numRightBitsToReserve = numRightBitsToReserve;
     }
 
-    private TstUtils.ColumnInfo[] getIncrementalColumnInfo(final String prefix, int numGroups) {
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        ChunkPoolReleaseTracking.enableStrict();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        ChunkPoolReleaseTracking.checkAndDisable();
+    }
+
+    private TstUtils.ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
         String[] names = new String[]{"Sym", "IntCol"};
 
         return initColumnInfos(Arrays.stream(names).map(name -> prefix + name).toArray(String[]::new),
@@ -205,10 +212,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
-        final TstUtils.ColumnInfo[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(leftSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(size, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, leftSize, random, getIncrementalColumnInfo("ls", numGroups));
@@ -305,7 +312,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
                 expectedSize += leftSize * rightSize;
                 Assert.eqFalse(expectedByKey.containsKey(sharedKey), "expectedByKey.containsKey(sharedKey)");
-                expectedByKey.put(sharedKey, new MutableLong(leftSize * rightSize));
+                expectedByKey.put(sharedKey, new MutableLong((long)leftSize * rightSize));
             }
         }
 
@@ -346,9 +353,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.assertTableEquals(nonChunkedCrossJoin, chunkedCrossJoin);
 
         Assert.eq(expectedSize, "expectedSize", chunkedCrossJoin.size(), "chunkedCrossJoin.size()");
-        final ColumnSource keyColumn = chunkedCrossJoin.getColumnSource("sharedKey");
-        final ColumnSource leftColumn = chunkedCrossJoin.getColumnSource("leftData");
-        final ColumnSource rightColumn = chunkedCrossJoin.getColumnSource("rightData");
+        final ColumnSource<?> keyColumn = chunkedCrossJoin.getColumnSource("sharedKey");
+        final ColumnSource<?> leftColumn = chunkedCrossJoin.getColumnSource("leftData");
+        final ColumnSource<?> rightColumn = chunkedCrossJoin.getColumnSource("rightData");
 
         final MutableLong lastLeftId = new MutableLong();
         final MutableLong lastRightId = new MutableLong();
@@ -381,6 +388,48 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    public void testStaticVsNaturalJoin() {
+        final int size = 10000;
+        final Table x = TableTools.emptyTable(size).update("Col1=i");
+        final Table y = TableTools.emptyTable(size).update("Col2=i*2");
+        final Table z = x.join(y, "Col1=Col2");
+        final Table z2 = x.naturalJoin(y, "Col1=Col2");
+        final Table z3 = z2.where("!isNull(Col2)");
+
+        assertTableEquals(z3, z);
+    }
+
+    public void testStaticVsNaturalJoin2() {
+        final int size = 10000;
+
+        final QueryTable xqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        xqt.setRefreshing(true);
+        final QueryTable yqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        yqt.setRefreshing(true);
+
+        final Table x = xqt.update("Col1=i");
+        final Table y = yqt.update("Col2=i*2");
+        final Table z = x.join(y, "Col1=Col2");
+        final Table z2 = x.naturalJoin(y, "Col1=Col2");
+        final Table z3 = z2.where("!isNull(Col2)");
+
+        assertTableEquals(z3, z);
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            xqt.getIndex().insertRange(size, size * 2);
+            xqt.notifyListeners(Index.FACTORY.getIndexByRange(size, size * 2), i(), i());
+        });
+
+        assertTableEquals(z3, z);
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            yqt.getIndex().insertRange(size, size * 2);
+            yqt.notifyListeners(Index.FACTORY.getIndexByRange(size, size * 2), i(), i());
+        });
+
+        assertTableEquals(z3, z);
+    }
+
     public void testIncrementalOverflow() {
         final int[] sizes = {10, 100, 10000};
 
@@ -389,20 +438,20 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    public void testIncrementalOverflow(final String ctxt, final int numGroups, final int seed, final MutableInt numSteps) {
+    private void testIncrementalOverflow(final String ctxt, final int numGroups, final int seed, final MutableInt numSteps) {
         final int maxSteps = numSteps.intValue();
         final Random random = new Random(seed);
 
         // Note: make our join helper think this left table might tick
         final QueryTable leftNotTicking = getTable(1000, random, getIncrementalColumnInfo("lt", numGroups));
 
-        final TstUtils.ColumnInfo[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(0, random, leftColumns);
 
-        final TstUtils.ColumnInfo[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftShifting = getTable(1000, random, leftShiftingColumns);
 
-        final TstUtils.ColumnInfo[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(0, random, rightColumns);
 
         final JoinControl control = new JoinControl() {
@@ -472,10 +521,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
-        final TstUtils.ColumnInfo[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(initialSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(initialSize, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, initialSize, random, getIncrementalColumnInfo("ls", numGroups));
@@ -522,10 +571,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) t2.join(t3, "A", numRightBitsToReserve);
 
         final int CHUNK_SIZE = 4;
-        final ColumnSource<Long> column = jt.getColumnSource("I");
+        final ColumnSource<Integer> column = jt.getColumnSource("I", int.class);
         try (final ColumnSource.FillContext context = column.makeFillContext(CHUNK_SIZE);
              final WritableIntChunk<Attributes.Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-             final ResettableWritableChunk<Attributes.Values> rdest = ChunkType.Int.makeResettableWritableChunk()) {
+             final ResettableWritableIntChunk<Attributes.Values> rdest = ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);
             column.fillChunk(context, rdest, jt.getIndex().subindexByPos(0, 4));
