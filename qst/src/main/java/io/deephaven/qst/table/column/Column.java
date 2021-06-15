@@ -66,9 +66,10 @@ public abstract class Column<T> {
         return ImmutableColumn.<T>builder().header(header);
     }
 
-    public static <T> Column<T> cast(@SuppressWarnings("unused") ColumnType<T> type, Column<?> column) {
-        //noinspection unchecked
-        return (Column<T>)column;
+    public static <T> Column<T> cast(@SuppressWarnings("unused") ColumnType<T> type,
+        Column<?> column) {
+        // noinspection unchecked
+        return (Column<T>) column;
     }
 
     public abstract ColumnHeader<T> header();

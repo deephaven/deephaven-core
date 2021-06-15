@@ -16,13 +16,10 @@ import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereTable;
 import java.util.Objects;
 
-class TableCreationAdapterImpl<
-    BUILDER extends TableOperations<BUILDER, TABLE>,
-    TABLE> implements Visitor {
+class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, TABLE>
+    implements Visitor {
 
-    static <
-        BUILDER extends TableOperations<BUILDER, TABLE>,
-        TABLE> BUILDER of(
+    static <BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> BUILDER of(
         TableCreation<BUILDER, TABLE> creation, Table table) {
         return table.walk(new TableCreationAdapterImpl<>(creation)).getOut();
     }
@@ -92,9 +89,7 @@ class TableCreationAdapterImpl<
     public void visit(NaturalJoinTable naturalJoinTable) {
         final BUILDER left = of(tableCreation, naturalJoinTable.left());
         final BUILDER right = of(tableCreation, naturalJoinTable.right());
-        out = left.naturalJoin2(
-            right.toTable(),
-            naturalJoinTable.matches(),
+        out = left.naturalJoin2(right.toTable(), naturalJoinTable.matches(),
             naturalJoinTable.additions());
     }
 
@@ -102,10 +97,8 @@ class TableCreationAdapterImpl<
     public void visit(ExactJoinTable exactJoinTable) {
         final BUILDER left = of(tableCreation, exactJoinTable.left());
         final BUILDER right = of(tableCreation, exactJoinTable.right());
-        out = left.exactJoin2(
-            right.toTable(),
-            exactJoinTable.matches(),
-            exactJoinTable.additions());
+        out =
+            left.exactJoin2(right.toTable(), exactJoinTable.matches(), exactJoinTable.additions());
     }
 
     private BUILDER parent(SingleParentTable table) {

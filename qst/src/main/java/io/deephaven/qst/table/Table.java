@@ -23,10 +23,12 @@ public interface Table extends TableOperations<Table, Table> {
     WhereTable where(Collection<String> filters);
 
     @Override
-    NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd);
+    NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
 
     @Override
-    NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
+    NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd);
 
     @Override
     NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch);
@@ -38,10 +40,12 @@ public interface Table extends TableOperations<Table, Table> {
     NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
     @Override
-    ExactJoinTable exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd);
+    ExactJoinTable exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
 
     @Override
-    ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd);
+    ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd);
 
     @Override
     ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch);
@@ -83,15 +87,25 @@ public interface Table extends TableOperations<Table, Table> {
 
     interface Visitor {
         void visit(EmptyTable emptyTable);
+
         void visit(NewTable newTable);
+
         void visit(HeadTable headTable);
+
         void visit(TailTable tailTable);
+
         void visit(WhereTable whereTable);
+
         void visit(NaturalJoinTable naturalJoinTable);
+
         void visit(ExactJoinTable exactJoinTable);
+
         void visit(ViewTable viewTable);
+
         void visit(UpdateViewTable updateViewTable);
+
         void visit(UpdateTable updateTable);
+
         void visit(SelectTable selectTable);
     }
 }

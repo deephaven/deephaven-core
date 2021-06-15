@@ -9,8 +9,7 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
 
 @Target({ElementType.PACKAGE, ElementType.TYPE})
 @Retention(RetentionPolicy.CLASS)
-@Value.Style(
-    visibility = ImplementationVisibility.PACKAGE,
-    defaults = @Value.Immutable(copy = false),
-    strictBuilder = true)
-public @interface QSTStyle {}
+@Value.Style(visibility = ImplementationVisibility.PACKAGE,
+    defaults = @Value.Immutable(copy = false), strictBuilder = true)
+public @interface QSTStyle {
+}

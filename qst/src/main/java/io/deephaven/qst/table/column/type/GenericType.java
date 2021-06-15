@@ -25,7 +25,8 @@ public abstract class GenericType<T> extends ColumnTypeBase<T> {
     final void checkClazz() {
         final Optional<ColumnType<T>> staticType = ColumnTypeMappings.findStatic(clazz());
         if (staticType.isPresent()) {
-            throw new IllegalArgumentException(String.format("Use static type %s instead", staticType.get()));
+            throw new IllegalArgumentException(
+                String.format("Use static type %s instead", staticType.get()));
         }
     }
 }

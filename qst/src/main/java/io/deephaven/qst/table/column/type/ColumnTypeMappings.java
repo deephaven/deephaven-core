@@ -20,8 +20,8 @@ class ColumnTypeMappings {
     }
 
     static <T> Optional<ColumnType<T>> findStatic(Class<T> clazz) {
-        //noinspection unchecked
-        return Optional.ofNullable((ColumnType<T>)MAPPINGS.get(clazz));
+        // noinspection unchecked
+        return Optional.ofNullable((ColumnType<T>) MAPPINGS.get(clazz));
     }
 
     static class AddMappings implements Visitor {

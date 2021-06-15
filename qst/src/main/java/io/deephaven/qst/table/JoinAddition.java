@@ -18,6 +18,7 @@ public interface JoinAddition {
 
     interface Visitor {
         void visit(ColumnName columnName);
+
         void visit(ColumnAssignment columnAssignment);
     }
 }

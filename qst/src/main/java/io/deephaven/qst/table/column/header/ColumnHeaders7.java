@@ -22,7 +22,8 @@ public abstract class ColumnHeaders7<A, B, C, D, E, F, G> {
         return header(ColumnHeader.of(name, clazz));
     }
 
-    public final <H> ColumnHeaders8<A, B, C, D, E, F, G, H> header(String name, ColumnType<H> type) {
+    public final <H> ColumnHeaders8<A, B, C, D, E, F, G, H> header(String name,
+        ColumnType<H> type) {
         return header(ColumnHeader.of(name, type));
     }
 

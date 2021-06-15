@@ -1,3 +1,8 @@
+plugins {
+    id 'java-library'
+    id 'com.diffplug.spotless'
+}
+
 dependencies {
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly 'org.immutables:value-annotations:2.8.1'
@@ -9,4 +14,10 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+spotless {
+    java {
+        eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+    }
 }

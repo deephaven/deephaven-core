@@ -33,19 +33,16 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        return ImmutableNaturalJoinTable.builder()
-            .left(this)
-            .right(rightTable)
-            .addAllMatches(columnsToMatch)
-            .addAllAdditions(columnsToAdd)
-            .build();
+    public final NaturalJoinTable naturalJoin2(Table rightTable,
+        Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return ImmutableNaturalJoinTable.builder().left(this).right(rightTable)
+            .addAllMatches(columnsToMatch).addAllAdditions(columnsToAdd).build();
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return naturalJoin2(
-            rightTable,
+    public final NaturalJoinTable naturalJoin(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd) {
+        return naturalJoin2(rightTable,
             columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
             columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
     }
@@ -61,24 +58,22 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
+    public final NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch,
+        String columnsToAdd) {
         return naturalJoin(rightTable, split(columnsToMatch), split(columnsToAdd));
     }
 
     @Override
-    public final ExactJoinTable exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        return ImmutableExactJoinTable.builder()
-            .left(this)
-            .right(rightTable)
-            .addAllMatches(columnsToMatch)
-            .addAllAdditions(columnsToAdd)
-            .build();
+    public final ExactJoinTable exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd) {
+        return ImmutableExactJoinTable.builder().left(this).right(rightTable)
+            .addAllMatches(columnsToMatch).addAllAdditions(columnsToAdd).build();
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return exactJoin2(
-            rightTable,
+    public final ExactJoinTable exactJoin(Table rightTable, Collection<String> columnsToMatch,
+        Collection<String> columnsToAdd) {
+        return exactJoin2(rightTable,
             columnsToMatch.stream().map(JoinMatch::parse).collect(Collectors.toList()),
             columnsToAdd.stream().map(JoinAddition::parse).collect(Collectors.toList()));
     }
@@ -94,7 +89,8 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
+    public final ExactJoinTable exactJoin(Table rightTable, String columnsToMatch,
+        String columnsToAdd) {
         return exactJoin(rightTable, split(columnsToMatch), split(columnsToAdd));
     }
 
@@ -144,11 +140,8 @@ public abstract class TableBase implements Table {
     }
 
     private static Collection<String> split(String string) {
-        return string.trim().isEmpty() ?
-            Collections.emptyList() :
-            Arrays.stream(string.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
+        return string.trim().isEmpty() ? Collections.emptyList()
+            : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
     }
 }

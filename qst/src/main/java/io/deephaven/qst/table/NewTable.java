@@ -45,16 +45,13 @@ public abstract class NewTable extends TableBase implements SourceTable {
     public final TableHeader header() {
         Builder builder = ImmutableTableHeader.builder();
         for (Column<?> column : columns()) {
-          builder.addHeaders(column.header());
+            builder.addHeaders(column.header());
         }
         return builder.build();
     }
 
     public final NewTable with(Column<?> column) {
-        return ImmutableNewTable.builder()
-            .size(size())
-            .addAllColumns(columns())
-            .addColumns(column)
+        return ImmutableNewTable.builder().size(size()).addAllColumns(columns()).addColumns(column)
             .build();
     }
 
@@ -66,10 +63,7 @@ public abstract class NewTable extends TableBase implements SourceTable {
 
     @Check
     final void checkColumnsSizes() {
-        if (!columns()
-            .stream()
-            .map(Column::values)
-            .mapToInt(List::size)
+        if (!columns().stream().map(Column::values).mapToInt(List::size)
             .allMatch(s -> s == size())) {
             throw new IllegalArgumentException("All columns must be the same size");
         }

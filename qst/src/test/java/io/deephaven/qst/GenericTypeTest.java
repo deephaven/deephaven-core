@@ -7,15 +7,15 @@ import org.junit.jupiter.api.Test;
 
 public class GenericTypeTest {
 
-  @Test
-  public void noGenericInt() {
-      try {
-          GenericType.of(int.class);
-          failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-      } catch (IllegalArgumentException e) {
-          // expected
-      }
-  }
+    @Test
+    public void noGenericInt() {
+        try {
+            GenericType.of(int.class);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+    }
 
     @Test
     public void noGenericInteger() {

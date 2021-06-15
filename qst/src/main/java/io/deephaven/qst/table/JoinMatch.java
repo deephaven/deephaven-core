@@ -18,6 +18,7 @@ public interface JoinMatch {
 
     interface Visitor {
         void visit(ColumnName columnName);
+
         void visit(ColumnMatch columnMatch);
     }
 }
