@@ -24,11 +24,24 @@ public abstract class TableBase implements Table {
 
     @Override
     public final WhereTable where(String... filters) {
-        return ImmutableWhereTable.builder().parent(this).addFilters(filters).build();
+        ImmutableWhereTable.Builder builder = ImmutableWhereTable.builder().parent(this);
+        for (String filter : filters) {
+            builder.addFilters(Filter.parse(filter));
+        }
+        return builder.build();
     }
 
     @Override
     public final WhereTable where(Collection<String> filters) {
+        ImmutableWhereTable.Builder builder = ImmutableWhereTable.builder().parent(this);
+        for (String filter : filters) {
+            builder.addFilters(Filter.parse(filter));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final WhereTable where2(Collection<Filter> filters) {
         return ImmutableWhereTable.builder().parent(this).addAllFilters(filters).build();
     }
 

@@ -57,7 +57,7 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
 
     @Override
     public void visit(WhereTable whereTable) {
-        out = parent(whereTable).where(whereTable.filters());
+        out = parent(whereTable).where2(whereTable.filters());
     }
 
     @Override

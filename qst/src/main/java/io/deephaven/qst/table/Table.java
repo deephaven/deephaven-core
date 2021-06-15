@@ -26,6 +26,9 @@ public interface Table extends TableOperations<Table, Table> {
     WhereTable where(Collection<String> filters);
 
     @Override
+    WhereTable where2(Collection<Filter> filters);
+
+    @Override
     NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,
         Collection<JoinAddition> columnsToAdd);
 

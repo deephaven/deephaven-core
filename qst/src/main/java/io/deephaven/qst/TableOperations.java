@@ -1,5 +1,6 @@
 package io.deephaven.qst;
 
+import io.deephaven.qst.table.Filter;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
 import io.deephaven.qst.table.Selectable;
@@ -12,6 +13,8 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
     SELF where(String... filters);
 
     SELF where(Collection<String> filters);
+
+    SELF where2(Collection<Filter> filters);
 
     // -------------------------------------------------------------------------------------------
 

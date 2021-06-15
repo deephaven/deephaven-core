@@ -27,6 +27,7 @@ import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.qst.TableOperations;
+import io.deephaven.qst.table.Filter;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
 import io.deephaven.qst.table.Selectable;
@@ -368,6 +369,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @AsyncMethod
     default Table where() {
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+    }
+
+    @Override
+    @AsyncMethod
+    default Table where2(Collection<Filter> filters) {
+        return where(filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new));
     }
 
     @AsyncMethod

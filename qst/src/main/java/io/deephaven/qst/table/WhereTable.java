@@ -10,7 +10,7 @@ public abstract class WhereTable extends TableBase implements SingleParentTable 
 
     public abstract Table parent();
 
-    public abstract List<String> filters();
+    public abstract List<Filter> filters();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

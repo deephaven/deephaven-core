@@ -1,12 +1,14 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.Filter.Visitor;
 import java.util.regex.Pattern;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
-public abstract class ColumnName implements JoinMatch, JoinAddition, Selectable, Expression {
+public abstract class ColumnName
+    implements JoinMatch, JoinAddition, Selectable, Expression, Filter {
 
     // todo: extract DBNameValidator or something similar for column names
     // todo: make better
@@ -39,6 +41,12 @@ public abstract class ColumnName implements JoinMatch, JoinAddition, Selectable,
 
     @Override
     public final <V extends Expression.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
+    @Override
+    public final <V extends Filter.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }
