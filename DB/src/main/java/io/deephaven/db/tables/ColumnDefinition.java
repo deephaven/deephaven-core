@@ -479,10 +479,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     // TODO: DELETE THESE OVERRIDES (SEE NOTES IN TableDefinition)
 
-    private static final byte STRING_ENCODING_VERSION = 1;
-    private static final byte OBJECT_CODEC_VERSION = 2;
-    private static final byte CURRENT_VERSION = OBJECT_CODEC_VERSION;
-
     static final byte MAGIC_NUMBER = (byte)0b10001111;
 
     protected String name;
