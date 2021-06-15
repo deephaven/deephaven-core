@@ -893,7 +893,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
     default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        throw new UnsupportedOperationException("TODO");
+        return exactJoin(
+            rightTable,
+            columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new),
+            columnsToAdd.stream().map(MatchPair::of).toArray(MatchPair[]::new));
     }
 
     default Table exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
@@ -1124,7 +1127,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
     default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        throw new UnsupportedOperationException("TODO");
+        return naturalJoin(
+            rightTable,
+            columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new),
+            columnsToAdd.stream().map(MatchPair::of).toArray(MatchPair[]::new));
     }
 
     default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {

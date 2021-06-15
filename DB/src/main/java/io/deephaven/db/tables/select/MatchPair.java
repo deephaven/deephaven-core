@@ -8,6 +8,11 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.db.tables.utils.DBNameValidator;
 
+import io.deephaven.qst.table.ColumnAssignment;
+import io.deephaven.qst.table.ColumnMatch;
+import io.deephaven.qst.table.ColumnName;
+import io.deephaven.qst.table.JoinAddition;
+import io.deephaven.qst.table.JoinMatch;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
@@ -19,6 +24,14 @@ public class MatchPair implements Serializable {
     private static final long serialVersionUID = 20180822L;
 
     public static final MatchPair [] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
+
+    public static MatchPair of(JoinMatch joinMatch) {
+        return joinMatch.walk(new JoinMatchVisitor()).getOut();
+    }
+
+    public static MatchPair of(JoinAddition joinAddition) {
+        return joinAddition.walk(new JoinAdditionVisitor()).getOut();
+    }
 
     public final String leftColumn;
     public final String rightColumn;
@@ -110,5 +123,43 @@ public class MatchPair implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(leftColumn, rightColumn);
+    }
+
+    private static class JoinMatchVisitor implements JoinMatch.Visitor {
+        private MatchPair out;
+
+        public MatchPair getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(ColumnName columnName) {
+            out = new MatchPair(columnName.name(), columnName.name());
+        }
+
+        @Override
+        public void visit(ColumnMatch columnMatch) {
+            out = new MatchPair(columnMatch.left().name(), columnMatch.right().name());
+        }
+    }
+
+    private static class JoinAdditionVisitor implements JoinAddition.Visitor {
+        private MatchPair out;
+
+        public MatchPair getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(ColumnName columnName) {
+            out = new MatchPair(columnName.name(), columnName.name());
+        }
+
+        @Override
+        public void visit(ColumnAssignment columnAssignment) {
+            out = new MatchPair(
+                columnAssignment.newColumn().name(),
+                columnAssignment.existingColumn().name());
+        }
     }
 }
