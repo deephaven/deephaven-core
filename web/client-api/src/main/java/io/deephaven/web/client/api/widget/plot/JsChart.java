@@ -54,7 +54,10 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     public String getTitle() {
-        return descriptor.getTitle();
+        if (descriptor.hasTitle()) {
+            return descriptor.getTitle();
+        }
+        return null;
     }
 
     @JsProperty

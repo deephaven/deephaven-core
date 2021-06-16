@@ -87,7 +87,10 @@ public class JsAxis {
 
     @JsProperty
     public String getFormatPattern() {
-        return axis.getFormatPattern();
+        if (axis.hasFormatPattern()) {
+            return axis.getFormatPattern();
+        }
+        return null;
     }
 
     @JsProperty

@@ -173,7 +173,10 @@ public class JsFigure extends HasEventHandling {
 
     @JsProperty
     public String getTitle() {
-        return descriptor.getTitle();
+        if (descriptor.hasTitle()) {
+            return descriptor.getTitle();
+        }
+        return null;
     }
 
     @JsProperty
@@ -184,24 +187,6 @@ public class JsFigure extends HasEventHandling {
     @JsProperty
     public String getTitleColor() {
         return descriptor.getTitleColor();
-    }
-
-    @Deprecated
-    @JsProperty
-    public boolean isResizable() {
-        return true;
-    }
-
-    //TODO IDS-4140
-//    @JsProperty
-//    public ThemeDescriptor getTheme() {
-//        return descriptor.getTheme();
-//    }
-
-    @Deprecated
-    @JsProperty
-    public boolean isDefaultTheme() {
-        return true;
     }
 
     @JsProperty

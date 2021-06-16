@@ -145,17 +145,26 @@ public class JsSeries {
 
     @JsProperty
     public String getPointLabelFormat() {
-        return descriptor.getPointLabelFormat();
+        if (descriptor.hasPointLabelFormat()) {
+            return descriptor.getPointLabelFormat();
+        }
+        return null;
     }
 
     @JsProperty
     public String getXToolTipPattern() {
-        return descriptor.getXToolTipPattern();
+        if (descriptor.hasXToolTipPattern()) {
+            return descriptor.getXToolTipPattern();
+        }
+        return null;
     }
 
     @JsProperty
     public String getYToolTipPattern() {
-        return descriptor.getYToolTipPattern();
+        if (descriptor.hasYToolTipPattern()) {
+            return descriptor.getYToolTipPattern();
+        }
+        return null;
     }
 
     @JsProperty
