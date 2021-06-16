@@ -6,6 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.math3.exception.NotStrictlyPositiveException;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import java.util.Arrays;
@@ -270,35 +271,64 @@ public class Java2NumpyCopy {
 
     /**
      * Randomly fills the slice with vaules in the range <code>[0,tSize-1]</code> using a
-     * reservoir sampling algorithm.  No rows will be repeated.
+     * reservoir sampling algorithm.  No rows will be repeated unless replace=True is specified.
      * The slice must be smaller than <code>tSize</code>
      *
      * @param slice slice to fill.
      * @param tSize table size.
+     * @param replace sample with or without replacement.
      */
-    private static void reservoirSample(final Slice slice, final long tSize) {
+    private static void reservoirSample(final Slice slice, final long tSize, boolean replace) {
         // https://en.wikipedia.org/wiki/Reservoir_sampling
         // A-Chao algorithm
 
-        final int k = slice.size();
+        // Updated sampling with replacement algorithm given here (2.2): https://epubs.siam.org/doi/pdf/10.1137/1.9781611972740.53
 
-        if (k > tSize) {
+        final int m = slice.size();
+
+        if (m > tSize) {
             throw new IllegalArgumentException("Requesting more items than are available.  slice.size()=" + slice.size() + " tSize=" + tSize);
         }
 
         final RandomDataGenerator rnd = new RandomDataGenerator();
 
-        // fill the reservoir array
-        for (int i = 0; i < k; i++) {
-            slice.set(i, i);
+        // I don't care for this code at all but it works for now. Need to find a way to use w/o going through numpy
+        // reservoir sampling with replacement
+        if (replace) {
+
+            // loop through reservoir
+            for (int i = 0; i < tSize; i++) {
+                final double p = (double) 1 / (double) (i + 1);
+                final int k = rnd.nextBinomial(m, p);
+
+                try {
+                    // replace s elements in slice with i
+                    for (int j : rnd.nextPermutation(m, k)) {
+                        slice.set(j, i);
+                    }
+                }
+                catch (NotStrictlyPositiveException e) {
+                    continue;
+                }
+            }
         }
+        /////////////////////////////////////////////////
 
-        for (long i = k; i < tSize; i++) {
-            final double p = (double) (k) / (double) (i + 1);
-            final double j = rnd.nextUniform(0, 1);
+        // reservoir sampling without replacement
+        else {
 
-            if (j <= p) {
-                slice.set(rnd.nextInt(0, k - 1), i);
+            // fill the reservoir array
+            for (int i = 0; i < m; i++) {
+                slice.set(i, i);
+            }
+
+            for (long i = m; i < tSize; i++) {
+                final double p = (double) (m) / (double) (i + 1);
+                final double j = rnd.nextUniform(0, 1);
+
+                if (j <= p) {
+                    slice.set(rnd.nextInt(0, m - 1), i);
+                }
             }
         }
     }
@@ -310,7 +340,7 @@ public class Java2NumpyCopy {
      * @param tSize table size.
      * @return indices of random table rows.
      */
-    public static long[] randRows(final int nRow, final long tSize) {
+    public static long[] randRows(final int nRow, final long tSize, final boolean replace) {
 
         final long[] R = new long[nRow];
 
@@ -322,7 +352,7 @@ public class Java2NumpyCopy {
             }
 
             final Slice s = new Slice(R, start, (int) size);
-            reservoirSample(s, tSize);
+            reservoirSample(s, tSize, replace);
         }
 
         return R;
@@ -378,7 +408,10 @@ public class Java2NumpyCopy {
     public static void copyRand(final Table t, final int nRow, final int nCol, final long[] rows, final Class type, final String cast, final CopySetter setter) {
 
         final long s = t.size();
-        final long[] tidxs = rows == null ? randRows(nRow, s) : rows;
+        // the following line should not ask if rows are null, should simply be passed rows
+        //final long[] tidxs = rows == null ? randRows(nRow, s, replace) : rows;
+        //here is replacement
+        final long[] tidxs = rows;
         final Table tt = t.view(Arrays.stream(t.getColumns()).map(c -> c.getType() == type ? c.getName() : c.getName() + " = " + cast + " " + c.getName()).toArray(String[]::new));
         final Index index = tt.getIndex();
 
@@ -813,8 +846,10 @@ public class Java2NumpyCopy {
     public static void copyImageRand(final Table t, final int nRow, final int width, final int height, final boolean resize, final boolean color, final long[] rows, final IntValSetter setter) {
 
         final long s = t.size();
-        final long[] tidxs = rows == null ? randRows(nRow, s) : rows;
-
+        // this should not ask null
+        //final long[] tidxs = rows == null ? randRows(nRow, s, replace) : rows;
+        // here is replacement
+        final long[] tidxs = rows;
         final DataColumn c = t.getColumn(0);
         final ColumnSource cs = t.getColumnSource(c.getName());
         final Index index = t.getIndex();
