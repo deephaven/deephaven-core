@@ -2,6 +2,7 @@ package io.deephaven.qst;
 
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.QueryScopeTable;
 import io.deephaven.qst.table.SourceTable;
 import io.deephaven.qst.table.Table;
 
@@ -21,4 +22,6 @@ public interface TableCreation<BUILDER extends TableOperations<BUILDER, TABLE>, 
     BUILDER of(NewTable newTable);
 
     BUILDER of(EmptyTable emptyTable);
+
+    BUILDER of(QueryScopeTable queryScopeTable);
 }

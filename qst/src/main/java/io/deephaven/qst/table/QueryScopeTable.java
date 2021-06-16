@@ -5,21 +5,17 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
-public abstract class EmptyTable extends TableBase implements SourceTable {
+public abstract class QueryScopeTable extends TableBase implements SourceTable {
 
-    public static EmptyTable of(long size) {
-        return ImmutableEmptyTable.of(TableHeader.empty(), size);
-    }
-
-    public static EmptyTable of(TableHeader header, long size) {
-        return ImmutableEmptyTable.of(header, size);
+    public static QueryScopeTable of(TableHeader header, String variableName) {
+        return ImmutableQueryScopeTable.of(header, variableName);
     }
 
     @Parameter
     public abstract TableHeader header();
 
     @Parameter
-    public abstract long size();
+    public abstract String variableName();
 
     @Override
     public final <V extends Table.Visitor> V walk(V visitor) {
@@ -34,9 +30,7 @@ public abstract class EmptyTable extends TableBase implements SourceTable {
     }
 
     @Check
-    final void checkSize() {
-        if (size() < 0) {
-            throw new IllegalArgumentException("Must have non-negative size");
-        }
+    final void checkVariableName() {
+        // todo
     }
 }

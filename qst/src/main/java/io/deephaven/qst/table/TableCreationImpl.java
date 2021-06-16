@@ -15,12 +15,17 @@ public enum TableCreationImpl implements TableCreation<Table, Table> {
     }
 
     @Override
-    public final Table of(NewTable newTable) {
+    public final NewTable of(NewTable newTable) {
         return newTable;
     }
 
     @Override
-    public final Table of(EmptyTable emptyTable) {
+    public final EmptyTable of(EmptyTable emptyTable) {
         return emptyTable;
+    }
+
+    @Override
+    public final QueryScopeTable of(QueryScopeTable queryScopeTable) {
+        return queryScopeTable;
     }
 }

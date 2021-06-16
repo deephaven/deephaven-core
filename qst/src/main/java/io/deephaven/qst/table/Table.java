@@ -11,7 +11,7 @@ public interface Table extends TableOperations<Table, Table> {
     }
 
     static EmptyTable empty(long size, TableHeader header) {
-        return EmptyTable.of(size, header);
+        return EmptyTable.of(header, size);
     }
 
     @Override
@@ -156,6 +156,8 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(EmptyTable emptyTable);
 
         void visit(NewTable newTable);
+
+        void visit(QueryScopeTable queryScopeTable);
 
         void visit(HeadTable headTable);
 

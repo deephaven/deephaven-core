@@ -8,6 +8,7 @@ import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.QueryScopeTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.Table;
@@ -48,6 +49,11 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
     @Override
     public void visit(NewTable newTable) {
         out = tableCreation.of(newTable);
+    }
+
+    @Override
+    public void visit(QueryScopeTable queryScopeTable) {
+        out = tableCreation.of(queryScopeTable);
     }
 
     @Override

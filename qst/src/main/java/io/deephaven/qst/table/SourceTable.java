@@ -6,6 +6,9 @@ public interface SourceTable extends Table {
 
     interface Visitor {
         void visit(EmptyTable emptyTable);
+
         void visit(NewTable newTable);
+
+        void visit(QueryScopeTable queryScopeTable);
     }
 }
