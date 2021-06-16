@@ -9,19 +9,19 @@ import io.deephaven.qst.table.Table;
 /**
  * Provides methods for building the {@link SourceTable source tables}.
  *
- * @param <BUILDER> the table operations type
+ * @param <OPS_TYPE> the table operations type
  * @param <TABLE> the table type
  */
-public interface TableCreation<BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> {
+public interface TableCreation<OPS_TYPE extends TableOperations<OPS_TYPE, TABLE>, TABLE> {
 
-    static <BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> BUILDER create(
-        TableCreation<BUILDER, TABLE> creation, Table table) {
+    static <OPS_TYPE extends TableOperations<OPS_TYPE, TABLE>, TABLE> OPS_TYPE create(
+        TableCreation<OPS_TYPE, TABLE> creation, Table table) {
         return TableCreationAdapterImpl.of(creation, table);
     }
 
-    BUILDER of(NewTable newTable);
+    OPS_TYPE of(NewTable newTable);
 
-    BUILDER of(EmptyTable emptyTable);
+    OPS_TYPE of(EmptyTable emptyTable);
 
-    BUILDER of(QueryScopeTable queryScopeTable);
+    OPS_TYPE of(QueryScopeTable queryScopeTable);
 }

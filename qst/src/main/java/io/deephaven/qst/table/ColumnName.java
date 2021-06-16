@@ -1,6 +1,5 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.table.Filter.Visitor;
 import java.util.regex.Pattern;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
