@@ -18,6 +18,10 @@ public abstract class ColumnName
         return COLUMN_NAME_PATTERN.matcher(name).matches();
     }
 
+    public static ColumnName of(String name) {
+        return ImmutableColumnName.of(name);
+    }
+
     @Parameter
     public abstract String name();
 

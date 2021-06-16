@@ -20,6 +20,7 @@ import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.by.AggregationIndexStateFactory;
 import io.deephaven.db.v2.by.AggregationStateFactory;
 import io.deephaven.db.v2.by.ComboAggregateFactory;
+import io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy;
 import io.deephaven.db.v2.iterators.*;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.select.SelectColumn;
@@ -31,6 +32,7 @@ import io.deephaven.qst.table.Filter;
 import io.deephaven.qst.table.JoinAddition;
 import io.deephaven.qst.table.JoinMatch;
 import io.deephaven.qst.table.Selectable;
+import io.deephaven.qst.table.agg.Aggregation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -534,7 +536,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     default Table select2(Collection<Selectable> columns) {
-        return select(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+        return select(SelectColumn.of(columns));
     }
 
     @AsyncMethod
@@ -567,7 +569,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     default Table update2(Collection<Selectable> columns) {
-        return update(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+        return update(SelectColumn.of(columns));
     }
 
     /**
@@ -623,7 +625,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table view2(Collection<Selectable> columns) {
-        return view(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+        return view(SelectColumn.of(columns));
     }
 
     @AsyncMethod
@@ -642,7 +644,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table updateView2(Collection<Selectable> columns) {
-        return updateView(columns.stream().map(SelectColumn::of).toArray(SelectColumn[]::new));
+        return updateView(SelectColumn.of(columns));
     }
 
     @AsyncMethod
@@ -1533,6 +1535,20 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @AsyncMethod
     default Table by() {
         return by(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    }
+
+    @Override
+    @AsyncMethod
+    default Table by2(Collection<Selectable> groupByColumns) {
+        return by(SelectColumn.of(groupByColumns));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations) {
+        return by(
+            ComboAggregateFactory.AggCombo(ComboBy.of(aggregations)),
+            SelectColumn.of(groupByColumns));
     }
 
     default Table headBy(long nRows, SelectColumn... groupByColumns) {

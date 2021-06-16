@@ -20,5 +20,7 @@ public interface JoinAddition {
         void visit(ColumnName columnName);
 
         void visit(ColumnAssignment columnAssignment);
+
+        // todo: can you match against an expression?
     }
 }

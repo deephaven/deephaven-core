@@ -16,6 +16,7 @@ import io.deephaven.qst.table.ColumnName;
 import io.deephaven.qst.table.Expression;
 import io.deephaven.qst.table.RawString;
 import io.deephaven.qst.table.Selectable;
+import java.util.Collection;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,8 +28,12 @@ import java.util.Map;
  */
 public interface SelectColumn {
 
-    static SelectColumn of(Selectable viewableItem) {
-        return viewableItem.walk(new SelectColumnAdapter()).getOut();
+    static SelectColumn of(Selectable selectable) {
+        return selectable.walk(new SelectColumnAdapter()).getOut();
+    }
+
+    static SelectColumn[] of(Collection<Selectable> selectables) {
+        return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
     }
 
     /**

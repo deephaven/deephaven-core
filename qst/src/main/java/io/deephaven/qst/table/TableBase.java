@@ -1,5 +1,6 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.agg.Aggregation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -280,6 +281,37 @@ public abstract class TableBase implements Table {
     @Override
     public final SelectTable select2(Collection<Selectable> columns) {
         return ImmutableSelectTable.builder().parent(this).addAllColumns(columns).build();
+    }
+
+    @Override
+    public final ByTable by() {
+        return ImmutableByTable.builder().parent(this).build();
+    }
+
+    @Override
+    public final ByTable by(String... groupByColumns) {
+        return by(Arrays.asList(groupByColumns));
+    }
+
+    @Override
+    public final ByTable by(Collection<String> groupByColumns) {
+        ImmutableByTable.Builder builder = ImmutableByTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final ByTable by2(Collection<Selectable> groupByColumns) {
+        return ImmutableByTable.builder().parent(this).addAllColumns(groupByColumns).build();
+    }
+
+    @Override
+    public final AggregationTable by(Collection<Selectable> groupByColumns,
+        Collection<Aggregation> aggregations) {
+        return ImmutableAggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+            .addAllAggregations(aggregations).build();
     }
 
     private static Collection<String> split(String string) {

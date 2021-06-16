@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.qst.TableOperations;
+import io.deephaven.qst.table.agg.Aggregation;
 import java.util.Collection;
 
 public interface Table extends TableOperations<Table, Table> {
@@ -127,6 +128,22 @@ public interface Table extends TableOperations<Table, Table> {
     @Override
     SelectTable select2(Collection<Selectable> columns);
 
+    @Override
+    ByTable by();
+
+    @Override
+    ByTable by(String... groupByColumns);
+
+    @Override
+    ByTable by(Collection<String> groupByColumns);
+
+    @Override
+    ByTable by2(Collection<Selectable> groupByColumns);
+
+    @Override
+    AggregationTable by(Collection<Selectable> groupByColumns,
+        Collection<Aggregation> aggregations);
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
@@ -157,5 +174,9 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(UpdateTable updateTable);
 
         void visit(SelectTable selectTable);
+
+        void visit(ByTable byTable);
+
+        void visit(AggregationTable aggregationTable);
     }
 }

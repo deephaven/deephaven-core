@@ -1,5 +1,7 @@
 package io.deephaven.qst;
 
+import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -123,6 +125,17 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
         final BUILDER left = of(tableCreation, joinTable.left());
         final BUILDER right = of(tableCreation, joinTable.right());
         out = left.join2(right.toTable(), joinTable.matches(), joinTable.additions());
+    }
+
+    @Override
+    public void visit(ByTable byTable) {
+        out = parent(byTable).by2(byTable.columns());
+    }
+
+    @Override
+    public void visit(AggregationTable aggregationTable) {
+        out = parent(aggregationTable).by(aggregationTable.columns(),
+            aggregationTable.aggregations());
     }
 
     private BUILDER parent(SingleParentTable table) {
