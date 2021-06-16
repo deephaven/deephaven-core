@@ -155,15 +155,7 @@ class TestPlot(unittest.TestCase):
         # with self.subTest(msg="lineStyle(List<T>)"):
         #     ls = Plot.lineStyle([3, 3])
 
-    def testTheme(self):
-        """
-        Theme test suite
-        """
 
-        with self.subTest(msg="themeNames()"):
-            names = Plot.themeNames()
-            self.assertTrue(isinstance(names, list) and len(names) > 0)
-            print("themeNames() values {}".format(names))
 
     def testPlot(self):
         """

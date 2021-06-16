@@ -8,9 +8,9 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.db.plot.BaseFigureImpl;
 import io.deephaven.db.plot.ChartImpl;
 import io.deephaven.db.plot.errors.PlotIllegalArgumentException;
+import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.gui.color.Color;
-import io.deephaven.db.plot.Theme;
 import io.deephaven.db.plot.datasets.data.IndexableNumericData;
 import io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayDouble;
 import io.deephaven.db.plot.util.tables.SwappableTable;
@@ -25,7 +25,6 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
 
     public void testXYDataSeriesArray() {
         ChartImpl chart = new BaseFigureImpl().newChart();
-        Theme theme = chart.theme();
         final double[] valueArray = {1, 2, 3};
         final double[] valueArray2 = {4, 5, 6};
         final IndexableNumericData values = new IndexableNumericDataArrayDouble(valueArray, null);
@@ -68,8 +67,8 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
 
 
         x1.seriesColor(1);
-        assertEquals(x1.getPointColor(0), theme.getSeriesColor(1));
-        assertEquals(x1.getLineColor(), theme.getSeriesColor(1));
+        assertEquals(x1.getPointColor(0), PlotUtils.intToColor(1));
+        assertEquals(x1.getLineColor(), PlotUtils.intToColor(1));
 
         final Color color = Color.color("red");
         x1.seriesColor(color);

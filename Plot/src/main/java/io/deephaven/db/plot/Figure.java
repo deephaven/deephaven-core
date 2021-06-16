@@ -802,10 +802,6 @@ public interface Figure extends java.io.Serializable, io.deephaven.db.plot.BaseF
 
     @Override  Figure span( int rowSpan, int colSpan );
 
-    @Override  Figure theme( java.lang.String theme );
-
-    @Override  Figure theme( io.deephaven.db.plot.Theme theme );
-
     @Override  Figure tickLabelAngle( double angle );
 
     @Override  Figure ticks( double[] tickLocations );
