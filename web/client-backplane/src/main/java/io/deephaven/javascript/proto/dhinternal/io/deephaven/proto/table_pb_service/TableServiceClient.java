@@ -6,7 +6,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Comb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateBatchMessage;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FilterTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
@@ -2243,10 +2243,10 @@ public class TableServiceClient {
       EmptyTableRequest requestMessage,
       TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback);
 
-  public native ResponseStream<ExportedTableUpdateBatchMessage> exportedTableUpdates(
+  public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
       ExportedTableUpdatesRequest requestMessage, BrowserHeaders metadata);
 
-  public native ResponseStream<ExportedTableUpdateBatchMessage> exportedTableUpdates(
+  public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
       ExportedTableUpdatesRequest requestMessage);
 
   @JsOverlay
