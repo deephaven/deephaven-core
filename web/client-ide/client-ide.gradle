@@ -43,7 +43,7 @@ task prepareDocker(type: Sync) {
     from 'docker/Dockerfile'
     from 'nginx/default.conf'
     from 'nginx/nginx.conf'
-    from 'nginx/init-notebooks.sh'
+    from 'nginx/99-init-notebooks.sh'
 }
 
 Docker.registerDockerImage(project, 'buildDocker') {
