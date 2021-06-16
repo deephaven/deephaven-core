@@ -4,7 +4,7 @@ FROM deephaven/js-out:local-build as js-out
 
 FROM docker.io/library/nginx:1.19.7
 
-# these installs are necessary because to enable webdav class 2
+# these installs are necessary to enable webdav class 2
 # https://github.com/arut/nginx-dav-ext-module
 RUN apt-get update && apt-get install -y nginx-extras libnginx-mod-http-dav-ext
 
