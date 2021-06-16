@@ -3,7 +3,6 @@ package io.deephaven.db.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
