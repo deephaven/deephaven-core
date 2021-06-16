@@ -33,13 +33,19 @@ public interface Table extends TableOperations<Table, Table> {
     WhereInTable whereIn(Table rightTable, String... columnsToMatch);
 
     @Override
-    WhereInTable whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch);
+    WhereInTable whereIn(Table rightTable, Collection<String> columnsToMatch);
+
+    @Override
+    WhereInTable whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch);
 
     @Override
     WhereNotInTable whereNotIn(Table rightTable, String... columnsToMatch);
 
     @Override
-    WhereNotInTable whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch);
+    WhereNotInTable whereNotIn(Table rightTable, Collection<String> columnsToMatch);
+
+    @Override
+    WhereNotInTable whereNotIn2(Table rightTable, Collection<JoinMatch> columnsToMatch);
 
     @Override
     NaturalJoinTable naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch,

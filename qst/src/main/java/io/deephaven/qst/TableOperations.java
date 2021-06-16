@@ -21,13 +21,17 @@ public interface TableOperations<SELF extends TableOperations<SELF, TABLE>, TABL
 
     SELF whereIn(TABLE rightTable, String... columnsToMatch);
 
-    SELF whereIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
+    SELF whereIn(TABLE rightTable, Collection<String> columnsToMatch);
+
+    SELF whereIn2(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
 
     SELF whereNotIn(TABLE rightTable, String... columnsToMatch);
 
-    SELF whereNotIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
+    SELF whereNotIn(TABLE rightTable, Collection<String> columnsToMatch);
+
+    SELF whereNotIn2(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
 

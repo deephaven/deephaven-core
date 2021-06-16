@@ -69,14 +69,14 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
     public void visit(WhereInTable whereInTable) {
         final BUILDER left = of(tableCreation, whereInTable.left());
         final BUILDER right = of(tableCreation, whereInTable.right());
-        out = left.whereIn(right.toTable(), whereInTable.matches());
+        out = left.whereIn2(right.toTable(), whereInTable.matches());
     }
 
     @Override
     public void visit(WhereNotInTable whereNotInTable) {
         final BUILDER left = of(tableCreation, whereNotInTable.left());
         final BUILDER right = of(tableCreation, whereNotInTable.right());
-        out = left.whereNotIn(right.toTable(), whereNotInTable.matches());
+        out = left.whereNotIn2(right.toTable(), whereNotInTable.matches());
     }
 
     @Override

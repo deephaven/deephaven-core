@@ -416,10 +416,16 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table whereIn(Table rightTable, String... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
     }
+    default Table whereIn(Table rightTable, Collection<String> columnsToMatch) {
+        return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
+    }
     default Table whereIn(Table rightTable, MatchPair... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, columnsToMatch);
     }
     default Table whereNotIn(Table rightTable, String... columnsToMatch) {
+        return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
+    }
+    default Table whereNotIn(Table rightTable, Collection<String> columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
     }
     default Table whereNotIn(Table rightTable, MatchPair... columnsToMatch) {
@@ -444,12 +450,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
         return whereIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
     }
 
     @Override
-    default Table whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereNotIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
         return whereNotIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
     }
 

@@ -48,6 +48,11 @@ public abstract class TableBase implements Table {
 
     @Override
     public final WhereInTable whereIn(Table rightTable, String... columnsToMatch) {
+        return whereIn(rightTable, Arrays.asList(columnsToMatch));
+    }
+
+    @Override
+    public final WhereInTable whereIn(Table rightTable, Collection<String> columnsToMatch) {
         ImmutableWhereInTable.Builder builder =
             ImmutableWhereInTable.builder().left(this).right(rightTable);
         for (String toMatch : columnsToMatch) {
@@ -57,13 +62,18 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final WhereInTable whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    public final WhereInTable whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
         return ImmutableWhereInTable.builder().left(this).right(rightTable)
             .addAllMatches(columnsToMatch).build();
     }
 
     @Override
     public final WhereNotInTable whereNotIn(Table rightTable, String... columnsToMatch) {
+        return whereNotIn(rightTable, Arrays.asList(columnsToMatch));
+    }
+
+    @Override
+    public final WhereNotInTable whereNotIn(Table rightTable, Collection<String> columnsToMatch) {
         ImmutableWhereNotInTable.Builder builder =
             ImmutableWhereNotInTable.builder().left(this).right(rightTable);
         for (String toMatch : columnsToMatch) {
@@ -73,7 +83,7 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final WhereNotInTable whereNotIn(Table rightTable,
+    public final WhereNotInTable whereNotIn2(Table rightTable,
         Collection<JoinMatch> columnsToMatch) {
         return ImmutableWhereNotInTable.builder().left(this).right(rightTable)
             .addAllMatches(columnsToMatch).build();
