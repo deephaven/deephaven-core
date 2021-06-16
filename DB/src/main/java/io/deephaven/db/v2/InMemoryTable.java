@@ -8,13 +8,35 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-
+import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.column.Column;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InMemoryTable extends QueryTable {
+
+    /**
+     * Defers to {@link ArrayBackedColumnSource#from(Column)} to construct the appropriate
+     * {@link ColumnSource column sources} (this involves copying the data).
+     *
+     * @param table the new table qst
+     * @return the in memory table
+     */
+    public static InMemoryTable from(NewTable table) {
+        final int L = table.numColumns();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>(L);
+        for (int i = 0; i < L; ++i) {
+            Column<?> column = table.columns().get(i);
+            final ColumnSource<?> source = ArrayBackedColumnSource.from(column);
+            columns.put(column.name(), source);
+        }
+        return new InMemoryTable(
+            TableDefinition.from(table.header()),
+            Index.FACTORY.getFlatIndex(table.size()),
+            columns);
+    }
 
     public InMemoryTable(String columnNames[], Object arrayValues[]) {
         super(Index.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])), createColumnsMap(columnNames, arrayValues));
@@ -26,6 +48,10 @@ public class InMemoryTable extends QueryTable {
                         definition.getColumnNames().toArray(new String[definition.getColumnNames().size()]),
                         Arrays.stream(definition.getColumns()).map(
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
+    }
+
+    private InMemoryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource<?>> columns) {
+        super(definition, index, columns);
     }
 
     private static Map<String, ColumnSource> createColumnsMap(String[] columnNames, Object[] arrayValues) {

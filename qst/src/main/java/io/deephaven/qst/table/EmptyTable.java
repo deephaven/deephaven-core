@@ -1,5 +1,6 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.SourceTable.Visitor;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -22,7 +23,13 @@ public abstract class EmptyTable extends TableBase implements SourceTable {
     public abstract TableHeader header();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
+    public final <V extends Table.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
+    @Override
+    public final <V extends SourceTable.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

@@ -14,7 +14,21 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.immutable.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ShiftData;
+import io.deephaven.qst.table.column.Column;
+import io.deephaven.qst.table.column.type.BooleanType;
+import io.deephaven.qst.table.column.type.ByteType;
+import io.deephaven.qst.table.column.type.CharType;
+import io.deephaven.qst.table.column.type.ColumnType;
+import io.deephaven.qst.table.column.type.ColumnType.Visitor;
+import io.deephaven.qst.table.column.type.DoubleType;
+import io.deephaven.qst.table.column.type.FloatType;
+import io.deephaven.qst.table.column.type.GenericType;
+import io.deephaven.qst.table.column.type.IntType;
+import io.deephaven.qst.table.column.type.LongType;
+import io.deephaven.qst.table.column.type.ShortType;
+import io.deephaven.qst.table.column.type.StringType;
 import io.deephaven.util.SoftRecycler;
+import java.util.Objects;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +99,10 @@ public abstract class ArrayBackedColumnSource<T>
     static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[IN_USE_BLOCK_SIZE],
             block -> Arrays.fill(block, 0));
+
+    public static <T> ArrayBackedColumnSource<T> from(Column<T> column) {
+        return column.type().walk(new ColumnAdapter<>(column)).getOut();
+    }
 
     /**
      * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
@@ -594,5 +612,129 @@ public abstract class ArrayBackedColumnSource<T>
         }
 
         return getChunkByFilling(context, orderedKeys);
+    }
+
+    private static class ColumnAdapter<T> implements ColumnType.Visitor {
+        private final Column<T> column;
+        private ArrayBackedColumnSource<?> out;
+
+        public ColumnAdapter(Column<T> column) {
+            this.column = Objects.requireNonNull(column);
+        }
+
+        public ArrayBackedColumnSource<T> getOut() {
+            //noinspection unchecked
+            return Objects.requireNonNull((ArrayBackedColumnSource<T>) out);
+        }
+
+        @Override
+        public void visit(BooleanType booleanType) {
+            final BooleanArraySource source = new BooleanArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, booleanType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(ByteType byteType) {
+            final ByteArraySource source = new ByteArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, byteType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(CharType charType) {
+            final CharacterArraySource source = new CharacterArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, charType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(ShortType shortType) {
+            final ShortArraySource source = new ShortArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, shortType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(IntType intType) {
+            final IntegerArraySource source = new IntegerArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, intType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(LongType longType) {
+            final LongArraySource source = new LongArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, longType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(FloatType floatType) {
+            final FloatArraySource source = new FloatArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, floatType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(DoubleType doubleType) {
+            final DoubleArraySource source = new DoubleArraySource();
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, doubleType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(StringType stringType) {
+            final ObjectArraySource<String> source = new ObjectArraySource<>(String.class);
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, stringType.castValue(value));
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(GenericType<?> genericType) {
+            final ObjectArraySource<T> source = new ObjectArraySource<>((Class<T>)genericType.clazz());
+            source.ensureCapacity(column.size());
+            long i = 0;
+            for (T value : column.values()) {
+                source.set(i++, value);
+            }
+            out = source;
+        }
     }
 }

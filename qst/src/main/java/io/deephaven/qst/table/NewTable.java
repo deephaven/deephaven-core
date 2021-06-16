@@ -56,7 +56,13 @@ public abstract class NewTable extends TableBase implements SourceTable {
     }
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
+    public final <V extends Table.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
+    @Override
+    public final <V extends SourceTable.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

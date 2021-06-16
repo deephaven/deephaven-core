@@ -2,8 +2,15 @@ package io.deephaven.qst;
 
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.SourceTable;
 import io.deephaven.qst.table.Table;
 
+/**
+ * Provides methods for building the {@link SourceTable source tables}.
+ *
+ * @param <BUILDER> the table operations type
+ * @param <TABLE> the table type
+ */
 public interface TableCreation<BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> {
 
     static <BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> BUILDER create(

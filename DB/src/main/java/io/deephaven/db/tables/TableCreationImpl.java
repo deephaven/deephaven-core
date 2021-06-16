@@ -15,11 +15,11 @@ enum TableCreationImpl implements TableCreation<Table, Table> {
 
     @Override
     public final Table of(NewTable newTable) {
-        return null; // todo: get changes from InMemoryTable in another patch
+        return InMemoryTable.from(newTable);
     }
 
     @Override
     public final Table of(EmptyTable emptyTable) {
-        return TableTools.emptyTable(emptyTable.size()); // todo: get changes from TableDefinition in another patch
+        return TableTools.emptyTable(emptyTable.size(), TableDefinition.from(emptyTable.header()));
     }
 }
