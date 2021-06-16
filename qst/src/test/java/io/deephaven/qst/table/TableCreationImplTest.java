@@ -2,6 +2,7 @@ package io.deephaven.qst.table;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.deephaven.qst.examples.EmployeesExample;
 import io.deephaven.qst.table.column.Column;
 import io.deephaven.qst.table.column.header.ColumnHeader;
 import java.util.ArrayList;
@@ -171,6 +172,7 @@ public class TableCreationImplTest {
                 }
             }
         }
+        tables.add(EmployeesExample.joined());
         return tables;
     }
 
