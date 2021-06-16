@@ -75,7 +75,7 @@ public class AsOfJoinHelper {
             throw new IllegalArgumentException("Can not aj() with different stamp types: left=" + leftStampSource.getType() + ", right=" + rightStampSource.getType());
         }
 
-        final RedirectionIndex redirectionIndex = makeRedirectionIndex(control, leftTable);
+        final RedirectionIndex redirectionIndex = JoinRedirectionIndex.makeRedirectionIndex(control, leftTable);
         if (keyColumnCount == 0) {
             return zeroKeyAj(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource, originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
         }
@@ -451,26 +451,6 @@ public class AsOfJoinHelper {
             keyChunk.resetFromTypedArray(leftStampKeys, 0, leftStampKeys.length);
             valuesChunk.resetFromArray(arrayValuesCache.getValues(slot), 0, leftStampKeys.length);
         }
-    }
-
-    private static RedirectionIndex makeRedirectionIndex(JoinControl control, QueryTable leftTable) {
-        final JoinControl.RedirectionType redirectionType = control.getRedirectionType(leftTable);
-
-        final RedirectionIndex redirectionIndex;
-        switch (redirectionType) {
-            case Contiguous:
-                redirectionIndex = new ContiguousRedirectionIndexImpl(leftTable.intSize());
-                break;
-            case Sparse:
-                redirectionIndex = new LongColumnSourceRedirectionIndex(new LongSparseArraySource());
-                break;
-            case Hash:
-                redirectionIndex = RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(leftTable.intSize());
-                break;
-            default:
-                throw new IllegalStateException();
-        }
-        return redirectionIndex;
     }
 
     private static Table zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
