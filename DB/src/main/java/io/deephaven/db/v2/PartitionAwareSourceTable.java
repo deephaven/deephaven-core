@@ -5,7 +5,6 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.DefaultColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
@@ -103,7 +102,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             ArrayList<SelectFilter> otherFilters = new ArrayList<>();
 
             List<ColumnDefinition> groupingColumns = table.getDefinition().getGroupingColumns();
-            Set<String> groupingColumnNames = groupingColumns.stream().map(DefaultColumnDefinition::getName).collect(Collectors.toSet());
+            Set<String> groupingColumnNames = groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
             for (SelectFilter filter : selectFilters) {
                 filter.init(table.definition);
@@ -227,7 +226,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         ArrayList<SelectFilter> otherFilters = new ArrayList<>();
 
         List<ColumnDefinition> groupingColumns = definition.getGroupingColumns();
-        Set<String> groupingColumnNames = groupingColumns.stream().map(DefaultColumnDefinition::getName).collect(Collectors.toSet());
+        Set<String> groupingColumnNames = groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
         for (SelectFilter filter : filters) {
             filter.init(definition);

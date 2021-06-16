@@ -224,16 +224,12 @@ public class TestChunkedRegionedOperations {
         dataDirectory.deleteOnExit();
 
         final TableDefinition partitionedDataDefinition = new TableDefinition(inputData.getDefinition());
-        partitionedDataDefinition.setNamespace("TestNamespace");
-        partitionedDataDefinition.setName("TestTable");
-        partitionedDataDefinition.setStorageType(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK);
 
         final TableDefinition partitionedMissingDataDefinition = new TableDefinition(inputData.view("PC", "II").getDefinition());
-        partitionedMissingDataDefinition.setNamespace("TestNamespace");
-        partitionedMissingDataDefinition.setName("TestTable");
-        partitionedMissingDataDefinition.setStorageType(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK);
 
-        final TableKey tableKey = new TableLookupKey.Immutable(partitionedDataDefinition.getNamespace(), partitionedDataDefinition.getName(), TableType.STANDALONE_SPLAYED);
+        final String namespace = "TestNamespace";
+        final String name = "TestTable";
+        final TableKey tableKey = new TableLookupKey.Immutable(namespace, name, TableType.STANDALONE_SPLAYED);
 
         final List<TableLocationMetadataIndex.TableLocationSnapshot> snapshots = new ArrayList<>();
 

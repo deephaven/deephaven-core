@@ -2,10 +2,14 @@ name: Label Check CI
 
 on:
   pull_request:
-    # This set of types only causes this workflow to run once when it is opened, or when the labels
-    # change. For example, it won't be (and doesn't need to be) retriggered when new commits are
-    # pushed.
-    types: [ labeled, unlabeled, opened ]
+    # The default pull_request trigger only happens on opened, synchronize, and reopened types.
+    # We are adding labeled and unlabeled here, so that changes to labels will cause this action to
+    # be re-run.
+    #
+    # Note: we need to rerun this action on new commits (synchronize events) even though it doesn't
+    # effect the labels because the merge requirements need checks to pass against the most recent
+    # commit.
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
     branches: [ main ]
 
 jobs:

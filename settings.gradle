@@ -128,8 +128,6 @@ include(':Configuration')
 
 include(':FishUtil')
 
-include(':DataObjects')
-
 include(':Net')
 
 include(':Stats')

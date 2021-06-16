@@ -1,9 +1,9 @@
 package io.deephaven.grpc_api.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Singleton
-public class SessionService extends LivenessArtifact {
+public class SessionService {
 
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds
 
@@ -58,8 +58,7 @@ public class SessionService extends LivenessArtifact {
      */
     public SessionState newSession(final AuthContext authContext) {
         final SessionState session = sessionFactory.create(authContext);
-        refreshToken(session);
-        manage(session);
+        refreshToken(session, true);
         return session;
     }
 
@@ -69,8 +68,12 @@ public class SessionService extends LivenessArtifact {
      * @param session the session to refresh
      * @return the most recent token expiration
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public TokenExpiration refreshToken(final SessionState session) {
+        return refreshToken(session, false);
+    }
+
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
         final DBDateTime now = scheduler.currentTime();
@@ -83,11 +86,15 @@ public class SessionService extends LivenessArtifact {
             }
 
             do {
-                newUUID = UUID.randomUUID();
+                newUUID = UuidCreator.getRandomBased();
                 expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
-            session.setExpiration(expiration);
+            if (initialToken) {
+                session.initializeExpiration(expiration);
+            } else {
+                session.updateExpiration(expiration);
+            }
         }
         outstandingCookies.addLast(expiration);
 
@@ -147,16 +154,13 @@ public class SessionService extends LivenessArtifact {
         if (session.isExpired()) {
             return;
         }
-        unmanage(session);
+        session.onExpired();
     }
 
     public void closeAllSessions() {
         for (final TokenExpiration token : outstandingCookies) {
-            // let's take the opportunity to close all LivenessReferents held on to by the session
+            // close all exports/resources acquired by the session
             token.session.onExpired();
-
-            // we manage each session exactly once, but there may be more than one token per session outstanding
-            tryUnmanage(token.session);
         }
     }
 
@@ -175,7 +179,7 @@ public class SessionService extends LivenessArtifact {
          * Returns the UUID cookie in byte[] friendly format.
          */
         public ByteString getTokenAsByteString() {
-            return ByteString.copyFromUtf8(token.toString());
+            return ByteString.copyFromUtf8(UuidCreator.toString(token));
         }
     }
 
@@ -199,7 +203,6 @@ public class SessionService extends LivenessArtifact {
                 synchronized (next.session) {
                     if (next.session.getExpiration() != null && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
                         next.session.onExpired();
-                        unmanage(next.session);
                     }
                 }
             } while (true);

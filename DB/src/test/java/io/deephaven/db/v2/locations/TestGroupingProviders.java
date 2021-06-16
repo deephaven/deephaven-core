@@ -120,9 +120,6 @@ public class TestGroupingProviders {
             ColumnDefinition.ofString("Part").withPartitioning(),
             ColumnDefinition.ofChar("Sym").withGrouping(),
             ColumnDefinition.ofLong("Other"));
-        partitionedDataDefinition.setNamespace("TestNamespace");
-        partitionedDataDefinition.setName("TestTable");
-        partitionedDataDefinition.setStorageType(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK);
 
         final TableDefinition partitionedMissingDataDefinition;
         if (missingGroups) {
@@ -130,19 +127,15 @@ public class TestGroupingProviders {
                 ColumnDefinition.ofString("Part").withPartitioning(),
                 ColumnDefinition.ofChar("Sym"),
                 ColumnDefinition.ofLong("Other"));
-            partitionedMissingDataDefinition.setNamespace("TestNamespace");
-            partitionedMissingDataDefinition.setName("TestTable");
-            partitionedMissingDataDefinition.setStorageType(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK);
         } else {
             partitionedMissingDataDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Part").withPartitioning(),
                 ColumnDefinition.ofLong("Other"));
-            partitionedMissingDataDefinition.setNamespace("TestNamespace");
-            partitionedMissingDataDefinition.setName("TestTable");
-            partitionedMissingDataDefinition.setStorageType(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK);
         }
 
-        final TableKey tableKey = new TableLookupKey.Immutable(partitionedDataDefinition.getNamespace(), partitionedDataDefinition.getName(), TableType.STANDALONE_SPLAYED);
+        final String namespace = "TestNamespace";
+        final String name = "TestTable";
+        final TableKey tableKey = new TableLookupKey.Immutable(namespace, name, TableType.STANDALONE_SPLAYED);
 
         TableManagementTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
         TableManagementTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);

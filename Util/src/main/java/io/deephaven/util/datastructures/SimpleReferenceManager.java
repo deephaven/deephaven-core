@@ -59,9 +59,10 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
      * references.
      *
      * @param item the item to remove.
+     * @return The item if it was removed, else null
      */
-    public void remove(@NotNull final T item) {
-        removeIf((final T found) -> found == item);
+    public T remove(@NotNull final T item) {
+        return removeIf((final T found) -> found == item) ? item : null;
     }
 
     /**
@@ -77,23 +78,28 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
      * Retrieve all encountered items that satisfy a filter, while also removing any cleared references.
      *
      * @param filter The filter to decide if a valid item should be removed
+     * @return Whether we succeeded in removing anything
      */
-    public void removeIf(@NotNull final Predicate<T> filter) {
+    public boolean removeIf(@NotNull final Predicate<T> filter) {
         if (references.isEmpty()) {
-            return;
+            return false;
         }
         Deque<R> collected = null;
+        boolean found = false;
         try {
             for (final R ref : references) {
                 final T item = ref.get();
-                if (item == null || filter.test(item)) {
+                boolean accepted = false;
+                if (item == null || (accepted = filter.test(item))) {
                     ref.clear();
                     (collected = maybeMakeRemovalDeque(collected)).add(ref);
                 }
+                found |= accepted;
             }
         } finally {
             maybeDoRemoves(collected);
         }
+        return found;
     }
 
     /**

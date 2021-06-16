@@ -131,53 +131,63 @@ if (PyEnv.pythonEnabled(project)) {
     JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
     SourceSet test = java.sourceSets.maybeCreate('test')
 
-    def pyTest = Docker.registerDockerTask(project, "test-py-37") {
-        copyIn {
-            from('python') {
-                into 'python'
-            }
-            from(test.runtimeClasspath) {
-                into 'classpath'
-            }
+    def runInDocker = { String name, List<String> command ->
+        Docker.registerDockerTask(project, name) {
+            copyIn {
+                from('python') {
+                    into 'python'
+                }
+                from(test.runtimeClasspath) {
+                    into 'classpath'
+                }
 
-            // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
-            // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
-            // so it is part of the previous statement
-            from(zipTree(project(':configs').tasks.getByName('jar').outputs.files.singleFile)) {
-                into 'python/configs'
+                // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
+                // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
+                // so it is part of the previous statement
+                from(zipTree(project(':configs').tasks.getByName('jar').outputs.files.singleFile)) {
+                    into 'python/configs'
+                }
             }
-        }
-        parentContainers = [tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+            parentContainers = [tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
 
-        dockerfile {
-            // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/runtime-base:local-build'
-            runCommand '''set -eux; \\
+            imageName = 'deephaven/py-integrations:local-build'
+            dockerfile {
+                // set up the container, env vars - things that aren't likely to change
+                from 'deephaven/runtime-base:local-build'
+                runCommand '''set -eux; \\
                           pip3 install unittest-xml-reporting==3.0.4;\\
                           mkdir -p /out/report;\\
                           mkdir -p /workspace/cache/classes'''
-            environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
-            environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
-            environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
-            environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-            environmentVariable 'JAVA_VERSION', '1.8'
-            environmentVariable 'DEEPHAVEN_VERSION', project.version
+                environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
+                environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
+                environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
+                environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
+                environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
+                environmentVariable 'JAVA_VERSION', '1.8'
+                environmentVariable 'DEEPHAVEN_VERSION', project.version
 
-            workingDir '/python'
+                workingDir '/python'
 
-            // copy in the contents that we do expect to change as the project updates
-            copyFile 'python', '/python'
-            copyFile 'classpath', '/classpath'
-        }
-        entrypoint = ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report']
+                // copy in the contents that we do expect to change as the project updates
+                copyFile 'python', '/python'
+                copyFile 'classpath', '/classpath'
+            }
+            entrypoint = command
 
-        copyOut {
-            into layout.buildDirectory.dir('test-results')
+            copyOut {
+                into layout.buildDirectory.dir('test-results')
+            }
         }
     }
+    def pyTest = runInDocker("test-py-37", ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'])
+    def pyFunctionalTest = runInDocker('py-functional-test', ['/bin/bash', 'run-functional-tests.sh'])
     pyTest.configure({
         onlyIf { TestTools.shouldRunTests(project) }
     })
     tasks.getByName('test').dependsOn(pyTest)
+
+    pyFunctionalTest.configure({
+        onlyIf { TestTools.shouldRunTests(project) }
+    })
+    tasks.getByName('test').dependsOn(pyFunctionalTest)
 }

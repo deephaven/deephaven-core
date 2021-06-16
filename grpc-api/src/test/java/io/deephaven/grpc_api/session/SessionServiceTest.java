@@ -25,7 +25,7 @@ public class SessionServiceTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService = new SessionService(scheduler, authContext -> new SessionState(scheduler, LiveTableMonitor.DEFAULT, authContext), TOKEN_EXPIRE_MS);
+        sessionService = new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
     }
 
     @After
@@ -35,12 +35,6 @@ public class SessionServiceTest {
         scheduler = null;
         sessionService = null;
         livenessScope = null;
-    }
-
-    @Test
-    public void testNewSessionIsLive() {
-        final SessionState session = sessionService.newSession(AUTH_CONTEXT);
-        Assert.neqNull(session.getWeakReference().get(), "session.getWeakReference().get()");
     }
 
     @Test

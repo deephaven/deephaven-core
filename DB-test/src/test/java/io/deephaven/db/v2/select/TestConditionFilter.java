@@ -34,7 +34,7 @@ import static io.deephaven.db.v2.select.FormulaTestUtil.*;
 import static org.jpy.PyLib.getMainGlobals;
 import static org.junit.Assert.fail;
 
-@Ignore
+@Ignore// TODO (deephaven-core#734)
 public class TestConditionFilter extends PythonTest {
     static {
         if (ProcessEnvironment.tryGet() == null) {

@@ -141,7 +141,7 @@ service TableService {
    * exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
    * initial update had been sent.
    */
-  rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateBatchMessage) {}
+  rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateMessage) {}
 }
 
 message TableReference {
@@ -182,10 +182,6 @@ message ExportedTableUpdateMessage {
   Ticket export_id = 1;
   sint64 size = 2 [jstype=JS_STRING];
   string update_failure_message = 3;
-}
-
-message ExportedTableUpdateBatchMessage {
-  repeated ExportedTableUpdateMessage updates = 1;
 }
 
 message EmptyTableRequest {
