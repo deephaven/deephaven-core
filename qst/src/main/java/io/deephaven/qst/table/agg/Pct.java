@@ -8,10 +8,6 @@ import org.immutables.value.Value.Parameter;
 @Immutable
 public abstract class Pct implements Aggregation {
 
-    public static Pct of(JoinMatch match, double pct) {
-        return ImmutablePct.of(match, pct);
-    }
-
     public abstract JoinMatch match();
 
     public abstract double percentile();

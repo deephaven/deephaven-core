@@ -9,7 +9,7 @@ import org.immutables.value.Value.Parameter;
 public abstract class CountDistinct implements Aggregation {
 
     public static CountDistinct of(JoinMatch match) {
-        return ImmutableCountDistinct.of(match);
+        return ImmutableCountDistinct.builder().match(match).build();
     }
 
     public static CountDistinct of(String x) {
