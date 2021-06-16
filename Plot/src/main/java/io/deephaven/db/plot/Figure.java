@@ -22,7 +22,6 @@ public interface Figure extends java.io.Serializable, io.deephaven.db.plot.BaseF
     Figure show();
 
 
-
     @Override  Figure save( java.lang.String saveLocation );
 
     @Override  Figure save( java.lang.String saveLocation, int width, int height );
