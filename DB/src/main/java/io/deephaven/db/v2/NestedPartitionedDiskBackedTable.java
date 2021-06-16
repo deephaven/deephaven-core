@@ -34,7 +34,7 @@ public class NestedPartitionedDiskBackedTable extends PartitionAwareSourceTable 
                                             Set<String> internalPartitions) {
         //noinspection unchecked
         super(checkTableDefinitionRequirements(tableDefinition),
-                NestedPartitionedDiskBackedTable.class.getSimpleName() + '[' + tableDefinition.getNamespace() + ',' + tableDefinition.getName() + ']',
+                NestedPartitionedDiskBackedTable.class.getSimpleName() + '[' + locationProvider + ']',
                 componentFactory,
                 locationProvider,
                 liveTableRegistrar,
@@ -66,10 +66,6 @@ public class NestedPartitionedDiskBackedTable extends PartitionAwareSourceTable 
 
     private static TableDefinition checkTableDefinitionRequirements(TableDefinition tableDefinition) {
         Require.neqNull(tableDefinition, "tableDefinition");
-        if (tableDefinition.getStorageType() != TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK) {
-            throw new IllegalArgumentException("Expected storage type of " + TableDefinition.STORAGE_TYPE_FORMATTER.format(TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK) +
-                    ", instead found " + TableDefinition.STORAGE_TYPE_FORMATTER.format(tableDefinition.getStorageType()));
-        }
         int numberOfPartitioningColumns = 0;
         for (int ci = 0; ci < tableDefinition.getColumns().length; ++ci) {
             switch (tableDefinition.getColumns()[ci].getColumnType()) {

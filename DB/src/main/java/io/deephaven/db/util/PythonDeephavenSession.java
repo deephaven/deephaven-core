@@ -58,8 +58,20 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * @param runInitScripts if init scripts should be executed
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    @SuppressWarnings("unused")
     public PythonDeephavenSession(boolean runInitScripts) throws IOException {
+        this(runInitScripts, false);
+    }
+
+    /**
+     * Create a Python ScriptSession.
+     *
+     * @param runInitScripts if init scripts should be executed
+     * @param isDefaultScriptSession true if this is in the default context of a worker jvm
+     * @throws IOException if an IO error occurs running initialization scripts
+     */
+    public PythonDeephavenSession(boolean runInitScripts, boolean isDefaultScriptSession) throws IOException {
+        super(isDefaultScriptSession);
+
         JpyInit.init(log);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
@@ -96,6 +108,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * scope, such as an IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
+        super(false);
+
         this.scope = scope;
         this.evaluator = null;
         this.scriptFinder = null;

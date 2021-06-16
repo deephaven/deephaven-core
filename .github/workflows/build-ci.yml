@@ -2,7 +2,7 @@ name: Build CI
 
 on:
   push:
-    branches: [ 'main', 'build/**' ]
+    branches: [ 'main', 'build/**', 'release/v*' ]
     tags: [ 'v*' ]
 
 jobs:
@@ -19,15 +19,24 @@ jobs:
         with:
           java-version: '8.0.292'
 
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/grpc-api
+          flavor: |
+            latest=false
           tags: |
             type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.2') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Core
@@ -85,15 +94,24 @@ jobs:
         with:
           java-version: '8.0.292'
 
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/grpc-proxy
+          flavor: |
+            latest=false
           tags: |
             type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.2') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven gRPC Web Proxy
@@ -147,15 +165,24 @@ jobs:
         with:
           java-version: '8.0.292'
 
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/envoy
+          flavor: |
+            latest=false
           tags: |
             type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.2') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Envoy
@@ -203,15 +230,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v3.3.0
         with:
           images: ghcr.io/${{ github.repository_owner }}/web
+          flavor: |
+            latest=false
           tags: |
             type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.2') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Web

@@ -1,6 +1,7 @@
 package io.deephaven.db.util;
 
 import org.jpy.PyDictWrapper;
+import org.jpy.PyLib;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -20,6 +21,10 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static PythonScopeJpyImpl ofMainGlobals() {
+         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
     }
 
     public PythonScopeJpyImpl(PyDictWrapper dict) {

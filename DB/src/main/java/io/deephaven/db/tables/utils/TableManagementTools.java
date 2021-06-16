@@ -54,10 +54,6 @@ public class TableManagementTools {
 
     private static Table getTable(final String description, final TableDefinition sourceDef, final TableLocationProvider locationProvider) {
         TableDefinition tableDefinition = sourceDef.getWritable();
-        if (tableDefinition.getStorageType() == TableDefinition.STORAGETYPE_NESTEDPARTITIONEDONDISK) {
-            tableDefinition = new TableDefinition(tableDefinition);
-            tableDefinition.setStorageType(TableDefinition.STORAGETYPE_SPLAYEDONDISK);
-        }
         return new SimpleSourceTable(tableDefinition, description, RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 

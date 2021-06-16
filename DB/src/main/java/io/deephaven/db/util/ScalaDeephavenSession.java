@@ -79,7 +79,9 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
         }
     }
 
-    public ScalaDeephavenSession(@SuppressWarnings("unused") boolean runInitScripts) {
+    public ScalaDeephavenSession(@SuppressWarnings("unused") boolean runInitScripts, boolean isDefaultScriptSession) {
+        super(isDefaultScriptSession);
+
         errorHandler = new ErrorHandler();
         GenericRunnerSettings settings = new GenericRunnerSettings(errorHandler);
         ((MutableSettings.BooleanSetting) settings.usejavacp()).v_$eq(true);

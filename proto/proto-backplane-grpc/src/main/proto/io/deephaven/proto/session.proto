@@ -139,6 +139,8 @@ message ExportNotification {
     FAILED = 6; // This item had a specific error.
     DEPENDENCY_FAILED = 7; // One of this item's dependencies had an internal error before it exported.
     DEPENDENCY_NEVER_FOUND = 8; // One of this item's dependencies was already released or never submitted within the out-of-order window.
+    DEPENDENCY_CANCELLED = 9; // Dependency was cancelled, causing a cascading cancel that applies to this export.
+    DEPENDENCY_RELEASED = 10; // Dependency was already released, causing a cascading failure that applies to this export.
   }
   State export_state = 2;
 

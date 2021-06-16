@@ -6,7 +6,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;
@@ -20,9 +19,6 @@ import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.locations.TableLocationSubscriptionBuffer;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.db.v2.sources.EmptyToNullStringRegionedColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -32,9 +28,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -246,32 +239,6 @@ public abstract class SourceTable extends RedefinableTable {
         return foundLocations;
     }
 
-    private static final boolean MAP_EMPTY_STRINGS_TO_NULL = Configuration.getInstance().getBooleanWithDefault("SourceTable.mapEmptyStringsToNull", false);
-
-    private Map<String, ? extends ColumnSource> maybeReplaceColumnSources(@NotNull final Map<String, ? extends DeferredGroupingColumnSource> sources) {
-        if (!MAP_EMPTY_STRINGS_TO_NULL) {
-            return sources;
-        }
-        return sources.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                (e) -> {
-                    final String name = e.getKey();
-                    final DeferredGroupingColumnSource source = e.getValue();
-                    if (getDefinition().getColumn(name).isPartitioning() || !CharSequence.class.isAssignableFrom(source.getType())) {
-                        return source;
-                    }
-                    //noinspection unchecked
-                    return new EmptyToNullStringRegionedColumnSource(source, () ->
-                            log.info().append("EMPTY-TO-NULL-CONVERSION: ")
-                                    .append(getDefinition().getNamespace()).append('.')
-                                    .append(getDefinition().getName()).append('.')
-                                    .append(name)
-                                    .endl());
-                },
-                Assert::neverInvoked,
-                LinkedHashMap::new));
-    }
-
     @Override
     protected final QueryTable doCoalesce() {
         initialize();
@@ -294,7 +261,7 @@ public abstract class SourceTable extends RedefinableTable {
 
         final Mutable<QueryTable> result = new MutableObject<>();
         initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
-            final QueryTable resultTable = new QueryTable(definition, index, maybeReplaceColumnSources(columnSourceManager.getColumnSources()));
+            final QueryTable resultTable = new QueryTable(definition, index, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
 
             if (swapListener != null) {
