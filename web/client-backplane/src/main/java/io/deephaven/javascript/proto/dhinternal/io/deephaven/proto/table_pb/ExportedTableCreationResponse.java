@@ -105,10 +105,10 @@ public class ExportedTableCreationResponse {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface TicketFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetIdUnionType {
+        public interface GetTicketUnionType {
           @JsOverlay
           static ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
-                  .GetIdUnionType
+                  .GetTicketUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -142,31 +142,31 @@ public class ExportedTableCreationResponse {
 
         @JsProperty
         ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
-                .GetIdUnionType
-            getId();
+                .GetTicketUnionType
+            getTicket();
 
         @JsProperty
-        void setId(
+        void setTicket(
             ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType
-                    .GetIdUnionType
-                id);
+                    .GetTicketUnionType
+                ticket);
 
         @JsOverlay
-        default void setId(String id) {
-          setId(
+        default void setTicket(String ticket) {
+          setTicket(
               Js
                   .<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType
-                          .TicketFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                          .TicketFieldType.GetTicketUnionType>
+                      uncheckedCast(ticket));
         }
 
         @JsOverlay
-        default void setId(Uint8Array id) {
-          setId(
+        default void setTicket(Uint8Array ticket) {
+          setTicket(
               Js
                   .<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType
-                          .TicketFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                          .TicketFieldType.GetTicketUnionType>
+                      uncheckedCast(ticket));
         }
       }
 
@@ -286,10 +286,10 @@ public class ExportedTableCreationResponse {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface TicketFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetIdUnionType {
+        public interface GetTicketUnionType {
           @JsOverlay
           static ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
-                  .GetIdUnionType
+                  .GetTicketUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -323,31 +323,31 @@ public class ExportedTableCreationResponse {
 
         @JsProperty
         ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
-                .GetIdUnionType
-            getId();
+                .GetTicketUnionType
+            getTicket();
 
         @JsProperty
-        void setId(
+        void setTicket(
             ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType
-                    .GetIdUnionType
-                id);
+                    .GetTicketUnionType
+                ticket);
 
         @JsOverlay
-        default void setId(String id) {
-          setId(
+        default void setTicket(String ticket) {
+          setTicket(
               Js
                   .<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType
-                          .TicketFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                          .TicketFieldType.GetTicketUnionType>
+                      uncheckedCast(ticket));
         }
 
         @JsOverlay
-        default void setId(Uint8Array id) {
-          setId(
+        default void setTicket(Uint8Array ticket) {
+          setTicket(
               Js
                   .<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType
-                          .TicketFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                          .TicketFieldType.GetTicketUnionType>
+                      uncheckedCast(ticket));
         }
       }
 

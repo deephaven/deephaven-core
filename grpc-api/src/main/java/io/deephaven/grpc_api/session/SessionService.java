@@ -8,6 +8,7 @@ import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -139,9 +140,24 @@ public class SessionService {
      * @throws StatusRuntimeException if thread is not attached to a session or if the session is expired/closed
      */
     public SessionState getCurrentSession() {
+        final SessionState session = getOptionalSession();
+        if (session == null) {
+            throw new StatusRuntimeException(Status.UNAUTHENTICATED);
+        }
+        return session;
+    }
+
+    /**
+     * Lookup a session via the SessionServiceGrpcImpl.SESSION_CONTEXT_KEY. This method is only valid in the context of
+     * the original calling gRPC thread.
+     *
+     * @return the session attached to this gRPC request; null if no session is established
+     */
+    @Nullable
+    public SessionState getOptionalSession() {
         final SessionState session = SessionServiceGrpcImpl.SESSION_CONTEXT_KEY.get();
         if (session == null || session.isExpired()) {
-            throw new StatusRuntimeException(Status.UNAUTHENTICATED);
+            return null;
         }
         return session;
     }

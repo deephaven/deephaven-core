@@ -129,7 +129,7 @@ public final class LongColumnSourceRedirectionIndex implements RedirectionIndex 
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<Values> src, @NotNull OrderedKeys orderedKeys) {
+    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull OrderedKeys orderedKeys) {
         columnSource.fillFromChunk(context, src, orderedKeys);
     }
 

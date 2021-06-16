@@ -4,8 +4,8 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.StatusRuntimeException;
+import org.apache.arrow.flight.impl.Flight;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +18,7 @@ public abstract class GrpcTableOperation<T> {
     }
 
     final Function<BatchTableRequest.Operation, T> getRequest;
-    final Function<T, Ticket> getTicket;
+    final Function<T, Flight.Ticket> getTicket;
     final MultiDependencyFunction<T> getDependencies;
 
     /**
@@ -29,7 +29,7 @@ public abstract class GrpcTableOperation<T> {
      */
     protected GrpcTableOperation(
             final Function<BatchTableRequest.Operation, T> getRequest,
-            final Function<T, Ticket> getTicket,
+            final Function<T, Flight.Ticket> getTicket,
             final MultiDependencyFunction<T> getDependencies) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
@@ -44,7 +44,7 @@ public abstract class GrpcTableOperation<T> {
      */
     protected GrpcTableOperation(
             final Function<BatchTableRequest.Operation, T> getRequest,
-            final Function<T, Ticket> getTicket,
+            final Function<T, Flight.Ticket> getTicket,
             final Function<T, TableReference> getDependency) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
@@ -58,7 +58,7 @@ public abstract class GrpcTableOperation<T> {
      */
     protected GrpcTableOperation(
             final Function<BatchTableRequest.Operation, T> getRequest,
-            final Function<T, Ticket> getTicket) {
+            final Function<T, Flight.Ticket> getTicket) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
         this.getDependencies = (request) -> Collections.emptyList();
@@ -95,7 +95,7 @@ public abstract class GrpcTableOperation<T> {
      * @param request the request
      * @return the result ticket
      */
-    public Ticket getResultTicket(final T request) {
+    public Flight.Ticket getResultTicket(final T request) {
         return getTicket.apply(request);
     }
 

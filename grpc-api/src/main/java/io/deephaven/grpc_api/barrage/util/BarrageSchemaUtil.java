@@ -1,16 +1,29 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.barrage.util;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.rpc.Code;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.barrage.flatbuf.KeyValue;
+import io.deephaven.base.ClassUtil;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.tables.utils.DBNameValidator;
 import io.deephaven.db.util.ColumnFormattingValues;
 import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.sources.ColumnSource;
 
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.web.shared.data.LocalDate;
+import io.deephaven.web.shared.data.LocalTime;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -20,8 +33,6 @@ import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 
@@ -31,17 +42,10 @@ public class BarrageSchemaUtil {
 
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
-    private static final Map<String, Class<?>> primitiveTypeNameMap = new HashMap<>(16);
-    private static void registerPrimitive(final Class<?> cls) {
-        primitiveTypeNameMap.put(cls.getCanonicalName(), cls);
-    }
-
-    static {
-        Arrays.asList(boolean.class, boolean[].class, byte.class, byte[].class, char.class, char[].class, double.class, double[].class,
-                float.class, float[].class, int.class, int[].class, long.class, long[].class, short.class, short[].class)
-                .forEach(BarrageSchemaUtil::registerPrimitive);
-    }
-
+    /**
+     * These are the types that get special encoding but are otherwise not primitives.
+     * TODO (core#58): add custom barrage serialization/deserialization support
+     */
     private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.<Class<?>>asImmutableList(
             BigDecimal.class,
             BigInteger.class,
@@ -51,8 +55,7 @@ public class BarrageSchemaUtil {
     ));
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,
-                                        final String[] columnNames,
-                                        final ColumnSource<?>[] columnSources,
+                                        final TableDefinition table,
                                         final Map<String, Object> attributes) {
         final Map<String, Map<String, String>> fieldExtraMetadata = new HashMap<>();
         final Function<String, Map<String, String>> getExtraMetadata =
@@ -64,11 +67,7 @@ public class BarrageSchemaUtil {
 
         // find format columns
         final Set<String> formatColumns = new HashSet<>();
-        for (final String colName : columnNames) {
-            if (ColumnFormattingValues.isFormattingColumn(colName)) {
-                formatColumns.add(colName);
-            }
-        }
+        table.getColumnNames().stream().filter(ColumnFormattingValues::isFormattingColumn).forEach(formatColumns::add);
 
         // create metadata on the schema for table attributes
         final Map<String, String> schemaMetadata = new HashMap<>();
@@ -103,8 +102,8 @@ public class BarrageSchemaUtil {
         }
 
         final Map<String, Field> fields = new LinkedHashMap<>();
-        for (int i = 0; i < columnNames.length; ++i) {
-            final String colName = columnNames[i];
+        for (final ColumnDefinition<?> column : table.getColumns()) {
+            final String colName = column.getName();
             final Map<String, String> extraMetadata = getExtraMetadata.apply(colName);
 
             // wire up style and format column references
@@ -116,7 +115,7 @@ public class BarrageSchemaUtil {
                 putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
-            fields.put(colName, arrowFieldFor(colName, columnSources[i], descriptions.get(colName), inputTable, extraMetadata));
+            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
         }
 
         return new Schema(new ArrayList<>(fields.values()), schemaMetadata).getSchema(builder);
@@ -126,19 +125,48 @@ public class BarrageSchemaUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    private static Class<?> getClassFor(final String className) throws ClassNotFoundException {
-        Class<?> cls =  primitiveTypeNameMap.get(className);
-        if (cls == null) {
-            cls = Class.forName(className);
+    public static TableDefinition schemaToTableDefinition(final io.deephaven.barrage.flatbuf.Schema schema) {
+        final ColumnDefinition<?>[] columns = new ColumnDefinition[schema.fieldsLength()];
+
+        for (int i = 0; i < schema.fieldsLength(); ++i) {
+            final io.deephaven.barrage.flatbuf.Field field = schema.fields(i);
+
+            final String name = DBNameValidator.legalizeColumnName(field.name());
+
+            Class<?> type = null;
+            Class<?> componentType = null;
+            for (int j = 0; j < field.customMetadataLength(); j++) {
+                final KeyValue keyValue = field.customMetadata(j);
+                if (keyValue.key().equals("deephaven:type")) {
+                    try {
+                        type = ClassUtil.lookupClass(keyValue.value());
+                    } catch (final ClassNotFoundException e) {
+                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                    }
+                } else if (keyValue.key().equals("deephaven:componentType")) {
+                    try {
+                        componentType = ClassUtil.lookupClass(keyValue.value());
+                    } catch (final ClassNotFoundException e) {
+                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                    }
+                }
+            }
+
+            if (type == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema did not include `deephaven:type` metadata");
+            }
+            columns[i] = ColumnDefinition.fromGenericType(name, type, componentType);
         }
-        return cls;
+
+        return new TableDefinition(columns);
     }
 
-    private static Field arrowFieldFor(final String name, final ColumnSource<?> source, final String description, final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
+    private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description, final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
         List<Field> children = Collections.emptyList();
 
         // is hidden?
-        final Class<?> type = source.getType();
+        final Class<?> type = column.getDataType();
+        final Class<?> componentType = column.getComponentType();
         final Map<String, String> metadata = new HashMap<>(extraMetadata);
 
         if (type.isPrimitive() || supportedTypes.contains(type)) {
@@ -162,10 +190,9 @@ public class BarrageSchemaUtil {
             putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
         }
 
-        final FieldType fieldType = arrowFieldTypeFor(type, source.getComponentType(), metadata);
+        final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                final Class<?> componentType = type.getComponentType();
                 children = Collections.singletonList(new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());

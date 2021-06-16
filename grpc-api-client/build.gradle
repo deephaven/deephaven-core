@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+configurations {
+    compile.extendsFrom irisDb
+    testCompile.extendsFrom irisDbTest
+}
+
+dependencies {
+    compile project(':Base'),
+            project(':DB'),
+            project(':Util'),
+            project(':proto:proto-backplane-grpc'),
+            project(':log-factory'),
+            "com.google.flatbuffers:flatbuffers-java:1.12.0",
+            "io.deephaven.barrage:barrage-format:0.1.1"
+
+
+    testCompile TestTools.projectDependency(project, 'DB'),
+                TestTools.projectDependency(project, 'Util')
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+}
+
+def createMainExecTask = {
+    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        task.workingDir "$rootDir"
+        task.classpath = sourceSets.main.runtimeClasspath
+        task.main = mainClass
+        return
+    })
+}
+
+createMainExecTask('replicateBarrageUtils', 'io.deephaven.grpc_api_client.barrage.chunk.ReplicateBarrageUtils')
+
+task replicate {
+    dependsOn 'replicateBarrageUtils'
+}

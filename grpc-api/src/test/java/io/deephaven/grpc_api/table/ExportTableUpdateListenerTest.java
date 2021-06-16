@@ -11,7 +11,6 @@ import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.auth.AuthContext;
@@ -20,6 +19,7 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
@@ -211,7 +211,7 @@ public class ExportTableUpdateListenerTest {
         });
 
         final ExportedTableUpdateMessage msg = observer.msgQueue.poll();
-        final Ticket updateId = msg.getExportId();
+        final Flight.Ticket updateId = msg.getExportId();
         Assert.equals(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
         Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
@@ -313,10 +313,10 @@ public class ExportTableUpdateListenerTest {
         });
     }
 
-    private void expectSizes(final Ticket exportId, final long... sizes) {
+    private void expectSizes(final Flight.Ticket exportId, final long... sizes) {
         for (long size : sizes) {
             final ExportedTableUpdateMessage msg = observer.msgQueue.poll();
-            final Ticket updateId = msg.getExportId();
+            final Flight.Ticket updateId = msg.getExportId();
             Assert.equals(updateId, "updateId", exportId, "exportId");
             Assert.eq(msg.getSize(), "msg.getSize()", size);
             Assert.eqTrue(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");

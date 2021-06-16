@@ -2,7 +2,7 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Int32Array;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 
 /**
@@ -77,7 +77,7 @@ public class TableTicket {
 
     public Ticket makeTicket() {
         Ticket ticket = new Ticket();
-        ticket.setId(getTicket());
+        ticket.setTicket(getTicket());
         return ticket;
     }
 

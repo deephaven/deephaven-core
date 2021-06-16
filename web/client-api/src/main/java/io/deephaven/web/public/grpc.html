@@ -81,7 +81,7 @@
         var subscriptionRequest = new dhinternal.io.deephaven.proto.barrage_pb.SubscriptionRequest()
             .setSequence("1")
             .setTicket(timeTableTicket)
-            .setExportid(nextTicket())
+            .setExportId(nextTicket())
             .setViewport(new Uint8Array([32]))// empty index
             .setColumns(new Uint8Array([1]));// single column
         barrageService.doSubscribeNoClientStream(subscriptionRequest, metadata)

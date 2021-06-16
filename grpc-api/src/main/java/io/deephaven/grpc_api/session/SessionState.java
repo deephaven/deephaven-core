@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -9,6 +13,8 @@ import dagger.assisted.AssistedInject;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
@@ -18,15 +24,12 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
-import io.deephaven.hash.KeyedLongObjectHash;
-import io.deephaven.hash.KeyedLongObjectHashMap;
-import io.deephaven.hash.KeyedLongObjectKey;
+import io.deephaven.hash.KeyedIntObjectHash;
+import io.deephaven.hash.KeyedIntObjectHashMap;
+import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
@@ -34,6 +37,7 @@ import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +51,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
@@ -79,7 +82,7 @@ import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
  */
 public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.
-    public static final long NON_EXPORT_ID = 0;
+    public static final int NON_EXPORT_ID = 0;
 
     @AssistedFactory
     public interface Factory {
@@ -98,12 +101,12 @@ public class SessionState {
             AtomicReferenceFieldUpdater.newUpdater(SessionState.class, SessionService.TokenExpiration.class, "expiration");
 
     // some types of exports have a more sound story if the server tells the client what to call it
-    private volatile long nextServerAllocatedId = -1;
-    private static final AtomicLongFieldUpdater<SessionState> SERVER_EXPORT_UPDATER =
-            AtomicLongFieldUpdater.newUpdater(SessionState.class, "nextServerAllocatedId");
+    private volatile int nextServerAllocatedId = -1;
+    private static final AtomicIntegerFieldUpdater<SessionState> SERVER_EXPORT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(SessionState.class, "nextServerAllocatedId");
 
     // maintains all requested exports by this client's session
-    private final KeyedLongObjectHashMap<ExportObject<?>> exportMap = new KeyedLongObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
+    private final KeyedIntObjectHashMap<ExportObject<?>> exportMap = new KeyedIntObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
 
     // the list of active listeners
     private final List<ExportListener> exportListeners = new CopyOnWriteArrayList<>();
@@ -200,8 +203,8 @@ public class SessionState {
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
-    public <T> ExportObject<T> getExport(final Ticket ticket) {
-        return getExport(ticketToExportId(ticket));
+    public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
+        return getExport(ExportTicketResolver.ticketToExportId(ticket));
     }
 
     /**
@@ -210,7 +213,7 @@ public class SessionState {
      * @return a future-like object that represents this export
      */
     @SuppressWarnings("unchecked")
-    public <T> ExportObject<T> getExport(final long exportId) {
+    public <T> ExportObject<T> getExport(final int exportId) {
         if (isExpired()) {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
@@ -232,6 +235,30 @@ public class SessionState {
     }
 
     /**
+     * Grab the ExportObject for the provided id if it already exists, otherwise return null.
+     * @param exportId the export handle id
+     * @return a future-like object that represents this export
+     */
+    @SuppressWarnings("unchecked")
+    public <T> ExportObject<T> getExportIfExists(final int exportId) {
+        if (isExpired()) {
+            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+
+        return (ExportObject<T>) exportMap.get(exportId);
+    }
+
+    /**
+     * Grab the ExportObject for the provided id if it already exists, otherwise return null.
+     * @param ticket the export ticket
+     * @return a future-like object that represents this export
+     */
+    @SuppressWarnings("unchecked")
+    public <T> ExportObject<T> getExportIfExists(final Flight.Ticket ticket) {
+        return getExportIfExists(ExportTicketResolver.ticketToExportId(ticket));
+    }
+
+    /**
      * Create and export a pre-computed element. This is typically used in scenarios where the number of exports is not
      * known in advance by the requesting client.
      *
@@ -244,7 +271,7 @@ public class SessionState {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
-        final long exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
+        final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
         //noinspection unchecked
         final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -255,12 +282,12 @@ public class SessionState {
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
-     * @param ticket the grpc {@link Ticket} for this export
+     * @param ticket the grpc {@link Flight.Ticket} for this export
      * @param <T> the export type that the callable will return
      * @return an export builder
      */
-    public <T> ExportBuilder<T> newExport(final Ticket ticket) {
-        return newExport(ticketToExportId(ticket));
+    public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket) {
+        return newExport(ExportTicketResolver.ticketToExportId(ticket));
     }
 
     /**
@@ -270,7 +297,8 @@ public class SessionState {
      * @param <T> the export type that the callable will return
      * @return an export builder
      */
-    public <T> ExportBuilder<T> newExport(final long exportId) {
+    @VisibleForTesting
+    public <T> ExportBuilder<T> newExport(final int exportId) {
         if (isExpired()) {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
@@ -377,48 +405,50 @@ public class SessionState {
     /**
      * This class represents one unit of content exported in the session.
      *
+     *
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      * @param <T> Is context sensitive depending on the export.
+     *
+     * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything itself.
+     * @apiNote Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
-        // ExportId may be 0, if this is a task that has exported dependencies, but does not export anything itself.
-        // Non-exports do not publish state changes.
-        private final long exportId;
+        private final int exportId;
         private final String logIdentity;
         private final SessionState session;
 
-        // final result of export
+        /** final result of export */
         private volatile T result;
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
 
-        // This indicates whether or not this export should use the serial execution queue.
+        /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
 
-        // This is a reference of the work to-be-done. It is non-null only during the PENDING state.
+        /** This is a reference of the work to-be-done. It is non-null only during the PENDING state. */
         private Callable<T> exportMain;
-        // This is a reference to the error handler to call if this item enters one of the failure states.
+        /** This is a reference to the error handler to call if this item enters one of the failure states. */
         private ExportErrorHandler errorHandler;
 
-        // used to keep track of which children need notification on export completion
+        /** used to keep track of which children need notification on export completion */
         private List<ExportObject<?>> children = Collections.emptyList();
-        // used to manage liveness of dependencies (to prevent a dependency from being released before it is used)
+        /** used to manage liveness of dependencies (to prevent a dependency from being released before it is used) */
         private List<ExportObject<?>> parents = Collections.emptyList();
 
-        // used to detect when this object is ready for export (is visible for atomic int field updater)
+        /** used to detect when this object is ready for export (is visible for atomic int field updater) */
         private volatile int dependentCount = -1;
         @SuppressWarnings("unchecked")
         private static final AtomicIntegerFieldUpdater<ExportObject<?>> DEPENDENT_COUNT_UPDATER =
                 AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>)(Class<?>) ExportObject.class, "dependentCount");
 
-        // used to identify and propagate error details
+        /** used to identify and propagate error details */
         private String errorId;
         private String dependentHandle;
 
         /**
          * @param exportId the export id for this export
          */
-        private ExportObject(final SessionState session, final long exportId) {
+        private ExportObject(final SessionState session, final int exportId) {
             this.session = session;
             this.exportId = exportId;
             this.logIdentity = isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
@@ -497,7 +527,7 @@ public class SessionState {
 
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're still valid
             if (result == null) {
-                throw new IllegalStateException("Dependent export '" + exportId + "' is " + state.name() + " and not exported");
+                throw new IllegalStateException("Dependent export '" + exportId + "' is null and in state " + state.name());
             }
 
             return result;
@@ -513,8 +543,8 @@ public class SessionState {
         /**
          * @return the export id or NON_EXPORT_ID if it does not have one
          */
-        public Ticket getExportId() {
-            return exportIdToTicket(exportId);
+        public Flight.Ticket getExportId() {
+            return ExportTicketResolver.exportIdToTicket(exportId);
         }
 
         /**
@@ -789,7 +819,7 @@ public class SessionState {
          */
         private synchronized ExportNotification makeExportNotification() {
             final ExportNotification.Builder builder = ExportNotification.newBuilder()
-                    .setTicket(exportIdToTicket(exportId))
+                    .setTicket(ExportTicketResolver.exportIdToTicket(exportId))
                     .setExportState(state);
 
             if (errorId != null) {
@@ -919,7 +949,7 @@ public class SessionState {
 
             // notify that the refresh has completed
             notify(ExportNotification.newBuilder()
-                    .setTicket(exportIdToTicket(NON_EXPORT_ID))
+                    .setTicket(ExportTicketResolver.exportIdToTicket(NON_EXPORT_ID))
                     .setExportState(ExportNotification.State.EXPORTED)
                     .setContext("refresh is complete")
                     .build());
@@ -961,13 +991,13 @@ public class SessionState {
     }
 
     public class ExportBuilder<T> {
-        private final long exportId;
+        private final int exportId;
         private final ExportObject<T> export;
 
         private boolean requiresSerialQueue;
         private ExportErrorHandler errorHandler;
 
-        ExportBuilder(final long exportId) {
+        ExportBuilder(final int exportId) {
             this.exportId = exportId;
 
             if (exportId == NON_EXPORT_ID) {
@@ -1086,44 +1116,21 @@ public class SessionState {
         /**
          * @return the export id of this export or {@link SessionState#NON_EXPORT_ID} if is a non-export
          */
-        public long getExportId() {
+        public int getExportId() {
             return exportId;
         }
     }
 
-    /**
-     * Convenience method to convert from export id to {@link Ticket}.
-     *
-     * @param exportId the export id
-     * @return a grpc Ticket wrapping the export id
-     */
-    public static Ticket exportIdToTicket(final long exportId) {
-        return Ticket.newBuilder().setId(GrpcUtil.longToByteString(exportId)).build();
-    }
-
-    /**
-     * Convenience method to convert from {@link Ticket} to export id.
-     *
-     * @param ticket the grpc Ticket
-     * @return the export id that the Ticket wraps
-     */
-    public static long ticketToExportId(final Ticket ticket) {
-        if (ticket == null || ticket.getId().size() != 8) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "missing or incorrectly formatted ticket");
-        }
-        return GrpcUtil.byteStringToLong(ticket.getId());
-    }
-
-    private static final KeyedLongObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY = new KeyedLongObjectKey.BasicStrict<ExportObject<?>>() {
+    private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY = new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
         @Override
-        public long getLongKey(final ExportObject<?> exportObject) {
+        public int getIntKey(final ExportObject<?> exportObject) {
             return exportObject.exportId;
         }
     };
 
-    private final KeyedLongObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY = new KeyedLongObjectHash.ValueFactory.Strict<ExportObject<?>>() {
+    private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY = new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
         @Override
-        public ExportObject<?> newValue(final long key) {
+        public ExportObject<?> newValue(final int key) {
             if (isExpired()) {
                 throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }

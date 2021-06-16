@@ -105,23 +105,17 @@ public class TestControlledScheduler implements Scheduler {
 
     @Override
     public void runAtTime(final @NotNull DBDateTime absoluteTime, final @NotNull Runnable command) {
-        if (!workQueue.put(absoluteTime, command)) {
-            throw new IllegalStateException("could not add runner to queue");
-        }
+        workQueue.put(absoluteTime, command);
     }
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        if (!workQueue.put(DBTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command)) {
-            throw new IllegalStateException("could not add runner to queue");
-        }
+        workQueue.put(DBTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
     }
 
     @Override
     public void runImmediately(final @NotNull Runnable command) {
-        if (!workQueue.put(currentTime(), command)) {
-            throw new IllegalStateException("could not add runner to queue");
-        }
+        workQueue.put(currentTime(), command);
     }
 
     @Override

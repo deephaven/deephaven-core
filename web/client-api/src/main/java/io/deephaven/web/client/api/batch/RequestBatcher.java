@@ -4,8 +4,8 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -247,7 +247,7 @@ public class RequestBatcher {
                     String fail = response.getErrorInfo();
 
                     // any table which has that state active should fire a failed event
-                    ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getId_asB64().equals(ticket.getId_asB64())).first();
+                    ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64())).first();
                     state.getHandle().setState(TableTicket.State.FAILED);
                     for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
                         // fire the failed event
@@ -261,7 +261,7 @@ public class RequestBatcher {
                 }
 
                 // any table which has that state active should fire a failed event
-                ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getId_asB64().equals(ticket.getId_asB64())).first();
+                ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64())).first();
 //                state.getHandle().setState(TableTicket.State.EXPORTED);
                 for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
                     // check what state it was in previously to use for firing an event

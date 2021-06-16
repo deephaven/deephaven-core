@@ -3,9 +3,9 @@ package io.deephaven.web.client.state;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -128,10 +128,10 @@ public class TableReviver implements HasTableBinding {
             Ticket ticket = resultid.getTicket();
 
             if (!response.getSuccess()) {
-                ClientTableState dead = all.remove(new TableTicket(ticket.getId_asU8()));
+                ClientTableState dead = all.remove(new TableTicket(ticket.getTicket_asU8()));
                 dead.forActiveLifecycles(t -> t.die(response.getErrorInfo()));
             } else {
-                ClientTableState succeeded = all.remove(new TableTicket(ticket.getId_asU8()));
+                ClientTableState succeeded = all.remove(new TableTicket(ticket.getTicket_asU8()));
                 succeeded.setResolution(ClientTableState.ResolutionState.RUNNING);
                 succeeded.forActiveLifecycles(t -> t.revive(succeeded));
 
