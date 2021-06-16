@@ -10,7 +10,6 @@ import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
