@@ -17,12 +17,10 @@ public class TableCreationImplTest {
     // todo: this test will need to be replaced w/ a saner generator, or real examples, once we have
     // stricter query validation
 
-    private static final List<SourceTable> SOURCE_TABLES = Arrays.asList(
-        NewTable.of(Column.of("Foo", 0, -1, 1, 42, null, 1, Integer.MAX_VALUE)),
-        NewTable.of(Column.of("Bar", 0L, -1L, 1L, 42L, null, 1L, Long.MAX_VALUE)), Table.empty(0),
-        Table.empty(1), Table.empty(100), Table.empty(0, TableHeader.of(ColumnHeader.ofInt("Foo"))),
-        Table.empty(1, TableHeader.of(ColumnHeader.ofLong("Foo"))),
-        Table.empty(100, TableHeader.of(ColumnHeader.ofString("Foo"))));
+    private static final List<SourceTable> SOURCE_TABLES =
+        Arrays.asList(NewTable.of(Column.of("Foo", 0, -1, 1, 42, null, 1, Integer.MAX_VALUE)),
+            NewTable.of(Column.of("Bar", 0L, -1L, 1L, 42L, null, 1L, Long.MAX_VALUE)),
+            Table.empty(0), Table.empty(1), Table.empty(100), Table.empty(0));
 
     private static final List<Function<Table, Table>> SINGLE_PARENT_OPS =
         Arrays.asList(TableCreationImplTest::head1, TableCreationImplTest::headMax,

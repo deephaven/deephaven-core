@@ -8,15 +8,8 @@ import org.immutables.value.Value.Parameter;
 public abstract class EmptyTable extends TableBase implements SourceTable {
 
     public static EmptyTable of(long size) {
-        return ImmutableEmptyTable.of(TableHeader.empty(), size);
+        return ImmutableEmptyTable.of(size);
     }
-
-    public static EmptyTable of(TableHeader header, long size) {
-        return ImmutableEmptyTable.of(header, size);
-    }
-
-    @Parameter
-    public abstract TableHeader header();
 
     @Parameter
     public abstract long size();

@@ -10,10 +10,6 @@ public interface Table extends TableOperations<Table, Table> {
         return EmptyTable.of(size);
     }
 
-    static EmptyTable empty(long size, TableHeader header) {
-        return EmptyTable.of(header, size);
-    }
-
     @Override
     HeadTable head(long size);
 

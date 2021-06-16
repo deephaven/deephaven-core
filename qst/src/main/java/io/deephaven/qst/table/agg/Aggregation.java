@@ -42,7 +42,8 @@ public interface Aggregation {
     }
 
     static Pct AggPct(double percentile, String matchPair) {
-        return ImmutablePct.builder().match(JoinMatch.parse(matchPair)).percentile(percentile).build();
+        return ImmutablePct.builder().match(JoinMatch.parse(matchPair)).percentile(percentile)
+            .build();
     }
 
     static WSum AggWSum(String weight, String matchPair) {
