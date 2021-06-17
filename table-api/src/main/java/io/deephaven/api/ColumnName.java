@@ -9,8 +9,6 @@ import org.immutables.value.Value.Parameter;
 public abstract class ColumnName
     implements JoinMatch, JoinAddition, Selectable, Expression, Filter {
 
-    // todo: extract DBNameValidator or something similar for column names
-    // todo: make better
     private final static Pattern COLUMN_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]+");
 
     public static boolean isValidColumnName(String name) {
@@ -56,7 +54,6 @@ public abstract class ColumnName
 
     @Check
     final void checkName() {
-        // todo: better validation in shared library
         if (!isValidColumnName(name())) {
             throw new IllegalArgumentException(String.format("Invalid column name: '%s'", name()));
         }

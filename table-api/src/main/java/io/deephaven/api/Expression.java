@@ -11,7 +11,6 @@ public interface Expression {
 
     <V extends Visitor> V walk(V visitor);
 
-    // todo: expand expression as fuller AST
     interface Visitor {
         void visit(ColumnName name);
 
