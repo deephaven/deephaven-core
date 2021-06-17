@@ -944,8 +944,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return exactJoin(
             rightTable,
-            columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new),
-            columnsToAdd.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     default Table exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
@@ -1178,8 +1178,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return naturalJoin(
             rightTable,
-            columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new),
-            columnsToAdd.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
@@ -1503,8 +1503,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table join2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return join(
             rightTable,
-            columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new),
-            columnsToAdd.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

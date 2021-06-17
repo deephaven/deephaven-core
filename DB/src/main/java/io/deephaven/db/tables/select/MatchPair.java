@@ -15,6 +15,7 @@ import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -31,6 +32,14 @@ public class MatchPair implements Serializable {
 
     public static MatchPair of(JoinAddition joinAddition) {
         return joinAddition.walk(new Adapter()).getOut();
+    }
+
+    public static MatchPair[] fromMatches(Collection<JoinMatch> matches) {
+        return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static MatchPair[] fromAddition(Collection<JoinAddition> matches) {
+        return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
     }
 
     public final String leftColumn;
