@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Column definition for all Deephaven columns.
  */
-public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition> {
+public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition<TYPE>> {
 
     private static final long serialVersionUID = 3656456077670712362L;
 
@@ -525,10 +525,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     private int encoding=Integer.MIN_VALUE;
     public int getEncoding() {
         return encoding;
-    }
-
-    void setEncoding(int encoding) {
-        this.encoding=encoding;
     }
 
     private String objectCodecClass;

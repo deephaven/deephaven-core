@@ -121,7 +121,21 @@ public class ParquetReaderUtil {
         }
     }
 
-    public static void readParquetSchema(final String filePath, final ColumnDefinitionConsumer colDefConsumer) throws IOException {
+    /**
+     * Obtain schema information from a parquet file
+     *
+     * @param filePath  Location for input parquet file
+     * @param readInstructions  Parquet read instructions specifying transformations like column mappings and codecs.
+     *                          Note the supplied read instructions may be modified by this method to provide necessary
+     *                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param colDefConsumer  A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     * @throws IOException if the specified file cannot be read
+     */
+    public static void readParquetSchema(
+            final String filePath,
+            final ParquetInstructions.Read readInstructions,
+            final ColumnDefinitionConsumer colDefConsumer
+    ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
         final MessageType schema = pf.getSchema();
@@ -269,7 +283,17 @@ public class ParquetReaderUtil {
         for (ColumnDescriptor column : schema.getColumns()) {
             currentColumn.setValue(column);
             final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
-            final String colName = column.getPath()[0];
+            final String parquetColumnName = column.getPath()[0];
+            final String colName;
+            final String mappedName = readInstructions.getColumnNameMapping(parquetColumnName);
+            if (mappedName != null) {
+                colName = mappedName;
+            } else if (parquetColumnName.contains(" ")) {
+                colName = parquetColumnName.replace(" ", "_");
+                readInstructions.addColumnNameMapping(parquetColumnName, colName);
+            } else {
+                colName = parquetColumnName;
+            }
             final boolean isGrouping = groupingCols.contains(colName);
             final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
             final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);

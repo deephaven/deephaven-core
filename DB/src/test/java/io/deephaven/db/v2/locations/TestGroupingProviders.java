@@ -166,7 +166,8 @@ public class TestGroupingProviders {
                         tableKey,
                         new NestedPartitionedLocalTableLocationScanner(dataDirectory),
                         false,
-                        TableDataRefreshService.Null.INSTANCE
+                        TableDataRefreshService.Null.INSTANCE,
+                        Collections.emptyMap()
                 ),
                 null,
                 Collections.emptySet()

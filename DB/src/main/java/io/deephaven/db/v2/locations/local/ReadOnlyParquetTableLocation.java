@@ -47,10 +47,16 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     private final Map<String, GroupingFile> groupingFiles = new ConcurrentHashMap<>();
     private final Set<String> grouping = new HashSet<>();
+    private final Map<String, String> columnNameMapping;
 
-    ReadOnlyParquetTableLocation(@NotNull TableKey tableKey, @NotNull TableLocationKey tableLocationKey, File parquetFile, boolean supportsSubscriptions) {
+    ReadOnlyParquetTableLocation(
+            @NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey,
+            final File parquetFile,
+            final boolean supportsSubscriptions,
+            final Map<String, String> columnNameMapping) {
         super(tableKey, tableLocationKey, supportsSubscriptions);
-
+        this.columnNameMapping = columnNameMapping;
         try {
             parentDir = parquetFile.getParentFile();
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
@@ -83,9 +89,16 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private static final ColumnDefinition<Long> FIRST_KEY_COL_DEF = ColumnDefinition.ofLong("__firstKey__");
     private static final ColumnDefinition<Long> LAST_KEY_COL_DEF = ColumnDefinition.ofLong("__lastKey__");
 
+    private String getMappedName(final String colName) {
+        final String mapped = columnNameMapping.get(colName);
+        return mapped != null ? mapped : colName;
+    }
+
     @NotNull
     @Override
-    protected ParquetColumnLocation<Attributes.Values> makeColumnLocation(@NotNull String name) {
+    protected ParquetColumnLocation<Attributes.Values> makeColumnLocation(@NotNull String colName) {
+        final String name = getMappedName(colName);
+
         ColumnChunkPageStore.MetaDataCreator getMetaData = null;
 
         if (grouping.contains(name)) {
@@ -125,10 +138,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     @NotNull
     private <ATTR extends Attributes.Any> ColumnChunkPageStore.Creator<ATTR> makeColumnCreator(
-            @NotNull String name,
+            @NotNull String colName,
             @NotNull RowGroupReader rowGroupReader,
             @NotNull Map<String, String> keyValueMetaData,
             ColumnChunkPageStore.MetaDataCreator getMetadata) {
+        final String name = getMappedName(colName);
         String [] nameList = columns.get(name);
         final ColumnChunkReader columnChunkReader = rowGroupReader.getColumnChunk(nameList == null ?
                 Collections.singletonList(name) : Arrays.asList(nameList));
@@ -221,6 +235,12 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                 throw new TableDataException("Unexpected exception accessing column " + name, except);
             }
         }, getMetadata);
+    }
+
+    @Override
+    public @NotNull final ParquetColumnLocation<Attributes.Values> getColumnLocation(@NotNull CharSequence argName) {
+        final String name = getMappedName(argName.toString());
+        return super.getColumnLocation(name.subSequence(0, name.length()));
     }
 
     private static class LogicalTypeVisitor<ATTR extends Attributes.Any> implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<ToPage<ATTR, ?>> {
