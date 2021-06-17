@@ -6,7 +6,7 @@ FROM docker.io/library/nginx:1.19.7
 
 # these installs are necessary to enable webdav class 2
 # https://github.com/arut/nginx-dav-ext-module
-RUN set-eux; \
+RUN set -eux; \
     apt-get update; \
     apt-get install -y nginx-extras libnginx-mod-http-dav-ext;
 
