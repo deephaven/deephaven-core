@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
+import io.deephaven.client.impl.ExportManagerImpl.State;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -79,30 +80,30 @@ import java.util.stream.Stream;
 
 class BatchTableRequestBuilder {
 
-    private static final Collector<ExportedTableImpl, ?, Map<Table, ExportedTableImpl>> TABLE_TO_EXPORT_COLLECTOR =
-        Collectors.toMap(ExportedTableImpl::table, Function.identity());
+    private static final Collector<ExportManagerImpl.State, ?, Map<Table, ExportManagerImpl.State>> TABLE_TO_EXPORT_COLLECTOR =
+        Collectors.toMap(State::table, Function.identity());
 
-    static BatchTableRequest build(List<ExportedTableImpl> exports) {
-        if (exports.isEmpty()) {
+    static BatchTableRequest build(List<ExportManagerImpl.State> states) {
+        if (states.isEmpty()) {
             throw new IllegalArgumentException();
         }
 
-        final Map<Table, ExportedTableImpl> tableToExport =
-            exports.stream().collect(TABLE_TO_EXPORT_COLLECTOR);
+        final Map<Table, ExportManagerImpl.State> tableToExport =
+            states.stream().collect(TABLE_TO_EXPORT_COLLECTOR);
 
         // this is a depth-first ordering without duplicates, ensuring we create the dependencies
         // in the preferred/resolvable order
-        final List<Table> tables = exports.stream().map(ExportedTableImpl::table)
+        final List<Table> tables = states.stream().map(ExportManagerImpl.State::table)
             .flatMap(ParentsVisitor::getAncestorsAndSelf).distinct().collect(Collectors.toList());
 
         final Map<Table, Integer> indices = new HashMap<>(tables.size());
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
         int ix = 0;
         for (Table next : tables) {
-            final ExportedTableImpl exportedTable = tableToExport.get(next);
+            final ExportManagerImpl.State state = tableToExport.get(next);
 
-            final Ticket ticket = exportedTable == null ? Ticket.getDefaultInstance()
-                : Ticket.newBuilder().setId(longToByteString(exportedTable.ticket())).build();
+            final Ticket ticket = state == null ? Ticket.getDefaultInstance()
+                : Ticket.newBuilder().setId(longToByteString(state.ticket())).build();
 
             final Operation operation = next.walk(new OperationAdapter(ticket, indices)).getOut();
             builder.addOps(operation);

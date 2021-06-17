@@ -5,13 +5,11 @@ import java.io.Closeable;
 
 public interface ExportedTable extends Closeable {
 
-    ExportManager manager();
-
     Table table();
 
-    default void release() {
-        manager().release(this);
-    }
+    ExportedTable newRef();
+
+    void release();
 
     @Override
     default void close() {

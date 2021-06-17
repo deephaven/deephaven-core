@@ -1,17 +1,47 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.ExportedTable;
+import io.deephaven.client.impl.ExportManagerImpl.State;
 import io.deephaven.qst.table.Table;
-import org.immutables.value.Value.Immutable;
+import java.util.Objects;
 
-@Immutable
-abstract class ExportedTableImpl implements ExportedTable {
+class ExportedTableImpl implements ExportedTable {
+
+    private final ExportManagerImpl.State state;
+    private boolean released;
+
+    ExportedTableImpl(ExportManagerImpl.State state) {
+        this.state = Objects.requireNonNull(state);
+        this.released = false;
+    }
+
+    final State state() {
+        return state;
+    }
 
     @Override
-    public abstract ExportManagerImpl manager();
+    public final Table table() {
+        return state.table();
+    }
 
     @Override
-    public abstract Table table();
+    public synchronized final ExportedTable newRef() {
+        if (released) {
+            throw new IllegalStateException("Should not take newRef after release");
+        }
+        return state.newRef();
+    }
 
-    public abstract long ticket();
+    public final long ticket() {
+        return state.ticket();
+    }
+
+    @Override
+    public synchronized final void release() {
+        if (released) {
+            return;
+        }
+        state.decRef();
+        released = true;
+    }
 }
