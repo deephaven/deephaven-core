@@ -23,6 +23,9 @@ public interface Table extends TableOperations<Table, Table> {
     TailTable tail(long size);
 
     @Override
+    ReverseTable reverse();
+
+    @Override
     SortTable sort(String... columnsToSortBy);
 
     @Override
@@ -179,6 +182,8 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(HeadTable headTable);
 
         void visit(TailTable tailTable);
+
+        void visit(ReverseTable reverseTable);
 
         void visit(SortTable sortTable);
 

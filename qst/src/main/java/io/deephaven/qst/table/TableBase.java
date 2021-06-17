@@ -31,6 +31,11 @@ public abstract class TableBase implements Table {
     }
 
     @Override
+    public final ReverseTable reverse() {
+        return ImmutableReverseTable.of(this);
+    }
+
+    @Override
     public final SortTable sort(String... columnsToSortBy) {
         return sort(Arrays.asList(columnsToSortBy));
     }

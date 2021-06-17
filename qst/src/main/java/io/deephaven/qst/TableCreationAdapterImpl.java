@@ -10,6 +10,7 @@ import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.QueryScopeTable;
+import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SortTable;
@@ -66,6 +67,11 @@ class TableCreationAdapterImpl<TABLE_OPS extends TableOperations<TABLE_OPS, TABL
     @Override
     public void visit(TailTable tailTable) {
         out = parent(tailTable).tail(tailTable.size());
+    }
+
+    @Override
+    public void visit(ReverseTable reverseTable) {
+        out = parent(reverseTable).reverse();
     }
 
     @Override

@@ -20,6 +20,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS reverse();
+
+    // -------------------------------------------------------------------------------------------
+
     TOPS sort(String... columnsToSortBy);
 
     TOPS sort(List<String> columnsToSortBy);

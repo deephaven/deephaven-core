@@ -36,6 +36,7 @@ import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.QueryScopeTable;
 import io.deephaven.api.RawString;
+import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.api.Selectable;
 import io.deephaven.qst.table.SingleParentTable;
@@ -166,6 +167,16 @@ class BatchTableRequestBuilder {
         public void visit(TailTable tailTable) {
             out = op(Builder::setTail,
                 HeadOrTailRequest.newBuilder().setResultId(ticket).setNumRows(tailTable.size()));
+        }
+
+        @Override
+        public void visit(ReverseTable reverseTable) {
+            // a bit hacky at the proto level, but this is how to specify a reverse
+            out = op(Builder::setSort,
+                SortTableRequest.newBuilder().setResultId(ticket)
+                    .addSorts(
+                        SortDescriptor.newBuilder().setDirection(SortDirection.REVERSE).build())
+                    .build());
         }
 
         @Override
