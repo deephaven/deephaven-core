@@ -4,9 +4,11 @@ import io.deephaven.api.Filter;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.Aggregation;
 import java.util.Collection;
+import java.util.List;
 
 public interface Table extends TableOperations<Table, Table> {
 
@@ -19,6 +21,21 @@ public interface Table extends TableOperations<Table, Table> {
 
     @Override
     TailTable tail(long size);
+
+    @Override
+    SortTable sort(String... columnsToSortBy);
+
+    @Override
+    SortTable sort(List<String> columnsToSortBy);
+
+    @Override
+    SortTable sortDescending(String... columnsToSortBy);
+
+    @Override
+    SortTable sortDescending(List<String> columnsToSortBy);
+
+    @Override
+    SortTable sort2(List<SortColumn> columnsToSortBy);
 
     @Override
     WhereTable where(String... filters);
@@ -162,6 +179,8 @@ public interface Table extends TableOperations<Table, Table> {
         void visit(HeadTable headTable);
 
         void visit(TailTable tailTable);
+
+        void visit(SortTable sortTable);
 
         void visit(WhereTable whereTable);
 

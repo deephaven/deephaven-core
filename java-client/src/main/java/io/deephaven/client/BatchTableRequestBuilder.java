@@ -1,5 +1,7 @@
 package io.deephaven.client;
 
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortColumn.Order;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -11,6 +13,9 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.JoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.JoinTablesRequest.Type;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SortDescriptor;
+import io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection;
+import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.AggregationTable;
@@ -34,6 +39,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.api.Selectable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.Table;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.UpdateTable;
@@ -160,6 +166,20 @@ class BatchTableRequestBuilder {
         public void visit(TailTable tailTable) {
             out = op(Builder::setTail,
                 HeadOrTailRequest.newBuilder().setResultId(ticket).setNumRows(tailTable.size()));
+        }
+
+        @Override
+        public void visit(SortTable sortTable) {
+            SortTableRequest.Builder builder = SortTableRequest.newBuilder().setResultId(ticket);
+            for (SortColumn column : sortTable.columns()) {
+                SortDescriptor descriptor =
+                    SortDescriptor.newBuilder().setColumnName(column.column().name())
+                        .setDirection(column.order() == Order.ASCENDING ? SortDirection.ASCENDING
+                            : SortDirection.DESCENDING)
+                        .build();
+                builder.addSorts(descriptor);
+            }
+            out = op(Builder::setSort, builder.build());
         }
 
         @Override

@@ -2,6 +2,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Table operations is a user-accessible api for modifying tables or building up table operations.
@@ -16,6 +17,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS head(long size);
 
     TOPS tail(long size);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS sort(String... columnsToSortBy);
+
+    TOPS sort(List<String> columnsToSortBy);
+
+    TOPS sortDescending(String... columnsToSortBy);
+
+    TOPS sortDescending(List<String> columnsToSortBy);
+
+    TOPS sort2(List<SortColumn> columnsToSortBy);
 
     // -------------------------------------------------------------------------------------------
 

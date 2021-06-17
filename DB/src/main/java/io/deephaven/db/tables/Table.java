@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -2355,6 +2356,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @AsyncMethod
     default Table sortDescending(List<String> columnsToSortBy) {
         return sortDescending(columnsToSortBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table sort2(List<SortColumn> columnsToSortBy) {
+        return sort(SortPair.from(columnsToSortBy));
     }
 
     @AsyncMethod

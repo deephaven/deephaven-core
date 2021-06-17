@@ -1,13 +1,16 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Filter;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class TableBase implements Table {
@@ -25,6 +28,39 @@ public abstract class TableBase implements Table {
     @Override
     public final TailTable tail(long size) {
         return ImmutableTailTable.of(this, size);
+    }
+
+    @Override
+    public final SortTable sort(String... columnsToSortBy) {
+        return sort(Arrays.asList(columnsToSortBy));
+    }
+
+    @Override
+    public final SortTable sort(List<String> columnsToSortBy) {
+        ImmutableSortTable.Builder builder = ImmutableSortTable.builder().parent(this);
+        for (String column : columnsToSortBy) {
+            builder.addColumns(SortColumn.asc(ColumnName.of(column)));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final SortTable sortDescending(String... columnsToSortBy) {
+        return sortDescending(Arrays.asList(columnsToSortBy));
+    }
+
+    @Override
+    public final SortTable sortDescending(List<String> columnsToSortBy) {
+        ImmutableSortTable.Builder builder = ImmutableSortTable.builder().parent(this);
+        for (String column : columnsToSortBy) {
+            builder.addColumns(SortColumn.desc(ColumnName.of(column)));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final SortTable sort2(List<SortColumn> columnsToSortBy) {
+        return ImmutableSortTable.builder().parent(this).addAllColumns(columnsToSortBy).build();
     }
 
     @Override

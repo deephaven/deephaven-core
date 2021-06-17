@@ -79,6 +79,11 @@ public class ParentsVisitor implements Table.Visitor {
     }
 
     @Override
+    public void visit(SortTable sortTable) {
+        out = Stream.of(sortTable.parent());
+    }
+
+    @Override
     public void visit(WhereTable whereTable) {
         out = Stream.of(whereTable.parent());
     }

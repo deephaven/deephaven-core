@@ -1,6 +1,9 @@
 package io.deephaven.db.tables;
 
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortColumn.Order;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -8,6 +11,18 @@ import java.util.Objects;
  */
 public class SortPair {
     public static SortPair[] ZERO_LENGTH_SORT_PAIR_ARRAY = new SortPair[0];
+
+    public static SortPair[] from(Collection<SortColumn> sortColumns) {
+        return sortColumns.stream().map(SortPair::of).toArray(SortPair[]::new);
+    }
+
+    public static SortPair of(SortColumn sortColumn) {
+        return new SortPair(
+            sortColumn.column().name(),
+            sortColumn.order() == Order.ASCENDING ?
+                SortingOrder.Ascending :
+                SortingOrder.Descending);
+    }
 
     private final String column;
     private final SortingOrder order;
