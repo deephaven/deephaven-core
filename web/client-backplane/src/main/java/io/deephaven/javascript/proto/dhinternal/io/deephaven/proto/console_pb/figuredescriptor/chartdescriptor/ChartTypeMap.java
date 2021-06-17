@@ -18,38 +18,38 @@ public interface ChartTypeMap {
   }
 
   @JsProperty(name = "CATEGORY")
-  double getCATEGORY();
+  int getCATEGORY();
 
   @JsProperty(name = "CATEGORY_3D")
-  double getCATEGORY_3D();
+  int getCATEGORY_3D();
 
   @JsProperty(name = "OHLC")
-  double getOHLC();
+  int getOHLC();
 
   @JsProperty(name = "PIE")
-  double getPIE();
+  int getPIE();
 
   @JsProperty(name = "XY")
-  double getXY();
+  int getXY();
 
   @JsProperty(name = "XYZ")
-  double getXYZ();
+  int getXYZ();
 
   @JsProperty(name = "CATEGORY")
-  void setCATEGORY(double CATEGORY);
+  void setCATEGORY(int CATEGORY);
 
   @JsProperty(name = "CATEGORY_3D")
-  void setCATEGORY_3D(double CATEGORY_3D);
+  void setCATEGORY_3D(int CATEGORY_3D);
 
   @JsProperty(name = "OHLC")
-  void setOHLC(double OHLC);
+  void setOHLC(int OHLC);
 
   @JsProperty(name = "PIE")
-  void setPIE(double PIE);
+  void setPIE(int PIE);
 
   @JsProperty(name = "XY")
-  void setXY(double XY);
+  void setXY(int XY);
 
   @JsProperty(name = "XYZ")
-  void setXYZ(double XYZ);
+  void setXYZ(int XYZ);
 }

@@ -18,98 +18,98 @@ public interface SourceTypeMap {
   }
 
   @JsProperty(name = "CLOSE")
-  double getCLOSE();
+  int getCLOSE();
 
   @JsProperty(name = "COLOR")
-  double getCOLOR();
+  int getCOLOR();
 
   @JsProperty(name = "HIGH")
-  double getHIGH();
+  int getHIGH();
 
   @JsProperty(name = "LABEL")
-  double getLABEL();
+  int getLABEL();
 
   @JsProperty(name = "LOW")
-  double getLOW();
+  int getLOW();
 
   @JsProperty(name = "OPEN")
-  double getOPEN();
+  int getOPEN();
 
   @JsProperty(name = "SHAPE")
-  double getSHAPE();
+  int getSHAPE();
 
   @JsProperty(name = "SIZE")
-  double getSIZE();
+  int getSIZE();
 
   @JsProperty(name = "TIME")
-  double getTIME();
+  int getTIME();
 
   @JsProperty(name = "X")
-  double getX();
+  int getX();
 
   @JsProperty(name = "X_HIGH")
-  double getX_HIGH();
+  int getX_HIGH();
 
   @JsProperty(name = "X_LOW")
-  double getX_LOW();
+  int getX_LOW();
 
   @JsProperty(name = "Y")
-  double getY();
+  int getY();
 
   @JsProperty(name = "Y_HIGH")
-  double getY_HIGH();
+  int getY_HIGH();
 
   @JsProperty(name = "Y_LOW")
-  double getY_LOW();
+  int getY_LOW();
 
   @JsProperty(name = "Z")
-  double getZ();
+  int getZ();
 
   @JsProperty(name = "CLOSE")
-  void setCLOSE(double CLOSE);
+  void setCLOSE(int CLOSE);
 
   @JsProperty(name = "COLOR")
-  void setCOLOR(double COLOR);
+  void setCOLOR(int COLOR);
 
   @JsProperty(name = "HIGH")
-  void setHIGH(double HIGH);
+  void setHIGH(int HIGH);
 
   @JsProperty(name = "LABEL")
-  void setLABEL(double LABEL);
+  void setLABEL(int LABEL);
 
   @JsProperty(name = "LOW")
-  void setLOW(double LOW);
+  void setLOW(int LOW);
 
   @JsProperty(name = "OPEN")
-  void setOPEN(double OPEN);
+  void setOPEN(int OPEN);
 
   @JsProperty(name = "SHAPE")
-  void setSHAPE(double SHAPE);
+  void setSHAPE(int SHAPE);
 
   @JsProperty(name = "SIZE")
-  void setSIZE(double SIZE);
+  void setSIZE(int SIZE);
 
   @JsProperty(name = "TIME")
-  void setTIME(double TIME);
+  void setTIME(int TIME);
 
   @JsProperty(name = "X")
-  void setX(double X);
+  void setX(int X);
 
   @JsProperty(name = "X_HIGH")
-  void setX_HIGH(double X_HIGH);
+  void setX_HIGH(int X_HIGH);
 
   @JsProperty(name = "X_LOW")
-  void setX_LOW(double X_LOW);
+  void setX_LOW(int X_LOW);
 
   @JsProperty(name = "Y")
-  void setY(double Y);
+  void setY(int Y);
 
   @JsProperty(name = "Y_HIGH")
-  void setY_HIGH(double Y_HIGH);
+  void setY_HIGH(int Y_HIGH);
 
   @JsProperty(name = "Y_LOW")
-  void setY_LOW(double Y_LOW);
+  void setY_LOW(int Y_LOW);
 
   @JsProperty(name = "Z")
-  void setZ(double Z);
+  void setZ(int Z);
 }

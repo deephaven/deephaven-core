@@ -18,68 +18,68 @@ public interface SeriesPlotStyleMap {
   }
 
   @JsProperty(name = "AREA")
-  double getAREA();
+  int getAREA();
 
   @JsProperty(name = "BAR")
-  double getBAR();
+  int getBAR();
 
   @JsProperty(name = "ERROR_BAR")
-  double getERROR_BAR();
+  int getERROR_BAR();
 
   @JsProperty(name = "HISTOGRAM")
-  double getHISTOGRAM();
+  int getHISTOGRAM();
 
   @JsProperty(name = "LINE")
-  double getLINE();
+  int getLINE();
 
   @JsProperty(name = "OHLC")
-  double getOHLC();
+  int getOHLC();
 
   @JsProperty(name = "PIE")
-  double getPIE();
+  int getPIE();
 
   @JsProperty(name = "SCATTER")
-  double getSCATTER();
+  int getSCATTER();
 
   @JsProperty(name = "STACKED_AREA")
-  double getSTACKED_AREA();
+  int getSTACKED_AREA();
 
   @JsProperty(name = "STACKED_BAR")
-  double getSTACKED_BAR();
+  int getSTACKED_BAR();
 
   @JsProperty(name = "STEP")
-  double getSTEP();
+  int getSTEP();
 
   @JsProperty(name = "AREA")
-  void setAREA(double AREA);
+  void setAREA(int AREA);
 
   @JsProperty(name = "BAR")
-  void setBAR(double BAR);
+  void setBAR(int BAR);
 
   @JsProperty(name = "ERROR_BAR")
-  void setERROR_BAR(double ERROR_BAR);
+  void setERROR_BAR(int ERROR_BAR);
 
   @JsProperty(name = "HISTOGRAM")
-  void setHISTOGRAM(double HISTOGRAM);
+  void setHISTOGRAM(int HISTOGRAM);
 
   @JsProperty(name = "LINE")
-  void setLINE(double LINE);
+  void setLINE(int LINE);
 
   @JsProperty(name = "OHLC")
-  void setOHLC(double OHLC);
+  void setOHLC(int OHLC);
 
   @JsProperty(name = "PIE")
-  void setPIE(double PIE);
+  void setPIE(int PIE);
 
   @JsProperty(name = "SCATTER")
-  void setSCATTER(double SCATTER);
+  void setSCATTER(int SCATTER);
 
   @JsProperty(name = "STACKED_AREA")
-  void setSTACKED_AREA(double STACKED_AREA);
+  void setSTACKED_AREA(int STACKED_AREA);
 
   @JsProperty(name = "STACKED_BAR")
-  void setSTACKED_BAR(double STACKED_BAR);
+  void setSTACKED_BAR(int STACKED_BAR);
 
   @JsProperty(name = "STEP")
-  void setSTEP(double STEP);
+  void setSTEP(int STEP);
 }

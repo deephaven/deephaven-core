@@ -17,144 +17,31 @@ public class SeriesDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DatasourcesListFieldType {
+    public interface DataSourcesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface AxisFieldType {
+      public interface OneClickFieldType {
         @JsOverlay
-        static SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        Object getBusinesscalendardescriptor();
-
-        @JsProperty
-        String getColor();
-
-        @JsProperty
-        String getFormatpattern();
-
-        @JsProperty
-        double getFormattype();
-
-        @JsProperty
-        double getGapbetweenmajorticks();
-
-        @JsProperty
-        String getId();
-
-        @JsProperty
-        String getLabel();
-
-        @JsProperty
-        String getLabelfont();
-
-        @JsProperty
-        JsArray<Double> getMajorticklocationsList();
-
-        @JsProperty
-        double getMaxrange();
-
-        @JsProperty
-        double getMinortickcount();
-
-        @JsProperty
-        double getMinrange();
-
-        @JsProperty
-        double getPosition();
-
-        @JsProperty
-        double getTicklabelangle();
-
-        @JsProperty
-        String getTicksfont();
-
-        @JsProperty
-        double getType();
-
-        @JsProperty
-        boolean isInvert();
-
-        @JsProperty
-        boolean isLog();
-
-        @JsProperty
-        void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-        @JsProperty
-        void setColor(String color);
-
-        @JsProperty
-        void setFormatpattern(String formatpattern);
-
-        @JsProperty
-        void setFormattype(double formattype);
-
-        @JsProperty
-        void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-        @JsProperty
-        void setId(String id);
-
-        @JsProperty
-        void setInvert(boolean invert);
-
-        @JsProperty
-        void setLabel(String label);
-
-        @JsProperty
-        void setLabelfont(String labelfont);
-
-        @JsProperty
-        void setLog(boolean log);
-
-        @JsProperty
-        void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-        @JsOverlay
-        default void setMajorticklocationsList(double[] majorticklocationsList) {
-          setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-        }
-
-        @JsProperty
-        void setMaxrange(double maxrange);
-
-        @JsProperty
-        void setMinortickcount(double minortickcount);
-
-        @JsProperty
-        void setMinrange(double minrange);
-
-        @JsProperty
-        void setPosition(double position);
-
-        @JsProperty
-        void setTicklabelangle(double ticklabelangle);
-
-        @JsProperty
-        void setTicksfont(String ticksfont);
-
-        @JsProperty
-        void setType(double type);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface OneclickFieldType {
-        @JsOverlay
-        static SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.OneclickFieldType
+        static SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
+        JsArray<String> getColumnTypesList();
+
+        @JsProperty
         JsArray<String> getColumnsList();
 
         @JsProperty
-        JsArray<String> getColumntypesList();
+        boolean isRequireAllFiltersToDisplay();
 
         @JsProperty
-        boolean isRequireallfilterstodisplay();
+        void setColumnTypesList(JsArray<String> columnTypesList);
+
+        @JsOverlay
+        default void setColumnTypesList(String[] columnTypesList) {
+          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+        }
 
         @JsProperty
         void setColumnsList(JsArray<String> columnsList);
@@ -165,61 +52,53 @@ public class SeriesDescriptor {
         }
 
         @JsProperty
-        void setColumntypesList(JsArray<String> columntypesList);
-
-        @JsOverlay
-        default void setColumntypesList(String[] columntypesList) {
-          setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-        }
-
-        @JsProperty
-        void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+        void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
       }
 
       @JsOverlay
-      static SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType create() {
+      static SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType getAxis();
+      String getAxisId();
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      String getColumntype();
+      String getColumnType();
 
       @JsProperty
-      SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.OneclickFieldType getOneclick();
+      SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
       @JsProperty
-      double getTableid();
+      double getTableId();
 
       @JsProperty
-      double getTablemapid();
+      double getTableMapId();
 
       @JsProperty
       double getType();
 
       @JsProperty
-      void setAxis(SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType axis);
+      void setAxisId(String axisId);
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
-      void setColumntype(String columntype);
+      void setColumnType(String columnType);
 
       @JsProperty
-      void setOneclick(
-          SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.OneclickFieldType oneclick);
+      void setOneClick(
+          SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
       @JsProperty
-      void setTableid(double tableid);
+      void setTableId(double tableId);
 
       @JsProperty
-      void setTablemapid(double tablemapid);
+      void setTableMapId(double tableMapId);
 
       @JsProperty
       void setType(double type);
@@ -231,241 +110,127 @@ public class SeriesDescriptor {
     }
 
     @JsProperty
-    JsArray<SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType> getDatasourcesList();
+    JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> getDataSourcesList();
 
     @JsProperty
-    String getLinecolor();
+    String getLineColor();
 
     @JsProperty
     String getName();
 
     @JsProperty
-    double getPlotstyle();
+    double getPlotStyle();
 
     @JsProperty
-    String getPointlabelformat();
+    String getPointLabelFormat();
 
     @JsProperty
     String getShape();
 
     @JsProperty
-    String getShapecolor();
+    String getShapeColor();
 
     @JsProperty
-    String getShapelabel();
+    String getShapeLabel();
 
     @JsProperty
-    double getShapesize();
+    double getShapeSize();
 
     @JsProperty
-    String getXtooltippattern();
+    String getXToolTipPattern();
 
     @JsProperty
-    String getYtooltippattern();
+    String getYToolTipPattern();
 
     @JsProperty
-    boolean isGradientvisible();
+    boolean isGradientVisible();
 
     @JsProperty
-    boolean isLinesvisible();
+    boolean isLinesVisible();
 
     @JsProperty
-    boolean isShapesvisible();
+    boolean isShapesVisible();
 
     @JsOverlay
-    default void setDatasourcesList(
-        SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType[] datasourcesList) {
-      setDatasourcesList(
-          Js.<JsArray<SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType>>uncheckedCast(
-              datasourcesList));
+    default void setDataSourcesList(
+        SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
+      setDataSourcesList(
+          Js.<JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>uncheckedCast(
+              dataSourcesList));
     }
 
     @JsProperty
-    void setDatasourcesList(
-        JsArray<SeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType> datasourcesList);
+    void setDataSourcesList(
+        JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
 
     @JsProperty
-    void setGradientvisible(boolean gradientvisible);
+    void setGradientVisible(boolean gradientVisible);
 
     @JsProperty
-    void setLinecolor(String linecolor);
+    void setLineColor(String lineColor);
 
     @JsProperty
-    void setLinesvisible(boolean linesvisible);
+    void setLinesVisible(boolean linesVisible);
 
     @JsProperty
     void setName(String name);
 
     @JsProperty
-    void setPlotstyle(double plotstyle);
+    void setPlotStyle(double plotStyle);
 
     @JsProperty
-    void setPointlabelformat(String pointlabelformat);
+    void setPointLabelFormat(String pointLabelFormat);
 
     @JsProperty
     void setShape(String shape);
 
     @JsProperty
-    void setShapecolor(String shapecolor);
+    void setShapeColor(String shapeColor);
 
     @JsProperty
-    void setShapelabel(String shapelabel);
+    void setShapeLabel(String shapeLabel);
 
     @JsProperty
-    void setShapesize(double shapesize);
+    void setShapeSize(double shapeSize);
 
     @JsProperty
-    void setShapesvisible(boolean shapesvisible);
+    void setShapesVisible(boolean shapesVisible);
 
     @JsProperty
-    void setXtooltippattern(String xtooltippattern);
+    void setXToolTipPattern(String xToolTipPattern);
 
     @JsProperty
-    void setYtooltippattern(String ytooltippattern);
+    void setYToolTipPattern(String yToolTipPattern);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DatasourcesListFieldType {
+    public interface DataSourcesListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface AxisFieldType {
+      public interface OneClickFieldType {
         @JsOverlay
-        static SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType
+        static SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        Object getBusinesscalendardescriptor();
-
-        @JsProperty
-        String getColor();
-
-        @JsProperty
-        String getFormatpattern();
-
-        @JsProperty
-        double getFormattype();
-
-        @JsProperty
-        double getGapbetweenmajorticks();
-
-        @JsProperty
-        String getId();
-
-        @JsProperty
-        String getLabel();
-
-        @JsProperty
-        String getLabelfont();
-
-        @JsProperty
-        JsArray<Double> getMajorticklocationsList();
-
-        @JsProperty
-        double getMaxrange();
-
-        @JsProperty
-        double getMinortickcount();
-
-        @JsProperty
-        double getMinrange();
-
-        @JsProperty
-        double getPosition();
-
-        @JsProperty
-        double getTicklabelangle();
-
-        @JsProperty
-        String getTicksfont();
-
-        @JsProperty
-        double getType();
-
-        @JsProperty
-        boolean isInvert();
-
-        @JsProperty
-        boolean isLog();
-
-        @JsProperty
-        void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-        @JsProperty
-        void setColor(String color);
-
-        @JsProperty
-        void setFormatpattern(String formatpattern);
-
-        @JsProperty
-        void setFormattype(double formattype);
-
-        @JsProperty
-        void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-        @JsProperty
-        void setId(String id);
-
-        @JsProperty
-        void setInvert(boolean invert);
-
-        @JsProperty
-        void setLabel(String label);
-
-        @JsProperty
-        void setLabelfont(String labelfont);
-
-        @JsProperty
-        void setLog(boolean log);
-
-        @JsProperty
-        void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-        @JsOverlay
-        default void setMajorticklocationsList(double[] majorticklocationsList) {
-          setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-        }
-
-        @JsProperty
-        void setMaxrange(double maxrange);
-
-        @JsProperty
-        void setMinortickcount(double minortickcount);
-
-        @JsProperty
-        void setMinrange(double minrange);
-
-        @JsProperty
-        void setPosition(double position);
-
-        @JsProperty
-        void setTicklabelangle(double ticklabelangle);
-
-        @JsProperty
-        void setTicksfont(String ticksfont);
-
-        @JsProperty
-        void setType(double type);
-      }
-
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface OneclickFieldType {
-        @JsOverlay
-        static SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.OneclickFieldType
-            create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
+        JsArray<String> getColumnTypesList();
 
         @JsProperty
         JsArray<String> getColumnsList();
 
         @JsProperty
-        JsArray<String> getColumntypesList();
+        boolean isRequireAllFiltersToDisplay();
 
         @JsProperty
-        boolean isRequireallfilterstodisplay();
+        void setColumnTypesList(JsArray<String> columnTypesList);
+
+        @JsOverlay
+        default void setColumnTypesList(String[] columnTypesList) {
+          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+        }
 
         @JsProperty
         void setColumnsList(JsArray<String> columnsList);
@@ -476,62 +241,53 @@ public class SeriesDescriptor {
         }
 
         @JsProperty
-        void setColumntypesList(JsArray<String> columntypesList);
-
-        @JsOverlay
-        default void setColumntypesList(String[] columntypesList) {
-          setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-        }
-
-        @JsProperty
-        void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+        void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
       }
 
       @JsOverlay
-      static SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType create() {
+      static SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType getAxis();
+      String getAxisId();
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      String getColumntype();
+      String getColumnType();
 
       @JsProperty
-      SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.OneclickFieldType getOneclick();
+      SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType getOneClick();
 
       @JsProperty
-      double getTableid();
+      double getTableId();
 
       @JsProperty
-      double getTablemapid();
+      double getTableMapId();
 
       @JsProperty
       double getType();
 
       @JsProperty
-      void setAxis(
-          SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType axis);
+      void setAxisId(String axisId);
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
-      void setColumntype(String columntype);
+      void setColumnType(String columnType);
 
       @JsProperty
-      void setOneclick(
-          SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.OneclickFieldType oneclick);
+      void setOneClick(
+          SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType oneClick);
 
       @JsProperty
-      void setTableid(double tableid);
+      void setTableId(double tableId);
 
       @JsProperty
-      void setTablemapid(double tablemapid);
+      void setTableMapId(double tableMapId);
 
       @JsProperty
       void setType(double type);
@@ -543,97 +299,97 @@ public class SeriesDescriptor {
     }
 
     @JsProperty
-    JsArray<SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType> getDatasourcesList();
+    JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> getDataSourcesList();
 
     @JsProperty
-    String getLinecolor();
+    String getLineColor();
 
     @JsProperty
     String getName();
 
     @JsProperty
-    double getPlotstyle();
+    double getPlotStyle();
 
     @JsProperty
-    String getPointlabelformat();
+    String getPointLabelFormat();
 
     @JsProperty
     String getShape();
 
     @JsProperty
-    String getShapecolor();
+    String getShapeColor();
 
     @JsProperty
-    String getShapelabel();
+    String getShapeLabel();
 
     @JsProperty
-    double getShapesize();
+    double getShapeSize();
 
     @JsProperty
-    String getXtooltippattern();
+    String getXToolTipPattern();
 
     @JsProperty
-    String getYtooltippattern();
+    String getYToolTipPattern();
 
     @JsProperty
-    boolean isGradientvisible();
+    boolean isGradientVisible();
 
     @JsProperty
-    boolean isLinesvisible();
+    boolean isLinesVisible();
 
     @JsProperty
-    boolean isShapesvisible();
+    boolean isShapesVisible();
 
     @JsOverlay
-    default void setDatasourcesList(
-        SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType[] datasourcesList) {
-      setDatasourcesList(
-          Js.<JsArray<SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType>>uncheckedCast(
-              datasourcesList));
+    default void setDataSourcesList(
+        SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
+      setDataSourcesList(
+          Js.<JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>uncheckedCast(
+              dataSourcesList));
     }
 
     @JsProperty
-    void setDatasourcesList(
-        JsArray<SeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType> datasourcesList);
+    void setDataSourcesList(
+        JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> dataSourcesList);
 
     @JsProperty
-    void setGradientvisible(boolean gradientvisible);
+    void setGradientVisible(boolean gradientVisible);
 
     @JsProperty
-    void setLinecolor(String linecolor);
+    void setLineColor(String lineColor);
 
     @JsProperty
-    void setLinesvisible(boolean linesvisible);
+    void setLinesVisible(boolean linesVisible);
 
     @JsProperty
     void setName(String name);
 
     @JsProperty
-    void setPlotstyle(double plotstyle);
+    void setPlotStyle(double plotStyle);
 
     @JsProperty
-    void setPointlabelformat(String pointlabelformat);
+    void setPointLabelFormat(String pointLabelFormat);
 
     @JsProperty
     void setShape(String shape);
 
     @JsProperty
-    void setShapecolor(String shapecolor);
+    void setShapeColor(String shapeColor);
 
     @JsProperty
-    void setShapelabel(String shapelabel);
+    void setShapeLabel(String shapeLabel);
 
     @JsProperty
-    void setShapesize(double shapesize);
+    void setShapeSize(double shapeSize);
 
     @JsProperty
-    void setShapesvisible(boolean shapesvisible);
+    void setShapesVisible(boolean shapesVisible);
 
     @JsProperty
-    void setXtooltippattern(String xtooltippattern);
+    void setXToolTipPattern(String xToolTipPattern);
 
     @JsProperty
-    void setYtooltippattern(String ytooltippattern);
+    void setYToolTipPattern(String yToolTipPattern);
   }
 
   public static native SeriesDescriptor deserializeBinary(Uint8Array bytes);
@@ -646,88 +402,100 @@ public class SeriesDescriptor {
   public static native SeriesDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, SeriesDescriptor msg);
 
-  public native SourceDescriptor addDatasources();
+  public native SourceDescriptor addDataSources();
 
-  public native SourceDescriptor addDatasources(SourceDescriptor value, double index);
+  public native SourceDescriptor addDataSources(SourceDescriptor value, double index);
 
-  public native SourceDescriptor addDatasources(SourceDescriptor value);
+  public native SourceDescriptor addDataSources(SourceDescriptor value);
 
-  public native void clearDatasourcesList();
+  public native void clearDataSourcesList();
 
-  public native void clearLinesvisible();
+  public native void clearLinesVisible();
 
-  public native void clearShapesize();
+  public native void clearPointLabelFormat();
 
-  public native void clearShapesvisible();
+  public native void clearShapeSize();
 
-  public native JsArray<SourceDescriptor> getDatasourcesList();
+  public native void clearShapesVisible();
 
-  public native boolean getGradientvisible();
+  public native void clearXToolTipPattern();
 
-  public native String getLinecolor();
+  public native void clearYToolTipPattern();
 
-  public native boolean getLinesvisible();
+  public native JsArray<SourceDescriptor> getDataSourcesList();
+
+  public native boolean getGradientVisible();
+
+  public native String getLineColor();
+
+  public native boolean getLinesVisible();
 
   public native String getName();
 
-  public native double getPlotstyle();
+  public native int getPlotStyle();
 
-  public native String getPointlabelformat();
+  public native String getPointLabelFormat();
 
   public native String getShape();
 
-  public native String getShapecolor();
+  public native String getShapeColor();
 
-  public native String getShapelabel();
+  public native String getShapeLabel();
 
-  public native double getShapesize();
+  public native double getShapeSize();
 
-  public native boolean getShapesvisible();
+  public native boolean getShapesVisible();
 
-  public native String getXtooltippattern();
+  public native String getXToolTipPattern();
 
-  public native String getYtooltippattern();
+  public native String getYToolTipPattern();
 
-  public native boolean hasLinesvisible();
+  public native boolean hasLinesVisible();
 
-  public native boolean hasShapesize();
+  public native boolean hasPointLabelFormat();
 
-  public native boolean hasShapesvisible();
+  public native boolean hasShapeSize();
+
+  public native boolean hasShapesVisible();
+
+  public native boolean hasXToolTipPattern();
+
+  public native boolean hasYToolTipPattern();
 
   public native Uint8Array serializeBinary();
 
-  public native void setDatasourcesList(JsArray<SourceDescriptor> value);
+  public native void setDataSourcesList(JsArray<SourceDescriptor> value);
 
   @JsOverlay
-  public final void setDatasourcesList(SourceDescriptor[] value) {
-    setDatasourcesList(Js.<JsArray<SourceDescriptor>>uncheckedCast(value));
+  public final void setDataSourcesList(SourceDescriptor[] value) {
+    setDataSourcesList(Js.<JsArray<SourceDescriptor>>uncheckedCast(value));
   }
 
-  public native void setGradientvisible(boolean value);
+  public native void setGradientVisible(boolean value);
 
-  public native void setLinecolor(String value);
+  public native void setLineColor(String value);
 
-  public native void setLinesvisible(boolean value);
+  public native void setLinesVisible(boolean value);
 
   public native void setName(String value);
 
-  public native void setPlotstyle(double value);
+  public native void setPlotStyle(int value);
 
-  public native void setPointlabelformat(String value);
+  public native void setPointLabelFormat(String value);
 
   public native void setShape(String value);
 
-  public native void setShapecolor(String value);
+  public native void setShapeColor(String value);
 
-  public native void setShapelabel(String value);
+  public native void setShapeLabel(String value);
 
-  public native void setShapesize(double value);
+  public native void setShapeSize(double value);
 
-  public native void setShapesvisible(boolean value);
+  public native void setShapesVisible(boolean value);
 
-  public native void setXtooltippattern(String value);
+  public native void setXToolTipPattern(String value);
 
-  public native void setYtooltippattern(String value);
+  public native void setYToolTipPattern(String value);
 
   public native SeriesDescriptor.ToObjectReturnType0 toObject();
 

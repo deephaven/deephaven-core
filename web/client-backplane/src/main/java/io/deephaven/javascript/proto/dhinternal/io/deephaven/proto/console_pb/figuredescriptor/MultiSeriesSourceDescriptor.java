@@ -1,6 +1,5 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
-import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -16,152 +15,31 @@ import jsinterop.base.JsPropertyMap;
 public class MultiSeriesSourceDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AxisFieldType {
-      @JsOverlay
-      static MultiSeriesSourceDescriptor.ToObjectReturnType.AxisFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      Object getBusinesscalendardescriptor();
-
-      @JsProperty
-      String getColor();
-
-      @JsProperty
-      String getFormatpattern();
-
-      @JsProperty
-      double getFormattype();
-
-      @JsProperty
-      double getGapbetweenmajorticks();
-
-      @JsProperty
-      String getId();
-
-      @JsProperty
-      String getLabel();
-
-      @JsProperty
-      String getLabelfont();
-
-      @JsProperty
-      JsArray<Double> getMajorticklocationsList();
-
-      @JsProperty
-      double getMaxrange();
-
-      @JsProperty
-      double getMinortickcount();
-
-      @JsProperty
-      double getMinrange();
-
-      @JsProperty
-      double getPosition();
-
-      @JsProperty
-      double getTicklabelangle();
-
-      @JsProperty
-      String getTicksfont();
-
-      @JsProperty
-      double getType();
-
-      @JsProperty
-      boolean isInvert();
-
-      @JsProperty
-      boolean isLog();
-
-      @JsProperty
-      void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-      @JsProperty
-      void setColor(String color);
-
-      @JsProperty
-      void setFormatpattern(String formatpattern);
-
-      @JsProperty
-      void setFormattype(double formattype);
-
-      @JsProperty
-      void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-      @JsProperty
-      void setId(String id);
-
-      @JsProperty
-      void setInvert(boolean invert);
-
-      @JsProperty
-      void setLabel(String label);
-
-      @JsProperty
-      void setLabelfont(String labelfont);
-
-      @JsProperty
-      void setLog(boolean log);
-
-      @JsProperty
-      void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-      @JsOverlay
-      default void setMajorticklocationsList(double[] majorticklocationsList) {
-        setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-      }
-
-      @JsProperty
-      void setMaxrange(double maxrange);
-
-      @JsProperty
-      void setMinortickcount(double minortickcount);
-
-      @JsProperty
-      void setMinrange(double minrange);
-
-      @JsProperty
-      void setPosition(double position);
-
-      @JsProperty
-      void setTicklabelangle(double ticklabelangle);
-
-      @JsProperty
-      void setTicksfont(String ticksfont);
-
-      @JsProperty
-      void setType(double type);
-    }
-
     @JsOverlay
     static MultiSeriesSourceDescriptor.ToObjectReturnType create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    MultiSeriesSourceDescriptor.ToObjectReturnType.AxisFieldType getAxis();
+    String getAxisId();
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    double getTablemapid();
+    double getTableMapId();
 
     @JsProperty
     double getType();
 
     @JsProperty
-    void setAxis(MultiSeriesSourceDescriptor.ToObjectReturnType.AxisFieldType axis);
+    void setAxisId(String axisId);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setTablemapid(double tablemapid);
+    void setTableMapId(double tableMapId);
 
     @JsProperty
     void setType(double type);
@@ -169,152 +47,31 @@ public class MultiSeriesSourceDescriptor {
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AxisFieldType {
-      @JsOverlay
-      static MultiSeriesSourceDescriptor.ToObjectReturnType0.AxisFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      Object getBusinesscalendardescriptor();
-
-      @JsProperty
-      String getColor();
-
-      @JsProperty
-      String getFormatpattern();
-
-      @JsProperty
-      double getFormattype();
-
-      @JsProperty
-      double getGapbetweenmajorticks();
-
-      @JsProperty
-      String getId();
-
-      @JsProperty
-      String getLabel();
-
-      @JsProperty
-      String getLabelfont();
-
-      @JsProperty
-      JsArray<Double> getMajorticklocationsList();
-
-      @JsProperty
-      double getMaxrange();
-
-      @JsProperty
-      double getMinortickcount();
-
-      @JsProperty
-      double getMinrange();
-
-      @JsProperty
-      double getPosition();
-
-      @JsProperty
-      double getTicklabelangle();
-
-      @JsProperty
-      String getTicksfont();
-
-      @JsProperty
-      double getType();
-
-      @JsProperty
-      boolean isInvert();
-
-      @JsProperty
-      boolean isLog();
-
-      @JsProperty
-      void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-      @JsProperty
-      void setColor(String color);
-
-      @JsProperty
-      void setFormatpattern(String formatpattern);
-
-      @JsProperty
-      void setFormattype(double formattype);
-
-      @JsProperty
-      void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-      @JsProperty
-      void setId(String id);
-
-      @JsProperty
-      void setInvert(boolean invert);
-
-      @JsProperty
-      void setLabel(String label);
-
-      @JsProperty
-      void setLabelfont(String labelfont);
-
-      @JsProperty
-      void setLog(boolean log);
-
-      @JsProperty
-      void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-      @JsOverlay
-      default void setMajorticklocationsList(double[] majorticklocationsList) {
-        setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-      }
-
-      @JsProperty
-      void setMaxrange(double maxrange);
-
-      @JsProperty
-      void setMinortickcount(double minortickcount);
-
-      @JsProperty
-      void setMinrange(double minrange);
-
-      @JsProperty
-      void setPosition(double position);
-
-      @JsProperty
-      void setTicklabelangle(double ticklabelangle);
-
-      @JsProperty
-      void setTicksfont(String ticksfont);
-
-      @JsProperty
-      void setType(double type);
-    }
-
     @JsOverlay
     static MultiSeriesSourceDescriptor.ToObjectReturnType0 create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    MultiSeriesSourceDescriptor.ToObjectReturnType0.AxisFieldType getAxis();
+    String getAxisId();
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    double getTablemapid();
+    double getTableMapId();
 
     @JsProperty
     double getType();
 
     @JsProperty
-    void setAxis(MultiSeriesSourceDescriptor.ToObjectReturnType0.AxisFieldType axis);
+    void setAxisId(String axisId);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setTablemapid(double tablemapid);
+    void setTableMapId(double tableMapId);
 
     @JsProperty
     void setType(double type);
@@ -331,29 +88,23 @@ public class MultiSeriesSourceDescriptor {
   public static native MultiSeriesSourceDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, MultiSeriesSourceDescriptor msg);
 
-  public native void clearAxis();
+  public native String getAxisId();
 
-  public native AxisDescriptor getAxis();
+  public native String getColumnName();
 
-  public native String getColumnname();
+  public native int getTableMapId();
 
-  public native double getTablemapid();
-
-  public native double getType();
-
-  public native boolean hasAxis();
+  public native int getType();
 
   public native Uint8Array serializeBinary();
 
-  public native void setAxis();
+  public native void setAxisId(String value);
 
-  public native void setAxis(AxisDescriptor value);
+  public native void setColumnName(String value);
 
-  public native void setColumnname(String value);
+  public native void setTableMapId(int value);
 
-  public native void setTablemapid(double value);
-
-  public native void setType(double value);
+  public native void setType(int value);
 
   public native MultiSeriesSourceDescriptor.ToObjectReturnType0 toObject();
 

@@ -19,14 +19,14 @@ public interface AxisFormatTypeMap {
   }
 
   @JsProperty(name = "CATEGORY")
-  double getCATEGORY();
+  int getCATEGORY();
 
   @JsProperty(name = "NUMBER")
-  double getNUMBER();
+  int getNUMBER();
 
   @JsProperty(name = "CATEGORY")
-  void setCATEGORY(double CATEGORY);
+  void setCATEGORY(int CATEGORY);
 
   @JsProperty(name = "NUMBER")
-  void setNUMBER(double NUMBER);
+  void setNUMBER(int NUMBER);
 }

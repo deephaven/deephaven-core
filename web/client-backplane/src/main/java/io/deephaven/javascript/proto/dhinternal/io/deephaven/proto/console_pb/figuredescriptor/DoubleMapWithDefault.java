@@ -22,7 +22,7 @@ public class DoubleMapWithDefault {
     }
 
     @JsProperty
-    double getDefaultdouble();
+    double getDefaultDouble();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -31,7 +31,7 @@ public class DoubleMapWithDefault {
     JsArray<Double> getValuesList();
 
     @JsProperty
-    void setDefaultdouble(double defaultdouble);
+    void setDefaultDouble(double defaultDouble);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -58,7 +58,7 @@ public class DoubleMapWithDefault {
     }
 
     @JsProperty
-    double getDefaultdouble();
+    double getDefaultDouble();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -67,7 +67,7 @@ public class DoubleMapWithDefault {
     JsArray<Double> getValuesList();
 
     @JsProperty
-    void setDefaultdouble(double defaultdouble);
+    void setDefaultDouble(double defaultDouble);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -108,7 +108,7 @@ public class DoubleMapWithDefault {
 
   public native void clearValuesList();
 
-  public native double getDefaultdouble();
+  public native double getDefaultDouble();
 
   public native JsArray<String> getKeysList();
 
@@ -116,7 +116,7 @@ public class DoubleMapWithDefault {
 
   public native Uint8Array serializeBinary();
 
-  public native void setDefaultdouble(double value);
+  public native void setDefaultDouble(double value);
 
   public native void setKeysList(JsArray<String> value);
 

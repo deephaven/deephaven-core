@@ -22,7 +22,7 @@ public class StringMapWithDefault {
     }
 
     @JsProperty
-    String getDefaultstring();
+    String getDefaultString();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -31,7 +31,7 @@ public class StringMapWithDefault {
     JsArray<String> getValuesList();
 
     @JsProperty
-    void setDefaultstring(String defaultstring);
+    void setDefaultString(String defaultString);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -58,7 +58,7 @@ public class StringMapWithDefault {
     }
 
     @JsProperty
-    String getDefaultstring();
+    String getDefaultString();
 
     @JsProperty
     JsArray<String> getKeysList();
@@ -67,7 +67,7 @@ public class StringMapWithDefault {
     JsArray<String> getValuesList();
 
     @JsProperty
-    void setDefaultstring(String defaultstring);
+    void setDefaultString(String defaultString);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -108,7 +108,7 @@ public class StringMapWithDefault {
 
   public native void clearValuesList();
 
-  public native String getDefaultstring();
+  public native String getDefaultString();
 
   public native JsArray<String> getKeysList();
 
@@ -116,7 +116,7 @@ public class StringMapWithDefault {
 
   public native Uint8Array serializeBinary();
 
-  public native void setDefaultstring(String value);
+  public native void setDefaultString(String value);
 
   public native void setKeysList(JsArray<String> value);
 

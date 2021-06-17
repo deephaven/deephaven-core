@@ -28,10 +28,10 @@ public class BoolMapWithDefault {
     JsArray<Boolean> getValuesList();
 
     @JsProperty
-    boolean isDefaultbool();
+    boolean isDefaultBool();
 
     @JsProperty
-    void setDefaultbool(boolean defaultbool);
+    void setDefaultBool(boolean defaultBool);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -64,10 +64,10 @@ public class BoolMapWithDefault {
     JsArray<Boolean> getValuesList();
 
     @JsProperty
-    boolean isDefaultbool();
+    boolean isDefaultBool();
 
     @JsProperty
-    void setDefaultbool(boolean defaultbool);
+    void setDefaultBool(boolean defaultBool);
 
     @JsProperty
     void setKeysList(JsArray<String> keysList);
@@ -108,7 +108,7 @@ public class BoolMapWithDefault {
 
   public native void clearValuesList();
 
-  public native boolean getDefaultbool();
+  public native boolean getDefaultBool();
 
   public native JsArray<String> getKeysList();
 
@@ -116,7 +116,7 @@ public class BoolMapWithDefault {
 
   public native Uint8Array serializeBinary();
 
-  public native void setDefaultbool(boolean value);
+  public native void setDefaultBool(boolean value);
 
   public native void setKeysList(JsArray<String> value);
 

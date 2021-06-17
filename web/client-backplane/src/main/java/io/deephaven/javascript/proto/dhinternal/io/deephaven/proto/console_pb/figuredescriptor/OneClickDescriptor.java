@@ -22,13 +22,21 @@ public class OneClickDescriptor {
     }
 
     @JsProperty
+    JsArray<String> getColumnTypesList();
+
+    @JsProperty
     JsArray<String> getColumnsList();
 
     @JsProperty
-    JsArray<String> getColumntypesList();
+    boolean isRequireAllFiltersToDisplay();
 
     @JsProperty
-    boolean isRequireallfilterstodisplay();
+    void setColumnTypesList(JsArray<String> columnTypesList);
+
+    @JsOverlay
+    default void setColumnTypesList(String[] columnTypesList) {
+      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+    }
 
     @JsProperty
     void setColumnsList(JsArray<String> columnsList);
@@ -39,15 +47,7 @@ public class OneClickDescriptor {
     }
 
     @JsProperty
-    void setColumntypesList(JsArray<String> columntypesList);
-
-    @JsOverlay
-    default void setColumntypesList(String[] columntypesList) {
-      setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-    }
-
-    @JsProperty
-    void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+    void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -58,13 +58,21 @@ public class OneClickDescriptor {
     }
 
     @JsProperty
+    JsArray<String> getColumnTypesList();
+
+    @JsProperty
     JsArray<String> getColumnsList();
 
     @JsProperty
-    JsArray<String> getColumntypesList();
+    boolean isRequireAllFiltersToDisplay();
 
     @JsProperty
-    boolean isRequireallfilterstodisplay();
+    void setColumnTypesList(JsArray<String> columnTypesList);
+
+    @JsOverlay
+    default void setColumnTypesList(String[] columnTypesList) {
+      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+    }
 
     @JsProperty
     void setColumnsList(JsArray<String> columnsList);
@@ -75,15 +83,7 @@ public class OneClickDescriptor {
     }
 
     @JsProperty
-    void setColumntypesList(JsArray<String> columntypesList);
-
-    @JsOverlay
-    default void setColumntypesList(String[] columntypesList) {
-      setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-    }
-
-    @JsProperty
-    void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+    void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
   }
 
   public static native OneClickDescriptor deserializeBinary(Uint8Array bytes);
@@ -96,25 +96,32 @@ public class OneClickDescriptor {
   public static native OneClickDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, OneClickDescriptor msg);
 
+  public native String addColumnTypes(String value, double index);
+
+  public native String addColumnTypes(String value);
+
   public native String addColumns(String value, double index);
 
   public native String addColumns(String value);
 
-  public native String addColumntypes(String value, double index);
-
-  public native String addColumntypes(String value);
+  public native void clearColumnTypesList();
 
   public native void clearColumnsList();
 
-  public native void clearColumntypesList();
+  public native JsArray<String> getColumnTypesList();
 
   public native JsArray<String> getColumnsList();
 
-  public native JsArray<String> getColumntypesList();
-
-  public native boolean getRequireallfilterstodisplay();
+  public native boolean getRequireAllFiltersToDisplay();
 
   public native Uint8Array serializeBinary();
+
+  public native void setColumnTypesList(JsArray<String> value);
+
+  @JsOverlay
+  public final void setColumnTypesList(String[] value) {
+    setColumnTypesList(Js.<JsArray<String>>uncheckedCast(value));
+  }
 
   public native void setColumnsList(JsArray<String> value);
 
@@ -123,14 +130,7 @@ public class OneClickDescriptor {
     setColumnsList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setColumntypesList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setColumntypesList(String[] value) {
-    setColumntypesList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native void setRequireallfilterstodisplay(boolean value);
+  public native void setRequireAllFiltersToDisplay(boolean value);
 
   public native OneClickDescriptor.ToObjectReturnType0 toObject();
 

@@ -18,9 +18,9 @@ public class Holiday {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface BusinessperiodsListFieldType {
+    public interface BusinessPeriodsListFieldType {
       @JsOverlay
-      static Holiday.ToObjectReturnType.BusinessperiodsListFieldType create() {
+      static Holiday.ToObjectReturnType.BusinessPeriodsListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -69,22 +69,22 @@ public class Holiday {
     }
 
     @JsProperty
-    JsArray<Holiday.ToObjectReturnType.BusinessperiodsListFieldType> getBusinessperiodsList();
+    JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType> getBusinessPeriodsList();
 
     @JsProperty
     Holiday.ToObjectReturnType.DateFieldType getDate();
 
     @JsOverlay
-    default void setBusinessperiodsList(
-        Holiday.ToObjectReturnType.BusinessperiodsListFieldType[] businessperiodsList) {
-      setBusinessperiodsList(
-          Js.<JsArray<Holiday.ToObjectReturnType.BusinessperiodsListFieldType>>uncheckedCast(
-              businessperiodsList));
+    default void setBusinessPeriodsList(
+        Holiday.ToObjectReturnType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+      setBusinessPeriodsList(
+          Js.<JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType>>uncheckedCast(
+              businessPeriodsList));
     }
 
     @JsProperty
-    void setBusinessperiodsList(
-        JsArray<Holiday.ToObjectReturnType.BusinessperiodsListFieldType> businessperiodsList);
+    void setBusinessPeriodsList(
+        JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType> businessPeriodsList);
 
     @JsProperty
     void setDate(Holiday.ToObjectReturnType.DateFieldType date);
@@ -93,9 +93,9 @@ public class Holiday {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface BusinessperiodsListFieldType {
+    public interface BusinessPeriodsListFieldType {
       @JsOverlay
-      static Holiday.ToObjectReturnType0.BusinessperiodsListFieldType create() {
+      static Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -144,22 +144,22 @@ public class Holiday {
     }
 
     @JsProperty
-    JsArray<Holiday.ToObjectReturnType0.BusinessperiodsListFieldType> getBusinessperiodsList();
+    JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType> getBusinessPeriodsList();
 
     @JsProperty
     Holiday.ToObjectReturnType0.DateFieldType getDate();
 
     @JsOverlay
-    default void setBusinessperiodsList(
-        Holiday.ToObjectReturnType0.BusinessperiodsListFieldType[] businessperiodsList) {
-      setBusinessperiodsList(
-          Js.<JsArray<Holiday.ToObjectReturnType0.BusinessperiodsListFieldType>>uncheckedCast(
-              businessperiodsList));
+    default void setBusinessPeriodsList(
+        Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType[] businessPeriodsList) {
+      setBusinessPeriodsList(
+          Js.<JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType>>uncheckedCast(
+              businessPeriodsList));
     }
 
     @JsProperty
-    void setBusinessperiodsList(
-        JsArray<Holiday.ToObjectReturnType0.BusinessperiodsListFieldType> businessperiodsList);
+    void setBusinessPeriodsList(
+        JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType> businessPeriodsList);
 
     @JsProperty
     void setDate(Holiday.ToObjectReturnType0.DateFieldType date);
@@ -173,17 +173,17 @@ public class Holiday {
 
   public static native Holiday.ToObjectReturnType toObject(boolean includeInstance, Holiday msg);
 
-  public native BusinessPeriod addBusinessperiods();
+  public native BusinessPeriod addBusinessPeriods();
 
-  public native BusinessPeriod addBusinessperiods(BusinessPeriod value, double index);
+  public native BusinessPeriod addBusinessPeriods(BusinessPeriod value, double index);
 
-  public native BusinessPeriod addBusinessperiods(BusinessPeriod value);
+  public native BusinessPeriod addBusinessPeriods(BusinessPeriod value);
 
-  public native void clearBusinessperiodsList();
+  public native void clearBusinessPeriodsList();
 
   public native void clearDate();
 
-  public native JsArray<BusinessPeriod> getBusinessperiodsList();
+  public native JsArray<BusinessPeriod> getBusinessPeriodsList();
 
   public native LocalDate getDate();
 
@@ -192,11 +192,11 @@ public class Holiday {
   public native Uint8Array serializeBinary();
 
   @JsOverlay
-  public final void setBusinessperiodsList(BusinessPeriod[] value) {
-    setBusinessperiodsList(Js.<JsArray<BusinessPeriod>>uncheckedCast(value));
+  public final void setBusinessPeriodsList(BusinessPeriod[] value) {
+    setBusinessPeriodsList(Js.<JsArray<BusinessPeriod>>uncheckedCast(value));
   }
 
-  public native void setBusinessperiodsList(JsArray<BusinessPeriod> value);
+  public native void setBusinessPeriodsList(JsArray<BusinessPeriod> value);
 
   public native void setDate();
 

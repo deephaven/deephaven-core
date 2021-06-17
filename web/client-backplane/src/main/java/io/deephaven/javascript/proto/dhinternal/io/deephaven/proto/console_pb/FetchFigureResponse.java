@@ -17,56 +17,385 @@ public class FetchFigureResponse {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FiguredescriptorFieldType {
+    public interface FigureDescriptorFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface ChartsListFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface MultiseriesListFieldType {
+        public interface AxesListFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface DatasourcesListFieldType {
+          public interface BusinessCalendarDescriptorFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface BusinessPeriodsListFieldType {
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              String getClose();
+
+              @JsProperty
+              String getOpen();
+
+              @JsProperty
+              void setClose(String close);
+
+              @JsProperty
+              void setOpen(String open);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface HolidaysListFieldType {
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface DateFieldType {
+                @JsOverlay
+                static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .HolidaysListFieldType.DateFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDay();
+
+                @JsProperty
+                double getMonth();
+
+                @JsProperty
+                double getYear();
+
+                @JsProperty
+                void setDay(double day);
+
+                @JsProperty
+                void setMonth(double month);
+
+                @JsProperty
+                void setYear(double year);
+              }
+
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              JsArray<Object> getBusinessPeriodsList();
+
+              @JsProperty
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                      .AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType
+                      .DateFieldType
+                  getDate();
+
+              @JsProperty
+              void setBusinessPeriodsList(JsArray<Object> businessPeriodsList);
+
+              @JsOverlay
+              default void setBusinessPeriodsList(Object[] businessPeriodsList) {
+                setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+              }
+
+              @JsProperty
+              void setDate(
+                  FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                          .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                          .HolidaysListFieldType.DateFieldType
+                      date);
+            }
+
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            Object getAxis();
+            JsArray<Double> getBusinessDaysList();
 
             @JsProperty
-            String getColumnname();
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .BusinessPeriodsListFieldType>
+                getBusinessPeriodsList();
 
             @JsProperty
-            double getTablemapid();
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .HolidaysListFieldType>
+                getHolidaysList();
+
+            @JsProperty
+            String getName();
+
+            @JsProperty
+            String getTimeZone();
+
+            @JsProperty
+            void setBusinessDaysList(JsArray<Double> businessDaysList);
+
+            @JsOverlay
+            default void setBusinessDaysList(double[] businessDaysList) {
+              setBusinessDaysList(Js.<JsArray<Double>>uncheckedCast(businessDaysList));
+            }
+
+            @JsOverlay
+            default void setBusinessPeriodsList(
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                            .AxesListFieldType.BusinessCalendarDescriptorFieldType
+                            .BusinessPeriodsListFieldType
+                        []
+                    businessPeriodsList) {
+              setBusinessPeriodsList(
+                  Js
+                      .<JsArray<
+                              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                                  .ChartsListFieldType.AxesListFieldType
+                                  .BusinessCalendarDescriptorFieldType
+                                  .BusinessPeriodsListFieldType>>
+                          uncheckedCast(businessPeriodsList));
+            }
+
+            @JsProperty
+            void setBusinessPeriodsList(
+                JsArray<
+                        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>
+                    businessPeriodsList);
+
+            @JsOverlay
+            default void setHolidaysList(
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                            .AxesListFieldType.BusinessCalendarDescriptorFieldType
+                            .HolidaysListFieldType
+                        []
+                    holidaysList) {
+              setHolidaysList(
+                  Js
+                      .<JsArray<
+                              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                                  .ChartsListFieldType.AxesListFieldType
+                                  .BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>
+                          uncheckedCast(holidaysList));
+            }
+
+            @JsProperty
+            void setHolidaysList(
+                JsArray<
+                        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.HolidaysListFieldType>
+                    holidaysList);
+
+            @JsProperty
+            void setName(String name);
+
+            @JsProperty
+            void setTimeZone(String timeZone);
+          }
+
+          @JsOverlay
+          static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                  .ChartsListFieldType.AxesListFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                  .AxesListFieldType.BusinessCalendarDescriptorFieldType
+              getBusinessCalendarDescriptor();
+
+          @JsProperty
+          String getColor();
+
+          @JsProperty
+          String getFormatPattern();
+
+          @JsProperty
+          double getFormatType();
+
+          @JsProperty
+          double getGapBetweenMajorTicks();
+
+          @JsProperty
+          String getId();
+
+          @JsProperty
+          String getLabel();
+
+          @JsProperty
+          String getLabelFont();
+
+          @JsProperty
+          JsArray<Double> getMajorTickLocationsList();
+
+          @JsProperty
+          double getMaxRange();
+
+          @JsProperty
+          double getMinRange();
+
+          @JsProperty
+          double getMinorTickCount();
+
+          @JsProperty
+          double getPosition();
+
+          @JsProperty
+          double getTickLabelAngle();
+
+          @JsProperty
+          String getTicksFont();
+
+          @JsProperty
+          double getType();
+
+          @JsProperty
+          boolean isInvert();
+
+          @JsProperty
+          boolean isIsTimeAxis();
+
+          @JsProperty
+          boolean isLog();
+
+          @JsProperty
+          boolean isMajorTicksVisible();
+
+          @JsProperty
+          boolean isMinorTicksVisible();
+
+          @JsProperty
+          void setBusinessCalendarDescriptor(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                      .AxesListFieldType.BusinessCalendarDescriptorFieldType
+                  businessCalendarDescriptor);
+
+          @JsProperty
+          void setColor(String color);
+
+          @JsProperty
+          void setFormatPattern(String formatPattern);
+
+          @JsProperty
+          void setFormatType(double formatType);
+
+          @JsProperty
+          void setGapBetweenMajorTicks(double gapBetweenMajorTicks);
+
+          @JsProperty
+          void setId(String id);
+
+          @JsProperty
+          void setInvert(boolean invert);
+
+          @JsProperty
+          void setIsTimeAxis(boolean isTimeAxis);
+
+          @JsProperty
+          void setLabel(String label);
+
+          @JsProperty
+          void setLabelFont(String labelFont);
+
+          @JsProperty
+          void setLog(boolean log);
+
+          @JsProperty
+          void setMajorTickLocationsList(JsArray<Double> majorTickLocationsList);
+
+          @JsOverlay
+          default void setMajorTickLocationsList(double[] majorTickLocationsList) {
+            setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
+          }
+
+          @JsProperty
+          void setMajorTicksVisible(boolean majorTicksVisible);
+
+          @JsProperty
+          void setMaxRange(double maxRange);
+
+          @JsProperty
+          void setMinRange(double minRange);
+
+          @JsProperty
+          void setMinorTickCount(double minorTickCount);
+
+          @JsProperty
+          void setMinorTicksVisible(boolean minorTicksVisible);
+
+          @JsProperty
+          void setPosition(double position);
+
+          @JsProperty
+          void setTickLabelAngle(double tickLabelAngle);
+
+          @JsProperty
+          void setTicksFont(String ticksFont);
+
+          @JsProperty
+          void setType(double type);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MultiSeriesListFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface DataSourcesListFieldType {
+            @JsOverlay
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getAxisId();
+
+            @JsProperty
+            String getColumnName();
+
+            @JsProperty
+            double getTableMapId();
 
             @JsProperty
             double getType();
 
             @JsProperty
-            void setAxis(Object axis);
+            void setAxisId(String axisId);
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
 
             @JsProperty
-            void setTablemapid(double tablemapid);
+            void setTableMapId(double tableMapId);
 
             @JsProperty
             void setType(double type);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface LinecolorFieldType {
+          public interface LineColorFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.LinecolorFieldType
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.LineColorFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            String getDefaultstring();
+            String getDefaultString();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -75,7 +404,7 @@ public class FetchFigureResponse {
             JsArray<String> getValuesList();
 
             @JsProperty
-            void setDefaultstring(String defaultstring);
+            void setDefaultString(String defaultString);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -95,10 +424,10 @@ public class FetchFigureResponse {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface LinesvisibleFieldType {
+          public interface LinesVisibleFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.LinesvisibleFieldType
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.LinesVisibleFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -110,10 +439,10 @@ public class FetchFigureResponse {
             JsArray<Boolean> getValuesList();
 
             @JsProperty
-            boolean isDefaultbool();
+            boolean isDefaultBool();
 
             @JsProperty
-            void setDefaultbool(boolean defaultbool);
+            void setDefaultBool(boolean defaultBool);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -133,16 +462,16 @@ public class FetchFigureResponse {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface PointsizeFieldType {
+          public interface PointSizeFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.PointsizeFieldType
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.PointSizeFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            double getDefaultdouble();
+            double getDefaultDouble();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -151,7 +480,7 @@ public class FetchFigureResponse {
             JsArray<Double> getValuesList();
 
             @JsProperty
-            void setDefaultdouble(double defaultdouble);
+            void setDefaultDouble(double defaultDouble);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -171,281 +500,164 @@ public class FetchFigureResponse {
           }
 
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                  .ChartsListFieldType.MultiseriesListFieldType
+          static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                  .ChartsListFieldType.MultiSeriesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                      .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType>
-              getDatasourcesList();
+                  FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType>
+              getDataSourcesList();
 
           @JsProperty
-          Object getGradientvisible();
+          Object getGradientVisible();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.LinecolorFieldType
-              getLinecolor();
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.LineColorFieldType
+              getLineColor();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.LinesvisibleFieldType
-              getLinesvisible();
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.LinesVisibleFieldType
+              getLinesVisible();
 
           @JsProperty
           String getName();
 
           @JsProperty
-          double getPlotstyle();
+          double getPlotStyle();
 
           @JsProperty
-          Object getPointcolor();
+          Object getPointColor();
 
           @JsProperty
-          Object getPointlabel();
+          Object getPointLabel();
 
           @JsProperty
-          Object getPointlabelformat();
+          Object getPointLabelFormat();
 
           @JsProperty
-          Object getPointshape();
+          Object getPointShape();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.PointsizeFieldType
-              getPointsize();
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.PointSizeFieldType
+              getPointSize();
 
           @JsProperty
-          Object getPointsvisible();
+          Object getPointsVisible();
 
           @JsProperty
-          Object getXtooltippattern();
+          Object getXToolTipPattern();
 
           @JsProperty
-          Object getYtooltippattern();
+          Object getYToolTipPattern();
 
           @JsOverlay
-          default void setDatasourcesList(
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                          .MultiseriesListFieldType.DatasourcesListFieldType
+          default void setDataSourcesList(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                          .MultiSeriesListFieldType.DataSourcesListFieldType
                       []
-                  datasourcesList) {
-            setDatasourcesList(
+                  dataSourcesList) {
+            setDataSourcesList(
                 Js
                     .<JsArray<
-                            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                                .ChartsListFieldType.MultiseriesListFieldType
-                                .DatasourcesListFieldType>>
-                        uncheckedCast(datasourcesList));
+                            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                                .ChartsListFieldType.MultiSeriesListFieldType
+                                .DataSourcesListFieldType>>
+                        uncheckedCast(dataSourcesList));
           }
 
           @JsProperty
-          void setDatasourcesList(
+          void setDataSourcesList(
               JsArray<
-                      FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                          .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType>
-                  datasourcesList);
+                      FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                          .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType>
+                  dataSourcesList);
 
           @JsProperty
-          void setGradientvisible(Object gradientvisible);
+          void setGradientVisible(Object gradientVisible);
 
           @JsProperty
-          void setLinecolor(
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.LinecolorFieldType
-                  linecolor);
+          void setLineColor(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.LineColorFieldType
+                  lineColor);
 
           @JsProperty
-          void setLinesvisible(
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.LinesvisibleFieldType
-                  linesvisible);
+          void setLinesVisible(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.LinesVisibleFieldType
+                  linesVisible);
 
           @JsProperty
           void setName(String name);
 
           @JsProperty
-          void setPlotstyle(double plotstyle);
+          void setPlotStyle(double plotStyle);
 
           @JsProperty
-          void setPointcolor(Object pointcolor);
+          void setPointColor(Object pointColor);
 
           @JsProperty
-          void setPointlabel(Object pointlabel);
+          void setPointLabel(Object pointLabel);
 
           @JsProperty
-          void setPointlabelformat(Object pointlabelformat);
+          void setPointLabelFormat(Object pointLabelFormat);
 
           @JsProperty
-          void setPointshape(Object pointshape);
+          void setPointShape(Object pointShape);
 
           @JsProperty
-          void setPointsize(
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.PointsizeFieldType
-                  pointsize);
+          void setPointSize(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.PointSizeFieldType
+                  pointSize);
 
           @JsProperty
-          void setPointsvisible(Object pointsvisible);
+          void setPointsVisible(Object pointsVisible);
 
           @JsProperty
-          void setXtooltippattern(Object xtooltippattern);
+          void setXToolTipPattern(Object xToolTipPattern);
 
           @JsProperty
-          void setYtooltippattern(Object ytooltippattern);
+          void setYToolTipPattern(Object yToolTipPattern);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SeriesListFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface DatasourcesListFieldType {
+          public interface DataSourcesListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AxisFieldType {
+            public interface OneClickFieldType {
               @JsOverlay
-              static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                      .AxisFieldType
+              static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType
+                      .OneClickFieldType
                   create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
               }
 
               @JsProperty
-              Object getBusinesscalendardescriptor();
-
-              @JsProperty
-              String getColor();
-
-              @JsProperty
-              String getFormatpattern();
-
-              @JsProperty
-              double getFormattype();
-
-              @JsProperty
-              double getGapbetweenmajorticks();
-
-              @JsProperty
-              String getId();
-
-              @JsProperty
-              String getLabel();
-
-              @JsProperty
-              String getLabelfont();
-
-              @JsProperty
-              JsArray<Double> getMajorticklocationsList();
-
-              @JsProperty
-              double getMaxrange();
-
-              @JsProperty
-              double getMinortickcount();
-
-              @JsProperty
-              double getMinrange();
-
-              @JsProperty
-              double getPosition();
-
-              @JsProperty
-              double getTicklabelangle();
-
-              @JsProperty
-              String getTicksfont();
-
-              @JsProperty
-              double getType();
-
-              @JsProperty
-              boolean isInvert();
-
-              @JsProperty
-              boolean isLog();
-
-              @JsProperty
-              void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-              @JsProperty
-              void setColor(String color);
-
-              @JsProperty
-              void setFormatpattern(String formatpattern);
-
-              @JsProperty
-              void setFormattype(double formattype);
-
-              @JsProperty
-              void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-              @JsProperty
-              void setId(String id);
-
-              @JsProperty
-              void setInvert(boolean invert);
-
-              @JsProperty
-              void setLabel(String label);
-
-              @JsProperty
-              void setLabelfont(String labelfont);
-
-              @JsProperty
-              void setLog(boolean log);
-
-              @JsProperty
-              void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-              @JsOverlay
-              default void setMajorticklocationsList(double[] majorticklocationsList) {
-                setMajorticklocationsList(
-                    Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-              }
-
-              @JsProperty
-              void setMaxrange(double maxrange);
-
-              @JsProperty
-              void setMinortickcount(double minortickcount);
-
-              @JsProperty
-              void setMinrange(double minrange);
-
-              @JsProperty
-              void setPosition(double position);
-
-              @JsProperty
-              void setTicklabelangle(double ticklabelangle);
-
-              @JsProperty
-              void setTicksfont(String ticksfont);
-
-              @JsProperty
-              void setType(double type);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface OneclickFieldType {
-              @JsOverlay
-              static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                      .OneclickFieldType
-                  create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-              }
+              JsArray<String> getColumnTypesList();
 
               @JsProperty
               JsArray<String> getColumnsList();
 
               @JsProperty
-              JsArray<String> getColumntypesList();
+              boolean isRequireAllFiltersToDisplay();
 
               @JsProperty
-              boolean isRequireallfilterstodisplay();
+              void setColumnTypesList(JsArray<String> columnTypesList);
+
+              @JsOverlay
+              default void setColumnTypesList(String[] columnTypesList) {
+                setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+              }
 
               @JsProperty
               void setColumnsList(JsArray<String> columnsList);
@@ -456,79 +668,66 @@ public class FetchFigureResponse {
               }
 
               @JsProperty
-              void setColumntypesList(JsArray<String> columntypesList);
-
-              @JsOverlay
-              default void setColumntypesList(String[] columntypesList) {
-                setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-              }
-
-              @JsProperty
-              void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+              void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
             }
 
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                    .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                    .SeriesListFieldType.DatasourcesListFieldType.AxisFieldType
-                getAxis();
+            String getAxisId();
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            String getColumntype();
+            String getColumnType();
 
             @JsProperty
-            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                    .SeriesListFieldType.DatasourcesListFieldType.OneclickFieldType
-                getOneclick();
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                    .SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType
+                getOneClick();
 
             @JsProperty
-            double getTableid();
+            double getTableId();
 
             @JsProperty
-            double getTablemapid();
+            double getTableMapId();
 
             @JsProperty
             double getType();
 
             @JsProperty
-            void setAxis(
-                FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                        .SeriesListFieldType.DatasourcesListFieldType.AxisFieldType
-                    axis);
+            void setAxisId(String axisId);
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
 
             @JsProperty
-            void setColumntype(String columntype);
+            void setColumnType(String columnType);
 
             @JsProperty
-            void setOneclick(
-                FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                        .SeriesListFieldType.DatasourcesListFieldType.OneclickFieldType
-                    oneclick);
+            void setOneClick(
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                        .SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType
+                    oneClick);
 
             @JsProperty
-            void setTableid(double tableid);
+            void setTableId(double tableId);
 
             @JsProperty
-            void setTablemapid(double tablemapid);
+            void setTableMapId(double tableMapId);
 
             @JsProperty
             void setType(double type);
           }
 
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
+          static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
                   .ChartsListFieldType.SeriesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -536,143 +735,146 @@ public class FetchFigureResponse {
 
           @JsProperty
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>
-              getDatasourcesList();
+                  FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>
+              getDataSourcesList();
 
           @JsProperty
-          String getLinecolor();
+          String getLineColor();
 
           @JsProperty
           String getName();
 
           @JsProperty
-          double getPlotstyle();
+          double getPlotStyle();
 
           @JsProperty
-          String getPointlabelformat();
+          String getPointLabelFormat();
 
           @JsProperty
           String getShape();
 
           @JsProperty
-          String getShapecolor();
+          String getShapeColor();
 
           @JsProperty
-          String getShapelabel();
+          String getShapeLabel();
 
           @JsProperty
-          double getShapesize();
+          double getShapeSize();
 
           @JsProperty
-          String getXtooltippattern();
+          String getXToolTipPattern();
 
           @JsProperty
-          String getYtooltippattern();
+          String getYToolTipPattern();
 
           @JsProperty
-          boolean isGradientvisible();
+          boolean isGradientVisible();
 
           @JsProperty
-          boolean isLinesvisible();
+          boolean isLinesVisible();
 
           @JsProperty
-          boolean isShapesvisible();
+          boolean isShapesVisible();
 
           @JsOverlay
-          default void setDatasourcesList(
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                          .SeriesListFieldType.DatasourcesListFieldType
+          default void setDataSourcesList(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                          .SeriesListFieldType.DataSourcesListFieldType
                       []
-                  datasourcesList) {
-            setDatasourcesList(
+                  dataSourcesList) {
+            setDataSourcesList(
                 Js
                     .<JsArray<
-                            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                                .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>>
-                        uncheckedCast(datasourcesList));
+                            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                                .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>>
+                        uncheckedCast(dataSourcesList));
           }
 
           @JsProperty
-          void setDatasourcesList(
+          void setDataSourcesList(
               JsArray<
-                      FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                          .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>
-                  datasourcesList);
+                      FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                          .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>
+                  dataSourcesList);
 
           @JsProperty
-          void setGradientvisible(boolean gradientvisible);
+          void setGradientVisible(boolean gradientVisible);
 
           @JsProperty
-          void setLinecolor(String linecolor);
+          void setLineColor(String lineColor);
 
           @JsProperty
-          void setLinesvisible(boolean linesvisible);
+          void setLinesVisible(boolean linesVisible);
 
           @JsProperty
           void setName(String name);
 
           @JsProperty
-          void setPlotstyle(double plotstyle);
+          void setPlotStyle(double plotStyle);
 
           @JsProperty
-          void setPointlabelformat(String pointlabelformat);
+          void setPointLabelFormat(String pointLabelFormat);
 
           @JsProperty
           void setShape(String shape);
 
           @JsProperty
-          void setShapecolor(String shapecolor);
+          void setShapeColor(String shapeColor);
 
           @JsProperty
-          void setShapelabel(String shapelabel);
+          void setShapeLabel(String shapeLabel);
 
           @JsProperty
-          void setShapesize(double shapesize);
+          void setShapeSize(double shapeSize);
 
           @JsProperty
-          void setShapesvisible(boolean shapesvisible);
+          void setShapesVisible(boolean shapesVisible);
 
           @JsProperty
-          void setXtooltippattern(String xtooltippattern);
+          void setXToolTipPattern(String xToolTipPattern);
 
           @JsProperty
-          void setYtooltippattern(String ytooltippattern);
+          void setYToolTipPattern(String yToolTipPattern);
         }
 
         @JsOverlay
-        static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
+        static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Object> getAxesList();
+        JsArray<
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                    .AxesListFieldType>
+            getAxesList();
 
         @JsProperty
-        double getCharttype();
+        double getChartType();
 
         @JsProperty
         double getColspan();
 
         @JsProperty
-        String getLegendcolor();
+        String getLegendColor();
 
         @JsProperty
-        String getLegendfont();
+        String getLegendFont();
 
         @JsProperty
         JsArray<
-                FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                    .MultiseriesListFieldType>
-            getMultiseriesList();
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                    .MultiSeriesListFieldType>
+            getMultiSeriesList();
 
         @JsProperty
         double getRowspan();
 
         @JsProperty
         JsArray<
-                FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
                     .SeriesListFieldType>
             getSeriesList();
 
@@ -680,27 +882,40 @@ public class FetchFigureResponse {
         String getTitle();
 
         @JsProperty
-        String getTitlecolor();
+        String getTitleColor();
 
         @JsProperty
-        String getTitlefont();
+        String getTitleFont();
 
         @JsProperty
         boolean isIs3d();
 
         @JsProperty
-        boolean isShowlegend();
-
-        @JsProperty
-        void setAxesList(JsArray<Object> axesList);
+        boolean isShowLegend();
 
         @JsOverlay
-        default void setAxesList(Object[] axesList) {
-          setAxesList(Js.<JsArray<Object>>uncheckedCast(axesList));
+        default void setAxesList(
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                        .AxesListFieldType
+                    []
+                axesList) {
+          setAxesList(
+              Js
+                  .<JsArray<
+                          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                              .ChartsListFieldType.AxesListFieldType>>
+                      uncheckedCast(axesList));
         }
 
         @JsProperty
-        void setCharttype(double charttype);
+        void setAxesList(
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType>
+                axesList);
+
+        @JsProperty
+        void setChartType(double chartType);
 
         @JsProperty
         void setColspan(double colspan);
@@ -709,30 +924,30 @@ public class FetchFigureResponse {
         void setIs3d(boolean is3d);
 
         @JsProperty
-        void setLegendcolor(String legendcolor);
+        void setLegendColor(String legendColor);
 
         @JsProperty
-        void setLegendfont(String legendfont);
+        void setLegendFont(String legendFont);
 
         @JsProperty
-        void setMultiseriesList(
+        void setMultiSeriesList(
             JsArray<
-                    FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                        .ChartsListFieldType.MultiseriesListFieldType>
-                multiseriesList);
+                    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                        .ChartsListFieldType.MultiSeriesListFieldType>
+                multiSeriesList);
 
         @JsOverlay
-        default void setMultiseriesList(
-            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
-                        .MultiseriesListFieldType
+        default void setMultiSeriesList(
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
+                        .MultiSeriesListFieldType
                     []
-                multiseriesList) {
-          setMultiseriesList(
+                multiSeriesList) {
+          setMultiSeriesList(
               Js
                   .<JsArray<
-                          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                              .ChartsListFieldType.MultiseriesListFieldType>>
-                      uncheckedCast(multiseriesList));
+                          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                              .ChartsListFieldType.MultiSeriesListFieldType>>
+                      uncheckedCast(multiSeriesList));
         }
 
         @JsProperty
@@ -741,44 +956,44 @@ public class FetchFigureResponse {
         @JsProperty
         void setSeriesList(
             JsArray<
-                    FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
+                    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
                         .ChartsListFieldType.SeriesListFieldType>
                 seriesList);
 
         @JsOverlay
         default void setSeriesList(
-            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType
                         .SeriesListFieldType
                     []
                 seriesList) {
           setSeriesList(
               Js
                   .<JsArray<
-                          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
+                          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
                               .ChartsListFieldType.SeriesListFieldType>>
                       uncheckedCast(seriesList));
         }
 
         @JsProperty
-        void setShowlegend(boolean showlegend);
+        void setShowLegend(boolean showLegend);
 
         @JsProperty
         void setTitle(String title);
 
         @JsProperty
-        void setTitlecolor(String titlecolor);
+        void setTitleColor(String titleColor);
 
         @JsProperty
-        void setTitlefont(String titlefont);
+        void setTitleFont(String titleFont);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TableidsListFieldType {
+      public interface TablesListFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetIdUnionType {
+        public interface GetSchemaHeaderUnionType {
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                  .TableidsListFieldType.GetIdUnionType
+          static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                  .TablesListFieldType.GetSchemaHeaderUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -804,50 +1019,180 @@ public class FetchFigureResponse {
           }
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface TicketFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetIdUnionType {
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType
+                  of(Object o) {
+                return Js.cast(o);
+              }
+
+              @JsOverlay
+              default String asString() {
+                return Js.asString(this);
+              }
+
+              @JsOverlay
+              default Uint8Array asUint8Array() {
+                return Js.cast(this);
+              }
+
+              @JsOverlay
+              default boolean isString() {
+                return (Object) this instanceof String;
+              }
+
+              @JsOverlay
+              default boolean isUint8Array() {
+                return (Object) this instanceof Uint8Array;
+              }
+            }
+
+            @JsOverlay
+            static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                    .TablesListFieldType.ResultIdFieldType.TicketFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                    .ResultIdFieldType.TicketFieldType.GetIdUnionType
+                getId();
+
+            @JsProperty
+            void setId(
+                FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                        .ResultIdFieldType.TicketFieldType.GetIdUnionType
+                    id);
+
+            @JsOverlay
+            default void setId(String id) {
+              setId(
+                  Js
+                      .<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                              .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType>
+                          uncheckedCast(id));
+            }
+
+            @JsOverlay
+            default void setId(Uint8Array id) {
+              setId(
+                  Js
+                      .<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                              .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType>
+                          uncheckedCast(id));
+            }
+          }
+
+          @JsOverlay
+          static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                  .TablesListFieldType.ResultIdFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getBatchOffset();
+
+          @JsProperty
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                  .ResultIdFieldType.TicketFieldType
+              getTicket();
+
+          @JsProperty
+          void setBatchOffset(double batchOffset);
+
+          @JsProperty
+          void setTicket(
+              FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                      .ResultIdFieldType.TicketFieldType
+                  ticket);
+        }
+
         @JsOverlay
-        static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                .TableidsListFieldType
+        static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.TableidsListFieldType
-                .GetIdUnionType
-            getId();
+        String getErrorInfo();
 
         @JsProperty
-        void setId(
-            FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.TableidsListFieldType
-                    .GetIdUnionType
-                id);
+        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                .ResultIdFieldType
+            getResultId();
+
+        @JsProperty
+        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                .GetSchemaHeaderUnionType
+            getSchemaHeader();
+
+        @JsProperty
+        String getSize();
+
+        @JsProperty
+        boolean isIsStatic();
+
+        @JsProperty
+        boolean isSuccess();
+
+        @JsProperty
+        void setErrorInfo(String errorInfo);
+
+        @JsProperty
+        void setIsStatic(boolean isStatic);
+
+        @JsProperty
+        void setResultId(
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                    .ResultIdFieldType
+                resultId);
+
+        @JsProperty
+        void setSchemaHeader(
+            FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType
+                    .GetSchemaHeaderUnionType
+                schemaHeader);
 
         @JsOverlay
-        default void setId(String id) {
-          setId(
+        default void setSchemaHeader(String schemaHeader) {
+          setSchemaHeader(
               Js
-                  .<FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                          .TableidsListFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                  .<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                          .TablesListFieldType.GetSchemaHeaderUnionType>
+                      uncheckedCast(schemaHeader));
         }
 
         @JsOverlay
-        default void setId(Uint8Array id) {
-          setId(
+        default void setSchemaHeader(Uint8Array schemaHeader) {
+          setSchemaHeader(
               Js
-                  .<FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                          .TableidsListFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                  .<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                          .TablesListFieldType.GetSchemaHeaderUnionType>
+                      uncheckedCast(schemaHeader));
         }
+
+        @JsProperty
+        void setSize(String size);
+
+        @JsProperty
+        void setSuccess(boolean success);
       }
 
       @JsOverlay
-      static FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType create() {
+      static FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JsArray<FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType>
+      JsArray<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType>
           getChartsList();
 
       @JsProperty
@@ -860,34 +1205,29 @@ public class FetchFigureResponse {
       double getRows();
 
       @JsProperty
-      JsArray<
-              FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                  .TableidsListFieldType>
-          getTableidsList();
-
-      @JsProperty
-      JsArray<Object> getTablemapsList();
+      JsArray<FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType>
+          getTablesList();
 
       @JsProperty
       String getTitle();
 
       @JsProperty
-      String getTitlecolor();
+      String getTitleColor();
 
       @JsProperty
-      String getTitlefont();
+      String getTitleFont();
 
       @JsProperty
-      double getUpdateinterval();
+      double getUpdateInterval();
 
       @JsOverlay
       default void setChartsList(
-          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.ChartsListFieldType[]
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.ChartsListFieldType[]
               chartsList) {
         setChartsList(
             Js
                 .<JsArray<
-                        FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
+                        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
                             .ChartsListFieldType>>
                     uncheckedCast(chartsList));
       }
@@ -895,7 +1235,7 @@ public class FetchFigureResponse {
       @JsProperty
       void setChartsList(
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
+                  FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
                       .ChartsListFieldType>
               chartsList);
 
@@ -914,43 +1254,35 @@ public class FetchFigureResponse {
       void setRows(double rows);
 
       @JsProperty
-      void setTableidsList(
+      void setTablesList(
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                      .TableidsListFieldType>
-              tableidsList);
+                  FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                      .TablesListFieldType>
+              tablesList);
 
       @JsOverlay
-      default void setTableidsList(
-          FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType.TableidsListFieldType[]
-              tableidsList) {
-        setTableidsList(
+      default void setTablesList(
+          FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType.TablesListFieldType[]
+              tablesList) {
+        setTablesList(
             Js
                 .<JsArray<
-                        FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType
-                            .TableidsListFieldType>>
-                    uncheckedCast(tableidsList));
-      }
-
-      @JsProperty
-      void setTablemapsList(JsArray<Object> tablemapsList);
-
-      @JsOverlay
-      default void setTablemapsList(Object[] tablemapsList) {
-        setTablemapsList(Js.<JsArray<Object>>uncheckedCast(tablemapsList));
+                        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType
+                            .TablesListFieldType>>
+                    uncheckedCast(tablesList));
       }
 
       @JsProperty
       void setTitle(String title);
 
       @JsProperty
-      void setTitlecolor(String titlecolor);
+      void setTitleColor(String titleColor);
 
       @JsProperty
-      void setTitlefont(String titlefont);
+      void setTitleFont(String titleFont);
 
       @JsProperty
-      void setUpdateinterval(double updateinterval);
+      void setUpdateInterval(double updateInterval);
     }
 
     @JsOverlay
@@ -959,66 +1291,395 @@ public class FetchFigureResponse {
     }
 
     @JsProperty
-    FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType getFiguredescriptor();
+    FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType getFigureDescriptor();
 
     @JsProperty
-    void setFiguredescriptor(
-        FetchFigureResponse.ToObjectReturnType.FiguredescriptorFieldType figuredescriptor);
+    void setFigureDescriptor(
+        FetchFigureResponse.ToObjectReturnType.FigureDescriptorFieldType figureDescriptor);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FiguredescriptorFieldType {
+    public interface FigureDescriptorFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface ChartsListFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface MultiseriesListFieldType {
+        public interface AxesListFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface DatasourcesListFieldType {
+          public interface BusinessCalendarDescriptorFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface BusinessPeriodsListFieldType {
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              String getClose();
+
+              @JsProperty
+              String getOpen();
+
+              @JsProperty
+              void setClose(String close);
+
+              @JsProperty
+              void setOpen(String open);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface HolidaysListFieldType {
+              @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+              public interface DateFieldType {
+                @JsOverlay
+                static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .HolidaysListFieldType.DateFieldType
+                    create() {
+                  return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getDay();
+
+                @JsProperty
+                double getMonth();
+
+                @JsProperty
+                double getYear();
+
+                @JsProperty
+                void setDay(double day);
+
+                @JsProperty
+                void setMonth(double month);
+
+                @JsProperty
+                void setYear(double year);
+              }
+
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              JsArray<Object> getBusinessPeriodsList();
+
+              @JsProperty
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                      .AxesListFieldType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType
+                      .DateFieldType
+                  getDate();
+
+              @JsProperty
+              void setBusinessPeriodsList(JsArray<Object> businessPeriodsList);
+
+              @JsOverlay
+              default void setBusinessPeriodsList(Object[] businessPeriodsList) {
+                setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+              }
+
+              @JsProperty
+              void setDate(
+                  FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                          .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                          .HolidaysListFieldType.DateFieldType
+                      date);
+            }
+
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            Object getAxis();
+            JsArray<Double> getBusinessDaysList();
 
             @JsProperty
-            String getColumnname();
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .BusinessPeriodsListFieldType>
+                getBusinessPeriodsList();
 
             @JsProperty
-            double getTablemapid();
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType.BusinessCalendarDescriptorFieldType
+                        .HolidaysListFieldType>
+                getHolidaysList();
+
+            @JsProperty
+            String getName();
+
+            @JsProperty
+            String getTimeZone();
+
+            @JsProperty
+            void setBusinessDaysList(JsArray<Double> businessDaysList);
+
+            @JsOverlay
+            default void setBusinessDaysList(double[] businessDaysList) {
+              setBusinessDaysList(Js.<JsArray<Double>>uncheckedCast(businessDaysList));
+            }
+
+            @JsOverlay
+            default void setBusinessPeriodsList(
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType
+                        []
+                    businessPeriodsList) {
+              setBusinessPeriodsList(
+                  Js
+                      .<JsArray<
+                              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                                  .ChartsListFieldType.AxesListFieldType
+                                  .BusinessCalendarDescriptorFieldType
+                                  .BusinessPeriodsListFieldType>>
+                          uncheckedCast(businessPeriodsList));
+            }
+
+            @JsProperty
+            void setBusinessPeriodsList(
+                JsArray<
+                        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>
+                    businessPeriodsList);
+
+            @JsOverlay
+            default void setHolidaysList(
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.HolidaysListFieldType
+                        []
+                    holidaysList) {
+              setHolidaysList(
+                  Js
+                      .<JsArray<
+                              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                                  .ChartsListFieldType.AxesListFieldType
+                                  .BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>
+                          uncheckedCast(holidaysList));
+            }
+
+            @JsProperty
+            void setHolidaysList(
+                JsArray<
+                        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                            .ChartsListFieldType.AxesListFieldType
+                            .BusinessCalendarDescriptorFieldType.HolidaysListFieldType>
+                    holidaysList);
+
+            @JsProperty
+            void setName(String name);
+
+            @JsProperty
+            void setTimeZone(String timeZone);
+          }
+
+          @JsOverlay
+          static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                  .ChartsListFieldType.AxesListFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                  .AxesListFieldType.BusinessCalendarDescriptorFieldType
+              getBusinessCalendarDescriptor();
+
+          @JsProperty
+          String getColor();
+
+          @JsProperty
+          String getFormatPattern();
+
+          @JsProperty
+          double getFormatType();
+
+          @JsProperty
+          double getGapBetweenMajorTicks();
+
+          @JsProperty
+          String getId();
+
+          @JsProperty
+          String getLabel();
+
+          @JsProperty
+          String getLabelFont();
+
+          @JsProperty
+          JsArray<Double> getMajorTickLocationsList();
+
+          @JsProperty
+          double getMaxRange();
+
+          @JsProperty
+          double getMinRange();
+
+          @JsProperty
+          double getMinorTickCount();
+
+          @JsProperty
+          double getPosition();
+
+          @JsProperty
+          double getTickLabelAngle();
+
+          @JsProperty
+          String getTicksFont();
+
+          @JsProperty
+          double getType();
+
+          @JsProperty
+          boolean isInvert();
+
+          @JsProperty
+          boolean isIsTimeAxis();
+
+          @JsProperty
+          boolean isLog();
+
+          @JsProperty
+          boolean isMajorTicksVisible();
+
+          @JsProperty
+          boolean isMinorTicksVisible();
+
+          @JsProperty
+          void setBusinessCalendarDescriptor(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                      .AxesListFieldType.BusinessCalendarDescriptorFieldType
+                  businessCalendarDescriptor);
+
+          @JsProperty
+          void setColor(String color);
+
+          @JsProperty
+          void setFormatPattern(String formatPattern);
+
+          @JsProperty
+          void setFormatType(double formatType);
+
+          @JsProperty
+          void setGapBetweenMajorTicks(double gapBetweenMajorTicks);
+
+          @JsProperty
+          void setId(String id);
+
+          @JsProperty
+          void setInvert(boolean invert);
+
+          @JsProperty
+          void setIsTimeAxis(boolean isTimeAxis);
+
+          @JsProperty
+          void setLabel(String label);
+
+          @JsProperty
+          void setLabelFont(String labelFont);
+
+          @JsProperty
+          void setLog(boolean log);
+
+          @JsProperty
+          void setMajorTickLocationsList(JsArray<Double> majorTickLocationsList);
+
+          @JsOverlay
+          default void setMajorTickLocationsList(double[] majorTickLocationsList) {
+            setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
+          }
+
+          @JsProperty
+          void setMajorTicksVisible(boolean majorTicksVisible);
+
+          @JsProperty
+          void setMaxRange(double maxRange);
+
+          @JsProperty
+          void setMinRange(double minRange);
+
+          @JsProperty
+          void setMinorTickCount(double minorTickCount);
+
+          @JsProperty
+          void setMinorTicksVisible(boolean minorTicksVisible);
+
+          @JsProperty
+          void setPosition(double position);
+
+          @JsProperty
+          void setTickLabelAngle(double tickLabelAngle);
+
+          @JsProperty
+          void setTicksFont(String ticksFont);
+
+          @JsProperty
+          void setType(double type);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MultiSeriesListFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface DataSourcesListFieldType {
+            @JsOverlay
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getAxisId();
+
+            @JsProperty
+            String getColumnName();
+
+            @JsProperty
+            double getTableMapId();
 
             @JsProperty
             double getType();
 
             @JsProperty
-            void setAxis(Object axis);
+            void setAxisId(String axisId);
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
 
             @JsProperty
-            void setTablemapid(double tablemapid);
+            void setTableMapId(double tableMapId);
 
             @JsProperty
             void setType(double type);
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface LinecolorFieldType {
+          public interface LineColorFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.LinecolorFieldType
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.LineColorFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            String getDefaultstring();
+            String getDefaultString();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -1027,7 +1688,7 @@ public class FetchFigureResponse {
             JsArray<String> getValuesList();
 
             @JsProperty
-            void setDefaultstring(String defaultstring);
+            void setDefaultString(String defaultString);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -1047,10 +1708,10 @@ public class FetchFigureResponse {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface LinesvisibleFieldType {
+          public interface LinesVisibleFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.LinesvisibleFieldType
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.LinesVisibleFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
@@ -1062,10 +1723,10 @@ public class FetchFigureResponse {
             JsArray<Boolean> getValuesList();
 
             @JsProperty
-            boolean isDefaultbool();
+            boolean isDefaultBool();
 
             @JsProperty
-            void setDefaultbool(boolean defaultbool);
+            void setDefaultBool(boolean defaultBool);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -1085,16 +1746,16 @@ public class FetchFigureResponse {
           }
 
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface PointsizeFieldType {
+          public interface PointSizeFieldType {
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType.PointsizeFieldType
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType.PointSizeFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            double getDefaultdouble();
+            double getDefaultDouble();
 
             @JsProperty
             JsArray<String> getKeysList();
@@ -1103,7 +1764,7 @@ public class FetchFigureResponse {
             JsArray<Double> getValuesList();
 
             @JsProperty
-            void setDefaultdouble(double defaultdouble);
+            void setDefaultDouble(double defaultDouble);
 
             @JsProperty
             void setKeysList(JsArray<String> keysList);
@@ -1123,281 +1784,164 @@ public class FetchFigureResponse {
           }
 
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                  .ChartsListFieldType.MultiseriesListFieldType
+          static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                  .ChartsListFieldType.MultiSeriesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
           }
 
           @JsProperty
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                      .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType>
-              getDatasourcesList();
+                  FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType>
+              getDataSourcesList();
 
           @JsProperty
-          Object getGradientvisible();
+          Object getGradientVisible();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.LinecolorFieldType
-              getLinecolor();
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.LineColorFieldType
+              getLineColor();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.LinesvisibleFieldType
-              getLinesvisible();
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.LinesVisibleFieldType
+              getLinesVisible();
 
           @JsProperty
           String getName();
 
           @JsProperty
-          double getPlotstyle();
+          double getPlotStyle();
 
           @JsProperty
-          Object getPointcolor();
+          Object getPointColor();
 
           @JsProperty
-          Object getPointlabel();
+          Object getPointLabel();
 
           @JsProperty
-          Object getPointlabelformat();
+          Object getPointLabelFormat();
 
           @JsProperty
-          Object getPointshape();
+          Object getPointShape();
 
           @JsProperty
-          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                  .MultiseriesListFieldType.PointsizeFieldType
-              getPointsize();
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                  .MultiSeriesListFieldType.PointSizeFieldType
+              getPointSize();
 
           @JsProperty
-          Object getPointsvisible();
+          Object getPointsVisible();
 
           @JsProperty
-          Object getXtooltippattern();
+          Object getXToolTipPattern();
 
           @JsProperty
-          Object getYtooltippattern();
+          Object getYToolTipPattern();
 
           @JsOverlay
-          default void setDatasourcesList(
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                          .MultiseriesListFieldType.DatasourcesListFieldType
+          default void setDataSourcesList(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                          .MultiSeriesListFieldType.DataSourcesListFieldType
                       []
-                  datasourcesList) {
-            setDatasourcesList(
+                  dataSourcesList) {
+            setDataSourcesList(
                 Js
                     .<JsArray<
-                            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                                .ChartsListFieldType.MultiseriesListFieldType
-                                .DatasourcesListFieldType>>
-                        uncheckedCast(datasourcesList));
+                            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                                .ChartsListFieldType.MultiSeriesListFieldType
+                                .DataSourcesListFieldType>>
+                        uncheckedCast(dataSourcesList));
           }
 
           @JsProperty
-          void setDatasourcesList(
+          void setDataSourcesList(
               JsArray<
-                      FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                          .ChartsListFieldType.MultiseriesListFieldType.DatasourcesListFieldType>
-                  datasourcesList);
+                      FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                          .ChartsListFieldType.MultiSeriesListFieldType.DataSourcesListFieldType>
+                  dataSourcesList);
 
           @JsProperty
-          void setGradientvisible(Object gradientvisible);
+          void setGradientVisible(Object gradientVisible);
 
           @JsProperty
-          void setLinecolor(
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.LinecolorFieldType
-                  linecolor);
+          void setLineColor(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.LineColorFieldType
+                  lineColor);
 
           @JsProperty
-          void setLinesvisible(
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.LinesvisibleFieldType
-                  linesvisible);
+          void setLinesVisible(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.LinesVisibleFieldType
+                  linesVisible);
 
           @JsProperty
           void setName(String name);
 
           @JsProperty
-          void setPlotstyle(double plotstyle);
+          void setPlotStyle(double plotStyle);
 
           @JsProperty
-          void setPointcolor(Object pointcolor);
+          void setPointColor(Object pointColor);
 
           @JsProperty
-          void setPointlabel(Object pointlabel);
+          void setPointLabel(Object pointLabel);
 
           @JsProperty
-          void setPointlabelformat(Object pointlabelformat);
+          void setPointLabelFormat(Object pointLabelFormat);
 
           @JsProperty
-          void setPointshape(Object pointshape);
+          void setPointShape(Object pointShape);
 
           @JsProperty
-          void setPointsize(
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                      .MultiseriesListFieldType.PointsizeFieldType
-                  pointsize);
+          void setPointSize(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                      .MultiSeriesListFieldType.PointSizeFieldType
+                  pointSize);
 
           @JsProperty
-          void setPointsvisible(Object pointsvisible);
+          void setPointsVisible(Object pointsVisible);
 
           @JsProperty
-          void setXtooltippattern(Object xtooltippattern);
+          void setXToolTipPattern(Object xToolTipPattern);
 
           @JsProperty
-          void setYtooltippattern(Object ytooltippattern);
+          void setYToolTipPattern(Object yToolTipPattern);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SeriesListFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface DatasourcesListFieldType {
+          public interface DataSourcesListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface AxisFieldType {
+            public interface OneClickFieldType {
               @JsOverlay
-              static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                      .AxisFieldType
+              static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType
+                      .OneClickFieldType
                   create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
               }
 
               @JsProperty
-              Object getBusinesscalendardescriptor();
-
-              @JsProperty
-              String getColor();
-
-              @JsProperty
-              String getFormatpattern();
-
-              @JsProperty
-              double getFormattype();
-
-              @JsProperty
-              double getGapbetweenmajorticks();
-
-              @JsProperty
-              String getId();
-
-              @JsProperty
-              String getLabel();
-
-              @JsProperty
-              String getLabelfont();
-
-              @JsProperty
-              JsArray<Double> getMajorticklocationsList();
-
-              @JsProperty
-              double getMaxrange();
-
-              @JsProperty
-              double getMinortickcount();
-
-              @JsProperty
-              double getMinrange();
-
-              @JsProperty
-              double getPosition();
-
-              @JsProperty
-              double getTicklabelangle();
-
-              @JsProperty
-              String getTicksfont();
-
-              @JsProperty
-              double getType();
-
-              @JsProperty
-              boolean isInvert();
-
-              @JsProperty
-              boolean isLog();
-
-              @JsProperty
-              void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-              @JsProperty
-              void setColor(String color);
-
-              @JsProperty
-              void setFormatpattern(String formatpattern);
-
-              @JsProperty
-              void setFormattype(double formattype);
-
-              @JsProperty
-              void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-              @JsProperty
-              void setId(String id);
-
-              @JsProperty
-              void setInvert(boolean invert);
-
-              @JsProperty
-              void setLabel(String label);
-
-              @JsProperty
-              void setLabelfont(String labelfont);
-
-              @JsProperty
-              void setLog(boolean log);
-
-              @JsProperty
-              void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-              @JsOverlay
-              default void setMajorticklocationsList(double[] majorticklocationsList) {
-                setMajorticklocationsList(
-                    Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-              }
-
-              @JsProperty
-              void setMaxrange(double maxrange);
-
-              @JsProperty
-              void setMinortickcount(double minortickcount);
-
-              @JsProperty
-              void setMinrange(double minrange);
-
-              @JsProperty
-              void setPosition(double position);
-
-              @JsProperty
-              void setTicklabelangle(double ticklabelangle);
-
-              @JsProperty
-              void setTicksfont(String ticksfont);
-
-              @JsProperty
-              void setType(double type);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface OneclickFieldType {
-              @JsOverlay
-              static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                      .OneclickFieldType
-                  create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-              }
+              JsArray<String> getColumnTypesList();
 
               @JsProperty
               JsArray<String> getColumnsList();
 
               @JsProperty
-              JsArray<String> getColumntypesList();
+              boolean isRequireAllFiltersToDisplay();
 
               @JsProperty
-              boolean isRequireallfilterstodisplay();
+              void setColumnTypesList(JsArray<String> columnTypesList);
+
+              @JsOverlay
+              default void setColumnTypesList(String[] columnTypesList) {
+                setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+              }
 
               @JsProperty
               void setColumnsList(JsArray<String> columnsList);
@@ -1408,81 +1952,67 @@ public class FetchFigureResponse {
               }
 
               @JsProperty
-              void setColumntypesList(JsArray<String> columntypesList);
-
-              @JsOverlay
-              default void setColumntypesList(String[] columntypesList) {
-                setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-              }
-
-              @JsProperty
-              void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+              void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
             }
 
             @JsOverlay
-            static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType
                 create() {
               return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                    .SeriesListFieldType.DatasourcesListFieldType.AxisFieldType
-                getAxis();
+            String getAxisId();
 
             @JsProperty
-            String getColumnname();
+            String getColumnName();
 
             @JsProperty
-            String getColumntype();
+            String getColumnType();
 
             @JsProperty
-            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                    .SeriesListFieldType.DatasourcesListFieldType.OneclickFieldType
-                getOneclick();
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                    .SeriesListFieldType.DataSourcesListFieldType.OneClickFieldType
+                getOneClick();
 
             @JsProperty
-            double getTableid();
+            double getTableId();
 
             @JsProperty
-            double getTablemapid();
+            double getTableMapId();
 
             @JsProperty
             double getType();
 
             @JsProperty
-            void setAxis(
-                FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                        .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                        .AxisFieldType
-                    axis);
+            void setAxisId(String axisId);
 
             @JsProperty
-            void setColumnname(String columnname);
+            void setColumnName(String columnName);
 
             @JsProperty
-            void setColumntype(String columntype);
+            void setColumnType(String columnType);
 
             @JsProperty
-            void setOneclick(
-                FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                        .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType
-                        .OneclickFieldType
-                    oneclick);
+            void setOneClick(
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType
+                        .OneClickFieldType
+                    oneClick);
 
             @JsProperty
-            void setTableid(double tableid);
+            void setTableId(double tableId);
 
             @JsProperty
-            void setTablemapid(double tablemapid);
+            void setTableMapId(double tableMapId);
 
             @JsProperty
             void setType(double type);
           }
 
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+          static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                   .ChartsListFieldType.SeriesListFieldType
               create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -1490,143 +2020,146 @@ public class FetchFigureResponse {
 
           @JsProperty
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                      .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>
-              getDatasourcesList();
+                  FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>
+              getDataSourcesList();
 
           @JsProperty
-          String getLinecolor();
+          String getLineColor();
 
           @JsProperty
           String getName();
 
           @JsProperty
-          double getPlotstyle();
+          double getPlotStyle();
 
           @JsProperty
-          String getPointlabelformat();
+          String getPointLabelFormat();
 
           @JsProperty
           String getShape();
 
           @JsProperty
-          String getShapecolor();
+          String getShapeColor();
 
           @JsProperty
-          String getShapelabel();
+          String getShapeLabel();
 
           @JsProperty
-          double getShapesize();
+          double getShapeSize();
 
           @JsProperty
-          String getXtooltippattern();
+          String getXToolTipPattern();
 
           @JsProperty
-          String getYtooltippattern();
+          String getYToolTipPattern();
 
           @JsProperty
-          boolean isGradientvisible();
+          boolean isGradientVisible();
 
           @JsProperty
-          boolean isLinesvisible();
+          boolean isLinesVisible();
 
           @JsProperty
-          boolean isShapesvisible();
+          boolean isShapesVisible();
 
           @JsOverlay
-          default void setDatasourcesList(
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                          .SeriesListFieldType.DatasourcesListFieldType
+          default void setDataSourcesList(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                          .SeriesListFieldType.DataSourcesListFieldType
                       []
-                  datasourcesList) {
-            setDatasourcesList(
+                  dataSourcesList) {
+            setDataSourcesList(
                 Js
                     .<JsArray<
-                            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                                .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>>
-                        uncheckedCast(datasourcesList));
+                            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                                .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>>
+                        uncheckedCast(dataSourcesList));
           }
 
           @JsProperty
-          void setDatasourcesList(
+          void setDataSourcesList(
               JsArray<
-                      FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                          .ChartsListFieldType.SeriesListFieldType.DatasourcesListFieldType>
-                  datasourcesList);
+                      FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                          .ChartsListFieldType.SeriesListFieldType.DataSourcesListFieldType>
+                  dataSourcesList);
 
           @JsProperty
-          void setGradientvisible(boolean gradientvisible);
+          void setGradientVisible(boolean gradientVisible);
 
           @JsProperty
-          void setLinecolor(String linecolor);
+          void setLineColor(String lineColor);
 
           @JsProperty
-          void setLinesvisible(boolean linesvisible);
+          void setLinesVisible(boolean linesVisible);
 
           @JsProperty
           void setName(String name);
 
           @JsProperty
-          void setPlotstyle(double plotstyle);
+          void setPlotStyle(double plotStyle);
 
           @JsProperty
-          void setPointlabelformat(String pointlabelformat);
+          void setPointLabelFormat(String pointLabelFormat);
 
           @JsProperty
           void setShape(String shape);
 
           @JsProperty
-          void setShapecolor(String shapecolor);
+          void setShapeColor(String shapeColor);
 
           @JsProperty
-          void setShapelabel(String shapelabel);
+          void setShapeLabel(String shapeLabel);
 
           @JsProperty
-          void setShapesize(double shapesize);
+          void setShapeSize(double shapeSize);
 
           @JsProperty
-          void setShapesvisible(boolean shapesvisible);
+          void setShapesVisible(boolean shapesVisible);
 
           @JsProperty
-          void setXtooltippattern(String xtooltippattern);
+          void setXToolTipPattern(String xToolTipPattern);
 
           @JsProperty
-          void setYtooltippattern(String ytooltippattern);
+          void setYToolTipPattern(String yToolTipPattern);
         }
 
         @JsOverlay
-        static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
+        static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Object> getAxesList();
+        JsArray<
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.AxesListFieldType>
+            getAxesList();
 
         @JsProperty
-        double getCharttype();
+        double getChartType();
 
         @JsProperty
         double getColspan();
 
         @JsProperty
-        String getLegendcolor();
+        String getLegendColor();
 
         @JsProperty
-        String getLegendfont();
+        String getLegendFont();
 
         @JsProperty
         JsArray<
-                FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                    .ChartsListFieldType.MultiseriesListFieldType>
-            getMultiseriesList();
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .ChartsListFieldType.MultiSeriesListFieldType>
+            getMultiSeriesList();
 
         @JsProperty
         double getRowspan();
 
         @JsProperty
         JsArray<
-                FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                     .ChartsListFieldType.SeriesListFieldType>
             getSeriesList();
 
@@ -1634,27 +2167,40 @@ public class FetchFigureResponse {
         String getTitle();
 
         @JsProperty
-        String getTitlecolor();
+        String getTitleColor();
 
         @JsProperty
-        String getTitlefont();
+        String getTitleFont();
 
         @JsProperty
         boolean isIs3d();
 
         @JsProperty
-        boolean isShowlegend();
-
-        @JsProperty
-        void setAxesList(JsArray<Object> axesList);
+        boolean isShowLegend();
 
         @JsOverlay
-        default void setAxesList(Object[] axesList) {
-          setAxesList(Js.<JsArray<Object>>uncheckedCast(axesList));
+        default void setAxesList(
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                        .AxesListFieldType
+                    []
+                axesList) {
+          setAxesList(
+              Js
+                  .<JsArray<
+                          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                              .ChartsListFieldType.AxesListFieldType>>
+                      uncheckedCast(axesList));
         }
 
         @JsProperty
-        void setCharttype(double charttype);
+        void setAxesList(
+            JsArray<
+                    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.AxesListFieldType>
+                axesList);
+
+        @JsProperty
+        void setChartType(double chartType);
 
         @JsProperty
         void setColspan(double colspan);
@@ -1663,30 +2209,30 @@ public class FetchFigureResponse {
         void setIs3d(boolean is3d);
 
         @JsProperty
-        void setLegendcolor(String legendcolor);
+        void setLegendColor(String legendColor);
 
         @JsProperty
-        void setLegendfont(String legendfont);
+        void setLegendFont(String legendFont);
 
         @JsProperty
-        void setMultiseriesList(
+        void setMultiSeriesList(
             JsArray<
-                    FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                        .ChartsListFieldType.MultiseriesListFieldType>
-                multiseriesList);
+                    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .ChartsListFieldType.MultiSeriesListFieldType>
+                multiSeriesList);
 
         @JsOverlay
-        default void setMultiseriesList(
-            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
-                        .MultiseriesListFieldType
+        default void setMultiSeriesList(
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
+                        .MultiSeriesListFieldType
                     []
-                multiseriesList) {
-          setMultiseriesList(
+                multiSeriesList) {
+          setMultiSeriesList(
               Js
                   .<JsArray<
-                          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                              .ChartsListFieldType.MultiseriesListFieldType>>
-                      uncheckedCast(multiseriesList));
+                          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                              .ChartsListFieldType.MultiSeriesListFieldType>>
+                      uncheckedCast(multiSeriesList));
         }
 
         @JsProperty
@@ -1695,44 +2241,44 @@ public class FetchFigureResponse {
         @JsProperty
         void setSeriesList(
             JsArray<
-                    FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+                    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                         .ChartsListFieldType.SeriesListFieldType>
                 seriesList);
 
         @JsOverlay
         default void setSeriesList(
-            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType
                         .SeriesListFieldType
                     []
                 seriesList) {
           setSeriesList(
               Js
                   .<JsArray<
-                          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+                          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                               .ChartsListFieldType.SeriesListFieldType>>
                       uncheckedCast(seriesList));
         }
 
         @JsProperty
-        void setShowlegend(boolean showlegend);
+        void setShowLegend(boolean showLegend);
 
         @JsProperty
         void setTitle(String title);
 
         @JsProperty
-        void setTitlecolor(String titlecolor);
+        void setTitleColor(String titleColor);
 
         @JsProperty
-        void setTitlefont(String titlefont);
+        void setTitleFont(String titleFont);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface TableidsListFieldType {
+      public interface TablesListFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetIdUnionType {
+        public interface GetSchemaHeaderUnionType {
           @JsOverlay
-          static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                  .TableidsListFieldType.GetIdUnionType
+          static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                  .TablesListFieldType.GetSchemaHeaderUnionType
               of(Object o) {
             return Js.cast(o);
           }
@@ -1758,50 +2304,180 @@ public class FetchFigureResponse {
           }
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface TicketFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetIdUnionType {
+              @JsOverlay
+              static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType
+                  of(Object o) {
+                return Js.cast(o);
+              }
+
+              @JsOverlay
+              default String asString() {
+                return Js.asString(this);
+              }
+
+              @JsOverlay
+              default Uint8Array asUint8Array() {
+                return Js.cast(this);
+              }
+
+              @JsOverlay
+              default boolean isString() {
+                return (Object) this instanceof String;
+              }
+
+              @JsOverlay
+              default boolean isUint8Array() {
+                return (Object) this instanceof Uint8Array;
+              }
+            }
+
+            @JsOverlay
+            static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                    .TablesListFieldType.ResultIdFieldType.TicketFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                    .ResultIdFieldType.TicketFieldType.GetIdUnionType
+                getId();
+
+            @JsProperty
+            void setId(
+                FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                        .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType
+                    id);
+
+            @JsOverlay
+            default void setId(String id) {
+              setId(
+                  Js
+                      .<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                              .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType>
+                          uncheckedCast(id));
+            }
+
+            @JsOverlay
+            default void setId(Uint8Array id) {
+              setId(
+                  Js
+                      .<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                              .TablesListFieldType.ResultIdFieldType.TicketFieldType.GetIdUnionType>
+                          uncheckedCast(id));
+            }
+          }
+
+          @JsOverlay
+          static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                  .TablesListFieldType.ResultIdFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getBatchOffset();
+
+          @JsProperty
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                  .ResultIdFieldType.TicketFieldType
+              getTicket();
+
+          @JsProperty
+          void setBatchOffset(double batchOffset);
+
+          @JsProperty
+          void setTicket(
+              FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                      .ResultIdFieldType.TicketFieldType
+                  ticket);
+        }
+
         @JsOverlay
-        static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                .TableidsListFieldType
+        static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
             create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.TableidsListFieldType
-                .GetIdUnionType
-            getId();
+        String getErrorInfo();
 
         @JsProperty
-        void setId(
-            FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.TableidsListFieldType
-                    .GetIdUnionType
-                id);
+        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                .ResultIdFieldType
+            getResultId();
+
+        @JsProperty
+        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                .GetSchemaHeaderUnionType
+            getSchemaHeader();
+
+        @JsProperty
+        String getSize();
+
+        @JsProperty
+        boolean isIsStatic();
+
+        @JsProperty
+        boolean isSuccess();
+
+        @JsProperty
+        void setErrorInfo(String errorInfo);
+
+        @JsProperty
+        void setIsStatic(boolean isStatic);
+
+        @JsProperty
+        void setResultId(
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                    .ResultIdFieldType
+                resultId);
+
+        @JsProperty
+        void setSchemaHeader(
+            FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType
+                    .GetSchemaHeaderUnionType
+                schemaHeader);
 
         @JsOverlay
-        default void setId(String id) {
-          setId(
+        default void setSchemaHeader(String schemaHeader) {
+          setSchemaHeader(
               Js
-                  .<FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                          .TableidsListFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                  .<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                          .TablesListFieldType.GetSchemaHeaderUnionType>
+                      uncheckedCast(schemaHeader));
         }
 
         @JsOverlay
-        default void setId(Uint8Array id) {
-          setId(
+        default void setSchemaHeader(Uint8Array schemaHeader) {
+          setSchemaHeader(
               Js
-                  .<FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                          .TableidsListFieldType.GetIdUnionType>
-                      uncheckedCast(id));
+                  .<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                          .TablesListFieldType.GetSchemaHeaderUnionType>
+                      uncheckedCast(schemaHeader));
         }
+
+        @JsProperty
+        void setSize(String size);
+
+        @JsProperty
+        void setSuccess(boolean success);
       }
 
       @JsOverlay
-      static FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType create() {
+      static FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JsArray<FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType>
+      JsArray<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType>
           getChartsList();
 
       @JsProperty
@@ -1814,34 +2490,29 @@ public class FetchFigureResponse {
       double getRows();
 
       @JsProperty
-      JsArray<
-              FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                  .TableidsListFieldType>
-          getTableidsList();
-
-      @JsProperty
-      JsArray<Object> getTablemapsList();
+      JsArray<FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType>
+          getTablesList();
 
       @JsProperty
       String getTitle();
 
       @JsProperty
-      String getTitlecolor();
+      String getTitleColor();
 
       @JsProperty
-      String getTitlefont();
+      String getTitleFont();
 
       @JsProperty
-      double getUpdateinterval();
+      double getUpdateInterval();
 
       @JsOverlay
       default void setChartsList(
-          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.ChartsListFieldType[]
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.ChartsListFieldType[]
               chartsList) {
         setChartsList(
             Js
                 .<JsArray<
-                        FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+                        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                             .ChartsListFieldType>>
                     uncheckedCast(chartsList));
       }
@@ -1849,7 +2520,7 @@ public class FetchFigureResponse {
       @JsProperty
       void setChartsList(
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
+                  FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
                       .ChartsListFieldType>
               chartsList);
 
@@ -1868,43 +2539,35 @@ public class FetchFigureResponse {
       void setRows(double rows);
 
       @JsProperty
-      void setTableidsList(
+      void setTablesList(
           JsArray<
-                  FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                      .TableidsListFieldType>
-              tableidsList);
+                  FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                      .TablesListFieldType>
+              tablesList);
 
       @JsOverlay
-      default void setTableidsList(
-          FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType.TableidsListFieldType[]
-              tableidsList) {
-        setTableidsList(
+      default void setTablesList(
+          FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType.TablesListFieldType[]
+              tablesList) {
+        setTablesList(
             Js
                 .<JsArray<
-                        FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType
-                            .TableidsListFieldType>>
-                    uncheckedCast(tableidsList));
-      }
-
-      @JsProperty
-      void setTablemapsList(JsArray<Object> tablemapsList);
-
-      @JsOverlay
-      default void setTablemapsList(Object[] tablemapsList) {
-        setTablemapsList(Js.<JsArray<Object>>uncheckedCast(tablemapsList));
+                        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType
+                            .TablesListFieldType>>
+                    uncheckedCast(tablesList));
       }
 
       @JsProperty
       void setTitle(String title);
 
       @JsProperty
-      void setTitlecolor(String titlecolor);
+      void setTitleColor(String titleColor);
 
       @JsProperty
-      void setTitlefont(String titlefont);
+      void setTitleFont(String titleFont);
 
       @JsProperty
-      void setUpdateinterval(double updateinterval);
+      void setUpdateInterval(double updateInterval);
     }
 
     @JsOverlay
@@ -1913,11 +2576,11 @@ public class FetchFigureResponse {
     }
 
     @JsProperty
-    FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType getFiguredescriptor();
+    FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType getFigureDescriptor();
 
     @JsProperty
-    void setFiguredescriptor(
-        FetchFigureResponse.ToObjectReturnType0.FiguredescriptorFieldType figuredescriptor);
+    void setFigureDescriptor(
+        FetchFigureResponse.ToObjectReturnType0.FigureDescriptorFieldType figureDescriptor);
   }
 
   public static native FetchFigureResponse deserializeBinary(Uint8Array bytes);
@@ -1930,17 +2593,17 @@ public class FetchFigureResponse {
   public static native FetchFigureResponse.ToObjectReturnType toObject(
       boolean includeInstance, FetchFigureResponse msg);
 
-  public native void clearFiguredescriptor();
+  public native void clearFigureDescriptor();
 
-  public native FigureDescriptor getFiguredescriptor();
+  public native FigureDescriptor getFigureDescriptor();
 
-  public native boolean hasFiguredescriptor();
+  public native boolean hasFigureDescriptor();
 
   public native Uint8Array serializeBinary();
 
-  public native void setFiguredescriptor();
+  public native void setFigureDescriptor();
 
-  public native void setFiguredescriptor(FigureDescriptor value);
+  public native void setFigureDescriptor(FigureDescriptor value);
 
   public native FetchFigureResponse.ToObjectReturnType0 toObject();
 

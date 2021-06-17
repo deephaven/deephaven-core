@@ -19,32 +19,32 @@ public interface AxisPositionMap {
   }
 
   @JsProperty(name = "BOTTOM")
-  double getBOTTOM();
+  int getBOTTOM();
 
   @JsProperty(name = "LEFT")
-  double getLEFT();
+  int getLEFT();
 
   @JsProperty(name = "NONE")
-  double getNONE();
+  int getNONE();
 
   @JsProperty(name = "RIGHT")
-  double getRIGHT();
+  int getRIGHT();
 
   @JsProperty(name = "TOP")
-  double getTOP();
+  int getTOP();
 
   @JsProperty(name = "BOTTOM")
-  void setBOTTOM(double BOTTOM);
+  void setBOTTOM(int BOTTOM);
 
   @JsProperty(name = "LEFT")
-  void setLEFT(double LEFT);
+  void setLEFT(int LEFT);
 
   @JsProperty(name = "NONE")
-  void setNONE(double NONE);
+  void setNONE(int NONE);
 
   @JsProperty(name = "RIGHT")
-  void setRIGHT(double RIGHT);
+  void setRIGHT(int RIGHT);
 
   @JsProperty(name = "TOP")
-  void setTOP(double TOP);
+  void setTOP(int TOP);
 }

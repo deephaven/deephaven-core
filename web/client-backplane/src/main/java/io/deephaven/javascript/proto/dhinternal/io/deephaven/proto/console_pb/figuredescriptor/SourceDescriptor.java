@@ -17,141 +17,28 @@ public class SourceDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AxisFieldType {
+    public interface OneClickFieldType {
       @JsOverlay
-      static SourceDescriptor.ToObjectReturnType.AxisFieldType create() {
+      static SourceDescriptor.ToObjectReturnType.OneClickFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      Object getBusinesscalendardescriptor();
-
-      @JsProperty
-      String getColor();
-
-      @JsProperty
-      String getFormatpattern();
-
-      @JsProperty
-      double getFormattype();
-
-      @JsProperty
-      double getGapbetweenmajorticks();
-
-      @JsProperty
-      String getId();
-
-      @JsProperty
-      String getLabel();
-
-      @JsProperty
-      String getLabelfont();
-
-      @JsProperty
-      JsArray<Double> getMajorticklocationsList();
-
-      @JsProperty
-      double getMaxrange();
-
-      @JsProperty
-      double getMinortickcount();
-
-      @JsProperty
-      double getMinrange();
-
-      @JsProperty
-      double getPosition();
-
-      @JsProperty
-      double getTicklabelangle();
-
-      @JsProperty
-      String getTicksfont();
-
-      @JsProperty
-      double getType();
-
-      @JsProperty
-      boolean isInvert();
-
-      @JsProperty
-      boolean isLog();
-
-      @JsProperty
-      void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-      @JsProperty
-      void setColor(String color);
-
-      @JsProperty
-      void setFormatpattern(String formatpattern);
-
-      @JsProperty
-      void setFormattype(double formattype);
-
-      @JsProperty
-      void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-      @JsProperty
-      void setId(String id);
-
-      @JsProperty
-      void setInvert(boolean invert);
-
-      @JsProperty
-      void setLabel(String label);
-
-      @JsProperty
-      void setLabelfont(String labelfont);
-
-      @JsProperty
-      void setLog(boolean log);
-
-      @JsProperty
-      void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-      @JsOverlay
-      default void setMajorticklocationsList(double[] majorticklocationsList) {
-        setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-      }
-
-      @JsProperty
-      void setMaxrange(double maxrange);
-
-      @JsProperty
-      void setMinortickcount(double minortickcount);
-
-      @JsProperty
-      void setMinrange(double minrange);
-
-      @JsProperty
-      void setPosition(double position);
-
-      @JsProperty
-      void setTicklabelangle(double ticklabelangle);
-
-      @JsProperty
-      void setTicksfont(String ticksfont);
-
-      @JsProperty
-      void setType(double type);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OneclickFieldType {
-      @JsOverlay
-      static SourceDescriptor.ToObjectReturnType.OneclickFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+      JsArray<String> getColumnTypesList();
 
       @JsProperty
       JsArray<String> getColumnsList();
 
       @JsProperty
-      JsArray<String> getColumntypesList();
+      boolean isRequireAllFiltersToDisplay();
 
       @JsProperty
-      boolean isRequireallfilterstodisplay();
+      void setColumnTypesList(JsArray<String> columnTypesList);
+
+      @JsOverlay
+      default void setColumnTypesList(String[] columnTypesList) {
+        setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+      }
 
       @JsProperty
       void setColumnsList(JsArray<String> columnsList);
@@ -162,15 +49,7 @@ public class SourceDescriptor {
       }
 
       @JsProperty
-      void setColumntypesList(JsArray<String> columntypesList);
-
-      @JsOverlay
-      default void setColumntypesList(String[] columntypesList) {
-        setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-      }
-
-      @JsProperty
-      void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+      void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
     }
 
     @JsOverlay
@@ -179,43 +58,43 @@ public class SourceDescriptor {
     }
 
     @JsProperty
-    SourceDescriptor.ToObjectReturnType.AxisFieldType getAxis();
+    String getAxisId();
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    String getColumntype();
+    String getColumnType();
 
     @JsProperty
-    SourceDescriptor.ToObjectReturnType.OneclickFieldType getOneclick();
+    SourceDescriptor.ToObjectReturnType.OneClickFieldType getOneClick();
 
     @JsProperty
-    double getTableid();
+    double getTableId();
 
     @JsProperty
-    double getTablemapid();
+    double getTableMapId();
 
     @JsProperty
     double getType();
 
     @JsProperty
-    void setAxis(SourceDescriptor.ToObjectReturnType.AxisFieldType axis);
+    void setAxisId(String axisId);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setColumntype(String columntype);
+    void setColumnType(String columnType);
 
     @JsProperty
-    void setOneclick(SourceDescriptor.ToObjectReturnType.OneclickFieldType oneclick);
+    void setOneClick(SourceDescriptor.ToObjectReturnType.OneClickFieldType oneClick);
 
     @JsProperty
-    void setTableid(double tableid);
+    void setTableId(double tableId);
 
     @JsProperty
-    void setTablemapid(double tablemapid);
+    void setTableMapId(double tableMapId);
 
     @JsProperty
     void setType(double type);
@@ -224,141 +103,28 @@ public class SourceDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AxisFieldType {
+    public interface OneClickFieldType {
       @JsOverlay
-      static SourceDescriptor.ToObjectReturnType0.AxisFieldType create() {
+      static SourceDescriptor.ToObjectReturnType0.OneClickFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      Object getBusinesscalendardescriptor();
-
-      @JsProperty
-      String getColor();
-
-      @JsProperty
-      String getFormatpattern();
-
-      @JsProperty
-      double getFormattype();
-
-      @JsProperty
-      double getGapbetweenmajorticks();
-
-      @JsProperty
-      String getId();
-
-      @JsProperty
-      String getLabel();
-
-      @JsProperty
-      String getLabelfont();
-
-      @JsProperty
-      JsArray<Double> getMajorticklocationsList();
-
-      @JsProperty
-      double getMaxrange();
-
-      @JsProperty
-      double getMinortickcount();
-
-      @JsProperty
-      double getMinrange();
-
-      @JsProperty
-      double getPosition();
-
-      @JsProperty
-      double getTicklabelangle();
-
-      @JsProperty
-      String getTicksfont();
-
-      @JsProperty
-      double getType();
-
-      @JsProperty
-      boolean isInvert();
-
-      @JsProperty
-      boolean isLog();
-
-      @JsProperty
-      void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-      @JsProperty
-      void setColor(String color);
-
-      @JsProperty
-      void setFormatpattern(String formatpattern);
-
-      @JsProperty
-      void setFormattype(double formattype);
-
-      @JsProperty
-      void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-      @JsProperty
-      void setId(String id);
-
-      @JsProperty
-      void setInvert(boolean invert);
-
-      @JsProperty
-      void setLabel(String label);
-
-      @JsProperty
-      void setLabelfont(String labelfont);
-
-      @JsProperty
-      void setLog(boolean log);
-
-      @JsProperty
-      void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-      @JsOverlay
-      default void setMajorticklocationsList(double[] majorticklocationsList) {
-        setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-      }
-
-      @JsProperty
-      void setMaxrange(double maxrange);
-
-      @JsProperty
-      void setMinortickcount(double minortickcount);
-
-      @JsProperty
-      void setMinrange(double minrange);
-
-      @JsProperty
-      void setPosition(double position);
-
-      @JsProperty
-      void setTicklabelangle(double ticklabelangle);
-
-      @JsProperty
-      void setTicksfont(String ticksfont);
-
-      @JsProperty
-      void setType(double type);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface OneclickFieldType {
-      @JsOverlay
-      static SourceDescriptor.ToObjectReturnType0.OneclickFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+      JsArray<String> getColumnTypesList();
 
       @JsProperty
       JsArray<String> getColumnsList();
 
       @JsProperty
-      JsArray<String> getColumntypesList();
+      boolean isRequireAllFiltersToDisplay();
 
       @JsProperty
-      boolean isRequireallfilterstodisplay();
+      void setColumnTypesList(JsArray<String> columnTypesList);
+
+      @JsOverlay
+      default void setColumnTypesList(String[] columnTypesList) {
+        setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
+      }
 
       @JsProperty
       void setColumnsList(JsArray<String> columnsList);
@@ -369,15 +135,7 @@ public class SourceDescriptor {
       }
 
       @JsProperty
-      void setColumntypesList(JsArray<String> columntypesList);
-
-      @JsOverlay
-      default void setColumntypesList(String[] columntypesList) {
-        setColumntypesList(Js.<JsArray<String>>uncheckedCast(columntypesList));
-      }
-
-      @JsProperty
-      void setRequireallfilterstodisplay(boolean requireallfilterstodisplay);
+      void setRequireAllFiltersToDisplay(boolean requireAllFiltersToDisplay);
     }
 
     @JsOverlay
@@ -386,43 +144,43 @@ public class SourceDescriptor {
     }
 
     @JsProperty
-    SourceDescriptor.ToObjectReturnType0.AxisFieldType getAxis();
+    String getAxisId();
 
     @JsProperty
-    String getColumnname();
+    String getColumnName();
 
     @JsProperty
-    String getColumntype();
+    String getColumnType();
 
     @JsProperty
-    SourceDescriptor.ToObjectReturnType0.OneclickFieldType getOneclick();
+    SourceDescriptor.ToObjectReturnType0.OneClickFieldType getOneClick();
 
     @JsProperty
-    double getTableid();
+    double getTableId();
 
     @JsProperty
-    double getTablemapid();
+    double getTableMapId();
 
     @JsProperty
     double getType();
 
     @JsProperty
-    void setAxis(SourceDescriptor.ToObjectReturnType0.AxisFieldType axis);
+    void setAxisId(String axisId);
 
     @JsProperty
-    void setColumnname(String columnname);
+    void setColumnName(String columnName);
 
     @JsProperty
-    void setColumntype(String columntype);
+    void setColumnType(String columnType);
 
     @JsProperty
-    void setOneclick(SourceDescriptor.ToObjectReturnType0.OneclickFieldType oneclick);
+    void setOneClick(SourceDescriptor.ToObjectReturnType0.OneClickFieldType oneClick);
 
     @JsProperty
-    void setTableid(double tableid);
+    void setTableId(double tableId);
 
     @JsProperty
-    void setTablemapid(double tablemapid);
+    void setTableMapId(double tableMapId);
 
     @JsProperty
     void setType(double type);
@@ -438,47 +196,41 @@ public class SourceDescriptor {
   public static native SourceDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, SourceDescriptor msg);
 
-  public native void clearAxis();
+  public native void clearOneClick();
 
-  public native void clearOneclick();
+  public native String getAxisId();
 
-  public native AxisDescriptor getAxis();
+  public native String getColumnName();
 
-  public native String getColumnname();
+  public native String getColumnType();
 
-  public native String getColumntype();
+  public native OneClickDescriptor getOneClick();
 
-  public native OneClickDescriptor getOneclick();
+  public native int getTableId();
 
-  public native double getTableid();
+  public native int getTableMapId();
 
-  public native double getTablemapid();
+  public native int getType();
 
-  public native double getType();
-
-  public native boolean hasAxis();
-
-  public native boolean hasOneclick();
+  public native boolean hasOneClick();
 
   public native Uint8Array serializeBinary();
 
-  public native void setAxis();
+  public native void setAxisId(String value);
 
-  public native void setAxis(AxisDescriptor value);
+  public native void setColumnName(String value);
 
-  public native void setColumnname(String value);
+  public native void setColumnType(String value);
 
-  public native void setColumntype(String value);
+  public native void setOneClick();
 
-  public native void setOneclick();
+  public native void setOneClick(OneClickDescriptor value);
 
-  public native void setOneclick(OneClickDescriptor value);
+  public native void setTableId(int value);
 
-  public native void setTableid(double value);
+  public native void setTableMapId(int value);
 
-  public native void setTablemapid(double value);
-
-  public native void setType(double value);
+  public native void setType(int value);
 
   public native SourceDescriptor.ToObjectReturnType0 toObject();
 

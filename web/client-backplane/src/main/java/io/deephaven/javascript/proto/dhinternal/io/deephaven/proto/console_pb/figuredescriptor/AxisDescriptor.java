@@ -19,25 +19,193 @@ import jsinterop.base.JsPropertyMap;
 public class AxisDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface BusinessCalendarDescriptorFieldType {
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface BusinessPeriodsListFieldType {
+        @JsOverlay
+        static AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                .BusinessPeriodsListFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getClose();
+
+        @JsProperty
+        String getOpen();
+
+        @JsProperty
+        void setClose(String close);
+
+        @JsProperty
+        void setOpen(String open);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface HolidaysListFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DateFieldType {
+          @JsOverlay
+          static AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                  .HolidaysListFieldType.DateFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getDay();
+
+          @JsProperty
+          double getMonth();
+
+          @JsProperty
+          double getYear();
+
+          @JsProperty
+          void setDay(double day);
+
+          @JsProperty
+          void setMonth(double month);
+
+          @JsProperty
+          void setYear(double year);
+        }
+
+        @JsOverlay
+        static AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                .HolidaysListFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<Object> getBusinessPeriodsList();
+
+        @JsProperty
+        AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType
+                .DateFieldType
+            getDate();
+
+        @JsProperty
+        void setBusinessPeriodsList(JsArray<Object> businessPeriodsList);
+
+        @JsOverlay
+        default void setBusinessPeriodsList(Object[] businessPeriodsList) {
+          setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+        }
+
+        @JsProperty
+        void setDate(
+            AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                    .HolidaysListFieldType.DateFieldType
+                date);
+      }
+
+      @JsOverlay
+      static AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<Double> getBusinessDaysList();
+
+      @JsProperty
+      JsArray<
+              AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                  .BusinessPeriodsListFieldType>
+          getBusinessPeriodsList();
+
+      @JsProperty
+      JsArray<
+              AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                  .HolidaysListFieldType>
+          getHolidaysList();
+
+      @JsProperty
+      String getName();
+
+      @JsProperty
+      String getTimeZone();
+
+      @JsProperty
+      void setBusinessDaysList(JsArray<Double> businessDaysList);
+
+      @JsOverlay
+      default void setBusinessDaysList(double[] businessDaysList) {
+        setBusinessDaysList(Js.<JsArray<Double>>uncheckedCast(businessDaysList));
+      }
+
+      @JsOverlay
+      default void setBusinessPeriodsList(
+          AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType
+                  []
+              businessPeriodsList) {
+        setBusinessPeriodsList(
+            Js
+                .<JsArray<
+                        AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                            .BusinessPeriodsListFieldType>>
+                    uncheckedCast(businessPeriodsList));
+      }
+
+      @JsProperty
+      void setBusinessPeriodsList(
+          JsArray<
+                  AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType>
+              businessPeriodsList);
+
+      @JsOverlay
+      default void setHolidaysList(
+          AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType
+                  []
+              holidaysList) {
+        setHolidaysList(
+            Js
+                .<JsArray<
+                        AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                            .HolidaysListFieldType>>
+                    uncheckedCast(holidaysList));
+      }
+
+      @JsProperty
+      void setHolidaysList(
+          JsArray<
+                  AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType>
+              holidaysList);
+
+      @JsProperty
+      void setName(String name);
+
+      @JsProperty
+      void setTimeZone(String timeZone);
+    }
+
     @JsOverlay
     static AxisDescriptor.ToObjectReturnType create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    Object getBusinesscalendardescriptor();
+    AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+        getBusinessCalendarDescriptor();
 
     @JsProperty
     String getColor();
 
     @JsProperty
-    String getFormatpattern();
+    String getFormatPattern();
 
     @JsProperty
-    double getFormattype();
+    double getFormatType();
 
     @JsProperty
-    double getGapbetweenmajorticks();
+    double getGapBetweenMajorTicks();
 
     @JsProperty
     String getId();
@@ -46,28 +214,28 @@ public class AxisDescriptor {
     String getLabel();
 
     @JsProperty
-    String getLabelfont();
+    String getLabelFont();
 
     @JsProperty
-    JsArray<Double> getMajorticklocationsList();
+    JsArray<Double> getMajorTickLocationsList();
 
     @JsProperty
-    double getMaxrange();
+    double getMaxRange();
 
     @JsProperty
-    double getMinortickcount();
+    double getMinRange();
 
     @JsProperty
-    double getMinrange();
+    double getMinorTickCount();
 
     @JsProperty
     double getPosition();
 
     @JsProperty
-    double getTicklabelangle();
+    double getTickLabelAngle();
 
     @JsProperty
-    String getTicksfont();
+    String getTicksFont();
 
     @JsProperty
     double getType();
@@ -76,22 +244,33 @@ public class AxisDescriptor {
     boolean isInvert();
 
     @JsProperty
+    boolean isIsTimeAxis();
+
+    @JsProperty
     boolean isLog();
 
     @JsProperty
-    void setBusinesscalendardescriptor(Object businesscalendardescriptor);
+    boolean isMajorTicksVisible();
+
+    @JsProperty
+    boolean isMinorTicksVisible();
+
+    @JsProperty
+    void setBusinessCalendarDescriptor(
+        AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType
+            businessCalendarDescriptor);
 
     @JsProperty
     void setColor(String color);
 
     @JsProperty
-    void setFormatpattern(String formatpattern);
+    void setFormatPattern(String formatPattern);
 
     @JsProperty
-    void setFormattype(double formattype);
+    void setFormatType(double formatType);
 
     @JsProperty
-    void setGapbetweenmajorticks(double gapbetweenmajorticks);
+    void setGapBetweenMajorTicks(double gapBetweenMajorTicks);
 
     @JsProperty
     void setId(String id);
@@ -100,39 +279,48 @@ public class AxisDescriptor {
     void setInvert(boolean invert);
 
     @JsProperty
+    void setIsTimeAxis(boolean isTimeAxis);
+
+    @JsProperty
     void setLabel(String label);
 
     @JsProperty
-    void setLabelfont(String labelfont);
+    void setLabelFont(String labelFont);
 
     @JsProperty
     void setLog(boolean log);
 
     @JsProperty
-    void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
+    void setMajorTickLocationsList(JsArray<Double> majorTickLocationsList);
 
     @JsOverlay
-    default void setMajorticklocationsList(double[] majorticklocationsList) {
-      setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
+    default void setMajorTickLocationsList(double[] majorTickLocationsList) {
+      setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
     }
 
     @JsProperty
-    void setMaxrange(double maxrange);
+    void setMajorTicksVisible(boolean majorTicksVisible);
 
     @JsProperty
-    void setMinortickcount(double minortickcount);
+    void setMaxRange(double maxRange);
 
     @JsProperty
-    void setMinrange(double minrange);
+    void setMinRange(double minRange);
+
+    @JsProperty
+    void setMinorTickCount(double minorTickCount);
+
+    @JsProperty
+    void setMinorTicksVisible(boolean minorTicksVisible);
 
     @JsProperty
     void setPosition(double position);
 
     @JsProperty
-    void setTicklabelangle(double ticklabelangle);
+    void setTickLabelAngle(double tickLabelAngle);
 
     @JsProperty
-    void setTicksfont(String ticksfont);
+    void setTicksFont(String ticksFont);
 
     @JsProperty
     void setType(double type);
@@ -140,25 +328,193 @@ public class AxisDescriptor {
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface BusinessCalendarDescriptorFieldType {
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface BusinessPeriodsListFieldType {
+        @JsOverlay
+        static AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                .BusinessPeriodsListFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getClose();
+
+        @JsProperty
+        String getOpen();
+
+        @JsProperty
+        void setClose(String close);
+
+        @JsProperty
+        void setOpen(String open);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface HolidaysListFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DateFieldType {
+          @JsOverlay
+          static AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                  .HolidaysListFieldType.DateFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getDay();
+
+          @JsProperty
+          double getMonth();
+
+          @JsProperty
+          double getYear();
+
+          @JsProperty
+          void setDay(double day);
+
+          @JsProperty
+          void setMonth(double month);
+
+          @JsProperty
+          void setYear(double year);
+        }
+
+        @JsOverlay
+        static AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                .HolidaysListFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<Object> getBusinessPeriodsList();
+
+        @JsProperty
+        AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType
+                .DateFieldType
+            getDate();
+
+        @JsProperty
+        void setBusinessPeriodsList(JsArray<Object> businessPeriodsList);
+
+        @JsOverlay
+        default void setBusinessPeriodsList(Object[] businessPeriodsList) {
+          setBusinessPeriodsList(Js.<JsArray<Object>>uncheckedCast(businessPeriodsList));
+        }
+
+        @JsProperty
+        void setDate(
+            AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                    .HolidaysListFieldType.DateFieldType
+                date);
+      }
+
+      @JsOverlay
+      static AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<Double> getBusinessDaysList();
+
+      @JsProperty
+      JsArray<
+              AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                  .BusinessPeriodsListFieldType>
+          getBusinessPeriodsList();
+
+      @JsProperty
+      JsArray<
+              AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                  .HolidaysListFieldType>
+          getHolidaysList();
+
+      @JsProperty
+      String getName();
+
+      @JsProperty
+      String getTimeZone();
+
+      @JsProperty
+      void setBusinessDaysList(JsArray<Double> businessDaysList);
+
+      @JsOverlay
+      default void setBusinessDaysList(double[] businessDaysList) {
+        setBusinessDaysList(Js.<JsArray<Double>>uncheckedCast(businessDaysList));
+      }
+
+      @JsOverlay
+      default void setBusinessPeriodsList(
+          AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType
+                  []
+              businessPeriodsList) {
+        setBusinessPeriodsList(
+            Js
+                .<JsArray<
+                        AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                            .BusinessPeriodsListFieldType>>
+                    uncheckedCast(businessPeriodsList));
+      }
+
+      @JsProperty
+      void setBusinessPeriodsList(
+          JsArray<
+                  AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                      .BusinessPeriodsListFieldType>
+              businessPeriodsList);
+
+      @JsOverlay
+      default void setHolidaysList(
+          AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType
+                  []
+              holidaysList) {
+        setHolidaysList(
+            Js
+                .<JsArray<
+                        AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                            .HolidaysListFieldType>>
+                    uncheckedCast(holidaysList));
+      }
+
+      @JsProperty
+      void setHolidaysList(
+          JsArray<
+                  AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+                      .HolidaysListFieldType>
+              holidaysList);
+
+      @JsProperty
+      void setName(String name);
+
+      @JsProperty
+      void setTimeZone(String timeZone);
+    }
+
     @JsOverlay
     static AxisDescriptor.ToObjectReturnType0 create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    Object getBusinesscalendardescriptor();
+    AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+        getBusinessCalendarDescriptor();
 
     @JsProperty
     String getColor();
 
     @JsProperty
-    String getFormatpattern();
+    String getFormatPattern();
 
     @JsProperty
-    double getFormattype();
+    double getFormatType();
 
     @JsProperty
-    double getGapbetweenmajorticks();
+    double getGapBetweenMajorTicks();
 
     @JsProperty
     String getId();
@@ -167,28 +523,28 @@ public class AxisDescriptor {
     String getLabel();
 
     @JsProperty
-    String getLabelfont();
+    String getLabelFont();
 
     @JsProperty
-    JsArray<Double> getMajorticklocationsList();
+    JsArray<Double> getMajorTickLocationsList();
 
     @JsProperty
-    double getMaxrange();
+    double getMaxRange();
 
     @JsProperty
-    double getMinortickcount();
+    double getMinRange();
 
     @JsProperty
-    double getMinrange();
+    double getMinorTickCount();
 
     @JsProperty
     double getPosition();
 
     @JsProperty
-    double getTicklabelangle();
+    double getTickLabelAngle();
 
     @JsProperty
-    String getTicksfont();
+    String getTicksFont();
 
     @JsProperty
     double getType();
@@ -197,22 +553,33 @@ public class AxisDescriptor {
     boolean isInvert();
 
     @JsProperty
+    boolean isIsTimeAxis();
+
+    @JsProperty
     boolean isLog();
 
     @JsProperty
-    void setBusinesscalendardescriptor(Object businesscalendardescriptor);
+    boolean isMajorTicksVisible();
+
+    @JsProperty
+    boolean isMinorTicksVisible();
+
+    @JsProperty
+    void setBusinessCalendarDescriptor(
+        AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType
+            businessCalendarDescriptor);
 
     @JsProperty
     void setColor(String color);
 
     @JsProperty
-    void setFormatpattern(String formatpattern);
+    void setFormatPattern(String formatPattern);
 
     @JsProperty
-    void setFormattype(double formattype);
+    void setFormatType(double formatType);
 
     @JsProperty
-    void setGapbetweenmajorticks(double gapbetweenmajorticks);
+    void setGapBetweenMajorTicks(double gapBetweenMajorTicks);
 
     @JsProperty
     void setId(String id);
@@ -221,39 +588,48 @@ public class AxisDescriptor {
     void setInvert(boolean invert);
 
     @JsProperty
+    void setIsTimeAxis(boolean isTimeAxis);
+
+    @JsProperty
     void setLabel(String label);
 
     @JsProperty
-    void setLabelfont(String labelfont);
+    void setLabelFont(String labelFont);
 
     @JsProperty
     void setLog(boolean log);
 
     @JsProperty
-    void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
+    void setMajorTickLocationsList(JsArray<Double> majorTickLocationsList);
 
     @JsOverlay
-    default void setMajorticklocationsList(double[] majorticklocationsList) {
-      setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
+    default void setMajorTickLocationsList(double[] majorTickLocationsList) {
+      setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(majorTickLocationsList));
     }
 
     @JsProperty
-    void setMaxrange(double maxrange);
+    void setMajorTicksVisible(boolean majorTicksVisible);
 
     @JsProperty
-    void setMinortickcount(double minortickcount);
+    void setMaxRange(double maxRange);
 
     @JsProperty
-    void setMinrange(double minrange);
+    void setMinRange(double minRange);
+
+    @JsProperty
+    void setMinorTickCount(double minorTickCount);
+
+    @JsProperty
+    void setMinorTicksVisible(boolean minorTicksVisible);
 
     @JsProperty
     void setPosition(double position);
 
     @JsProperty
-    void setTicklabelangle(double ticklabelangle);
+    void setTickLabelAngle(double tickLabelAngle);
 
     @JsProperty
-    void setTicksfont(String ticksfont);
+    void setTicksFont(String ticksFont);
 
     @JsProperty
     void setType(double type);
@@ -273,96 +649,116 @@ public class AxisDescriptor {
   public static native AxisDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, AxisDescriptor msg);
 
-  public native double addMajorticklocations(double value, double index);
+  public native double addMajorTickLocations(double value, double index);
 
-  public native double addMajorticklocations(double value);
+  public native double addMajorTickLocations(double value);
 
-  public native void clearBusinesscalendardescriptor();
+  public native void clearBusinessCalendarDescriptor();
 
-  public native void clearMajorticklocationsList();
+  public native void clearFormatPattern();
 
-  public native BusinessCalendarDescriptor getBusinesscalendardescriptor();
+  public native void clearGapBetweenMajorTicks();
+
+  public native void clearMajorTickLocationsList();
+
+  public native BusinessCalendarDescriptor getBusinessCalendarDescriptor();
 
   public native String getColor();
 
-  public native String getFormatpattern();
+  public native String getFormatPattern();
 
-  public native double getFormattype();
+  public native int getFormatType();
 
-  public native double getGapbetweenmajorticks();
+  public native double getGapBetweenMajorTicks();
 
   public native String getId();
 
   public native boolean getInvert();
 
+  public native boolean getIsTimeAxis();
+
   public native String getLabel();
 
-  public native String getLabelfont();
+  public native String getLabelFont();
 
   public native boolean getLog();
 
-  public native JsArray<Double> getMajorticklocationsList();
+  public native JsArray<Double> getMajorTickLocationsList();
 
-  public native double getMaxrange();
+  public native boolean getMajorTicksVisible();
 
-  public native double getMinortickcount();
+  public native double getMaxRange();
 
-  public native double getMinrange();
+  public native double getMinRange();
 
-  public native double getPosition();
+  public native int getMinorTickCount();
 
-  public native double getTicklabelangle();
+  public native boolean getMinorTicksVisible();
 
-  public native String getTicksfont();
+  public native int getPosition();
 
-  public native double getType();
+  public native double getTickLabelAngle();
 
-  public native boolean hasBusinesscalendardescriptor();
+  public native String getTicksFont();
+
+  public native int getType();
+
+  public native boolean hasBusinessCalendarDescriptor();
+
+  public native boolean hasFormatPattern();
+
+  public native boolean hasGapBetweenMajorTicks();
 
   public native Uint8Array serializeBinary();
 
-  public native void setBusinesscalendardescriptor();
+  public native void setBusinessCalendarDescriptor();
 
-  public native void setBusinesscalendardescriptor(BusinessCalendarDescriptor value);
+  public native void setBusinessCalendarDescriptor(BusinessCalendarDescriptor value);
 
   public native void setColor(String value);
 
-  public native void setFormatpattern(String value);
+  public native void setFormatPattern(String value);
 
-  public native void setFormattype(double value);
+  public native void setFormatType(int value);
 
-  public native void setGapbetweenmajorticks(double value);
+  public native void setGapBetweenMajorTicks(double value);
 
   public native void setId(String value);
 
   public native void setInvert(boolean value);
 
+  public native void setIsTimeAxis(boolean value);
+
   public native void setLabel(String value);
 
-  public native void setLabelfont(String value);
+  public native void setLabelFont(String value);
 
   public native void setLog(boolean value);
 
-  public native void setMajorticklocationsList(JsArray<Double> value);
+  public native void setMajorTickLocationsList(JsArray<Double> value);
 
   @JsOverlay
-  public final void setMajorticklocationsList(double[] value) {
-    setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(value));
+  public final void setMajorTickLocationsList(double[] value) {
+    setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(value));
   }
 
-  public native void setMaxrange(double value);
+  public native void setMajorTicksVisible(boolean value);
 
-  public native void setMinortickcount(double value);
+  public native void setMaxRange(double value);
 
-  public native void setMinrange(double value);
+  public native void setMinRange(double value);
 
-  public native void setPosition(double value);
+  public native void setMinorTickCount(int value);
 
-  public native void setTicklabelangle(double value);
+  public native void setMinorTicksVisible(boolean value);
 
-  public native void setTicksfont(String value);
+  public native void setPosition(int value);
 
-  public native void setType(double value);
+  public native void setTickLabelAngle(double value);
+
+  public native void setTicksFont(String value);
+
+  public native void setType(int value);
 
   public native AxisDescriptor.ToObjectReturnType0 toObject();
 

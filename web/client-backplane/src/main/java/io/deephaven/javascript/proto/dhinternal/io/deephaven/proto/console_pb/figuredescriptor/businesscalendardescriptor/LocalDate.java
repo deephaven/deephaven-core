@@ -75,19 +75,19 @@ public class LocalDate {
   public static native LocalDate.ToObjectReturnType toObject(
       boolean includeInstance, LocalDate msg);
 
-  public native double getDay();
+  public native int getDay();
 
-  public native double getMonth();
+  public native int getMonth();
 
-  public native double getYear();
+  public native int getYear();
 
   public native Uint8Array serializeBinary();
 
-  public native void setDay(double value);
+  public native void setDay(int value);
 
-  public native void setMonth(double value);
+  public native void setMonth(int value);
 
-  public native void setYear(double value);
+  public native void setYear(int value);
 
   public native LocalDate.ToObjectReturnType0 toObject();
 

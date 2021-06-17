@@ -18,38 +18,38 @@ public interface AxisTypeMap {
   }
 
   @JsProperty(name = "COLOR")
-  double getCOLOR();
+  int getCOLOR();
 
   @JsProperty(name = "LABEL")
-  double getLABEL();
+  int getLABEL();
 
   @JsProperty(name = "SHAPE")
-  double getSHAPE();
+  int getSHAPE();
 
   @JsProperty(name = "SIZE")
-  double getSIZE();
+  int getSIZE();
 
   @JsProperty(name = "X")
-  double getX();
+  int getX();
 
   @JsProperty(name = "Y")
-  double getY();
+  int getY();
 
   @JsProperty(name = "COLOR")
-  void setCOLOR(double COLOR);
+  void setCOLOR(int COLOR);
 
   @JsProperty(name = "LABEL")
-  void setLABEL(double LABEL);
+  void setLABEL(int LABEL);
 
   @JsProperty(name = "SHAPE")
-  void setSHAPE(double SHAPE);
+  void setSHAPE(int SHAPE);
 
   @JsProperty(name = "SIZE")
-  void setSIZE(double SIZE);
+  void setSIZE(int SIZE);
 
   @JsProperty(name = "X")
-  void setX(double X);
+  void setX(int X);
 
   @JsProperty(name = "Y")
-  void setY(double Y);
+  void setY(int Y);
 }

@@ -17,169 +17,46 @@ public class MultiSeriesDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DatasourcesListFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface AxisFieldType {
-        @JsOverlay
-        static MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType
-            create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        Object getBusinesscalendardescriptor();
-
-        @JsProperty
-        String getColor();
-
-        @JsProperty
-        String getFormatpattern();
-
-        @JsProperty
-        double getFormattype();
-
-        @JsProperty
-        double getGapbetweenmajorticks();
-
-        @JsProperty
-        String getId();
-
-        @JsProperty
-        String getLabel();
-
-        @JsProperty
-        String getLabelfont();
-
-        @JsProperty
-        JsArray<Double> getMajorticklocationsList();
-
-        @JsProperty
-        double getMaxrange();
-
-        @JsProperty
-        double getMinortickcount();
-
-        @JsProperty
-        double getMinrange();
-
-        @JsProperty
-        double getPosition();
-
-        @JsProperty
-        double getTicklabelangle();
-
-        @JsProperty
-        String getTicksfont();
-
-        @JsProperty
-        double getType();
-
-        @JsProperty
-        boolean isInvert();
-
-        @JsProperty
-        boolean isLog();
-
-        @JsProperty
-        void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-        @JsProperty
-        void setColor(String color);
-
-        @JsProperty
-        void setFormatpattern(String formatpattern);
-
-        @JsProperty
-        void setFormattype(double formattype);
-
-        @JsProperty
-        void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-        @JsProperty
-        void setId(String id);
-
-        @JsProperty
-        void setInvert(boolean invert);
-
-        @JsProperty
-        void setLabel(String label);
-
-        @JsProperty
-        void setLabelfont(String labelfont);
-
-        @JsProperty
-        void setLog(boolean log);
-
-        @JsProperty
-        void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-        @JsOverlay
-        default void setMajorticklocationsList(double[] majorticklocationsList) {
-          setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-        }
-
-        @JsProperty
-        void setMaxrange(double maxrange);
-
-        @JsProperty
-        void setMinortickcount(double minortickcount);
-
-        @JsProperty
-        void setMinrange(double minrange);
-
-        @JsProperty
-        void setPosition(double position);
-
-        @JsProperty
-        void setTicklabelangle(double ticklabelangle);
-
-        @JsProperty
-        void setTicksfont(String ticksfont);
-
-        @JsProperty
-        void setType(double type);
-      }
-
+    public interface DataSourcesListFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType getAxis();
+      String getAxisId();
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      double getTablemapid();
+      double getTableMapId();
 
       @JsProperty
       double getType();
 
       @JsProperty
-      void setAxis(
-          MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType.AxisFieldType axis);
+      void setAxisId(String axisId);
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
-      void setTablemapid(double tablemapid);
+      void setTableMapId(double tableMapId);
 
       @JsProperty
       void setType(double type);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LinecolorFieldType {
+    public interface LineColorFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType.LinecolorFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType.LineColorFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      String getDefaultstring();
+      String getDefaultString();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -188,7 +65,7 @@ public class MultiSeriesDescriptor {
       JsArray<String> getValuesList();
 
       @JsProperty
-      void setDefaultstring(String defaultstring);
+      void setDefaultString(String defaultString);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -208,9 +85,9 @@ public class MultiSeriesDescriptor {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LinesvisibleFieldType {
+    public interface LinesVisibleFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType.LinesvisibleFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType.LinesVisibleFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -221,10 +98,10 @@ public class MultiSeriesDescriptor {
       JsArray<Boolean> getValuesList();
 
       @JsProperty
-      boolean isDefaultbool();
+      boolean isDefaultBool();
 
       @JsProperty
-      void setDefaultbool(boolean defaultbool);
+      void setDefaultBool(boolean defaultBool);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -244,14 +121,14 @@ public class MultiSeriesDescriptor {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface PointsizeFieldType {
+    public interface PointSizeFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType.PointsizeFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType.PointSizeFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getDefaultdouble();
+      double getDefaultDouble();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -260,7 +137,7 @@ public class MultiSeriesDescriptor {
       JsArray<Double> getValuesList();
 
       @JsProperty
-      void setDefaultdouble(double defaultdouble);
+      void setDefaultDouble(double defaultDouble);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -285,267 +162,144 @@ public class MultiSeriesDescriptor {
     }
 
     @JsProperty
-    JsArray<MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType> getDatasourcesList();
+    JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> getDataSourcesList();
 
     @JsProperty
-    Object getGradientvisible();
+    Object getGradientVisible();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType.LinecolorFieldType getLinecolor();
+    MultiSeriesDescriptor.ToObjectReturnType.LineColorFieldType getLineColor();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType.LinesvisibleFieldType getLinesvisible();
+    MultiSeriesDescriptor.ToObjectReturnType.LinesVisibleFieldType getLinesVisible();
 
     @JsProperty
     String getName();
 
     @JsProperty
-    double getPlotstyle();
+    double getPlotStyle();
 
     @JsProperty
-    Object getPointcolor();
+    Object getPointColor();
 
     @JsProperty
-    Object getPointlabel();
+    Object getPointLabel();
 
     @JsProperty
-    Object getPointlabelformat();
+    Object getPointLabelFormat();
 
     @JsProperty
-    Object getPointshape();
+    Object getPointShape();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType.PointsizeFieldType getPointsize();
+    MultiSeriesDescriptor.ToObjectReturnType.PointSizeFieldType getPointSize();
 
     @JsProperty
-    Object getPointsvisible();
+    Object getPointsVisible();
 
     @JsProperty
-    Object getXtooltippattern();
+    Object getXToolTipPattern();
 
     @JsProperty
-    Object getYtooltippattern();
+    Object getYToolTipPattern();
 
     @JsOverlay
-    default void setDatasourcesList(
-        MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType[] datasourcesList) {
-      setDatasourcesList(
+    default void setDataSourcesList(
+        MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
+      setDataSourcesList(
           Js
-              .<JsArray<MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType>>
-                  uncheckedCast(datasourcesList));
+              .<JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>
+                  uncheckedCast(dataSourcesList));
     }
 
     @JsProperty
-    void setDatasourcesList(
-        JsArray<MultiSeriesDescriptor.ToObjectReturnType.DatasourcesListFieldType> datasourcesList);
+    void setDataSourcesList(
+        JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
 
     @JsProperty
-    void setGradientvisible(Object gradientvisible);
+    void setGradientVisible(Object gradientVisible);
 
     @JsProperty
-    void setLinecolor(MultiSeriesDescriptor.ToObjectReturnType.LinecolorFieldType linecolor);
+    void setLineColor(MultiSeriesDescriptor.ToObjectReturnType.LineColorFieldType lineColor);
 
     @JsProperty
-    void setLinesvisible(
-        MultiSeriesDescriptor.ToObjectReturnType.LinesvisibleFieldType linesvisible);
+    void setLinesVisible(
+        MultiSeriesDescriptor.ToObjectReturnType.LinesVisibleFieldType linesVisible);
 
     @JsProperty
     void setName(String name);
 
     @JsProperty
-    void setPlotstyle(double plotstyle);
+    void setPlotStyle(double plotStyle);
 
     @JsProperty
-    void setPointcolor(Object pointcolor);
+    void setPointColor(Object pointColor);
 
     @JsProperty
-    void setPointlabel(Object pointlabel);
+    void setPointLabel(Object pointLabel);
 
     @JsProperty
-    void setPointlabelformat(Object pointlabelformat);
+    void setPointLabelFormat(Object pointLabelFormat);
 
     @JsProperty
-    void setPointshape(Object pointshape);
+    void setPointShape(Object pointShape);
 
     @JsProperty
-    void setPointsize(MultiSeriesDescriptor.ToObjectReturnType.PointsizeFieldType pointsize);
+    void setPointSize(MultiSeriesDescriptor.ToObjectReturnType.PointSizeFieldType pointSize);
 
     @JsProperty
-    void setPointsvisible(Object pointsvisible);
+    void setPointsVisible(Object pointsVisible);
 
     @JsProperty
-    void setXtooltippattern(Object xtooltippattern);
+    void setXToolTipPattern(Object xToolTipPattern);
 
     @JsProperty
-    void setYtooltippattern(Object ytooltippattern);
+    void setYToolTipPattern(Object yToolTipPattern);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DatasourcesListFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface AxisFieldType {
-        @JsOverlay
-        static MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType
-            create() {
-          return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        Object getBusinesscalendardescriptor();
-
-        @JsProperty
-        String getColor();
-
-        @JsProperty
-        String getFormatpattern();
-
-        @JsProperty
-        double getFormattype();
-
-        @JsProperty
-        double getGapbetweenmajorticks();
-
-        @JsProperty
-        String getId();
-
-        @JsProperty
-        String getLabel();
-
-        @JsProperty
-        String getLabelfont();
-
-        @JsProperty
-        JsArray<Double> getMajorticklocationsList();
-
-        @JsProperty
-        double getMaxrange();
-
-        @JsProperty
-        double getMinortickcount();
-
-        @JsProperty
-        double getMinrange();
-
-        @JsProperty
-        double getPosition();
-
-        @JsProperty
-        double getTicklabelangle();
-
-        @JsProperty
-        String getTicksfont();
-
-        @JsProperty
-        double getType();
-
-        @JsProperty
-        boolean isInvert();
-
-        @JsProperty
-        boolean isLog();
-
-        @JsProperty
-        void setBusinesscalendardescriptor(Object businesscalendardescriptor);
-
-        @JsProperty
-        void setColor(String color);
-
-        @JsProperty
-        void setFormatpattern(String formatpattern);
-
-        @JsProperty
-        void setFormattype(double formattype);
-
-        @JsProperty
-        void setGapbetweenmajorticks(double gapbetweenmajorticks);
-
-        @JsProperty
-        void setId(String id);
-
-        @JsProperty
-        void setInvert(boolean invert);
-
-        @JsProperty
-        void setLabel(String label);
-
-        @JsProperty
-        void setLabelfont(String labelfont);
-
-        @JsProperty
-        void setLog(boolean log);
-
-        @JsProperty
-        void setMajorticklocationsList(JsArray<Double> majorticklocationsList);
-
-        @JsOverlay
-        default void setMajorticklocationsList(double[] majorticklocationsList) {
-          setMajorticklocationsList(Js.<JsArray<Double>>uncheckedCast(majorticklocationsList));
-        }
-
-        @JsProperty
-        void setMaxrange(double maxrange);
-
-        @JsProperty
-        void setMinortickcount(double minortickcount);
-
-        @JsProperty
-        void setMinrange(double minrange);
-
-        @JsProperty
-        void setPosition(double position);
-
-        @JsProperty
-        void setTicklabelangle(double ticklabelangle);
-
-        @JsProperty
-        void setTicksfont(String ticksfont);
-
-        @JsProperty
-        void setType(double type);
-      }
-
+    public interface DataSourcesListFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType getAxis();
+      String getAxisId();
 
       @JsProperty
-      String getColumnname();
+      String getColumnName();
 
       @JsProperty
-      double getTablemapid();
+      double getTableMapId();
 
       @JsProperty
       double getType();
 
       @JsProperty
-      void setAxis(
-          MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType.AxisFieldType axis);
+      void setAxisId(String axisId);
 
       @JsProperty
-      void setColumnname(String columnname);
+      void setColumnName(String columnName);
 
       @JsProperty
-      void setTablemapid(double tablemapid);
+      void setTableMapId(double tableMapId);
 
       @JsProperty
       void setType(double type);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LinecolorFieldType {
+    public interface LineColorFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType0.LinecolorFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType0.LineColorFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      String getDefaultstring();
+      String getDefaultString();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -554,7 +308,7 @@ public class MultiSeriesDescriptor {
       JsArray<String> getValuesList();
 
       @JsProperty
-      void setDefaultstring(String defaultstring);
+      void setDefaultString(String defaultString);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -574,9 +328,9 @@ public class MultiSeriesDescriptor {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LinesvisibleFieldType {
+    public interface LinesVisibleFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType0.LinesvisibleFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType0.LinesVisibleFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -587,10 +341,10 @@ public class MultiSeriesDescriptor {
       JsArray<Boolean> getValuesList();
 
       @JsProperty
-      boolean isDefaultbool();
+      boolean isDefaultBool();
 
       @JsProperty
-      void setDefaultbool(boolean defaultbool);
+      void setDefaultBool(boolean defaultBool);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -610,14 +364,14 @@ public class MultiSeriesDescriptor {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface PointsizeFieldType {
+    public interface PointSizeFieldType {
       @JsOverlay
-      static MultiSeriesDescriptor.ToObjectReturnType0.PointsizeFieldType create() {
+      static MultiSeriesDescriptor.ToObjectReturnType0.PointSizeFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      double getDefaultdouble();
+      double getDefaultDouble();
 
       @JsProperty
       JsArray<String> getKeysList();
@@ -626,7 +380,7 @@ public class MultiSeriesDescriptor {
       JsArray<Double> getValuesList();
 
       @JsProperty
-      void setDefaultdouble(double defaultdouble);
+      void setDefaultDouble(double defaultDouble);
 
       @JsProperty
       void setKeysList(JsArray<String> keysList);
@@ -651,101 +405,101 @@ public class MultiSeriesDescriptor {
     }
 
     @JsProperty
-    JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType>
-        getDatasourcesList();
+    JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>
+        getDataSourcesList();
 
     @JsProperty
-    Object getGradientvisible();
+    Object getGradientVisible();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType0.LinecolorFieldType getLinecolor();
+    MultiSeriesDescriptor.ToObjectReturnType0.LineColorFieldType getLineColor();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType0.LinesvisibleFieldType getLinesvisible();
+    MultiSeriesDescriptor.ToObjectReturnType0.LinesVisibleFieldType getLinesVisible();
 
     @JsProperty
     String getName();
 
     @JsProperty
-    double getPlotstyle();
+    double getPlotStyle();
 
     @JsProperty
-    Object getPointcolor();
+    Object getPointColor();
 
     @JsProperty
-    Object getPointlabel();
+    Object getPointLabel();
 
     @JsProperty
-    Object getPointlabelformat();
+    Object getPointLabelFormat();
 
     @JsProperty
-    Object getPointshape();
+    Object getPointShape();
 
     @JsProperty
-    MultiSeriesDescriptor.ToObjectReturnType0.PointsizeFieldType getPointsize();
+    MultiSeriesDescriptor.ToObjectReturnType0.PointSizeFieldType getPointSize();
 
     @JsProperty
-    Object getPointsvisible();
+    Object getPointsVisible();
 
     @JsProperty
-    Object getXtooltippattern();
+    Object getXToolTipPattern();
 
     @JsProperty
-    Object getYtooltippattern();
+    Object getYToolTipPattern();
 
     @JsOverlay
-    default void setDatasourcesList(
-        MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType[] datasourcesList) {
-      setDatasourcesList(
+    default void setDataSourcesList(
+        MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
+      setDataSourcesList(
           Js
-              .<JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType>>
-                  uncheckedCast(datasourcesList));
+              .<JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>
+                  uncheckedCast(dataSourcesList));
     }
 
     @JsProperty
-    void setDatasourcesList(
-        JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DatasourcesListFieldType>
-            datasourcesList);
+    void setDataSourcesList(
+        JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>
+            dataSourcesList);
 
     @JsProperty
-    void setGradientvisible(Object gradientvisible);
+    void setGradientVisible(Object gradientVisible);
 
     @JsProperty
-    void setLinecolor(MultiSeriesDescriptor.ToObjectReturnType0.LinecolorFieldType linecolor);
+    void setLineColor(MultiSeriesDescriptor.ToObjectReturnType0.LineColorFieldType lineColor);
 
     @JsProperty
-    void setLinesvisible(
-        MultiSeriesDescriptor.ToObjectReturnType0.LinesvisibleFieldType linesvisible);
+    void setLinesVisible(
+        MultiSeriesDescriptor.ToObjectReturnType0.LinesVisibleFieldType linesVisible);
 
     @JsProperty
     void setName(String name);
 
     @JsProperty
-    void setPlotstyle(double plotstyle);
+    void setPlotStyle(double plotStyle);
 
     @JsProperty
-    void setPointcolor(Object pointcolor);
+    void setPointColor(Object pointColor);
 
     @JsProperty
-    void setPointlabel(Object pointlabel);
+    void setPointLabel(Object pointLabel);
 
     @JsProperty
-    void setPointlabelformat(Object pointlabelformat);
+    void setPointLabelFormat(Object pointLabelFormat);
 
     @JsProperty
-    void setPointshape(Object pointshape);
+    void setPointShape(Object pointShape);
 
     @JsProperty
-    void setPointsize(MultiSeriesDescriptor.ToObjectReturnType0.PointsizeFieldType pointsize);
+    void setPointSize(MultiSeriesDescriptor.ToObjectReturnType0.PointSizeFieldType pointSize);
 
     @JsProperty
-    void setPointsvisible(Object pointsvisible);
+    void setPointsVisible(Object pointsVisible);
 
     @JsProperty
-    void setXtooltippattern(Object xtooltippattern);
+    void setXToolTipPattern(Object xToolTipPattern);
 
     @JsProperty
-    void setYtooltippattern(Object ytooltippattern);
+    void setYToolTipPattern(Object yToolTipPattern);
   }
 
   public static native MultiSeriesDescriptor deserializeBinary(Uint8Array bytes);
@@ -758,143 +512,143 @@ public class MultiSeriesDescriptor {
   public static native MultiSeriesDescriptor.ToObjectReturnType toObject(
       boolean includeInstance, MultiSeriesDescriptor msg);
 
-  public native MultiSeriesSourceDescriptor addDatasources();
+  public native MultiSeriesSourceDescriptor addDataSources();
 
-  public native MultiSeriesSourceDescriptor addDatasources(
+  public native MultiSeriesSourceDescriptor addDataSources(
       MultiSeriesSourceDescriptor value, double index);
 
-  public native MultiSeriesSourceDescriptor addDatasources(MultiSeriesSourceDescriptor value);
+  public native MultiSeriesSourceDescriptor addDataSources(MultiSeriesSourceDescriptor value);
 
-  public native void clearDatasourcesList();
+  public native void clearDataSourcesList();
 
-  public native void clearGradientvisible();
+  public native void clearGradientVisible();
 
-  public native void clearLinecolor();
+  public native void clearLineColor();
 
-  public native void clearLinesvisible();
+  public native void clearLinesVisible();
 
-  public native void clearPointcolor();
+  public native void clearPointColor();
 
-  public native void clearPointlabel();
+  public native void clearPointLabel();
 
-  public native void clearPointlabelformat();
+  public native void clearPointLabelFormat();
 
-  public native void clearPointshape();
+  public native void clearPointShape();
 
-  public native void clearPointsize();
+  public native void clearPointSize();
 
-  public native void clearPointsvisible();
+  public native void clearPointsVisible();
 
-  public native void clearXtooltippattern();
+  public native void clearXToolTipPattern();
 
-  public native void clearYtooltippattern();
+  public native void clearYToolTipPattern();
 
-  public native JsArray<MultiSeriesSourceDescriptor> getDatasourcesList();
+  public native JsArray<MultiSeriesSourceDescriptor> getDataSourcesList();
 
-  public native BoolMapWithDefault getGradientvisible();
+  public native BoolMapWithDefault getGradientVisible();
 
-  public native StringMapWithDefault getLinecolor();
+  public native StringMapWithDefault getLineColor();
 
-  public native BoolMapWithDefault getLinesvisible();
+  public native BoolMapWithDefault getLinesVisible();
 
   public native String getName();
 
-  public native double getPlotstyle();
+  public native int getPlotStyle();
 
-  public native StringMapWithDefault getPointcolor();
+  public native StringMapWithDefault getPointColor();
 
-  public native StringMapWithDefault getPointlabel();
+  public native StringMapWithDefault getPointLabel();
 
-  public native StringMapWithDefault getPointlabelformat();
+  public native StringMapWithDefault getPointLabelFormat();
 
-  public native StringMapWithDefault getPointshape();
+  public native StringMapWithDefault getPointShape();
 
-  public native DoubleMapWithDefault getPointsize();
+  public native DoubleMapWithDefault getPointSize();
 
-  public native BoolMapWithDefault getPointsvisible();
+  public native BoolMapWithDefault getPointsVisible();
 
-  public native StringMapWithDefault getXtooltippattern();
+  public native StringMapWithDefault getXToolTipPattern();
 
-  public native StringMapWithDefault getYtooltippattern();
+  public native StringMapWithDefault getYToolTipPattern();
 
-  public native boolean hasGradientvisible();
+  public native boolean hasGradientVisible();
 
-  public native boolean hasLinecolor();
+  public native boolean hasLineColor();
 
-  public native boolean hasLinesvisible();
+  public native boolean hasLinesVisible();
 
-  public native boolean hasPointcolor();
+  public native boolean hasPointColor();
 
-  public native boolean hasPointlabel();
+  public native boolean hasPointLabel();
 
-  public native boolean hasPointlabelformat();
+  public native boolean hasPointLabelFormat();
 
-  public native boolean hasPointshape();
+  public native boolean hasPointShape();
 
-  public native boolean hasPointsize();
+  public native boolean hasPointSize();
 
-  public native boolean hasPointsvisible();
+  public native boolean hasPointsVisible();
 
-  public native boolean hasXtooltippattern();
+  public native boolean hasXToolTipPattern();
 
-  public native boolean hasYtooltippattern();
+  public native boolean hasYToolTipPattern();
 
   public native Uint8Array serializeBinary();
 
-  public native void setDatasourcesList(JsArray<MultiSeriesSourceDescriptor> value);
+  public native void setDataSourcesList(JsArray<MultiSeriesSourceDescriptor> value);
 
   @JsOverlay
-  public final void setDatasourcesList(MultiSeriesSourceDescriptor[] value) {
-    setDatasourcesList(Js.<JsArray<MultiSeriesSourceDescriptor>>uncheckedCast(value));
+  public final void setDataSourcesList(MultiSeriesSourceDescriptor[] value) {
+    setDataSourcesList(Js.<JsArray<MultiSeriesSourceDescriptor>>uncheckedCast(value));
   }
 
-  public native void setGradientvisible();
+  public native void setGradientVisible();
 
-  public native void setGradientvisible(BoolMapWithDefault value);
+  public native void setGradientVisible(BoolMapWithDefault value);
 
-  public native void setLinecolor();
+  public native void setLineColor();
 
-  public native void setLinecolor(StringMapWithDefault value);
+  public native void setLineColor(StringMapWithDefault value);
 
-  public native void setLinesvisible();
+  public native void setLinesVisible();
 
-  public native void setLinesvisible(BoolMapWithDefault value);
+  public native void setLinesVisible(BoolMapWithDefault value);
 
   public native void setName(String value);
 
-  public native void setPlotstyle(double value);
+  public native void setPlotStyle(int value);
 
-  public native void setPointcolor();
+  public native void setPointColor();
 
-  public native void setPointcolor(StringMapWithDefault value);
+  public native void setPointColor(StringMapWithDefault value);
 
-  public native void setPointlabel();
+  public native void setPointLabel();
 
-  public native void setPointlabel(StringMapWithDefault value);
+  public native void setPointLabel(StringMapWithDefault value);
 
-  public native void setPointlabelformat();
+  public native void setPointLabelFormat();
 
-  public native void setPointlabelformat(StringMapWithDefault value);
+  public native void setPointLabelFormat(StringMapWithDefault value);
 
-  public native void setPointshape();
+  public native void setPointShape();
 
-  public native void setPointshape(StringMapWithDefault value);
+  public native void setPointShape(StringMapWithDefault value);
 
-  public native void setPointsize();
+  public native void setPointSize();
 
-  public native void setPointsize(DoubleMapWithDefault value);
+  public native void setPointSize(DoubleMapWithDefault value);
 
-  public native void setPointsvisible();
+  public native void setPointsVisible();
 
-  public native void setPointsvisible(BoolMapWithDefault value);
+  public native void setPointsVisible(BoolMapWithDefault value);
 
-  public native void setXtooltippattern();
+  public native void setXToolTipPattern();
 
-  public native void setXtooltippattern(StringMapWithDefault value);
+  public native void setXToolTipPattern(StringMapWithDefault value);
 
-  public native void setYtooltippattern();
+  public native void setYToolTipPattern();
 
-  public native void setYtooltippattern(StringMapWithDefault value);
+  public native void setYToolTipPattern(StringMapWithDefault value);
 
   public native MultiSeriesDescriptor.ToObjectReturnType0 toObject();
 
