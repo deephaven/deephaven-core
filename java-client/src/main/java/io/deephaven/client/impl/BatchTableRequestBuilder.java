@@ -1,7 +1,9 @@
-package io.deephaven.client;
+package io.deephaven.client.impl;
 
+import com.google.protobuf.ByteString;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
+import io.deephaven.api.Strings;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -20,13 +22,8 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.ByTable;
-import io.deephaven.api.ColumnAssignment;
-import io.deephaven.api.ColumnFormula;
-import io.deephaven.api.ColumnMatch;
-import io.deephaven.api.ColumnName;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.api.Expression;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -35,7 +32,6 @@ import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.QueryScopeTable;
-import io.deephaven.api.RawString;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.api.Selectable;
@@ -71,74 +67,75 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class BatchTableRequestBuilder {
 
-    private final Set<Table> exports;
-    private final Map<Table, Integer> indices;
+    private static final Collector<ExportedTableImpl, ?, Map<Table, ExportedTableImpl>> TABLE_TO_EXPORT_COLLECTOR =
+        Collectors.toMap(ExportedTableImpl::table, Function.identity());
 
-    public BatchTableRequestBuilder() {
-        exports = new HashSet<>();
-        indices = new HashMap<>();
-    }
-
-    public synchronized BatchTableRequestBuilder addExports(Table... tables) {
-        return addExports(Arrays.asList(tables));
-    }
-
-    public synchronized BatchTableRequestBuilder addExports(Collection<Table> tables) {
-        exports.addAll(tables);
-        return this;
-    }
-
-    public synchronized BatchTableRequest build() {
-        final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
-        try (final Stream<Table> stream =
-            exports.stream().flatMap(ParentsVisitor::getAncestorsAndSelf).distinct()) {
-            final Iterator<Table> it = stream.iterator();
-            for (int ix = 0; it.hasNext(); ix++) {
-                final Table next = it.next();
-                final boolean exported = exports.contains(next);
-                final Ticket ticket = exported ? createExportTicket() : Ticket.getDefaultInstance();
-                final Operation operation = next.walk(new OperationAdapter(ticket)).getOut();
-                builder.addOps(operation);
-                indices.put(next, ix);
-            }
+    static BatchTableRequest build(List<ExportedTableImpl> exports) {
+        if (exports.isEmpty()) {
+            throw new IllegalArgumentException();
         }
-        return builder.build();
-    }
 
-    private Ticket createExportTicket() {
-        throw new UnsupportedOperationException("TODO");
+        final Map<Table, ExportedTableImpl> tableToExport =
+            exports.stream().collect(TABLE_TO_EXPORT_COLLECTOR);
+
+        // this is a depth-first ordering without duplicates, ensuring we create the dependencies
+        // in the preferred/resolvable order
+        final List<Table> tables = exports.stream().map(ExportedTableImpl::table)
+            .flatMap(ParentsVisitor::getAncestorsAndSelf).distinct().collect(Collectors.toList());
+
+        final Map<Table, Integer> indices = new HashMap<>(tables.size());
+        final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
+        int ix = 0;
+        for (Table next : tables) {
+            final ExportedTableImpl exportedTable = tableToExport.get(next);
+
+            final Ticket ticket = exportedTable == null ? Ticket.getDefaultInstance()
+                : Ticket.newBuilder().setId(longToByteString(exportedTable.ticket())).build();
+
+            final Operation operation = next.walk(new OperationAdapter(ticket, indices)).getOut();
+            builder.addOps(operation);
+            indices.put(next, ix++);
+        }
+
+        return builder.build();
     }
 
     private static <T> Operation op(BiFunction<Builder, T, Builder> f, T value) {
         return f.apply(Operation.newBuilder(), value).build();
     }
 
-    private TableReference ref(Table table) {
-        final Integer ix = indices.get(table);
-        if (ix == null) {
-            throw new IllegalStateException();
-        }
-        return TableReference.newBuilder().setBatchOffset(ix).build();
-    }
-
-    private class OperationAdapter implements Table.Visitor {
+    private static class OperationAdapter implements Table.Visitor {
         private final Ticket ticket;
+        private final Map<Table, Integer> indices;
         private Operation out;
 
-        OperationAdapter(Ticket ticket) {
+        OperationAdapter(Ticket ticket, Map<Table, Integer> indices) {
             this.ticket = Objects.requireNonNull(ticket);
+            this.indices = Objects.requireNonNull(indices);
         }
 
         public Operation getOut() {
             return Objects.requireNonNull(out);
+        }
+
+        private TableReference ref(Table table) {
+            final Integer ix = indices.get(table);
+            if (ix == null) {
+                throw new IllegalStateException();
+            }
+            return TableReference.newBuilder().setBatchOffset(ix).build();
         }
 
         @Override
@@ -159,14 +156,14 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(HeadTable headTable) {
-            out = op(Builder::setHead,
-                HeadOrTailRequest.newBuilder().setResultId(ticket).setNumRows(headTable.size()));
+            out = op(Builder::setHead, HeadOrTailRequest.newBuilder().setResultId(ticket)
+                .setSourceId(ref(headTable.parent())).setNumRows(headTable.size()));
         }
 
         @Override
         public void visit(TailTable tailTable) {
-            out = op(Builder::setTail,
-                HeadOrTailRequest.newBuilder().setResultId(ticket).setNumRows(tailTable.size()));
+            out = op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
+                .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
         }
 
         @Override
@@ -174,6 +171,7 @@ class BatchTableRequestBuilder {
             // a bit hacky at the proto level, but this is how to specify a reverse
             out = op(Builder::setSort,
                 SortTableRequest.newBuilder().setResultId(ticket)
+                    .setSourceId(ref(reverseTable.parent()))
                     .addSorts(
                         SortDescriptor.newBuilder().setDirection(SortDirection.REVERSE).build())
                     .build());
@@ -181,7 +179,8 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(SortTable sortTable) {
-            SortTableRequest.Builder builder = SortTableRequest.newBuilder().setResultId(ticket);
+            SortTableRequest.Builder builder = SortTableRequest.newBuilder().setResultId(ticket)
+                .setSourceId(ref(sortTable.parent()));
             for (SortColumn column : sortTable.columns()) {
                 SortDescriptor descriptor =
                     SortDescriptor.newBuilder().setColumnName(column.column().name())
@@ -245,38 +244,38 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(ByTable byTable) {
-            ComboAggregateRequest.Builder builder =
-                ComboAggregateRequest.newBuilder().setResultId(ticket);
+            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
+                .setResultId(ticket).setSourceId(ref(byTable.parent()));
             for (Selectable column : byTable.columns()) {
-                builder = builder.addGroupByColumns(SelectableString.of(column));
+                builder.addGroupByColumns(Strings.of(column));
             }
             out = op(Builder::setComboAggregate, builder);
         }
 
         @Override
         public void visit(AggregationTable aggregationTable) {
-            ComboAggregateRequest.Builder builder =
-                ComboAggregateRequest.newBuilder().setResultId(ticket);
+            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
+                .setResultId(ticket).setSourceId(ref(aggregationTable.parent()));
             for (Selectable column : aggregationTable.columns()) {
-                builder = builder.addGroupByColumns(SelectableString.of(column));
+                builder.addGroupByColumns(Strings.of(column));
             }
             for (Aggregation aggregation : aggregationTable.aggregations()) {
-                builder = builder.addAggregates(AggregationAdapter.of(aggregation));
+                builder.addAggregates(AggregationAdapter.of(aggregation));
             }
             out = op(Builder::setComboAggregate, builder);
         }
 
         private Operation join(Type type, Table left, Table right, Collection<JoinMatch> matches,
             Collection<JoinAddition> additions) {
-            JoinTablesRequest.Builder joinBuilder = JoinTablesRequest.newBuilder()
-                .setResultId(ticket).setJoinType(type).setLeftId(ref(left)).setRightId(ref(right));
+            JoinTablesRequest.Builder builder = JoinTablesRequest.newBuilder().setResultId(ticket)
+                .setJoinType(type).setLeftId(ref(left)).setRightId(ref(right));
             for (JoinMatch match : matches) {
-                joinBuilder = joinBuilder.addColumnsToMatch(JoinMatchString.of(match));
+                builder.addColumnsToMatch(Strings.of(match));
             }
             for (JoinAddition addition : additions) {
-                joinBuilder = joinBuilder.addColumnsToAdd(JoinAdditionString.of(addition));
+                builder.addColumnsToAdd(Strings.of(addition));
             }
-            return op(Builder::setJoin, joinBuilder);
+            return op(Builder::setJoin, builder);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
@@ -284,100 +283,9 @@ class BatchTableRequestBuilder {
             SelectOrUpdateRequest.Builder builder =
                 SelectOrUpdateRequest.newBuilder().setResultId(ticket).setSourceId(ref(x.parent()));
             for (Selectable column : columns) {
-                builder = builder.addColumnSpecs(SelectableString.of(column));
+                builder.addColumnSpecs(Strings.of(column));
             }
             return builder.build();
-        }
-    }
-
-    private static class JoinMatchString implements JoinMatch.Visitor {
-
-        public static String of(JoinMatch match) {
-            return match.walk(new JoinMatchString()).getOut();
-        }
-
-        private String out;
-
-        public String getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName columnName) {
-            out = columnName.name();
-        }
-
-        @Override
-        public void visit(ColumnMatch columnMatch) {
-            out = String.format("%s=%s", columnMatch.left(), columnMatch.right());
-        }
-    }
-
-    private static class JoinAdditionString implements JoinAddition.Visitor {
-        public static String of(JoinAddition addition) {
-            return addition.walk(new JoinAdditionString()).getOut();
-        }
-
-        private String out;
-
-        public String getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName columnName) {
-            out = columnName.name();
-        }
-
-        @Override
-        public void visit(ColumnAssignment columnAssignment) {
-            out = String.format("%s=%s", columnAssignment.newColumn(),
-                columnAssignment.existingColumn());
-        }
-    }
-
-    private static class SelectableString implements Selectable.Visitor {
-        public static String of(Selectable selectable) {
-            return selectable.walk(new SelectableString()).getOut();
-        }
-
-        private String out;
-
-        public String getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName columnName) {
-            out = columnName.name();
-        }
-
-        @Override
-        public void visit(ColumnFormula columnFormula) {
-            out = String.format("%s=%s", columnFormula.newColumn().name(),
-                ExpressionString.of(columnFormula.expression()));
-        }
-    }
-
-    private static class ExpressionString implements Expression.Visitor {
-        public static String of(Expression expression) {
-            return expression.walk(new ExpressionString()).getOut();
-        }
-
-        private String out;
-
-        public String getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName name) {
-            out = name.name();
-        }
-
-        @Override
-        public void visit(RawString rawString) {
-            out = rawString.value();
         }
     }
 
@@ -394,8 +302,7 @@ class BatchTableRequestBuilder {
         }
 
         private Aggregate.Builder of(AggType type, Aggregation agg) {
-            return Aggregate.newBuilder().setType(type)
-                .addMatchPairs(JoinMatchString.of(agg.match()));
+            return Aggregate.newBuilder().setType(type).addMatchPairs(Strings.of(agg.match()));
         }
 
         @Override
@@ -484,5 +391,16 @@ class BatchTableRequestBuilder {
         public void visit(Array array) {
             out = of(AggType.ARRAY, array).build();
         }
+    }
+
+    public static ByteString longToByteString(long value) {
+        // todo: make common location
+        // Note: Little-Endian
+        final byte[] result = new byte[8];
+        for (int i = 0; i < 8; i++) {
+            result[i] = (byte) (value & 0xffL);
+            value >>= 8;
+        }
+        return ByteString.copyFrom(result);
     }
 }
