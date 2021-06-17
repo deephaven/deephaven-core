@@ -32,7 +32,7 @@ public interface SelectColumn {
         return selectable.walk(new SelectColumnAdapter()).getOut();
     }
 
-    static SelectColumn[] of(Collection<Selectable> selectables) {
+    static SelectColumn[] from(Collection<Selectable> selectables) {
         return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
     }
 

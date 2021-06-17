@@ -4,7 +4,13 @@
 
 package io.deephaven.db.tables;
 
+import io.deephaven.api.Filter;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -28,12 +34,6 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.api.TableOperations;
-import io.deephaven.api.Filter;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -377,7 +377,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table where2(Collection<Filter> filters) {
-        return where(filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new));
+        return where(SelectFilter.from(filters));
     }
 
     @AsyncMethod
@@ -452,12 +452,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     default Table whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
-        return whereIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+        return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
     @Override
     default Table whereNotIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
-        return whereNotIn(rightTable, columnsToMatch.stream().map(MatchPair::of).toArray(MatchPair[]::new));
+        return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
     /**
@@ -543,7 +543,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     default Table select2(Collection<Selectable> columns) {
-        return select(SelectColumn.of(columns));
+        return select(SelectColumn.from(columns));
     }
 
     @AsyncMethod
@@ -576,7 +576,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     default Table update2(Collection<Selectable> columns) {
-        return update(SelectColumn.of(columns));
+        return update(SelectColumn.from(columns));
     }
 
     /**
@@ -632,7 +632,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table view2(Collection<Selectable> columns) {
-        return view(SelectColumn.of(columns));
+        return view(SelectColumn.from(columns));
     }
 
     @AsyncMethod
@@ -651,7 +651,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table updateView2(Collection<Selectable> columns) {
-        return updateView(SelectColumn.of(columns));
+        return updateView(SelectColumn.from(columns));
     }
 
     @AsyncMethod
@@ -941,13 +941,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        return exactJoin(
-            rightTable,
-            MatchPair.fromMatches(columnsToMatch),
-            MatchPair.fromAddition(columnsToAdd));
-    }
-
     default Table exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
         return exactJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
     }
@@ -962,6 +955,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     default Table exactJoin(Table rightTable, String columnsToMatch) {
         return exactJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
+    }
+
+    @Override
+    default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return exactJoin(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     enum AsOfMatchRule {
@@ -1175,13 +1176,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
-        return naturalJoin(
-            rightTable,
-            MatchPair.fromMatches(columnsToMatch),
-            MatchPair.fromAddition(columnsToAdd));
-    }
-
     default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
         return naturalJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
     }
@@ -1196,6 +1190,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     default Table naturalJoin(Table rightTable, String columnsToMatch) {
         return naturalJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
+    }
+
+    @Override
+    default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return naturalJoin(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     /**
@@ -1547,15 +1549,15 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @Override
     @AsyncMethod
     default Table by2(Collection<Selectable> groupByColumns) {
-        return by(SelectColumn.of(groupByColumns));
+        return by(SelectColumn.from(groupByColumns));
     }
 
     @Override
     @AsyncMethod
     default Table by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations) {
         return by(
-            ComboAggregateFactory.AggCombo(ComboBy.of(aggregations)),
-            SelectColumn.of(groupByColumns));
+            ComboAggregateFactory.AggCombo(ComboBy.from(aggregations)),
+            SelectColumn.from(groupByColumns));
     }
 
     default Table headBy(long nRows, SelectColumn... groupByColumns) {

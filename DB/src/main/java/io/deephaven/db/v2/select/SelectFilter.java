@@ -13,6 +13,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Filter;
 import io.deephaven.api.RawString;
+import java.util.Collection;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,8 +23,13 @@ import java.util.List;
  * Interface for individual filters within a where clause.
  */
 public interface SelectFilter {
+
     static SelectFilter of(Filter filter) {
         return filter.walk(new Adapter()).getOut();
+    }
+
+    static SelectFilter[] from(Collection<Filter> filters) {
+        return filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new);
     }
 
     /**

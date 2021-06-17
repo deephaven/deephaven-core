@@ -582,11 +582,12 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     public interface ComboBy {
+
         static ComboBy of(Aggregation agg) {
             return agg.walk(new ComboByAggregationAdapter()).getOut();
         }
 
-        static ComboBy[] of(Collection<Aggregation> agg) {
+        static ComboBy[] from(Collection<Aggregation> agg) {
             return agg.stream().map(ComboBy::of).toArray(ComboBy[]::new);
         }
 
