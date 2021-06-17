@@ -52,6 +52,8 @@ services:
     image: deephaven/web:local-build
     expose:
       - "80"
+    volumes:
+      - ./docker/core/data:/data
     deploy:
       resources:
         limits:
