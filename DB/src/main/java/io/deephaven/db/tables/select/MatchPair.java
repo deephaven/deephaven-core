@@ -26,11 +26,11 @@ public class MatchPair implements Serializable {
     public static final MatchPair [] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
 
     public static MatchPair of(JoinMatch joinMatch) {
-        return joinMatch.walk(new JoinMatchVisitor()).getOut();
+        return joinMatch.walk(new Adapter()).getOut();
     }
 
     public static MatchPair of(JoinAddition joinAddition) {
-        return joinAddition.walk(new JoinAdditionVisitor()).getOut();
+        return joinAddition.walk(new Adapter()).getOut();
     }
 
     public final String leftColumn;
@@ -125,7 +125,7 @@ public class MatchPair implements Serializable {
         return Objects.hash(leftColumn, rightColumn);
     }
 
-    private static class JoinMatchVisitor implements JoinMatch.Visitor {
+    private static class Adapter implements JoinMatch.Visitor, JoinAddition.Visitor {
         private MatchPair out;
 
         public MatchPair getOut() {
@@ -140,19 +140,6 @@ public class MatchPair implements Serializable {
         @Override
         public void visit(ColumnMatch columnMatch) {
             out = new MatchPair(columnMatch.left().name(), columnMatch.right().name());
-        }
-    }
-
-    private static class JoinAdditionVisitor implements JoinAddition.Visitor {
-        private MatchPair out;
-
-        public MatchPair getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName columnName) {
-            out = new MatchPair(columnName.name(), columnName.name());
         }
 
         @Override
