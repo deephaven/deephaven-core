@@ -6,9 +6,15 @@ package io.deephaven.db.v2.select;
 
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.select.SelectFilterFactory;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Filter;
+import io.deephaven.api.RawString;
+import java.util.Collection;
+import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -17,6 +23,15 @@ import java.util.List;
  * Interface for individual filters within a where clause.
  */
 public interface SelectFilter {
+
+    static SelectFilter of(Filter filter) {
+        return filter.walk(new Adapter()).getOut();
+    }
+
+    static SelectFilter[] from(Collection<Filter> filters) {
+        return filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new);
+    }
+
     /**
      * Users of SelectFilter may implement this interface if they must react to the filter fundamentally changing.
      *
@@ -159,6 +174,27 @@ public interface SelectFilter {
 
         public PreviousFilteringNotSupported(String message) {
             super(message);
+        }
+    }
+
+    class Adapter implements Filter.Visitor {
+        private SelectFilter out;
+
+        private Adapter() {}
+
+        public SelectFilter getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(ColumnName name) {
+            out = SelectFilterFactory.getExpression(name.name()); // todo: improve
+
+        }
+
+        @Override
+        public void visit(RawString rawString) {
+            out = SelectFilterFactory.getExpression(rawString.value());
         }
     }
 }

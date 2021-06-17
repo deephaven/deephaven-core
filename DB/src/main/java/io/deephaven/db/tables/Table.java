@@ -4,6 +4,13 @@
 
 package io.deephaven.db.tables;
 
+import io.deephaven.api.Filter;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -20,6 +27,7 @@ import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.by.AggregationIndexStateFactory;
 import io.deephaven.db.v2.by.AggregationStateFactory;
 import io.deephaven.db.v2.by.ComboAggregateFactory;
+import io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy;
 import io.deephaven.db.v2.iterators.*;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.select.SelectColumn;
@@ -35,7 +43,7 @@ import java.util.stream.Collectors;
 /**
  * A Deephaven table.
  */
-public interface Table extends LongSizedDataStructure, LivenessNode {
+public interface Table extends LongSizedDataStructure, LivenessNode, TableOperations<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
@@ -362,6 +370,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
+    @Override
+    @AsyncMethod
+    default Table where2(Collection<Filter> filters) {
+        return where(SelectFilter.from(filters));
+    }
+
     @AsyncMethod
     default Table wouldMatch(String... expressions) {
         return wouldMatch(WouldMatchPairFactory.getExpressions(expressions));
@@ -399,10 +413,16 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     default Table whereIn(Table rightTable, String... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
     }
+    default Table whereIn(Table rightTable, Collection<String> columnsToMatch) {
+        return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
+    }
     default Table whereIn(Table rightTable, MatchPair... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, columnsToMatch);
     }
     default Table whereNotIn(Table rightTable, String... columnsToMatch) {
+        return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
+    }
+    default Table whereNotIn(Table rightTable, Collection<String> columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
     }
     default Table whereNotIn(Table rightTable, MatchPair... columnsToMatch) {
@@ -424,6 +444,16 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
 
     default Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, String... columnsToMatch) {
         return whereIn(groupStrategy, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
+    }
+
+    @Override
+    default Table whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+        return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
+    }
+
+    @Override
+    default Table whereNotIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+        return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
     /**
@@ -507,6 +537,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return select(getDefinition().getColumnNamesArray());
     }
 
+    @Override
+    default Table select2(Collection<Selectable> columns) {
+        return select(SelectColumn.from(columns));
+    }
+
     @AsyncMethod
     Table selectDistinct(SelectColumn... columns);
 
@@ -533,6 +568,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
 
     default Table update(Collection<String> newColumns) {
         return update(SelectColumnFactory.getExpressions(newColumns));
+    }
+
+    @Override
+    default Table update2(Collection<Selectable> columns) {
+        return update(SelectColumn.from(columns));
     }
 
     /**
@@ -585,6 +625,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return view(SelectColumnFactory.getExpressions(columns));
     }
 
+    @Override
+    @AsyncMethod
+    default Table view2(Collection<Selectable> columns) {
+        return view(SelectColumn.from(columns));
+    }
+
     @AsyncMethod
     Table updateView(SelectColumn... newColumns);
 
@@ -596,6 +642,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     @AsyncMethod
     default Table updateView(Collection<String> newColumns) {
         return updateView(SelectColumnFactory.getExpressions(newColumns));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table updateView2(Collection<Selectable> columns) {
+        return updateView(SelectColumn.from(columns));
     }
 
     @AsyncMethod
@@ -901,6 +953,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return exactJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
     }
 
+    @Override
+    default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return exactJoin(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
+    }
+
     enum AsOfMatchRule {
         LESS_THAN_EQUAL,
         LESS_THAN,
@@ -1126,6 +1186,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
 
     default Table naturalJoin(Table rightTable, String columnsToMatch) {
         return naturalJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
+    }
+
+    @Override
+    default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return naturalJoin(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
     }
 
     /**
@@ -1429,6 +1497,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
      */
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
+    @Override
+    default Table join2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return join(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -1464,6 +1540,20 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
     @AsyncMethod
     default Table by() {
         return by(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    }
+
+    @Override
+    @AsyncMethod
+    default Table by2(Collection<Selectable> groupByColumns) {
+        return by(SelectColumn.from(groupByColumns));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations) {
+        return by(
+            ComboAggregateFactory.AggCombo(ComboBy.from(aggregations)),
+            SelectColumn.from(groupByColumns));
     }
 
     default Table headBy(long nRows, SelectColumn... groupByColumns) {
@@ -2266,6 +2356,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
         return sortDescending(columnsToSortBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
+    @Override
+    @AsyncMethod
+    default Table sort2(List<SortColumn> columnsToSortBy) {
+        return sort(SortPair.from(columnsToSortBy));
+    }
+
     @AsyncMethod
     Table reverse();
 
@@ -2465,4 +2561,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode {
 
     @Deprecated
     void addColumnGrouping(String columnName);
+
+    @Override
+    default Table toTable() {
+        return this;
+    }
+
 }

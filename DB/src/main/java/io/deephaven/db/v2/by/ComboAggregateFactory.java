@@ -22,6 +22,23 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Avg;
+import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.CountDistinct;
+import io.deephaven.api.agg.Distinct;
+import io.deephaven.api.agg.First;
+import io.deephaven.api.agg.Last;
+import io.deephaven.api.agg.Max;
+import io.deephaven.api.agg.Med;
+import io.deephaven.api.agg.Min;
+import io.deephaven.api.agg.Pct;
+import io.deephaven.api.agg.Std;
+import io.deephaven.api.agg.Sum;
+import io.deephaven.api.agg.Var;
+import io.deephaven.api.agg.WAvg;
+import io.deephaven.api.agg.WSum;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -565,6 +582,15 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     public interface ComboBy {
+
+        static ComboBy of(Aggregation agg) {
+            return agg.walk(new ComboByAggregationAdapter()).getOut();
+        }
+
+        static ComboBy[] from(Collection<Aggregation> agg) {
+            return agg.stream().map(ComboBy::of).toArray(ComboBy[]::new);
+        }
+
         AggregationStateFactory getUnderlyingStateFactory();
         String [] getSourceColumns();
         MatchPair [] getResultPairs();
@@ -1351,5 +1377,98 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
         table.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, TableMap.emptyMap());
         table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
+    }
+
+    private static class ComboByAggregationAdapter implements Aggregation.Visitor {
+
+        private ComboBy out;
+
+        public ComboBy getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        static String asMatchPair(Aggregation match) {
+            return MatchPair.of(match.match()).toString();
+        }
+
+        @Override
+        public void visit(Min min) {
+            out = AggMin(asMatchPair(min));
+        }
+
+        @Override
+        public void visit(Max max) {
+            out = AggMax(asMatchPair(max));
+        }
+
+        @Override
+        public void visit(Sum sum) {
+            out = AggSum(asMatchPair(sum));
+        }
+
+        @Override
+        public void visit(Var var) {
+            out = AggVar(asMatchPair(var));
+        }
+
+        @Override
+        public void visit(Avg avg) {
+            out = AggAvg(asMatchPair(avg));
+        }
+
+        @Override
+        public void visit(First first) {
+            out = AggFirst(asMatchPair(first));
+        }
+
+        @Override
+        public void visit(Last last) {
+            out = AggLast(asMatchPair(last));
+        }
+
+        @Override
+        public void visit(Std std) {
+            out = AggStd(asMatchPair(std));
+        }
+
+        @Override
+        public void visit(Med med) {
+            out = AggPct(0.50d, med.averageMedian(), asMatchPair(med));
+        }
+
+        @Override
+        public void visit(Pct pct) {
+            out = AggPct(pct.percentile(), pct.averageMedian(), asMatchPair(pct));
+        }
+
+        @Override
+        public void visit(WSum wSum) {
+            out = AggWSum(wSum.weight().name(), asMatchPair(wSum));
+        }
+
+        @Override
+        public void visit(WAvg wAvg) {
+            out = AggWSum(wAvg.weight().name(), asMatchPair(wAvg));
+        }
+
+        @Override
+        public void visit(Count count) {
+            out = AggCount(count.column().name());
+        }
+
+        @Override
+        public void visit(CountDistinct countDistinct) {
+            out = AggCountDistinct(countDistinct.countNulls(), asMatchPair(countDistinct));
+        }
+
+        @Override
+        public void visit(Distinct distinct) {
+            out = AggDistinct(distinct.includeNulls(), asMatchPair(distinct));
+        }
+
+        @Override
+        public void visit(Array array) {
+            out = AggArray(asMatchPair(array));
+        }
     }
 }

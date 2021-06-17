@@ -7,9 +7,17 @@ package io.deephaven.db.v2.select;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
+import io.deephaven.db.tables.select.SelectColumnFactory;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.WritableSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.api.ColumnFormula;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Expression;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
+import java.util.Collection;
+import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -19,6 +27,15 @@ import java.util.Map;
  * The interface for a query table to perform retrieve values from a column for select like operations.
  */
 public interface SelectColumn {
+
+    static SelectColumn of(Selectable selectable) {
+        return selectable.walk(new SelectColumnAdapter()).getOut();
+    }
+
+    static SelectColumn[] from(Collection<Selectable> selectables) {
+        return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
+    }
+
     /**
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */
@@ -128,4 +145,38 @@ public interface SelectColumn {
      * @return an independent copy of this SelectColumn.
      */
     SelectColumn copy();
+
+    class SelectColumnAdapter implements Selectable.Visitor {
+
+        private SelectColumn out;
+
+        private SelectColumnAdapter() {}
+
+        public SelectColumn getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(ColumnName columnName) {
+            out = new SourceColumn(columnName.name());
+        }
+
+        @Override
+        public void visit(ColumnFormula columnFormula) {
+            final String lhs = columnFormula.newColumn().name();
+            columnFormula.expression().walk(new Expression.Visitor() {
+                @Override
+                public void visit(ColumnName name) {
+                    final String rhs = name.name();
+                    out = new SourceColumn(rhs, lhs);
+                }
+
+                @Override
+                public void visit(RawString rawString) {
+                    final String rhs = rawString.value();
+                    out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs, rhs));
+                }
+            });
+        }
+    }
 }
