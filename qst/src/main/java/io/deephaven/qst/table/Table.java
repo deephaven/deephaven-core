@@ -1,7 +1,11 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.TableOperations;
-import io.deephaven.qst.table.agg.Aggregation;
+import io.deephaven.api.Filter;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
 import java.util.Collection;
 
 public interface Table extends TableOperations<Table, Table> {

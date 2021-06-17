@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.table.agg.Aggregation;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import java.util.List;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

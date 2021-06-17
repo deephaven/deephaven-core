@@ -1,5 +1,6 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.api.Selectable;
 import java.util.List;
 import org.immutables.value.Value.Immutable;
 

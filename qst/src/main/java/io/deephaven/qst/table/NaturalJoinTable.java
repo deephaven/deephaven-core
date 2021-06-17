@@ -1,5 +1,7 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
 import java.util.List;
 import org.immutables.value.Value.Immutable;
 

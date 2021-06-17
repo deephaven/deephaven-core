@@ -27,12 +27,12 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.qst.TableOperations;
-import io.deephaven.qst.table.Filter;
-import io.deephaven.qst.table.JoinAddition;
-import io.deephaven.qst.table.JoinMatch;
-import io.deephaven.qst.table.Selectable;
-import io.deephaven.qst.table.agg.Aggregation;
+import io.deephaven.api.TableOperations;
+import io.deephaven.api.Filter;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

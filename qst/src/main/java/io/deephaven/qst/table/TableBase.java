@@ -1,6 +1,10 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.table.agg.Aggregation;
+import io.deephaven.api.Filter;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;

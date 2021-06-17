@@ -10,9 +10,9 @@ import io.deephaven.db.tables.select.SelectFilterFactory;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.qst.table.ColumnName;
-import io.deephaven.qst.table.Filter;
-import io.deephaven.qst.table.RawString;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Filter;
+import io.deephaven.api.RawString;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 

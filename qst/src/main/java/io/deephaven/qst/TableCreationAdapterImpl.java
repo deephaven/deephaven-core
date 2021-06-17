@@ -1,5 +1,6 @@
 package io.deephaven.qst;
 
+import io.deephaven.api.TableOperations;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
@@ -22,22 +23,22 @@ import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
 import java.util.Objects;
 
-class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, TABLE>
+class TableCreationAdapterImpl<TABLE_OPS extends TableOperations<TABLE_OPS, TABLE>, TABLE>
     implements Visitor {
 
-    static <BUILDER extends TableOperations<BUILDER, TABLE>, TABLE> BUILDER of(
-        TableCreation<BUILDER, TABLE> creation, Table table) {
+    static <TABLE_OPS extends TableOperations<TABLE_OPS, TABLE>, TABLE> TABLE_OPS of(
+        TableCreation<TABLE_OPS, TABLE> creation, Table table) {
         return table.walk(new TableCreationAdapterImpl<>(creation)).getOut();
     }
 
-    private final TableCreation<BUILDER, TABLE> tableCreation;
-    private BUILDER out;
+    private final TableCreation<TABLE_OPS, TABLE> tableCreation;
+    private TABLE_OPS out;
 
-    private TableCreationAdapterImpl(TableCreation<BUILDER, TABLE> tableCreation) {
+    private TableCreationAdapterImpl(TableCreation<TABLE_OPS, TABLE> tableCreation) {
         this.tableCreation = Objects.requireNonNull(tableCreation);
     }
 
-    public BUILDER getOut() {
+    public TABLE_OPS getOut() {
         return Objects.requireNonNull(out);
     }
 
@@ -73,15 +74,15 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
 
     @Override
     public void visit(WhereInTable whereInTable) {
-        final BUILDER left = of(tableCreation, whereInTable.left());
-        final BUILDER right = of(tableCreation, whereInTable.right());
+        final TABLE_OPS left = of(tableCreation, whereInTable.left());
+        final TABLE_OPS right = of(tableCreation, whereInTable.right());
         out = left.whereIn2(right.toTable(), whereInTable.matches());
     }
 
     @Override
     public void visit(WhereNotInTable whereNotInTable) {
-        final BUILDER left = of(tableCreation, whereNotInTable.left());
-        final BUILDER right = of(tableCreation, whereNotInTable.right());
+        final TABLE_OPS left = of(tableCreation, whereNotInTable.left());
+        final TABLE_OPS right = of(tableCreation, whereNotInTable.right());
         out = left.whereNotIn2(right.toTable(), whereNotInTable.matches());
     }
 
@@ -112,24 +113,24 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
 
     @Override
     public void visit(NaturalJoinTable naturalJoinTable) {
-        final BUILDER left = of(tableCreation, naturalJoinTable.left());
-        final BUILDER right = of(tableCreation, naturalJoinTable.right());
+        final TABLE_OPS left = of(tableCreation, naturalJoinTable.left());
+        final TABLE_OPS right = of(tableCreation, naturalJoinTable.right());
         out = left.naturalJoin2(right.toTable(), naturalJoinTable.matches(),
             naturalJoinTable.additions());
     }
 
     @Override
     public void visit(ExactJoinTable exactJoinTable) {
-        final BUILDER left = of(tableCreation, exactJoinTable.left());
-        final BUILDER right = of(tableCreation, exactJoinTable.right());
+        final TABLE_OPS left = of(tableCreation, exactJoinTable.left());
+        final TABLE_OPS right = of(tableCreation, exactJoinTable.right());
         out =
             left.exactJoin2(right.toTable(), exactJoinTable.matches(), exactJoinTable.additions());
     }
 
     @Override
     public void visit(JoinTable joinTable) {
-        final BUILDER left = of(tableCreation, joinTable.left());
-        final BUILDER right = of(tableCreation, joinTable.right());
+        final TABLE_OPS left = of(tableCreation, joinTable.left());
+        final TABLE_OPS right = of(tableCreation, joinTable.right());
         out = left.join2(right.toTable(), joinTable.matches(), joinTable.additions());
     }
 
@@ -144,7 +145,7 @@ class TableCreationAdapterImpl<BUILDER extends TableOperations<BUILDER, TABLE>, 
             aggregationTable.aggregations());
     }
 
-    private BUILDER parent(SingleParentTable table) {
+    private TABLE_OPS parent(SingleParentTable table) {
         return of(tableCreation, table.parent());
     }
 }

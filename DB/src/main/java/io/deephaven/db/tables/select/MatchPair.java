@@ -8,11 +8,11 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.db.tables.utils.DBNameValidator;
 
-import io.deephaven.qst.table.ColumnAssignment;
-import io.deephaven.qst.table.ColumnMatch;
-import io.deephaven.qst.table.ColumnName;
-import io.deephaven.qst.table.JoinAddition;
-import io.deephaven.qst.table.JoinMatch;
+import io.deephaven.api.ColumnAssignment;
+import io.deephaven.api.ColumnMatch;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
