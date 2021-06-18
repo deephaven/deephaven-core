@@ -1,11 +1,11 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.filterdescription;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.literal;
 
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.FilterDescription.ValueCase",
+    name = "dhinternal.io.deephaven.proto.table_pb.Literal.ValueCase",
     namespace = JsPackage.GLOBAL)
 public class ValueCase {
   public static int BOOL_VALUE,

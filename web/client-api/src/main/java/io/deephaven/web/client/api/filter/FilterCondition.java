@@ -1,101 +1,103 @@
 package io.deephaven.web.client.api.filter;
 
-import elemental2.core.Global;
 import elemental2.core.JsArray;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.web.client.api.Column;
-import io.deephaven.web.shared.ast.FilterPrinter;
-import io.deephaven.web.shared.ast.FilterValidator;
-import io.deephaven.web.shared.data.FilterDescriptor;
-import io.deephaven.web.shared.data.FilterDescriptor.FilterOperation;
 import jsinterop.annotations.*;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 @JsType(namespace = "dh")
 public class FilterCondition {
 
     @JsIgnore
-    private final FilterDescriptor descriptor;
+    private final Condition descriptor;
 
     @JsMethod(namespace = "dh.FilterCondition")
-    public static FilterCondition invoke(String function, FilterValue... params) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.INVOKE);
-        descriptor.setValue(function);
-        descriptor.setChildren(FilterValue.buildDescriptors(null, params));
+    public static FilterCondition invoke(String function, FilterValue... args) {
+        InvokeCondition invoke = new InvokeCondition();
+        invoke.setMethod(function);
+        invoke.setArgumentsList(Arrays.stream(args).map(v -> v.descriptor).toArray(Value[]::new));
 
-        return createAndValidate(descriptor);
+        Condition c = new Condition();
+        c.setInvoke(invoke);
+
+        return createAndValidate(c);
     }
 
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition search(FilterValue value, @JsOptional FilterValue[] columns) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.SEARCH);
-        if (columns == null) {
-            descriptor.setChildren(new FilterDescriptor[]{value.descriptor});
-        } else {
-            descriptor.setChildren(FilterValue.buildDescriptors(value.descriptor, columns));
+        SearchCondition search = new SearchCondition();
+        search.setSearchString(value.descriptor.getLiteral().getStringValue());
+        if (columns != null) {
+            search.setOptionalReferencesList(Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
         }
 
-        return createAndValidate(descriptor);
+        Condition c = new Condition();
+        c.setSearch(search);
+
+        return createAndValidate(c);
     }
 
     @JsIgnore
-    public FilterCondition(FilterDescriptor descriptor) {
+    public FilterCondition(Condition descriptor) {
         this.descriptor = descriptor;
     }
 
     public FilterCondition not() {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.NOT);
-        descriptor.setChildren(new FilterDescriptor[]{this.descriptor});
-        return createAndValidate(descriptor);
+        NotCondition not = new NotCondition();
+        not.setFilter(descriptor);
+
+        Condition c = new Condition();
+        c.setNot(not);
+
+        return createAndValidate(c);
     }
 
     @JsIgnore
-    protected static FilterCondition createAndValidate(FilterDescriptor descriptor) {
-        descriptor.accept(new FilterValidator((a, b) -> true, a -> true));
+    protected static FilterCondition createAndValidate(Condition descriptor) {
+        //TODO (deephaven-core#723) re-introduce client-side validation so that a client knows right away when
+        //                          they build something invalid
         return new FilterCondition(descriptor);
     }
 
-    public FilterCondition and(FilterCondition one, FilterCondition... more) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.AND);
-        descriptor.setChildren(buildDescriptors(this.descriptor, one, more));
-        return createAndValidate(descriptor);
+    public FilterCondition and(FilterCondition... filters) {
+        AndCondition and = new AndCondition();
+        and.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor)).toArray(Condition[]::new));
+
+        Condition c = new Condition();
+        c.setAnd(and);
+
+        return createAndValidate(c);
     }
 
 
-    public FilterCondition or(FilterCondition one, FilterCondition... more) {
-        FilterDescriptor descriptor = new FilterDescriptor();
-        descriptor.setOperation(FilterOperation.OR);
-        descriptor.setChildren(buildDescriptors(this.descriptor, one, more));
-        return createAndValidate(descriptor);
+    public FilterCondition or(FilterCondition... filters) {
+        OrCondition or = new OrCondition();
+        or.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor)).toArray(Condition[]::new));
+
+        Condition c = new Condition();
+        c.setOr(or);
+
+        return createAndValidate(c);
     }
 
     @JsIgnore
-    public FilterDescriptor makeDescriptor() {
+    public Condition makeDescriptor() {
         // these are immutable, so we can just return the instance
         return descriptor;
     }
 
     @JsMethod
     public String toString() {
-        return new FilterPrinter(Global.JSON::stringify).print(descriptor);
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
+        return descriptor.toString();
     }
 
     @JsProperty
     public JsArray<Column> getColumns() {
         return new JsArray<>();
-    }
-
-    @JsIgnore
-    private static FilterDescriptor[] buildDescriptors(FilterDescriptor descriptor, FilterCondition one, FilterCondition[] more) {
-        FilterDescriptor[] descriptors = new FilterDescriptor[more.length + 2];
-        descriptors[0] = descriptor;
-        descriptors[1] = one.descriptor;
-        for (int i = 0; i < more.length; i++) {
-            descriptors[i + 2] = more[i].descriptor;
-        }
-        return descriptors;
     }
 
     @Override
