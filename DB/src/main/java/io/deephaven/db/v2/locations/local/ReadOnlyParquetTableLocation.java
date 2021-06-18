@@ -11,6 +11,7 @@ import io.deephaven.db.v2.locations.parquet.*;
 import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.util.codec.ByteArrayCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
@@ -177,7 +178,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                 }
 
                 if (toPage == null) {
-                    switch (type.getPrimitiveTypeName()) {
+                    final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
+                    switch (typeName) {
                         case BOOLEAN:
                             toPage = ToBooleanAsBytePage.create(pageType);
                             break;
@@ -195,15 +197,22 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             break;
                         case BINARY:
                         case FIXED_LEN_BYTE_ARRAY:
+                            //noinspection rawtypes
+                            final ObjectCodec codec;
                             if (isCodec) {
                                 final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
-                                //noinspection rawtypes
-                                final ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
-                                //noinspection unchecked
-                                toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
+                                codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                             } else {
-                                throw new TableDataException("No codec in parquet file for binary blob.");
+                                final String codecParams;
+                                if (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY) {
+                                    codecParams = Integer.toString(type.getTypeLength());
+                                } else {
+                                    codecParams = null;
+                                }
+                                codec = CodecCache.DEFAULT.getCodec(io.deephaven.util.codec.ByteArrayCodec.class.getName(), codecParams);
                             }
+                            //noinspection unchecked
+                            toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
                             break;
                         case INT96:
                         default:

@@ -19,6 +19,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -282,7 +283,8 @@ public class ParquetReaderUtil {
 
         for (ColumnDescriptor column : schema.getColumns()) {
             currentColumn.setValue(column);
-            final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
+            final PrimitiveType primitiveType = column.getPrimitiveType();
+            final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
             final String parquetColumnName = column.getPath()[0];
             final String colName;
             final String mappedName = readInstructions.getColumnNameMapping(parquetColumnName);
@@ -295,8 +297,8 @@ public class ParquetReaderUtil {
                 colName = parquetColumnName;
             }
             final boolean isGrouping = groupingCols.contains(colName);
-            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
-            final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
+            String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
+            String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
             final String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
@@ -318,7 +320,8 @@ public class ParquetReaderUtil {
             }
             final boolean isArray = column.getMaxRepetitionLevel() > 0;
             if (logicalTypeAnnotation == null) {
-                switch (column.getPrimitiveType().getPrimitiveTypeName()) {
+                final PrimitiveType.PrimitiveTypeName typeName = primitiveType.getPrimitiveTypeName();
+                switch (typeName) {
                     case BOOLEAN:
                         if (isArray) {
                             colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGrouping, codecName, codecArgs);
@@ -367,6 +370,12 @@ public class ParquetReaderUtil {
                                 throw new UncheckedDeephavenException(exceptionTextSupplier.get()
                                         + " with unknown special type " + specialType);
                             }
+                        }
+                        if (codecName == null || codecName.isEmpty()) {
+                            codecName = io.deephaven.util.codec.ByteArrayCodec.class.getName();
+                            codecArgs =  (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                ? Integer.toString(primitiveType.getTypeLength())
+                                : null;
                         }
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
