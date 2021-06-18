@@ -24,6 +24,10 @@ class ExportedTableImpl implements ExportedTable {
         return state.table();
     }
 
+    synchronized final boolean isReleased() {
+        return released;
+    }
+
     @Override
     public synchronized final ExportedTable newRef() {
         if (released) {

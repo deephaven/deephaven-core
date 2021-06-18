@@ -1,10 +1,13 @@
 package io.deephaven.client.impl;
 
+import static io.deephaven.client.impl.BatchTableRequestBuilder.byteStringToLong;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 import io.deephaven.client.ExportedTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
+import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.HeadTable;
@@ -12,6 +15,7 @@ import io.deephaven.qst.table.Table;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +71,18 @@ public class ExportManagerImplTest {
     }
 
     @Test
+    void newRefCanOutliveOriginal() {
+        final EmptyTable empty42 = Table.empty(42L);
+        final ExportedTableImpl newRef;
+        try (final ExportedTableImpl ref = (ExportedTableImpl) impl.export(empty42)) {
+            newRef = (ExportedTableImpl) ref.newRef();
+        }
+        assertThat(newRef.isReleased()).isFalse();
+        newRef.release();
+        assertThat(newRef.isReleased()).isTrue();
+    }
+
+    @Test
     void errorAfterRelease() {
         final EmptyTable empty42 = Table.empty(42L);
         final ExportedTable steal;
@@ -108,6 +124,48 @@ public class ExportManagerImplTest {
         assertThat(impl.batchTableRequests.get(0).getOpsList()).hasSize(2);
         assertThat(impl.batchTableRequests.get(0).getOpsList().get(0).hasEmptyTable()).isTrue();
         assertThat(impl.batchTableRequests.get(0).getOpsList().get(1).hasHead()).isTrue();
+    }
+
+    @Test
+    void reusePreviousExports() {
+        final EmptyTable empty42 = Table.empty(42L);
+        final HeadTable empty42head6 = empty42.head(6);
+        try (final ExportedTableImpl e1 = (ExportedTableImpl) impl.export(empty42);
+            final ExportedTableImpl e2 = (ExportedTableImpl) impl.export(empty42head6)) {
+
+            assertThat(impl.batchTableRequests).hasSize(2);
+            // Check that we are re-using the ticket from e1
+            assertThat(impl.batchTableRequests.get(1).getOpsList()).hasSize(1);
+            assertThat(impl.batchTableRequests.get(1).getOps(0))
+                .satisfies(op -> hasSourceId(op, e1.ticket()));
+        }
+    }
+
+    @Test
+    void mustReexportIfPreviousHasBeenReleased() {
+        final EmptyTable empty42 = Table.empty(42L);
+        final HeadTable empty42head6 = empty42.head(6);
+        try (final ExportedTableImpl e1 = (ExportedTableImpl) impl.export(empty42)) {
+            // ignore
+        }
+        try (final ExportedTableImpl e2 = (ExportedTableImpl) impl.export(empty42head6)) {
+            assertThat(impl.batchTableRequests).hasSize(2);
+            // Check that we aren't reusing the ticket from e1
+            assertThat(impl.batchTableRequests.get(1).getOpsList()).hasSize(2);
+        }
+    }
+
+    private static boolean hasSourceId(Operation op, long ticket) {
+        final List<TableReference> references =
+            ProtoHelper.getSourceIds(op).limit(2).collect(Collectors.toList());
+        if (references.size() != 1) {
+            return false;
+        }
+        final TableReference ref = references.get(0);
+        if (!ref.hasTicket()) {
+            return false;
+        }
+        return ticket == byteStringToLong(ref.getTicket().getId());
     }
 
     static class ExportManagerImplMock extends ExportManagerImpl {

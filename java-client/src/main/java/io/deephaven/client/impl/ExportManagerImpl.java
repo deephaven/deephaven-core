@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 abstract class ExportManagerImpl implements ExportManager {
 
@@ -20,6 +22,8 @@ abstract class ExportManagerImpl implements ExportManager {
 
         private final Table table;
         private final long ticket;
+        // Note: consider keeping around state machine for the various transitions the ticket
+        // goes through. Would allow slightly better BatchTableRequestBuilder signature and impl
 
         private int localRefs; // note: all release ops go through the ExportManager which will
                                // guard this
@@ -90,7 +94,7 @@ abstract class ExportManagerImpl implements ExportManager {
     @Override
     public synchronized List<ExportedTable> export(Collection<Table> tables) {
         List<ExportedTable> results = new ArrayList<>(tables.size());
-        List<State> newStates = new ArrayList<>(tables.size());
+        Set<State> newStates = new HashSet<>(tables.size());
         for (Table table : tables) {
 
             final Optional<State> existing = lookup(table);
@@ -110,13 +114,9 @@ abstract class ExportManagerImpl implements ExportManager {
             return results;
         }
 
-        final BatchTableRequest request = BatchTableRequestBuilder.build(newStates);
+        final BatchTableRequest request = BatchTableRequestBuilder.build(exports, newStates);
 
         execute(request); // todo: handle async success / failure
-
-        for (State newState : newStates) {
-            exports.put(newState.table(), newState);
-        }
 
         return results;
     }

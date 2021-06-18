@@ -1,9 +1,29 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Avg;
+import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.CountDistinct;
+import io.deephaven.api.agg.Distinct;
+import io.deephaven.api.agg.First;
+import io.deephaven.api.agg.Last;
+import io.deephaven.api.agg.Max;
+import io.deephaven.api.agg.Med;
+import io.deephaven.api.agg.Min;
+import io.deephaven.api.agg.Pct;
+import io.deephaven.api.agg.Std;
+import io.deephaven.api.agg.Sum;
+import io.deephaven.api.agg.Var;
+import io.deephaven.api.agg.WAvg;
+import io.deephaven.api.agg.WSum;
 import io.deephaven.client.impl.ExportManagerImpl.State;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
@@ -26,8 +46,6 @@ import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -35,7 +53,6 @@ import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.QueryScopeTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
-import io.deephaven.api.Selectable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.Table;
@@ -46,28 +63,8 @@ import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereInTable;
 import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
-import io.deephaven.api.agg.Avg;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.CountDistinct;
-import io.deephaven.api.agg.Distinct;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
-import io.deephaven.api.agg.Max;
-import io.deephaven.api.agg.Med;
-import io.deephaven.api.agg.Min;
-import io.deephaven.api.agg.Pct;
-import io.deephaven.api.agg.Std;
-import io.deephaven.api.agg.Sum;
-import io.deephaven.api.agg.Var;
-import io.deephaven.api.agg.WAvg;
-import io.deephaven.api.agg.WSum;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,36 +73,42 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 class BatchTableRequestBuilder {
 
     private static final Collector<ExportManagerImpl.State, ?, Map<Table, ExportManagerImpl.State>> TABLE_TO_EXPORT_COLLECTOR =
         Collectors.toMap(State::table, Function.identity());
 
-    static BatchTableRequest build(List<ExportManagerImpl.State> states) {
-        if (states.isEmpty()) {
+    static BatchTableRequest build(Map<Table, ExportManagerImpl.State> states,
+        Set<ExportManagerImpl.State> newStates) {
+        if (newStates.isEmpty()) {
             throw new IllegalArgumentException();
         }
 
-        final Map<Table, ExportManagerImpl.State> tableToExport =
-            states.stream().collect(TABLE_TO_EXPORT_COLLECTOR);
-
         // this is a depth-first ordering without duplicates, ensuring we create the dependencies
         // in the preferred/resolvable order
-        final List<Table> tables = states.stream().map(ExportManagerImpl.State::table)
+        final List<Table> tables = newStates.stream().map(ExportManagerImpl.State::table)
             .flatMap(ParentsVisitor::getAncestorsAndSelf).distinct().collect(Collectors.toList());
 
         final Map<Table, Integer> indices = new HashMap<>(tables.size());
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
         int ix = 0;
         for (Table next : tables) {
-            final ExportManagerImpl.State state = tableToExport.get(next);
+            final Ticket ticket;
+            final ExportManagerImpl.State state = states.get(next);
+            final boolean isExported = state != null;
+            if (isExported) {
+                final boolean isNewExport = newStates.contains(state);
+                if (!isNewExport) {
+                    continue;
+                }
+                ticket = Ticket.newBuilder().setId(longToByteString(state.ticket())).build();
+            } else {
+                ticket = Ticket.getDefaultInstance();
+            }
 
-            final Ticket ticket = state == null ? Ticket.getDefaultInstance()
-                : Ticket.newBuilder().setId(longToByteString(state.ticket())).build();
-
-            final Operation operation = next.walk(new OperationAdapter(ticket, indices)).getOut();
+            final Operation operation =
+                next.walk(new OperationAdapter(ticket, indices, states)).getOut();
             builder.addOps(operation);
             indices.put(next, ix++);
         }
@@ -120,11 +123,14 @@ class BatchTableRequestBuilder {
     private static class OperationAdapter implements Table.Visitor {
         private final Ticket ticket;
         private final Map<Table, Integer> indices;
+        private final Map<Table, ExportManagerImpl.State> exports;
         private Operation out;
 
-        OperationAdapter(Ticket ticket, Map<Table, Integer> indices) {
+        OperationAdapter(Ticket ticket, Map<Table, Integer> indices,
+            Map<Table, ExportManagerImpl.State> exports) {
             this.ticket = Objects.requireNonNull(ticket);
             this.indices = Objects.requireNonNull(indices);
+            this.exports = Objects.requireNonNull(exports);
         }
 
         public Operation getOut() {
@@ -132,11 +138,17 @@ class BatchTableRequestBuilder {
         }
 
         private TableReference ref(Table table) {
-            final Integer ix = indices.get(table);
-            if (ix == null) {
-                throw new IllegalStateException();
+            final State export = exports.get(table);
+            if (export != null) {
+                return TableReference.newBuilder()
+                    .setTicket(Ticket.newBuilder().setId(longToByteString(export.ticket())).build())
+                    .build();
             }
-            return TableReference.newBuilder().setBatchOffset(ix).build();
+            final Integer ix = indices.get(table);
+            if (ix != null) {
+                return TableReference.newBuilder().setBatchOffset(ix).build();
+            }
+            throw new IllegalStateException();
         }
 
         @Override
@@ -403,5 +415,15 @@ class BatchTableRequestBuilder {
             value >>= 8;
         }
         return ByteString.copyFrom(result);
+    }
+
+    public static long byteStringToLong(final ByteString value) {
+        // Note: Little-Endian
+        long result = 0;
+        for (int i = 7; i >= 0; i--) {
+            final byte bval = value.byteAt(i);
+            result = (result << 8) + (bval & 0xffL);
+        }
+        return result;
     }
 }
