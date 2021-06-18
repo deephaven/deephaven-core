@@ -3,6 +3,9 @@ package io.deephaven.qst.table;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * A visitor that returns the parent tables (if any) of the given table.
+ */
 public class ParentsVisitor implements Table.Visitor {
 
     /**
@@ -23,7 +26,20 @@ public class ParentsVisitor implements Table.Visitor {
      * @return the ancestors and table stream
      */
     public static Stream<Table> getAncestorsAndSelf(Table table) {
-        return Stream.concat(getAncestorsDepthFirst(table), Stream.of(table));
+        return getAncestorsAndSelf(table, Integer.MAX_VALUE);
+    }
+
+    /**
+     * A depth-first traversal of the table's ancestors, and the table. Does not perform
+     * de-duplication. A {@code maxDepth == 0} will return just {@code table}, {@code maxDepth == 1}
+     * will return the first parents, etc.
+     *
+     * @param table the table
+     * @param maxDepth the max depth
+     * @return the ancestors and table stream
+     */
+    public static Stream<Table> getAncestorsAndSelf(Table table, int maxDepth) {
+        return Stream.concat(getAncestorsDepthFirst(table, maxDepth), Stream.of(table));
     }
 
     /**
@@ -34,15 +50,32 @@ public class ParentsVisitor implements Table.Visitor {
      * @return the table and ancestors stream
      */
     public static Stream<Table> getSelfAndAncestors(Table table) {
-        return Stream.concat(Stream.of(table), getAncestorsInOrder(table));
+        return getSelfAndAncestors(table, Integer.MAX_VALUE);
     }
 
-    private static Stream<Table> getAncestorsDepthFirst(Table table) {
-        return getParents(table).flatMap(ParentsVisitor::getAncestorsAndSelf);
+    /**
+     * An in-order traversal of the table and the table's ancestors. Does not perform
+     * de-duplication. A {@code maxDepth == 0} will return just {@code table}, {@code maxDepth == 1}
+     * will return the first parents, etc.
+     *
+     * @param table the table
+     * @param maxDepth the max depth
+     * @return the table and ancestors stream
+     */
+    public static Stream<Table> getSelfAndAncestors(Table table, int maxDepth) {
+        return Stream.concat(Stream.of(table), getAncestorsInOrder(table, maxDepth));
     }
 
-    private static Stream<Table> getAncestorsInOrder(Table table) {
-        return getParents(table).flatMap(ParentsVisitor::getSelfAndAncestors);
+    private static Stream<Table> getAncestorsInOrder(Table table, int maxDepth) {
+        return maxDepth <= 0 ?
+            Stream.empty() :
+            getParents(table).flatMap(x -> getSelfAndAncestors(x, maxDepth - 1));
+    }
+
+    private static Stream<Table> getAncestorsDepthFirst(Table table, int maxDepth) {
+        return maxDepth <= 0 ?
+            Stream.empty() :
+            getParents(table).flatMap(x -> getAncestorsAndSelf(x, maxDepth - 1));
     }
 
     private Stream<Table> out;
