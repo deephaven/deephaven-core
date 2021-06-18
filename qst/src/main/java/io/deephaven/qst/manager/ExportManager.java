@@ -1,4 +1,4 @@
-package io.deephaven.client;
+package io.deephaven.qst.manager;
 
 import io.deephaven.qst.table.Table;
 import java.util.Collection;

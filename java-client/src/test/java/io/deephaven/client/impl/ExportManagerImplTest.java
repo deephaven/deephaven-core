@@ -4,7 +4,7 @@ import static io.deephaven.client.impl.BatchTableRequestBuilder.byteStringToLong
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-import io.deephaven.client.ExportedTable;
+import io.deephaven.qst.manager.ExportedTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.TableReference;

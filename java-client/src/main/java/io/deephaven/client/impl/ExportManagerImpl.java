@@ -2,9 +2,8 @@ package io.deephaven.client.impl;
 
 import static io.deephaven.client.impl.BatchTableRequestBuilder.longToByteString;
 
-import io.deephaven.client.ExportManager;
-import io.deephaven.client.ExportedTable;
-import io.deephaven.client.ExportedTables;
+import io.deephaven.qst.manager.ExportManager;
+import io.deephaven.qst.manager.ExportedTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.Table;

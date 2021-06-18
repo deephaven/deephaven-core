@@ -1,6 +1,6 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.client.ExportedTable;
+import io.deephaven.qst.manager.ExportedTable;
 import io.deephaven.client.impl.ExportManagerImpl.State;
 import io.deephaven.qst.table.Table;
 import java.util.Objects;
