@@ -12,6 +12,7 @@ import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -372,7 +373,7 @@ public class ParquetReaderUtil {
                             }
                         }
                         if (codecName == null || codecName.isEmpty()) {
-                            codecName = io.deephaven.util.codec.ByteArrayCodec.class.getName();
+                            codecName = SimpleByteArrayCodec.class.getName();
                             codecArgs =  (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
                                 ? Integer.toString(primitiveType.getTypeLength())
                                 : null;

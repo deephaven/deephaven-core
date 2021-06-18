@@ -11,7 +11,7 @@ import io.deephaven.db.v2.locations.parquet.*;
 import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.util.codec.ByteArrayCodec;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
@@ -209,7 +209,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                                 } else {
                                     codecParams = null;
                                 }
-                                codec = CodecCache.DEFAULT.getCodec(io.deephaven.util.codec.ByteArrayCodec.class.getName(), codecParams);
+                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecParams);
                             }
                             //noinspection unchecked
                             toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
