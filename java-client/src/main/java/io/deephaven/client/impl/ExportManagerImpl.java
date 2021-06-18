@@ -1,5 +1,7 @@
 package io.deephaven.client.impl;
 
+import static io.deephaven.client.impl.BatchTableRequestBuilder.longToByteString;
+
 import io.deephaven.client.ExportManager;
 import io.deephaven.client.ExportedTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -64,6 +66,7 @@ abstract class ExportManagerImpl implements ExportManager {
                 localRefs -= 1;
                 if (localRefs == 0) {
                     exports.remove(table);
+                    executeRelease(Ticket.newBuilder().setId(longToByteString(ticket)).build());
                 }
             }
         }

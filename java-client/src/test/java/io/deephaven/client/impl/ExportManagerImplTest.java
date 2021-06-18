@@ -38,6 +38,14 @@ public class ExportManagerImplTest {
     }
 
     @Test
+    void releaseIsCalled() {
+        final EmptyTable empty42 = Table.empty(42L);
+        impl.export(empty42).release();
+        assertThat(impl.batchTableRequests).hasSize(1);
+        assertThat(impl.releasedTickets).hasSize(1);
+    }
+
+    @Test
     void sameTicketOnSameExportedTable() {
         final EmptyTable empty42 = Table.empty(42L);
         try (final ExportedTableImpl ref1 = (ExportedTableImpl) impl.export(empty42);
