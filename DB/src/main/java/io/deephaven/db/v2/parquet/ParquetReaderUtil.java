@@ -4,6 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.libs.StringSet;
+import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
@@ -346,6 +347,8 @@ public class ParquetReaderUtil {
                         }
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
+                    case INT96:
+                        colDefConsumer.accept(colName, DBDateTime.class, null, isGrouping, codecName, codecArgs);
                     default:
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
