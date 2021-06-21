@@ -47,7 +47,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
-    static Table of(io.deephaven.qst.table.Table table) {
+    static QueryTable of(io.deephaven.qst.table.Table table) {
         return TableCreationImpl.create(table);
     }
 
@@ -2570,5 +2570,4 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table toTable() {
         return this;
     }
-
 }

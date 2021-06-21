@@ -15,7 +15,7 @@ public interface ExportManager {
      *
      * @param manager the manager
      * @param root the table
-     * @return the exported table chain
+     * @return the exported table chai
      * @see ExportedTableChain#of(ExportManager, Table)
      */
     static ExportedTableChain exportChain(ExportManager manager, Table root) {
@@ -49,7 +49,7 @@ public interface ExportManager {
      * @param tables the tables
      * @return the exported table
      */
-    List<ExportedTable> export(Collection<Table> tables);
+    List<? extends ExportedTable> export(Collection<Table> tables);
 
     // TODO: support batch release in the future
     // void release(Collection<ExportedTable> exports);
