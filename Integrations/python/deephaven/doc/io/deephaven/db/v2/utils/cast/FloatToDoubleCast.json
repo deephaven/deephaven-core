@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.db.v2.utils.cast.FloatToDoubleCast",
  "methods": {
-  "cast": "Note: Java generics information - <T>\n\n:param input: io.deephaven.db.v2.sources.chunk.Chunk<? extends T>\n:return: io.deephaven.db.v2.sources.chunk.DoubleChunk<? extends T>",
-  "castInto": "Note: Java generics information - <T2 extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param input: io.deephaven.db.v2.sources.chunk.FloatChunk<? extends T2>\n:param result: io.deephaven.db.v2.sources.chunk.WritableDoubleChunk<T2>"
+  "cast": "Note: Java generics information - <T>\n\n:param extend: io.deephaven.db.v2.sources.chunk.Chunk<?\n:return: io.deephaven.db.v2.sources.chunk.DoubleChunk<? extends T>",
+  "castInto": "Note: Java generics information - <T2 extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param extend: io.deephaven.db.v2.sources.chunk.FloatChunk<?\n:param result: io.deephaven.db.v2.sources.chunk.WritableDoubleChunk<T2>"
  },
  "path": "io.deephaven.db.v2.utils.cast.FloatToDoubleCast",
  "text": "Cast the values in the input chunk to an int.",

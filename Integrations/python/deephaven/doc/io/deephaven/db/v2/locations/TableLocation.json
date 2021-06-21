@@ -1,16 +1,16 @@
 {
  "className": "io.deephaven.db.v2.locations.TableLocation",
  "methods": {
-  "append": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "getColumnLocation": ":param name: (java.lang.CharSequence) - The column name\n:return: (TableLocation.CLT) The ColumnLocation for the defined column under this table location",
   "getFormat": "Get the format that was used to persist this table location.\n\n:return: (io.deephaven.db.v2.locations.TableLocation.Format) The format for this table location",
   "getTableKey": ":return: (io.deephaven.db.v2.locations.TableKey) A TableKey instance for the enclosing table",
   "refresh": "Initialize or refresh state information.",
   "subscribe": "Subscribe to pushed location updates. Subscribing more than once with the same listener without an\n intervening unsubscribe is an error, and may result in undefined behavior.\n This is a possibly asynchronous operation - listener will receive 1 or more handleUpdate callbacks,\n followed by 0 or 1 handleException callbacks during invocation and continuing after completion, on a thread\n determined by the implementation.  Don't hold a lock that prevents notification delivery while subscribing!\n This method only guarantees eventually consistent state.  To force a state update, use refresh() after\n subscription completes.\n\n:param listener: (io.deephaven.db.v2.locations.TableLocation.Listener) - A listener",
   "supportsSubscriptions": "Does this location support subscriptions? That is, can this location ever have ticking data?\n\n:return: (boolean) True if this location supports subscriptions",
-  "toGenericString": "Format the table key without implementation specific bits.\n\nNote: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: (java.lang.String) a formatted string",
-  "toStringDetailed": "Optional toString path with more implementation detail.\n\nNote: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: (java.lang.String) detailed conversion to string",
-  "toStringHelper": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: java.lang.String",
+  "toGenericString": "Format the table key without implementation specific bits.\n\n:return: (java.lang.String) a formatted string",
+  "toStringDetailed": "Optional toString path with more implementation detail.\n\n:return: (java.lang.String) detailed conversion to string",
+  "toStringHelper": ":return: java.lang.String",
   "unsubscribe": "Unsubscribe from pushed location updates.\n\n:param listener: (io.deephaven.db.v2.locations.TableLocation.Listener) - The listener to forget about"
  },
  "path": "io.deephaven.db.v2.locations.TableLocation",

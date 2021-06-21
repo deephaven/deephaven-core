@@ -9,7 +9,7 @@
   "isEmpty": ":return: boolean",
   "keySet": ":return: java.util.Set<java.lang.String>",
   "put": ":param key: java.lang.String\n:param value: io.deephaven.db.plot.Theme\n:return: io.deephaven.db.plot.Theme",
-  "putAll": ":param m: java.util.Map<? extends java.lang.String,? extends io.deephaven.db.plot.Theme>",
+  "putAll": ":param m: java.util.Map<? extendsjava.lang.String,? extendsio.deephaven.db.plot.Theme>",
   "remove": ":param key: java.lang.Object\n:return: io.deephaven.db.plot.Theme",
   "setDefaultTheme": "Defines the default Theme used when one isn't specified.\n\n:param defaultTheme: (io.deephaven.db.plot.Theme) - default theme",
   "size": ":return: int",

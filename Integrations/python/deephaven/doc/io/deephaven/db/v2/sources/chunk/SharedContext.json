@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.sources.chunk.SharedContext",
  "methods": {
   "close": "Close implementation which invokes SafeCloseable.close() on all values registered via\n getOrCreate(Key, Supplier), and then forgets all registered values.\n\n Sub-classes should be sure to call super.close().",
-  "getOrCreate": "Get or create the ResettableContext value for a SharedContext.Key key. If the value is computed, the result\n value will be associated with the key until the SharedContext is close()ed.\n\nNote: Java generics information - <V extends io.deephaven.db.v2.sources.chunk.ResettableContext,K extends io.deephaven.db.v2.sources.chunk.SharedContext.Key<V>>\n\n:param key: (K) - The key\n:param valueFactory: (java.util.function.Supplier<V>) - The value factory, to be invoked if key is not found within this SharedContext\n:return: (V) The value associated with key, possibly newly-created",
+  "getOrCreate": "Get or create the ResettableContext value for a SharedContext.Key key. If the value is computed, the result\n value will be associated with the key until the SharedContext is close()ed.\n\n:param key: (K) - The key\n:param valueFactory: (java.util.function.Supplier<V>) - The value factory, to be invoked if key is not found within this SharedContext\n:return: (V) The value associated with key, possibly newly-created",
   "makeSharedContext": "Construct a new, empty shared context.\n\n:return: io.deephaven.db.v2.sources.chunk.SharedContext",
   "reset": "Reset implementation which invokes ResettableContext.reset() on all values registered via\n getOrCreate(Key, Supplier).\n\n Sub-classes should be sure to call super.reset()."
  },

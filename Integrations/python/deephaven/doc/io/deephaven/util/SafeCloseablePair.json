@@ -1,12 +1,12 @@
 {
  "className": "io.deephaven.util.SafeCloseablePair",
  "methods": {
-  "downcast": "Note: Java generics information - <AP extends io.deephaven.util.SafeCloseable,BP extends io.deephaven.util.SafeCloseable,A extends AP,B extends BP>\n\n:param self: io.deephaven.util.SafeCloseablePair<A,B>\n:return: io.deephaven.util.SafeCloseablePair<AP,BP>",
+  "downcast": ":param self: io.deephaven.util.SafeCloseablePair<A,B>\n:return: io.deephaven.util.SafeCloseablePair<AP,BP>",
   "equals": ":param other: java.lang.Object\n:return: boolean",
   "getFirst": ":return: SafeCloseablePair.A",
   "getSecond": ":return: SafeCloseablePair.B",
   "hashCode": ":return: int",
-  "of": "Note: Java generics information - <A extends io.deephaven.util.SafeCloseable,B extends io.deephaven.util.SafeCloseable>\n\n:param first: A\n:param second: B\n:return: io.deephaven.util.SafeCloseablePair<A,B>",
+  "of": "Note: Java generics information - <A extends io.deephaven.util.SafeCloseable,\nB extends io.deephaven.util.SafeCloseable>\n\n:param first: A\n:param second: B\n:return: io.deephaven.util.SafeCloseablePair<A,B>",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.util.SafeCloseablePair",

@@ -23,7 +23,7 @@
   "ixInsertSecondHalf": ":param keys: io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices>\n:param offset: int\n:param length: int\n:return: io.deephaven.db.v2.utils.TreeIndexImpl",
   "ixInsertWithShift": ":param shiftAmount: long\n:param other: io.deephaven.db.v2.utils.TreeIndexImpl\n:return: io.deephaven.db.v2.utils.TreeIndexImpl",
   "ixIntersectOnNew": ":param intersected: io.deephaven.db.v2.utils.TreeIndexImpl\n:return: io.deephaven.db.v2.utils.TreeIndexImpl",
-  "ixInvertOnNew": "Invert the given index.\n\n:param keys: io.deephaven.db.v2.utils.TreeIndexImpl\n:param maximumPosition: long\n:return: (io.deephaven.db.v2.utils.TreeIndexImpl) the inverse of index",
+  "ixInvertOnNew": "Invert the given index.\n\n:param keys: (io.deephaven.db.v2.utils.TreeIndexImpl) - Index of keys to invert\n:param maximumPosition: (long) - the largest position to add to indexBuilder, inclusive\n:return: (io.deephaven.db.v2.utils.TreeIndexImpl) the inverse of index",
   "ixIsEmpty": ":return: boolean",
   "ixIterator": ":return: io.deephaven.db.v2.utils.ReadOnlyIndex.Iterator",
   "ixLastKey": ":return: long",

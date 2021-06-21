@@ -12,7 +12,7 @@
   "isEmpty": ":return: boolean",
   "keySet": ":return: java.util.Set<java.lang.String>",
   "put": ":param key: java.lang.String\n:param value: io.deephaven.util.calendar.BusinessCalendar\n:return: io.deephaven.util.calendar.BusinessCalendar",
-  "putAll": ":param m: java.util.Map<? extends java.lang.String,? extends io.deephaven.util.calendar.BusinessCalendar>",
+  "putAll": ":param m: java.util.Map<? extendsjava.lang.String,? extendsio.deephaven.util.calendar.BusinessCalendar>",
   "remove": ":param key: java.lang.Object\n:return: io.deephaven.util.calendar.BusinessCalendar",
   "size": ":return: int",
   "values": ":return: java.util.Collection<io.deephaven.util.calendar.BusinessCalendar>"

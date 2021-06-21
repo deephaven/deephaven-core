@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.modelfarm.fitterfarm.FitDataOptionChainFutures",
- "methods": {
-  "getUnderlyingFutureIds": "Gets the ids for the underlying futures of the options.\n\n:return: (long[]) ids for the underlying futures of the options."
- },
- "path": "io.deephaven.modelfarm.fitterfarm.FitDataOptionChainFutures",
- "text": "A snapshot of market data needed to create an option chain for futures.",
- "typeName": "interface"
-}

@@ -1,12 +1,12 @@
 {
  "className": "io.deephaven.db.v2.by.ssmcountdistinct.ByteSsmBackedSource",
  "methods": {
-  "clear": "Set the SSM at the specified key to null\n\n:param key: long",
-  "clearDeltas": "Clear out any tracked deltas from recent computations.\n\n:param indices: io.deephaven.db.v2.utils.Index",
-  "ensureCapacity": "Ensure the source has at least `capacity` capacity\n\n:param capacity: long",
+  "clear": "Set the SSM at the specified key to null\n\n:param key: (long) - the key to get the ssm for.",
+  "clearDeltas": "Clear out any tracked deltas from recent computations.\n\n:param indices: (io.deephaven.db.v2.utils.Index) - the set of indices to clear deltas for.",
+  "ensureCapacity": "Ensure the source has at least `capacity` capacity\n\n:param capacity: (long) - the capacity to ensure.",
   "get": ":param index: long\n:return: io.deephaven.db.tables.dbarrays.DbByteArray",
-  "getCurrentSsm": "Get the current SSM at the specified key. This does not permute it in any way.\n\n:param key: long\n:return: (io.deephaven.db.v2.ssms.ByteSegmentedSortedMultiset) the SSM",
-  "getOrCreate": "Get the ssm at the specified key, creating one if none existed.  This method will\n update the current previous tracking state of the SSM.\n\n:param key: long\n:return: (io.deephaven.db.v2.ssms.ByteSegmentedSortedMultiset) the SSM at the key, or a new one.",
+  "getCurrentSsm": "Get the current SSM at the specified key. This does not permute it in any way.\n\n:param key: (long) - the key to get the ssm for.\n:return: (io.deephaven.db.v2.ssms.ByteSegmentedSortedMultiset) the SSM",
+  "getOrCreate": "Get the ssm at the specified key, creating one if none existed.  This method will\n update the current previous tracking state of the SSM.\n\n:param key: (long) - the key to get the ssm for.\n:return: (io.deephaven.db.v2.ssms.ByteSegmentedSortedMultiset) the SSM at the key, or a new one.",
   "getPrev": ":param index: long\n:return: io.deephaven.db.tables.dbarrays.DbByteArray",
   "getUnderlyingSource": ":return: io.deephaven.db.v2.sources.ObjectArraySource<io.deephaven.db.v2.ssms.ByteSegmentedSortedMultiset>",
   "isImmutable": "Determine if this column source is immutable, meaning that the values at a given index key never change.\n\n:return: (boolean) true if the values at a given index of the column source never change, false otherwise",

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray",
  "methods": {
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: io.deephaven.db.plot.AxesImpl\n:return: (io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray) copy of the series on a different set of axes.",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray) copy of the series on a different set of axes.",
   "drawXError": ":return: boolean",
   "drawYError": ":return: boolean",
   "getEndX": ":param i: int\n:return: double",
