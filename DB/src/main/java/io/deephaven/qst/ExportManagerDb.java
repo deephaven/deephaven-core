@@ -6,6 +6,7 @@ import io.deephaven.qst.manager.ExportManager;
 import io.deephaven.qst.manager.ExportedTable;
 import io.deephaven.qst.manager.ExportedTableBase;
 import io.deephaven.qst.table.Table;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,7 @@ public class ExportManagerDb implements ExportManager {
         return tables.stream().map(this::export).collect(Collectors.toList());
     }
 
-    public class State extends io.deephaven.util.referencecounting.ReferenceCounted {
+    public class State extends ReferenceCounted {
         private final Table table;
         private QueryTable canonicalTable;
 
