@@ -7,18 +7,21 @@ public abstract class ParquetInstructions {
     public ParquetInstructions() {
     }
 
+    public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
+        final String mapped = getColumnNameFromParquetColumnName(parquetColumnName);
+        return (mapped != null) ? mapped : parquetColumnName;
+    }
+    public abstract String getParquetColumnNameFromColumnNameOrDefault(final String columnName);
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
-    public abstract String getParquetColumnNameFromColumnName(final String columnName);
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
         @Override
-        public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
-            return parquetColumnName;
-        }
-
-        @Override
-        public String getParquetColumnNameFromColumnName(final String columnName) {
+        public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
             return columnName;
+        }
+        @Override
+        public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
+            return null;
         }
     };
 
@@ -26,18 +29,8 @@ public abstract class ParquetInstructions {
         private Map<String, ColumnInstructions> columnNameToInstructions;
         private Map<String, String> parquetColumnNameToColumnName;
 
-        public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
-            if (parquetColumnNameToColumnName == null) {
-                return parquetColumnName;
-            }
-            final String mapping = parquetColumnNameToColumnName.get(parquetColumnName);
-            if (mapping != null) {
-                return mapping;
-            }
-            return parquetColumnName;
-        }
-
-        public String getParquetColumnNameFromColumnName(final String columnName) {
+        @Override
+        public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
             if (columnNameToInstructions == null) {
                 return columnName;
             }
@@ -48,6 +41,14 @@ public abstract class ParquetInstructions {
             return ci.getParquetColumnName();
         }
 
+        @Override
+        public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
+            if (parquetColumnNameToColumnName == null) {
+                return null;
+            }
+            return parquetColumnNameToColumnName.get(parquetColumnName);
+        }
+
         public ParquetInstructions addColumnNameMapping(final String parquetColumnName, final String columnName) {
             if (columnNameToInstructions == null) {
                 columnNameToInstructions = new HashMap<>();
@@ -55,13 +56,12 @@ public abstract class ParquetInstructions {
             }
             ColumnInstructions ci = columnNameToInstructions.get(columnName);
             if (ci != null) {
-                final String previous = ci.getParquetColumnName();
-                if (previous != null) {
-                    if (previous.equals(parquetColumnName)) {
+                if (ci.parquetColumnName != null) {
+                    if (ci.parquetColumnName.equals(parquetColumnName)) {
                         return this;
                     }
                     throw new IllegalArgumentException(
-                            "Cannot add a mapping to already mapped parqueColumnName=" + previous + " for column=" + columnName);
+                            "Cannot add a mapping to already mapped parqueColumnName=" + ci.parquetColumnName + " for column=" + columnName);
                 }
             } else {
                 ci = new ColumnInstructions(columnName);

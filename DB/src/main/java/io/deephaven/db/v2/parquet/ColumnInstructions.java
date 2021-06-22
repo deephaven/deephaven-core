@@ -2,7 +2,7 @@ package io.deephaven.db.v2.parquet;
 
 public class ColumnInstructions {
     private final String columnName;
-    private String parquetColumnName;
+    String parquetColumnName;
     private String codecName;
     private String codecArgs;
 
