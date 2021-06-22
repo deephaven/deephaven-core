@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.db.v2.sources.chunk.page.Page",
  "methods": {
-  "firstRow": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param row: (long) - Any row contained on this page.\n:return: (long) the first row of this page, located in the same way as row.",
+  "firstRow": ":param row: (long) - Any row contained on this page.\n:return: (long) the first row of this page, located in the same way as row.",
   "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n page.",
-  "getRowOffset": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:param row: long\n:return: (long) the offset for the given row in this page, between [0, length()).",
+  "getRowOffset": ":param row: long\n:return: (long) the offset for the given row in this page, between [0, length()).",
   "lastRow": ":param row: (long) - Any row contained on this page.\n:return: (long) the last row of this page, located in the same way as row.",
   "length": ":return: (long) the length of this page."
  },

@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.util.datastructures.WeakIdentityHashSet",
  "methods": {
-  "add": "Add a value to the set if its not already present.\n\n*Overload 1*  \n  :param value: (WeakIdentityHashSet.TYPE) - The value to add\n  :return: (boolean) True if the value was added to the set\n  \n*Overload 2*  \n  :param value: (WeakIdentityHashSet.TYPE) - The value to add\n  :param valueReference: (java.lang.ref.WeakReference<? extends WeakIdentityHashSet.TYPE>) - A re-usable WeakReference to value if already available, else null\n  :return: (boolean) True if the value was added to the set",
+  "add": "Add a value to the set if its not already present.\n\n*Overload 1*  \n  :param value: (WeakIdentityHashSet.TYPE) - The value to add\n  :return: (boolean) True if the value was added to the set\n  \n*Overload 2*  \n  :param value: (WeakIdentityHashSet.TYPE) - The value to add\n  :param valueReference: (java.lang.ref.WeakReference<? extendsWeakIdentityHashSet.TYPE>) - A re-usable WeakReference to value if already available, else null\n  :return: (boolean) True if the value was added to the set",
   "clear": "Clear the set.",
-  "forEach": "Invoke an action on each member of the set.\n\n:param action: (java.util.function.Consumer<? super WeakIdentityHashSet.TYPE>) - The action to invoke"
+  "forEach": "Invoke an action on each member of the set.\n\n:param action: (java.util.function.Consumer<? superWeakIdentityHashSet.TYPE>) - The action to invoke"
  },
  "path": "io.deephaven.util.datastructures.WeakIdentityHashSet",
  "text": "An open-addressed identity hash set that only maintains weak references to its members.\n Only supports add(TYPE) and clear(). See WeakIdentityHashSet.Synchronized variant for concurrent usage.",

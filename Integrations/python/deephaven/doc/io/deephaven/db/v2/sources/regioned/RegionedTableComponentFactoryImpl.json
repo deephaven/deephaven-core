@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl",
  "methods": {
   "createColumnSourceManager": ":param isRefreshing: boolean\n:param columnDefinitions: io.deephaven.db.tables.ColumnDefinition<?>...\n:return: io.deephaven.db.v2.ColumnSourceManager",
-  "createRegionedColumnSource": "Create a new RegionedColumnSource appropriate to implement the supplied ColumnDefinition.\n Note: This implementation currently lets arrays fall into the catch-all (Serializable) case.\n Note: There is no handling for Enum(Set) assignables.  No existing tables should have legacy Enum(Set) columns.\n\nNote: Java generics information - <DATA_TYPE>\n\n:param columnDefinition: io.deephaven.db.tables.ColumnDefinition<DATA_TYPE>\n:return: (io.deephaven.db.v2.sources.regioned.RegionedColumnSource<DATA_TYPE>) A new RegionedColumnSource."
+  "createRegionedColumnSource": "Create a new RegionedColumnSource appropriate to implement the supplied ColumnDefinition.\n Note: This implementation currently lets arrays fall into the catch-all (Serializable) case.\n Note: There is no handling for Enum(Set) assignables.  No existing tables should have legacy Enum(Set) columns.\n\nNote: Java generics information - <DATA_TYPE>\n\n:param columnDefinition: (io.deephaven.db.tables.ColumnDefinition<DATA_TYPE>) - The column definition\n:return: (io.deephaven.db.v2.sources.regioned.RegionedColumnSource<DATA_TYPE>) A new RegionedColumnSource."
  },
  "path": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl",
  "text": "Factory that assembles modular components for regioned source tables.",
