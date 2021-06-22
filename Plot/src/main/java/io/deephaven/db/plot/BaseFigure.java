@@ -28,23 +28,6 @@ public interface BaseFigure extends Serializable {
 
     ////////////////////////// figure configuration //////////////////////////
 
-
-    /**
-     * Sets the {@link Theme} of this Figure
-     *
-     * @param theme theme
-     * @return this Figure
-     */
-    BaseFigure theme(final Theme theme);
-
-    /**
-     * Sets the {@link Theme} of this Figure
-     *
-     * @param theme theme name
-     * @return this Figure
-     */
-    BaseFigure theme(final String theme);
-
     /**
      * Sets the update interval of this Figure. The plot will be redrawn at this update interval.
      *

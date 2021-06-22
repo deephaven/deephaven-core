@@ -2,14 +2,14 @@
  "className": "io.deephaven.db.v2.SwapListenerBase",
  "methods": {
   "dropReference": "Drop a previously-retained reference to this referent.",
-  "getErrorNotification": "Creates a notification for the exception.\n\n:param originalException: java.lang.Throwable\n:param sourceEntry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry\n:return: (io.deephaven.db.tables.live.NotificationQueue.Notification) exception notification",
+  "getErrorNotification": "Creates a notification for the exception.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry) - performance tracking\n:return: (io.deephaven.db.tables.live.NotificationQueue.Notification) exception notification",
   "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
-  "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.\n\nNote: Java generics information - io.deephaven.util.annotations.@VisibleForTesting",
+  "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "makeSnapshotControl": ":return: io.deephaven.db.v2.remote.ConstructSnapshot.SnapshotControl",
-  "onFailure": "Notification of exceptions.\n\n:param originalException: java.lang.Throwable\n:param sourceEntry: io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry",
+  "onFailure": "Notification of exceptions.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry) - performance tracking",
   "setListenerAndResult": "Set the listener that will eventually become the listener, if we have a successful swap.\n\n:param listener: (SwapListenerBase.T) - The listener that we will eventually forward all updates to\n:param resultTable: (io.deephaven.db.v2.NotificationStepReceiver) - The table that will result from this operation",
   "subscribeForUpdates": "Invoke DynamicTable.listenForUpdates(Listener) for the appropriate subclass of SwapListenerBase.",
-  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: io.deephaven.db.util.liveness.LivenessReferent\n:return: (boolean) Whether the referent was in fact added",
+  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
   "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.SwapListenerBase",

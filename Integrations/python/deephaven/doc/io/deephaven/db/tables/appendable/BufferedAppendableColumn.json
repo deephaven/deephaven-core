@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.appendable.BufferedAppendableColumn",
- "methods": {
-  "doneAppending": "Optionally called before BufferedAppendable.close() to release any resources that may be released prior to\n BufferedAppendable.close(). No data should be appended after this method is invoked."
- },
- "path": "io.deephaven.db.tables.appendable.BufferedAppendableColumn",
- "text": "Combine the BufferedAppendable and AppendableColumn interfaces.",
- "typeName": "interface"
-}

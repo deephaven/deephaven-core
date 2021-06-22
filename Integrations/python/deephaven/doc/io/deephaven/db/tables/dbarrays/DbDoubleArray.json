@@ -5,7 +5,7 @@
   "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.db.tables.dbarrays.DbDoubleArray) - The LHS of the equality test (always a DbDoubleArray)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
   "fillChunk": ":param destChunk: io.deephaven.db.v2.sources.chunk.WritableChunk",
   "get": ":param i: long\n:return: double",
-  "getComponentType": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: java.lang.Class",
+  "getComponentType": ":return: java.lang.Class",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.db.tables.dbarrays.DbDoubleArray",
   "getPrev": ":param i: long\n:return: double",
   "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.db.tables.dbarrays.DbDoubleArray) - The DbDoubleArray to hash\n:return: (int) The hash code",

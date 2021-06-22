@@ -74,13 +74,13 @@ public class CrossJoinHelper {
                 // TODO: use grouping
                 if (!leftTable.isLive()) {
                     final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
-                            bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable));
+                            bucketingContext.leftSources, control.initialBuildSize(), control, leftTable);
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    final Index resultIndex = control.buildLeft(leftTable, rightTable)
-                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources);
+                    // We can only build from right, because the left hand side does not permit us to nicely rehash as
+                    // we only have the redirection index when building left and no way to reverse the lookup.
+                    final Index resultIndex = jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable, bucketingContext.rightSources);
 
                     return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultIndex, cs -> {
                         //noinspection unchecked
@@ -89,7 +89,7 @@ public class CrossJoinHelper {
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm = new LeftOnlyIncrementalChunkedCrossJoinStateManager(
-                        bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable), leftTable, numRightBitsToReserve);
+                        bucketingContext.leftSources, control.initialBuildSize(), leftTable, numRightBitsToReserve);
                 jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 

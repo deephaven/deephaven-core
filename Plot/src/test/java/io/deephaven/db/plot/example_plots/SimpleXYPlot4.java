@@ -15,8 +15,7 @@ public class SimpleXYPlot4 {
 
         LineStyle thickDash = LineStyle.lineStyle(2.0, "BUTT", "MITER", 10.0f);
 
-        Figure fig = FigureFactory.figure()
-                .theme("Light");
+        Figure fig = FigureFactory.figure();
 
         Figure cht = fig.newChart(0)
                 .chartTitle("triad_mixing")

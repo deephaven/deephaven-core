@@ -7,9 +7,11 @@ package io.deephaven.lang.generated;
    between nodes. */
 
 import io.deephaven.lang.api.IsScope;
+import io.deephaven.lang.parse.LspTools;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.Position;
+import io.deephaven.proto.backplane.script.grpc.PositionOrBuilder;
 import io.deephaven.web.shared.fu.LinkedIterable;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
-import io.deephaven.web.shared.ide.lsp.Position;
 
 import java.util.List;
 
@@ -214,11 +216,10 @@ public interface Node {
 
     int indexOf(Node node);
 
-    default DocumentRange asRange() {
-        final DocumentRange range = new DocumentRange();
-        range.start = jjtGetFirstToken().positionStart();
-        range.end = jjtGetLastToken().positionEnd();
-        return range;
+    default DocumentRange.Builder asRange() {
+        return DocumentRange.newBuilder()
+                .setStart(jjtGetFirstToken().positionStart())
+                .setEnd(jjtGetLastToken().positionEnd());
     }
 
     default boolean containsLines(int winStartLine, int winEndLine) {
@@ -226,23 +227,23 @@ public interface Node {
     }
 
     default boolean contains(Position pos) {
-        final Position startPos = jjtGetFirstToken().positionStart();
-        if (startPos.greaterThan(pos)) {
+        final Position.Builder startPos = jjtGetFirstToken().positionStart();
+        if (LspTools.greaterThan(startPos, pos)) {
             // if we start after this position, we don't contain it
             return false;
         }
         // we start before or after the query pos
-        final Position endPos = jjtGetLastToken().positionEnd();
+        final Position.Builder endPos = jjtGetLastToken().positionEnd();
         // we contain the position if we also end after it.
-        return endPos.greaterOrEqual(pos);
+        return LspTools.greaterOrEqual(endPos, pos);
     }
 
-    default Token findToken(Position requested) {
-        final Position start = jjtGetFirstToken().positionStart();
+    default Token findToken(PositionOrBuilder requested) {
+        final Position.Builder start = jjtGetFirstToken().positionStart();
         Token candidate = null;
-        if (start.lessThan(requested)) {
-            final Position end = jjtGetLastToken().positionEnd();
-            if (end.greaterOrEqual(requested)) {
+        if (LspTools.lessOrEqual(start, requested)) {
+            final Position.Builder end = jjtGetLastToken().positionEnd();
+            if (LspTools.greaterOrEqual(end, requested)) {
                 // we contain the position, iterate our own tokens to pick a winner.
                 for (Token token : tokens(true)) {
                     if (token.containsPosition(requested)) {
@@ -259,7 +260,7 @@ public interface Node {
                     } else if (candidate != null){
                         return candidate;
                     }
-                    assert token.positionStart().lessThan(requested) : "Could not find " + requested + " after " + jjtGetLastToken();
+                    assert LspTools.lessThan(token.positionStart(), requested) : "Could not find " + requested + " after " + jjtGetLastToken();
                 }
             }
         } else {
@@ -271,7 +272,7 @@ public interface Node {
                     } else if (candidate != null) {
                         return candidate;
                     }
-                    assert token.positionEnd().greaterThan(requested) : "Could not find " + requested + " before " + jjtGetFirstToken();
+                    assert LspTools.greaterThan(token.positionEnd(), requested) : "Could not find " + requested + " before " + jjtGetFirstToken();
             }
         }
         if (candidate == null) {

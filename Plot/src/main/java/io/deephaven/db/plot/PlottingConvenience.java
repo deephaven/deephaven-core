@@ -26,7 +26,6 @@ import io.deephaven.db.plot.datasets.data.IndexableNumericData;
 import io.deephaven.db.plot.filters.SelectableDataSet;
 import io.deephaven.db.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.db.plot.filters.Selectables;
-import io.deephaven.db.plot.themes.Themes;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
@@ -440,13 +439,6 @@ public class PlottingConvenience {
     **/
     public static  io.deephaven.db.plot.composite.ScatterPlotMatrix scatterPlotMatrix( io.deephaven.db.tables.Table t, java.lang.String... columns ) {
         return ScatterPlotMatrix.scatterPlotMatrix( t, columns );
-    }
-
-    /**
-    * See {@link io.deephaven.db.plot.themes.Themes#themeNames} 
-    **/
-    public static  java.lang.String[] themeNames( ) {
-        return Themes.themeNames( );
     }
 
     /**

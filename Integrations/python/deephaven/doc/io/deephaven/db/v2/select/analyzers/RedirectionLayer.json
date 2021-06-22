@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.select.analyzers.RedirectionLayer",
  "methods": {
-  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: io.deephaven.db.v2.ShiftAwareListener.Update\n:param toClear: io.deephaven.db.v2.utils.ReadOnlyIndex\n:param helper: io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.db.v2.ShiftAwareListener.Update) - the upstream update\n:param toClear: (io.deephaven.db.v2.utils.ReadOnlyIndex) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
   "calcDependsOnRecurse": ":return: java.util.Map<java.lang.String,java.util.Set<java.lang.String>>",
   "getColumnSourcesRecurse": ":param mode: io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer.GetMode\n:return: java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource>",
   "getInner": ":return: io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer",

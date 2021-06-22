@@ -8,6 +8,7 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
+import io.deephaven.lang.parse.api.CompletionParseService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -39,6 +40,15 @@ public interface ScriptSession extends LivenessNode {
      * @return the value of the variable, or defaultValue if not present
      */
     <T> T getVariable(String name, T defaultValue);
+
+    /**
+     * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"
+     * view of our session state.
+     * @return a VariableProvider instance backed by the global/binding context of this script session.
+     */
+    VariableProvider getVariableProvider();
+
+    CompletionParseService getParser();
 
     class Changes {
         public Map<String, ExportedObjectType> created = new HashMap<>();

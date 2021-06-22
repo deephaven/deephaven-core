@@ -6,9 +6,10 @@ import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.Node;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -32,12 +33,12 @@ public class CompleteColumnName extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         CompletionRequest request,
         String colName
     ) {
         final String src;
-        final DocumentRange range;
+        final DocumentRange.Builder range;
         src = node == null ? "" : node.toSource();
         final String qt = getCompleter().getQuoteType(node);
 
@@ -45,7 +46,8 @@ public class CompleteColumnName extends CompletionBuilder {
         if (node == null) {
             final Token nameTok = invoke.getNameToken();
             range = replaceToken(nameTok.next, request);
-            range.decrementColumns();
+            range.getStartBuilder().setCharacter(range.getStartBuilder().getCharacter() - 1);
+            range.getEndBuilder().setCharacter(range.getEndBuilder().getCharacter() - 1);
             len--;
         } else {
             range = replaceNode(node, request);
@@ -79,7 +81,14 @@ public class CompleteColumnName extends CompletionBuilder {
                     b.append(node.jjtGetLastToken().image);
             }
         }
-        CompletionItem result = new CompletionItem(start, len, b.toString(), b.toString(), range);
+        final CompletionItem.Builder result = CompletionItem.newBuilder();
+        String item = b.toString();
+        result.setStart(start)
+                .setLength(len)
+                .setLabel(item)
+                .getTextEditBuilder()
+                        .setText(item)
+                        .setRange(range);
         results.add(result);
     }
 }

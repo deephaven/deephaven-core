@@ -5,8 +5,9 @@ import io.deephaven.lang.completion.CompletionOptions;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerAssign;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -27,7 +28,7 @@ public class CompleteAssignment extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         CompletionRequest request,
         String varName,
         boolean methodMatched

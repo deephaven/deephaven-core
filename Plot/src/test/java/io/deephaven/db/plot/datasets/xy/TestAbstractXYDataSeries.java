@@ -9,6 +9,7 @@ import io.deephaven.db.plot.*;
 import io.deephaven.db.plot.datasets.data.IndexableData;
 import io.deephaven.db.plot.datasets.data.IndexableDataArray;
 import io.deephaven.db.plot.datasets.data.IndexableDataInteger;
+import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.DynamicTable;
@@ -83,7 +84,6 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
     public void testLineColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
-        final Theme theme = axes.chart().theme();
         final TestAXYDS data = new TestAXYDS(axes);
         final Color color = new Color(0, 0, 0);
         assertNull(data.getLineColor());
@@ -91,7 +91,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getLineColor(), color);
 
         data.lineColor(1);
-        assertEquals(data.getLineColor(), theme.getSeriesColor(1));
+        assertEquals(data.getLineColor(), PlotUtils.intToColor(1));
 
         data.lineColor("Red");
         assertEquals(Color.color("red"), data.getLineColor());
@@ -99,7 +99,6 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
     public void testErrorBarColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
-        final Theme theme = axes.chart().theme();
         final TestAXYDS data = new TestAXYDS(axes);
         final Color color = new Color(0, 0, 0);
         assertNull(data.getErrorBarColor());
@@ -107,7 +106,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getErrorBarColor(), color);
 
         data.errorBarColor(1);
-        assertEquals(data.getErrorBarColor(), theme.getSeriesColor(1));
+        assertEquals(data.getErrorBarColor(), PlotUtils.intToColor(1));
 
         data.errorBarColor("Red");
         assertEquals(Color.color("red"), data.getErrorBarColor());
@@ -182,7 +181,6 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
     public void testPointColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
-        final Theme theme = axes.chart().theme();
         final TestAXYDS data = new TestAXYDS(axes);
 
         final Color c1 = new Color(0, 0, 0);
@@ -190,13 +188,13 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         final Color c3 = new Color(255, 255, 255);
 
         data.pointColor(1);
-        assertEquals(data.getPointColor(0), theme.getSeriesColor(1));
+        assertEquals(data.getPointColor(0), PlotUtils.intToColor(1));
 
         data.pointColor(c1);
         assertEquals(data.getPointColor(0), c1);
 
         data.pointColor(new Integer(1));
-        assertEquals(data.getPointColor(0), theme.getSeriesColor(1));
+        assertEquals(data.getPointColor(0), PlotUtils.intToColor(1));
 
         data.pointColor("Red");
         for (int i = 0; i < data.size(); i++) {
@@ -218,26 +216,26 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         int[] icolors = {1, 2, 3};
         data.pointColor(icolors);
         for (int i = 0; i < icolors.length; i++) {
-            assertEquals(data.getPointColor(i), theme.getSeriesColor(icolors[i]));
+            assertEquals(data.getPointColor(i), PlotUtils.intToColor(icolors[i]));
         }
 
         IndexableData<Integer> idiColors = new IndexableDataInteger(icolors, null);
         data.pointColorInteger(idiColors);
         for (int i = 0; i < idiColors.size(); i++) {
-            assertEquals(data.getPointColor(i), theme.getSeriesColor(idiColors.get(i)));
+            assertEquals(data.getPointColor(i), PlotUtils.intToColor(idiColors.get(i)));
         }
 
         final Integer[] asizes = {new Integer(1), new Integer(2), new Integer(3)};
         data.pointColor(asizes);
         for (int i = 0; i < asizes.length; i++) {
-            assertEquals(data.getPointColor(i), theme.getSeriesColor(asizes[i]));
+            assertEquals(data.getPointColor(i), PlotUtils.intToColor(asizes[i]));
         }
 
         final String[] cats = {"A", "B", "C"};
         Table t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats), TableTools.col("Paints", colors));
         data.pointColor(t, "ints");
         for (int i = 0; i < t.size(); i++) {
-            assertEquals(data.getPointColor(i), theme.getSeriesColor(icolors[i]));
+            assertEquals(data.getPointColor(i), PlotUtils.intToColor(icolors[i]));
         }
 
         colors[0] = c3;

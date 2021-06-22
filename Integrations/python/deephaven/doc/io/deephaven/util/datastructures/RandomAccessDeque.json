@@ -2,7 +2,7 @@
  "className": "io.deephaven.util.datastructures.RandomAccessDeque",
  "methods": {
   "add": ":param t: RandomAccessDeque.T\n:return: boolean",
-  "addAll": ":param c: java.util.Collection<? extends RandomAccessDeque.T>\n:return: boolean",
+  "addAll": ":param c: java.util.Collection<? extendsRandomAccessDeque.T>\n:return: boolean",
   "addFirst": ":param vv: RandomAccessDeque.T",
   "addLast": ":param vv: RandomAccessDeque.T",
   "contains": ":param o: java.lang.Object\n:return: boolean",
@@ -13,7 +13,7 @@
   "parallelStream": ":return: java.util.stream.Stream<RandomAccessDeque.T>",
   "remove": ":param entry: java.lang.Object\n:return: boolean",
   "removeAll": ":param c: java.util.Collection<?>\n:return: boolean",
-  "removeIf": ":param predicate: java.util.function.Predicate<? super RandomAccessDeque.T>\n:return: boolean",
+  "removeIf": ":param predicate: java.util.function.Predicate<? superRandomAccessDeque.T>\n:return: boolean",
   "retainAll": ":param c: java.util.Collection<?>\n:return: boolean",
   "size": ":return: int",
   "stream": ":return: java.util.stream.Stream<RandomAccessDeque.T>",

@@ -6,7 +6,7 @@
   "comboAggregate": ":param request: io.deephaven.proto.backplane.grpc.ComboAggregateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "dropColumns": ":param request: io.deephaven.proto.backplane.grpc.DropColumnsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "emptyTable": ":param request: io.deephaven.proto.backplane.grpc.EmptyTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
-  "exportedTableUpdates": ":param request: io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableUpdateBatchMessage>",
+  "exportedTableUpdates": ":param request: io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage>",
   "filter": ":param request: io.deephaven.proto.backplane.grpc.FilterTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "flatten": ":param request: io.deephaven.proto.backplane.grpc.FlattenRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "head": ":param request: io.deephaven.proto.backplane.grpc.HeadOrTailRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",

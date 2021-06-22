@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.RegionedColumnSourceManager",
  "methods": {
-  "addLocation": "Add a table location to the list to be checked in refresh().\n\n:param tableLocation: io.deephaven.db.v2.locations.TableLocation",
+  "addLocation": "Add a table location to the list to be checked in refresh().\n\n:param tableLocation: (io.deephaven.db.v2.locations.TableLocation) - The table location to be added",
   "allLocations": "Get the added locations, first the ones that have been \"included\" (found to exist with non-zero size) in order\n of inclusion, then the remainder in order of discovery.\n\n:return: (java.util.Collection<io.deephaven.db.v2.locations.TableLocation>) All known locations, ordered as described",
   "disableGrouping": "Turn off column grouping, and clear the groupings on all GROUPING column sources.\n Note that this does *not* affect PARTITIONING columns.",
   "getColumnSources": "Get a map of name to DeferredGroupingColumnSource for the column sources maintained by\n this manager.\n\n:return: (java.util.Map<java.lang.String,? extends io.deephaven.db.v2.sources.DeferredGroupingColumnSource<?>>) An unmodifiable view of the column source map maintained by this manager.",

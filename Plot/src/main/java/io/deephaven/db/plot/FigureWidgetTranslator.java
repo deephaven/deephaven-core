@@ -70,9 +70,6 @@ public class FigureWidgetTranslator {
         clientFigure.setCols(figure.getWidth());
         clientFigure.setRows(figure.getHeight());
 
-        clientFigure.setTheme(new ThemeDescriptor());
-        clientFigure.setDefaultTheme(figure.isDefaultTheme());
-
         clientFigure.setResizable(figure.isResizable());
 
         clientFigure.setUpdateInterval(figure.getUpdateInterval());

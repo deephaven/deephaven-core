@@ -294,57 +294,450 @@ public class Operation {
     public interface FilterFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface FiltersListFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AndFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.AndFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getFiltersList();
+
+          @JsProperty
+          void setFiltersList(JsArray<Object> filtersList);
+
+          @JsOverlay
+          default void setFiltersList(Object[] filtersList) {
+            setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+          }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface CompareFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface LhsFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LiteralFieldType {
+              @JsOverlay
+              static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType
+                      .CompareFieldType.LhsFieldType.LiteralFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              double getDoubleValue();
+
+              @JsProperty
+              String getLongValue();
+
+              @JsProperty
+              String getNanoTimeValue();
+
+              @JsProperty
+              String getStringValue();
+
+              @JsProperty
+              boolean isBoolValue();
+
+              @JsProperty
+              void setBoolValue(boolean boolValue);
+
+              @JsProperty
+              void setDoubleValue(double doubleValue);
+
+              @JsProperty
+              void setLongValue(String longValue);
+
+              @JsProperty
+              void setNanoTimeValue(String nanoTimeValue);
+
+              @JsProperty
+              void setStringValue(String stringValue);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ReferenceFieldType {
+              @JsOverlay
+              static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType
+                      .CompareFieldType.LhsFieldType.ReferenceFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              String getColumnName();
+
+              @JsProperty
+              void setColumnName(String columnName);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType
+                    .CompareFieldType.LhsFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                    .LhsFieldType.LiteralFieldType
+                getLiteral();
+
+            @JsProperty
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                    .LhsFieldType.ReferenceFieldType
+                getReference();
+
+            @JsProperty
+            void setLiteral(
+                Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                        .LhsFieldType.LiteralFieldType
+                    literal);
+
+            @JsProperty
+            void setReference(
+                Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                        .LhsFieldType.ReferenceFieldType
+                    reference);
+          }
+
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                  .LhsFieldType
+              getLhs();
+
+          @JsProperty
+          double getOperation();
+
+          @JsProperty
+          Object getRhs();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setLhs(
+              Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                      .LhsFieldType
+                  lhs);
+
+          @JsProperty
+          void setOperation(double operation);
+
+          @JsProperty
+          void setRhs(Object rhs);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ContainsFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.ContainsFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          String getSearchString();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setReference(Object reference);
+
+          @JsProperty
+          void setSearchString(String searchString);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface InvokeFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.InvokeFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getArgumentsList();
+
+          @JsProperty
+          String getMethod();
+
+          @JsProperty
+          Object getTarget();
+
+          @JsProperty
+          void setArgumentsList(JsArray<Object> argumentsList);
+
+          @JsOverlay
+          default void setArgumentsList(Object[] argumentsList) {
+            setArgumentsList(Js.<JsArray<Object>>uncheckedCast(argumentsList));
+          }
+
+          @JsProperty
+          void setMethod(String method);
+
+          @JsProperty
+          void setTarget(Object target);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface IsNullFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.IsNullFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          void setReference(Object reference);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MatchesFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.MatchesFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          String getRegex();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setReference(Object reference);
+
+          @JsProperty
+          void setRegex(String regex);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface NotFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.NotFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          Object getFilter();
+
+          @JsProperty
+          void setFilter(Object filter);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface OrFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.OrFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getFiltersList();
+
+          @JsProperty
+          void setFiltersList(JsArray<Object> filtersList);
+
+          @JsOverlay
+          default void setFiltersList(Object[] filtersList) {
+            setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+          }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface Pb_inFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.Pb_inFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getCandidatesList();
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getTarget();
+
+          @JsProperty
+          void setCandidatesList(JsArray<Object> candidatesList);
+
+          @JsOverlay
+          default void setCandidatesList(Object[] candidatesList) {
+            setCandidatesList(Js.<JsArray<Object>>uncheckedCast(candidatesList));
+          }
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setTarget(Object target);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SearchFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.SearchFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getOptionalReferencesList();
+
+          @JsProperty
+          String getSearchString();
+
+          @JsProperty
+          void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
+
+          @JsOverlay
+          default void setOptionalReferencesList(Object[] optionalReferencesList) {
+            setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+          }
+
+          @JsProperty
+          void setSearchString(String searchString);
+        }
+
         @JsOverlay
         static Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Object> getChildrenList();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.AndFieldType getAnd();
 
         @JsProperty
-        double getDoubleValue();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+            getCompare();
 
         @JsProperty
-        double getFilterOp();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.ContainsFieldType
+            getContains();
 
         @JsProperty
-        double getLongValue();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.InvokeFieldType
+            getInvoke();
 
         @JsProperty
-        double getNanoTimeValue();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.IsNullFieldType
+            getIsNull();
 
         @JsProperty
-        String getStringValue();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.MatchesFieldType
+            getMatches();
 
         @JsProperty
-        boolean isBoolValue();
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.NotFieldType getNot();
 
         @JsProperty
-        void setBoolValue(boolean boolValue);
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.OrFieldType getOr();
 
         @JsProperty
-        void setChildrenList(JsArray<Object> childrenList);
-
-        @JsOverlay
-        default void setChildrenList(Object[] childrenList) {
-          setChildrenList(Js.<JsArray<Object>>uncheckedCast(childrenList));
-        }
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.Pb_inFieldType getPb_in();
 
         @JsProperty
-        void setDoubleValue(double doubleValue);
+        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.SearchFieldType
+            getSearch();
 
         @JsProperty
-        void setFilterOp(double filterOp);
+        void setAnd(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
         @JsProperty
-        void setLongValue(double longValue);
+        void setCompare(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType
+                compare);
 
         @JsProperty
-        void setNanoTimeValue(double nanoTimeValue);
+        void setContains(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.ContainsFieldType
+                contains);
 
         @JsProperty
-        void setStringValue(String stringValue);
+        void setInvoke(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.InvokeFieldType
+                invoke);
+
+        @JsProperty
+        void setIsNull(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.IsNullFieldType
+                isNull);
+
+        @JsProperty
+        void setMatches(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.MatchesFieldType
+                matches);
+
+        @JsProperty
+        void setNot(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.NotFieldType not);
+
+        @JsProperty
+        void setOr(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.OrFieldType or);
+
+        @JsProperty
+        void setPb_in(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
+
+        @JsProperty
+        void setSearch(
+            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.SearchFieldType
+                search);
       }
 
       @JsOverlay
@@ -1214,57 +1607,453 @@ public class Operation {
     public interface FilterFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface FiltersListFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface AndFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.AndFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getFiltersList();
+
+          @JsProperty
+          void setFiltersList(JsArray<Object> filtersList);
+
+          @JsOverlay
+          default void setFiltersList(Object[] filtersList) {
+            setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+          }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface CompareFieldType {
+          @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+          public interface LhsFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LiteralFieldType {
+              @JsOverlay
+              static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType
+                      .CompareFieldType.LhsFieldType.LiteralFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              double getDoubleValue();
+
+              @JsProperty
+              String getLongValue();
+
+              @JsProperty
+              String getNanoTimeValue();
+
+              @JsProperty
+              String getStringValue();
+
+              @JsProperty
+              boolean isBoolValue();
+
+              @JsProperty
+              void setBoolValue(boolean boolValue);
+
+              @JsProperty
+              void setDoubleValue(double doubleValue);
+
+              @JsProperty
+              void setLongValue(String longValue);
+
+              @JsProperty
+              void setNanoTimeValue(String nanoTimeValue);
+
+              @JsProperty
+              void setStringValue(String stringValue);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ReferenceFieldType {
+              @JsOverlay
+              static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType
+                      .CompareFieldType.LhsFieldType.ReferenceFieldType
+                  create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+              }
+
+              @JsProperty
+              String getColumnName();
+
+              @JsProperty
+              void setColumnName(String columnName);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType
+                    .CompareFieldType.LhsFieldType
+                create() {
+              return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                    .LhsFieldType.LiteralFieldType
+                getLiteral();
+
+            @JsProperty
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                    .LhsFieldType.ReferenceFieldType
+                getReference();
+
+            @JsProperty
+            void setLiteral(
+                Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                        .LhsFieldType.LiteralFieldType
+                    literal);
+
+            @JsProperty
+            void setReference(
+                Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                        .LhsFieldType.ReferenceFieldType
+                    reference);
+          }
+
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                  .LhsFieldType
+              getLhs();
+
+          @JsProperty
+          double getOperation();
+
+          @JsProperty
+          Object getRhs();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setLhs(
+              Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                      .LhsFieldType
+                  lhs);
+
+          @JsProperty
+          void setOperation(double operation);
+
+          @JsProperty
+          void setRhs(Object rhs);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ContainsFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType
+                  .ContainsFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          String getSearchString();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setReference(Object reference);
+
+          @JsProperty
+          void setSearchString(String searchString);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface InvokeFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.InvokeFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getArgumentsList();
+
+          @JsProperty
+          String getMethod();
+
+          @JsProperty
+          Object getTarget();
+
+          @JsProperty
+          void setArgumentsList(JsArray<Object> argumentsList);
+
+          @JsOverlay
+          default void setArgumentsList(Object[] argumentsList) {
+            setArgumentsList(Js.<JsArray<Object>>uncheckedCast(argumentsList));
+          }
+
+          @JsProperty
+          void setMethod(String method);
+
+          @JsProperty
+          void setTarget(Object target);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface IsNullFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.IsNullFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          void setReference(Object reference);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MatchesFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.MatchesFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getReference();
+
+          @JsProperty
+          String getRegex();
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setReference(Object reference);
+
+          @JsProperty
+          void setRegex(String regex);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface NotFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.NotFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          Object getFilter();
+
+          @JsProperty
+          void setFilter(Object filter);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface OrFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.OrFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getFiltersList();
+
+          @JsProperty
+          void setFiltersList(JsArray<Object> filtersList);
+
+          @JsOverlay
+          default void setFiltersList(Object[] filtersList) {
+            setFiltersList(Js.<JsArray<Object>>uncheckedCast(filtersList));
+          }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface Pb_inFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.Pb_inFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getCandidatesList();
+
+          @JsProperty
+          double getCaseSensitivity();
+
+          @JsProperty
+          double getMatchType();
+
+          @JsProperty
+          Object getTarget();
+
+          @JsProperty
+          void setCandidatesList(JsArray<Object> candidatesList);
+
+          @JsOverlay
+          default void setCandidatesList(Object[] candidatesList) {
+            setCandidatesList(Js.<JsArray<Object>>uncheckedCast(candidatesList));
+          }
+
+          @JsProperty
+          void setCaseSensitivity(double caseSensitivity);
+
+          @JsProperty
+          void setMatchType(double matchType);
+
+          @JsProperty
+          void setTarget(Object target);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SearchFieldType {
+          @JsOverlay
+          static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.SearchFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          JsArray<Object> getOptionalReferencesList();
+
+          @JsProperty
+          String getSearchString();
+
+          @JsProperty
+          void setOptionalReferencesList(JsArray<Object> optionalReferencesList);
+
+          @JsOverlay
+          default void setOptionalReferencesList(Object[] optionalReferencesList) {
+            setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+          }
+
+          @JsProperty
+          void setSearchString(String searchString);
+        }
+
         @JsOverlay
         static Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        JsArray<Object> getChildrenList();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.AndFieldType getAnd();
 
         @JsProperty
-        double getDoubleValue();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+            getCompare();
 
         @JsProperty
-        double getFilterOp();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.ContainsFieldType
+            getContains();
 
         @JsProperty
-        double getLongValue();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.InvokeFieldType
+            getInvoke();
 
         @JsProperty
-        double getNanoTimeValue();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.IsNullFieldType
+            getIsNull();
 
         @JsProperty
-        String getStringValue();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.MatchesFieldType
+            getMatches();
 
         @JsProperty
-        boolean isBoolValue();
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.NotFieldType getNot();
 
         @JsProperty
-        void setBoolValue(boolean boolValue);
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.OrFieldType getOr();
 
         @JsProperty
-        void setChildrenList(JsArray<Object> childrenList);
-
-        @JsOverlay
-        default void setChildrenList(Object[] childrenList) {
-          setChildrenList(Js.<JsArray<Object>>uncheckedCast(childrenList));
-        }
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.Pb_inFieldType
+            getPb_in();
 
         @JsProperty
-        void setDoubleValue(double doubleValue);
+        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.SearchFieldType
+            getSearch();
 
         @JsProperty
-        void setFilterOp(double filterOp);
+        void setAnd(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
         @JsProperty
-        void setLongValue(double longValue);
+        void setCompare(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType
+                compare);
 
         @JsProperty
-        void setNanoTimeValue(double nanoTimeValue);
+        void setContains(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.ContainsFieldType
+                contains);
 
         @JsProperty
-        void setStringValue(String stringValue);
+        void setInvoke(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.InvokeFieldType
+                invoke);
+
+        @JsProperty
+        void setIsNull(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.IsNullFieldType
+                isNull);
+
+        @JsProperty
+        void setMatches(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.MatchesFieldType
+                matches);
+
+        @JsProperty
+        void setNot(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.NotFieldType not);
+
+        @JsProperty
+        void setOr(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.OrFieldType or);
+
+        @JsProperty
+        void setPb_in(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.Pb_inFieldType
+                pb_in);
+
+        @JsProperty
+        void setSearch(
+            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.SearchFieldType
+                search);
       }
 
       @JsOverlay

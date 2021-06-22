@@ -4,7 +4,7 @@
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "asParquetFormat": "Get this column location cast to the TableLocation.Format.PARQUET format sub-interface.\n\n:return: (io.deephaven.db.v2.locations.ParquetFormatColumnLocation<io.deephaven.db.v2.sources.chunk.Attributes.Values,ColumnLocation.TLT>) this, with the appropriate cast applied",
   "exists": "Check for existence of this ColumnLocation.\n\n:return: (boolean) True iff the ColumnLocation actually exists",
-  "getFormat": "Get the format that was used to persist this column location.\n\nNote: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: (io.deephaven.db.v2.locations.TableLocation.Format) The format for this column location",
+  "getFormat": "Get the format that was used to persist this column location.\n\n:return: (io.deephaven.db.v2.locations.TableLocation.Format) The format for this column location",
   "getMetadata": "Get the metadata object stored with this column, or null if no such data exists.\n This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from\n unique (boxed) column values for this location to the associated ranges in which they occur.\n Ranges are either 2-element int[]s, or 2-element long[]s.\n\nNote: Java generics information - <METADATA_TYPE>\n\n:param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n:return: (METADATA_TYPE) The metadata stored with this column, or null if no such data exists",
   "getName": "Get the column name for this ColumnLocation.\n\n:return: (java.lang.String) the column name for this ColumnLocation",
   "getStringRepresentation": ":return: java.lang.String",

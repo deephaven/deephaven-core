@@ -5,24 +5,26 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.lang.parse.api.CompletionParseService;
+import io.deephaven.lang.parse.api.CompletionParseServiceNoOp;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation
  * for evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession extends LivenessArtifact implements ScriptSession {
+public abstract class AbstractScriptSession extends LivenessArtifact implements ScriptSession, VariableProvider {
     public static final String CLASS_CACHE_LOCATION = Configuration.getInstance().getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
 
     public static void createScriptCache() {
@@ -45,6 +47,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     protected final QueryScope queryScope;
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
+    private final CompletionParseService<?, ?, ?> parser;
 
     protected AbstractScriptSession(boolean isDefaultScriptSession) {
         manage(livenessScope);
@@ -73,6 +76,16 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
             CompilerTools.setDefaultContext(compilerContext);
             QueryScope.setDefaultScope(queryScope);
             QueryLibrary.setDefaultLibrary(queryLibrary);
+        }
+        @SuppressWarnings("rawtypes")
+        ServiceLoader<CompletionParseService> loader = ServiceLoader.load(CompletionParseService.class);
+        @SuppressWarnings("rawtypes")
+        final Iterator<CompletionParseService> itr = loader.iterator();
+        if (itr.hasNext()) {
+            parser = itr.next();
+        } else {
+            // hm, should maybe log to the user that we are using a do-nothing completer...
+            parser = new CompletionParseServiceNoOp();
         }
     }
 
@@ -160,4 +173,35 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
      * @return a query scope for this session; only invoked during construction
      */
     protected abstract QueryScope newQueryScope();
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public CompletionParseService getParser() {
+        return parser;
+    }
+
+
+    @Override
+    public Class getVariableType(final String var) {
+        final Object result = getVariable(var, null);
+        if (result == null) {
+            return null;
+        } else if (result instanceof Table) {
+            return Table.class;
+        } else {
+            return result.getClass();
+        }
+    }
+
+
+    @Override
+    public TableDefinition getTableDefinition(final String var) {
+        Object o = getVariable(var, null);
+        return o instanceof Table ? ((Table) o).getDefinition() : null;
+    }
+
+    @Override
+    public VariableProvider getVariableProvider() {
+        return this;
+    }
 }

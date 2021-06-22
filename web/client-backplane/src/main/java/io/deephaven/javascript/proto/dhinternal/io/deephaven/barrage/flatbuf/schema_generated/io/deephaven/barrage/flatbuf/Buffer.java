@@ -14,8 +14,6 @@ import jsinterop.annotations.JsType;
 public class Buffer {
   public static native double createBuffer(Builder builder, Long offset, Long length);
 
-  public static native double sizeOf();
-
   public ByteBuffer bb;
   public double bb_pos;
 

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.numerics.movingaverages.TradingHoursEma",
- "methods": {
-  "processDouble": ":param timestamp: long\n:param data: double"
- },
- "path": "io.deephaven.numerics.movingaverages.TradingHoursEma",
- "text": "A simple ema which decays with trading time and only accepts samples during trading hours.\n This is intended to be used when sampling is frequent.",
- "typeName": "class"
-}
