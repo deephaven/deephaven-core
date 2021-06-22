@@ -9,6 +9,7 @@ import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.parquet.*;
 import io.deephaven.db.v2.locations.parquet.topage.*;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
@@ -48,16 +49,16 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     private final Map<String, GroupingFile> groupingFiles = new ConcurrentHashMap<>();
     private final Set<String> grouping = new HashSet<>();
-    private final Map<String, String> columnNameMapping;
+    private final ParquetInstructions readInstructions;
 
     ReadOnlyParquetTableLocation(
             @NotNull final TableKey tableKey,
             @NotNull final TableLocationKey tableLocationKey,
             final File parquetFile,
             final boolean supportsSubscriptions,
-            final Map<String, String> columnNameMapping) {
+            final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, supportsSubscriptions);
-        this.columnNameMapping = columnNameMapping;
+        this.readInstructions = readInstructions;
         try {
             parentDir = parquetFile.getParentFile();
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
@@ -90,15 +91,10 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private static final ColumnDefinition<Long> FIRST_KEY_COL_DEF = ColumnDefinition.ofLong("__firstKey__");
     private static final ColumnDefinition<Long> LAST_KEY_COL_DEF = ColumnDefinition.ofLong("__lastKey__");
 
-    private String getMappedName(final String colName) {
-        final String mapped = columnNameMapping.get(colName);
-        return mapped != null ? mapped : colName;
-    }
-
     @NotNull
     @Override
     protected ParquetColumnLocation<Attributes.Values> makeColumnLocation(@NotNull String colName) {
-        final String name = getMappedName(colName);
+        final String name = readInstructions.getParquetColumnNameFromColumnName(colName);
 
         ColumnChunkPageStore.MetaDataCreator getMetaData = null;
 
@@ -143,7 +139,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             @NotNull RowGroupReader rowGroupReader,
             @NotNull Map<String, String> keyValueMetaData,
             ColumnChunkPageStore.MetaDataCreator getMetadata) {
-        final String name = getMappedName(colName);
+        final String name = readInstructions.getParquetColumnNameFromColumnName(colName);
         String [] nameList = columns.get(name);
         final ColumnChunkReader columnChunkReader = rowGroupReader.getColumnChunk(nameList == null ?
                 Collections.singletonList(name) : Arrays.asList(nameList));
@@ -248,7 +244,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     @Override
     public @NotNull final ParquetColumnLocation<Attributes.Values> getColumnLocation(@NotNull CharSequence argName) {
-        final String name = getMappedName(argName.toString());
+        final String name = readInstructions.getParquetColumnNameFromColumnName(argName.toString());
         return super.getColumnLocation(name.subSequence(0, name.length()));
     }
 

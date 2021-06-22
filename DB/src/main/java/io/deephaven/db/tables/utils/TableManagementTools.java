@@ -80,7 +80,7 @@ public class TableManagementTools {
                 new StandaloneLocalTableLocationScanner(location),
                 false,
                 TableDataRefreshService.getSharedRefreshService(),
-                (readInstructions == null) ? Collections.emptyMap() : readInstructions.getReverseColumnNameMappings());
+                readInstructions != null ? readInstructions : ParquetInstructions.EMPTY);
         return getTable("Stand-alone V2 table from " + path, tableDefinition, locationProvider);
     }
 
@@ -91,7 +91,7 @@ public class TableManagementTools {
                 sourceFile,
                 false,
                 TableDataRefreshService.getSharedRefreshService(),
-                (readInstructions == null) ? Collections.emptyMap() : readInstructions.getReverseColumnNameMappings());
+                readInstructions != null ? readInstructions : ParquetInstructions.EMPTY);
         return getTable("Read single parquet file from " + sourceFile, tableDefinition, locationProvider);
     }
 

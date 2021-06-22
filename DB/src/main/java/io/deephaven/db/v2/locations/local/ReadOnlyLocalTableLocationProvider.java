@@ -5,6 +5,7 @@ import io.deephaven.db.v2.locations.TableKey;
 import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,16 +19,16 @@ public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProvid
 
     private static final String PARQUET_FILE_NAME = "table.parquet";
 
-    private final Map<String, String> columnNameMappings;
+    private final ParquetInstructions readInstructions;
 
     public ReadOnlyLocalTableLocationProvider(
             @NotNull final TableKey tableKey,
             @NotNull final Scanner scanner,
             final boolean supportsSubscriptions,
             @NotNull final TableDataRefreshService refreshService,
-            @NotNull final Map<String, String> columnNameMappings) {
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, scanner, supportsSubscriptions, refreshService);
-        this.columnNameMappings = columnNameMappings;
+        this.readInstructions = readInstructions;
     }
 
     @Override
@@ -61,14 +62,14 @@ public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProvid
                 tableLocationKey,
                 new File(scanner.computeLocationDirectory(tableKey, tableLocationKey), PARQUET_FILE_NAME),
                 false,
-                columnNameMappings);
+                readInstructions);
     }
 
     private TableLocation makeDataDrivenLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
         final File directory = scanner.computeLocationDirectory(tableKey, tableLocationKey);
         final File parquetFile = new File(directory, PARQUET_FILE_NAME);
         if (Utils.fileExistsPrivileged(parquetFile)) {
-            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, parquetFile, supportsSubscriptions(), columnNameMappings);
+            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, parquetFile, supportsSubscriptions(), readInstructions);
         } else {
             throw new UnsupportedOperationException(this + ": Unrecognized data format in location " + tableLocationKey);
         }

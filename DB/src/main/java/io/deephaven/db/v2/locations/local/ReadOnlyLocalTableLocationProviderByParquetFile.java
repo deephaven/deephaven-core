@@ -2,6 +2,7 @@ package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,17 +12,17 @@ import java.util.Map;
 public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableLocationProvider {
 
     private final File fileLocation;
-    private final Map<String, String> columnNameMappings;
+    private final ParquetInstructions readInstructions;
 
     public ReadOnlyLocalTableLocationProviderByParquetFile(
             @NotNull final TableKey tableKey,
             @NotNull final File fileLocation,
             final boolean supportsSubscriptions,
             @NotNull final TableDataRefreshService refreshService,
-            @NotNull final Map<String, String> columnNameMappings) {
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, supportsSubscriptions, refreshService);
         this.fileLocation = fileLocation;
-        this.columnNameMappings = columnNameMappings;
+        this.readInstructions = readInstructions;
     }
 
     @Override
@@ -43,7 +44,7 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableL
 
     private TableLocation<?> makeLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
         if (Utils.fileExistsPrivileged(fileLocation)) {
-            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, supportsSubscriptions(), columnNameMappings);
+            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, supportsSubscriptions(), readInstructions);
         } else {
             throw new UnsupportedOperationException(this + ": Unrecognized data format in location " + tableLocationKey);
         }

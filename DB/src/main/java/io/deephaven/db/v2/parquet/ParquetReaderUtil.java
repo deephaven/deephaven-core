@@ -288,7 +288,7 @@ public class ParquetReaderUtil {
             final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
             final String parquetColumnName = column.getPath()[0];
             final String colName;
-            final String mappedName = readInstructions.getColumnNameMapping(parquetColumnName);
+            final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
             if (mappedName != null) {
                 colName = mappedName;
             } else if (parquetColumnName.contains(" ")) {
