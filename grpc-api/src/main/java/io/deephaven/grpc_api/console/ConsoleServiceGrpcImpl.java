@@ -365,7 +365,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         if (!(result instanceof FigureWidget)) {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Value bound to name " + figureName + " is not a FigureWidget");
                         }
-                        //TODO acls
                         FigureWidget widget = (FigureWidget) result;
 
                         FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session);

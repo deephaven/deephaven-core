@@ -614,6 +614,7 @@ public class JsFigure extends HasEventHandling {
         public Promise fetch(JsFigure figure, FigureDescriptor descriptor) {
             JsTable[] tables;
 
+            // TODO (deephaven-core#62) implement fetch for tablemaps
 //            // iterate through the tablemaps we're supposed to have, fetch keys for them, and construct them
             TableMap[] tableMaps = new TableMap[0];//new TableMap[descriptor.getTableMapIdsList().length];
 //            Promise<?>[] tableMapPromises = new Promise[descriptor.getTablemapsList().length];

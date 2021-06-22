@@ -26,8 +26,6 @@ import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.tables.*;
 import io.deephaven.db.plot.util.tables.TableHandle;
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.TableMapSupplier;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.gui.shape.JShapes;
@@ -86,6 +84,7 @@ public class FigureWidgetTranslator {
             clientFigure.addTables(TableServiceGrpcImpl.buildTableCreationResponse(TableReference.newBuilder().setTicket(tableExportObject.getExportId()).build(), table));
         }
 
+        // TODO (deephaven-core#62) implement once tablemaps are ready
 //        i = 0;
 //        for (Map.Entry<TableMap, List<TableMapHandle>> entry : figure.getTableMapHandles().stream().collect(Collectors.groupingBy(TableMapHandle::getTableMap)).entrySet()) {
 //            Set<String> relevantColumns = entry.getValue().stream().map(TableMapHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
@@ -97,12 +96,12 @@ public class FigureWidgetTranslator {
 //            i++;
 //
 //            SessionState.ExportObject<TableMap> tableExportObject = sessionState.newServerSideExport(tableMap);
-//            clientFigure.addTableMap(TODO)
+//            clientFigure.addTableMap(...)
 //        }
 
         assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
-        assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor, clientFigure::clearTitleColor); // clientFigure.setTitleColor(toCssColorString(figure.getTitleColor()));
-        assignOptionalField(toCssFont(figure.getTitleFont()), clientFigure::setTitleFont, clientFigure::clearTitleFont); // clientFigure.setTitleFont(toCssFont(figure.getTitleFont()));
+        assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor, clientFigure::clearTitleColor);
+        assignOptionalField(toCssFont(figure.getTitleFont()), clientFigure::setTitleFont, clientFigure::clearTitleFont);
 
         List<ChartImpl> charts = figure.getCharts().getCharts();
 
@@ -161,11 +160,11 @@ public class FigureWidgetTranslator {
                 clientAxis.setId(type.name() + axis.id());
                 clientAxis.setFormatType(AxisDescriptor.AxisFormatType.valueOf(axis.getType().name()));
                 clientAxis.setLog(axis.isLog());
-                assignOptionalField(axis.getLabel(), clientAxis::setLabel, clientAxis::clearLabel); // clientAxis.setLabel(axis.getLabel());
-                assignOptionalField(toCssFont(axis.getLabelFont()), clientAxis::setLabelFont, clientAxis::clearLabelFont); // clientAxis.setLabelFont(toCssFont(axis.getLabelFont()));
+                assignOptionalField(axis.getLabel(), clientAxis::setLabel, clientAxis::clearLabel);
+                assignOptionalField(toCssFont(axis.getLabelFont()), clientAxis::setLabelFont, clientAxis::clearLabelFont);
 //                clientAxis.setFormat(axis.getFormat().toString());
-                assignOptionalField(axis.getFormatPattern(), clientAxis::setFormatPattern, clientAxis::clearFormatPattern); // clientAxis.setFormatPattern(axis.getFormatPattern());
-                assignOptionalField(toCssColorString(axis.getColor()), clientAxis::setColor, clientAxis::clearColor); // clientAxis.setColor(toCssColorString(axis.getColor()));
+                assignOptionalField(axis.getFormatPattern(), clientAxis::setFormatPattern, clientAxis::clearFormatPattern);
+                assignOptionalField(toCssColorString(axis.getColor()), clientAxis::setColor, clientAxis::clearColor);
                 clientAxis.setMinRange(axis.getMinRange());
                 clientAxis.setMaxRange(axis.getMaxRange());
                 clientAxis.setMinorTicksVisible(axis.isMinorTicksVisible());
@@ -241,14 +240,14 @@ public class FigureWidgetTranslator {
 
                     AbstractDataSeries s = (AbstractDataSeries) seriesInternal;
 
-                    assignOptionalField(s.getLinesVisible(), clientSeries::setLinesVisible, clientSeries::clearLinesVisible); // clientSeries.setLinesVisible(s.getLinesVisible());
-                    assignOptionalField(s.getPointsVisible(), clientSeries::setShapesVisible, clientSeries::clearShapesVisible); // clientSeries.setShapesVisible(s.getPointsVisible());
+                    assignOptionalField(s.getLinesVisible(), clientSeries::setLinesVisible, clientSeries::clearLinesVisible);
+                    assignOptionalField(s.getPointsVisible(), clientSeries::setShapesVisible, clientSeries::clearShapesVisible);
                     clientSeries.setGradientVisible(s.getGradientVisible());
-                    assignOptionalField(toCssColorString(s.getLineColor()), clientSeries::setLineColor, clientSeries::clearLineColor); // clientSeries.setLineColor(toCssColorString(s.getLineColor()));
+                    assignOptionalField(toCssColorString(s.getLineColor()), clientSeries::setLineColor, clientSeries::clearLineColor);
 //                            clientSeries.setLineStyle(s.getLineStyle().toString());
-                    assignOptionalField(s.getPointLabelFormat(), clientSeries::setPointLabelFormat, clientSeries::clearPointLabelFormat); // clientSeries.setPointLabelFormat(s.getPointLabelFormat());
-                    assignOptionalField(s.getXToolTipPattern(), clientSeries::setXToolTipPattern, clientSeries::clearXToolTipPattern); // clientSeries.setXToolTipPattern(s.getXToolTipPattern());
-                    assignOptionalField(s.getYToolTipPattern(), clientSeries::setYToolTipPattern, clientSeries::clearYToolTipPattern); // clientSeries.setYToolTipPattern(s.getYToolTipPattern());
+                    assignOptionalField(s.getPointLabelFormat(), clientSeries::setPointLabelFormat, clientSeries::clearPointLabelFormat);
+                    assignOptionalField(s.getXToolTipPattern(), clientSeries::setXToolTipPattern, clientSeries::clearXToolTipPattern);
+                    assignOptionalField(s.getYToolTipPattern(), clientSeries::setYToolTipPattern, clientSeries::clearYToolTipPattern);
 
                     // build the set of axes that the series is watching, and give each a type, starting
                     // with the x and y we have so far mapped to this
@@ -403,13 +402,13 @@ public class FigureWidgetTranslator {
 
         clientChart.setChartType(FigureDescriptor.ChartDescriptor.ChartType.valueOf(chart.getChartType().name()));
         clientChart.setColspan(chart.colSpan());
-        assignOptionalField(toCssColorString(chart.getLegendColor()), clientChart::setLegendColor, clientChart::clearLegendColor); // clientChart.setLegendColor(toCssColorString(chart.getLegendColor()));
-        assignOptionalField(toCssFont(chart.getLegendFont()), clientChart::setLegendFont, clientChart::clearLegendFont); // clientChart.setLegendFont(toCssFont(chart.getLegendFont()));
+        assignOptionalField(toCssColorString(chart.getLegendColor()), clientChart::setLegendColor, clientChart::clearLegendColor);
+        assignOptionalField(toCssFont(chart.getLegendFont()), clientChart::setLegendFont, clientChart::clearLegendFont);
         clientChart.setRowspan(chart.rowSpan());
         clientChart.setShowLegend(chart.isShowLegend());
-        assignOptionalField(chart.getTitle(), clientChart::setTitle, clientChart::clearTitle); // clientChart.setTitle(chart.getTitle());
-        assignOptionalField(toCssColorString(chart.getTitleColor()), clientChart::setTitleColor, clientChart::clearTitleColor); // clientChart.setTitleColor(toCssColorString(chart.getTitleColor()));
-        assignOptionalField(toCssFont(chart.getTitleFont()), clientChart::setTitleFont, clientChart::clearTitleFont); // clientChart.setTitleFont(toCssFont(chart.getTitleFont()));
+        assignOptionalField(chart.getTitle(), clientChart::setTitle, clientChart::clearTitle);
+        assignOptionalField(toCssColorString(chart.getTitleColor()), clientChart::setTitleColor, clientChart::clearTitleColor);
+        assignOptionalField(toCssFont(chart.getTitleFont()), clientChart::setTitleFont, clientChart::clearTitleFont);
 
         return clientChart.build();
     }

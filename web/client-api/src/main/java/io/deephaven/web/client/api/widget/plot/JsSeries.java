@@ -137,7 +137,7 @@ public class JsSeries {
         return descriptor.getLineColor();
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getLineStyle() {
 //        return descriptor.getLineStyle();

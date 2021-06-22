@@ -206,7 +206,6 @@ message FetchFigureResponse {
     FigureDescriptor figure_descriptor = 1;
 }
 
-//TODO before merging this, redo the field ids
 message FigureDescriptor {
     optional string title = 1;
     string title_font = 2;
@@ -221,7 +220,8 @@ message FigureDescriptor {
 
     repeated io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;
 
-    reserved 12;// reserved for tablemaps, once those are well supported
+    // TODO (deephaven-core#62) implement once tablemaps are ready
+    reserved 12;// reserved for tablemaps
 //    repeated arrow.flight.protocol.Ticket table_maps = 12;
 
     repeated string errors = 13;
@@ -279,7 +279,9 @@ message FigureDescriptor {
 
         bool gradient_visible = 5;
         string line_color = 6;
+        //TODO (deephaven-core#774) finish this field or remove it from the DSL
         //    string line_style = 7;
+        reserved 7;
         optional string point_label_format = 8;
         optional string x_tool_tip_pattern = 9;
         optional string y_tool_tip_pattern = 10;

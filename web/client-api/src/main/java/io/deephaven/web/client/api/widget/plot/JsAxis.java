@@ -79,7 +79,7 @@ public class JsAxis {
         return axis.getTicksFont();
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getFormat() {
 //        return axis.getFormat();
@@ -133,7 +133,7 @@ public class JsAxis {
         return Js.uncheckedCast(axis.getMajorTickLocationsList().slice());
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getAxisTransform() {
 //        return axis.getAxisTransform();
