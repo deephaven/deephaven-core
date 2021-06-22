@@ -559,7 +559,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
     if not categoricalSet.issubset(columnNames):
         raise KeyError("Categorical set -{}- not contained in column names set -{}".format(categoricals, columnNames))
 
-    data = {}
+    data = []
     useColumnNames = []
     for columnName in columnNames:
         logging.info("Column {} get.....;".format(columnName))
@@ -573,5 +573,5 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
                             "type {}".format(columnName, table.getColumn(columnName).getType().getName()))
         else:
             useColumnNames.append(columnName)
-            data[columnName] = series
-    return pandas.DataFrame(data=data, columns=useColumnNames, copy=False)
+            data.append(series)
+    return pandas.DataFrame(data=numpy.stack([d.array for d in data], axis=1), columns=useColumnNames, copy=False)

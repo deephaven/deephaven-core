@@ -7,6 +7,7 @@ package io.deephaven.db.v2;
 import io.deephaven.base.Procedure;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.v2.iterators.*;
 import io.deephaven.db.v2.sources.*;
@@ -156,14 +157,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public byte[] getBytes(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final byte[] result = new byte[rangeIndex.intSize("getBytes")];
-        //noinspection unchecked
-        new ByteColumnIterator(rangeIndex, (ColumnSource<Byte>)columnSource).forEachRemaining(new Procedure.UnaryByte() {
-            private int vi = 0;
-            @Override
-            public void call(final byte value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableByteChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -198,14 +194,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public char[] getChars(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final char[] result = new char[rangeIndex.intSize("getChars")];
-        //noinspection unchecked
-        new CharacterColumnIterator(rangeIndex, (ColumnSource<Character>)columnSource).forEachRemaining(new Procedure.UnaryChar() {
-            private int vi = 0;
-            @Override
-            public void call(final char value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableCharChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -240,14 +231,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public double[] getDoubles(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final double[] result = new double[rangeIndex.intSize("getDoubles")];
-        //noinspection unchecked
-        new DoubleColumnIterator(rangeIndex, (ColumnSource<Double>)columnSource).forEachRemaining(new DoubleConsumer() {
-            private int vi = 0;
-            @Override
-            public void accept(final double value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableDoubleChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -282,14 +268,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public float[] getFloats(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final float[] result = new float[rangeIndex.intSize("getFloats")];
-        //noinspection unchecked
-        new FloatColumnIterator(rangeIndex, (ColumnSource<Float>)columnSource).forEachRemaining(new Procedure.UnaryFloat() {
-            private int vi = 0;
-            @Override
-            public void call(final float value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableFloatChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -324,14 +305,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public int[] getInts(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final int[] result = new int[rangeIndex.intSize("getInts")];
-        //noinspection unchecked
-        new IntegerColumnIterator(rangeIndex, (ColumnSource<Integer>)columnSource).forEachRemaining(new IntConsumer() {
-            private int vi = 0;
-            @Override
-            public void accept(final int value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableIntChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -366,14 +342,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public long[] getLongs(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final long[] result = new long[rangeIndex.intSize("getLongs")];
-        //noinspection unchecked
-        new LongColumnIterator(rangeIndex, (ColumnSource<Long>)columnSource).forEachRemaining(new LongConsumer() {
-            private int vi = 0;
-            @Override
-            public void accept(final long value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableLongChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
@@ -408,14 +379,9 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     public short[] getShorts(final long startPosInclusive, final long endPosExclusive) {
         final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
         final short[] result = new short[rangeIndex.intSize("getShorts")];
-        //noinspection unchecked
-        new ShortColumnIterator(rangeIndex, (ColumnSource<Short>)columnSource).forEachRemaining(new Procedure.UnaryShort() {
-            private int vi = 0;
-            @Override
-            public void call(final short value) {
-                result[vi++] = value;
-            }
-        });
+        try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
+            columnSource.fillChunk(context, WritableShortChunk.writableChunkWrap(result), rangeIndex);
+        }
         return result;
     }
 
