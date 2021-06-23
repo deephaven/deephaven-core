@@ -2,6 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.bat
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
@@ -32,6 +33,66 @@ import jsinterop.base.JsPropertyMap;
 public class Operation {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface AsOfJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType.AsOfJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getAsOfJoinType();
+
+      @JsProperty
+      double getAsOfMatchRule();
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setAsOfJoinType(double asOfJoinType);
+
+      @JsProperty
+      void setAsOfMatchRule(double asOfMatchRule);
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
+    }
+
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ComboAggregateFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1209,6 +1270,9 @@ public class Operation {
     }
 
     @JsProperty
+    Operation.ToObjectReturnType.AsOfJoinFieldType getAsOfJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType.ComboAggregateFieldType getComboAggregate();
 
     @JsProperty
@@ -1273,6 +1337,9 @@ public class Operation {
 
     @JsProperty
     Object getView();
+
+    @JsProperty
+    void setAsOfJoin(Operation.ToObjectReturnType.AsOfJoinFieldType asOfJoin);
 
     @JsProperty
     void setComboAggregate(Operation.ToObjectReturnType.ComboAggregateFieldType comboAggregate);
@@ -1344,6 +1411,66 @@ public class Operation {
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface AsOfJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType0.AsOfJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getAsOfJoinType();
+
+      @JsProperty
+      double getAsOfMatchRule();
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setAsOfJoinType(double asOfJoinType);
+
+      @JsProperty
+      void setAsOfMatchRule(double asOfMatchRule);
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
+    }
+
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ComboAggregateFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2525,6 +2652,9 @@ public class Operation {
     }
 
     @JsProperty
+    Operation.ToObjectReturnType0.AsOfJoinFieldType getAsOfJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType0.ComboAggregateFieldType getComboAggregate();
 
     @JsProperty
@@ -2589,6 +2719,9 @@ public class Operation {
 
     @JsProperty
     Object getView();
+
+    @JsProperty
+    void setAsOfJoin(Operation.ToObjectReturnType0.AsOfJoinFieldType asOfJoin);
 
     @JsProperty
     void setComboAggregate(Operation.ToObjectReturnType0.ComboAggregateFieldType comboAggregate);
@@ -2667,6 +2800,8 @@ public class Operation {
   public static native Operation.ToObjectReturnType toObject(
       boolean includeInstance, Operation msg);
 
+  public native void clearAsOfJoin();
+
   public native void clearComboAggregate();
 
   public native void clearDropColumns();
@@ -2710,6 +2845,8 @@ public class Operation {
   public native void clearUpdateView();
 
   public native void clearView();
+
+  public native AsOfJoinTablesRequest getAsOfJoin();
 
   public native ComboAggregateRequest getComboAggregate();
 
@@ -2757,6 +2894,8 @@ public class Operation {
 
   public native SelectOrUpdateRequest getView();
 
+  public native boolean hasAsOfJoin();
+
   public native boolean hasComboAggregate();
 
   public native boolean hasDropColumns();
@@ -2802,6 +2941,10 @@ public class Operation {
   public native boolean hasView();
 
   public native Uint8Array serializeBinary();
+
+  public native void setAsOfJoin();
+
+  public native void setAsOfJoin(AsOfJoinTablesRequest value);
 
   public native void setComboAggregate();
 
