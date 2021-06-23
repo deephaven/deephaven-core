@@ -273,10 +273,8 @@ message JoinTablesRequest {
   enum Type {
     CROSS_JOIN = 0;
     NATURAL_JOIN = 1;
-    AS_OF_JOIN = 2 [deprecated=true];
-    REVERSE_AS_OF_JOIN = 3 [deprecated=true];
-    EXACT_JOIN = 4;
-    LEFT_JOIN = 5;
+    EXACT_JOIN = 2;
+    LEFT_JOIN = 3;
   }
 }
 

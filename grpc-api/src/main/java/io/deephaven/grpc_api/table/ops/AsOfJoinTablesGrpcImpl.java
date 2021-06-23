@@ -12,6 +12,7 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.JoinTablesRequest;
 import io.deephaven.util.FunctionalInterfaces;
 import io.grpc.StatusRuntimeException;
 
@@ -31,7 +32,6 @@ public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesReq
         this.liveTableMonitor = liveTableMonitor;
     }
 
-
     @Override
     public void validateRequest(final AsOfJoinTablesRequest request) throws StatusRuntimeException {
         try {
@@ -39,6 +39,12 @@ public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesReq
             MatchPairFactory.getExpressions(request.getColumnsToAddList());
         } catch (final ExpressionException err) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
+        }
+        if (request.getAsOfJoinType() == AsOfJoinTablesRequest.Type.UNRECOGNIZED) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized join type");
+        }
+        if (request.getAsOfMatchRule() == AsOfJoinTablesRequest.MatchRule.UNRECOGNIZED) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized match rule");
         }
     }
 

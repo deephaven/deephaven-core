@@ -41,8 +41,8 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
         } catch (final ExpressionException err) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
         }
-        if (request.getJoinType() == JoinTablesRequest.Type.AS_OF_JOIN || request.getJoinType() == JoinTablesRequest.Type.REVERSE_AS_OF_JOIN) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "For as-of joins, used AsOfJoinTablesRequest");
+        if (request.getJoinType() == JoinTablesRequest.Type.UNRECOGNIZED) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized join type");
         }
     }
 
@@ -69,9 +69,6 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
                     return lhs.join(rhs, columnsToMatch, columnsToAdd);
                 case NATURAL_JOIN:
                     return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
-                case AS_OF_JOIN:
-                case REVERSE_AS_OF_JOIN:
-                    throw new UnsupportedOperationException("Should have thrown in validate, join type not supported, use AsOfJoinTablesRequest");
                 case EXACT_JOIN:
                     return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
                 case LEFT_JOIN:
