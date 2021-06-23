@@ -187,8 +187,6 @@ message ExportedTableUpdateMessage {
 message EmptyTableRequest {
   Ticket result_id = 1;
   sint64 size = 2 [jstype=JS_STRING];
-  repeated string column_names = 3;
-  repeated string column_types = 4;
 }
 
 message TimeTableRequest {
