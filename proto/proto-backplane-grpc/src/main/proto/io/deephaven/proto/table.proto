@@ -109,6 +109,8 @@ service TableService {
    */
   rpc JoinTables(JoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
+  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
   /*
    * Returns the result of an aggregate table operation.
    */
@@ -271,11 +273,31 @@ message JoinTablesRequest {
   enum Type {
     CROSS_JOIN = 0;
     NATURAL_JOIN = 1;
-    AS_OF_JOIN = 2;
-    REVERSE_AS_OF_JOIN = 3;
+    AS_OF_JOIN = 2 [deprecated=true];
+    REVERSE_AS_OF_JOIN = 3 [deprecated=true];
     EXACT_JOIN = 4;
     LEFT_JOIN = 5;
   }
+}
+
+message AsOfJoinTablesRequest {
+  enum Type {
+    AS_OF_JOIN = 0;
+    REVERSE_AS_OF_JOIN = 1;
+  }
+  enum MatchRule {
+    LESS_THAN_EQUAL = 0;
+    LESS_THAN = 1;
+    GREATER_THAN_EQUAL = 2;
+    GREATER_THAN = 3;
+  }
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+  Type as_of_join_type = 6;
+  MatchRule as_of_match_rule = 7;
 }
 
 message ComboAggregateRequest {
@@ -485,6 +507,7 @@ message BatchTableRequest {
       ComboAggregateRequest combo_aggregate = 20;
       SnapshotTableRequest snapshot = 21;
       FlattenRequest flatten = 22;
+      AsOfJoinTablesRequest as_of_join = 23;
     }
   }
 }
