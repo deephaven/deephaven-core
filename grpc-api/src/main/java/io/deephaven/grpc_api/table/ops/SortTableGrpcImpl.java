@@ -1,6 +1,7 @@
 package io.deephaven.grpc_api.table.ops;
 
 
+import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.db.tables.SortPair;
@@ -43,7 +44,7 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         }
 
         if (!absViews.isEmpty()) {
-            result = result.updateView(absViews);
+            result = result.updateView(Selectable.from(absViews));
         }
 
         // This loop does two optimizations:

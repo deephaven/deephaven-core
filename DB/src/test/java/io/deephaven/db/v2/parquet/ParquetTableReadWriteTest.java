@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.StringSetArrayWrapper;
@@ -65,7 +66,7 @@ public class ParquetTableReadWriteTest {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
         return TableTools.emptyTable(size).select(
-                columns
+                Selectable.from(columns)
         );
     }
 

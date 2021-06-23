@@ -13,7 +13,6 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.lang.DBLanguageParser;
 import io.deephaven.db.tables.remote.*;
 import io.deephaven.db.tables.select.*;
@@ -362,18 +361,15 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return where(SelectFilterFactory.getExpressions(filters));
     }
 
+    @Override
     @AsyncMethod
-    default Table where(Collection<String> filters) { return where(filters.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)); }
+    default Table where(Collection<Filter> filters) {
+        return where(SelectFilter.from(filters));
+    }
 
     @AsyncMethod
     default Table where() {
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
-    }
-
-    @Override
-    @AsyncMethod
-    default Table where2(Collection<Filter> filters) {
-        return where(SelectFilter.from(filters));
     }
 
     @AsyncMethod
@@ -413,16 +409,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     default Table whereIn(Table rightTable, String... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
     }
-    default Table whereIn(Table rightTable, Collection<String> columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
-    }
     default Table whereIn(Table rightTable, MatchPair... columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, true, columnsToMatch);
     }
     default Table whereNotIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
-    }
-    default Table whereNotIn(Table rightTable, Collection<String> columnsToMatch) {
         return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
     }
     default Table whereNotIn(Table rightTable, MatchPair... columnsToMatch) {
@@ -447,12 +437,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table whereIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
         return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
     @Override
-    default Table whereNotIn2(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
         return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
@@ -529,17 +519,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return select(SelectColumnFactory.getExpressions(columns));
     }
 
-    default Table select(Collection<String> columns) {
-        return select(SelectColumnFactory.getExpressions(columns));
+    @Override
+    default Table select(Collection<Selectable> columns) {
+        return select(SelectColumn.from(columns));
     }
 
     default Table select() {
         return select(getDefinition().getColumnNamesArray());
-    }
-
-    @Override
-    default Table select2(Collection<Selectable> columns) {
-        return select(SelectColumn.from(columns));
     }
 
     @AsyncMethod
@@ -566,12 +552,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return update(SelectColumnFactory.getExpressions(newColumns));
     }
 
-    default Table update(Collection<String> newColumns) {
-        return update(SelectColumnFactory.getExpressions(newColumns));
-    }
-
     @Override
-    default Table update2(Collection<Selectable> columns) {
+    default Table update(Collection<Selectable> columns) {
         return update(SelectColumn.from(columns));
     }
 
@@ -620,14 +602,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return view(SelectColumnFactory.getExpressions(columns));
     }
 
-    @AsyncMethod
-    default Table view(Collection<String> columns) {
-        return view(SelectColumnFactory.getExpressions(columns));
-    }
-
     @Override
     @AsyncMethod
-    default Table view2(Collection<Selectable> columns) {
+    default Table view(Collection<Selectable> columns) {
         return view(SelectColumn.from(columns));
     }
 
@@ -639,14 +616,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return updateView(SelectColumnFactory.getExpressions(newColumns));
     }
 
-    @AsyncMethod
-    default Table updateView(Collection<String> newColumns) {
-        return updateView(SelectColumnFactory.getExpressions(newColumns));
-    }
-
     @Override
     @AsyncMethod
-    default Table updateView2(Collection<Selectable> columns) {
+    default Table updateView(Collection<Selectable> columns) {
         return updateView(SelectColumn.from(columns));
     }
 
@@ -937,28 +909,26 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table exactJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return exactJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
-    }
-
-    default Table exactJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return exactJoin(rightTable, columnsToMatch, Collections.emptyList());
-    }
-
-    default Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return exactJoin(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
-    }
-
-    default Table exactJoin(Table rightTable, String columnsToMatch) {
-        return exactJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
-    }
-
     @Override
-    default Table exactJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table exactJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return exactJoin(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
             MatchPair.fromAddition(columnsToAdd));
+    }
+
+    default Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
+        return exactJoin(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+    }
+
+    default Table exactJoin(Table rightTable, String columnsToMatch) {
+        return exactJoin(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     enum AsOfMatchRule {
@@ -1172,28 +1142,26 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return naturalJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
-    }
-
-    default Table naturalJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return naturalJoin(rightTable, columnsToMatch, Collections.emptyList());
-    }
-
-    default Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return naturalJoin(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
-    }
-
-    default Table naturalJoin(Table rightTable, String columnsToMatch) {
-        return naturalJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
-    }
-
     @Override
-    default Table naturalJoin2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table naturalJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return naturalJoin(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
             MatchPair.fromAddition(columnsToAdd));
+    }
+
+    default Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
+        return naturalJoin(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+    }
+
+    default Table naturalJoin(Table rightTable, String columnsToMatch) {
+        return naturalJoin(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     /**
@@ -1277,7 +1245,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and includes all non-key-columns from the right table
      */
     default Table join(Table rightTable, String columnsToMatch) {
-        return join(rightTable, StringUtils.splitToCollection(columnsToMatch), Collections.emptyList());
+        return join(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     /**
@@ -1338,7 +1309,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return join(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
+        return join(
+            rightTable,
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+            MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
     /**
@@ -1371,37 +1345,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      */
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
         return join(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd), numRightBitsToReserve);
-    }
-
-    /**
-     * Perform a cross join with the right table.
-     * <p>
-     * Returns a table that is the cartesian product of left rows X right rows, with one column for each of the left
-     * table's columns, and one column corresponding to each of the right table's columns that are included in the
-     * columnsToAdd argument. The rows are ordered first by the left table then by the right table. If columnsToMatch
-     * is non-empty then the product is filtered by the supplied match conditions.
-     * <p>
-     * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless specified,
-     * join reserves 16 bits to represent a right row. When there are too few bits to represent all of the right rows
-     * for a given aggregation group the table will shift a bit from the left side to the right side. The default of 16
-     * bits was carefully chosen because it results in an efficient implementation to process live updates.
-     * <p>
-     * An {@link io.deephaven.db.v2.utils.OutOfKeySpaceException} is thrown when the total number of bits needed
-     * to express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
-     * - If the left table is sparse, consider flattening the left table.
-     * - If there are no key-columns and the right table is sparse, consider flattening the right table.
-     * - If the maximum size of a right table's group is small, you can reserve fewer bits by setting numRightBitsToReserve on initialization.
-     * <p>
-     * Note: If you can prove that a given group has at most one right-row then you should prefer using {@link #naturalJoin}.
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A collection of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd   A collection of the columns from the right side that need to be added to the left
-     *                       side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    default Table join(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return join(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
     }
 
     /**
@@ -1498,7 +1441,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
     @Override
-    default Table join2(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return join(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
@@ -1533,18 +1476,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @AsyncMethod
-    default Table by(Collection<String> groupByColumns) {
-        return by(SelectColumnFactory.getExpressions(groupByColumns));
-    }
-
-    @AsyncMethod
     default Table by() {
         return by(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
     }
 
     @Override
     @AsyncMethod
-    default Table by2(Collection<Selectable> groupByColumns) {
+    default Table by(Collection<Selectable> groupByColumns) {
         return by(SelectColumn.from(groupByColumns));
     }
 
@@ -2342,23 +2280,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @AsyncMethod
-    default Table sort(List<String> columnsToSortBy) {
-        return sort(columnsToSortBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
-
-    @AsyncMethod
     default Table sortDescending(String... columnsToSortBy) {
         return sort(SortPair.descendingPairs(columnsToSortBy));
     }
 
-    @AsyncMethod
-    default Table sortDescending(List<String> columnsToSortBy) {
-        return sortDescending(columnsToSortBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
-
     @Override
     @AsyncMethod
-    default Table sort2(List<SortColumn> columnsToSortBy) {
+    default Table sort(Collection<SortColumn> columnsToSortBy) {
         return sort(SortPair.from(columnsToSortBy));
     }
 

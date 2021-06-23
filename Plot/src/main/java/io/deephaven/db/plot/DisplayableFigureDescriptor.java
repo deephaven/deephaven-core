@@ -1,5 +1,6 @@
 package io.deephaven.db.plot;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.db.plot.errors.PlotInfo;
 import io.deephaven.db.plot.util.tables.TableHandle;
 import io.deephaven.db.plot.util.tables.TableMapHandle;
@@ -42,7 +43,7 @@ public class DisplayableFigureDescriptor {
             Table table = entry.getKey();
 
             final Set<String> relevantColumns = tableColumnMap.get(table);
-            table = table.view(relevantColumns);
+            table = table.view(Selectable.from(relevantColumns));
 
             tables.add(table);
             tableIds.add(entry.getValue());
@@ -63,7 +64,7 @@ public class DisplayableFigureDescriptor {
             TableMap tableMap = entry.getKey();
 
             final Set<String> relevantColumns = tableMapColumnMap.get(tableMap);
-            tableMap = new TableMapSupplier(tableMap, Collections.singletonList(t -> t.view(relevantColumns)));
+            tableMap = new TableMapSupplier(tableMap, Collections.singletonList(t -> t.view(Selectable.from(relevantColumns))));
 
             tableMaps.add(tableMap);
             tableMapIds.add(entry.getValue());
