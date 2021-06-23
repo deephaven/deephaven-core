@@ -159,6 +159,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final byte[] result = new byte[rangeIndex.intSize("getBytes")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableByteChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -196,6 +198,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final char[] result = new char[rangeIndex.intSize("getChars")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableCharChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -233,6 +237,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final double[] result = new double[rangeIndex.intSize("getDoubles")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableDoubleChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -270,6 +276,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final float[] result = new float[rangeIndex.intSize("getFloats")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableFloatChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -307,6 +315,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final int[] result = new int[rangeIndex.intSize("getInts")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableIntChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -344,6 +354,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final long[] result = new long[rangeIndex.intSize("getLongs")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableLongChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
@@ -381,6 +393,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         final short[] result = new short[rangeIndex.intSize("getShorts")];
         try (final ChunkSource.FillContext context = columnSource.makeFillContext(result.length, null)) {
             columnSource.fillChunk(context, WritableShortChunk.writableChunkWrap(result), rangeIndex);
+        } finally {
+            rangeIndex.close();
         }
         return result;
     }
