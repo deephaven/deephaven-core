@@ -61,7 +61,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     /**
      * <p>Index to keep track of destinations with shifts.
      * <p>This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(ShiftAwareListener.Update)} and
-     * {@link IterativeChunkedAggregationOperator#propagateUpdates(ShiftAwareListener.Update, ReadOnlyIndex)}
+     * {@link IterativeChunkedAggregationOperator#propagateUpdates(ShiftAwareListener.Update, ReadableIndex)}
      * <p>If this ever becomes necessary in other operators, it could be moved out to the helper the way modified
      * destination tracking already is.
      * <p>We should consider whether to instead use a random builder, but the current approach seemed reasonable for now.
@@ -189,7 +189,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 chunkDestinationBuilder.appendKey(destination);
             }
         }
-        try (final ReadOnlyIndex chunkDestinationsShifted = new CurrentOnlyIndex(chunkDestinationBuilder.getTreeIndexImpl())) {
+        try (final ReadableIndex chunkDestinationsShifted = new CurrentOnlyIndex(chunkDestinationBuilder.getTreeIndexImpl())) {
             stepShiftedDestinations.insert(chunkDestinationsShifted);
         }
     }
@@ -360,7 +360,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 ? resultTable.getColumnSource(keyColumnNames[0])
                 : new SmartKeySource(Arrays.stream(keyColumnNames).map(resultTable::getColumnSource).toArray(ColumnSource[]::new));
 
-        final ReadOnlyIndex initialDestinations = resultTable.getIndex();
+        final ReadableIndex initialDestinations = resultTable.getIndex();
         if (initialDestinations.nonempty()) {
             // At this point, we cannot have had any tables pre-populated because the table map has not been exposed
             // externally.
@@ -444,7 +444,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-                                 @NotNull final ReadOnlyIndex newDestinations) {
+                                 @NotNull final ReadableIndex newDestinations) {
         if (downstream.added.isEmpty() && downstream.removed.isEmpty() && downstream.modified.isEmpty() && stepShiftedDestinations.isEmpty()) {
             stepShiftedDestinations = null;
             return;

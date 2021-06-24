@@ -18,7 +18,6 @@ import io.deephaven.db.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.db.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.db.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.db.v2.utils.compact.IntCompactKernel;
 import io.deephaven.db.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -316,7 +315,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         return resultIndex.getIndex();
     }
 
-    void rightRemove(final ReadOnlyIndex removed, final CrossJoinModifiedSlotTracker tracker) {
+    void rightRemove(final ReadableIndex removed, final CrossJoinModifiedSlotTracker tracker) {
         if (removed.isEmpty()) {
             return;
         }
@@ -335,11 +334,11 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void shiftRightIndexToSlot(final ReadOnlyIndex filterIndex, final IndexShiftData shifted) {
+    void shiftRightIndexToSlot(final ReadableIndex filterIndex, final IndexShiftData shifted) {
         rightIndexToSlot.applyShift(filterIndex, shifted);
     }
 
-    void rightShift(final ReadOnlyIndex filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+    void rightShift(final ReadableIndex filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = rightIndexToSlot.get(ii);
             if (slot == Index.NULL_KEY) {
@@ -446,7 +445,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void leftRemoved(final ReadOnlyIndex removed, final CrossJoinModifiedSlotTracker tracker) {
+    void leftRemoved(final ReadableIndex removed, final CrossJoinModifiedSlotTracker tracker) {
         if (removed.nonempty()) {
             try (final ProbeContext pc = makeProbeContext(leftKeySources, removed.size())) {
                 final boolean usePrev = true;
@@ -466,7 +465,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
 
-    void leftAdded(final ReadOnlyIndex added, final CrossJoinModifiedSlotTracker tracker) {
+    void leftAdded(final ReadableIndex added, final CrossJoinModifiedSlotTracker tracker) {
         if (added.nonempty()) {
             try (final BuildContext pc = makeBuildContext(leftKeySources, added.size())) {
                 buildTable(pc, added, leftKeySources, tracker, null, (cookie, slot, index, prevIndex) -> {
@@ -544,7 +543,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         tracker.flushLeftModifies();
     }
 
-    void leftShift(final ReadOnlyIndex filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
+    void leftShift(final ReadableIndex filterIndex, final IndexShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
             if (slot == Index.NULL_KEY) {

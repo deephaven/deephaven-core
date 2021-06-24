@@ -15,7 +15,7 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.LongRangeConsumer;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.OutOfKeySpaceException;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -392,7 +392,7 @@ public class CrossJoinHelper {
                             try (final OrderedKeys.Iterator okit = allRowsShift ? null : resultIndex.getOrderedKeysIterator();
                                  final Index unshiftedRowsToShift = rowsToShift.clone()) {
                                 upstreamLeft.shifted.unapply(unshiftedRowsToShift);
-                                final ReadOnlyIndex.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
+                                final ReadableIndex.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
 
                                 final LongConsumer processLeftShiftsUntil = (ii) -> {
                                     // note: if all rows shift, then each row shifts by a different amount and rowsToShift is inclusive

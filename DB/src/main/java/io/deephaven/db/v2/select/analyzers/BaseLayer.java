@@ -5,7 +5,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 
 import java.util.*;
 
@@ -45,7 +45,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadableIndex toClear, UpdateHelper helper) {
         // nothing to do at the base layer
     }
 

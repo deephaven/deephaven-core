@@ -14,7 +14,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.*;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -297,7 +297,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-                                 @NotNull final ReadOnlyIndex newDestinations) {
+                                 @NotNull final ReadableIndex newDestinations) {
         initializeNewIndexPreviousValues(newDestinations);
     }
 

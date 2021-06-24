@@ -52,19 +52,19 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings = null;
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings = null;
 
-    protected final void onUpdate(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
+    protected final void onUpdate(final ReadableIndex added, final ReadableIndex removed) {
         clearMappings();
     }
 
-    protected final void onRemove(final ReadOnlyIndex removed) {
+    protected final void onRemove(final ReadableIndex removed) {
         clearMappings();
     }
 
-    protected final void onRetain(final ReadOnlyIndex intersected) {
+    protected final void onRetain(final ReadableIndex intersected) {
         clearMappings();
     }
 
-    protected final void onInsert(final ReadOnlyIndex added) {
+    protected final void onInsert(final ReadableIndex added) {
         clearMappings();
     }
 
@@ -85,7 +85,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     @Override
-    public void insert(final ReadOnlyIndex added) {
+    public void insert(final ReadableIndex added) {
         for (final Index.RangeIterator iterator = added.rangeIterator(); iterator.hasNext(); ) {
             iterator.next();
             insertRange(iterator.currentRangeStart(), iterator.currentRangeEnd());
@@ -93,7 +93,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     @Override
-    public void remove(ReadOnlyIndex removed) {
+    public void remove(ReadableIndex removed) {
         for (final Index.Iterator iterator = removed.iterator(); iterator.hasNext(); ) {
             final long next = iterator.nextLong();
             remove(next);
@@ -101,7 +101,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     @Override
-    public Index invert(ReadOnlyIndex keys) {
+    public Index invert(ReadableIndex keys) {
         return invert(keys, Long.MAX_VALUE);
     }
 
@@ -116,7 +116,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
      * Note maximumPosition is inclusive.
      */
     @Override
-    public Index invert(final ReadOnlyIndex keys, final long maximumPosition) {
+    public Index invert(final ReadableIndex keys, final long maximumPosition) {
         final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
         for (final Index.Iterator iterator = keys.iterator(); iterator.hasNext(); ) {
             final long next = iterator.nextLong();
@@ -131,7 +131,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     @Override
-    public TLongArrayList[] findMissing(ReadOnlyIndex keys) {
+    public TLongArrayList[] findMissing(ReadableIndex keys) {
         return IndexUtilities.findMissing(this, keys);
     }
 

@@ -129,7 +129,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;
-        try (final ReadOnlyIndex prevIndex = sourceIndex.getPrevIndex()) {
+        try (final ReadableIndex prevIndex = sourceIndex.getPrevIndex()) {
             previousContainsAdds = update.added.overlaps(prevIndex);
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
             previousMissingModifications = !update.modified.subsetOf(prevIndex);

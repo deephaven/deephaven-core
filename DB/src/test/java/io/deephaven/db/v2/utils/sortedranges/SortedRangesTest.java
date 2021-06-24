@@ -1044,7 +1044,7 @@ public class SortedRangesTest {
         final Index.SearchIterator sit = sar.getSearchIterator();
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
-        final ReadOnlyIndex.TargetComparator comp =
+        final ReadableIndex.TargetComparator comp =
                 (final long key, final int dir) -> Long.signum(dir * (mutVal.getValue() - key));
         for (long[] segment : segments0) {
             final long start = segment[0];
@@ -1073,7 +1073,7 @@ public class SortedRangesTest {
         sar.append(32);
         final Index.SearchIterator sit = sar.getSearchIterator();
         final long v = sar.last();
-        final ReadOnlyIndex.TargetComparator comp =
+        final ReadableIndex.TargetComparator comp =
                 (final long key, final int dir) -> Long.signum(dir * (v - key));
         final long r = sit.binarySearchValue(comp, 1);
         assertEquals(v, r);

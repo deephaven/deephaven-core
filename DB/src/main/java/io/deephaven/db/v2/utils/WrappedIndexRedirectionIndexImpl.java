@@ -113,7 +113,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
                               @NotNull final OrderedKeys keysToMap) {
         final WritableLongChunk<KeyIndices> indexPositions = ((FillContext) fillContext).indexPositions;
         keysToMap.fillKeyIndicesChunk(indexPositions);
-        try (final ReadOnlyIndex prevWrappedIndex = wrappedIndex.getPrevIndex()) {
+        try (final ReadableIndex prevWrappedIndex = wrappedIndex.getPrevIndex()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
         }
         mappedKeysOut.setSize(keysToMap.intSize());

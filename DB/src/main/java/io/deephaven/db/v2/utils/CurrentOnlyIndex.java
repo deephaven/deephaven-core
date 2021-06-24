@@ -69,7 +69,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void insert(final ReadOnlyIndex added) {
+    public void insert(final ReadableIndex added) {
         assign(impl.ixInsert(getImpl(added)));
     }
 
@@ -90,7 +90,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void remove(final ReadOnlyIndex removed) {
+    public void remove(final ReadableIndex removed) {
         assign(impl.ixRemove(getImpl(removed)));
     }
 
@@ -101,7 +101,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void retain(final ReadOnlyIndex toIntersect) {
+    public void retain(final ReadableIndex toIntersect) {
         assign(impl.ixRetain(getImpl(toIntersect)));
     }
 
@@ -111,7 +111,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void update(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
+    public void update(final ReadableIndex added, final ReadableIndex removed) {
         assign(impl.ixUpdate(getImpl(added), getImpl(removed)));
     }
 
@@ -152,24 +152,24 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public Index invert(final ReadOnlyIndex keys) {
+    public Index invert(final ReadableIndex keys) {
         return invert(keys, Long.MAX_VALUE);
 
     }
 
     @Override
-    public Index invert(final ReadOnlyIndex keys, final long maximumPosition) {
+    public Index invert(final ReadableIndex keys, final long maximumPosition) {
         return new CurrentOnlyIndex(impl.ixInvertOnNew(getImpl(keys), maximumPosition));
     }
 
     @Override
-    public TLongArrayList[] findMissing(final ReadOnlyIndex keys) {
+    public TLongArrayList[] findMissing(final ReadableIndex keys) {
         return IndexUtilities.findMissing(this, keys);
     }
 
     @NotNull
     @Override
-    public Index intersect(@NotNull final ReadOnlyIndex range) {
+    public Index intersect(@NotNull final ReadableIndex range) {
         return new CurrentOnlyIndex(impl.ixIntersectOnNew(getImpl(range)));
     }
 
@@ -179,17 +179,17 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public boolean subsetOf(@NotNull final ReadOnlyIndex other) {
+    public boolean subsetOf(@NotNull final ReadableIndex other) {
         return impl.ixSubsetOf(getImpl(other));
     }
 
     @Override
-    public Index minus(final ReadOnlyIndex indexToRemove) {
+    public Index minus(final ReadableIndex indexToRemove) {
         return new CurrentOnlyIndex(impl.ixMinusOnNew(getImpl(indexToRemove)));
     }
 
     @Override
-    public Index union(final ReadOnlyIndex indexToAdd) {
+    public Index union(final ReadableIndex indexToAdd) {
         return new CurrentOnlyIndex(impl.ixUnionOnNew(getImpl(indexToAdd)));
     }
 
@@ -209,7 +209,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void insertWithShift(final long shiftAmount, final ReadOnlyIndex other) {
+    public void insertWithShift(final long shiftAmount, final ReadableIndex other) {
         assign(impl.ixInsertWithShift(shiftAmount, getImpl(other)));
     }
 
@@ -378,7 +378,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     // Through this the contract for ReadOnlyIndex could be bypassed; it is not the intention.
-    private static TreeIndexImpl getImpl(final ReadOnlyIndex index) {
+    private static TreeIndexImpl getImpl(final ReadableIndex index) {
         if (index instanceof ImplementedByTreeIndexImpl) {
             return ((ImplementedByTreeIndexImpl) index).getImpl();
         }

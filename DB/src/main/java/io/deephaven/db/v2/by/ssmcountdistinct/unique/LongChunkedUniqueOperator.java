@@ -9,7 +9,6 @@ package io.deephaven.db.v2.by.ssmcountdistinct.unique;
 
 import io.deephaven.db.v2.sources.BoxedColumnSource;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
 
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.by.ComboAggregateFactory;
@@ -28,7 +27,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.UpdateCommitter;
 import io.deephaven.db.v2.utils.compact.LongCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -249,7 +248,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadableIndex newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();

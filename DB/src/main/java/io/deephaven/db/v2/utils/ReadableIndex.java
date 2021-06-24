@@ -14,9 +14,9 @@ import java.util.Set;
 import java.util.function.LongConsumer;
 
 /**
- * Read-only subset of the {@link Index} interface.
+ * Readable subset of the {@link Index} interface.
  */
-public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
+public interface ReadableIndex extends OrderedKeys, SafeCloseable {
     long NULL_KEY = -1L;
     void close();
     @VisibleForTesting
@@ -48,7 +48,7 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      * @param keys the keys to find positions for
      * @return a new Index containing the positions of the keys in this index
      */
-    Index invert(ReadOnlyIndex keys);
+    Index invert(ReadableIndex keys);
 
     /**
      * Returns the positions of <i>keys</i> in the current set as an Index, stopping at maximumPosition.
@@ -60,7 +60,7 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      * @param maximumPosition the largest position for which we will find a key
      * @return a new Index containing the positions of the keys in this index
      */
-    Index invert(ReadOnlyIndex keys, long maximumPosition);
+    Index invert(ReadableIndex keys, long maximumPosition);
 
     /**
      * For the given keys Index, under the assertion that none of them are present in the current index, return the tentative
@@ -69,18 +69,18 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      * @param keys the keys to identify insertion locations
      * @return two TLongArrayLists; [0] contains the positions, [1] contains the counts.
      */
-    TLongArrayList[] findMissing(ReadOnlyIndex keys);
+    TLongArrayList[] findMissing(ReadableIndex keys);
 
     /**
      * Returns a new index representing the intersection of the current index with the input index
      */
     @NotNull
-    Index intersect(@NotNull ReadOnlyIndex range);
+    Index intersect(@NotNull ReadableIndex range);
 
     /**
      * Returns true if an index has any overlap.
      */
-    default boolean overlaps(@NotNull ReadOnlyIndex index) {
+    default boolean overlaps(@NotNull ReadableIndex index) {
         return intersect(index).nonempty();
     }
 
@@ -98,20 +98,20 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
      *
      * @return true if every element of this exists within other
      */
-    boolean subsetOf(@NotNull ReadOnlyIndex other);
+    boolean subsetOf(@NotNull ReadableIndex other);
 
     /**
      * Returns a new index representing the keys of the current set not present inside indexToRemove
      * This operation is equivalent to set difference.  This index is not modified.
      */
-    Index minus(ReadOnlyIndex indexToRemove);
+    Index minus(ReadableIndex indexToRemove);
 
     /**
      * Returns a new index representing the keys present in both this index and the argument index.
      * @param indexToAdd an index whose keys will be joined with our own to produce a new index.
      * @return a new index with the union of the keys in both this index and indexToAdd.
      */
-    Index union(ReadOnlyIndex indexToAdd);
+    Index union(ReadableIndex indexToAdd);
 
     Index shift(long shiftAmount);
 

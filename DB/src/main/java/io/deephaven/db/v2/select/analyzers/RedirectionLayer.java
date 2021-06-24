@@ -5,7 +5,7 @@ import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -42,7 +42,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadableIndex toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
         // we need to remove the removed values from our redirection index, and add them to our free index; so that

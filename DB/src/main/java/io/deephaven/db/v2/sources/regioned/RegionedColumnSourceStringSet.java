@@ -12,7 +12,7 @@ import io.deephaven.util.datastructures.cache.OffsetLookup;
 import io.deephaven.util.datastructures.cache.ReverseOffsetLookupCache;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.db.v2.utils.ReadableIndex.NULL_KEY;
 
 class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet, Attributes.Values> {
 

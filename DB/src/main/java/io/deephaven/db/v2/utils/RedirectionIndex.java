@@ -151,7 +151,7 @@ public interface RedirectionIndex {
      * @param tableIndex an Index to filter which rows should be shifted
      * @param shiftData the IndexShiftData for this update
      */
-    default void applyShift(final ReadOnlyIndex tableIndex, final IndexShiftData shiftData) {
+    default void applyShift(final ReadableIndex tableIndex, final IndexShiftData shiftData) {
         RedirectionIndexUtilities.applyRedirectionShift(this, tableIndex, shiftData);
     }
 

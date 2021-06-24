@@ -4,7 +4,7 @@ import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 
 import java.util.Map;
 
@@ -20,7 +20,7 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadableIndex toClear, UpdateHelper helper) {
         // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g. because they are SelectColumnLayers)
         inner.applyUpdate(upstream, toClear, helper);
     }

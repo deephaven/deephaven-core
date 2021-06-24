@@ -384,7 +384,7 @@ public class ChunkedOperatorAggregationHelper {
         }
 
         private ShiftAwareListener.Update computeDownstreamIndicesAndCopyKeys(
-                @NotNull final ReadOnlyIndex upstreamIndex,
+                @NotNull final ReadableIndex upstreamIndex,
                 @NotNull final ColumnSource<?>[] keyColumnsRaw,
                 @NotNull final WritableSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
@@ -404,17 +404,17 @@ public class ChunkedOperatorAggregationHelper {
                             }
                             doShifts(postShiftIndex); // Also handles shifted same-key modifications for modified-input operators that require indices (if any)
                         }
-                        try (final ReadOnlyIndex keysSameUnshiftedModifies = keysModified ? null : getUnshiftedModifies()) {
+                        try (final ReadableIndex keysSameUnshiftedModifies = keysModified ? null : getUnshiftedModifies()) {
                             // Do unshifted modifies for everyone
                             assert !keysModified || split.unshiftedSameSlotIndices != null;
-                            final ReadOnlyIndex unshiftedSameSlotModifies = keysModified ? split.unshiftedSameSlotIndices : keysSameUnshiftedModifies;
+                            final ReadableIndex unshiftedSameSlotModifies = keysModified ? split.unshiftedSameSlotIndices : keysSameUnshiftedModifies;
                             doSameSlotModifies(unshiftedSameSlotModifies, unshiftedSameSlotModifies,  true /* We don't process shifts unless some operator requires indices */,
                                     od.operatorsWithModifiedInputColumns, od.operatorsWithoutModifiedInputColumnsThatRequireIndices);
 
                             if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
                                 // Do shifted same-key modifies for index-only and modified-input operators that don't require indices
-                                try (final ReadOnlyIndex removeIndex = keysModified ? unshiftedSameSlotModifies.union(split.keyChangeIndicesPostShift) : null;
-                                    final ReadOnlyIndex shiftedSameSlotModifiesPost = upstream.modified.minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
+                                try (final ReadableIndex removeIndex = keysModified ? unshiftedSameSlotModifies.union(split.keyChangeIndicesPostShift) : null;
+                                     final ReadableIndex shiftedSameSlotModifiesPost = upstream.modified.minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
                                      final Index shiftedSameSlotModifiesPre = shiftedSameSlotModifiesPost.clone()) {
                                     upstream.shifted.unapply(shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
@@ -461,7 +461,7 @@ public class ChunkedOperatorAggregationHelper {
             final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
             downstream.shifted = IndexShiftData.EMPTY;
 
-            try (final ReadOnlyIndex newStates = makeNewStatesIndex(previousLastState, outputPosition.intValue() - 1)) {
+            try (final ReadableIndex newStates = makeNewStatesIndex(previousLastState, outputPosition.intValue() - 1)) {
                 downstream.added = reincarnatedStatesBuilder.getIndex();
                 downstream.removed = emptiedStatesBuilder.getIndex();
 
@@ -600,7 +600,7 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
 
-        private void doShifts(@NotNull final ReadOnlyIndex postShiftIndexToProcess) {
+        private void doShifts(@NotNull final ReadableIndex postShiftIndexToProcess) {
             if (postShiftIndexToProcess.isEmpty()) {
                 return;
             }
@@ -764,31 +764,31 @@ public class ChunkedOperatorAggregationHelper {
              * shifted same-slot modifies in shiftChunk.
              */
             @Nullable
-            private final ReadOnlyIndex unshiftedSameSlotIndices;
+            private final ReadableIndex unshiftedSameSlotIndices;
             /**
              * This is all of same-slot modified, with index keys in pre-shift space.
              * Needed for modifyChunk of input-modified operators that don't require indices.
              */
             @Nullable
-            private final ReadOnlyIndex sameSlotIndicesPreShift;
+            private final ReadableIndex sameSlotIndicesPreShift;
             /**
              * This is all of same-slot modified, with index keys in post-shift space.
              * Needed for modifyChunk of input-modified operators that don't require indices, and for modifyIndices
              * of operators that require indices but don't have any inputs modified.
              */
             @Nullable
-            private final ReadOnlyIndex sameSlotIndicesPostShift;
+            private final ReadableIndex sameSlotIndicesPostShift;
             /**
              * This is all key change modifies, with index keys in post-shift space.
              * Needed for addChunk to process key changes for all operators.
              */
             @NotNull
-            private final ReadOnlyIndex keyChangeIndicesPostShift;
+            private final ReadableIndex keyChangeIndicesPostShift;
 
-            private ModifySplitResult(@Nullable final ReadOnlyIndex unshiftedSameSlotIndices,
-                                      @Nullable final ReadOnlyIndex sameSlotIndicesPreShift,
-                                      @Nullable final ReadOnlyIndex sameSlotIndicesPostShift,
-                                      @NotNull final ReadOnlyIndex keyChangeIndicesPostShift) {
+            private ModifySplitResult(@Nullable final ReadableIndex unshiftedSameSlotIndices,
+                                      @Nullable final ReadableIndex sameSlotIndicesPreShift,
+                                      @Nullable final ReadableIndex sameSlotIndicesPostShift,
+                                      @NotNull final ReadableIndex keyChangeIndicesPostShift) {
                 this.unshiftedSameSlotIndices = unshiftedSameSlotIndices;
                 this.sameSlotIndicesPreShift = sameSlotIndicesPreShift;
                 this.sameSlotIndicesPostShift = sameSlotIndicesPostShift;
@@ -880,7 +880,7 @@ public class ChunkedOperatorAggregationHelper {
                     keyChangeIndicesPostShiftBuilder.getIndex());
         }
 
-        private ReadOnlyIndex getUnshiftedModifies() {
+        private ReadableIndex getUnshiftedModifies() {
             Require.requirement(!keysModified, "!keysModified");
             Require.requirement(shifted, "shifted");
             return extractUnshiftedModifiesFromUpstream(upstream);
@@ -901,7 +901,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static ReadOnlyIndex extractUnshiftedModifiesFromUpstream(@NotNull final ShiftAwareListener.Update upstream) {
+    private static ReadableIndex extractUnshiftedModifiesFromUpstream(@NotNull final ShiftAwareListener.Update upstream) {
         final Index.SequentialBuilder unshiftedModifiesBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
 
         try (final OrderedKeys.Iterator modifiedPreShiftIterator = upstream.getModifiedPreShift().getOrderedKeysIterator();
@@ -1001,7 +1001,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void processUpstreamShifts(ShiftAwareListener.Update upstream, ReadOnlyIndex useIndex, WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices, Runnable applyChunkedShift) {
+    private static void processUpstreamShifts(ShiftAwareListener.Update upstream, ReadableIndex useIndex, WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices, Runnable applyChunkedShift) {
         Index.SearchIterator postOkForward = null;
         Index.SearchIterator postOkReverse = null;
 
@@ -1381,11 +1381,11 @@ public class ChunkedOperatorAggregationHelper {
         doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
     }
 
-    private static ReadOnlyIndex makeNewStatesIndex(final int first, final int last) {
+    private static ReadableIndex makeNewStatesIndex(final int first, final int last) {
         return first > last ? Index.CURRENT_FACTORY.getEmptyIndex() : Index.CURRENT_FACTORY.getIndexByRange(first, last);
     }
 
-    private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableSource<?>[] keyColumnsCopied, final ReadOnlyIndex copyValues) {
+    private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableSource<?>[] keyColumnsCopied, final ReadableIndex copyValues) {
         if (copyValues.isEmpty()) {
             return;
         }
@@ -1475,7 +1475,7 @@ public class ChunkedOperatorAggregationHelper {
                                 // Also handles shifted modifications for modified-input operators that require indices (if any)
                                 doNoKeyShifts(table, upstream, ac, opContexts, od.operatorsThatRequireIndices, modifiedOperators);
 
-                                try (final ReadOnlyIndex unshiftedModifies = extractUnshiftedModifiesFromUpstream(upstream)) {
+                                try (final ReadableIndex unshiftedModifies = extractUnshiftedModifiesFromUpstream(upstream)) {
                                     // Do unshifted modifies for everyone
                                     doNoKeyModifications(unshiftedModifies, unshiftedModifies, ac, opContexts, true,
                                             od.operatorsWithModifiedInputColumns, od.operatorsWithoutModifiedInputColumnsThatRequireIndices,
@@ -1483,7 +1483,7 @@ public class ChunkedOperatorAggregationHelper {
 
                                     if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
                                         // Do shifted modifies for index-only and modified-input operators that don't require indices
-                                        try (final ReadOnlyIndex shiftedModifiesPost = upstream.modified.minus(unshiftedModifies);
+                                        try (final ReadableIndex shiftedModifiesPost = upstream.modified.minus(unshiftedModifies);
                                              final Index shiftedModifiesPre = shiftedModifiesPost.clone()) {
                                             upstream.shifted.unapply(shiftedModifiesPre);
                                             doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac, opContexts, true,
@@ -1492,7 +1492,7 @@ public class ChunkedOperatorAggregationHelper {
                                         }
                                     } else if (ac.requiresIndices()) {
                                         // Do shifted modifies for index-only operators
-                                        try (final ReadOnlyIndex shiftedModifiesPost = upstream.modified.minus(unshiftedModifies)) {
+                                        try (final ReadableIndex shiftedModifiesPost = upstream.modified.minus(unshiftedModifies)) {
                                             doIndexOnlyNoKeyModifications(shiftedModifiesPost, ac, opContexts,
                                                     od.operatorsThatRequireIndices, modifiedOperators);
                                         }
@@ -1536,7 +1536,7 @@ public class ChunkedOperatorAggregationHelper {
                         lastSize = newResultSize;
 
                         final int newStatesCreated = Math.max(statesCreated, newResultSize);
-                        try (final ReadOnlyIndex newStates = makeNewStatesIndex(statesCreated, newStatesCreated - 1)) {
+                        try (final ReadableIndex newStates = makeNewStatesIndex(statesCreated, newStatesCreated - 1)) {
                             ac.propagateChangesToOperators(downstream, newStates);
                         }
                         statesCreated = newStatesCreated;

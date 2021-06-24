@@ -20,7 +20,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.UpdateCommitter;
 import io.deephaven.db.v2.utils.compact.CharCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -467,7 +467,7 @@ public class CharRollupDistinctOperator implements IterativeChunkedAggregationOp
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadableIndex newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();

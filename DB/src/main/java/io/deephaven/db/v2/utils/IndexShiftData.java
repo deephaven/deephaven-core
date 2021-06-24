@@ -386,9 +386,9 @@ public final class IndexShiftData implements Serializable {
         void shift(long key, long shiftDelta);
     }
 
-    public void forAllInIndex(final ReadOnlyIndex filterIndex, final SingleElementShiftCallback callback) {
+    public void forAllInIndex(final ReadableIndex filterIndex, final SingleElementShiftCallback callback) {
         boolean hasReverseShift = false;
-        ReadOnlyIndex.SearchIterator it = filterIndex.reverseIterator();
+        ReadableIndex.SearchIterator it = filterIndex.reverseIterator();
         FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
             final long delta = getShiftDelta(ii);
             if (delta < 0) {
@@ -758,17 +758,17 @@ public final class IndexShiftData implements Serializable {
         /**
          * The pre shift keys of the table we are generating shift data for.
          */
-        private ReadOnlyIndex preShiftKeys;
+        private ReadableIndex preShiftKeys;
         /**
          * A forward iterator, which is used for all shifts that do not have reversed polarity (i.e. negative delta).
          * We create this on the first negative delta shift and reuse it until we are closed.
          */
-        private ReadOnlyIndex.SearchIterator preShiftKeysIteratorForward;
+        private ReadableIndex.SearchIterator preShiftKeysIteratorForward;
         /**
          * For each run of shifts that have reversed polarity (positive delta), we create a new reverse iterator.  We
          * reuse this until we find a negative delta shift and then close it.
          */
-        private ReadOnlyIndex.SearchIterator preShiftKeysIteratorReverse;
+        private ReadableIndex.SearchIterator preShiftKeysIteratorReverse;
         /**
          * The resultant shift data.
          */
@@ -797,12 +797,12 @@ public final class IndexShiftData implements Serializable {
          * delta, but do not include the intervening key we do not permit coalescing.  If there is no intervening key,
          * we permit coalescing.  ReadOnlyIndex.NULL_KEY indicates there is no intervening key of interest.
          */
-        private long interveningKey = ReadOnlyIndex.NULL_KEY;
+        private long interveningKey = ReadableIndex.NULL_KEY;
 
         /**
          * The last point at which we started the reverse iterator.
          */
-        private long lastReverseIteratorStart = ReadOnlyIndex.NULL_KEY;
+        private long lastReverseIteratorStart = ReadableIndex.NULL_KEY;
 
         /**
          * Make a builder that tries to coalesce non-adjacent ranges with the same delta if there are no intervening
@@ -810,7 +810,7 @@ public final class IndexShiftData implements Serializable {
          *
          * @param preShiftKeys The pre-shift ordered keys for the space being shifted.
          */
-        public SmartCoalescingBuilder(@NotNull final ReadOnlyIndex preShiftKeys) {
+        public SmartCoalescingBuilder(@NotNull final ReadableIndex preShiftKeys) {
             this.preShiftKeys = preShiftKeys;
             shiftData = new IndexShiftData();
         }
@@ -838,7 +838,7 @@ public final class IndexShiftData implements Serializable {
             final boolean polarityChanged = lastPolarityReversed != polarityReversed;
             final boolean reinitializeReverseIterator = polarityReversed && (polarityChanged || beginRange > lastReverseIteratorStart);
             if (polarityChanged || reinitializeReverseIterator) {
-                interveningKey = ReadOnlyIndex.NULL_KEY;
+                interveningKey = ReadableIndex.NULL_KEY;
                 if (lastPolarityReversed) {
                     maybeReverseLastRun();
                     if (preShiftKeysIteratorReverse != null) {
@@ -856,7 +856,7 @@ public final class IndexShiftData implements Serializable {
                 preShiftKeysIteratorReverse = preShiftKeys.reverseIterator();
                 lastReverseIteratorStart = endRange;
                 if (!preShiftKeysIteratorReverse.advance(endRange)) {
-                    nextReverseKey = ReadOnlyIndex.NULL_KEY;
+                    nextReverseKey = ReadableIndex.NULL_KEY;
                 } else {
                     nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
@@ -869,26 +869,26 @@ public final class IndexShiftData implements Serializable {
                 if (preShiftKeysIteratorForward.hasNext()) {
                     nextForwardKey = preShiftKeysIteratorForward.nextLong();
                 } else {
-                    nextForwardKey = ReadOnlyIndex.NULL_KEY;
+                    nextForwardKey = ReadableIndex.NULL_KEY;
                 }
             }
 
             final long nextInterveningKey;
             if (polarityReversed) {
-                if (nextReverseKey == ReadOnlyIndex.NULL_KEY || nextReverseKey < beginRange) {
+                if (nextReverseKey == ReadableIndex.NULL_KEY || nextReverseKey < beginRange) {
                     return;
                 }
                 if (beginRange == 0 || !preShiftKeysIteratorReverse.advance(beginRange - 1)) {
-                    nextInterveningKey = nextReverseKey = ReadOnlyIndex.NULL_KEY;
+                    nextInterveningKey = nextReverseKey = ReadableIndex.NULL_KEY;
                 } else {
                     nextInterveningKey = nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
             } else {
-                if (nextForwardKey == ReadOnlyIndex.NULL_KEY || nextForwardKey > endRange) {
+                if (nextForwardKey == ReadableIndex.NULL_KEY || nextForwardKey > endRange) {
                     return;
                 }
                 if (endRange == Long.MAX_VALUE || !preShiftKeysIteratorForward.advance(endRange + 1)) {
-                    nextInterveningKey = nextForwardKey = ReadOnlyIndex.NULL_KEY;
+                    nextInterveningKey = nextForwardKey = ReadableIndex.NULL_KEY;
                 } else {
                     nextInterveningKey = nextForwardKey = preShiftKeysIteratorForward.currentValue();
                 }
@@ -900,7 +900,7 @@ public final class IndexShiftData implements Serializable {
                 // if we had an intervening key between the last end (or begin) and the current begin (or end); then
                 // these two ranges can not be coalesced
                 if (polarityReversed) {
-                    if (interveningKey == ReadOnlyIndex.NULL_KEY || interveningKey <= endRange) {
+                    if (interveningKey == ReadableIndex.NULL_KEY || interveningKey <= endRange) {
                         // we must merge these ranges; this is not as simple as the forward case, because if we had the
                         // same reverse iterator as last time (i.e. the polarity was applied "correctly"), we should
                         // simply be able to update the beginning of the range.  However, if the existing range is
@@ -922,7 +922,7 @@ public final class IndexShiftData implements Serializable {
                         }
                     }
                 } else {
-                    if (interveningKey == ReadOnlyIndex.NULL_KEY || interveningKey >= beginRange) {
+                    if (interveningKey == ReadableIndex.NULL_KEY || interveningKey >= beginRange) {
                         shiftData.payload.set(currentRangeIndex * 3 + 1, endRange);
                         interveningKey = nextInterveningKey;
                         return;
@@ -1047,7 +1047,7 @@ public final class IndexShiftData implements Serializable {
      *                       that did not exist prior to the shift.
      * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this IndexShiftData with postShiftIndex.
      */
-    public SafeCloseablePair<Index, Index> extractParallelShiftedRowsFromPostShiftIndex(final ReadOnlyIndex postShiftIndex) {
+    public SafeCloseablePair<Index, Index> extractParallelShiftedRowsFromPostShiftIndex(final ReadableIndex postShiftIndex) {
         if (empty()) {
             return SafeCloseablePair.of(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
         }

@@ -11,7 +11,7 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.UpdateSizeCalculator;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
@@ -262,7 +262,7 @@ class AggregationContext {
      * @param newDestinations New destinations added on this update
      */
     void propagateChangesToOperators(@NotNull final ShiftAwareListener.Update downstream,
-                                     @NotNull final ReadOnlyIndex newDestinations) {
+                                     @NotNull final ReadableIndex newDestinations) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
         }

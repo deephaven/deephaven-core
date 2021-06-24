@@ -3,7 +3,7 @@ package io.deephaven.db.v2.utils;
 public class RedirectionIndexUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
-    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final ReadOnlyIndex filterIndex,
+    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final ReadableIndex filterIndex,
                                       final IndexShiftData shiftData) {
 
         final IndexShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {

@@ -28,7 +28,7 @@ public class IndexUtilities {
         return result.toString();
     }
 
-    public static void fillKeyIndicesChunk(final ReadOnlyIndex index, final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public static void fillKeyIndicesChunk(final ReadableIndex index, final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
         chunkToFill.setSize(0);  // so that we can actually add from the beginning.
         index.forEachLong((final long v) -> {
             chunkToFill.add(v);
@@ -36,7 +36,7 @@ public class IndexUtilities {
         });
     }
 
-    public static void fillKeyRangesChunk(final ReadOnlyIndex index, final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
+    public static void fillKeyRangesChunk(final ReadableIndex index, final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         index.forAllLongRanges((final long start, final long end) -> {
             chunkToFill.add(start);
@@ -44,7 +44,7 @@ public class IndexUtilities {
         });
     }
 
-    static TLongArrayList[] findMissing(final ReadOnlyIndex base, final ReadOnlyIndex keys) {
+    static TLongArrayList[] findMissing(final ReadableIndex base, final ReadableIndex keys) {
         final TLongArrayList indices = new TLongArrayList();
         final TLongArrayList counts = new TLongArrayList();
 
@@ -99,7 +99,7 @@ public class IndexUtilities {
         return logOutput;
     }
 
-    static boolean equalsDeepImpl(final ReadOnlyIndex index, final ReadOnlyIndex other) {
+    static boolean equalsDeepImpl(final ReadableIndex index, final ReadableIndex other) {
         final Index.RangeIterator it1 = other.rangeIterator();
         final Index.RangeIterator it2 = index.rangeIterator();
         while(it1.hasNext() && it2.hasNext()) {
@@ -112,7 +112,7 @@ public class IndexUtilities {
         return !(it1.hasNext() || it2.hasNext());
     }
 
-    static boolean equals(final ReadOnlyIndex index, final Object other) {
+    static boolean equals(final ReadableIndex index, final Object other) {
         if (!(other instanceof Index)) {
             return false;
         }

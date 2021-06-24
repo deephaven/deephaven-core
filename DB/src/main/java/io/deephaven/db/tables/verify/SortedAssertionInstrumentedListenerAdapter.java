@@ -13,7 +13,7 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.utils.ChunkUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
     private static final int CHUNK_SIZE = 1<<16;
@@ -84,7 +84,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
             final Index.SequentialBuilder processBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
             long lastPosition = parentIndex.size() - 1;
             long lastUsedPosition = 0;
-            for (ReadOnlyIndex.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext(); ) {
+            for (ReadableIndex.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext(); ) {
                 rangeIterator.next();
                 long start = rangeIterator.currentRangeStart();
                 long end = rangeIterator.currentRangeEnd();

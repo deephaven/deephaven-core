@@ -277,7 +277,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         return resultIndex.getIndex();
     }
 
-    void removeLeft(final ReadOnlyIndex leftToRemove, final StateTrackingCallback trackingCallback) {
+    void removeLeft(final ReadableIndex leftToRemove, final StateTrackingCallback trackingCallback) {
         if (leftToRemove.isEmpty()) {
             return;
         }
@@ -290,7 +290,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void addLeft(final ReadOnlyIndex leftToAdd, final StateTrackingCallback trackingCallback) {
+    void addLeft(final ReadableIndex leftToAdd, final StateTrackingCallback trackingCallback) {
         if (leftToAdd.isEmpty()) {
             return;
         }
@@ -310,7 +310,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void applyLeftShift(final ReadOnlyIndex prevLeftIndex, final IndexShiftData shiftData) {
+    void applyLeftShift(final ReadableIndex prevLeftIndex, final IndexShiftData shiftData) {
         leftIndexToSlot.applyShift(prevLeftIndex, shiftData);
     }
 

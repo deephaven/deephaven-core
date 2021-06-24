@@ -4,7 +4,7 @@ import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 
 final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     ViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource cs, String[] deps,
@@ -13,7 +13,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadableIndex toClear, UpdateHelper helper) {
         // To be parallel with SelectColumnLayer, we would recurse here, but since this is ViewColumnLayer
         // (and all my inner layers are ViewColumnLayer), there's nothing to do.
     }

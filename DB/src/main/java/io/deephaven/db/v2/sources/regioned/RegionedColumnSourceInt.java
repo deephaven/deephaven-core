@@ -10,7 +10,7 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.db.v2.utils.ReadableIndex.NULL_KEY;
 
 /**
  * Regioned column source implementation for columns of ints.

@@ -29,7 +29,7 @@ import java.util.function.*;
 /**
  * A set of sorted long keys between 0 and Long.MAX_VALUE
  */
-public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long>, LongSizedDataStructure{
+public interface Index extends ReadableIndex, LogOutputAppendable, Iterable<Long>, LongSizedDataStructure{
     boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER = Configuration.getInstance().getBooleanWithDefault("Index.usePriorityQueueRandomBuilder", true);
 
     boolean VALIDATE_COALESCED_UPDATES = Configuration.getInstance().getBooleanWithDefault("Index.validateCoalescedUpdates", true);
@@ -65,7 +65,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      *
      * @param added The index to add
      */
-    void insert(ReadOnlyIndex added);
+    void insert(ReadableIndex added);
 
     /**
      * Remove a single key from this index if it's present.
@@ -96,13 +96,13 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      *
      * @param removed The index to remove
      */
-    void remove(ReadOnlyIndex removed);
+    void remove(ReadableIndex removed);
 
     /**
      * Simultaneously adds the keys from the first index and removes the keys from the second one.
      * API assumption: the intersection of added and removed is empty.
      */
-    void update(ReadOnlyIndex added, ReadOnlyIndex removed);
+    void update(ReadableIndex added, ReadableIndex removed);
 
     /**
      * Removes all the keys from <i>other</i> index that are present in the current set.
@@ -120,7 +120,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      *
      * @param indexToIntersect an index with the keys to retain; any other keys not in indexToIntersect will be removed.
      */
-    void retain(ReadOnlyIndex indexToIntersect);
+    void retain(ReadableIndex indexToIntersect);
 
     /**
      * Modifies the index by keeping only keys in the interval [start, end]
@@ -139,7 +139,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      * @param shiftAmount the amount to add to each key in the index argument before insertion.
      * @param other the index with the keys to shift and insert.
      */
-    void insertWithShift(long shiftAmount, ReadOnlyIndex other);
+    void insertWithShift(long shiftAmount, ReadableIndex other);
 
     /**
      * May reclaim some unused memory.
@@ -200,7 +200,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
             return true;
         }
 
-        default void appendIndex(final ReadOnlyIndex idx) {
+        default void appendIndex(final ReadableIndex idx) {
             idx.forAllLongRanges(this::appendRange);
         }
 
@@ -209,7 +209,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
          * @param idx The index to append.
          * @param offset An offset to apply to every range in the index.
          */
-        default void appendIndexWithOffset(final ReadOnlyIndex idx, long offset) {
+        default void appendIndexWithOffset(final ReadableIndex idx, long offset) {
             idx.forAllLongRanges((s, e) -> appendRange(s + offset, e + offset));
         }
 

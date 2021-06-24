@@ -17,7 +17,7 @@ import io.deephaven.db.v2.sources.chunk.IntChunk;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -286,7 +286,7 @@ public interface IterativeChunkedAggregationOperator {
      * @param newDestinations New destinations added on this update
      */
     default void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-                                  @NotNull final ReadOnlyIndex newDestinations) {
+                                  @NotNull final ReadableIndex newDestinations) {
     }
 
     /**

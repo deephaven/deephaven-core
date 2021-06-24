@@ -145,7 +145,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insert(final ReadOnlyIndex added) {
+    public void insert(final ReadableIndex added) {
         if (trace) pre("insert(added_" + (added == null ? "id=-1" : ((ImplementedByTreeIndexImpl) added).strid()) + ")");
         if (added != null) {
             checkPrevForWrite();
@@ -180,7 +180,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         if (trace) pos();
     }
 
-    @Override public void remove(final ReadOnlyIndex removed) {
+    @Override public void remove(final ReadableIndex removed) {
         if (trace) pre("remove(removed_" + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
         checkPrevForWrite();
         assign(impl.ixRemove(getImpl(removed)));
@@ -295,7 +295,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public Index invert(ReadOnlyIndex keys, long maximumPosition) {
+    public Index invert(ReadableIndex keys, long maximumPosition) {
         if (trace) pre("invert(" + keys + ")");
         final TreeIndexImpl result = impl.ixInvertOnNew(getImpl(keys), maximumPosition);
         final TreeIndex ans = new TreeIndex(result);
@@ -374,7 +374,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return ans;
     }
 
-    private static TreeIndexImpl getImpl(final ReadOnlyIndex index) {
+    private static TreeIndexImpl getImpl(final ReadableIndex index) {
         if (index instanceof ImplementedByTreeIndexImpl) {
             return ((ImplementedByTreeIndexImpl) index).getImpl();
         }
@@ -388,7 +388,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         if (trace) pos();
     }
 
-    @Override public void update(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
+    @Override public void update(final ReadableIndex added, final ReadableIndex removed) {
         if (trace) pre("update(added_" + ((ImplementedByTreeIndexImpl) added).strid() + ", removed_" + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
         checkPrevForWrite();
         assign(impl.ixUpdate(getImpl(added), getImpl(removed)));
@@ -396,7 +396,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         if (trace) pos();
     }
 
-    @Override public void retain(@NotNull final ReadOnlyIndex toIntersect) {
+    @Override public void retain(@NotNull final ReadableIndex toIntersect) {
         if (trace) pre("retain(toIntersect_" + ((ImplementedByTreeIndexImpl) toIntersect).strid() + ")");
         checkPrevForWrite();
         assign(impl.ixRetain(getImpl(toIntersect)));
@@ -413,14 +413,14 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @NotNull
-    @Override public Index intersect(@NotNull final ReadOnlyIndex range) {
+    @Override public Index intersect(@NotNull final ReadableIndex range) {
         if (trace) pre("intersect(range_" + ((ImplementedByTreeIndexImpl) range).strid());
         final SortedIndex ans = new TreeIndex(impl.ixIntersectOnNew(getImpl(range)));
         if (trace) pos();
         return ans;
     }
 
-    @Override public boolean overlaps(@NotNull final ReadOnlyIndex range) {
+    @Override public boolean overlaps(@NotNull final ReadableIndex range) {
         if (trace) pre("overlaps");
         final boolean ans = impl.ixOverlaps(getImpl(range));
         if (trace) pos();
@@ -434,14 +434,14 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return ans;
     }
 
-    @Override public boolean subsetOf(@NotNull final ReadOnlyIndex range) {
+    @Override public boolean subsetOf(@NotNull final ReadableIndex range) {
         if (trace) pre("subsetOf");
         final boolean ans = impl.ixSubsetOf(getImpl(range));
         if (trace) pos();
         return ans;
     }
 
-    @Override public Index minus(final ReadOnlyIndex set) {
+    @Override public Index minus(final ReadableIndex set) {
         if (trace) pre("minus(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
             return FACTORY.getIndexByValues();
@@ -451,7 +451,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return ans;
     }
 
-    @Override public Index union(final ReadOnlyIndex set) {
+    @Override public Index union(final ReadableIndex set) {
         if (trace) pre("union(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
             return FACTORY.getIndexByValues();
@@ -472,12 +472,12 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     private abstract static class IndexSequentialBuilderBase extends TreeIndexImplSequentialBuilder implements Index.SequentialBuilder {
-        @Override public void appendIndex(final ReadOnlyIndex ix) {
+        @Override public void appendIndex(final ReadableIndex ix) {
             appendIndexWithOffset(ix, 0);
         }
 
         @Override
-        public void appendIndexWithOffset(final ReadOnlyIndex ix, final long shiftAmount) {
+        public void appendIndexWithOffset(final ReadableIndex ix, final long shiftAmount) {
             if (ix instanceof ImplementedByTreeIndexImpl) {
                 appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) ix).getImpl(), false);
                 return;
@@ -545,7 +545,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insertWithShift(final long shiftAmount, final ReadOnlyIndex other) {
+    public void insertWithShift(final long shiftAmount, final ReadableIndex other) {
         if (trace) pre("insertWithShift(" + shiftAmount + "," + other + ")");
         assign(impl.ixInsertWithShift(shiftAmount, getImpl(other)));
         if (trace) pos();

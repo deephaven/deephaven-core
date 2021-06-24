@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
-import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.db.v2.utils.ReadableIndex.NULL_KEY;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Attributes.Values> extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {

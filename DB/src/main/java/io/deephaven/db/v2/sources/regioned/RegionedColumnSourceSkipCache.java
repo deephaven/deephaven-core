@@ -5,7 +5,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.db.v2.utils.ReadableIndex.NULL_KEY;
 
 class RegionedColumnSourceSkipCache<T> extends RegionedColumnSourceInner<T, Attributes.Values, ColumnRegionObject<T, Attributes.Values>, T, ColumnRegionObject<T, Attributes.Values>>
     implements ColumnSourceGetDefaults.ForObject<T> {

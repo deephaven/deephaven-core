@@ -11,7 +11,7 @@ import io.deephaven.db.v2.select.SwitchColumn;
 import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -132,8 +132,8 @@ public abstract class SelectAndViewAnalyzer {
 
     public static class UpdateHelper implements SafeCloseable {
         private Index existingRows;
-        private SafeCloseablePair<ReadOnlyIndex, ReadOnlyIndex> shiftedWithModifies;
-        private SafeCloseablePair<ReadOnlyIndex, ReadOnlyIndex> shiftedWithoutModifies;
+        private SafeCloseablePair<ReadableIndex, ReadableIndex> shiftedWithModifies;
+        private SafeCloseablePair<ReadableIndex, ReadableIndex> shiftedWithoutModifies;
 
         private final Index parentIndex;
         private final ShiftAwareListener.Update upstream;
@@ -160,7 +160,7 @@ public abstract class SelectAndViewAnalyzer {
             }
         }
 
-        ReadOnlyIndex getPreShifted(boolean withModifies) {
+        ReadableIndex getPreShifted(boolean withModifies) {
             if (!withModifies && upstream.modified.empty()) {
                 return getPreShifted(true);
             }
@@ -168,7 +168,7 @@ public abstract class SelectAndViewAnalyzer {
             return withModifies ? shiftedWithModifies.first : shiftedWithoutModifies.first;
         }
 
-        ReadOnlyIndex getPostShifted(boolean withModifies) {
+        ReadableIndex getPostShifted(boolean withModifies) {
             if (!withModifies && upstream.modified.empty()) {
                 return getPostShifted(true);
             }
@@ -200,7 +200,7 @@ public abstract class SelectAndViewAnalyzer {
      * @param toClear  rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      */
-    public abstract void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper);
+    public abstract void applyUpdate(ShiftAwareListener.Update upstream, ReadableIndex toClear, UpdateHelper helper);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects.

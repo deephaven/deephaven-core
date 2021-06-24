@@ -20,7 +20,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.ChunkSource.GetContext;
 import io.deephaven.db.v2.utils.OrderedKeys;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -278,7 +278,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream, @NotNull final ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream, @NotNull final ReadableIndex newDestinations) {
         if (delegateToBy) {
             by.propagateUpdates(downstream, newDestinations);
         }

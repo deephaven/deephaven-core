@@ -16,7 +16,7 @@ import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OrderedKeys;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
-    private static final ReadOnlyIndex EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
+    private static final ReadableIndex EMPTY_INDEX = Index.FACTORY.getEmptyIndex();
     private final List<ColumnHolder> matchColumns;
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -416,7 +416,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             // Filter and add addeds
             final Index filteredAdded = filter.filter(added, source, table, false);
-            ReadOnlyIndex keysToRemove = EMPTY_INDEX;
+            ReadableIndex keysToRemove = EMPTY_INDEX;
 
             // If we were affected, recompute mods and re-add the ones that pass.
             if(affected) {
@@ -433,7 +433,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             return null;
         }
 
-        private Index recompute(QueryTable table, ReadOnlyIndex upstreamAdded) {
+        private Index recompute(QueryTable table, ReadableIndex upstreamAdded) {
             doRecompute = false;
             final Index refiltered = filter.filter(table.getIndex().clone(), table.getIndex(), table, false);
 

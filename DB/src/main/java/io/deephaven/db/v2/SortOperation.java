@@ -88,7 +88,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
-        final ReadOnlyIndex.Iterator it = parent.getIndex().iterator();
+        final ReadableIndex.Iterator it = parent.getIndex().iterator();
         return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
     }
 

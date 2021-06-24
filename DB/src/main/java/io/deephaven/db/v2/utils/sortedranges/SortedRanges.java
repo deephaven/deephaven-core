@@ -734,7 +734,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         @Override
-        public long binarySearchValue(final ReadOnlyIndex.TargetComparator comp, final int dir) {
+        public long binarySearchValue(final ReadableIndex.TargetComparator comp, final int dir) {
             pendingNext = false;
             boolean rollbackNextIfNotFound = false;
             if (currRangeStart == -1) {
@@ -807,7 +807,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return new SearchIterator(this);
     }
 
-    private static final class ReverseIterator implements ReadOnlyIndex.SearchIterator {
+    private static final class ReverseIterator implements ReadableIndex.SearchIterator {
         private int nextRangeIdx = -1;
         private long rangeCurr = -1;
         private long rangeStart = -1;
@@ -933,7 +933,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         @Override
-        public long binarySearchValue(ReadOnlyIndex.TargetComparator comp, int dir) {
+        public long binarySearchValue(ReadableIndex.TargetComparator comp, int dir) {
             throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
         }
     }
@@ -1462,8 +1462,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final boolean takeComplement) {
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
-        try (ReadOnlyIndex.RangeIterator it1 = sr.getRangeIterator();
-             ReadOnlyIndex.RangeIterator it2 = takeComplement
+        try (ReadableIndex.RangeIterator it1 = sr.getRangeIterator();
+             ReadableIndex.RangeIterator it2 = takeComplement
                      ? new ComplementRangeIterator(tix.ixRangeIterator())
                      : tix.ixRangeIterator()) {
             it1.next();
@@ -1578,8 +1578,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     private static SortedRangesLong union(final SortedRanges sr1, final SortedRanges sr2) {
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
-        try (ReadOnlyIndex.RangeIterator it1 = sr1.getRangeIterator();
-             ReadOnlyIndex.RangeIterator it2 = sr2.getRangeIterator()) {
+        try (ReadableIndex.RangeIterator it1 = sr1.getRangeIterator();
+             ReadableIndex.RangeIterator it2 = sr2.getRangeIterator()) {
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1713,7 +1713,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final TreeIndexImpl tix) {
-        try (ReadOnlyIndex.RangeIterator rangeIter = tix.ixRangeIterator()) {
+        try (ReadableIndex.RangeIterator rangeIter = tix.ixRangeIterator()) {
             SortedRanges sar = sarOut.getValue();
             final long first = sar.first();
             final boolean valid = rangeIter.advance(first);
@@ -4442,22 +4442,22 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final ReadOnlyIndex.Iterator ixIterator() {
+    public final ReadableIndex.Iterator ixIterator() {
         return getIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.SearchIterator ixSearchIterator() {
+    public final ReadableIndex.SearchIterator ixSearchIterator() {
         return getSearchIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.SearchIterator ixReverseIterator() {
+    public final ReadableIndex.SearchIterator ixReverseIterator() {
         return getReverseIterator();
     }
 
     @Override
-    public final ReadOnlyIndex.RangeIterator ixRangeIterator() {
+    public final ReadableIndex.RangeIterator ixRangeIterator() {
         return getRangeIterator();
     }
 
@@ -4521,7 +4521,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final TreeIndexImpl remove(final TreeIndexImpl removed) {
         if (!USE_RANGES_ARRAY) {
-            try (final ReadOnlyIndex.RangeIterator removedIter = removed.ixRangeIterator()){
+            try (final ReadableIndex.RangeIterator removedIter = removed.ixRangeIterator()){
                 final MutableObject<SortedRanges> holder = new MutableObject<>(this);
                 final boolean valid = removeLegacy(holder, removedIter);
                 if (!valid) {
@@ -4618,7 +4618,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return TreeIndexImpl.EMPTY;
         }
         if (!USE_RANGES_ARRAY) {
-            final ReadOnlyIndex.RangeIterator rangeIter = toIntersect.ixRangeIterator();
+            final ReadableIndex.RangeIterator rangeIter = toIntersect.ixRangeIterator();
             rangeIter.advance(first());
             final long last = last();
             final SortedRanges sr = intersectLegacy(this, last, rangeIter);

@@ -733,11 +733,11 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         final boolean currentMissingAdds = !update.added.subsetOf(getIndex());
         final boolean currentMissingModifications = !update.modified.subsetOf(getIndex());
         final boolean previousMissingRemovals;
-        try (final ReadOnlyIndex prevIndex = getIndex().getPrevIndex()) {
+        try (final ReadableIndex prevIndex = getIndex().getPrevIndex()) {
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
-        try (final ReadOnlyIndex removedMinusAdded = update.removed.minus(update.added)) {
+        try (final ReadableIndex removedMinusAdded = update.removed.minus(update.added)) {
             currentContainsRemovals = removedMinusAdded.overlaps(getIndex());
         }
 

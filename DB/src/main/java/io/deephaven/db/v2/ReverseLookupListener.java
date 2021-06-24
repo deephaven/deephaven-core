@@ -1,8 +1,6 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
@@ -11,7 +9,7 @@ import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.db.v2.utils.ReadableIndex;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -233,7 +231,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
         map = new TObjectLongHashMap<>(2*source.intSize(), 0.75f, NO_ENTRY_VALUE);
-        try (final ReadOnlyIndex prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
+        try (final ReadableIndex prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
             addEntries(usePrev ? prevIndex : source.getIndex(), usePrev, () -> {
                 if (source.isRefreshing()) {
                     ConstructSnapshot.failIfConcurrentAttemptInconsistent();
@@ -293,8 +291,8 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
         return TableTools.getPrevKey(columns, row);
     }
 
-    private void addEntries(@NotNull final ReadOnlyIndex index, final boolean usePrev, @NotNull final Runnable consistencyChecker) {
-        for (final ReadOnlyIndex.Iterator it = index.iterator(); it.hasNext(); ) {
+    private void addEntries(@NotNull final ReadableIndex index, final boolean usePrev, @NotNull final Runnable consistencyChecker) {
+        for (final ReadableIndex.Iterator it = index.iterator(); it.hasNext(); ) {
             final long row = it.nextLong();
             final Object keyToReverse = usePrev ? getPrevKey(row) : getKey(row);
             if(ignoreNull && keyToReverse == null) {
