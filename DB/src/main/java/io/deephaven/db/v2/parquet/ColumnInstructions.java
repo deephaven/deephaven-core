@@ -1,6 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
-public class ColumnInstructions {
+class ColumnInstructions {
     private final String columnName;
     String parquetColumnName;
     private String codecName;
