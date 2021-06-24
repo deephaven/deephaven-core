@@ -2,6 +2,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -137,9 +138,10 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             ops.clear();
         }
 
-        private ColumnSource makeConstituentColumnSource(String name, Object array) {
-            final Class colType = theTree.getSourceTable().getDefinition().getColumn(name).getDataType();
-            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array, colType);
+        private ColumnSource<?> makeConstituentColumnSource(String name, Object array) {
+            final ColumnDefinition<?> colDef = theTree.getSourceTable().getDefinition().getColumn(name);
+            //noinspection unchecked
+            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(), colDef.getComponentType());
         }
 
         void setCompareToTable(Table compareTo) {
