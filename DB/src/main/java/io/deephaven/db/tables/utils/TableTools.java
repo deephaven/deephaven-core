@@ -990,7 +990,8 @@ public class TableTools {
         } else if (data.getClass().getComponentType() == Float.class) {
             return floatCol(name, ArrayUtils.getUnboxedArray((Float[]) data));
         }
-        return new ColumnHolder(name, false, data);
+        //noinspection unchecked
+        return new ColumnHolder(name, data.getClass().getComponentType(), data.getClass().getComponentType().getComponentType(), false, data);
     }
 
     /**
@@ -1001,7 +1002,7 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder stringCol(String name, String... data) {
-        return new ColumnHolder(name, false, data);
+        return new ColumnHolder(name, String.class, null, false, data);
     }
 
     /**
@@ -1012,7 +1013,7 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder dateTimeCol(String name, DBDateTime... data) {
-        return new ColumnHolder(name, false, data);
+        return new ColumnHolder(name, DBDateTime.class, null, false, data);
     }
 
     /**

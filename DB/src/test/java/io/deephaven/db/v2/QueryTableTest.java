@@ -2238,7 +2238,7 @@ public class QueryTableTest extends QueryTableTestBase {
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long bigIndex = 1L << 55;
-                addToTable(table, i(bigIndex), intCol("X", 3), new ColumnHolder("Y", String[].class, (String[]) new String[]{"f"}));
+                addToTable(table, i(bigIndex), intCol("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false, new String[]{"f"}));
                 table.notifyListeners(i(bigIndex), i(), i());
             });
             showWithIndex(t1);
@@ -2281,7 +2281,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(9), c("X", 3), new ColumnHolder("Y", String[].class, new String[]{"f", "g", "h", "i", "j", "k"}));
+                addToTable(table, i(9), c("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false, new String[]{"f", "g", "h", "i", "j", "k"}));
                 table.notifyListeners(i(9), i(), i());
             });
             showWithIndex(t1);

@@ -32,6 +32,8 @@ public interface DbArray<T> extends DbArrayBase {
         return ObjectChunk.chunkWrap(toArray());
     }
 
+    DbArray<T> getDirect();
+
     @Override
     default void fillChunk(WritableChunk destChunk) {
         destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(), (int)size());

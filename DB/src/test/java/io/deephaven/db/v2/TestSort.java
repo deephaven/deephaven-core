@@ -614,7 +614,7 @@ public class TestSort extends BaseArrayTestCase {
             {
                 data[jj] = dataGenerator.makeEntry();
             }
-            columnHolders[ii] = new ColumnHolder("Column" +ii, grouped, data);
+            columnHolders[ii] = new ColumnHolder<>("Column" +ii, String.class, null, grouped, data);
             boxedData[ii] = data;
         }
 
@@ -623,7 +623,7 @@ public class TestSort extends BaseArrayTestCase {
         {
             sequence[jj] = jj + 1;
         }
-        columnHolders[ncols] = new ColumnHolder("Sentinel", false, sequence);
+        columnHolders[ncols] = new ColumnHolder<>("Sentinel", Integer.class, null, false, sequence);
 
         Table source = TableTools.newTable(columnHolders);
 

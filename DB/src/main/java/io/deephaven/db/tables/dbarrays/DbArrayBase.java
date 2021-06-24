@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
 
 public interface DbArrayBase extends Serializable, LongSizedDataStructure {
@@ -21,8 +22,6 @@ public interface DbArrayBase extends Serializable, LongSizedDataStructure {
 
     String NULL_ELEMENT_STRING = " ";
 
-    DbArrayBase subArray(long fromIndex, long toIndex);
-    DbArrayBase subArrayByPositions(long [] positions);
     Object toArray();
     DbArray toDbArray();
     Class getComponentType();
@@ -34,9 +33,6 @@ public interface DbArrayBase extends Serializable, LongSizedDataStructure {
     default boolean isEmpty() {
         return size() == 0;
     }
-
-    /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
-    DbArrayBase getDirect();
 
     static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;
@@ -69,5 +65,37 @@ public interface DbArrayBase extends Serializable, LongSizedDataStructure {
         } else {
             return DbArray::defaultValToString;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T, R extends T> Function<T, R> resolveGetDirect(@NotNull final Class<T> dbArrayType) {
+        if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbBooleanArray) v).getDirect();
+        }
+        if (DbCharArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbCharArray) v).getDirect();
+        }
+        if (DbByteArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbByteArray) v).getDirect();
+        }
+        if (DbShortArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbShortArray) v).getDirect();
+        }
+        if (DbIntArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbIntArray) v).getDirect();
+        }
+        if (DbLongArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbLongArray) v).getDirect();
+        }
+        if (DbFloatArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbFloatArray) v).getDirect();
+        }
+        if (DbDoubleArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbDoubleArray) v).getDirect();
+        }
+        if (DbArray.class.isAssignableFrom(dbArrayType)) {
+            return v -> (R) ((DbArray<?>) v).getDirect();
+        }
+        throw new IllegalArgumentException("Unrecognized DbArray type " + dbArrayType);
     }
 }
