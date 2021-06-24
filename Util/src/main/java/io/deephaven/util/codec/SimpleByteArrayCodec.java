@@ -4,6 +4,13 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ * <p>Codec for non-nullable byte arrays that does a no-op encode/decode.
+ * <p>One particular instance where this is useful is reading parquet 1.0 data
+ *    encoded as binary as "raw".
+ *
+ */
 public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     private final int expectedWidth;
 
@@ -35,15 +42,15 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     @NotNull
     @Override
     public byte[] encode(@Nullable final byte[] input) {
-        if (input == null || input.length == 0) {
-            return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+        if (input == null) {
+            throw new IllegalArgumentException(SimpleByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
         }
         return input;
     }
 
     @Override
     public boolean isNullable() {
-        return true;
+        return false;
     }
 
     @Override
@@ -60,7 +67,7 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     @Override
     public byte[] decode(@NotNull final byte[] input, final int offset, final int length) {
         if (input.length == 0) {
-            return null;
+            return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
         if (offset == 0 && length == input.length) {
             return input;

@@ -1,8 +1,8 @@
 package io.deephaven.db.v2.parquet;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class ParquetInstructions {
     public ParquetInstructions() {
@@ -27,20 +27,17 @@ public abstract class ParquetInstructions {
     };
 
     private static class ReadOnly extends ParquetInstructions {
-        private final Map<String, ColumnInstructions> columnNameToInstructions;
-        private final Map<String, String> parquetColumnNameToColumnName;
+        private final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions;
+        // Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
+        // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
+        // different than the columnName (ie, the column name mapping is not the default mapping)
+        private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
 
         protected ReadOnly(
-                final Map<String, ColumnInstructions> columnNameToInstructions,
-                final Map<String, String> parquetColumnNameToColumnName) {
-            this.columnNameToInstructions = columnNameToInstructions != null
-                    ? Collections.unmodifiableMap(columnNameToInstructions)
-                    : null
-                    ;
-            this.parquetColumnNameToColumnName = parquetColumnNameToColumnName != null
-                    ? Collections.unmodifiableMap(parquetColumnNameToColumnName)
-                    : null
-                    ;
+                final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
+                final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName) {
+            this.columnNameToInstructions = columnNameToInstructions;
+            this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
         }
 
         @Override
@@ -57,16 +54,39 @@ public abstract class ParquetInstructions {
 
         @Override
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
-            if (parquetColumnNameToColumnName == null) {
-                return null;
+            if (parquetColumnNameToInstructions == null) {
+                return parquetColumnName;
             }
-            return parquetColumnNameToColumnName.get(parquetColumnName);
+            final ColumnInstructions ci = parquetColumnNameToInstructions.get(parquetColumnName);
+            if (ci == null) {
+                return parquetColumnName;
+            }
+            return ci.getColumnName();
+        }
+
+        KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
+            // noinspection unchecked
+            return (columnNameToInstructions == null)
+                    ? null
+                    : (KeyedObjectHashMap<String, ColumnInstructions>) columnNameToInstructions.clone()
+                    ;
+        }
+
+        KeyedObjectHashMap<String, ColumnInstructions> copyParquetColumnNameToInstructions() {
+            // noinspection unchecked
+            return (parquetColumnNameToInstructions == null)
+                    ? null
+                    : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone()
+                    ;
         }
     }
 
     public static class Builder {
-        private Map<String, ColumnInstructions> columnNameToInstructions;
-        private Map<String, String> parquetColumnNameToColumnName;
+        private KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions;
+        // Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
+        // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
+        // different than the columnName (ie, the column name mapping is not the default mapping)
+        private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
 
         public Builder() {
         }
@@ -76,18 +96,42 @@ public abstract class ParquetInstructions {
                 return;
             }
             final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
-            columnNameToInstructions = readOnlyParquetInstructions.columnNameToInstructions == null
-                    ? null
-                    : new HashMap<>(readOnlyParquetInstructions.columnNameToInstructions);
-            parquetColumnNameToColumnName = readOnlyParquetInstructions.parquetColumnNameToColumnName == null
-                    ? null
-                    : new HashMap<>(readOnlyParquetInstructions.parquetColumnNameToColumnName);
+            columnNameToInstructions = readOnlyParquetInstructions.copyColumnNameToInstructions();
+            parquetColumnNameToInstructions = readOnlyParquetInstructions.copyParquetColumnNameToInstructions();
         }
+
+        private void newColumnNameToInstructionsMap() {
+            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+                @Override
+                public String getKey(@NotNull final ColumnInstructions value) {
+                    return value.getColumnName();
+                }
+            });
+        }
+
+        private void newParquetColumnNameToInstructionsMap() {
+            parquetColumnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+                @Override
+                public String getKey(@NotNull final ColumnInstructions value) {
+                    return value.getParquetColumnName();
+                }
+            });
+        }
+
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            if (columnNameToInstructions == null) {
-                columnNameToInstructions = new HashMap<>();
-                parquetColumnNameToColumnName = new HashMap<>();
+            if (parquetColumnName.equals(columnName)) {
+                return this;
             }
+            if (columnNameToInstructions == null) {
+                newColumnNameToInstructionsMap();
+                final ColumnInstructions ci = new ColumnInstructions(columnName);
+                ci.setParquetColumnName(parquetColumnName);
+                columnNameToInstructions.put(columnName, ci);
+                newParquetColumnNameToInstructionsMap();
+                parquetColumnNameToInstructions.put(parquetColumnName, ci);
+                return this;
+            }
+
             ColumnInstructions ci = columnNameToInstructions.get(columnName);
             if (ci != null) {
                 if (ci.parquetColumnName != null) {
@@ -95,23 +139,39 @@ public abstract class ParquetInstructions {
                         return this;
                     }
                     throw new IllegalArgumentException(
-                            "Cannot add a mapping to already mapped parqueColumnName=" + ci.parquetColumnName + " for column=" + columnName);
+                            "Cannot add a mapping from parquetColumnName=" + parquetColumnName
+                            + ": columnName=" + columnName + " already mapped to parquetColumnName=" + ci.parquetColumnName);
                 }
             } else {
                 ci = new ColumnInstructions(columnName);
                 columnNameToInstructions.put(columnName, ci);
+            }
 
+            if (parquetColumnNameToInstructions == null) {
+                newParquetColumnNameToInstructionsMap();
+                parquetColumnNameToInstructions.put(parquetColumnName, ci);
+                return this;
+            }
+
+            final ColumnInstructions fromParquetColumnNameInstructions = parquetColumnNameToInstructions.get(parquetColumnName);
+            if (fromParquetColumnNameInstructions != null) {
+                if (fromParquetColumnNameInstructions.getColumnName().equals(columnName)) {
+                    return this;
+                }
+                throw new IllegalArgumentException(
+                        "Cannot add new mapping from parquetColumnName=" + parquetColumnName + " to columnName=" + columnName
+                                + ": already mapped to columnName=" + fromParquetColumnNameInstructions.getColumnName());
             }
             ci.setParquetColumnName(parquetColumnName);
-            parquetColumnNameToColumnName.put(parquetColumnName, columnName);
+            parquetColumnNameToInstructions.put(parquetColumnName, ci);
             return this;
         }
 
         public ParquetInstructions build() {
-            final Map<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
+            final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
-            final Map<String, String> parquetColumnNameToColumnNameOut = parquetColumnNameToColumnName;
-            parquetColumnNameToColumnName = null;
+            final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnNameOut = parquetColumnNameToInstructions;
+            parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut);
         }
     }
