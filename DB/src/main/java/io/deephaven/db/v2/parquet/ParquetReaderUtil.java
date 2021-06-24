@@ -128,14 +128,16 @@ public class ParquetReaderUtil {
      *
      * @param filePath  Location for input parquet file
      * @param readInstructions  Parquet read instructions specifying transformations like column mappings and codecs.
-     *                          Note the supplied read instructions may be modified by this method to provide necessary
+     *                          Note a new read instructions based on this one may be returned by this method to provide necessary
      *                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.
      * @param colDefConsumer  A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     * @return Parquet read instructions, either the ones supplied or a new object based on the suplied with with necessary
+     *         transformations added.
      * @throws IOException if the specified file cannot be read
      */
-    public static void readParquetSchema(
+    public static ParquetInstructions readParquetSchema(
             final String filePath,
-            final ParquetInstructions.Read readInstructions,
+            final ParquetInstructions readInstructions,
             final ColumnDefinitionConsumer colDefConsumer
     ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
@@ -282,6 +284,7 @@ public class ParquetReaderUtil {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
         }
 
+        ParquetInstructions.Builder instructionsBuilder = null;
         for (ColumnDescriptor column : schema.getColumns()) {
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
@@ -293,7 +296,10 @@ public class ParquetReaderUtil {
                 colName = mappedName;
             } else if (parquetColumnName.contains(" ")) {
                 colName = parquetColumnName.replace(" ", "_");
-                readInstructions.addColumnNameMapping(parquetColumnName, colName);
+                if (instructionsBuilder == null) {
+                    instructionsBuilder = new ParquetInstructions.Builder(readInstructions);
+                }
+                instructionsBuilder.addColumnNameMapping(parquetColumnName, colName);
             } else {
                 colName = parquetColumnName;
             }
@@ -401,6 +407,10 @@ public class ParquetReaderUtil {
                 }
             }
         }
+        if (instructionsBuilder == null) {
+            return readInstructions;
+        }
+        return instructionsBuilder.build();
     }
 
     private static Object[] convertArray(Binary[] rawData, ObjectCodec<?> codec) {

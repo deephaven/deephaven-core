@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,9 +26,22 @@ public abstract class ParquetInstructions {
         }
     };
 
-    private static class Base extends ParquetInstructions {
-        private Map<String, ColumnInstructions> columnNameToInstructions;
-        private Map<String, String> parquetColumnNameToColumnName;
+    private static class ReadOnly extends ParquetInstructions {
+        private final Map<String, ColumnInstructions> columnNameToInstructions;
+        private final Map<String, String> parquetColumnNameToColumnName;
+
+        protected ReadOnly(
+                final Map<String, ColumnInstructions> columnNameToInstructions,
+                final Map<String, String> parquetColumnNameToColumnName) {
+            this.columnNameToInstructions = columnNameToInstructions != null
+                    ? Collections.unmodifiableMap(columnNameToInstructions)
+                    : null
+                    ;
+            this.parquetColumnNameToColumnName = parquetColumnNameToColumnName != null
+                    ? Collections.unmodifiableMap(parquetColumnNameToColumnName)
+                    : null
+                    ;
+        }
 
         @Override
         public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
@@ -48,8 +62,28 @@ public abstract class ParquetInstructions {
             }
             return parquetColumnNameToColumnName.get(parquetColumnName);
         }
+    }
 
-        public ParquetInstructions addColumnNameMapping(final String parquetColumnName, final String columnName) {
+    public static class Builder {
+        private Map<String, ColumnInstructions> columnNameToInstructions;
+        private Map<String, String> parquetColumnNameToColumnName;
+
+        public Builder() {
+        }
+
+        public Builder(final ParquetInstructions parquetInstructions) {
+            if (parquetInstructions == EMPTY) {
+                return;
+            }
+            final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
+            columnNameToInstructions = readOnlyParquetInstructions.columnNameToInstructions == null
+                    ? null
+                    : new HashMap<>(readOnlyParquetInstructions.columnNameToInstructions);
+            parquetColumnNameToColumnName = readOnlyParquetInstructions.parquetColumnNameToColumnName == null
+                    ? null
+                    : new HashMap<>(readOnlyParquetInstructions.parquetColumnNameToColumnName);
+        }
+        public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
             if (columnNameToInstructions == null) {
                 columnNameToInstructions = new HashMap<>();
                 parquetColumnNameToColumnName = new HashMap<>();
@@ -72,21 +106,13 @@ public abstract class ParquetInstructions {
             parquetColumnNameToColumnName.put(parquetColumnName, columnName);
             return this;
         }
-    }
 
-    public static final class Read extends Base {
-        @Override
-        public Read addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            super.addColumnNameMapping(parquetColumnName, columnName);
-            return this;
-        }
-    }
-
-    public static final class Write extends Base {
-        @Override
-        public Write addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            super.addColumnNameMapping(parquetColumnName, columnName);
-            return this;
+        public ParquetInstructions build() {
+            final Map<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
+            columnNameToInstructions = null;
+            final Map<String, String> parquetColumnNameToColumnNameOut = parquetColumnNameToColumnName;
+            parquetColumnNameToColumnName = null;
+            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut);
         }
     }
 }

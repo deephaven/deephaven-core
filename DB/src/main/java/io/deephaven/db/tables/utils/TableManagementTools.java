@@ -70,7 +70,7 @@ public class TableManagementTools {
     }
 
     public static Table readTable(
-            @NotNull final File location, final ParquetInstructions.Read readInstructions, @NotNull TableDefinition tableDefinition) {
+            @NotNull final File location, final ParquetInstructions readInstructions, @NotNull TableDefinition tableDefinition) {
         final String path = location.getPath();
         if (path.endsWith(PARQUET_FILE_EXTENSION)) {
             return readTableFromSingleParquetFile(location, readInstructions, tableDefinition);
@@ -85,7 +85,7 @@ public class TableManagementTools {
     }
 
     private static Table readTableFromSingleParquetFile(
-            @NotNull final File sourceFile, final ParquetInstructions.Read readInstructions, @NotNull final TableDefinition tableDefinition) {
+            @NotNull final File sourceFile, final ParquetInstructions readInstructions, @NotNull final TableDefinition tableDefinition) {
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
                 StandaloneTableKey.getInstance(),
                 sourceFile,
@@ -134,10 +134,10 @@ public class TableManagementTools {
                     }
                     cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
-        final ParquetInstructions.Read readInstructions = new ParquetInstructions.Read();
+        ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
-            ParquetReaderUtil.readParquetSchema(path, readInstructions, colConsumer);
+            readInstructions = ParquetReaderUtil.readParquetSchema(path, readInstructions, colConsumer);
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }
