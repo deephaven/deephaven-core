@@ -71,12 +71,12 @@ public class TstUtils {
                 continue;
             }
 
-            if (columnSource instanceof DateTimeTreeMapSource && columnHolder.type == long.class) {
+            if (columnSource instanceof DateTimeTreeMapSource && columnHolder.dataType == long.class) {
                 final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource)columnSource;
                 treeMapSource.add(colIndex, (Long[])boxedArray);
             }
-            else if (columnSource.getType() != columnHolder.type) {
-                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()=" + columnSource.getType() + ", columnHolder=" + columnHolder.type);
+            else if (columnSource.getType() != columnHolder.dataType) {
+                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()=" + columnSource.getType() + ", columnHolder=" + columnHolder.dataType);
             }
 
             if (columnSource instanceof TreeMapSource) {
@@ -521,12 +521,12 @@ public class TstUtils {
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {
             //noinspection unchecked
-            result = new ImmutableTreeMapSource(columnHolder.type, index, boxedData);
-        } else if (columnHolder.type.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
+            result = new ImmutableTreeMapSource(columnHolder.dataType, index, boxedData);
+        } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
             result = new DateTimeTreeMapSource(index, (long[])columnHolder.data);
         } else {
             //noinspection unchecked
-            result = new TreeMapSource(columnHolder.type, index, boxedData);
+            result = new TreeMapSource(columnHolder.dataType, index, boxedData);
         }
 
         if (columnHolder.grouped) {

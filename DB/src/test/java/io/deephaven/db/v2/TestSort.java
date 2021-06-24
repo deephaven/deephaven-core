@@ -375,7 +375,7 @@ public class TestSort extends BaseArrayTestCase {
             {
                 column[ii] = makeEntry();
             }
-            return ArrayBackedColumnSource.getMemoryColumnSource(column);
+            return ArrayBackedColumnSource.getMemoryColumnSourceUntyped(column);
         }
     }
 
@@ -572,7 +572,7 @@ public class TestSort extends BaseArrayTestCase {
         {
             sentinels[jj] = jj + 1;
         }
-        columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSource(sentinels));
+        columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSourceUntyped(sentinels));
 
         return new QueryTable(Index.FACTORY.getIndexByRange(0, size - 1), columns);
     }

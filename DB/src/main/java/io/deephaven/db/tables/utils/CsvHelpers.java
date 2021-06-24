@@ -634,7 +634,7 @@ public class CsvHelpers {
             Map<String, ColumnSource> columnSources = new LinkedHashMap<>();
             for (int ii = 0; ii < columnNames.length; ii++) {
                 lProgress.update(90 + (ii + 1) * 10 / columnNames.length, "Mapping CSV column " + (ii + 1) + " of " + columnNames.length + " to table.");
-                ColumnSource arrayBackedSource = ArrayBackedColumnSource.getMemoryColumnSource(columnData[ii]);
+                ColumnSource arrayBackedSource = ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnData[ii]);
                 columnSources.put(columnNames[ii], arrayBackedSource);
             }
             lProgress.finish("");
