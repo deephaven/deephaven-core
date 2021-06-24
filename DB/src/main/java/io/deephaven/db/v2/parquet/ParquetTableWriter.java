@@ -140,7 +140,7 @@ public class ParquetTableWriter {
                 Class keyType = definition.getColumn(columnName).getDataType();
                 Map<String, ColumnSource> sourceMap = new HashMap<>();
                 Map<?, long[]> keyRangeMap = columnGrouping.getValue();
-                sourceMap.put(GROUPING_KEY, ArrayBackedColumnSource.getMemoryColumnSource(keyRangeMap.keySet().toArray((Object[]) Array.newInstance(TypeUtils.getBoxedType(keyType), 0))));
+                sourceMap.put(GROUPING_KEY, ArrayBackedColumnSource.getMemoryColumnSourceUntyped(keyRangeMap.keySet().toArray((Object[]) Array.newInstance(TypeUtils.getBoxedType(keyType), 0))));
                 sourceMap.put(BEGIN_POS, ArrayBackedColumnSource.getMemoryColumnSource(keyRangeMap.values().stream().mapToLong(range -> range[0]).toArray()));
                 sourceMap.put(END_POS, ArrayBackedColumnSource.getMemoryColumnSource(keyRangeMap.values().stream().mapToLong(range -> range[1]).toArray()));
                 QueryTable groupingTable = new QueryTable(Index.FACTORY.getIndexByRange(0, keyRangeMap.size() - 1), sourceMap);

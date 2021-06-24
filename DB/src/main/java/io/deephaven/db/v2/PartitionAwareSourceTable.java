@@ -205,8 +205,8 @@ public class PartitionAwareSourceTable extends SourceTable {
                 columnPartitions.length,
                 Arrays.asList(partitioningColumnDefinition.getName(), LOCATION_COLUMN_NAME),
                 Arrays.asList(
-                        ArrayBackedColumnSource.getMemoryColumnSource(columnPartitions),
-                        ArrayBackedColumnSource.getMemoryColumnSource(foundLocations, TableLocation.class)))
+                        ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnPartitions),
+                        ArrayBackedColumnSource.getMemoryColumnSource(foundLocations, TableLocation.class, null)))
                 .where(partitioningColumnFilters);
         if(filteredColumnPartitionTable.size() == columnPartitions.length) {
             return foundLocations;

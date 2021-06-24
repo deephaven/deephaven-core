@@ -21,7 +21,7 @@ public class DbArrayTest extends TestCase {
     public void testDbArrayColumnWrapper(){
         //noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
-                ArrayBackedColumnSource.getMemoryColumnSource(new String[]{"a","b","c"}),
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new String[]{"a","b","c"}),
                 Index.FACTORY.getIndexByRange(0, 2));
         assertEquals(3,dbArray.size());
         assertEquals("a",dbArray.get(0));
@@ -85,7 +85,7 @@ public class DbArrayTest extends TestCase {
     public void testSubArray() {
         //noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
-                ArrayBackedColumnSource.getMemoryColumnSource(new Object[]{10, 20, 30}),
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new Object[]{10, 20, 30}),
                 Index.FACTORY.getIndexByRange(0, 2));
 
         for (int start=-4; start<=4; start++){
@@ -197,7 +197,7 @@ public class DbArrayTest extends TestCase {
         DbArrayDirect dbArrayDirect = new DbArrayDirect<>("a","b","c");
         //noinspection unchecked
         DbArrayColumnWrapper dbArray = new DbArrayColumnWrapper(
-                ArrayBackedColumnSource.getMemoryColumnSource(new DbArrayBase[]{dbArrayDirect,null}),
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new DbArrayBase[]{dbArrayDirect,null}),
                 Index.FACTORY.getIndexByRange(0, 1));
         DbArrayBase base = dbArray.getDirect();
         assertEquals(2, base.intSize());
