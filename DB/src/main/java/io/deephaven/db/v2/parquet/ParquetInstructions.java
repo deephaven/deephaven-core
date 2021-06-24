@@ -4,6 +4,11 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * This class provides instructions intended for read and write parquet operations (which take
+ * it as an optional argument) specifying desired transformations.  Examples are
+ * mapping column names and use of specific codecs during (de)serialization.
+ */
 public abstract class ParquetInstructions {
     public ParquetInstructions() {
     }
