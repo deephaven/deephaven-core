@@ -574,4 +574,9 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
         else:
             useColumnNames.append(columnName)
             data[columnName] = series
-    return pandas.DataFrame(data=data, columns=useColumnNames, copy=False)
+
+    dtype_set = set([v.dtype for k, v in data.items()])
+    if len(dtype_set) == 1:
+        return pandas.DataFrame(data=numpy.stack([v.array for k, v in data.items()], axis=1), columns=useColumnNames, copy=False)
+    else:
+        return pandas.DataFrame(data=data, columns=useColumnNames, copy=False)
