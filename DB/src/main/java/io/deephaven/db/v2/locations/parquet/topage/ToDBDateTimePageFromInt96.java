@@ -29,10 +29,10 @@ public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements T
     private static final ToDBDateTimePageFromInt96 INSTANCE = new ToDBDateTimePageFromInt96<>();
     private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
     private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
-    private static final String REFERENCE_TIME_ZONE = Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone","UTC");
     private static long offset;
     static {
-        setReferenceTimeZone(REFERENCE_TIME_ZONE);
+        final String referenceTimeZone = Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone","UTC");
+        setReferenceTimeZone(referenceTimeZone);
     }
 
     public static <ATTR extends Attributes.Any> ToDBDateTimePageFromInt96<ATTR> create(@NotNull Class<?> nativeType) {
