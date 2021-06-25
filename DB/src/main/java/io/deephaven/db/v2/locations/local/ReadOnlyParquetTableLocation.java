@@ -192,7 +192,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             }
                             break;
                         case INT96:
-                            toPage = ToDBDateTimePageFromInt96.create(componentType);
+                            toPage = ToDBDateTimePageFromInt96.create(pageType);
                             break;
                         default:
                     }
