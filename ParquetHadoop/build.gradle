@@ -22,5 +22,18 @@ dependencies {
 
     }
 
-    runtime('com.fasterxml.woodstox:woodstox-core:5.2.1')
+    /* A dependency to woodstox is triggered from the
+     *  initialization of ParquetReader the first time
+     *  we try to open a parquet file.  Without this below,
+     *  we get:
+     *
+     *  java.lang.NoClassDefFoundError: com/ctc/wstx/io/InputBootstrapper
+     *    at io.deephaven.parquet.ParquetFileReader.lambda$new$0(ParquetFileReader.java:44)
+     *    at java.lang.ThreadLocal$SuppliedThreadLocal.initialValue(ThreadLocal.java:284)
+     *    at java.lang.ThreadLocal.setInitialValue(ThreadLocal.java:180)
+     *    at java.lang.ThreadLocal.get(ThreadLocal.java:170)
+     *    at io.deephaven.parquet.ColumnChunkReaderImpl.lambda$new$0(ColumnChunkReaderImpl.java:49)
+     *    [...]
+     */
+    runtimeOnly('com.fasterxml.woodstox:woodstox-core:5.2.1')
 }
