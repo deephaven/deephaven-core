@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.function.Function;
 
 // region boxing imports
 // endregion boxing imports
@@ -70,18 +71,18 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     protected transient ObjectOneOrN.Block0<T> prevBlocks;
 
     // region constructor
-    private final boolean isArrayType;
+    private final Function<T, ? extends T> copyFunction;
 
     ObjectSparseArraySource(Class<T> type) {
         super(type);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = DbArrayBase.class.isAssignableFrom(type);
+        copyFunction = DbArrayBase.class.isAssignableFrom(type) ? DbArrayBase.resolveGetDirect(type) : null;
     }
 
     ObjectSparseArraySource(Class<T> type, Class componentType) {
         super(type, componentType);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = DbArrayBase.class.isAssignableFrom(type);
+        copyFunction = DbArrayBase.class.isAssignableFrom(type) ? DbArrayBase.resolveGetDirect(type) : null;
     }
     // endregion constructor
 
@@ -166,9 +167,8 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
 
-        if (isArrayType && value instanceof DbArrayBase) {
-            final DbArrayBase dbArray = (DbArrayBase) value;
-            set(destKey, (T) dbArray.getDirect());
+        if (value != null && copyFunction != null) {
+            set(destKey, copyFunction.apply(value));
         } else {
             set(destKey, value);
         }
