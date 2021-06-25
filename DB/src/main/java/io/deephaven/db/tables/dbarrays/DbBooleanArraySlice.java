@@ -78,11 +78,6 @@ public class DbBooleanArraySlice extends DbBooleanArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayBooleanWrapper(this);
-    }
-
-    @Override
     public boolean isEmpty() {
         return length == 0;
     }

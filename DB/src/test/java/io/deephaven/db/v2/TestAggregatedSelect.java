@@ -2,10 +2,11 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.db.tables;
+package io.deephaven.db.v2;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.*;
 import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.dbarrays.DbDoubleArray;
@@ -14,35 +15,37 @@ import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.tables.utils.TableManagementTools;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 
 import java.io.*;
 import java.nio.file.Files;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 
-/*
-Files to run this with:
-db-query-ny9-dbquery1.prop // before the intraday tables have been merged
-db-query-production[1-7].prop // once the intraday tables have been merged
- */
 public class TestAggregatedSelect extends TestCase {
-    private final static String testRoot = Configuration.getInstance().getWorkspacePath()+ File.separator+"testroot";
-
-    private Table tableToClose = null;
-    private File tableDirectory = null;
-
 
     public TestAggregatedSelect() {
         super("TestAggregatedSelect()");
     }
 
-    public Table createTestTable() throws IOException
-    {
+    private static File tableDirectory;
+
+    @Before
+    public void setUp() {
         try {
-            tableDirectory = Files.createTempDirectory("TestAggregatedSelectV2").toFile();
+            tableDirectory = Files.createTempDirectory("TestAggregatedSelect").toFile();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @After
+    public void tearDown() {
+        FileUtils.deleteRecursivelyOnNFS(tableDirectory);
+    }
+
+    public Table createTestTable() {
         FileUtils.deleteRecursively(tableDirectory);
 
         TableDefinition tableDefinition = TableDefinition.of(
@@ -56,35 +59,30 @@ public class TestAggregatedSelect extends TestCase {
         double [] bid = new double[size];
         double [] bidSize = new double[size];
 
-        for (int ii = 0; ii < size; ++ii)
-        {
+        for (int ii = 0; ii < size; ++ii) {
             symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
             bid[ii] =  (ii < 15) ? 98 : 99;
             bidSize[ii] =  ii;
         }
 
         TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
-
-        tableToClose = TableManagementTools.readTable(tableDirectory);
-        return tableToClose;
+        return TableManagementTools.readTable(tableDirectory);
     }
 
-    Table doAggregatedQuery() throws IOException
-    {
+    Table doAggregatedQuery() {
         Table t = createTestTable();
         Table t2 = t.by("USym", "Bid").by("USym");
         return t2;
     }
 
-    double avgConsecutive(int start, int end)
-    {
+    double avgConsecutive(int start, int end) {
         double count = (end - start) + 1;
         double sumEnd = (end*(end+1)) / 2;
         double sumStart = (start*(start+1)) / 2;
         return (sumEnd - sumStart) / count;
     }
 
-    public void testSelectType() throws IOException {
+    public void testSelectType() {
         Table table = createTestTable();
         Table selectedTable = table.select();
 
@@ -96,12 +94,9 @@ public class TestAggregatedSelect extends TestCase {
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
             TestCase.assertEquals(dcFresh.getComponentType(), dcSelected.getComponentType());
         }
-
-        tableToClose.close();
-        FileUtils.deleteRecursively(tableDirectory);
     }
 
-    public void testUngroup() throws IOException {
+    public void testUngroup() {
         Table freshTable = doAggregatedQuery();
 
         Table t1 = freshTable.dropColumns("BidSize");
@@ -154,9 +149,6 @@ public class TestAggregatedSelect extends TestCase {
         Table s3 = s1.select();
         Table s4 = s3.update("BidSize=avg(BidSize)");
         TableTools.show(s4);
-
-        tableToClose.close();
-        FileUtils.deleteRecursively(tableDirectory);
     }
 
     public void testSerializedAggregation() throws IOException, ClassNotFoundException {
@@ -182,9 +174,6 @@ public class TestAggregatedSelect extends TestCase {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
         objectOutputStream.writeObject(toBeSerialized);
 
-        tableToClose.close();
-        FileUtils.deleteRecursively(tableDirectory);
-
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
         Table result = (Table)objectInputStream.readObject();
@@ -209,8 +198,7 @@ public class TestAggregatedSelect extends TestCase {
         TestCase.assertEquals(2, bidSizeColumn.size());
 
         int [] expectedSize = { 1, 2 };
-        for (int ii = 0; ii < bidColumn.size(); ++ii)
-        {
+        for (int ii = 0; ii < bidColumn.size(); ++ii)  {
             DbDoubleArray bidArray = bidColumn.get(ii);
             DbArray<DbDoubleArray> bidSizeArray = bidSizeColumn.get(ii);
 
@@ -220,8 +208,7 @@ public class TestAggregatedSelect extends TestCase {
             TestCase.assertTrue(double.class.isAssignableFrom(bidArray.getComponentType()));
             TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeArray.getComponentType()));
 
-            for (int jj = 0; jj < bidSizeArray.size(); ++jj)
-            {
+            for (int jj = 0; jj < bidSizeArray.size(); ++jj) {
                 DbDoubleArray bidSizeInnerArray = bidSizeArray.get(jj);
                 TestCase.assertTrue(double.class.isAssignableFrom(bidSizeInnerArray.getComponentType()));
             }

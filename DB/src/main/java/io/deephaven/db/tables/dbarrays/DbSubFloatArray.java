@@ -57,11 +57,6 @@ public class DbSubFloatArray extends DbFloatArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayFloatWrapper(this);
-    }
-
-    @Override
     public float getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_FLOAT;

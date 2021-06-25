@@ -8,6 +8,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +25,12 @@ public interface DbArray<T> extends DbArrayBase {
     DbArray<T> subArrayByPositions(long [] positions);
     T[] toArray();
     Class<T> getComponentType();
+
+    @Override
+    @FinalDefault
+    default String toString(final int prefixLength) {
+        return toString(this, prefixLength);
+    }
 
     T getPrev(long offset);
 
@@ -46,10 +53,11 @@ public interface DbArray<T> extends DbArrayBase {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The DbArray to convert to a String
+     * @param array       The DbArray to convert to a String
+     * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
-    static String toString(@NotNull final DbArray array) {
+    static String toString(@NotNull final DbArray<?> array, final int prefixLength) {
         if (array.isEmpty()) {
             return "[]";
         }
@@ -57,7 +65,7 @@ public interface DbArray<T> extends DbArrayBase {
         final Function<Object, String> valToString = DbArrayBase.classToHelper(array.getComponentType());
 
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), 10);
+        final int displaySize = (int) Math.min(array.size(), prefixLength);
         builder.append(valToString.apply(array.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
             builder.append(',').append(valToString.apply(array.get(ei)));
@@ -122,7 +130,7 @@ public interface DbArray<T> extends DbArrayBase {
 
         @Override
         public final String toString() {
-            return DbArray.toString(this);
+            return DbArray.toString(this, 10);
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

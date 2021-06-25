@@ -59,11 +59,6 @@ public class DbLongArrayDirect implements DbLongArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayLongWrapper(this);
-    }
-
-    @Override
     public DbLongArrayDirect getDirect() {
         return this;
     }

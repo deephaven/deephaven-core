@@ -5,7 +5,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayFloatWrapper;
 import io.deephaven.db.tables.dbarrays.DbFloatArray;
 import io.deephaven.db.tables.dbarrays.DbFloatArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2315,11 +2314,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Float> toDbArray() {
-        return new DbArrayFloatWrapper(this);
     }
 
     @Override

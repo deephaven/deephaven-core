@@ -2,12 +2,15 @@ package io.deephaven.db.v2.locations.parquet.topage;
 
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.parquet.DataWithOffsets;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
+import java.util.Arrays;
+import java.util.function.Function;
 
 public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT> extends ToPage.Wrap<ATTR, RESULT, DbArrayBase[]> {
 
@@ -49,21 +52,23 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT> extends ToPage.W
 
     @NotNull
     @Override
-    public final DbArrayBase [] convertResult(Object object) {
-        DataWithOffsets dataWithOffsets = (DataWithOffsets) object;
+    public final DbArrayBase[] convertResult(final Object object) {
+        final DataWithOffsets dataWithOffsets = (DataWithOffsets) object;
 
-        DbArrayBase dbArrayBase = toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
-        IntBuffer offsets = dataWithOffsets.offsets;
+        final DbArrayBase dbArrayBase = toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
+        //noinspection unchecked
+        final Function<DbArrayBase, ? extends DbArrayBase> getDirectFunction = DbArrayBase.resolveGetDirect((Class<DbArrayBase>) dbArrayBase.getClass());
+        final IntBuffer offsets = dataWithOffsets.offsets;
 
-        DbArrayBase [] to = (DbArrayBase []) Array.newInstance(nativeType, offsets.remaining());
+        final DbArrayBase[] to = (DbArrayBase []) Array.newInstance(nativeType, offsets.remaining());
 
         int lastOffset = 0;
-        for (int i = 0; i < to.length; ++i) {
-            int nextOffset = offsets.get();
+        for (int vi = 0; vi < to.length; ++vi) {
+            final int nextOffset = offsets.get();
             if (nextOffset == DataWithOffsets.NULL_OFFSET) {
-                to[i] = null;
+                to[vi] = null;
             } else {
-                to[i] = dbArrayBase.subArray(lastOffset, nextOffset);
+                to[vi] = getDirectFunction.apply(dbArrayBase.subArray(lastOffset, nextOffset));
                 lastOffset = nextOffset;
             }
         }

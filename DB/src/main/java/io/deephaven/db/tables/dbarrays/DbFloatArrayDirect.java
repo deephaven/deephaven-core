@@ -59,11 +59,6 @@ public class DbFloatArrayDirect implements DbFloatArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayFloatWrapper(this);
-    }
-
-    @Override
     public DbFloatArrayDirect getDirect() {
         return this;
     }

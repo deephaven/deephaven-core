@@ -5,7 +5,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayDoubleWrapper;
 import io.deephaven.db.tables.dbarrays.DbDoubleArray;
 import io.deephaven.db.tables.dbarrays.DbDoubleArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2315,11 +2314,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Double> toDbArray() {
-        return new DbArrayDoubleWrapper(this);
     }
 
     @Override

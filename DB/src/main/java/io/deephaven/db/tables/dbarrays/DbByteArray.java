@@ -27,7 +27,7 @@ public interface DbByteArray extends DbArrayBase {
     DbByteArray subArrayByPositions(long [] positions);
     byte[] toArray();
     long size();
-    DbArray toDbArray();
+
     byte getPrev(long i);
 
     @Override
