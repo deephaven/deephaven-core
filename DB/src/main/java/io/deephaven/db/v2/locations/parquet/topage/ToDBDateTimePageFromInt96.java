@@ -17,13 +17,14 @@ import java.nio.ByteBuffer;
  * Parquet {@link ToPage} implementation for {@link DBDateTime}s stored as Int96s representing an Impala
  * format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
  *
- * Potential references/points of comparison for algorithm:
- *   https://github.com/apache/iceberg/pull/1184/files
- *   https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h
- *   (last retrieved as https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
  */
 public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements ToPage<ATTR, long[]> {
-
+    /*
+     * Potential references/points of comparison for this algorithm:
+     *   https://github.com/apache/iceberg/pull/1184/files
+     *   https://github.com/apache/arrow/blob/master/cpp/src/parquet/types.h
+     *   (last retrieved as https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
+     */
     @SuppressWarnings("rawtypes")
     private static final ToDBDateTimePageFromInt96 INSTANCE = new ToDBDateTimePageFromInt96<>();
     private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
