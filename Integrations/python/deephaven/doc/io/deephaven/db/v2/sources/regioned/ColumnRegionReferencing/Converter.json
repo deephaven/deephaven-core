@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing$Converter",
  "methods": {
-  "convertRegion": "Converts all the native source values represented by orderedKeys from a single region into\n the destination chunk by appending.\n\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? super ColumnRegionReferencing.Converter.ATTR>\n:param source: io.deephaven.db.v2.sources.chunk.Chunk<? extends ColumnRegionReferencing.Converter.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys"
+  "convertRegion": "Converts all the native source values represented by orderedKeys from a single region into\n the destination chunk by appending.\n\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superColumnRegionReferencing.Converter.ATTR>\n:param source: io.deephaven.db.v2.sources.chunk.Chunk<? extendsColumnRegionReferencing.Converter.ATTR>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys"
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing.Converter",
  "typeName": "interface"

@@ -1,9 +1,12 @@
 package io.deephaven.lang.generated;
 
+import io.deephaven.lang.parse.LspTools;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.DocumentRangeOrBuilder;
+import io.deephaven.proto.backplane.script.grpc.Position;
+import io.deephaven.proto.backplane.script.grpc.PositionOrBuilder;
 import io.deephaven.web.shared.fu.LinkedIterable;
 import io.deephaven.web.shared.fu.MappedIterable;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
-import io.deephaven.web.shared.ide.lsp.Position;
 
 import java.util.function.UnaryOperator;
 
@@ -193,11 +196,10 @@ public class BaseToken implements Comparable<BaseToken> {
     /**
      * Converts our 1-indexed javacc start token to a 0-indexed LSP Position
      */
-    public Position positionStart() {
-        return new Position(
-            self().beginLine - 1,
-            self().beginColumn - 1
-        );
+    public Position.Builder positionStart() {
+        return Position.newBuilder().setLine(
+            self().beginLine - 1).setCharacter(
+            self().beginColumn - 1);
     }
 
     /**
@@ -208,7 +210,7 @@ public class BaseToken implements Comparable<BaseToken> {
      * which is perfectly acceptable to Monaco when telling it what chars to replace
      * (it's actually required when the cursor is at the end of the document; a common occurrence).
      */
-    public Position positionEnd() {
+    public Position.Builder positionEnd() {
         return positionEnd(false);
     }
 
@@ -225,10 +227,10 @@ public class BaseToken implements Comparable<BaseToken> {
      *                    absolute cursor positions).
      * @return A 0-indexed Position describing the end of this token.
      */
-    public Position positionEnd(boolean considerEof) {
+    public Position.Builder positionEnd(boolean considerEof) {
         final Token tok = self();
-        final Position pos = new Position(
-            tok.endLine - 1,
+        final Position.Builder pos = Position.newBuilder().setLine(
+            tok.endLine - 1).setCharacter(
             tok.endColumn
         );
         // javacc line/columns are weird.
@@ -236,7 +238,7 @@ public class BaseToken implements Comparable<BaseToken> {
         // will both have the same line/columns; the start and end indexes are inclusive.
         // we normally want to use them as an exclusive end (so start + length == end).
         if (considerEof && tok.image.length() == 0) {
-            pos.character--;
+            pos.setCharacter(pos.getCharacter()-1);
         }
         return pos;
     }
@@ -265,12 +267,12 @@ public class BaseToken implements Comparable<BaseToken> {
         return new ReversibleTokenIterable(start, end, Token::next);
     }
 
-    public boolean containsPosition(Position pos) {
-        return positionStart().lessOrEqual(pos) && positionEnd().greaterOrEqual(pos);
+    public boolean containsPosition(PositionOrBuilder pos) {
+        return LspTools.lessOrEqual(positionStart(), pos) && LspTools.greaterOrEqual(positionEnd(), pos);
     }
-    public boolean contains(DocumentRange replaceRange) {
-        final Position myStart = positionStart();
-        final Position myEnd = positionEnd();
-        return replaceRange.isInside(myStart, myEnd);
+    public boolean contains(DocumentRangeOrBuilder replaceRange) {
+        final Position.Builder myStart = positionStart();
+        final Position.Builder myEnd = positionEnd();
+        return LspTools.isInside(replaceRange, myStart, myEnd);
     }
 }

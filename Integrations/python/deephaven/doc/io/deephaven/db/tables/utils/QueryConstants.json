@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.QueryConstants",
- "methods": {},
- "path": "io.deephaven.util.QueryConstants",
- "text": "Forwards to QueryConstants for backwards compatibility and accessibility from BinaryStore module.",
- "typeName": "class"
-}

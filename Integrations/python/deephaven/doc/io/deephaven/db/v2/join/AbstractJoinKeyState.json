@@ -1,17 +1,11 @@
 {
  "className": "io.deephaven.db.v2.join.AbstractJoinKeyState",
  "methods": {
-  "addLeftIndices": ":param leftIndices: io.deephaven.db.v2.utils.Index",
-  "addRightIndices": ":param rightIndices: io.deephaven.db.v2.utils.Index",
   "dumpString": ":return: java.lang.String",
   "getKey": ":return: java.lang.Object",
   "getSlot1": ":return: int",
   "getSlot2": ":return: int",
   "isActive": ":return: boolean",
-  "modifyByRightIndices": ":param rightIndex: io.deephaven.db.v2.utils.Index",
-  "propagateRightUpdates": "After the right side has been changed (all additions, modifications, removals, etc.) have been completed;\n each state is visited calling propagateRightUpdates to update its RedirectionIndex and the list of left\n indicesthat have been modified by right changes.",
-  "removeLeftIndices": ":param leftIndices: io.deephaven.db.v2.utils.Index",
-  "removeRightIndices": ":param rightIndices: io.deephaven.db.v2.utils.Index",
   "setSlot1": ":param slot: int",
   "setSlot2": ":param slot: int"
  },

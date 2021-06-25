@@ -3,7 +3,7 @@
  "methods": {
   "addKeyListener": "Listen to changes in the map's keys.\n\n:param listener: (io.deephaven.db.v2.TableMap.KeyListener) - key change listener",
   "addListener": "Add a new listener for changes to the map.\n\n:param listener: (io.deephaven.db.v2.TableMap.Listener) - map change listener",
-  "apply": "Applies a function to this tableMap.\n\n This is useful if you have a reference to a tableMap and want to run a series of operations against the table\n map without each individual operation resulting in a remote method invocation.\n\nNote: Java generics information - <R>\n\n:param function: io.deephaven.base.Function.Unary<R,io.deephaven.db.v2.TableMap>\n:return: (R) the return value of function",
+  "apply": "Applies a function to this tableMap.\n\n This is useful if you have a reference to a tableMap and want to run a series of operations against the table\n map without each individual operation resulting in a remote method invocation.\n\nNote: Java generics information - <R>\n\n:param function: (io.deephaven.base.Function.Unary<R,io.deephaven.db.v2.TableMap>) - the function to run, its single argument will be this table map.\n:return: (R) the return value of function",
   "asTableMap": "If you're a TableMap return this, otherwise if you're a Proxy return the underlying TableMap.\n\n:return: (io.deephaven.db.v2.TableMap) a TableMap representation of this object",
   "emptyMap": "Returns an instance of the EmptyTableMap.\n\n:return: io.deephaven.db.v2.TableMap",
   "entrySet": "Gets the entries.\n\n:return: (java.util.Collection<java.util.Map.Entry<java.lang.Object,io.deephaven.db.tables.Table>>) the entries",

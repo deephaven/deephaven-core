@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal",
  "methods": {
   "categories": "Gets the categories of the dataset.\n\n:return: (java.util.Collection<java.lang.Comparable>) all categories in the dataset",
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: io.deephaven.db.plot.AxesImpl\n:return: (io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal) copy of the series on a different set of axes.",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal) copy of the series on a different set of axes.",
   "drawYError": ":return: boolean",
   "getCategoryLocation": "Get the row key of the specified series.\n\n:param category: java.lang.Comparable\n:return: long",
   "getColor": "Gets the Paint for the given data point.\n\n:param category: (java.lang.Comparable) - category\n:return: (io.deephaven.gui.color.Paint) Paint for the given data point",

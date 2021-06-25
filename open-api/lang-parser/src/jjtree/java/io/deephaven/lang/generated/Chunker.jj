@@ -6,7 +6,7 @@
     DEBUG_LOOKAHEAD=false;
     DEBUG_TOKEN_MANAGER=false;
 
-                                              
+                                               
                
                           
                           
@@ -28,12 +28,18 @@ PARSER_BEGIN(Chunker)
 package io.deephaven.lang.generated;
 
 import static io.deephaven.lang.shared.lsp.DiagnosticCode.*;
+import static java.util.Collections.singletonList;
 
 import io.deephaven.lang.api.ChunkerInvokable;
 import io.deephaven.lang.api.IsScope;
 import io.deephaven.lang.api.ParseState;
 import io.deephaven.lang.api.ParseCancelled;
 import io.deephaven.lang.meta.Messenger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.IdentityHashMap;
 import java.io.IOException;
@@ -418,7 +424,7 @@ TOKEN:
     // we may consider ternaries properly ...later.
     | ( "?" <COLON> ) // allow elvis operator (plain ? handled by <QUEST>, which we grab from productions manually)
     // explicitly not adding <COLON> as it gets special handling (b/c python and groovy use it differently)
-    | ( <WHITESPACE> ( "in" | "as" | "is" | "instanceof" ) ( <WHITESPACE> )? ) // groovy uses some words as operators
+    | ( <WHITESPACE> ( "in" | "as" | "is" | "instanceof" ) ( <WHITESPACE> | <NL> ) ) // groovy uses some words as operators
     | "*:" // groovy spread map
     | ( ".." ( "<" )? ) // groovy ranges
     | "<=>" // groovy spaceship operator

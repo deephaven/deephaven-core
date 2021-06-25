@@ -5,7 +5,7 @@
   "fillChunk": ":param destChunk: io.deephaven.db.v2.sources.chunk.WritableChunk",
   "floatValToString": ":param val: java.lang.Object\n:return: java.lang.String",
   "get": ":param i: long\n:return: float",
-  "getComponentType": "Note: Java generics information - io.deephaven.util.annotations.@FinalDefault\n\n:return: java.lang.Class",
+  "getComponentType": ":return: java.lang.Class",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.db.tables.dbarrays.DbFloatArray",
   "getPrev": ":param i: long\n:return: float",
   "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.db.tables.dbarrays.DbFloatArray) - The DbFloatArray to hash\n:return: (int) The hash code",

@@ -7,10 +7,12 @@ import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.Node;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.TextEdit;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -36,7 +38,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         CompletionRequest request,
         Method method
     ) {
@@ -69,7 +71,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
             }
         }
         // need to handle null node using parent invoke, the same as CompleteColumnName
-        final DocumentRange range = replaceNode(node, request);
+        final DocumentRange.Builder range = replaceNode(node, request);
         final String src = node.toSource();
         char c = 0, prev;
         boolean spaceBefore = false;
@@ -97,26 +99,29 @@ public class CompleteColumnExpression extends CompletionBuilder {
                     spaceBefore = Character.isWhitespace(prev);
                     sawEqual = true;
                 default:
-                    range.start.character++;
+                    range.getStartBuilder().setCharacter(range.getStartBuilder().getCharacter() + 1);
                     start++;
             }
         }
-
-        CompletionItem result = new CompletionItem(start, len, replaced,
-            displayCompletion + replaced + suffix, range
-        );
+        CompletionItem.Builder result = CompletionItem.newBuilder();
+        result.setStart(start)
+                .setLength(len)
+                .setLabel(displayCompletion + replaced + suffix)
+                .getTextEditBuilder()
+                        .setText(replaced)
+                        .setRange(range);
         results.add(result);
     }
 
     public void doCompletion(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         CompletionRequest request,
         String colName
     ) {
         String replaced = colName;
 
         // need to handle null node using parent invoke, the same as CompleteColumnName
-        final DocumentRange range = replaceNode(node, request);
+        final DocumentRange.Builder range = replaceNode(node, request);
         final String src = node.toSource();
         char c = 0, prev;
         boolean spaceBefore = false;
@@ -144,7 +149,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
                     spaceBefore = Character.isWhitespace(prev);
                     sawEqual = true;
                 default:
-                    range.start.character++;
+                    range.getStartBuilder().setCharacter(range.getStartBuilder().getCharacter() + 1);
                     start++;
             }
         }
@@ -165,7 +170,13 @@ public class CompleteColumnExpression extends CompletionBuilder {
                     }
             }
         }
-        CompletionItem result = new CompletionItem(start, len, withClose, withClose, range);
+        final CompletionItem.Builder result = CompletionItem.newBuilder();
+        result.setStart(start)
+                .setLength(len)
+                .setLabel(withClose)
+                .getTextEditBuilder()
+                        .setText(withClose)
+                        .setRange(range);
         results.add(result);
         // An alternate version which does not include the close quote.
         // Ideally, we just move the user's cursor position backwards, by making the main

@@ -204,11 +204,11 @@ class FigureWrapper(object):
         Gets an axes.
         
         *Overload 1*  
-          :param name: java.lang.String
+          :param name: (java.lang.String) - axes name.
           :return: (io.deephaven.db.plot.Figure) selected axes.
           
         *Overload 2*  
-          :param id: int
+          :param id: (int) - axes id.
           :return: (io.deephaven.db.plot.Figure) selected axes.
         """
         
@@ -219,7 +219,7 @@ class FigureWrapper(object):
         """
         Removes the series with the specified names from this Axes.
         
-        :param names: java.lang.String...
+        :param names: (java.lang.String...) - series names
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -231,7 +231,7 @@ class FigureWrapper(object):
         Gets the Axis at dimension dim.
          The x-axis is dimension 0, y-axis dimension 1.
         
-        :param dim: int
+        :param dim: (int) - dimension of the Axis
         :return: (io.deephaven.db.plot.Figure) Axis at dimension dim
         """
         
@@ -243,11 +243,11 @@ class FigureWrapper(object):
         Sets the color for this Axis line and tick marks.
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -258,7 +258,7 @@ class FigureWrapper(object):
         """
         Sets the AxisFormat for this Axis.
         
-        :param format: io.deephaven.db.plot.axisformatters.AxisFormat
+        :param format: (io.deephaven.db.plot.axisformatters.AxisFormat) - axis format
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -269,7 +269,7 @@ class FigureWrapper(object):
         """
         Sets the format pattern for this Axis's labels.
         
-        :param pattern: java.lang.String
+        :param pattern: (java.lang.String) - axis format pattern
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -280,7 +280,7 @@ class FigureWrapper(object):
         """
         Sets the label for this Axis.
         
-        :param label: java.lang.String
+        :param label: (java.lang.String) - label
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -292,13 +292,13 @@ class FigureWrapper(object):
         Sets the font for this Axis's label.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -313,12 +313,12 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axis using the default business calendar.
           
         *Overload 2*  
-          :param calendar: io.deephaven.util.calendar.BusinessCalendar
+          :param calendar: (io.deephaven.util.calendar.BusinessCalendar) - business calendar of the AxisTransformBusinessCalendar
           :return: (io.deephaven.db.plot.Figure) this Axis using the specified business calendar.
           
         *Overload 3*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
           :return: (io.deephaven.db.plot.Figure) this Axis using the business calendar from row 0 of the filtered sds for the business calendar.  If no value is found, no transform will be applied.
         """
         
@@ -330,181 +330,173 @@ class FigureWrapper(object):
         Creates a category error bar plot with whiskers in the y direction.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: T1[]
-          :param yLow: T2[]
-          :param yHigh: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (T1[]) - numeric data
+          :param yLow: (T2[]) - low value in y dimension
+          :param yHigh: (T3[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 2*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (double[]) - numeric data
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (float[]) - numeric data
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (int[]) - numeric data
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (long[]) - numeric data
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (io.deephaven.db.tables.utils.DBDateTime[]) - numeric data
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (java.util.Date[]) - numeric data
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (short[]) - numeric data
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: java.util.List<T1>
-          :param yLow: java.util.List<T2>
-          :param yHigh: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (java.util.List<T1>) - numeric data
+          :param yLow: (java.util.List<T2>) - low value in y dimension
+          :param yHigh: (java.util.List<T3>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 10*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: T1[]
-          :param yLow: T2[]
-          :param yHigh: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (T1[]) - numeric data
+          :param yLow: (T2[]) - low value in y dimension
+          :param yHigh: (T3[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 11*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (double[]) - numeric data
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (float[]) - numeric data
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (int[]) - numeric data
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (long[]) - numeric data
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (short[]) - numeric data
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 16*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: java.util.List<T1>
-          :param yLow: java.util.List<T2>
-          :param yHigh: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (java.util.List<T1>) - numeric data
+          :param yLow: (java.util.List<T2>) - low value in y dimension
+          :param yHigh: (java.util.List<T3>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
+          :param categories: (java.lang.String) - column in sds that holds the discrete data
+          :param values: (java.lang.String) - column in sds that holds the numeric data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param categories: (java.lang.String) - column in t that holds the discrete data
+          :param values: (java.lang.String) - column in t that holds the numeric data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -516,23 +508,23 @@ class FigureWrapper(object):
         Creates a catErrorBar plot for each distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
+          :param categories: (java.lang.String) - column in sds that holds the discrete data
+          :param values: (java.lang.String) - column in sds that holds the numeric data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param categories: (java.lang.String) - column in t that holds the discrete data
+          :param values: (java.lang.String) - column in t that holds the numeric data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -546,47 +538,47 @@ class FigureWrapper(object):
         *Overload 1*  
           Note: Java generics information - <T extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T[]) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 3*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 6*  
           Note: Java generics information - <T extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T>) - data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 7*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 8*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param columnName: (java.lang.String) - column in t
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -599,169 +591,173 @@ class FigureWrapper(object):
          Discrete data must not have duplicates.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (T1[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (double[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 3*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (float[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 4*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (int[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 5*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (long[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 6*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (io.deephaven.db.tables.utils.DBDateTime[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 7*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (java.util.Date[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 8*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (short[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 9*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - discrete data
+          :param values: (java.util.List<T1>) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 10*  
           Note: Java generics information - <T1 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: io.deephaven.db.plot.datasets.data.IndexableData<T1>
-          :param values: io.deephaven.db.plot.datasets.data.IndexableNumericData
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (io.deephaven.db.plot.datasets.data.IndexableData<T1>) - discrete data
+          :param values: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 11*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (T1[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 12*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (double[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 13*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (float[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 14*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (int[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 15*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (long[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 16*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (io.deephaven.db.tables.utils.DBDateTime[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 17*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (java.util.Date[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 18*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (short[]) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 19*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - discrete data
+          :param values: (java.util.List<T1>) - numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 20*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param categories: java.lang.String
-          :param values: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds holding discrete data
+          :param values: (java.lang.String) - column in sds holding numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 21*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param categories: java.lang.String
-          :param values: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param categories: (java.lang.String) - column in t holding discrete data
+          :param values: (java.lang.String) - column in t holding numeric data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -773,19 +769,19 @@ class FigureWrapper(object):
         Creates a category plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds holding discrete data
+          :param values: (java.lang.String) - column in sds holding numeric data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param categories: java.lang.String
-          :param values: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param categories: (java.lang.String) - column in t holding discrete data
+          :param values: (java.lang.String) - column in t holding numeric data
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -797,12 +793,15 @@ class FigureWrapper(object):
         Returns a chart from this Figure's grid.
         
         *Overload 1*  
-          :param index: int
+          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
+                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
+                  [0, 1]
+                  [2, 3].
           :return: (io.deephaven.db.plot.Figure) selected Chart
           
         *Overload 2*  
-          :param rowNum: int
-          :param colNum: int
+          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
           :return: (io.deephaven.db.plot.Figure) selected Chart
         """
         
@@ -813,7 +812,7 @@ class FigureWrapper(object):
         """
         Removes the series with the specified names from this Chart.
         
-        :param names: java.lang.String...
+        :param names: (java.lang.String...) - series names
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -825,41 +824,43 @@ class FigureWrapper(object):
         Sets the title of this Chart.
         
         *Overload 1*  
-          :param title: java.lang.String
+          :param title: (java.lang.String) - title
           :return: (io.deephaven.db.plot.Figure) this Chart
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param titleColumns: java.lang.String...
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 3*  
-          :param t: io.deephaven.db.tables.Table
-          :param titleColumns: java.lang.String...
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 4*  
-          :param showColumnNamesInTitle: boolean
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param titleColumns: java.lang.String...
+          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
+                                                  otherwise only the comma separated values will be included.
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 5*  
-          :param showColumnNamesInTitle: boolean
-          :param t: io.deephaven.db.tables.Table
-          :param titleColumns: java.lang.String...
+          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
+                                                  otherwise only the comma separated values will be included.
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 6*  
-          :param titleFormat: java.lang.String
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param titleColumns: java.lang.String...
+          :param titleFormat: (java.lang.String) - a MessageFormat format string for the chart title
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display values from the table
           
         *Overload 7*  
-          :param titleFormat: java.lang.String
-          :param t: io.deephaven.db.tables.Table
-          :param titleColumns: java.lang.String...
+          :param titleFormat: (java.lang.String) - a MessageFormat format string for the chart title
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display values from the table
         """
         
@@ -871,11 +872,11 @@ class FigureWrapper(object):
         Sets the color of this Chart's title.
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Chart
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -887,13 +888,13 @@ class FigureWrapper(object):
         Sets the font of this Chart's title.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Chart
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -904,7 +905,7 @@ class FigureWrapper(object):
         """
         Sets the size of this Chart within the grid of the figure.
         
-        :param n: int
+        :param n: (int) - how many columns wide
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -916,7 +917,7 @@ class FigureWrapper(object):
         Sets the error bar Paint for this dataset.
         
         *Overload 1*  
-          :param color: int
+          :param color: (int) - index of the color in the series color palette
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 2*  
@@ -925,7 +926,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 4*  
@@ -934,7 +935,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 6*  
@@ -951,337 +952,325 @@ class FigureWrapper(object):
         Creates an XY plot with error bars in the x direction.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (T3[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 2*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 10*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 11*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 16*  
           Note: Java generics information - <T3 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (T3[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 19*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 20*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 21*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 22*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 23*  
           Note: Java generics information - <T3 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 24*  
           Note: Java generics information - <T3 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (T3[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 25*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 26*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 27*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 28*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 29*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 30*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 31*  
           Note: Java generics information - <T3 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 32*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 33*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 34*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 35*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 36*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 37*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 38*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 39*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in t that holds the y-variable data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -1293,23 +1282,23 @@ class FigureWrapper(object):
         Creates an errorBarX plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -1321,415 +1310,395 @@ class FigureWrapper(object):
         Creates an XY plot with error bars in both the x and y directions.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: T3[]
-          :param yLow: T4[]
-          :param yHigh: T5[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (T3[]) - y-values
+          :param yLow: (T4[]) - low value in y dimension
+          :param yHigh: (T5[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 2*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param xLow: T1[]
-          :param xHigh: T2[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param xLow: (T1[]) - low value in x dimension
+          :param xHigh: (T2[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param xLow: double[]
-          :param xHigh: double[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param xLow: (double[]) - low value in x dimension
+          :param xHigh: (double[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param xLow: float[]
-          :param xHigh: float[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param xLow: (float[]) - low value in x dimension
+          :param xHigh: (float[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 10*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 11*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param xLow: int[]
-          :param xHigh: int[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param xLow: (int[]) - low value in x dimension
+          :param xHigh: (int[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param xLow: long[]
-          :param xHigh: long[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param xLow: (long[]) - low value in x dimension
+          :param xHigh: (long[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 16*  
-          Note: Java generics information - <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: T3[]
-          :param yLow: T4[]
-          :param yHigh: T5[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (T3[]) - y-values
+          :param yLow: (T4[]) - low value in y dimension
+          :param yHigh: (T5[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 19*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 20*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 21*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 22*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 23*  
-          Note: Java generics information - <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param xHigh: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: java.util.List<T3>
-          :param yLow: java.util.List<T4>
-          :param yHigh: java.util.List<T5>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param xLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in x dimension
+          :param xHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
+          :param yLow: (java.util.List<T4>) - low value in y dimension
+          :param yHigh: (java.util.List<T5>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 24*  
-          Note: Java generics information - <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: T3[]
-          :param yLow: T4[]
-          :param yHigh: T5[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (T3[]) - y-values
+          :param yLow: (T4[]) - low value in y dimension
+          :param yHigh: (T5[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 25*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 26*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 27*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 28*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 29*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 30*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 31*  
-          Note: Java generics information - <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param xLow: java.util.Date[]
-          :param xHigh: java.util.Date[]
-          :param y: java.util.List<T3>
-          :param yLow: java.util.List<T4>
-          :param yHigh: java.util.List<T5>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param xLow: (java.util.Date[]) - low value in x dimension
+          :param xHigh: (java.util.Date[]) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
+          :param yLow: (java.util.List<T4>) - low value in y dimension
+          :param yHigh: (java.util.List<T5>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 32*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 33*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 34*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param xLow: short[]
-          :param xHigh: short[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param xLow: (short[]) - low value in x dimension
+          :param xHigh: (short[]) - high value in x dimension
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 35*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 36*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 37*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param xLow: java.util.List<T1>
-          :param xHigh: java.util.List<T2>
-          :param y: java.util.List<T3>
-          :param yLow: java.util.List<T4>
-          :param yHigh: java.util.List<T5>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param xLow: (java.util.List<T1>) - low value in x dimension
+          :param xHigh: (java.util.List<T2>) - high value in x dimension
+          :param y: (java.util.List<T3>) - y-values
+          :param yLow: (java.util.List<T4>) - low value in y dimension
+          :param yHigh: (java.util.List<T5>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 38*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 39*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -1741,27 +1710,27 @@ class FigureWrapper(object):
         Creates an errorBar plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param xLow: java.lang.String
-          :param xHigh: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -1773,337 +1742,325 @@ class FigureWrapper(object):
         Creates an XY plot with error bars in the y direction.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: T1[]
-          :param yLow: T2[]
-          :param yHigh: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (T1[]) - y-values
+          :param yLow: (T2[]) - low value in y dimension
+          :param yHigh: (T3[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 2*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 10*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 11*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 16*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: T1[]
-          :param yLow: T2[]
-          :param yHigh: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (T1[]) - y-values
+          :param yLow: (T2[]) - low value in y dimension
+          :param yHigh: (T3[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 19*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 20*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 21*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 22*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 23*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: java.util.List<T1>
-          :param yLow: java.util.List<T2>
-          :param yHigh: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
+          :param yLow: (java.util.List<T2>) - low value in y dimension
+          :param yHigh: (java.util.List<T3>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 24*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: T1[]
-          :param yLow: T2[]
-          :param yHigh: T3[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (T1[]) - y-values
+          :param yLow: (T2[]) - low value in y dimension
+          :param yHigh: (T3[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 25*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: double[]
-          :param yLow: double[]
-          :param yHigh: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (double[]) - y-values
+          :param yLow: (double[]) - low value in y dimension
+          :param yHigh: (double[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 26*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: float[]
-          :param yLow: float[]
-          :param yHigh: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (float[]) - y-values
+          :param yLow: (float[]) - low value in y dimension
+          :param yHigh: (float[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 27*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: int[]
-          :param yLow: int[]
-          :param yHigh: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (int[]) - y-values
+          :param yLow: (int[]) - low value in y dimension
+          :param yHigh: (int[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 28*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: long[]
-          :param yLow: long[]
-          :param yHigh: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (long[]) - y-values
+          :param yLow: (long[]) - low value in y dimension
+          :param yHigh: (long[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 29*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 30*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 31*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: java.util.List<T1>
-          :param yLow: java.util.List<T2>
-          :param yHigh: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
+          :param yLow: (java.util.List<T2>) - low value in y dimension
+          :param yHigh: (java.util.List<T3>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 32*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 33*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 34*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: short[]
-          :param yLow: short[]
-          :param yHigh: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (short[]) - y-values
+          :param yLow: (short[]) - low value in y dimension
+          :param yHigh: (short[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 35*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yLow: io.deephaven.db.tables.utils.DBDateTime[]
-          :param yHigh: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
+          :param yLow: (io.deephaven.db.tables.utils.DBDateTime[]) - low value in y dimension
+          :param yHigh: (io.deephaven.db.tables.utils.DBDateTime[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 36*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: java.util.Date[]
-          :param yLow: java.util.Date[]
-          :param yHigh: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (java.util.Date[]) - y-values
+          :param yLow: (java.util.Date[]) - low value in y dimension
+          :param yHigh: (java.util.Date[]) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 37*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: java.util.List<T1>
-          :param yLow: java.util.List<T2>
-          :param yHigh: java.util.List<T3>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (java.util.List<T1>) - y-values
+          :param yLow: (java.util.List<T2>) - low value in y dimension
+          :param yHigh: (java.util.List<T3>) - high value in y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 38*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 39*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -2115,23 +2072,23 @@ class FigureWrapper(object):
         Creates a errorBarY plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param yLow: java.lang.String
-          :param yHigh: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -2142,7 +2099,7 @@ class FigureWrapper(object):
         """
         Removes all series with names from this Figure.
         
-        :param names: java.lang.String...
+        :param names: (java.lang.String...) - series names
         :return: (io.deephaven.db.plot.Figure) this Figure
         """
         
@@ -2153,7 +2110,7 @@ class FigureWrapper(object):
         """
         Sets the title of this Figure
         
-        :param title: java.lang.String
+        :param title: (java.lang.String) - title
         :return: (io.deephaven.db.plot.Figure) this Figure
         """
         
@@ -2165,11 +2122,11 @@ class FigureWrapper(object):
         Sets the color of this Figure's title
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Figure
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Figure
         """
         
@@ -2181,13 +2138,13 @@ class FigureWrapper(object):
         Sets the font of this Figure's title
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Figure
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Figure
         """
         
@@ -2198,7 +2155,7 @@ class FigureWrapper(object):
         """
         Sets the number of data points in this dataset.
         
-        :param npoints: int
+        :param npoints: (int) - number of points
         :return: (io.deephaven.db.plot.Figure) this data series with the specified number of points.
         """
         
@@ -2210,14 +2167,14 @@ class FigureWrapper(object):
         Sets the data range for this series.
         
         *Overload 1*  
-          :param xmin: double
-          :param xmax: double
+          :param xmin: (double) - range minimum
+          :param xmax: (double) - range maximum
           :return: (io.deephaven.db.plot.Figure) this data series with the new range
           
         *Overload 2*  
-          :param xmin: double
-          :param xmax: double
-          :param npoints: int
+          :param xmin: (double) - range minimum
+          :param xmax: (double) - range maximum
+          :param npoints: (int) - number of data points
           :return: (io.deephaven.db.plot.Figure) this data series with the new range
         """
         
@@ -2229,7 +2186,7 @@ class FigureWrapper(object):
         Sets whether bar gradients are visible.
         
         *Overload 1*  
-          :param visible: boolean
+          :param visible: (boolean) - bar gradient visibility
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2245,7 +2202,7 @@ class FigureWrapper(object):
         """
         Sets whether the Chart has grid lines.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the Chart's grid lines are drawn
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2274,146 +2231,146 @@ class FigureWrapper(object):
         Creates a histogram.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param counts: io.deephaven.db.tables.Table
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param counts: (io.deephaven.db.tables.Table) - table
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - data
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
+          :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 10*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param columnName: (java.lang.String) - column in t
+          :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 11*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 16*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 17*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - data
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 19*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
-          :param rangeMin: double
-          :param rangeMax: double
-          :param nbins: int
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param columnName: (java.lang.String) - column in t
+          :param rangeMin: (double) - minimum of the range
+          :param rangeMax: (double) - maximum of the range
+          :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -2428,7 +2385,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param invert: boolean
+          :param invert: (boolean) - if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -2440,11 +2397,11 @@ class FigureWrapper(object):
         Sets the color of the text inside the Chart's legend.
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Chart
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2456,13 +2413,13 @@ class FigureWrapper(object):
         Sets the font of this Chart's legend.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Chart
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2473,7 +2430,7 @@ class FigureWrapper(object):
         """
         Sets whether the Chart's legend is shown or hidden.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the Chart's legend is shown or hidden
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2485,7 +2442,7 @@ class FigureWrapper(object):
         Defines the default line color.
         
         *Overload 1*  
-          :param color: int
+          :param color: (int) - color palette index
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2494,7 +2451,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 4*  
@@ -2503,7 +2460,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 6*  
@@ -2520,7 +2477,7 @@ class FigureWrapper(object):
         Sets the line style.
         
         *Overload 1*  
-          :param style: io.deephaven.db.plot.LineStyle
+          :param style: (io.deephaven.db.plot.LineStyle) - style
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2537,7 +2494,7 @@ class FigureWrapper(object):
         Sets whether lines are visible.
         
         *Overload 1*  
-          :param visible: java.lang.Boolean
+          :param visible: (java.lang.Boolean) - line visibility
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2572,12 +2529,12 @@ class FigureWrapper(object):
         Sets the maximum range of this Axis.
         
         *Overload 1*  
-          :param max: double
+          :param max: (double) - maximum of the range
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset
+          :param valueColumn: (java.lang.String) - column in sds, where the maximum value is stored in row 0.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -2597,7 +2554,7 @@ class FigureWrapper(object):
          
          The default is 0.
         
-        :param maxRowsCount: int
+        :param maxRowsCount: (int) - maximum  number of row values to show in chart title
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2609,12 +2566,12 @@ class FigureWrapper(object):
         Sets the minimum range of this Axis.
         
         *Overload 1*  
-          :param min: double
+          :param min: (double) - minimum of the range
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable dataset
+          :param valueColumn: (java.lang.String) - column in sds, where the minimum value is stored in row 0.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -2626,7 +2583,7 @@ class FigureWrapper(object):
         Sets the number of minor ticks between consecutive major ticks.
          These minor ticks are equally spaced.
         
-        :param count: int
+        :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -2637,7 +2594,7 @@ class FigureWrapper(object):
         """
         Sets whether minor ticks are drawn on this Axis.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether minor ticks are drawn on this Axis
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -2652,16 +2609,16 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) newly created Axes with dimension 2 on this Chart
           
         *Overload 2*  
-          :param name: java.lang.String
+          :param name: (java.lang.String) - name for the axes
           :return: (io.deephaven.db.plot.Figure) newly created Axes with dimension 2 on this Chart
           
         *Overload 3*  
-          :param dim: int
+          :param dim: (int) - dimensions of the Axes
           :return: (io.deephaven.db.plot.Figure) newly created Axes with dimension dim on this Chart
           
         *Overload 4*  
-          :param name: java.lang.String
-          :param dim: int
+          :param name: (java.lang.String) - name for the axes
+          :param dim: (int) - dimensions of the Axes
           :return: (io.deephaven.db.plot.Figure) newly created Axes with dimension dim on this Chart
         """
         
@@ -2680,12 +2637,15 @@ class FigureWrapper(object):
           * if not, a RuntimeException will be thrown.
           
         *Overload 2*  
-          :param index: int
+          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
+                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
+                  [0, 1]
+                  [2, 3].
           :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space indicated by the index.
           
         *Overload 3*  
-          :param rowNum: int
-          :param colNum: int
+          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
           :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space [rowNum, colNum.
         """
         
@@ -2697,166 +2657,158 @@ class FigureWrapper(object):
         Creates an open-high-low-close plot.
         
         *Overload 1*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: T1[]
-          :param high: T2[]
-          :param low: T3[]
-          :param close: T4[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (T1[]) - open data
+          :param high: (T2[]) - high data
+          :param low: (T3[]) - low data
+          :param close: (T4[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: double[]
-          :param high: double[]
-          :param low: double[]
-          :param close: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (double[]) - open data
+          :param high: (double[]) - high data
+          :param low: (double[]) - low data
+          :param close: (double[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 3*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: float[]
-          :param high: float[]
-          :param low: float[]
-          :param close: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (float[]) - open data
+          :param high: (float[]) - high data
+          :param low: (float[]) - low data
+          :param close: (float[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 4*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: int[]
-          :param high: int[]
-          :param low: int[]
-          :param close: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (int[]) - open data
+          :param high: (int[]) - high data
+          :param low: (int[]) - low data
+          :param close: (int[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 5*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: long[]
-          :param high: long[]
-          :param low: long[]
-          :param close: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (long[]) - open data
+          :param high: (long[]) - high data
+          :param low: (long[]) - low data
+          :param close: (long[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 6*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: short[]
-          :param high: short[]
-          :param low: short[]
-          :param close: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (short[]) - open data
+          :param high: (short[]) - high data
+          :param low: (short[]) - low data
+          :param close: (short[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 7*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.tables.utils.DBDateTime[]
-          :param open: java.util.List<T1>
-          :param high: java.util.List<T2>
-          :param low: java.util.List<T3>
-          :param close: java.util.List<T4>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.tables.utils.DBDateTime[]) - time data
+          :param open: (java.util.List<T1>) - open data
+          :param high: (java.util.List<T2>) - high data
+          :param low: (java.util.List<T3>) - low data
+          :param close: (java.util.List<T4>) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 8*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: T1[]
-          :param high: T2[]
-          :param low: T3[]
-          :param close: T4[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (T1[]) - open data
+          :param high: (T2[]) - high data
+          :param low: (T3[]) - low data
+          :param close: (T4[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 9*  
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: double[]
-          :param high: double[]
-          :param low: double[]
-          :param close: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (double[]) - open data
+          :param high: (double[]) - high data
+          :param low: (double[]) - low data
+          :param close: (double[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 10*  
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: float[]
-          :param high: float[]
-          :param low: float[]
-          :param close: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (float[]) - open data
+          :param high: (float[]) - high data
+          :param low: (float[]) - low data
+          :param close: (float[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 11*  
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: int[]
-          :param high: int[]
-          :param low: int[]
-          :param close: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (int[]) - open data
+          :param high: (int[]) - high data
+          :param low: (int[]) - low data
+          :param close: (int[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 12*  
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: long[]
-          :param high: long[]
-          :param low: long[]
-          :param close: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (long[]) - open data
+          :param high: (long[]) - high data
+          :param low: (long[]) - low data
+          :param close: (long[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: short[]
-          :param high: short[]
-          :param low: short[]
-          :param close: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (short[]) - open data
+          :param high: (short[]) - high data
+          :param low: (short[]) - low data
+          :param close: (short[]) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 14*  
-          Note: Java generics information - <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number>
-          
-          :param seriesName: java.lang.Comparable
-          :param time: java.util.Date[]
-          :param open: java.util.List<T1>
-          :param high: java.util.List<T2>
-          :param low: java.util.List<T3>
-          :param close: java.util.List<T4>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (java.util.Date[]) - time data
+          :param open: (java.util.List<T1>) - open data
+          :param high: (java.util.List<T2>) - high data
+          :param low: (java.util.List<T3>) - low data
+          :param close: (java.util.List<T4>) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created by the plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param time: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param open: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param high: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param low: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param close: io.deephaven.db.plot.datasets.data.IndexableNumericData
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param time: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - time data
+          :param open: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - open data
+          :param high: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - high data
+          :param low: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - low data
+          :param close: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - close data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 16*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param timeCol: java.lang.String
-          :param openCol: java.lang.String
-          :param highCol: java.lang.String
-          :param lowCol: java.lang.String
-          :param closeCol: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param timeCol: (java.lang.String) - column in sds that holds the time data
+          :param openCol: (java.lang.String) - column in sds that holds the open data
+          :param highCol: (java.lang.String) - column in sds that holds the high data
+          :param lowCol: (java.lang.String) - column in sds that holds the low data
+          :param closeCol: (java.lang.String) - column in sds that holds the close data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param timeCol: java.lang.String
-          :param openCol: java.lang.String
-          :param highCol: java.lang.String
-          :param lowCol: java.lang.String
-          :param closeCol: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param timeCol: (java.lang.String) - column in t that holds the time data
+          :param openCol: (java.lang.String) - column in t that holds the open data
+          :param highCol: (java.lang.String) - column in t that holds the high data
+          :param lowCol: (java.lang.String) - column in t that holds the low data
+          :param closeCol: (java.lang.String) - column in t that holds the close data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -2868,25 +2820,25 @@ class FigureWrapper(object):
         Creates an open-high-low-close plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param timeCol: java.lang.String
-          :param openCol: java.lang.String
-          :param highCol: java.lang.String
-          :param lowCol: java.lang.String
-          :param closeCol: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param timeCol: (java.lang.String) - column in sds that holds the time data
+          :param openCol: (java.lang.String) - column in sds that holds the open data
+          :param highCol: (java.lang.String) - column in sds that holds the high data
+          :param lowCol: (java.lang.String) - column in sds that holds the low data
+          :param closeCol: (java.lang.String) - column in sds that holds the close data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param timeCol: java.lang.String
-          :param openCol: java.lang.String
-          :param highCol: java.lang.String
-          :param lowCol: java.lang.String
-          :param closeCol: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param timeCol: (java.lang.String) - column in t that holds the time data
+          :param openCol: (java.lang.String) - column in t that holds the open data
+          :param highCol: (java.lang.String) - column in t that holds the high data
+          :param lowCol: (java.lang.String) - column in t that holds the low data
+          :param closeCol: (java.lang.String) - column in t that holds the close data
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -2899,7 +2851,7 @@ class FigureWrapper(object):
          in pie plots.
         
         *Overload 1*  
-          :param format: java.lang.String
+          :param format: (java.lang.String) - format
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -2917,137 +2869,141 @@ class FigureWrapper(object):
          Categorical data must not have duplicates.
         
         *Overload 1*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (T1[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (double[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 3*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (float[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 4*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (int[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 5*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (long[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 6*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (short[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 7*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: T0[]
-          :param values: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (T0[]) - categories
+          :param values: (java.util.List<T1>) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 8*  
           Note: Java generics information - <T1 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: io.deephaven.db.plot.datasets.data.IndexableData<T1>
-          :param values: io.deephaven.db.plot.datasets.data.IndexableNumericData
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (io.deephaven.db.plot.datasets.data.IndexableData<T1>) - categories
+          :param values: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 9*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (T1[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 10*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (double[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 11*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (float[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 12*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (int[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 13*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (long[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 14*  
           Note: Java generics information - <T0 extends java.lang.Comparable>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (short[]) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 15*  
-          Note: Java generics information - <T0 extends java.lang.Comparable,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Comparable,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param categories: java.util.List<T0>
-          :param values: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param categories: (java.util.List<T0>) - categories
+          :param values: (java.util.List<T1>) - data values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 16*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param categories: java.lang.String
-          :param values: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds with categorical data
+          :param values: (java.lang.String) - column in sds with numerical data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param categories: java.lang.String
-          :param values: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param categories: (java.lang.String) - column in t with categorical data
+          :param values: (java.lang.String) - column in t with numerical data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -3061,585 +3017,589 @@ class FigureWrapper(object):
         *Overload 1*  
           Note: Java generics information - <T extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param function: groovy.lang.Closure<T>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param function: (groovy.lang.Closure<T>) - function to plot
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param function: java.util.function.DoubleUnaryOperator
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param function: (java.util.function.DoubleUnaryOperator) - function to plot
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 3*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Number,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 4*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 5*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 6*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 7*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 8*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 9*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 10*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 11*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Number,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: T0[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (T0[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 12*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 13*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 14*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 15*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 16*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 17*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 18*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 19*  
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 20*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: double[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (double[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 21*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 22*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 23*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 24*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 25*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 26*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 27*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 28*  
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 29*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: float[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (float[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 30*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 31*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 32*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 33*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 34*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 35*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 36*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 37*  
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 38*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: int[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (int[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 39*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 40*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 41*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 42*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 43*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 44*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 45*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 46*  
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 47*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: long[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (long[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 48*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 49*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 50*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 51*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 52*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 53*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 54*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 55*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 56*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.tables.utils.DBDateTime[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.tables.utils.DBDateTime[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 57*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 58*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 59*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 60*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 61*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 62*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 63*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 64*  
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 65*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.Date[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.Date[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 66*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 67*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 68*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 69*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 70*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 71*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 72*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 73*  
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 74*  
           Note: Java generics information - <T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: short[]
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (short[]) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 75*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Number,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: T1[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (T1[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 76*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: double[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (double[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 77*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: float[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (float[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 78*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: int[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (int[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 79*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: long[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (long[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 80*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: io.deephaven.db.tables.utils.DBDateTime[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (io.deephaven.db.tables.utils.DBDateTime[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 81*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: java.util.Date[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (java.util.Date[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 82*  
           Note: Java generics information - <T0 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: short[]
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (short[]) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 83*  
-          Note: Java generics information - <T0 extends java.lang.Number,T1 extends java.lang.Number>
+          Note: Java generics information - <T0 extends java.lang.Number,
+          T1 extends java.lang.Number>
           
-          :param seriesName: java.lang.Comparable
-          :param x: java.util.List<T0>
-          :param y: java.util.List<T1>
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (java.util.List<T0>) - x-values
+          :param y: (java.util.List<T1>) - y-values
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 84*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param y: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 85*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param y: java.lang.String
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 86*  
-          :param seriesName: java.lang.Comparable
-          :param x: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param y: io.deephaven.db.plot.datasets.data.IndexableNumericData
-          :param hasXTimeAxis: boolean
-          :param hasYTimeAxis: boolean
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param x: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - x-values
+          :param y: (io.deephaven.db.plot.datasets.data.IndexableNumericData) - y-values
+          :param hasXTimeAxis: (boolean) - whether to treat the x-values as time data
+          :param hasYTimeAxis: (boolean) - whether to treat the y-values as time data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -3651,19 +3611,19 @@ class FigureWrapper(object):
         Creates an XY plot per distinct grouping value specified in byColumns.
         
         *Overload 1*  
-          :param seriesName: java.lang.Comparable
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
           
         *Overload 2*  
-          :param seriesName: java.lang.Comparable
-          :param t: io.deephaven.db.tables.Table
-          :param x: java.lang.String
-          :param y: java.lang.String
-          :param byColumns: java.lang.String...
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.db.plot.Figure) dataset created for plot
         """
         
@@ -3674,7 +3634,7 @@ class FigureWrapper(object):
         """
         Sets the orientation of plots in this Chart.
         
-        :param orientation: java.lang.String
+        :param orientation: (java.lang.String) - plot orientation
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -3686,11 +3646,11 @@ class FigureWrapper(object):
         Sets the PlotStyle of this Axes.
         
         *Overload 1*  
-          :param style: io.deephaven.db.plot.PlotStyle
+          :param style: (io.deephaven.db.plot.PlotStyle) - style
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param style: java.lang.String
+          :param style: (java.lang.String) - style
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -3702,7 +3662,7 @@ class FigureWrapper(object):
         Sets the point color.  Unspecified points use the default color.
         
         *Overload 1*  
-          :param color: int
+          :param color: (int) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -3711,7 +3671,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param colors: int...
+          :param colors: (int...) - color palette indices.  The color for data point i comes from index i.  A value of 3 corresponds to the 3rd color from the color pallette.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 4*  
@@ -3720,8 +3680,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing colors
+          :param columnName: (java.lang.String) - column in sds containing colors.  The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 6*  
@@ -3731,9 +3691,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 7*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying Paints or ints/Integers representing color palette values.
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 8*  
@@ -3744,8 +3704,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 9*  
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table containing colors
+          :param columnName: (java.lang.String) - column in t containing colors.  The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -3755,9 +3715,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 11*  
-          :param t: io.deephaven.db.tables.Table
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param keyColumn: (java.lang.String) - column in t, specifying category values
+          :param valueColumn: (java.lang.String) - column in t, specifying Paints or ints/Integers representing color palette values.
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
@@ -3768,7 +3728,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 13*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 14*  
@@ -3777,7 +3737,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 15*  
-          :param colors: io.deephaven.gui.color.Paint...
+          :param colors: (io.deephaven.gui.color.Paint...) - colors.  The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 16*  
@@ -3786,8 +3746,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 17*  
-          :param category: java.lang.Comparable
-          :param color: int
+          :param category: (java.lang.Comparable) - data point
+          :param color: (int) - index of the color in the series color palette
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 18*  
@@ -3797,8 +3757,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 19*  
-          :param category: java.lang.Comparable
-          :param color: io.deephaven.gui.color.Paint
+          :param category: (java.lang.Comparable) - data point
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 20*  
@@ -3808,8 +3768,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 21*  
-          :param category: java.lang.Comparable
-          :param color: java.lang.String
+          :param category: (java.lang.Comparable) - data point
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 22*  
@@ -3819,7 +3779,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 23*  
-          :param colors: java.lang.Integer...
+          :param colors: (java.lang.Integer...) - color palette indices.  The color for data point i comes from index i.  A value of 3 corresponds to the 3rd color from the color pallette.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 24*  
@@ -3828,7 +3788,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 25*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 26*  
@@ -3837,7 +3797,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 27*  
-          :param colors: java.lang.String...
+          :param colors: (java.lang.String...) - color names.  The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 28*  
@@ -3846,13 +3806,15 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 29*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint>
+          Note: Java generics information - <CATEGORY extends java.lang.Comparable,
+          COLOR extends io.deephaven.gui.color.Paint>
           
-          :param colors: java.util.Map<CATEGORY,COLOR>
+          :param colors: (java.util.Map<CATEGORY,COLOR>) - map from data points to their Paints
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 30*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint>
+          Note: Java generics information - <CATEGORY extends java.lang.Comparable,
+          COLOR extends io.deephaven.gui.color.Paint>
           
           :param colors: java.util.Map<CATEGORY,COLOR>
           :param keys: java.lang.Object...
@@ -3861,7 +3823,7 @@ class FigureWrapper(object):
         *Overload 31*  
           Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
           
-          :param colors: groovy.lang.Closure<COLOR>
+          :param colors: (groovy.lang.Closure<COLOR>) - closure from data points to their Paints
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 32*  
@@ -3874,7 +3836,7 @@ class FigureWrapper(object):
         *Overload 33*  
           Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
           
-          :param colors: java.util.function.Function<java.lang.Comparable,COLOR>
+          :param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to their Paints
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 34*  
@@ -3887,7 +3849,7 @@ class FigureWrapper(object):
         *Overload 35*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: io.deephaven.db.plot.datasets.data.IndexableData<T>
+          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<T>) - colors.  The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 36*  
@@ -3908,7 +3870,7 @@ class FigureWrapper(object):
         *Overload 1*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: groovy.lang.Closure<T>
+          :param colors: (groovy.lang.Closure<T>) - function from the y-value of data points to Paint
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 2*  
@@ -3921,7 +3883,7 @@ class FigureWrapper(object):
         *Overload 3*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: java.util.Map<java.lang.Double,T>
+          :param colors: (java.util.Map<java.lang.Double,T>) - map from the y-value of data points to Paint
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 4*  
@@ -3934,7 +3896,7 @@ class FigureWrapper(object):
         *Overload 5*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: java.util.function.Function<java.lang.Double,T>
+          :param colors: (java.util.function.Function<java.lang.Double,T>) - function from the y-value of data points to Paint
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 6*  
@@ -3953,7 +3915,7 @@ class FigureWrapper(object):
         Sets the point color.  Unspecified points use the default color.
         
         *Overload 1*  
-          :param colors: io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Integer>
+          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Integer>) - colors.  The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 2*  
@@ -3962,14 +3924,10 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer>
-          
-          :param colors: java.util.Map<CATEGORY,COLOR>
+          :param colors: (java.util.Map<CATEGORY,COLOR>) - map from data points to the index of the color palette
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 4*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer>
-          
           :param colors: java.util.Map<CATEGORY,COLOR>
           :param keys: java.lang.Object...
           :return: io.deephaven.db.plot.Figure
@@ -3977,7 +3935,7 @@ class FigureWrapper(object):
         *Overload 5*  
           Note: Java generics information - <COLOR extends java.lang.Integer>
           
-          :param colors: groovy.lang.Closure<COLOR>
+          :param colors: (groovy.lang.Closure<COLOR>) - closure from data points to the index of the color palette
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 6*  
@@ -3990,7 +3948,7 @@ class FigureWrapper(object):
         *Overload 7*  
           Note: Java generics information - <COLOR extends java.lang.Integer>
           
-          :param colors: java.util.function.Function<java.lang.Comparable,COLOR>
+          :param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to the index of the color palette
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 8*  
@@ -4010,7 +3968,7 @@ class FigureWrapper(object):
          Points outside of these indices are unlabeled.
         
         *Overload 1*  
-          :param labels: io.deephaven.db.plot.datasets.data.IndexableData<?>
+          :param labels: (io.deephaven.db.plot.datasets.data.IndexableData<?>) - labels
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 2*  
@@ -4019,8 +3977,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing labels
+          :param columnName: (java.lang.String) - column in sds containing labels.  The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 4*  
@@ -4030,9 +3988,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying labels
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 6*  
@@ -4043,8 +4001,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 7*  
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table containing labels
+          :param columnName: (java.lang.String) - column in t containing labels.  The label data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 8*  
@@ -4054,9 +4012,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 9*  
-          :param t: io.deephaven.db.tables.Table
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param keyColumn: (java.lang.String) - column in t, specifying category values
+          :param valueColumn: (java.lang.String) - column in t, specifying labels
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 10*  
@@ -4067,8 +4025,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 11*  
-          :param category: java.lang.Comparable
-          :param label: java.lang.Object
+          :param category: (java.lang.Comparable) - category value
+          :param label: (java.lang.Object) - label
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
@@ -4078,7 +4036,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 13*  
-          :param label: java.lang.Object
+          :param label: (java.lang.Object) - label
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 14*  
@@ -4087,7 +4045,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 15*  
-          :param labels: java.lang.Object...
+          :param labels: (java.lang.Object...) - labels
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 16*  
@@ -4096,13 +4054,15 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 17*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,LABEL>
+          Note: Java generics information - <CATEGORY extends java.lang.Comparable,
+          LABEL>
           
-          :param labels: java.util.Map<CATEGORY,LABEL>
+          :param labels: (java.util.Map<CATEGORY,LABEL>) - map used to determine point labels
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 18*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,LABEL>
+          Note: Java generics information - <CATEGORY extends java.lang.Comparable,
+          LABEL>
           
           :param labels: java.util.Map<CATEGORY,LABEL>
           :param keys: java.lang.Object...
@@ -4111,7 +4071,7 @@ class FigureWrapper(object):
         *Overload 19*  
           Note: Java generics information - <LABEL>
           
-          :param labels: groovy.lang.Closure<LABEL>
+          :param labels: (groovy.lang.Closure<LABEL>) - closure used to determine point labels for input categories
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 20*  
@@ -4124,7 +4084,7 @@ class FigureWrapper(object):
         *Overload 21*  
           Note: Java generics information - <LABEL>
           
-          :param labels: java.util.function.Function<java.lang.Comparable,LABEL>
+          :param labels: (java.util.function.Function<java.lang.Comparable,LABEL>) - function used to determine point labels
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 22*  
@@ -4148,7 +4108,7 @@ class FigureWrapper(object):
          e.g. "{0}: ({1}, {2})" will display as Series1: (2.0, 5.5).
         
         *Overload 1*  
-          :param format: java.lang.String
+          :param format: (java.lang.String) - format
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -4166,7 +4126,7 @@ class FigureWrapper(object):
          Points outside of these indices use default shapes.
         
         *Overload 1*  
-          :param shapes: groovy.lang.Closure<java.lang.String>
+          :param shapes: (groovy.lang.Closure<java.lang.String>) - closure used to determine point shapes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 2*  
@@ -4175,7 +4135,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param shapes: io.deephaven.db.plot.datasets.data.IndexableData<java.lang.String>
+          :param shapes: (io.deephaven.db.plot.datasets.data.IndexableData<java.lang.String>) - shapes
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 4*  
@@ -4184,8 +4144,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing shapes
+          :param columnName: (java.lang.String) - column in sds containing shapes.  The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 6*  
@@ -4195,9 +4155,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 7*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying shapes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 8*  
@@ -4208,8 +4168,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 9*  
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table containing shapes
+          :param columnName: (java.lang.String) - column in t containing shapes.  The shape data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -4219,9 +4179,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 11*  
-          :param t: io.deephaven.db.tables.Table
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param keyColumn: (java.lang.String) - column in t, specifying category values
+          :param valueColumn: (java.lang.String) - column in t, specifying shapes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
@@ -4232,7 +4192,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 13*  
-          :param shape: io.deephaven.gui.shape.Shape
+          :param shape: (io.deephaven.gui.shape.Shape) - shape
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 14*  
@@ -4241,7 +4201,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 15*  
-          :param shapes: io.deephaven.gui.shape.Shape...
+          :param shapes: (io.deephaven.gui.shape.Shape...) - shapes
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 16*  
@@ -4250,8 +4210,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 17*  
-          :param category: java.lang.Comparable
-          :param shape: io.deephaven.gui.shape.Shape
+          :param category: (java.lang.Comparable) - category value
+          :param shape: (io.deephaven.gui.shape.Shape) - shape
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 18*  
@@ -4261,8 +4221,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 19*  
-          :param category: java.lang.Comparable
-          :param shape: java.lang.String
+          :param category: (java.lang.Comparable) - category value
+          :param shape: (java.lang.String) - shape
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 20*  
@@ -4272,7 +4232,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 21*  
-          :param shape: java.lang.String
+          :param shape: (java.lang.String) - shape
           :return: (io.deephaven.db.plot.Figure) this DataSeries
           
         *Overload 22*  
@@ -4281,7 +4241,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 23*  
-          :param shapes: java.lang.String...
+          :param shapes: (java.lang.String...) - shapes
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 24*  
@@ -4290,7 +4250,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 25*  
-          :param shapes: java.util.function.Function<java.lang.Comparable,java.lang.String>
+          :param shapes: (java.util.function.Function<java.lang.Comparable,java.lang.String>) - function used to determine point shapes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 26*  
@@ -4301,7 +4261,7 @@ class FigureWrapper(object):
         *Overload 27*  
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
-          :param shapes: java.util.Map<CATEGORY,java.lang.String>
+          :param shapes: (java.util.Map<CATEGORY,java.lang.String>) - map used to determine point shapes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 28*  
@@ -4321,11 +4281,11 @@ class FigureWrapper(object):
          default size.  Unspecified points use the default size.
         
         *Overload 1*  
-          :param factor: double
+          :param factor: (double) - point size
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
-          :param factors: double...
+          :param factors: (double...) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 3*  
@@ -4334,11 +4294,11 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 4*  
-          :param factor: int
+          :param factor: (int) - point size
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 5*  
-          :param factors: int...
+          :param factors: (int...) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 6*  
@@ -4347,7 +4307,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 7*  
-          :param factors: io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Double>
+          :param factors: (io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Double>) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 8*  
@@ -4356,8 +4316,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 9*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing factors to multiply the default size (1) by
+          :param columnName: (java.lang.String) - column in sds containing size scaling factors.  The size data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -4367,9 +4327,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 11*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying point sizes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
@@ -4380,8 +4340,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 13*  
-          :param t: io.deephaven.db.tables.Table
-          :param columnName: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table containing factors to multiply the default size (1) by
+          :param columnName: (java.lang.String) - column in t containing size scaling factors.  The size data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 14*  
@@ -4391,9 +4351,9 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 15*  
-          :param t: io.deephaven.db.tables.Table
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
+          :param t: (io.deephaven.db.tables.Table) - table
+          :param keyColumn: (java.lang.String) - column in t, specifying category values
+          :param valueColumn: (java.lang.String) - column in t, specifying point sizes
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 16*  
@@ -4404,8 +4364,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 17*  
-          :param category: java.lang.Comparable
-          :param factor: double
+          :param category: (java.lang.Comparable) - data point
+          :param factor: (double) - factor to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 18*  
@@ -4415,8 +4375,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 19*  
-          :param category: java.lang.Comparable
-          :param factor: int
+          :param category: (java.lang.Comparable) - data point
+          :param factor: (int) - factor to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 20*  
@@ -4426,8 +4386,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 21*  
-          :param category: java.lang.Comparable
-          :param factor: java.lang.Number
+          :param category: (java.lang.Comparable) - data point
+          :param factor: (java.lang.Number) - factor to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 22*  
@@ -4437,8 +4397,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 23*  
-          :param category: java.lang.Comparable
-          :param factor: long
+          :param category: (java.lang.Comparable) - data point
+          :param factor: (long) - factor to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 24*  
@@ -4448,7 +4408,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 25*  
-          :param factor: java.lang.Number
+          :param factor: (java.lang.Number) - point size
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 26*  
@@ -4457,11 +4417,11 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 27*  
-          :param factor: long
+          :param factor: (long) - point size
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 28*  
-          :param factors: long...
+          :param factors: (long...) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 29*  
@@ -4470,29 +4430,21 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 30*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number>
-          
-          :param categories: CATEGORY[]
-          :param factors: NUMBER[]
+          :param categories: (CATEGORY[]) - data points
+          :param factors: (NUMBER[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 31*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number>
-          
           :param categories: CATEGORY[]
           :param factors: NUMBER[]
           :param keys: java.lang.Object...
           :return: io.deephaven.db.plot.Figure
           
         *Overload 32*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number>
-          
-          :param factors: java.util.Map<CATEGORY,NUMBER>
+          :param factors: (java.util.Map<CATEGORY,NUMBER>) - map used to set sizes of specific data points
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 33*  
-          Note: Java generics information - <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number>
-          
           :param factors: java.util.Map<CATEGORY,NUMBER>
           :param keys: java.lang.Object...
           :return: io.deephaven.db.plot.Figure
@@ -4500,8 +4452,8 @@ class FigureWrapper(object):
         *Overload 34*  
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
-          :param categories: CATEGORY[]
-          :param factors: double[]
+          :param categories: (CATEGORY[]) - data points
+          :param factors: (double[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 35*  
@@ -4515,8 +4467,8 @@ class FigureWrapper(object):
         *Overload 36*  
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
-          :param categories: CATEGORY[]
-          :param factors: int[]
+          :param categories: (CATEGORY[]) - data points
+          :param factors: (int[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 37*  
@@ -4530,8 +4482,8 @@ class FigureWrapper(object):
         *Overload 38*  
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
-          :param categories: CATEGORY[]
-          :param factors: long[]
+          :param categories: (CATEGORY[]) - data points
+          :param factors: (long[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 39*  
@@ -4545,7 +4497,7 @@ class FigureWrapper(object):
         *Overload 40*  
           Note: Java generics information - <NUMBER extends java.lang.Number>
           
-          :param factors: groovy.lang.Closure<NUMBER>
+          :param factors: (groovy.lang.Closure<NUMBER>) - closure used to set sizes of data points
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 41*  
@@ -4558,7 +4510,7 @@ class FigureWrapper(object):
         *Overload 42*  
           Note: Java generics information - <NUMBER extends java.lang.Number>
           
-          :param factors: java.util.function.Function<java.lang.Comparable,NUMBER>
+          :param factors: (java.util.function.Function<java.lang.Comparable,NUMBER>) - function used to set sizes of data points
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 43*  
@@ -4571,7 +4523,7 @@ class FigureWrapper(object):
         *Overload 44*  
           Note: Java generics information - <T extends java.lang.Number>
           
-          :param factors: T[]
+          :param factors: (T[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 45*  
@@ -4590,7 +4542,7 @@ class FigureWrapper(object):
         Sets whether points are visible.
         
         *Overload 1*  
-          :param visible: java.lang.Boolean
+          :param visible: (java.lang.Boolean) - point visibility
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -4606,8 +4558,8 @@ class FigureWrapper(object):
         """
         Sets the range of this Axis to [min, max] inclusive.
         
-        :param min: double
-        :param max: double
+        :param min: (double) - minimum of the range
+        :param max: (double) - maximum of the range
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4619,12 +4571,15 @@ class FigureWrapper(object):
         Removes a chart from the Figure's grid.
         
         *Overload 1*  
-          :param index: int
+          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
+                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
+                  [0, 1]
+                  [2, 3].
           :return: (io.deephaven.db.plot.Figure) this Figure with the chart removed.
           
         *Overload 2*  
-          :param rowNum: int
-          :param colNum: int
+          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
           :return: (io.deephaven.db.plot.Figure) this Figure with the chart removed.
         """
         
@@ -4635,7 +4590,7 @@ class FigureWrapper(object):
         """
         Sets the size of this Chart within the grid of the figure.
         
-        :param n: int
+        :param n: (int) - how many rows tall
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -4647,27 +4602,27 @@ class FigureWrapper(object):
         Saves the Figure as an image.
         
         *Overload 1*  
-          :param saveLocation: java.lang.String
+          :param saveLocation: (java.lang.String) - save location. Must not be null
           :return: (io.deephaven.db.plot.Figure) figure
           
         *Overload 2*  
-          :param saveLocation: java.lang.String
-          :param width: int
-          :param height: int
+          :param saveLocation: (java.lang.String) - save location. Must not be null
+          :param width: (int) - image width
+          :param height: (int) - image height
           :return: (io.deephaven.db.plot.Figure) figure
           
         *Overload 3*  
-          :param saveLocation: java.lang.String
-          :param wait: boolean
-          :param timeoutSeconds: long
+          :param saveLocation: (java.lang.String) - save location. Must not be null
+          :param wait: (boolean) - whether to hold the calling thread until the file is written
+          :param timeoutSeconds: (long) - timeout in seconds to wait.
           :return: (io.deephaven.db.plot.Figure) figure
           
         *Overload 4*  
-          :param saveLocation: java.lang.String
-          :param width: int
-          :param height: int
-          :param wait: boolean
-          :param timeoutSeconds: long
+          :param saveLocation: (java.lang.String) - save location. Must not be null
+          :param width: (int) - image width
+          :param height: (int) - image height
+          :param wait: (boolean) - whether to hold the calling thread until the file is written
+          :param timeoutSeconds: (long) - timeout in seconds to wait.
           :return: (io.deephaven.db.plot.Figure) figure
         """
         
@@ -4679,11 +4634,11 @@ class FigureWrapper(object):
         Gets a data series.
         
         *Overload 1*  
-          :param id: int
+          :param id: (int) - series id.
           :return: (io.deephaven.db.plot.Figure) selected data series.
           
         *Overload 2*  
-          :param name: java.lang.Comparable
+          :param name: (java.lang.Comparable) - series name.
           :return: (io.deephaven.db.plot.Figure) selected data series.
         """
         
@@ -4695,7 +4650,7 @@ class FigureWrapper(object):
         Defines the default line and point color.
         
         *Overload 1*  
-          :param color: int
+          :param color: (int) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -4704,7 +4659,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 4*  
@@ -4713,7 +4668,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 5*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 6*  
@@ -4732,11 +4687,11 @@ class FigureWrapper(object):
          to the new series.
         
         *Overload 1*  
-          :param namingFunction: groovy.lang.Closure<java.lang.String>
+          :param namingFunction: (groovy.lang.Closure<java.lang.String>) - series naming closure
           :return: io.deephaven.db.plot.Figure
           
         *Overload 2*  
-          :param namingFunction: java.util.function.Function<java.lang.Object,java.lang.String>
+          :param namingFunction: (java.util.function.Function<java.lang.Object,java.lang.String>) - series naming function
           :return: io.deephaven.db.plot.Figure
         """
         
@@ -4747,35 +4702,19 @@ class FigureWrapper(object):
         """
         Sets the size of this Chart within the grid of the figure.
         
-        :param rowSpan: int
-        :param colSpan: int
+        :param rowSpan: (int) - how many rows tall
+        :param colSpan: (int) - how many columns wide
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
         return FigureWrapper(figure=self.figure.span(rowSpan, colSpan))
 
     @_convertArguments
-    def theme(self, theme):
-        """
-        Sets the Theme of this Figure
-        
-        *Overload 1*  
-          :param theme: java.lang.String
-          :return: (io.deephaven.db.plot.Figure) this Figure
-          
-        *Overload 2*  
-          :param theme: io.deephaven.db.plot.Theme
-          :return: (io.deephaven.db.plot.Figure) this Figure
-        """
-        
-        return FigureWrapper(figure=self.figure.theme(theme))
-
-    @_convertArguments
     def tickLabelAngle(self, angle):
         """
         Sets the angle the tick labels of this Axis are drawn at.
         
-        :param angle: double
+        :param angle: (double) - angle in degrees
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4787,11 +4726,11 @@ class FigureWrapper(object):
         Sets the tick locations.
         
         *Overload 1*  
-          :param tickLocations: double[]
+          :param tickLocations: (double[]) - coordinates of the major tick locations
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param gapBetweenTicks: double
+          :param gapBetweenTicks: (double) - the distance between ticks.  For example, if gapBetweenTicks is 5.0, and the first tick is at 10.0, the next will be drawn at 15.0.
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4803,13 +4742,13 @@ class FigureWrapper(object):
         Sets the font for this Axis's ticks.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4820,7 +4759,7 @@ class FigureWrapper(object):
         """
         Sets whether ticks are drawn on this Axis.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether ticks are drawn on this Axis
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4832,7 +4771,7 @@ class FigureWrapper(object):
         Sets the tooltip format.
         
         *Overload 1*  
-          :param format: java.lang.String
+          :param format: (java.lang.String) - format
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -4848,7 +4787,7 @@ class FigureWrapper(object):
         """
         Sets the AxisTransform for this Axis.
         
-        :param transform: io.deephaven.db.plot.axistransformations.AxisTransform
+        :param transform: (io.deephaven.db.plot.axistransformations.AxisTransform) - transform
         :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -4867,16 +4806,16 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
-          :param name: java.lang.String
+          :param name: (java.lang.String) - Name for the axes
           :return: (io.deephaven.db.plot.Figure) the new Axes instance
           
         *Overload 3*  
-          :param dim: int
+          :param dim: (int) - Axis dimension to share.  The x-axis is dimension 0, y-axis is dimension 1.
           :return: (io.deephaven.db.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
           
         *Overload 4*  
-          :param name: java.lang.String
-          :param dim: int
+          :param name: (java.lang.String) - name for the axes
+          :param dim: (int) - Axis dimension to share.  The x-axis is dimension 0, y-axis is dimension 1.
           :return: (io.deephaven.db.plot.Figure) the new Axes instance
         """
         
@@ -4896,7 +4835,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
-          :param name: java.lang.String
+          :param name: (java.lang.String) - Name for the axes
           :return: (io.deephaven.db.plot.Figure) the new Axes instance
         """
         
@@ -4916,7 +4855,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
-          :param name: java.lang.String
+          :param name: (java.lang.String) - Name for the axes
           :return: (io.deephaven.db.plot.Figure) the new Axes instance
         """
         
@@ -4927,7 +4866,7 @@ class FigureWrapper(object):
         """
         Sets the update interval of this Figure. The plot will be redrawn at this update interval.
         
-        :param updateIntervalMillis: long
+        :param updateIntervalMillis: (long) - update interval, in milliseconds
         :return: (io.deephaven.db.plot.Figure) this Figure
         """
         
@@ -4953,12 +4892,12 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes using the default BusinessCalendar for the x-Axis.
           
         *Overload 2*  
-          :param calendar: io.deephaven.util.calendar.BusinessCalendar
+          :param calendar: (io.deephaven.util.calendar.BusinessCalendar) - business calendar for the AxisTransformBusinessCalendar
           :return: (io.deephaven.db.plot.Figure) this Axes using the calendar for the x-Axis business calendar.
           
         *Overload 3*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
           :return: (io.deephaven.db.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the x-Axis business calendar.  If no value is found, no transform will be applied.
         """
         
@@ -4970,11 +4909,11 @@ class FigureWrapper(object):
         Sets the color of the x-Axis
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -4985,7 +4924,7 @@ class FigureWrapper(object):
         """
         Sets the AxisFormat of the x-Axis
         
-        :param format: io.deephaven.db.plot.axisformatters.AxisFormat
+        :param format: (io.deephaven.db.plot.axisformatters.AxisFormat) - format
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -4996,7 +4935,7 @@ class FigureWrapper(object):
         """
         Sets the format pattern of the x-Axis
         
-        :param pattern: java.lang.String
+        :param pattern: (java.lang.String) - pattern
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5007,7 +4946,7 @@ class FigureWrapper(object):
         """
         Sets whether the Chart has grid lines in the x direction.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the Chart's x grid lines are drawn
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -5022,7 +4961,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param invert: boolean
+          :param invert: (boolean) - if true, larger values will be closer to the origin
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5033,7 +4972,7 @@ class FigureWrapper(object):
         """
         Sets the label of the x-Axis
         
-        :param label: java.lang.String
+        :param label: (java.lang.String) - label
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5045,13 +4984,13 @@ class FigureWrapper(object):
         Sets the font for the x-Axis label.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -5073,12 +5012,12 @@ class FigureWrapper(object):
         Sets the maximum of the x-Axis.
         
         *Overload 1*  
-          :param max: double
+          :param max: (double) - maximum of the x-range
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the maximum.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5090,12 +5029,12 @@ class FigureWrapper(object):
         Sets the minimum of the x-Axis.
         
         *Overload 1*  
-          :param min: double
+          :param min: (double) - minimum of the x-range
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the minimum.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5108,7 +5047,7 @@ class FigureWrapper(object):
          in the x-Axis.
          These minor ticks are equally spaced.
         
-        :param count: int
+        :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5119,7 +5058,7 @@ class FigureWrapper(object):
         """
         Sets whether the x-Axis minor ticks are visible.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the minor ticks are visible
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5130,8 +5069,8 @@ class FigureWrapper(object):
         """
         Sets the range of the x-Axis
         
-        :param min: double
-        :param max: double
+        :param min: (double) - minimum of the range
+        :param max: (double) - maximum of the range
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5142,7 +5081,7 @@ class FigureWrapper(object):
         """
         Sets the angle the tick labels the x-Axis are drawn at.
         
-        :param angle: double
+        :param angle: (double) - angle in degrees
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5154,11 +5093,11 @@ class FigureWrapper(object):
         Sets the x-Axis ticks.
         
         *Overload 1*  
-          :param tickLocations: double[]
+          :param tickLocations: (double[]) - locations of the major ticks
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param gapBetweenTicks: double
+          :param gapBetweenTicks: (double) - spacing between major ticks
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5170,13 +5109,13 @@ class FigureWrapper(object):
         Sets the font for the x-Axis ticks.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -5187,7 +5126,7 @@ class FigureWrapper(object):
         """
         Sets whether the x-Axis ticks are visible.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the ticks are visible
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5199,7 +5138,7 @@ class FigureWrapper(object):
         Sets the x-value tooltip format.
         
         *Overload 1*  
-          :param format: java.lang.String
+          :param format: (java.lang.String) - format
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -5215,7 +5154,7 @@ class FigureWrapper(object):
         """
         Sets the AxisTransform of the x-Axis
         
-        :param transform: io.deephaven.db.plot.axistransformations.AxisTransform
+        :param transform: (io.deephaven.db.plot.axistransformations.AxisTransform) - transform
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5241,12 +5180,12 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes using the default BusinessCalendar for the y-Axis.
           
         *Overload 2*  
-          :param calendar: io.deephaven.util.calendar.BusinessCalendar
+          :param calendar: (io.deephaven.util.calendar.BusinessCalendar) - business calendar for the AxisTransformBusinessCalendar
           :return: (io.deephaven.db.plot.Figure) this Axes using the calendar for the y-Axis business calendar.
           
         *Overload 3*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
           :return: (io.deephaven.db.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the y-Axis business calendar.  If no value is found, no transform will be applied.
         """
         
@@ -5258,11 +5197,11 @@ class FigureWrapper(object):
         Sets the color of the y-Axis
         
         *Overload 1*  
-          :param color: java.lang.String
+          :param color: (java.lang.String) - color
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param color: io.deephaven.gui.color.Paint
+          :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5273,7 +5212,7 @@ class FigureWrapper(object):
         """
         Sets the AxisFormat of the y-Axis
         
-        :param format: io.deephaven.db.plot.axisformatters.AxisFormat
+        :param format: (io.deephaven.db.plot.axisformatters.AxisFormat) - format
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5284,7 +5223,7 @@ class FigureWrapper(object):
         """
         Sets the format pattern of the y-Axis
         
-        :param pattern: java.lang.String
+        :param pattern: (java.lang.String) - pattern
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5295,7 +5234,7 @@ class FigureWrapper(object):
         """
         Sets whether the Chart has grid lines in the y direction
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the Chart's y grid lines are drawn
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -5310,7 +5249,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param invert: boolean
+          :param invert: (boolean) - if true, larger values will be closer to the origin
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5321,7 +5260,7 @@ class FigureWrapper(object):
         """
         Sets the label of the y-Axis
         
-        :param label: java.lang.String
+        :param label: (java.lang.String) - pattern
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5333,13 +5272,13 @@ class FigureWrapper(object):
         Sets the font for the y-Axis label.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -5361,12 +5300,12 @@ class FigureWrapper(object):
         Sets the maximum of the y-Axis.
         
         *Overload 1*  
-          :param max: double
+          :param max: (double) - maximum of the y-range
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the maximum.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5378,12 +5317,12 @@ class FigureWrapper(object):
         Sets the minimum of the y-Axis.
         
         *Overload 1*  
-          :param min: double
+          :param min: (double) - minimum of the y-range
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param sds: io.deephaven.db.plot.filters.SelectableDataSet
-          :param valueColumn: java.lang.String
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the minimum.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5396,7 +5335,7 @@ class FigureWrapper(object):
          in the y-Axis.
          These minor ticks are equally spaced.
         
-        :param count: int
+        :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5407,7 +5346,7 @@ class FigureWrapper(object):
         """
         Sets whether the y-Axis minor ticks are visible.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the minor ticks are visible
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5418,8 +5357,8 @@ class FigureWrapper(object):
         """
         Sets the range of the y-Axis
         
-        :param min: double
-        :param max: double
+        :param min: (double) - minimum of the range
+        :param max: (double) - maximum of the range
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5430,7 +5369,7 @@ class FigureWrapper(object):
         """
         Sets the angle the tick labels the y-Axis are drawn at.
         
-        :param angle: double
+        :param angle: (double) - angle in degrees
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5442,11 +5381,11 @@ class FigureWrapper(object):
         Sets the y-Axis ticks.
         
         *Overload 1*  
-          :param tickLocations: double[]
+          :param tickLocations: (double[]) - locations of the major ticks
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param gapBetweenTicks: double
+          :param gapBetweenTicks: (double) - spacing between major ticks
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5458,13 +5397,13 @@ class FigureWrapper(object):
         Sets the font for the y-Axis ticks.
         
         *Overload 1*  
-          :param font: io.deephaven.db.plot.Font
+          :param font: (io.deephaven.db.plot.Font) - font
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param family: java.lang.String
-          :param style: java.lang.String
-          :param size: int
+          :param family: (java.lang.String) - font family; if null, set to Arial
+          :param style: (java.lang.String) - font style; if null, set to Font.FontStyle PLAIN
+          :param size: (int) - the point size of the Font
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         
@@ -5475,7 +5414,7 @@ class FigureWrapper(object):
         """
         Sets whether the y-Axis ticks are visible.
         
-        :param visible: boolean
+        :param visible: (boolean) - whether the ticks are visible
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -5487,7 +5426,7 @@ class FigureWrapper(object):
         Sets the y-value tooltip format.
         
         *Overload 1*  
-          :param format: java.lang.String
+          :param format: (java.lang.String) - format
           :return: (io.deephaven.db.plot.Figure) this data series.
           
         *Overload 2*  
@@ -5503,7 +5442,7 @@ class FigureWrapper(object):
         """
         Sets the AxisTransform of the y-Axis
         
-        :param transform: io.deephaven.db.plot.axistransformations.AxisTransform
+        :param transform: (io.deephaven.db.plot.axistransformations.AxisTransform) - transform
         :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
