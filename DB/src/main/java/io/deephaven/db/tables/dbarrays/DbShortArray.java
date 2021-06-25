@@ -27,7 +27,7 @@ public interface DbShortArray extends DbArrayBase {
     DbShortArray subArrayByPositions(long [] positions);
     short[] toArray();
     long size();
-    DbArray toDbArray();
+
     short getPrev(long i);
 
     @Override

@@ -24,13 +24,19 @@ public interface DbCharArray extends DbArrayBase {
     DbCharArray subArrayByPositions(long [] positions);
     char[] toArray();
     long size();
-    DbArray toDbArray();
+
     char getPrev(long i);
 
     @Override
     @FinalDefault
     default Class getComponentType() {
         return char.class;
+    }
+
+    @Override
+    @FinalDefault
+    default String toString(final int prefixLength) {
+        return toString(this, prefixLength);
     }
 
     /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
@@ -57,15 +63,16 @@ public interface DbCharArray extends DbArrayBase {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The DbCharArray to convert to a String
+     * @param array       The DbCharArray to convert to a String
+     * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
-    static String toString(@NotNull final DbCharArray array) {
+    static String toString(@NotNull final DbCharArray array, final int prefixLength) {
         if (array.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), 10);
+        final int displaySize = (int) Math.min(array.size(), prefixLength);
         builder.append(primitiveCharValToString(array.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
             builder.append(',').append(primitiveCharValToString(array.get(ei)));
@@ -137,7 +144,7 @@ public interface DbCharArray extends DbArrayBase {
 
         @Override
         public final String toString() {
-            return DbCharArray.toString(this);
+            return DbCharArray.toString(this, 10);
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

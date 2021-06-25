@@ -62,13 +62,8 @@ public class DbArrayDirect<T> implements DbArray<T> {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return this;
-    }
-
-    @Override
     public final String toString() {
-        return DbArray.toString(this);
+        return DbArray.toString(this, 10);
     }
 
     @Override

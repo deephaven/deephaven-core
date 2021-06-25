@@ -27,11 +27,6 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final long startPadding;
     private final long endPadding;
 
-    @Override
-    public DbArray toDbArray() {
-        return this;
-    }
-
     public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index) {
         this(columnSource, index, 0, 0);
     }
@@ -121,7 +116,7 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArrayBase getDirect() {
+    public DbArray<T> getDirect() {
         return new DbArrayDirect<>(toArray());
     }
 

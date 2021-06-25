@@ -59,11 +59,6 @@ public class DbDoubleArrayDirect implements DbDoubleArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayDoubleWrapper(this);
-    }
-
-    @Override
     public DbDoubleArrayDirect getDirect() {
         return this;
     }

@@ -27,7 +27,7 @@ public interface DbFloatArray extends DbArrayBase {
     DbFloatArray subArrayByPositions(long [] positions);
     float[] toArray();
     long size();
-    DbArray toDbArray();
+
     float getPrev(long i);
 
     @Override

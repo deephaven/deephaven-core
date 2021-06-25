@@ -22,9 +22,14 @@ public interface DbArrayBase extends Serializable, LongSizedDataStructure {
 
     String NULL_ELEMENT_STRING = " ";
 
+    DbArrayBase subArray(long fromIndex, long toIndex);
+    DbArrayBase subArrayByPositions(long [] positions);
+
     Object toArray();
-    DbArray toDbArray();
+
     Class getComponentType();
+
+    default String toString(int prefixLength) { return ""; }
 
     Chunk<Attributes.Values> toChunk();
 

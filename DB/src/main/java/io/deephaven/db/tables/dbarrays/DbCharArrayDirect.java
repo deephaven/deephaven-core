@@ -56,18 +56,13 @@ public class DbCharArrayDirect implements DbCharArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayCharWrapper(this);
-    }
-
-    @Override
     public DbCharArrayDirect getDirect() {
         return this;
     }
 
     @Override
     public final String toString() {
-        return DbCharArray.toString(this);
+        return DbCharArray.toString(this, 10);
     }
 
     @Override

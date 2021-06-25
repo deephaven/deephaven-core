@@ -27,7 +27,7 @@ public interface DbIntArray extends DbArrayBase {
     DbIntArray subArrayByPositions(long [] positions);
     int[] toArray();
     long size();
-    DbArray toDbArray();
+
     int getPrev(long i);
 
     @Override

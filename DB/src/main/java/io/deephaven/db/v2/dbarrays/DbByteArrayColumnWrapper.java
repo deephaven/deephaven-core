@@ -116,8 +116,4 @@ public class DbByteArrayColumnWrapper extends DbByteArray.Indirect {
         return startPadding + index.size() + endPadding;
     }
 
-    @Override
-    public DbArray toDbArray() {
-        return new DbArrayByteWrapper(this);
-    }
 }

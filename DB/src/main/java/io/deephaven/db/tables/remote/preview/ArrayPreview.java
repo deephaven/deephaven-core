@@ -18,11 +18,11 @@ public class ArrayPreview implements PreviewType {
         }
 
         final String displayString;
-        if(dbArray.size() <= ARRAY_SIZE_CUTOFF) {
+//        if(dbArray.size() <= ARRAY_SIZE_CUTOFF) {
             displayString = dbArray.toString();
-        } else {
-            displayString = dbArray.subArray(0, ARRAY_SIZE_CUTOFF).toString().replace("]", ", ...]");
-        }
+//        } else {
+//            displayString = dbArray.subArray(0, ARRAY_SIZE_CUTOFF).toString().replace("]", ", ...]");
+//        }
         return new ArrayPreview(displayString);
     }
 

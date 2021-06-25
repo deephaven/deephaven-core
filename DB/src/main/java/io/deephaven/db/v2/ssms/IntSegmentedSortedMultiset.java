@@ -5,7 +5,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayIntWrapper;
 import io.deephaven.db.tables.dbarrays.DbIntArray;
 import io.deephaven.db.tables.dbarrays.DbIntArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2315,11 +2314,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Integer> toDbArray() {
-        return new DbArrayIntWrapper(this);
     }
 
     @Override

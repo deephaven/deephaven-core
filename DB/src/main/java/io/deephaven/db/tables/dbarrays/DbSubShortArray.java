@@ -57,11 +57,6 @@ public class DbSubShortArray extends DbShortArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayShortWrapper(this);
-    }
-
-    @Override
     public short getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_SHORT;

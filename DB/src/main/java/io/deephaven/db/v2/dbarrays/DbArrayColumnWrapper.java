@@ -17,6 +17,7 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
+import java.util.function.Function;
 
 public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
@@ -26,11 +27,6 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final Index index;
     private final long startPadding;
     private final long endPadding;
-
-    @Override
-    public DbArray toDbArray() {
-        return this;
-    }
 
     public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index) {
         this(columnSource, index, 0, 0);
@@ -116,18 +112,22 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArrayBase getDirect() {
+    public DbArray<T> getDirect() {
         if (DbArrayBase.class.isAssignableFrom(getComponentType())) {
+            //noinspection rawtypes
+            final Function componentGetDirect = DbArrayBase.resolveGetDirect(getComponentType());
             // recursion!
             final long size = size();
-            final DbArrayBase [] array = (DbArrayBase[])Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray",  size));
+            //noinspection unchecked
+            final T[] array = (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray",  size));
             Object arrayBase;
             for (int ii = 0; ii < size; ++ii) {
                 arrayBase = get(ii);
                 if (arrayBase == null) {
                     array[ii] = null;
                 } else {
-                    array[ii] = ((DbArrayBase) arrayBase).getDirect();
+                    //noinspection unchecked
+                    array[ii] = (T) componentGetDirect.apply(arrayBase);
                 }
             }
             return new DbArrayDirect<>(array);
