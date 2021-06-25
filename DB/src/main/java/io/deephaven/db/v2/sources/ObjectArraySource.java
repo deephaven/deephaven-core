@@ -100,7 +100,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
-        if (copyFunction != null) {
+        if (value != null && copyFunction != null) {
             set(destKey, copyFunction.apply(value));
         } else {
             set(destKey, value);
