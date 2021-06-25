@@ -131,7 +131,7 @@ public class ParquetReaderUtil {
      *                          Note a new read instructions based on this one may be returned by this method to provide necessary
      *                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.
      * @param colDefConsumer  A ColumnDefinitionConsumer whose accept method would be called for each column in the file
-     * @return Parquet read instructions, either the ones supplied or a new object based on the suplied with with necessary
+     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
      *         transformations added.
      * @throws IOException if the specified file cannot be read
      */
