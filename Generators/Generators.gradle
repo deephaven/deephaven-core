@@ -150,79 +150,64 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
-if (PyEnv.pythonEnabled(project)) {
-    PyInstall install = PythonVersion.PY_37.getInstall(project)
-    Venv venv = install.getVenv(VenvType.PY_DOCS)
-    venv.pythonExec(project, "generatePyDocAssert", ["javadocExtraction.py", devRoot, "true"], [":allJavadoc", venv.taskNameCreateVenv], "${project.projectDir}/python")
-    venv.pythonExec(project, "generatePyDoc", ["javadocExtraction.py", devRoot, "false"], [":allJavadoc", venv.taskNameCreateVenv], "${project.projectDir}/python")
-    venv.pythonExec(project, "generateManPyDocAssert", ["manualDocstrings.py", devRoot, "true"], venv.taskNameCreateVenv, "${project.projectDir}/python")
-    venv.pythonExec(project, "generateManPyDoc", ["manualDocstrings.py", devRoot, "false"], venv.taskNameCreateVenv, "${project.projectDir}/python")
-} else {
-    TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generatePyDoc") {
-        copyIn {
-            from('python') {
-                into 'python'
-            }
-
-            // TODO move these to a later sync task, so that we detect changes and minimally build images
-            // Copy existing generated JSON to where the image can get it - remove if we stop checking in JSON
-            from("$devRoot/Integrations/python/deephaven") {
-                // allow javadocExtraction.py to verify existing json
-                include 'doc'
-                // allow manualDocstrings.py to verify existing json
-                include 'docCustom'
-                into 'out'
-            }
-            // Depend on generated javadoc so we can generate JSON from it
-            dependsOn ':allJavadoc'
-            from("$devRoot/build/docs/javadoc") {
-                // input for javadocExtraction.py
-                into 'javadoc'
-            }
+TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generatePyDoc") {
+    copyIn {
+        from('python') {
+            into 'python'
         }
 
-        dockerfile {
-            from 'docker.io/library/python:3.7.10'
-
-            runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
-
-            copyFile('.', '.')
-
-            runCommand '''set -eux; \\
-                          python3 /python/javadocExtraction.py / false; \\
-                          python3 /python/manualDocstrings.py / false
-                          '''
+        // TODO move these to a later sync task, so that we detect changes and minimally build images
+        // Copy existing generated JSON to where the image can get it - remove if we stop checking in JSON
+        from("$devRoot/Integrations/python/deephaven") {
+            // allow javadocExtraction.py to verify existing json
+            include 'doc'
+            // allow manualDocstrings.py to verify existing json
+            include 'docCustom'
+            into 'out'
         }
-
-        parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python
-        imageName = 'deephaven/pydocs:local-build'
-        copyOut {
-            into("$devRoot/Integrations/python/deephaven")
-            preserve {// only overwrite doc and docCustom directories
-                include '**/*'
-                exclude 'doc'
-                exclude 'docCustom'
-            }
+        // Depend on generated javadoc so we can generate JSON from it
+        dependsOn ':allJavadoc'
+        from("$devRoot/build/docs/javadoc") {
+            // input for javadocExtraction.py
+            into 'javadoc'
         }
     }
 
-    tasks.register("generateManPyDoc") {
-        // TODO core#430 remove this task when BUILD_PY disappears
-        // for now, this task just makes sure that the main task ran
-        dependsOn generatePyDoc
+    dockerfile {
+        from 'docker.io/library/python:3.7.10'
+
+        runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
+
+        copyFile('.', '.')
+
+        runCommand '''set -eux; \\
+                      python3 /python/javadocExtraction.py / false; \\
+                      python3 /python/manualDocstrings.py / false
+                      '''
     }
-    tasks.register("generateManPyDocAssert") {
-        doLast {
-            logger.warn "This task no longer checks output, we're expecting to always regenerate now"
-        }
-    }
-    tasks.register("generatePyDocAssert") {
-        doLast {
-            logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+
+    parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python
+    imageName = 'deephaven/pydocs:local-build'
+    copyOut {
+        into("$devRoot/Integrations/python/deephaven")
+        preserve {// only overwrite doc and docCustom directories
+            include '**/*'
+            exclude 'doc'
+            exclude 'docCustom'
         }
     }
 }
 
+tasks.register("generateManPyDocAssert") {
+    doLast {
+        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+    }
+}
+tasks.register("generatePyDocAssert") {
+    doLast {
+        logger.warn "This task no longer checks output, we're expecting to always regenerate now"
+    }
+}
 
 def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                     '/Integrations/python/deephaven/Calendars/__init__.py',
@@ -258,7 +243,7 @@ task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes'
     systemProperty 'workspace', workspace
     systemProperty 'devroot', devRoot
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn ':Generators:generatePyDoc', ':Generators:generateManPyDoc'
+    dependsOn generatePyDoc
 }
 
 task generatePythonIntegrationStaticMethodsAssert(type: JavaExec, dependsOn: 'classes') {
@@ -285,7 +270,7 @@ task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'workspace', workspace
     systemProperty 'devroot', devRoot
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn ':Generators:generatePyDoc', ':Generators:generateFigureImmutable'
+    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
 }
 
 task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {

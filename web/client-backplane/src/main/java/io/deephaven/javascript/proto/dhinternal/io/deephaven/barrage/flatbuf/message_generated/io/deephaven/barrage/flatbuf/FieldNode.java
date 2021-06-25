@@ -14,8 +14,6 @@ import jsinterop.annotations.JsType;
 public class FieldNode {
   public static native double createFieldNode(Builder builder, Long length, Long null_count);
 
-  public static native double sizeOf();
-
   public ByteBuffer bb;
   public double bb_pos;
 

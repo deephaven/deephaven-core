@@ -4,8 +4,8 @@ import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.Node;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,7 +31,7 @@ public class CompleteTableNamespace extends CompletionBuilder {
 
     public void doCompletion(
         Node replaced,
-        Set<CompletionItem> results,
+        Set<CompletionItem.Builder> results,
         CompletionRequest request
     ) {
         final int argInd = invoke.indexOfArgument(replaced);
@@ -39,7 +39,7 @@ public class CompleteTableNamespace extends CompletionBuilder {
         // TODO: move the chunk of code below into constructor, since it's not necessary to repeat inside a loop.  IDS-1517-14
         if (argInd == 0 || argInd == -1) {
             // The cursor is on the table namespace argument.  Replace the string node itself.
-            final DocumentRange range;
+            final DocumentRange.Builder range;
             if (replaced == null) {
                 range = placeAfter(invoke, request);
             } else {
@@ -60,7 +60,15 @@ public class CompleteTableNamespace extends CompletionBuilder {
                     }
                     addTokens(b, replaced.jjtGetLastToken(), ", ", qt);
                 }
-                CompletionItem result = new CompletionItem(start, len, b.toString(), b.toString(), range);
+                final CompletionItem.Builder result = CompletionItem.newBuilder();
+                String item = b.toString();
+                result
+                        .setStart(start)
+                        .setLength(len)
+                        .setLabel(item)
+                        .getTextEditBuilder()
+                            .setText(item)
+                            .setRange(range);
                 results.add(result);
             });
         } else if (argInd == 1) {

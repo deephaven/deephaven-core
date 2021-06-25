@@ -13,7 +13,7 @@
   "increment": ":param key: long\n:return: boolean",
   "isEmpty": ":return: boolean",
   "keySet": ":return: gnu.trove.set.TLongSet",
-  "putAll": "*Overload 1*  \n  :param map: java.util.Map<? extends java.lang.Long,? extends java.lang.Long>\n  \n*Overload 2*  \n  :param map: gnu.trove.map.TLongLongMap",
+  "putAll": "*Overload 1*  \n  :param map: java.util.Map<? extendsjava.lang.Long,? extendsjava.lang.Long>\n  \n*Overload 2*  \n  :param map: gnu.trove.map.TLongLongMap",
   "retainEntries": ":param procedure: gnu.trove.procedure.TLongLongProcedure\n:return: boolean",
   "size": ":return: int",
   "transformValues": ":param function: gnu.trove.function.TLongFunction",

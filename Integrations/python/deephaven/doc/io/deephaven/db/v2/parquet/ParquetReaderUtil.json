@@ -2,7 +2,8 @@
  "className": "io.deephaven.db.v2.parquet.ParquetReaderUtil",
  "methods": {
   "main": ":param args: java.lang.String[]",
-  "readParquetFile": "Note: Java generics information - io.deephaven.util.annotations.@VisibleForTesting\n\n:param filePath: java.lang.String"
+  "readParquetFile": ":param filePath: java.lang.String",
+  "readParquetSchema": ":param filePath: java.lang.String\n:param colDefConsumer: io.deephaven.db.v2.parquet.ParquetReaderUtil.ColumnDefinitionConsumer"
  },
  "path": "io.deephaven.db.v2.parquet.ParquetReaderUtil",
  "typeName": "class"

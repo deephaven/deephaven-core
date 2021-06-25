@@ -1,9 +1,10 @@
 package io.deephaven.lang.completion
 
+import io.deephaven.db.util.VariableProvider
 import io.deephaven.io.logger.Logger
+import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.lang.parse.ParsedDocument
-import io.deephaven.web.shared.ide.lsp.CompletionItem
 
 /**
  */
