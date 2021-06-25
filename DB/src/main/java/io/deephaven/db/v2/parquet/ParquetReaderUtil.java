@@ -317,6 +317,9 @@ public class ParquetReaderUtil {
                             colDefConsumer.accept(colName, long.class, null, isGrouping, codecName, codecArgs);
                         }
                         break;
+                    case INT96:
+                        colDefConsumer.accept(colName, DBDateTime.class, null, isGrouping, codecName, codecArgs);
+                        break;
                     case DOUBLE:
                         if (isArray) {
                             colDefConsumer.accept(colName, double[].class, double.class, isGrouping, codecName, codecArgs);
@@ -347,8 +350,6 @@ public class ParquetReaderUtil {
                         }
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
-                    case INT96:
-                        colDefConsumer.accept(colName, DBDateTime.class, null, isGrouping, codecName, codecArgs);
                     default:
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;

@@ -173,6 +173,9 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                         case INT64:
                             toPage = ToLongPage.create(pageType);
                             break;
+                        case INT96:
+                            toPage = ToDBDateTimePageFromInt96.create(pageType);
+                            break;
                         case DOUBLE:
                             toPage = ToDoublePage.create(pageType);
                             break;
@@ -190,9 +193,6 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             } else {
                                 throw new TableDataException("No codec in parquet file for binary blob.");
                             }
-                            break;
-                        case INT96:
-                            toPage = ToDBDateTimePageFromInt96.create(pageType);
                             break;
                         default:
                     }

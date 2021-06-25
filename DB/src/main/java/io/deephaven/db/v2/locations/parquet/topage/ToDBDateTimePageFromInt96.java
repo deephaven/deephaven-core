@@ -27,9 +27,12 @@ public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements T
     @SuppressWarnings("rawtypes")
     private static final ToDBDateTimePageFromInt96 INSTANCE = new ToDBDateTimePageFromInt96<>();
     private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
-    private static final int JULIAN_OFFSET = 2440588;
+    private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
     private static final String REFERENCE_TIME_ZONE = Configuration.getInstance().getStringWithDefault("deephaven.parquet.referenceTimeZone","UTC");
-    private static long offset = DBTimeUtils.nanosOfDay(DBTimeUtils.convertDateTime("1970-01-01T00:00:00 " + REFERENCE_TIME_ZONE), DBTimeZone.TZ_UTC);
+    private static long offset;
+    static {
+        setReferenceTimeZone(REFERENCE_TIME_ZONE);
+    }
 
     public static <ATTR extends Attributes.Any> ToDBDateTimePageFromInt96<ATTR> create(@NotNull Class<?> nativeType) {
         if (DBDateTime.class.equals(nativeType)) {
@@ -82,11 +85,11 @@ public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements T
         final long[] resultLongs = new long[resultLength];
 
         for (int ri = 0; ri < resultLength; ++ri) {
-            final ByteBuffer resultBuffer = ByteBuffer.wrap(results[ri].getBytes());
+            final ByteBuffer resultBuffer = ByteBuffer.wrap(results[ri].getBytesUnsafe());
             resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
             final long nanos = resultBuffer.getLong();
             final int julianDate = resultBuffer.getInt();
-            resultLongs[ri] = (julianDate - JULIAN_OFFSET) * (NANOS_PER_DAY) + nanos + offset;
+            resultLongs[ri] = (julianDate - JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS) * (NANOS_PER_DAY) + nanos + offset;
         }
         return resultLongs;
     }
