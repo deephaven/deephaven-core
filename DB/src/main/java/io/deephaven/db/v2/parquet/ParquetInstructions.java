@@ -33,7 +33,7 @@ public abstract class ParquetInstructions {
 
     private static class ColumnInstructions {
         private final String columnName;
-        String parquetColumnName;
+        private String parquetColumnName;
         private String codecName;
         private String codecArgs;
 
@@ -72,9 +72,11 @@ public abstract class ParquetInstructions {
 
     private static class ReadOnly extends ParquetInstructions {
         private final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions;
-        // Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
-        // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
-        // different than the columnName (ie, the column name mapping is not the default mapping)
+        /**
+         * Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
+         * We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
+         * different than the columnName (ie, the column name mapping is not the default mapping)
+         */
         private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
 
         protected ReadOnly(
