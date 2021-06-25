@@ -21,6 +21,7 @@ import io.deephaven.db.v2.TableMap;
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.local.*;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -280,7 +281,8 @@ public class TestChunkedRegionedOperations {
                                 : new NestedPartitionedLocalTableLocationScanner(dataDirectory)
                         ),
                         false,
-                        TableDataRefreshService.Null.INSTANCE
+                        TableDataRefreshService.Null.INSTANCE,
+                        ParquetInstructions.EMPTY
                 ),
                 null,
                 Collections.emptySet()

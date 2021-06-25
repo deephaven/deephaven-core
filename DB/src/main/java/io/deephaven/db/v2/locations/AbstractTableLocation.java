@@ -119,7 +119,7 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
     }
 
     @Override
-    public @NotNull final CLT getColumnLocation(@NotNull CharSequence name) {
+    public @NotNull CLT getColumnLocation(@NotNull CharSequence name) {
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 

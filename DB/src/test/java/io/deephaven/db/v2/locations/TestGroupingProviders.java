@@ -14,6 +14,7 @@ import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.locations.local.NestedPartitionedLocalTableLocationScanner;
 import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProvider;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -166,7 +167,8 @@ public class TestGroupingProviders {
                         tableKey,
                         new NestedPartitionedLocalTableLocationScanner(dataDirectory),
                         false,
-                        TableDataRefreshService.Null.INSTANCE
+                        TableDataRefreshService.Null.INSTANCE,
+                        ParquetInstructions.EMPTY
                 ),
                 null,
                 Collections.emptySet()

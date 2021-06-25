@@ -12,6 +12,7 @@ import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -19,6 +20,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -121,7 +123,23 @@ public class ParquetReaderUtil {
         }
     }
 
-    public static void readParquetSchema(final String filePath, final ColumnDefinitionConsumer colDefConsumer) throws IOException {
+    /**
+     * Obtain schema information from a parquet file
+     *
+     * @param filePath  Location for input parquet file
+     * @param readInstructions  Parquet read instructions specifying transformations like column mappings and codecs.
+     *                          Note a new read instructions based on this one may be returned by this method to provide necessary
+     *                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param colDefConsumer  A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
+     *         transformations added.
+     * @throws IOException if the specified file cannot be read
+     */
+    public static ParquetInstructions readParquetSchema(
+            final String filePath,
+            final ParquetInstructions readInstructions,
+            final ColumnDefinitionConsumer colDefConsumer
+    ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
         final MessageType schema = pf.getSchema();
@@ -266,13 +284,28 @@ public class ParquetReaderUtil {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
         }
 
+        ParquetInstructions.Builder instructionsBuilder = null;
         for (ColumnDescriptor column : schema.getColumns()) {
             currentColumn.setValue(column);
-            final LogicalTypeAnnotation logicalTypeAnnotation = column.getPrimitiveType().getLogicalTypeAnnotation();
-            final String colName = column.getPath()[0];
+            final PrimitiveType primitiveType = column.getPrimitiveType();
+            final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
+            final String parquetColumnName = column.getPath()[0];
+            final String colName;
+            final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
+            if (mappedName != null) {
+                colName = mappedName;
+            } else if (parquetColumnName.contains(" ")) {
+                colName = parquetColumnName.replace(" ", "_");
+                if (instructionsBuilder == null) {
+                    instructionsBuilder = new ParquetInstructions.Builder(readInstructions);
+                }
+                instructionsBuilder.addColumnNameMapping(parquetColumnName, colName);
+            } else {
+                colName = parquetColumnName;
+            }
             final boolean isGrouping = groupingCols.contains(colName);
-            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
-            final String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
+            String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
+            String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
             final String codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
             if (codecType != null && !codecType.isEmpty()) {
                 final Class<?> dataType = loadClass(colName, "codec type", codecType);
@@ -294,7 +327,8 @@ public class ParquetReaderUtil {
             }
             final boolean isArray = column.getMaxRepetitionLevel() > 0;
             if (logicalTypeAnnotation == null) {
-                switch (column.getPrimitiveType().getPrimitiveTypeName()) {
+                final PrimitiveType.PrimitiveTypeName typeName = primitiveType.getPrimitiveTypeName();
+                switch (typeName) {
                     case BOOLEAN:
                         if (isArray) {
                             colDefConsumer.accept(colName, Boolean[].class, Boolean.class, isGrouping, codecName, codecArgs);
@@ -344,6 +378,12 @@ public class ParquetReaderUtil {
                                         + " with unknown special type " + specialType);
                             }
                         }
+                        if (codecName == null || codecName.isEmpty()) {
+                            codecName = SimpleByteArrayCodec.class.getName();
+                            codecArgs =  (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                ? Integer.toString(primitiveType.getTypeLength())
+                                : null;
+                        }
                         colDefConsumer.accept(colName, byte[].class, byte.class, isGrouping, codecName, codecArgs);
                         break;
                     default:
@@ -367,6 +407,10 @@ public class ParquetReaderUtil {
                 }
             }
         }
+        if (instructionsBuilder == null) {
+            return readInstructions;
+        }
+        return instructionsBuilder.build();
     }
 
     private static Object[] convertArray(Binary[] rawData, ObjectCodec<?> codec) {
