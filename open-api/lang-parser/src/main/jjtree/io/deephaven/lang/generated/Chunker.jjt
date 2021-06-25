@@ -420,7 +420,7 @@ TOKEN:
     // we may consider ternaries properly ...later.
     | ( "?" <COLON> ) // allow elvis operator (plain ? handled by <QUEST>, which we grab from productions manually)
     // explicitly not adding <COLON> as it gets special handling (b/c python and groovy use it differently)
-    | ( <WHITESPACE> ( "in" | "as" | "is" | "instanceof" ) ( <WHITESPACE> )? ) // groovy uses some words as operators
+    | ( <WHITESPACE> ( "in" | "as" | "is" | "instanceof" ) ( <WHITESPACE> | <NL> ) ) // groovy uses some words as operators
     | "*:" // groovy spread map
     | ( ".." ( "<" )? ) // groovy ranges
     | "<=>" // groovy spaceship operator

@@ -2,7 +2,7 @@
  "className": "io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU",
  "methods": {
   "touch": ":param t: IntrusiveSoftLRU.T",
-  "verify": "Note: Java generics information - io.deephaven.util.annotations.@VisibleForTesting\n\n:param numStored: int\n:return: boolean"
+  "verify": ":param numStored: int\n:return: boolean"
  },
  "path": "io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU",
  "typeName": "class"

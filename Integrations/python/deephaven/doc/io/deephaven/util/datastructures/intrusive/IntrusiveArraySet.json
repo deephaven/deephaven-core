@@ -2,7 +2,7 @@
  "className": "io.deephaven.util.datastructures.intrusive.IntrusiveArraySet",
  "methods": {
   "add": ":param t: IntrusiveArraySet.T\n:return: boolean",
-  "addAll": ":param c: java.util.Collection<? extends IntrusiveArraySet.T>\n:return: boolean",
+  "addAll": ":param c: java.util.Collection<? extendsIntrusiveArraySet.T>\n:return: boolean",
   "contains": ":param o: java.lang.Object\n:return: boolean",
   "containsAll": ":param collection: java.util.Collection<?>\n:return: boolean",
   "ensureCapacity": ":param capacity: int",

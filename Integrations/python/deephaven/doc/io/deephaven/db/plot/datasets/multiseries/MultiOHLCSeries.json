@@ -9,7 +9,7 @@
   "errorBarColorSeriesNameTointMap": ":return: io.deephaven.db.plot.util.PlotUtils.HashMapWithDefault<java.lang.String,java.lang.Integer>",
   "gradientVisible": ":param visible: boolean\n:param keys: java.lang.Object...\n:return: io.deephaven.db.plot.datasets.multiseries.MultiOHLCSeries",
   "gradientVisibleSeriesNameTobooleanMap": ":return: io.deephaven.db.plot.util.PlotUtils.HashMapWithDefault<java.lang.String,java.lang.Boolean>",
-  "initializeSeries": "Assigns series modifiers, e.g. point color, to the given series\n\n:param series: io.deephaven.db.plot.datasets.ohlc.OHLCDataSeriesInternal",
+  "initializeSeries": "Assigns series modifiers, e.g. point color, to the given series\n\n:param series: (io.deephaven.db.plot.datasets.ohlc.OHLCDataSeriesInternal) - series to initialize",
   "lineColor": "*Overload 1*  \n  :param color: java.lang.String\n  :param keys: java.lang.Object...\n  :return: io.deephaven.db.plot.datasets.multiseries.MultiOHLCSeries\n  \n*Overload 2*  \n  :param color: int\n  :param keys: java.lang.Object...\n  :return: io.deephaven.db.plot.datasets.multiseries.MultiOHLCSeries\n  \n*Overload 3*  \n  :param color: io.deephaven.gui.color.Paint\n  :param keys: java.lang.Object...\n  :return: io.deephaven.db.plot.datasets.multiseries.MultiOHLCSeries",
   "lineColorSeriesNameToPaintMap": ":return: io.deephaven.db.plot.util.PlotUtils.HashMapWithDefault<java.lang.String,io.deephaven.gui.color.Paint>",
   "lineColorSeriesNameToStringMap": ":return: io.deephaven.db.plot.util.PlotUtils.HashMapWithDefault<java.lang.String,java.lang.String>",

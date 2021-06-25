@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 import sys
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 
 def _getSubstring(block, delimiters):
@@ -92,134 +92,101 @@ def _findBlock(strIn, startString, endString, startLimit=None, endLimit=None, in
     else:
         return start+len(startString), end
 
-
-def _splitTerms(part, delim=' ', secDelim=None):
-    def parseAnchor(block):
-        termDelimiters = _findBlock(block, '<a', '</a>', inclusive=True)
-        if termDelimiters is None:
-            return block
-        titleDelimiters = _findBlock(block, 'title="', '"', startLimit=termDelimiters[0], inclusive=False)
-        path = _getSubstring(block, titleDelimiters).split()[-1]
-        elementPart = _findBlock(block, '>', '</a>', startLimit=titleDelimiters[1], inclusive=False)
-        element = _getSubstring(block, elementPart)
-        end = ""
-        if len(block) > termDelimiters[1]:
-            end = block[termDelimiters[1]:]
-        return path + "." + element + end
-
-    def parseBrackets(block, dlim, subBrackets=True):
-        # find and process <> blocks
-        outblocks = []
-        cont = True
-        previousEnd = 0
-        while cont:
-            termDelimiters = _findBlock(block, '&lt;', '&gt;', startLimit=previousEnd, inclusive=True)
-            if termDelimiters is None:
-                cont = False
-            else:
-                # Is this <> nested?
-                starts = [termDelimiters[0], ]
-                ends = [termDelimiters[1], ]
-                cont2 = True
-                while cont2:
-                    tempDelimiters = _findBlock(block, '&lt;', '&gt;', startLimit=starts[-1] + 4, inclusive=True)
-                    if tempDelimiters is not None and tempDelimiters[0] < ends[0]:
-                        # we found another block.
-                        try:
-                            blockEnd = block.index('&gt;', ends[-1])  # we have to advance to the proper end
-                        except Exception:
-                            logging.error('We failed to find the new end {}, {},\n\t{}'.format(starts, ends, block))
-                            raise
-                        starts.append(tempDelimiters[0])
-                        ends.append(blockEnd)
-                    else:
-                        cont2 = False
-
-                start = starts[0]
-                end = ends[-1]
-                # backtrack start to previous delimiter
-                try:
-                    moveTo = block[start::-1].index(dlim)
-                    start -= moveTo
-                except ValueError:
-                    start = 0  # there is no previous delimiter
-                # advance end to next delimiter
-                try:
-                    moveTo = block.index(dlim, end)
-                    end = moveTo
-                except ValueError:
-                    end = len(block)  # there is no next delimiter
-                if start > previousEnd:
-                    temp = block[previousEnd:start].strip().split(dlim)
-                    outblocks.extend([el.strip() for el in temp if len(el.strip()) > 0])
-                if subBrackets:
-                    outblocks.append(_htmlUnescape(block[start:end].strip(),
-                                                   additionalParts={'&lt;': '<', '&gt;': '>'}))
-                else:
-                    outblocks.append(block[start:end].strip())
-                previousEnd = end
-        else:
-            if previousEnd < len(block):
-                temp = block[previousEnd:].strip().split(dlim)
-                outblocks.extend([el.strip() for el in temp if len(el.strip()) > 0])
-        return outblocks
-
-    # find and replace all anchor segments
-    part1 = ""
-    cont = True
-    previousEnd = 0
-    while cont:
-        termDelimiters = _findBlock(part, '<a', '</a>', startLimit=previousEnd, inclusive=True)
-        if termDelimiters is not None:
-            start = termDelimiters[0]
-            end = termDelimiters[1]
-            part1 += part[previousEnd:start] + parseAnchor(part[start:end])
-            previousEnd = end
-        else:
-            cont = False
-    else:
-        part1 += part[previousEnd:]
-
-    # find and process <> blocks
-    if secDelim is None:
-        return parseBrackets(part1, delim, subBrackets=True)
-    else:
-        blocks = []
-        for theBlock in parseBrackets(part1, delim, subBrackets=False):
-            blocks.append(parseBrackets(theBlock, secDelim, subBrackets=True))
-        return blocks
-
+def parseTypeAnchor(anchorElt):
+    """
+    :param anchorElt: bs4 anchor tag representing a param in a method signature
+    :return: string java type, with nested generics
+    """
+    # each <a> has a title we will use to read the package
+    title = anchorElt['title']
+    package = title.split()[-1]
+    return package + '.' + anchorElt.string
 
 def _parseSignature(sigString, methodName):
-    # get rid of the junk elements
-    sigString = _htmlUnescape(sigString, additionalParts={'\n': ' '})
+    # fix whitespace before parsing, lxml handles that like xml and not like html (consider html parser?)
+    dom = BeautifulSoup(_htmlUnescape(sigString), 'lxml')
 
-    segments = sigString.split(methodName+'(')
-    # segemnts[0] = modifiers (w. generics info) and return type
-    # segments[1] = params info, then any thrown exception details
-
-    # parse the return type and modifiers
-    modifierParts = _splitTerms(segments[0].strip())
-    returnType = modifierParts[-1]
+    # find modifiers span and collect allowed contents
     modifiers = []
-    genericsInfo = None
-    allowedModifiers = {'public', 'private', 'protected', 'static', 'abstract', 'default', 'final', 'strictfp',
-                        'java.lang.@Deprecated', 'io.deephaven.util.annotations.@ScriptApi'}
-    if len(modifierParts) > 1:
-        for el in modifierParts[:-1]:
+    modifiersSpan = dom.find('span', {'class': 'modifiers'})
+    if modifiersSpan is not None:
+        modifierParts = modifiersSpan.get_text().split(' ')
+        # TODO annotations probably aren't here any more
+        allowedModifiers = {'public', 'private', 'protected', 'static', 'abstract', 'default', 'final', 'strictfp',
+                            'java.lang.@Deprecated', 'io.deephaven.util.annotations.@ScriptApi'}
+        for el in modifierParts:
             if el in allowedModifiers:
                 modifiers.append(el)
-            elif not el.startswith('@'):
-                genericsInfo = el
+    annotationsSpan = dom.find('span', {'class': 'annotations'})
+    if annotationsSpan is not None:
+        for child in annotationsSpan.contents:
+            if isinstance(child, Tag):
+                # two cases, just brute forcing it
+                if child.get_text() == "@Deprecated":
+                    modifiers.append('java.lang.@Deprecated')
+                if child.get_text() == "@ScriptApi":
+                    modifiers.append('io.deephaven.util.annotations.@ScriptApi')
 
-    other = segments[1].strip().split(" throws ")
+    # if generics are specified, collect them as well
+    genericsInfo = None
+    genericsSpan = dom.find('span', {'class': 'type-parameters'})
+    if genericsSpan is not None:
+        genericsInfo = ''
+        for child in genericsSpan.contents:
+            if isinstance(child, str):
+                genericsInfo += child.strip('\n')
+            else:
+                genericsInfo += parseTypeAnchor(child)
+        genericsInfo = genericsInfo.strip()
+
+    # return type is always present, iterate children and assemble string
+    returnTypeSpan = dom.find('span', {'class': 'return-type'})
+    returnType = ''
+    for child in returnTypeSpan.contents:
+        if isinstance(child, str):
+            returnType += child.strip('\n')
+        else:
+            returnType += parseTypeAnchor(child)
+    returnType = returnType.strip()
+
+    paramsSpan = dom.find('span', {'class': 'parameters'})
+    currentParamAnnotations = []
+    currentParamType = ''
     params = []
-    paramString = other[0].strip()[:-1]  # eliminate trailing parenthesis from params
-    if len(paramString) > 0:
-        params = _splitTerms(paramString, delim=',', secDelim=' ')
-    # Not especially interested in parsing anything the method throws?
-    return modifiers, genericsInfo, returnType, params
+    if paramsSpan is not None:
+        for child in paramsSpan.contents:
+            if isinstance(child, str):
+                for line in child.split('\n'):
+                    if line.startswith('@'):
+                        # annotation on the param
+                        currentParamAnnotations.append(line.strip())
+                    elif line.endswith(',') or line.endswith(')'):
+                        # might be a name, split on whitespace between type and name
+                        parts = line.split(' ')
+                        if len(parts[0]) > 0:
+                            # found more type details, append them too
+                            currentParamType += parts[0]
+                        if len(parts) > 1:
+                            # this is a name, split on space and anything before it is part of the type
 
+                            # extract the type name, minus trailing comma or close paren
+                            currentParamName = parts[1][:-1]
+
+                            # finish this param, prep if there is a next one
+                            currentParam = [currentParamType, currentParamName]
+                            if len(currentParamAnnotations) > 0:
+                                currentParam.insert(0, ' '.join(currentParamAnnotations))
+                            params.append(currentParam)
+                            currentParamType = ''
+                            currentParamAnnotations = []
+                    else:
+                        # plain string, part of the type (primitive, </>/extends/super/etc, append to the last string
+                        currentParamType += line.strip()
+            if isinstance(child, Tag):
+                # anchor, read out the type
+                currentParamType += parseTypeAnchor(child)
+
+    return modifiers, genericsInfo, returnType, params
 
 class ClassDocParser(object):
     """This parses the desired components from the provided java doc (page?)"""
@@ -323,11 +290,11 @@ class ClassDocParser(object):
         # find the symbol information
         classStartBlock = '<!-- ======== START OF CLASS DATA ======== -->'
 
-        packageStartBlock = '<div class="subTitle">'
-        packageEndBlock = '</div'
+        packageStartBlock = '<a href="package-summary.html">'
+        packageEndBlock = '</a'
 
-        symbolStartBlock = '<h2'
-        symbolEndBlock = '</h2>'
+        symbolStartBlock = '<h1'
+        symbolEndBlock = '</h1>'
 
         symbolInfoDelimiters = _findBlock(self.docString, classStartBlock, symbolEndBlock, inclusive=True)
         if symbolInfoDelimiters is None:
@@ -366,8 +333,8 @@ class ClassDocParser(object):
         self._symbol = symb
 
         # Try to parse the text for this class/enum/interface
-        classDetailsStartBlock = '<div class="description">'  # after symbolEndBlock
-        classDetailsEndBlock = '<div class="summary">'
+        classDetailsStartBlock = '<section class="description">'  # after symbolEndBlock
+        classDetailsEndBlock = '<section class="summary">'
         classSpecificStart = '<pre>'
         classSpecificEnd = '</pre>'
         textStart = '<div class="block">'  # directly after class specific stuff
@@ -386,8 +353,8 @@ class ClassDocParser(object):
 
     def _parseMethods(self):
         # look for a methods section
-        methodStartString = '<h3>Method Detail</h3>'
-        methodEndString = '</section>'
+        methodStartString = '<h2>Method Details</h2>'
+        methodEndString = '</section>\n</li>\n</ul>\n</section>'
         limits = _findBlock(self.docString, methodStartString, methodEndString, inclusive=False)
         if limits is not None:
             methodBlockString = self.docString[limits[0]:limits[1]]
@@ -395,8 +362,8 @@ class ClassDocParser(object):
             theEnd = len(methodBlockString)
             # iterate over each method and populate
             while (thisStart is not None) and thisStart < theEnd:
-                methodLimits = _findBlock(methodBlockString, '<li class="blockList">\n<h4>',
-                                          '</li>\n</ul>', thisStart, theEnd, inclusive=True)
+                methodLimits = _findBlock(methodBlockString, '<li>\n<section class="detail"',
+                                          '</section>\n</li>', thisStart, theEnd, inclusive=True)
                 if methodLimits is not None:
                     if self.type == 'interface':
                         defMods = {'public', }  # everything for an interface is implicitly public
@@ -455,22 +422,22 @@ class MethodDetail(object):
     def _getName(self, start, end):
         """Parses name and returns the end of the name block"""
 
-        nameStartString = '<h4>'
-        nameEndString = '</h4>'
+        nameStartString = '<h3'
+        nameEndString = '</h3>'
 
         nameDelimiters = _findBlock(self.documentBlock, nameStartString, nameEndString, start, end, inclusive=False)
         if nameDelimiters is not None:
             if nameDelimiters[1] is not None:
-                self.name = self.documentBlock[nameDelimiters[0]:nameDelimiters[1]]
+                self.name = self.documentBlock[nameDelimiters[0]:nameDelimiters[1]].split('>')[1]
                 return nameDelimiters[1] + len(nameEndString)
             else:
-                self.name = self.documentBlock[nameDelimiters[0]:end]
+                self.name = self.documentBlock[nameDelimiters[0]:end].split('>')[1]
         return None
 
     def _getSignature(self, start, end):
         """Parses signature and returns the end of the signature block"""
-        sigStartString = ['<pre class="methodSignature">', '<pre>']
-        sigEndString = '</pre>'
+        sigStartString = ['<div class="member-signature">', '<pre>']
+        sigEndString = '</div>'
         sigDelimiters = None
         for sigStartStr in sigStartString:
             if sigDelimiters is None:
@@ -528,9 +495,9 @@ class MethodDetail(object):
     def _getParameterDetails(self, start, end):
         """Parses parameter details text - if it's there - and returns the next starting point"""
 
-        paramStartString = '<dl>\n<dt><span class="paramLabel">Parameters:</span></dt>\n'
-        returnStartString = '<dt><span class="returnLabel">Returns:</span></dt>\n'
-        blockEnd = '</dl>\n</li>'
+        paramStartString = '<dt>Parameters:</dt>\n'
+        returnStartString = '<dt>Returns:</dt>\n'
+        blockEnd = '</dl>'
 
         paramsDelimiters = _findBlock(self.documentBlock, paramStartString, blockEnd, start, end, inclusive=False)
         returnsDelimiters = _findBlock(self.documentBlock, returnStartString, blockEnd, start, end, inclusive=False)

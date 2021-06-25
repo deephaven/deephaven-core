@@ -2,10 +2,10 @@
  "className": "io.deephaven.db.tables.select.QueryScope",
  "methods": {
   "addObjectFields": "Adds an object's declared fields to the scope.\n\n:param object: (java.lang.Object) - object whose fields will be added.",
-  "addParam": "Adds a parameter to the default instance QueryScope, or updates the value of an\n existing parameter.\n\nNote: Java generics information - <T>\n\n:param name: java.lang.String\n:param value: T",
+  "addParam": "Adds a parameter to the default instance QueryScope, or updates the value of an\n existing parameter.\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - String name of the parameter to add.\n:param value: (T) - value to assign to the parameter.",
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "getParamNames": "Get all known scope variable names.\n\n:return: (java.util.Set<java.lang.String>) A collection of scope variable names.",
-  "getParamValue": "Gets a parameter from the default instance QueryScope.\n\nNote: Java generics information - <T>\n\n:param name: java.lang.String\n:return: (T) parameter value.",
+  "getParamValue": "Gets a parameter from the default instance QueryScope.\n\nNote: Java generics information - <T>\n\n:param name: (java.lang.String) - parameter name.\n:return: (T) parameter value.",
   "getParams": "Get an array of Params by name.  See createParam(name) implementations for details.\n\n:param names: (java.util.Collection<java.lang.String>) - parameter names\n:return: (io.deephaven.db.tables.select.Param[]) A newly-constructed array of newly-constructed Params.",
   "getQueryName": "Gets the query name.\n\n:return: (java.lang.String) query name.",
   "getScope": "Retrieve the default QueryScope instance which will be used by static methods.\n\n:return: (io.deephaven.db.tables.select.QueryScope) QueryScope",

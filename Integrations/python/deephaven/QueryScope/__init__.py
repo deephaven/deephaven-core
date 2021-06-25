@@ -69,8 +69,8 @@ def addParam(name, value):
     
     Note: Java generics information - <T>
     
-    :param name: java.lang.String
-    :param value: T
+    :param name: (java.lang.String) - String name of the parameter to add.
+    :param value: (T) - value to assign to the parameter.
     """
     
     return _java_type_.addParam(name, value)
@@ -83,7 +83,7 @@ def getParamValue(name):
     
     Note: Java generics information - <T>
     
-    :param name: java.lang.String
+    :param name: (java.lang.String) - parameter name.
     :return: (T) parameter value.
     """
     
