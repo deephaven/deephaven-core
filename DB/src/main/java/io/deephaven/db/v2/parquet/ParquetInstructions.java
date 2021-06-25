@@ -201,7 +201,7 @@ public abstract class ParquetInstructions {
 
             final ColumnInstructions fromParquetColumnNameInstructions = parquetColumnNameToInstructions.get(parquetColumnName);
             if (fromParquetColumnNameInstructions != null) {
-                if (fromParquetColumnNameInstructions.getColumnName().equals(columnName)) {
+                if (fromParquetColumnNameInstructions == ci) {
                     return this;
                 }
                 throw new IllegalArgumentException(
