@@ -115,6 +115,8 @@ public class TableManagementTools {
         return readParquetTable(sourceFilePath, !sourceFilePath.getPath().endsWith(PARQUET_FILE_EXTENSION));
     }
 
+    private static final ThreadLocal<Set<String>> localSet = ThreadLocal.withInitial(HashSet::new);
+
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
@@ -135,13 +137,21 @@ public class TableManagementTools {
                     cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
         ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
+        final Set<String> localStorageForTakenNames = localSet.get();
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
             readInstructions = ParquetReaderUtil.readParquetSchema(path, readInstructions, colConsumer,
-                    (final String colName) -> DBNameValidator.legalizeColumnName(colName, s -> s.replace(" ", "_")));
-
+                    (final String colName) -> {
+                        final String ans = DBNameValidator.legalizeColumnName(
+                                colName, s -> s.replace(" ", "_"), localStorageForTakenNames);
+                        localStorageForTakenNames.add(ans);
+                        return ans;
+                    });
+            localStorageForTakenNames.clear();
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
+        } finally {
+            localStorageForTakenNames.clear();
         }
         final TableDefinition def = new TableDefinition(cols);
         return isDirectory
