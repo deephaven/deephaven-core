@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -140,7 +141,7 @@ public class ParquetReaderUtil {
             final String filePath,
             final ParquetInstructions readInstructions,
             final ColumnDefinitionConsumer colDefConsumer,
-            final Function<String, String> legalizeColumnNameFunc
+            final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
     ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
@@ -297,7 +298,9 @@ public class ParquetReaderUtil {
             if (mappedName != null) {
                 colName = mappedName;
             } else {
-                final String legalized = legalizeColumnNameFunc.apply(parquetColumnName);
+                final String legalized = legalizeColumnNameFunc.apply(
+                        parquetColumnName,
+                        (instructionsBuilder == null) ? Collections.emptySet() : instructionsBuilder.getTakenNames());
                 if (!legalized.equals(parquetColumnName)) {
                     colName = legalized;
                     if (instructionsBuilder == null) {

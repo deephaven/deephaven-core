@@ -4,6 +4,9 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * This class provides instructions intended for read and write parquet operations (which take
  * it as an optional argument) specifying desired transformations.  Examples are
@@ -211,6 +214,10 @@ public abstract class ParquetInstructions {
             ci.setParquetColumnName(parquetColumnName);
             parquetColumnNameToInstructions.put(parquetColumnName, ci);
             return this;
+        }
+
+        public Set<String> getTakenNames() {
+            return (columnNameToInstructions == null) ? Collections.emptySet() : columnNameToInstructions.keySet();
         }
 
         public ParquetInstructions build() {
