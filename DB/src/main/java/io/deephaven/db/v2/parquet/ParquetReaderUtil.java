@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -139,7 +140,8 @@ public class ParquetReaderUtil {
     public static ParquetInstructions readParquetSchema(
             final String filePath,
             final ParquetInstructions readInstructions,
-            final ColumnDefinitionConsumer colDefConsumer
+            final ColumnDefinitionConsumer colDefConsumer,
+            final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
     ) throws IOException {
         final ParquetFileReader pf = new ParquetFileReader(
                 filePath, getChannelsProvider(), 0);
@@ -295,14 +297,19 @@ public class ParquetReaderUtil {
             final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
             if (mappedName != null) {
                 colName = mappedName;
-            } else if (parquetColumnName.contains(" ")) {
-                colName = parquetColumnName.replace(" ", "_");
-                if (instructionsBuilder == null) {
-                    instructionsBuilder = new ParquetInstructions.Builder(readInstructions);
-                }
-                instructionsBuilder.addColumnNameMapping(parquetColumnName, colName);
             } else {
-                colName = parquetColumnName;
+                final String legalized = legalizeColumnNameFunc.apply(
+                        parquetColumnName,
+                        (instructionsBuilder == null) ? Collections.emptySet() : instructionsBuilder.getTakenNames());
+                if (!legalized.equals(parquetColumnName)) {
+                    colName = legalized;
+                    if (instructionsBuilder == null) {
+                        instructionsBuilder = new ParquetInstructions.Builder(readInstructions);
+                    }
+                    instructionsBuilder.addColumnNameMapping(parquetColumnName, colName);
+                } else {
+                    colName = parquetColumnName;
+                }
             }
             final boolean isGrouping = groupingCols.contains(colName);
             String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);

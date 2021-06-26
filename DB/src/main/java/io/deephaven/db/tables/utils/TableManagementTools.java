@@ -137,7 +137,13 @@ public class TableManagementTools {
         ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
-            readInstructions = ParquetReaderUtil.readParquetSchema(path, readInstructions, colConsumer);
+            readInstructions = ParquetReaderUtil.readParquetSchema(
+                    path,
+                    readInstructions,
+                    colConsumer,
+                    (final String colName, final Set<String> takenNames) ->
+                            DBNameValidator.legalizeColumnName(
+                                    colName, s -> s.replace(" ", "_"), takenNames));
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }
