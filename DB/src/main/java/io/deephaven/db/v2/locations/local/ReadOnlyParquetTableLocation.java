@@ -9,8 +9,10 @@ import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.parquet.*;
 import io.deephaven.db.v2.locations.parquet.topage.*;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.parquet.ColumnChunkReader;
@@ -47,10 +49,16 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     private final Map<String, GroupingFile> groupingFiles = new ConcurrentHashMap<>();
     private final Set<String> grouping = new HashSet<>();
+    private final ParquetInstructions readInstructions;
 
-    ReadOnlyParquetTableLocation(@NotNull TableKey tableKey, @NotNull TableLocationKey tableLocationKey, File parquetFile, boolean supportsSubscriptions) {
+    ReadOnlyParquetTableLocation(
+            @NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey,
+            final File parquetFile,
+            final boolean supportsSubscriptions,
+            final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, supportsSubscriptions);
-
+        this.readInstructions = readInstructions;
         try {
             parentDir = parquetFile.getParentFile();
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
@@ -85,7 +93,9 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     @NotNull
     @Override
-    protected ParquetColumnLocation<Attributes.Values> makeColumnLocation(@NotNull String name) {
+    protected ParquetColumnLocation<Attributes.Values> makeColumnLocation(@NotNull String colName) {
+        final String name = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colName);
+
         ColumnChunkPageStore.MetaDataCreator getMetaData = null;
 
         if (grouping.contains(name)) {
@@ -125,10 +135,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
     @NotNull
     private <ATTR extends Attributes.Any> ColumnChunkPageStore.Creator<ATTR> makeColumnCreator(
-            @NotNull String name,
+            @NotNull String colName,
             @NotNull RowGroupReader rowGroupReader,
             @NotNull Map<String, String> keyValueMetaData,
             ColumnChunkPageStore.MetaDataCreator getMetadata) {
+        final String name = readInstructions.getParquetColumnNameFromColumnNameOrDefault(colName);
         String [] nameList = columns.get(name);
         final ColumnChunkReader columnChunkReader = rowGroupReader.getColumnChunk(nameList == null ?
                 Collections.singletonList(name) : Arrays.asList(nameList));
@@ -163,7 +174,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                 }
 
                 if (toPage == null) {
-                    switch (type.getPrimitiveTypeName()) {
+                    final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
+                    switch (typeName) {
                         case BOOLEAN:
                             toPage = ToBooleanAsBytePage.create(pageType);
                             break;
@@ -173,6 +185,9 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                         case INT64:
                             toPage = ToLongPage.create(pageType);
                             break;
+                        case INT96:
+                            toPage = ToDBDateTimePageFromInt96.create(pageType);
+                            break;
                         case DOUBLE:
                             toPage = ToDoublePage.create(pageType);
                             break;
@@ -181,17 +196,23 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             break;
                         case BINARY:
                         case FIXED_LEN_BYTE_ARRAY:
+                            //noinspection rawtypes
+                            final ObjectCodec codec;
                             if (isCodec) {
                                 final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
-                                //noinspection rawtypes
-                                final ObjectCodec codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
-                                //noinspection unchecked
-                                toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
+                                codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
                             } else {
-                                throw new TableDataException("No codec in parquet file for binary blob.");
+                                final String codecParams;
+                                if (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY) {
+                                    codecParams = Integer.toString(type.getTypeLength());
+                                } else {
+                                    codecParams = null;
+                                }
+                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecParams);
                             }
+                            //noinspection unchecked
+                            toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
                             break;
-                        case INT96:
                         default:
                     }
                 }
@@ -221,6 +242,12 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                 throw new TableDataException("Unexpected exception accessing column " + name, except);
             }
         }, getMetadata);
+    }
+
+    @Override
+    public @NotNull final ParquetColumnLocation<Attributes.Values> getColumnLocation(@NotNull CharSequence argName) {
+        final String name = readInstructions.getParquetColumnNameFromColumnNameOrDefault(argName.toString());
+        return super.getColumnLocation(name.subSequence(0, name.length()));
     }
 
     private static class LogicalTypeVisitor<ATTR extends Attributes.Any> implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<ToPage<ATTR, ?>> {
