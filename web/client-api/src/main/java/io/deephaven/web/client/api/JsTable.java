@@ -2,11 +2,13 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
@@ -783,23 +785,39 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<JsTable> join(String joinType, JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd) {
+    public Promise<JsTable> join(String joinType, JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
         if (rightTable.workerConnection != workerConnection) {
             throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
         }
-//        JoinDescriptor descriptor = new JoinDescriptor(
-//                JoinDescriptor.JoinType.valueOf(joinType),
-//                state().getHandle(),
-//                rightTable.state().getHandle(),
-//                columnsToMatch.asList().toArray(new String[0]),
-//                columnsToAdd == null ? new String[0] : columnsToAdd.asList().toArray(new String[0])
-//        );
-        // columns can be column names or match expressions, deferring validation to the server
+        final JsTableFetch joinFetch;
+        if (joinType.equals("AJ") || joinType.equals("RAJ")) {
+            joinFetch = (c, state, metadata) -> {
+                AsOfJoinTablesRequest request = new AsOfJoinTablesRequest();
+                request.setLeftId(state().getHandle().makeTableReference());
+                request.setRightId(rightTable.state().getHandle().makeTableReference());
+                request.setResultId(state.getHandle().makeTicket());
+                request.setColumnsToMatchList(columnsToMatch);
+                request.setColumnsToAddList(columnsToAdd);
+                if (asOfMatchRule != null) {
+                    request.setAsOfMatchRule(Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAny(asOfMatchRule).asDouble());
+                }
+                workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
+            };
 
-        return workerConnection.newState((c, state, metadata) -> {
-            workerConnection.tableServiceClient().joinTables(new JoinTablesRequest(), metadata, c::apply);
-
-        }, "join(" + joinType + ", " + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")").refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        } else if (Js.asPropertyMap(JoinTablesRequest.Type).has(joinType)){
+            joinFetch = (c, state, metadata) -> {
+                JoinTablesRequest request = new JoinTablesRequest();
+                request.setJoinType(Js.asPropertyMap(JoinTablesRequest.Type).getAny(joinType).asDouble());
+                request.setLeftId(state().getHandle().makeTableReference());
+                request.setRightId(rightTable.state().getHandle().makeTableReference());
+                request.setResultId(state.getHandle().makeTicket());
+                request.setColumnsToMatchList(columnsToMatch);
+                request.setColumnsToAddList(columnsToAdd);
+            };
+        } else {
+            throw new IllegalArgumentException("Unsupported join type " + joinType);
+        }
+        return workerConnection.newState(joinFetch, "join(" + joinType + ", " + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")").refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @JsMethod

@@ -17,9 +17,6 @@ public interface TypeMap {
     return Js.uncheckedCast(JsPropertyMap.of());
   }
 
-  @JsProperty(name = "AS_OF_JOIN")
-  double getAS_OF_JOIN();
-
   @JsProperty(name = "CROSS_JOIN")
   double getCROSS_JOIN();
 
@@ -32,12 +29,6 @@ public interface TypeMap {
   @JsProperty(name = "NATURAL_JOIN")
   double getNATURAL_JOIN();
 
-  @JsProperty(name = "REVERSE_AS_OF_JOIN")
-  double getREVERSE_AS_OF_JOIN();
-
-  @JsProperty(name = "AS_OF_JOIN")
-  void setAS_OF_JOIN(double AS_OF_JOIN);
-
   @JsProperty(name = "CROSS_JOIN")
   void setCROSS_JOIN(double CROSS_JOIN);
 
@@ -49,7 +40,4 @@ public interface TypeMap {
 
   @JsProperty(name = "NATURAL_JOIN")
   void setNATURAL_JOIN(double NATURAL_JOIN);
-
-  @JsProperty(name = "REVERSE_AS_OF_JOIN")
-  void setREVERSE_AS_OF_JOIN(double REVERSE_AS_OF_JOIN);
 }

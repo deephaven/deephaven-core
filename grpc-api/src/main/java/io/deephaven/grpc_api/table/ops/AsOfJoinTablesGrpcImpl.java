@@ -1,18 +1,19 @@
 package io.deephaven.grpc_api.table.ops;
 
-import io.deephaven.base.verify.Assert;
 import com.google.common.collect.Lists;
 import com.google.rpc.Code;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.exceptions.ExpressionException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.JoinTablesRequest;
+import io.deephaven.util.FunctionalInterfaces;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -20,34 +21,34 @@ import javax.inject.Singleton;
 import java.util.List;
 
 @Singleton
-public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
+public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesRequest> {
 
     private final LiveTableMonitor liveTableMonitor;
 
-    private static final MultiDependencyFunction<JoinTablesRequest> EXTRACT_DEPS =
+    private static final MultiDependencyFunction<AsOfJoinTablesRequest> EXTRACT_DEPS =
             (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
     @Inject
-    public JoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-        super(BatchTableRequest.Operation::getJoin, JoinTablesRequest::getResultId, EXTRACT_DEPS);
+    protected AsOfJoinTablesGrpcImpl(LiveTableMonitor liveTableMonitor) {
+        super(BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId, EXTRACT_DEPS);
         this.liveTableMonitor = liveTableMonitor;
     }
 
     @Override
-    public void validateRequest(final JoinTablesRequest request) throws StatusRuntimeException {
+    public void validateRequest(final AsOfJoinTablesRequest request) throws StatusRuntimeException {
         try {
             MatchPairFactory.getExpressions(request.getColumnsToMatchList());
             MatchPairFactory.getExpressions(request.getColumnsToAddList());
         } catch (final ExpressionException err) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
         }
-        if (request.getJoinType() == JoinTablesRequest.Type.UNRECOGNIZED) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized join type");
+        if (request.getAsOfMatchRule() == AsOfJoinTablesRequest.MatchRule.UNRECOGNIZED) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized as-of match rule");
         }
     }
 
     @Override
-    public Table create(final JoinTablesRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final AsOfJoinTablesRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 2);
 
         final MatchPair[] columnsToMatch;
@@ -64,17 +65,16 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
         final Table rhs = sourceTables.get(1).get();
 
         final FunctionalInterfaces.ThrowingSupplier<Table, RuntimeException> doJoin = () -> {
-            switch(request.getJoinType()) {
-                case CROSS_JOIN:
-                    return lhs.join(rhs, columnsToMatch, columnsToAdd);
-                case NATURAL_JOIN:
-                    return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
-                case EXACT_JOIN:
-                    return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
-                case LEFT_JOIN:
-                    return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
+            Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
+            switch (matchRule) {
+                case LESS_THAN:
+                case LESS_THAN_EQUAL:
+                    return lhs.aj(rhs, columnsToMatch, columnsToAdd, matchRule);
+                case GREATER_THAN:
+                case GREATER_THAN_EQUAL:
+                    return lhs.raj(rhs, columnsToMatch, columnsToAdd, matchRule);
                 default:
-                    throw new RuntimeException("Unsupported join type: " + request.getJoinType());
+                    throw new RuntimeException("Unsupported join type: " + matchRule);
             }
         };
 

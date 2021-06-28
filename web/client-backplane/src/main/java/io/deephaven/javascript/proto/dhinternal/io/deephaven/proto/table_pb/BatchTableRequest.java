@@ -20,6 +20,60 @@ public class BatchTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface OpsListFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface AsOfJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getAsOfMatchRule();
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setAsOfMatchRule(double asOfMatchRule);
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface ComboAggregateFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface AggregatesListFieldType {
@@ -1284,6 +1338,9 @@ public class BatchTableRequest {
       }
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType getAsOfJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.ComboAggregateFieldType
           getComboAggregate();
 
@@ -1351,6 +1408,10 @@ public class BatchTableRequest {
 
       @JsProperty
       Object getView();
+
+      @JsProperty
+      void setAsOfJoin(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType asOfJoin);
 
       @JsProperty
       void setComboAggregate(
@@ -1454,6 +1515,60 @@ public class BatchTableRequest {
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface OpsListFieldType {
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface AsOfJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getAsOfMatchRule();
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setAsOfMatchRule(double asOfMatchRule);
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
+      }
+
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface ComboAggregateFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2722,6 +2837,9 @@ public class BatchTableRequest {
       }
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType getAsOfJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ComboAggregateFieldType
           getComboAggregate();
 
@@ -2789,6 +2907,10 @@ public class BatchTableRequest {
 
       @JsProperty
       Object getView();
+
+      @JsProperty
+      void setAsOfJoin(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType asOfJoin);
 
       @JsProperty
       void setComboAggregate(
