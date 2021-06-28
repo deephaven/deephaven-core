@@ -1,5 +1,6 @@
 package io.deephaven.lang.parse;
 
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.Chunker;
 import io.deephaven.lang.generated.ChunkerDocument;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> {
 
+    Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
 
     public ParsedDocument parse(String document) throws ParseException {
@@ -27,8 +29,8 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     }
 
     @Override
-    public void open(final String text, final String uri, final String version, final Logger log) {
-        log.info()
+    public void open(final String text, final String uri, final String version) {
+        LOGGER.trace()
                 .append("Opening document ")
                 .append(uri)
                 .append("[")
@@ -36,17 +38,17 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
                 .append("] ->\n")
                 .append(text)
                 .endl();
-        startParse(uri, log)
+        startParse(uri)
                 .requestParse(String.valueOf(version), text, false);
     }
 
-    private PendingParse startParse(String uri, Logger log) {
-        return docs.computeIfAbsent(uri, k -> new PendingParse(uri, log));
+    private PendingParse startParse(String uri) {
+        return docs.computeIfAbsent(uri, k -> new PendingParse(uri, LOGGER));
     }
 
     @Override
-    public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes, final Logger log) {
-        log.info()
+    public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
+        LOGGER.trace()
                 .append("Updating document ")
                 .append(uri)
                 .append(" [")
@@ -59,7 +61,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         PendingParse doc = docs.get(uri);
         final boolean forceParse;
         if (doc == null) {
-            doc = startParse(uri, log);
+            doc = startParse(uri);
             forceParse = false;
         } else {
             // let the parser know that we have an incoming change, so it can clear out its worker thread asap
@@ -73,7 +75,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
 
             int offset = LspTools.getOffsetFromPosition(document, range.getStart());
             if (offset < 0) {
-                log.warn().append("Invalid change in document ")
+                LOGGER.warn().append("Invalid change in document ")
                         .append(uri)
                         .append("[")
                         .append(version)
@@ -90,7 +92,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
             document = prefix + change.getText() + suffix;
         }
         doc.requestParse(version, document, forceParse);
-        log.info()
+        LOGGER.trace()
                 .append("Finished updating ")
                 .append(uri)
                 .append(" [")
@@ -110,11 +112,14 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     @Override
     public ParsedDocument finish(String uri) {
         final PendingParse doc = docs.get(uri);
-        return doc.finishParse().orElseThrow(() -> new IllegalStateException("Unable to get parsed document " + uri));
+        if (doc == null) {
+          throw new IllegalStateException("Unable to find parsed document " + uri);
+        }
+        return doc.finishParse().orElseThrow(() -> new IllegalStateException("Unable to complete document parsing for " + uri));
     }
 
     @Override
-    public void close(final String uri, final Logger log) {
+    public void close(final String uri) {
         final PendingParse removed = docs.remove(uri);
         if (removed != null) {
             removed.cancel();
