@@ -4,7 +4,6 @@ import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.asofjointablesrequest.MatchRuleMap;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.asofjointablesrequest.TypeMap;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -104,9 +103,6 @@ public class AsOfJoinTablesRequest {
     }
 
     @JsProperty
-    double getAsOfJoinType();
-
-    @JsProperty
     double getAsOfMatchRule();
 
     @JsProperty
@@ -123,9 +119,6 @@ public class AsOfJoinTablesRequest {
 
     @JsProperty
     Object getRightId();
-
-    @JsProperty
-    void setAsOfJoinType(double asOfJoinType);
 
     @JsProperty
     void setAsOfMatchRule(double asOfMatchRule);
@@ -243,9 +236,6 @@ public class AsOfJoinTablesRequest {
     }
 
     @JsProperty
-    double getAsOfJoinType();
-
-    @JsProperty
     double getAsOfMatchRule();
 
     @JsProperty
@@ -262,9 +252,6 @@ public class AsOfJoinTablesRequest {
 
     @JsProperty
     Object getRightId();
-
-    @JsProperty
-    void setAsOfJoinType(double asOfJoinType);
 
     @JsProperty
     void setAsOfMatchRule(double asOfMatchRule);
@@ -296,7 +283,6 @@ public class AsOfJoinTablesRequest {
   }
 
   public static MatchRuleMap MatchRule;
-  public static TypeMap Type;
 
   public static native AsOfJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
@@ -326,8 +312,6 @@ public class AsOfJoinTablesRequest {
 
   public native void clearRightId();
 
-  public native double getAsOfJoinType();
-
   public native double getAsOfMatchRule();
 
   public native JsArray<String> getColumnsToAddList();
@@ -347,8 +331,6 @@ public class AsOfJoinTablesRequest {
   public native boolean hasRightId();
 
   public native Uint8Array serializeBinary();
-
-  public native void setAsOfJoinType(double value);
 
   public native void setAsOfMatchRule(double value);
 

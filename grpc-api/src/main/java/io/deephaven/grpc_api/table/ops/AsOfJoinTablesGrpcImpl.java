@@ -17,8 +17,10 @@ import io.deephaven.util.FunctionalInterfaces;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
+@Singleton
 public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesRequest> {
 
     private final LiveTableMonitor liveTableMonitor;
@@ -40,11 +42,8 @@ public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesReq
         } catch (final ExpressionException err) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
         }
-        if (request.getAsOfJoinType() == AsOfJoinTablesRequest.Type.UNRECOGNIZED) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized join type");
-        }
         if (request.getAsOfMatchRule() == AsOfJoinTablesRequest.MatchRule.UNRECOGNIZED) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized match rule");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized as-of match rule");
         }
     }
 
@@ -67,13 +66,15 @@ public class AsOfJoinTablesGrpcImpl extends GrpcTableOperation<AsOfJoinTablesReq
 
         final FunctionalInterfaces.ThrowingSupplier<Table, RuntimeException> doJoin = () -> {
             Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
-            switch(request.getAsOfJoinType()) {
-                case AS_OF_JOIN:
+            switch (matchRule) {
+                case LESS_THAN:
+                case LESS_THAN_EQUAL:
                     return lhs.aj(rhs, columnsToMatch, columnsToAdd, matchRule);
-                case REVERSE_AS_OF_JOIN:
+                case GREATER_THAN:
+                case GREATER_THAN_EQUAL:
                     return lhs.raj(rhs, columnsToMatch, columnsToAdd, matchRule);
                 default:
-                    throw new RuntimeException("Unsupported join type: " + request.getAsOfJoinType());
+                    throw new RuntimeException("Unsupported join type: " + matchRule);
             }
         };
 

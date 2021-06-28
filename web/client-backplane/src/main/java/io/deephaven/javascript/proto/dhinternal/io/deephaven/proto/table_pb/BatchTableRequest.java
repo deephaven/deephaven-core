@@ -27,9 +27,6 @@ public class BatchTableRequest {
         }
 
         @JsProperty
-        double getAsOfJoinType();
-
-        @JsProperty
         double getAsOfMatchRule();
 
         @JsProperty
@@ -46,9 +43,6 @@ public class BatchTableRequest {
 
         @JsProperty
         Object getRightId();
-
-        @JsProperty
-        void setAsOfJoinType(double asOfJoinType);
 
         @JsProperty
         void setAsOfMatchRule(double asOfMatchRule);
@@ -1529,9 +1523,6 @@ public class BatchTableRequest {
         }
 
         @JsProperty
-        double getAsOfJoinType();
-
-        @JsProperty
         double getAsOfMatchRule();
 
         @JsProperty
@@ -1548,9 +1539,6 @@ public class BatchTableRequest {
 
         @JsProperty
         Object getRightId();
-
-        @JsProperty
-        void setAsOfJoinType(double asOfJoinType);
 
         @JsProperty
         void setAsOfMatchRule(double asOfMatchRule);

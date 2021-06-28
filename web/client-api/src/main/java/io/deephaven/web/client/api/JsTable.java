@@ -790,10 +790,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
         }
         final JsTableFetch joinFetch;
-        if (Js.asPropertyMap(AsOfJoinTablesRequest.Type).has(joinType)) {
+        if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             joinFetch = (c, state, metadata) -> {
                 AsOfJoinTablesRequest request = new AsOfJoinTablesRequest();
-                request.setAsOfJoinType(Js.asPropertyMap(AsOfJoinTablesRequest.Type).getAny(joinType).asDouble());
                 request.setLeftId(state().getHandle().makeTableReference());
                 request.setRightId(rightTable.state().getHandle().makeTableReference());
                 request.setResultId(state.getHandle().makeTicket());
@@ -805,7 +804,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
             };
 
-        } else {
+        } else if (Js.asPropertyMap(JoinTablesRequest.Type).has(joinType)){
             joinFetch = (c, state, metadata) -> {
                 JoinTablesRequest request = new JoinTablesRequest();
                 request.setJoinType(Js.asPropertyMap(JoinTablesRequest.Type).getAny(joinType).asDouble());
@@ -815,6 +814,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 request.setColumnsToMatchList(columnsToMatch);
                 request.setColumnsToAddList(columnsToAdd);
             };
+        } else {
+            throw new IllegalArgumentException("Unsupported join type " + joinType);
         }
         return workerConnection.newState(joinFetch, "join(" + joinType + ", " + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")").refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }

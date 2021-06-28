@@ -279,10 +279,6 @@ message JoinTablesRequest {
 }
 
 message AsOfJoinTablesRequest {
-  enum Type {
-    AS_OF_JOIN = 0;
-    REVERSE_AS_OF_JOIN = 1;
-  }
   enum MatchRule {
     LESS_THAN_EQUAL = 0;
     LESS_THAN = 1;
@@ -294,7 +290,8 @@ message AsOfJoinTablesRequest {
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
   repeated string columns_to_add = 5;
-  Type as_of_join_type = 6;
+  // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
+  // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
   MatchRule as_of_match_rule = 7;
 }
 
