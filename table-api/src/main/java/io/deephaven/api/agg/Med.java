@@ -8,7 +8,7 @@ import org.immutables.value.Value.Immutable;
 public abstract class Med implements Aggregation {
 
     public static Med of(JoinMatch match) {
-        return ImmutableMed.of(match);
+        return ImmutableMed.builder().match(match).build();
     }
 
     public static Med of(String x) {

@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+
 import java.util.Collection;
 
 /**
@@ -20,6 +21,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     TOPS reverse();
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS snapshot(TABLE rightTable, boolean doInitialSnapshot, String... stampColumns);
+
+    TOPS snapshot(TABLE rightTable, String... stampColumns);
+
+    TOPS snapshot(TABLE rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
 
     // -------------------------------------------------------------------------------------------
 
