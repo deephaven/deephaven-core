@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> {
 
-    Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
 
     public ParsedDocument parse(String document) throws ParseException {
@@ -43,7 +43,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     }
 
     private PendingParse startParse(String uri) {
-        return docs.computeIfAbsent(uri, k -> new PendingParse(uri, LOGGER));
+        return docs.computeIfAbsent(uri, k -> new PendingParse(uri));
     }
 
     @Override
