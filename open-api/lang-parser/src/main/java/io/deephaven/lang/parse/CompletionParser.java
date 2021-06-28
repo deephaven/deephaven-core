@@ -30,14 +30,16 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
 
     @Override
     public void open(final String text, final String uri, final String version) {
-        LOGGER.trace()
-                .append("Opening document ")
-                .append(uri)
-                .append("[")
-                .append(version)
-                .append("] ->\n")
-                .append(text)
-                .endl();
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace()
+                    .append("Opening document ")
+                    .append(uri)
+                    .append("[")
+                    .append(version)
+                    .append("] ->\n")
+                    .append(text)
+                    .endl();
+        }
         startParse(uri)
                 .requestParse(String.valueOf(version), text, false);
     }
@@ -48,16 +50,18 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
 
     @Override
     public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
-        LOGGER.trace()
-                .append("Updating document ")
-                .append(uri)
-                .append(" [")
-                .append(version)
-                .append("] all docs: ")
-                .append(docs.keySet().toString())
-                .append(" changes: ")
-                .append(changes.toString())
-                .endl();
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace()
+                    .append("Updating document ")
+                    .append(uri)
+                    .append(" [")
+                    .append(version)
+                    .append("] all docs: ")
+                    .append(docs.keySet().toString())
+                    .append(" changes: ")
+                    .append(changes.toString())
+                    .endl();
+        }
         PendingParse doc = docs.get(uri);
         final boolean forceParse;
         if (doc == null) {
@@ -75,15 +79,18 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
 
             int offset = LspTools.getOffsetFromPosition(document, range.getStart());
             if (offset < 0) {
-                LOGGER.warn().append("Invalid change in document ")
-                        .append(uri)
-                        .append("[")
-                        .append(version)
-                        .append("] @")
-                        .append(range.getStart().getLine())
-                        .append(":")
-                        .append(range.getStart().getCharacter())
-                        .endl();
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn()
+                            .append("Invalid change in document ")
+                            .append(uri)
+                            .append("[")
+                            .append(version)
+                            .append("] @")
+                            .append(range.getStart().getLine())
+                            .append(":")
+                            .append(range.getStart().getCharacter())
+                            .endl();
+                }
                 return;
             }
 
@@ -92,13 +99,15 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
             document = prefix + change.getText() + suffix;
         }
         doc.requestParse(version, document, forceParse);
-        LOGGER.trace()
-                .append("Finished updating ")
-                .append(uri)
-                .append(" [")
-                .append(version)
-                .append("]")
-                .endl();
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace()
+                    .append("Finished updating ")
+                    .append(uri)
+                    .append(" [")
+                    .append(version)
+                    .append("]")
+                    .endl();
+        }
     }
 
     @Override
@@ -113,7 +122,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     public ParsedDocument finish(String uri) {
         final PendingParse doc = docs.get(uri);
         if (doc == null) {
-          throw new IllegalStateException("Unable to find parsed document " + uri);
+            throw new IllegalStateException("Unable to find parsed document " + uri);
         }
         return doc.finishParse().orElseThrow(() -> new IllegalStateException("Unable to complete document parsing for " + uri));
     }

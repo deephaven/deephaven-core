@@ -75,11 +75,13 @@ public class PendingParse {
                 // Cancelled, nothing to do here
                 return null;
             } catch (TokenMgrException | ParseException e) {
-                LOGGER.warn()
-                        .append("Parser for ").append(uri)
-                        .append(": Encountered parse exception ").append(e)
-                        .append(" while parsing ").append(text)
-                        .endl();
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn()
+                            .append("Parser for ").append(uri)
+                            .append(": Encountered parse exception ").append(e)
+                            .append(" while parsing ").append(text)
+                            .endl();
+                }
                 return false;
             }
         }
@@ -229,10 +231,12 @@ public class PendingParse {
                     // completion request is no longer valid, even though parsing _has_ completed.
                     // This can happen if a very large document has issued a completion request,
                     // but the user kept typing; we want to fail the current request quickly.
-                    LOGGER.info()
-                        .append("Document changed while awaiting parsing; failing current request ")
-                        .append(localTargetState.version)
-                        .endl();
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info()
+                                .append("Document changed while awaiting parsing; failing current request ")
+                                .append(localTargetState.version)
+                                .endl();
+                    }
                     // this exception tells calling code that it should immediately fail,
                     // rather than fall back to the V1 parser.
                     throw new CompletionCancelled();
@@ -240,7 +244,12 @@ public class PendingParse {
                 try {
                     parseThread.wait();
                 } catch (InterruptedException failure) {
-                    LOGGER.warn().append("Unexpected interruption of document parser").append(failure).endl();
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn()
+                                .append("Unexpected interruption of document parser")
+                                .append(failure)
+                                .endl();
+                    }
                     Thread.currentThread().interrupt(); // percolate interruption
                     throw new CompletionCancelled(); // calling code will catch this to fail-fast (does not allow fallback).
                 }
