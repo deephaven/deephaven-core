@@ -1,14 +1,16 @@
 package io.deephaven.lang.completion.results;
 
-import io.deephaven.libs.primitives.BytePrimitives;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
+import io.deephaven.libs.primitives.BytePrimitives;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.TextEdit;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -25,12 +27,12 @@ public class CompleteInvocation extends CompletionBuilder {
         this.replacing = replacing;
     }
 
-    public void doCompletion(Set<CompletionItem> results, CompletionRequest request, Method method) {
+    public void doCompletion(Collection<CompletionItem.Builder> results, CompletionRequest request, Method method) {
         final int start = replacing.getStartIndex();
         final int length = replacing.getEndIndex() - start;
 
         StringBuilder res = new StringBuilder();
-        final DocumentRange range;
+        final DocumentRange.Builder range;
         if (replacing.kind == ChunkerConstants.ACCESS) {
             res.append(".");
         }
@@ -63,8 +65,8 @@ public class CompleteInvocation extends CompletionBuilder {
             range = replaceToken(replacing, request);
         }
         final String displayCompletion;
-        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") && method.getDeclaringClass().getPackage().equals(
-            BytePrimitives.class.getPackage())) {
+        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") &&
+                BytePrimitives.class.getPackage().equals(method.getDeclaringClass().getPackage())) {
             // reduce massive duplication from same-named primitives methods.
             // In the future, when we have better column/type inference, we should be able to delete this workaround
             displayCompletion = "*Primitives." + method.getName() + "(";
@@ -72,10 +74,15 @@ public class CompleteInvocation extends CompletionBuilder {
             displayCompletion = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "(";
         }
         res.append(method.getName()).append("(");
-        CompletionItem result = new CompletionItem(start, length, res.toString(),
-            // let the user know where this method is coming from (include class name in display completion);
-            displayCompletion, range
-        );
+        CompletionItem.Builder result =
+                CompletionItem.newBuilder()
+                .setStart(start)
+                .setLength(length)
+                // let the user know where this method is coming from (include class name in display completion);
+                .setLabel(displayCompletion);
+        result.getTextEditBuilder()
+                .setText(res.toString())
+                .setRange(range);
         // in the future, we should enable adding
         // explicit import statements for static methods.  For now, we're assuming all static methods
         // already came from imports, but we'll want to handle this explicitly for more exotic cases in the future.

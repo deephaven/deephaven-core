@@ -38,7 +38,6 @@ pieChart = figure().figureTitle("Pie Chart").xLabel("X").yLabel("Y").piePlot("Ph
 
 
 //Sample Area Chart
-theme = io.deephaven.db.plot.themes.Themes.theme("Light").gridLineColor(colorRGB(250,250,250))
 red = java.awt.Color.decode("#d62728")
 darkBlue = java.awt.Color.decode("#1f77b4")
 lighterRed = colorRGB(red.getRed(), red.getGreen(), red.getBlue(), 50)
@@ -174,7 +173,7 @@ for(ii = 0; ii < y3.length; ii++) {
     y3Higher[ii] = d + ((2 + ii) * 0.3)
     y3Lower[ii] = d - ((2 + ii) * 0.3)
 }
-fig = figure().theme(theme).plotStyle(PlotStyle.LINE).yLabel("Predicted Index")
+fig = figure().plotStyle(PlotStyle.LINE).yLabel("Predicted Index")
         .plot("S1", date3,y3).pointsVisible(false)
         .plot("S2", date1,y1).pointsVisible(false)
 axs2 = fig.twin()
@@ -304,7 +303,7 @@ y1 = [2, 3, 1, 9]as Number[]
 c1 = [COLOR_RED, COLOR_RED, COLOR_YELLOW, COLOR_YELLOW]as io.deephaven.gui.color.Color[]
 x2 = [0, 1.5, 4.5]as Number[]
 y2 = [1.3, 3.2, 3.4]as Number[]
-SimpleXYColorChart = figure().theme("dark")
+SimpleXYColorChart = figure()
         .plot("S1", x1,y1).pointColor(COLOR_RED, COLOR_RED, COLOR_YELLOW, COLOR_YELLOW).pointsVisible(true)
         .plot("S2", x2,y2).pointsVisible(true).pointColor(COLOR_GREEN)
         .show()
@@ -366,7 +365,7 @@ SimpleXYPlot2bChart = fig.show()
 
 //Sample Plot with Modified LineStyle
 thickDash = lineStyle(2.0, LineStyle.LineEndStyle.BUTT, LineStyle.LineJoinStyle.MITER, 10.0)
-simpleXYPlot4 = figure().theme("dark")
+simpleXYPlot4 = figure()
         .figureTitle("Line Modified")
         .figureTitleFont(font("Courier", "PLAIN", 40))
         .xMin(0)
@@ -530,7 +529,7 @@ for(ii = 250; ii < x.length; ii++) {
     y[ii] = Math.sin(ii)
 }
 
-businessPlot = figure(2,1).theme("Dark")
+businessPlot = figure(2,1)
         .chartTitle("Business")
         .xTransform(new io.deephaven.db.plot.axistransformations.AxisTransformBusinessCalendar(CALENDAR_USNYSE))
         .plot("Business", x, y)

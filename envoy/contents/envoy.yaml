@@ -38,6 +38,9 @@ static_resources:
                         - match: # JS API lives in this path
                             prefix: "/jsapi"
                           route: { cluster: web }
+                        - match: # Notebook file storage at this path
+                            prefix: "/notebooks"
+                          route: { cluster: web }
                         - match: # Any GRPC call is assumed to be forwarded to the real service
                             prefix: "/"
                             grpc: {}

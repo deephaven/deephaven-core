@@ -157,6 +157,8 @@ class StaticChunkedCrossJoinStateManager
     StaticChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
                                          , int tableSize
                                        // region constructor arguments
+                                       , JoinControl control
+                                       , QueryTable leftTable
                                               // endregion constructor arguments
     ) {
         // region super
@@ -199,7 +201,7 @@ class StaticChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = RedirectionIndex.FACTORY.createRedirectionIndex(tableSize);
+        leftIndexToSlot = JoinRedirectionIndex.makeRedirectionIndex(control, leftTable);
         // endregion constructor
 
         ensureCapacity(tableSize);
@@ -417,6 +419,10 @@ class StaticChunkedCrossJoinStateManager
 
         final ResettableWritableLongChunk<Any> overflowLocationForPromotionLoop = ResettableWritableLongChunk.makeResettableChunk();
 
+        // mixin allowUpdateWriteThroughState
+        // @WritableStateChunkType@ from \QWritableObjectChunk<Index,Values>\E, @WritableStateChunkName@ from \QWritableObjectChunk\E
+        final ResettableWritableObjectChunk<Index,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
+        // endmixin allowUpdateWriteThroughState
         final ResettableWritableIntChunk<Values> writeThroughOverflowLocations = ResettableWritableIntChunk.makeResettableChunk();
         // endmixin rehash
 
@@ -548,6 +554,9 @@ class StaticChunkedCrossJoinStateManager
             overflowLocationsAsKeyIndices.close();
             shouldMoveBucket.close();
             overflowLocationForPromotionLoop.close();
+            // mixin allowUpdateWriteThroughState
+            writeThroughState.close();
+            // endmixin allowUpdateWriteThroughState
             writeThroughOverflowLocations.close();
             // endmixin rehash
             // region build context close
@@ -1015,12 +1024,19 @@ class StaticChunkedCrossJoinStateManager
                             if (bc.sourcePositions.size() > 0) {
                                 // the permutes here are flushing the write through for the state and overflow locations
 
+                                // mixin allowUpdateWriteThroughState
+                                // @StateChunkTypeEnum@ from \QObject\E
+                                ObjectPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
+                                // endmixin allowUpdateWriteThroughState
                                 IntPermuteKernel.permute(bc.sourcePositions, bc.overflowLocationsToMigrate, bc.destinationLocationPositionInWriteThrough, bc.writeThroughOverflowLocations);
                                 flushWriteThrough(bc.sourcePositions, bc.workingKeyChunks, bc.destinationLocationPositionInWriteThrough, bc.writeThroughChunks);
                             }
 
                             firstBackingChunkLocation = updateWriteThroughChunks(bc.writeThroughChunks, tableLocation, keySources);
                             lastBackingChunkLocation = firstBackingChunkLocation + bc.writeThroughChunks[0].size() - 1;
+                            // mixin allowUpdateWriteThroughState
+                            updateWriteThroughState(bc.writeThroughState, firstBackingChunkLocation, lastBackingChunkLocation);
+                            // endmixin allowUpdateWriteThroughState
                             updateWriteThroughOverflow(bc.writeThroughOverflowLocations, firstBackingChunkLocation, lastBackingChunkLocation);
                         }
                         bc.sourcePositions.add(ii);
@@ -1031,6 +1047,10 @@ class StaticChunkedCrossJoinStateManager
                 }
 
                 // the permutes are completing the state and overflow promotions write through
+                // mixin allowUpdateWriteThroughState
+                // @StateChunkTypeEnum@ from \QObject\E
+                ObjectPermuteKernel.permute(bc.sourcePositions, bc.workingStateEntries, bc.destinationLocationPositionInWriteThrough, bc.writeThroughState);
+                // endmixin allowUpdateWriteThroughState
                 IntPermuteKernel.permute(bc.sourcePositions, bc.overflowLocationsToMigrate, bc.destinationLocationPositionInWriteThrough, bc.writeThroughOverflowLocations);
                 flushWriteThrough(bc.sourcePositions, bc.workingKeyChunks, bc.destinationLocationPositionInWriteThrough, bc.writeThroughChunks);
 
@@ -1157,6 +1177,18 @@ class StaticChunkedCrossJoinStateManager
         }
     }
 
+    // mixin allowUpdateWriteThroughState
+    // @WritableStateChunkType@ from \QWritableObjectChunk<Index,Values>\E
+    private void updateWriteThroughState(ResettableWritableObjectChunk<Index,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
+        final long firstBackingChunkPosition = rightIndexSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
+        if (firstBackingChunkPosition != firstPosition) {
+            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+        }
+        if (firstBackingChunkPosition + writeThroughState.size() - 1 != expectedLastPosition) {
+            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+        }
+    }
+    // endmixin allowUpdateWriteThroughState
 
     private void updateWriteThroughOverflow(ResettableWritableIntChunk writeThroughOverflow, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = overflowLocationSource.resetWritableChunkToBackingStore(writeThroughOverflow, firstPosition);
@@ -1312,8 +1344,6 @@ class StaticChunkedCrossJoinStateManager
 
         // the chunk of indices created from our OrderedKeys, used to write into the hash table
         final WritableLongChunk<OrderedKeyIndices> keyIndices;
-
-        final LongArraySource pendingShifts = new LongArraySource();
 
         // endregion probe context
         final boolean haveSharedContexts;

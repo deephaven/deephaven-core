@@ -98,7 +98,7 @@ public class ReplicateHashTable {
 
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, LeftOnlyIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, RightIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedCrossJoinStateManager.class, allowMissingDestinations, Arrays.asList("allowUpdateWriteThroughState", "dumpTable", "prev"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedCrossJoinStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev"));
 
         // Incremental NJ -> Static & Incremental Operator Aggregations
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedOperatorAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));

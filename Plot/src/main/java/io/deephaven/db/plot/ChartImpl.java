@@ -124,13 +124,6 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     /**
-     * Gets the {@link Theme} of the {@link BaseFigure} containing this Chart.
-     *
-     * @return {@link BaseFigure} containing this Chart's {@link Theme}
-     */
-    public Theme theme() { return figure.getTheme(); }
-
-    /**
      * Gets the width of this Chart inside the {@link BaseFigure}
      *
      * @return width of this Chart inside the {@link BaseFigure}

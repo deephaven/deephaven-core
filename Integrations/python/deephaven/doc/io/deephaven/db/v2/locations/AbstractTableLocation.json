@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.locations.AbstractTableLocation",
  "methods": {
-  "getColumnLocation": ":param name: java.lang.CharSequence\n:return: (AbstractTableLocation.CLT) The ColumnLocation for the defined column under this table location",
+  "getColumnLocation": ":param name: (java.lang.CharSequence) - The column name\n:return: (AbstractTableLocation.CLT) The ColumnLocation for the defined column under this table location",
   "getColumnPartition": ":return: (java.lang.String) The column partition that encloses the identified table location, or null if none exists",
   "getInternalPartition": ":return: (java.lang.String) The internal partition that encloses the identified table location, or null if none exists",
   "getLastModifiedTimeMillis": ":return: (long) The last modified time for a table location, in milliseconds from the epoch:\n         NULL_TIME : Modification time information is unknown or does not exist for this table location\n             >= 0L : The time this table was last modified, in milliseconds from the UTC epoch",

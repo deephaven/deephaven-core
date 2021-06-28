@@ -1,37 +1,33 @@
 package io.deephaven.lang.completion;
 
-import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.QueryScope.MissingVariableException;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.util.VariableProvider;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
 import io.deephaven.lang.api.IsScope;
 import io.deephaven.lang.completion.results.*;
 import io.deephaven.lang.generated.*;
 import io.deephaven.lang.parse.CompletionParser;
+import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
-import io.deephaven.web.shared.ide.lsp.Position;
-import io.deephaven.web.shared.ide.lsp.TextEdit;
+import io.deephaven.proto.backplane.script.grpc.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * Uses a ChunkerDocument to lookup user cursor and perform autocompletion.
  */
-public class ChunkerCompleter implements CompletionHandler {
-
+public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
 
     public enum SearchDirection {
         LEFT, BOTH, RIGHT
@@ -45,7 +41,6 @@ public class ChunkerCompleter implements CompletionHandler {
 
     private final Logger log;
     private final VariableProvider variables;
-    private final ConcurrentMap<String, List<String>> tableNames;
     private final CompletionLookups lookups;
     private String defaultQuoteType;
     private ParsedDocument doc;
@@ -58,10 +53,8 @@ public class ChunkerCompleter implements CompletionHandler {
         this.log = log;
         this.variables = variables;
         this.lookups = lookups;
-        tableNames = new ConcurrentHashMap<>();
     }
 
-    @Override
     public CompletableFuture<? extends Collection<CompletionFragment>> complete(String command, int offset) {
         final long start = System.nanoTime();
         CompletionParser parser = new CompletionParser();
@@ -100,12 +93,13 @@ public class ChunkerCompleter implements CompletionHandler {
         }
     }
 
-    private CompletionFragment toFragment(CompletionItem item) {
-        return new CompletionFragment(item.getStart(), item.getLength(), item.textEdit.text, item.label);
+    private CompletionFragment toFragment(CompletionItemOrBuilder item) {
+        return new CompletionFragment(item.getStart(), item.getLength(), item.getTextEdit().getText(), item.getLabel());
     }
 
-    public Set<CompletionItem> runCompletion(ParsedDocument doc, Position pos, int offset) {
-        final Set<CompletionItem> results = new LinkedHashSet<>();
+    @Override
+    public Collection<CompletionItem.Builder> runCompletion(final ParsedDocument doc, final Position pos, final int offset) {
+        final List<CompletionItem.Builder> results = new ArrayList<>();
         this.doc = doc;
 
         String src = doc.getSource();
@@ -126,31 +120,31 @@ public class ChunkerCompleter implements CompletionHandler {
         fixRanges(doc, results, node, pos);
 
         if ("true".equals(System.getProperty("test.monaco.sanity"))) {
-            // We may want to manually test what monaco does with various formats of result objects,
-            // so we have this block of code hidden behind an off-by-default system property
-            results.add(new CompletionItem(0, 0, "A1", "A1", new DocumentRange(
-                pos.plus(0, -2), pos
-            )).sortText("A1"));
-
-            results.add(new CompletionItem(0, 0, "A2", "A2", new DocumentRange(
-                pos.plus(0, -2), pos.plus(0, 1)
-            )).sortText("A2"));
-
-            results.add(new CompletionItem(0, 0, "B3", "B3", new DocumentRange(
-                pos.plus(0, -2), pos.plus(0, 2)
-            )).sortText("A3"));
-
-            results.add(new CompletionItem(0, 0, "B1", "B1", new DocumentRange(
-                pos, pos
-            )).sortText("B1"));
-
-            results.add(new CompletionItem(0, 0, "B2", "B2", new DocumentRange(
-                pos, pos.plus(0, 1)
-            )).sortText("B2"));
-
-            results.add(new CompletionItem(0, 0, "A3", "A3", new DocumentRange(
-                pos, pos.plus(0, 2)
-            )).sortText("B3"));
+//            // We may want to manually test what monaco does with various formats of result objects,
+//            // so we have this block of code hidden behind an off-by-default system property
+//            results.add(new CompletionItem(0, 0, "A1", "A1", new DocumentRange(
+//                pos.plus(0, -2), pos
+//            )).sortText("A1"));
+//
+//            results.add(new CompletionItem(0, 0, "A2", "A2", new DocumentRange(
+//                pos.plus(0, -2), pos.plus(0, 1)
+//            )).sortText("A2"));
+//
+//            results.add(new CompletionItem(0, 0, "B3", "B3", new DocumentRange(
+//                pos.plus(0, -2), pos.plus(0, 2)
+//            )).sortText("A3"));
+//
+//            results.add(new CompletionItem(0, 0, "B1", "B1", new DocumentRange(
+//                pos, pos
+//            )).sortText("B1"));
+//
+//            results.add(new CompletionItem(0, 0, "B2", "B2", new DocumentRange(
+//                pos, pos.plus(0, 1)
+//            )).sortText("B2"));
+//
+//            results.add(new CompletionItem(0, 0, "A3", "A3", new DocumentRange(
+//                pos, pos.plus(0, 2)
+//            )).sortText("B3"));
         }
 
         return results;
@@ -167,19 +161,22 @@ public class ChunkerCompleter implements CompletionHandler {
      */
     public Set<CompletionItem> runCompletion(ParsedDocument doc, int offset) {
         this.doc = doc;
-        final Set<CompletionItem> results = new LinkedHashSet<>();
 
         final Node node = doc.findNode(offset);
 
         String src = doc.getSource();
         if (node instanceof ChunkerDocument || src.trim().isEmpty()) {
-            return results;
+            return Collections.emptySet();
         }
+        final List<CompletionItem.Builder> results = new ArrayList<>();
         CompletionRequest req = new CompletionRequest(this, src, offset);
         searchForResults(doc, results, node, req, SearchDirection.BOTH);
 
-
-        return results;
+        final Set<CompletionItem> built = new LinkedHashSet<>();
+        for (CompletionItem.Builder result : results) {
+            built.add(result.build());
+        }
+        return built;
     }
 
     /**
@@ -201,55 +198,146 @@ public class ChunkerCompleter implements CompletionHandler {
      * Due to this unfortunate complexity, we are doing this in a post-processing phase (here),
      * so that individual completion provider logic only has to handle "replace text X with Y",
      * and we'll figure out the correct incantation to keep monaco happy here.
-     *
-     * @param parsed The parsed document (bag of state related to the source document).
+     *  @param parsed The parsed document (bag of state related to the source document).
      * @param res A set of CompletionItem to fixup.
      * @param node The original node we started the search from (for ~O(1) token searching)
      * @param cursor The position of the user's cursor (the location we need to slice from)
      */
     private void fixRanges(
-        ParsedDocument parsed,
-        Set<CompletionItem> res,
-        Node node,
-        Position cursor
+            ParsedDocument parsed,
+            Collection<CompletionItem.Builder> res,
+            Node node,
+            Position cursor
     ) {
         int ind = 0;
-        for (CompletionItem item : res) {
-            final Position requested = cursor.copy();
-            item.sortText = sortable(ind++);
-            final DocumentRange result = item.textEdit.range;
+        for (CompletionItem.Builder item : res) {
+            final Position requested = cursor.toBuilder().build();
+            item.setSortText(sortable(ind++));
+            final DocumentRange result = item.getTextEdit().getRange();
 
-            if (result.start.greaterThan(requested)) {
+            if (LspTools.greaterThan(result.getStart(), requested)) {
                 // The result starts after the user's cursor.
                 // adjust the text edit back, stopping at the cursor.
-                parsed.extendStart(item, requested, node);
-            } else if (result.end.lessThan(requested)) {
+                throw new UnsupportedOperationException("No extendStart support yet");
+            } else if (LspTools.lessThan(result.getEnd(), requested)) {
                 // adjust the text edit forwards, appending tokens to result.
-                parsed.extendEnd(item, requested, node);
-            } else if (result.start.lessThan(requested)) {
+                extendEnd(item, requested, node);
+            } else if (LspTools.lessThan(result.getStart(), requested)) {
                 // The result starts before the cursor.
                 // Move the part up to the cursor into an additional edit.
-                final TextEdit edit = parsed.sliceBefore(item, requested, node);
+                final TextEdit.Builder edit = sliceBefore(item, requested, node);
                 if (edit == null) {
                     // could not process this edit.  TODO: We should log this case at least.  IDS-1517-31
                     continue;
                 }
                 item.addAdditionalTextEdits(edit);
             } else {
-                assert result.start.equals(requested);
+                assert result.getStart().equals(requested);
             }
 
             // now, if the result spans multiple lines, we need to break it into multiple ranges,
             // since monaco only supports same-line text edits.
-            if (result.start.line != result.end.line) {
+            if (result.getStart().getLine() != result.getEnd().getLine()) {
                 List<TextEdit> broken = new ArrayList<>();
                 // TODO: also split up the additional text edits, once they actually support multiline operations.  IDS-1517-31
 
             }
-            item.label = item.textEdit.text;
+            item.setLabel(item.getTextEdit().getText());
         }
 
     }
+    public TextEdit.Builder sliceBefore(CompletionItem.Builder item, Position requested, Node node) {
+        final TextEdit.Builder edit = TextEdit.newBuilder();
+        final DocumentRange.Builder range = DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
+        Token tok = node.findToken(range.getStart());
+        Position.Builder start = tok.positionStart();
+        if (start.getLine() != requested.getLine() || range.getStart().getLine() != requested.getLine()) {
+            // not going to worry about this highly unlikely and complex corner case just yet.
+            return null;
+        }
+        // advance the position to the start of the replacement range.
+        int imageInd = 0;
+        while (LspTools.lessThan(start, range.getStart())) {
+            start.setCharacter(start.getCharacter() + 1);
+            imageInd++;
+        }
+        range.setStart(start.build()).setEnd(requested);
+        edit.setRange(range);
+        StringBuilder b = new StringBuilder();
+        // now, from here, gobble up the token contents as we advance the position to the requested index.
+        while (LspTools.lessThan(start, requested)) {
+            if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
+                // find next non-empty token
+                final Token startTok = tok;
+                while (tok.next != null) {
+                    tok = tok.next;
+                    if (!tok.image.isEmpty()) {
+                        break;
+                    }
+                }
+                if (tok != startTok) {
+                    // shouldn't really happen, but this is way better than potential infinite loops of doom
+                    break;
+                }
+                imageInd = 0;
+                start = tok.positionStart();
+            }
+            start.setCharacter(start.getCharacter() + 1);
+            if (!tok.image.isEmpty()) {
+                b.append(tok.image.charAt(imageInd));
+            }
+            imageInd++;
+        }
+        edit.setText(b.toString());
+        return edit;
+    }
+
+    private TextEdit.Builder extendEnd(final CompletionItem.Builder item, final Position requested, final Node node) {
+        final TextEdit.Builder edit = TextEdit.newBuilder();
+        final DocumentRange.Builder range = DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
+        Token tok = node.findToken(range.getStart());
+        Position.Builder start = tok.positionStart();
+        if (start.getLine() != requested.getLine() || range.getStart().getLine() != requested.getLine()) {
+            // not going to worry about this highly unlikely and complex corner case just yet.
+            return null;
+        }
+        // advance the position to the start of the replacement range.
+        int imageInd = 0;
+        while (LspTools.lessThan(start, range.getStart())) {
+            start.setCharacter(start.getCharacter() + 1);
+            imageInd++;
+        }
+        range.setStart(start.build()).setEnd(requested);
+        edit.setRange(range);
+        StringBuilder b = new StringBuilder();
+        // now, from here, gobble up the token contents as we advance the position to the requested index.
+        while (LspTools.lessThan(start, requested)) {
+            if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
+                // find next non-empty token
+                final Token startTok = tok;
+                while (tok.next != null) {
+                    tok = tok.next;
+                    if (!tok.image.isEmpty()) {
+                        break;
+                    }
+                }
+                if (tok != startTok) {
+                    // shouldn't really happen, but this is way better than potential infinite loops of doom
+                    break;
+                }
+                imageInd = 0;
+                start = tok.positionStart();
+            }
+            start.setCharacter(start.getCharacter() + 1);
+            if (!tok.image.isEmpty()) {
+                b.append(tok.image.charAt(imageInd));
+            }
+            imageInd++;
+        }
+        edit.setText(b.toString());
+        return edit;
+    }
+
 
     private String sortable(int i) {
         StringBuilder res = new StringBuilder(Integer.toString(i, 36));
@@ -260,11 +348,11 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void searchForResults(
-        ParsedDocument doc,
-        Set<CompletionItem> results,
-        Node node,
-        CompletionRequest request,
-        SearchDirection direction
+            ParsedDocument doc,
+            Collection<CompletionItem.Builder> results,
+            Node node,
+            CompletionRequest request,
+            SearchDirection direction
     ) {
         // alright! let's figure out where the user's cursor is, and what we can help them with.
         node.jjtAccept(new ChunkerVisitor() {
@@ -427,7 +515,7 @@ public class ChunkerCompleter implements CompletionHandler {
 
     }
 
-    private void annotationComplete(Set<CompletionItem> results, ChunkerAnnotation node, CompletionRequest offset) {
+    private void annotationComplete(Collection<CompletionItem.Builder> results, ChunkerAnnotation node, CompletionRequest offset) {
         // suggest names of annotations / arguments for groovy...
         // while python should suggest the names of decorator functions only.
     }
@@ -436,12 +524,12 @@ public class ChunkerCompleter implements CompletionHandler {
         throw new UnsupportedOperationException("Node type " + node.getClass() + " not yet supported: " + node.toSource());
     }
 
-    private void numCompletion(Set<CompletionItem> results, ChunkerNum node, CompletionRequest offset) {
+    private void numCompletion(Collection<CompletionItem.Builder> results, ChunkerNum node, CompletionRequest offset) {
         // not really sure what, if anything, we'd want for numbers.
         // perhaps past history of number values entered / typed in?
     }
 
-    private void assignCompletion(Set<CompletionItem> results, ChunkerAssign node, CompletionRequest offset) {
+    private void assignCompletion(Collection<CompletionItem.Builder> results, ChunkerAssign node, CompletionRequest offset) {
         final CompleteAssignment completer = new CompleteAssignment(this, node);
         final Node value = node.getValue();
         if (value == null) {
@@ -479,19 +567,19 @@ public class ChunkerCompleter implements CompletionHandler {
         }
     }
 
-    private void typedAssignCompletion(Set<CompletionItem> results, ChunkerTypedAssign node, CompletionRequest offset) {
+    private void typedAssignCompletion(Collection<CompletionItem.Builder> results, ChunkerTypedAssign node, CompletionRequest offset) {
     }
 
-    private void typeParamsCompletion(Set<CompletionItem> results, ChunkerTypeParams node, CompletionRequest offset) {
+    private void typeParamsCompletion(Collection<CompletionItem.Builder> results, ChunkerTypeParams node, CompletionRequest offset) {
     }
 
-    private void typeParamCompletion(Set<CompletionItem> results, ChunkerTypeParam node, CompletionRequest offset) {
+    private void typeParamCompletion(Collection<CompletionItem.Builder> results, ChunkerTypeParam node, CompletionRequest offset) {
 
     }
 
     private void identCompletion(
         ParsedDocument doc,
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         ChunkerIdent node,
         CompletionRequest request
     ) {
@@ -532,7 +620,7 @@ public class ChunkerCompleter implements CompletionHandler {
 
     private void whitespaceComplete(
         ParsedDocument doc,
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         SimpleNode node,
         CompletionRequest req,
         SearchDirection direction
@@ -641,12 +729,12 @@ public class ChunkerCompleter implements CompletionHandler {
         return next;
     }
 
-    private void newComplete(Set<CompletionItem> results, ChunkerNew node, CompletionRequest offset) {
+    private void newComplete(Collection<CompletionItem.Builder> results, ChunkerNew node, CompletionRequest offset) {
         // `new ` completion not implemented yet.  This would need to lookup matching types w/ public constructors
     }
 
     private void invokeComplete(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         ChunkerInvoke node,
         CompletionRequest request,
         SearchDirection direction
@@ -686,7 +774,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void addMethods(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         Token replacing,
         CompletionRequest request,
         List<IsScope> scope,
@@ -712,7 +800,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void addMethodsAndVariables(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         Token replacing,
         CompletionRequest request,
         List<IsScope> scope,
@@ -729,7 +817,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void doMethodCompletion(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         Class<?> bindingClass,
         String methodPrefix,
         Token replacing,
@@ -754,7 +842,7 @@ public class ChunkerCompleter implements CompletionHandler {
         }
     }
 
-    private void doVariableCompletion(Set<CompletionItem> results, String variablePrefix, Token replacing, CompletionRequest request) {
+    private void doVariableCompletion(Collection<CompletionItem.Builder> results, String variablePrefix, Token replacing, CompletionRequest request) {
         FuzzyList<String> sorter = new FuzzyList<>(variablePrefix);
         for (String name : variables.getVariableNames()) {
             if (!name.equals(variablePrefix) && camelMatch(name, variablePrefix)) {
@@ -816,7 +904,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void methodArgumentCompletion(
-        String name, Set<CompletionItem> results,
+        String name, Collection<CompletionItem.Builder> results,
         ChunkerInvoke node,
         Node replaceNode,
         CompletionRequest request,
@@ -891,15 +979,13 @@ public class ChunkerCompleter implements CompletionHandler {
             return result;
         }
         switch (o.getName()) {
-            // NB: This is unused right now, but it remains in case it inspires future development by the precedent.
-            // dirty trick, but it will make life easier for users until we can
-            // get pre-evaluation type resolution up and running.
-            // any other always-statically-present variables that we want to do static cheating on can be added here.
+            // This used to be where we'd intercept certain well-known-service-variables, like "db";
+            // leaving this here in case we have add and such service to the OSS completer.
         }
         // Ok, maybe the user hasn't run the query yet.
         // See if there's any named assign's that have a value of db.i|t|etc
 
-        final List<ChunkerAssign> assignments = doc.findAssignment(request, o.getName());
+        final List<ChunkerAssign> assignments = findAssignment(doc, request, o.getName());
         for (ChunkerAssign assignment : assignments) {
             // This is pretty hacky, but our only use case here is looking for table loads, so...
             if (assignment.getValue() instanceof IsScope) {
@@ -915,6 +1001,45 @@ public class ChunkerCompleter implements CompletionHandler {
 
         return Optional.empty();
     }
+
+    public List<ChunkerAssign> findAssignment(final ParsedDocument doc, final CompletionRequest request, final String name) {
+        final Map<String, List<ChunkerAssign>> assignments = ensureAssignments(doc);
+        final List<ChunkerAssign> options = assignments.get(name), results = new ArrayList<>();
+        if (options != null) {
+            assert !options.isEmpty();
+            final ListIterator<ChunkerAssign> itr = options.listIterator(options.size());
+            while (itr.hasPrevious()) {
+                final ChunkerAssign test = itr.previous();
+                if (test.getStartIndex() <= request.getOffset()) {
+                    results.add(test);
+                }
+            }
+            return results;
+        }
+        return Collections.emptyList();
+    }
+
+    private Map<String, List<ChunkerAssign>> ensureAssignments(final ParsedDocument doc) {
+        Map<String, List<ChunkerAssign>> assignments = doc.getAssignments();
+        if (assignments.isEmpty()) {
+            doc.getDoc().jjtAccept(new ChunkerDefaultVisitor() {
+                @Override
+                public Object visitChunkerAssign(ChunkerAssign node, Object data) {
+                    assignments.computeIfAbsent(node.getName(), n->new ArrayList<>()).add(node);
+                    return super.visitChunkerAssign(node, data);
+                }
+
+                @Override
+                public Object visitChunkerTypedAssign(ChunkerTypedAssign node, Object data) {
+                    assignments.computeIfAbsent(node.getName(), n->new ArrayList<>()).add(node);
+                    return super.visitChunkerTypedAssign(node, data);
+                }
+            }, null);
+
+        }
+        return assignments;
+    }
+
     private Optional<Object> resolveScope(List<IsScope> scope) {
         if (scope == null || scope.isEmpty()) {
             return Optional.empty();
@@ -923,7 +1048,7 @@ public class ChunkerCompleter implements CompletionHandler {
         // TODO: also handle static classes / variables only present in source (code not run yet)  IDS-1517-23
         try {
 
-            final Object var = variables.getVariable(o.getName());
+            final Object var = variables.getVariable(o.getName(), null);
             if (var == null) {
                 return Optional.empty();
             }
@@ -1001,7 +1126,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void stringComplete(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         ChunkerString node,
         CompletionRequest offset,
         SearchDirection direction
@@ -1021,7 +1146,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void stringInMethodComplete(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         ChunkerInvoke invoke,
         ChunkerString node,
         CompletionRequest offset,
@@ -1036,7 +1161,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private void maybeColumnComplete(
-        Set<CompletionItem> results,
+        Collection<CompletionItem.Builder> results,
         ChunkerInvoke invoke,
         Node node,
         CompletionRequest offset,
@@ -1226,7 +1351,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     @Deprecated
-    public void addMatch(Set<CompletionItem> results, Node node, String match, CompletionRequest index, String ... nextTokens) {
+    public void addMatch(Collection<CompletionItem.Builder> results, Node node, String match, CompletionRequest index, String ... nextTokens) {
 
         // IDS-1517-13
         // The mess has gone too far.  It is no longer maintainable.
@@ -1331,7 +1456,14 @@ public class ChunkerCompleter implements CompletionHandler {
         displayed = completion.toString();
 
         //            + (node.isWellFormed() ? "" : nextChar);
-        CompletionItem result = new CompletionItem(start, length, completion.toString(), displayed, doc.getSource());
+        final DocumentRange.Builder range = LspTools.rangeFromSource(doc.getSource(), start, length);
+        final CompletionItem.Builder result = CompletionItem.newBuilder();
+        result.setStart(start)
+                .setLength(length)
+                .setLabel(displayed)
+                .getTextEditBuilder()
+                    .setText(displayed)
+                    .setRange(range);
         results.add(result);
     }
 

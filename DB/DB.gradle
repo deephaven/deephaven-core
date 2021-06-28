@@ -1,6 +1,4 @@
 import io.deephaven.tools.Tools
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.gradle.api.tasks.testing.logging.TestLogging
 
 configurations {
     compile.extendsFrom dhDb
@@ -56,6 +54,7 @@ dependencies {
             project(':DHProcess'),
             project(':proto:proto-backplane-grpc'),
             project(':log-factory'),
+            project(':open-api-lang-api'),
             project(':Container'),
             project(':table-api'),
             "org.flywaydb:flyway-core:5.2.4",

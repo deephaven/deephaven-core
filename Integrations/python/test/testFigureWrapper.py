@@ -75,8 +75,6 @@ class TestFigureWrapper(unittest.TestCase):
             figure = figure.figureTitleColor("#FF0000")  # named color or RGB hex-string
         with self.subTest(msg="figureTitleColor(Paint)"):
             figure = figure.figureTitleColor(Plot.colorRGB(0.0, 1.0, 0.0))  # create an RGB color using plot convenience function
-        with self.subTest(msg="theme(string)"):
-            figure = figure.theme("Dark")  # what are the possibilities here?
         with self.subTest(msg="updateInterval(long)"):
             figure = figure.updateInterval(1000)  # in milliseconds
 

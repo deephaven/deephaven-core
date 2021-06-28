@@ -25,6 +25,8 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
+        super(false);
+
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();
     }

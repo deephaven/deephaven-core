@@ -118,11 +118,11 @@ def _custom_getAllDbDirs(tableName, rootDir, levelsDepth):
     return [el.getAbsolutePath() for el in _java_type_.getAllDbDirs(tableName, getFileObject(rootDir), levelsDepth).toArray()]
 
 
-def _custom_readTableFromDir(*args):
+def _custom_readTable(*args):
     if len(args) == 1:
-        return _java_type_.readTableFromDir(getFileObject(args[0]))
+        return _java_type_.readTable(getFileObject(args[0]))
     else:
-        return _java_type_.readTableFromDir(getFileObject(args[0]), *args[1:])
+        return _java_type_.readTable(getFileObject(args[0]), *args[1:])
 
 
 def _custom_renameColumns(*args):
@@ -178,21 +178,43 @@ def deleteTable(path):
 
 
 @_passThrough
-def readTableFromDir(*args):
+def readTable(*args):
     """
     Reads in a table from disk.
     
     *Overload 1*  
-      :param path: (java.io.File) - table location
+      :param location: (java.io.File) - table location; if it ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
       :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - table definition
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 2*  
-      :param path: (java.io.File) - table location
+      :param sourceFilePath: (java.lang.String) - table location; if it ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
+      :return: (io.deephaven.db.tables.Table) table
+      
+    *Overload 3*  
+      :param sourceFilePath: (java.io.File) - table location; if its path ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
       :return: (io.deephaven.db.tables.Table) table
     """
     
-    return _custom_readTableFromDir(*args)
+    return _custom_readTable(*args)
+
+
+@_passThrough
+def writeParquetTable(source, tableDefinition, codecName, destinationDir, groupingColumns):
+    """
+    Writes a table to disk in parquet format under a given destination.  If you specify grouping columns, there
+     must already be grouping information for those columns in the source.  This can be accomplished with
+     .by(<grouping columns>).ungroup() or .sort(<grouping column>).
+    
+    :param source: (io.deephaven.db.tables.Table) - The table to write
+    :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The schema for the tables to write
+    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.  The only supported codecs are
+                            CompressionCodecName.SNAPPY and CompressionCodecName.UNCOMPRESSED.
+    :param destinationDir: (java.io.File) - The destination path
+    :param groupingColumns: (java.lang.String[]) - List of columns the tables are grouped by (the write operation will store the grouping info)
+    """
+    
+    return _java_type_.writeParquetTable(source, tableDefinition, codecName, destinationDir, groupingColumns)
 
 
 @_passThrough
@@ -220,26 +242,26 @@ def writeTable(*args):
     
     *Overload 1*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param destDir: (java.lang.String) - destination
+      :param destPath: (java.lang.String) - destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
       
     *Overload 2*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param destDir: (java.lang.String) - destination
-      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
+      :param dest: (java.io.File) - destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
       
     *Overload 3*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition.  Will be written to disk as given.
-      :param destDir: (java.io.File) - destination
+      :param destPath: (java.lang.String) - destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
       :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
       
     *Overload 4*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param destDir: (java.io.File) - destination
+      :param dest: (java.io.File) - destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
+      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
       
     *Overload 5*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param destDir: (java.io.File) - destination
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition.  Will be written to disk as given.
+      :param destFile: (java.io.File) - destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
       :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
     """
     
@@ -264,7 +286,3 @@ def writeTables(*args):
     """
     
     return _custom_writeTables(*args)
-
-@_passThrough
-def readTable(file_path_string):
-    return _java_type_.readTable(file_path_string)

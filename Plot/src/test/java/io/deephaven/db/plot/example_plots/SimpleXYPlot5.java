@@ -19,8 +19,7 @@ public class SimpleXYPlot5 {
         final Number[] y3 = {11.3, 2.2, 8.4};
 
         Figure fig = FigureFactory.figure(2, 2)
-                .figureTitle("Figure")
-                .theme("neon");
+                .figureTitle("Figure");
 
         Figure cht = fig.newChart(0)
                 .colSpan(2)

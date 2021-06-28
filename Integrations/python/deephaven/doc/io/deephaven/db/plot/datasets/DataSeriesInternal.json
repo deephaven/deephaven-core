@@ -3,7 +3,7 @@
  "methods": {
   "axes": "Gets the axes on which this data will be plotted.\n\n:return: (io.deephaven.db.plot.AxesImpl) axes on which this data will be plotted",
   "chart": "Gets the chart on which this data will be plotted.\n\n:return: (io.deephaven.db.plot.ChartImpl) chart on which this data will be plotted",
-  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: io.deephaven.db.plot.AxesImpl\n:return: (io.deephaven.db.plot.datasets.DataSeriesInternal) copy of the series on a different set of axes.",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - new axes.\n:return: (io.deephaven.db.plot.datasets.DataSeriesInternal) copy of the series on a different set of axes.",
   "getErrorBarColor": "Gets the color of the error bars.\n\n:return: (io.deephaven.gui.color.Paint) error bar color",
   "getGradientVisible": "Gets whether the bar gradient is visible.\n\n:return: (boolean) whether the bar gradient is visible",
   "getLineColor": "Gets the line color.\n\n:return: (io.deephaven.gui.color.Paint) line color",

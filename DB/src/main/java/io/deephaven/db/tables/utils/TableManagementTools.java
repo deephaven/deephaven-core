@@ -9,6 +9,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByParquetFile;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetReaderUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
@@ -65,24 +66,32 @@ public class TableManagementTools {
      * @return table
      */
     public static Table readTable(@NotNull final File location, @NotNull TableDefinition tableDefinition) {
+        return readTable(location, null, tableDefinition);
+    }
+
+    public static Table readTable(
+            @NotNull final File location, final ParquetInstructions readInstructions, @NotNull TableDefinition tableDefinition) {
         final String path = location.getPath();
         if (path.endsWith(PARQUET_FILE_EXTENSION)) {
-            return readTableFromSingleParquetFile(location, tableDefinition);
+            return readTableFromSingleParquetFile(location, readInstructions, tableDefinition);
         }
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProvider(
                 StandaloneTableKey.getInstance(),
                 new StandaloneLocalTableLocationScanner(location),
                 false,
-                TableDataRefreshService.getSharedRefreshService());
+                TableDataRefreshService.getSharedRefreshService(),
+                readInstructions != null ? readInstructions : ParquetInstructions.EMPTY);
         return getTable("Stand-alone V2 table from " + path, tableDefinition, locationProvider);
     }
 
-    private static Table readTableFromSingleParquetFile(@NotNull final File sourceFile, @NotNull final TableDefinition tableDefinition) {
+    private static Table readTableFromSingleParquetFile(
+            @NotNull final File sourceFile, final ParquetInstructions readInstructions, @NotNull final TableDefinition tableDefinition) {
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
                 StandaloneTableKey.getInstance(),
                 sourceFile,
                 false,
-                TableDataRefreshService.getSharedRefreshService());
+                TableDataRefreshService.getSharedRefreshService(),
+                readInstructions != null ? readInstructions : ParquetInstructions.EMPTY);
         return getTable("Read single parquet file from " + sourceFile, tableDefinition, locationProvider);
     }
 
@@ -125,16 +134,23 @@ public class TableManagementTools {
                     }
                     cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
+        ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
         try {
             final String path = source.getPath() + ((!isDirectory) ? "" : File.separator + ParquetTableWriter.PARQUET_FILE_NAME);
-            ParquetReaderUtil.readParquetSchema(path, colConsumer);
+            readInstructions = ParquetReaderUtil.readParquetSchema(
+                    path,
+                    readInstructions,
+                    colConsumer,
+                    (final String colName, final Set<String> takenNames) ->
+                            DBNameValidator.legalizeColumnName(
+                                    colName, s -> s.replace(" ", "_"), takenNames));
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }
         final TableDefinition def = new TableDefinition(cols);
         return isDirectory
-                ? TableManagementTools.readTable(source, def)
-                : readTableFromSingleParquetFile(source, def)
+                ? TableManagementTools.readTable(source, readInstructions, def)
+                : readTableFromSingleParquetFile(source, readInstructions, def)
                 ;
     }
 

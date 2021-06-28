@@ -8,6 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.db.plot.*;
 import io.deephaven.db.plot.datasets.data.IndexableDataArray;
 import io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayInt;
+import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.functions.ClosureFunction;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.shape.NamedShape;
@@ -60,7 +61,6 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
 
     public void testLineColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
-        final Theme theme = chart.theme();
         final TestCat data = new TestCat(chart.newAxes());
         final Color color = new Color(0, 0, 0);
         assertNull(data.getLineColor());
@@ -68,12 +68,11 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getLineColor(), color);
 
         data.lineColor(1);
-        assertEquals(data.getLineColor(), theme.getSeriesColor(1));
+        assertEquals(data.getLineColor(), PlotUtils.intToColor(1));
     }
 
     public void testErrorBarColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
-        final Theme theme = chart.theme();
         final TestCat data = new TestCat(chart.newAxes());
         final Color color = new Color(0, 0, 0);
         assertNull(data.getErrorBarColor());
@@ -81,7 +80,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getErrorBarColor(), color);
 
         data.errorBarColor(1);
-        assertEquals(data.getErrorBarColor(), theme.getSeriesColor(1));
+        assertEquals(data.getErrorBarColor(), PlotUtils.intToColor(1));
     }
 
     public void testPointSize() {
@@ -173,14 +172,13 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
 
     public void testPointColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
-        final Theme theme = chart.theme();
         final TestCat data = new TestCat(chart.newAxes());
 
         data.pointColor(1);
-        assertEquals(data.getColor(0), theme.getSeriesColor(1));
+        assertEquals(data.getColor(0), PlotUtils.intToColor(1));
 
         data.pointColor(categories[0], 1);
-        assertEquals(data.getColor(categories[0]), theme.getSeriesColor(1));
+        assertEquals(data.getColor(categories[0]), PlotUtils.intToColor(1));
 
         data.pointColor(c1);
         assertEquals(data.getColor(0), c1);
@@ -205,11 +203,11 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
         data.pointColorInteger(intMap);
         for (int i = 0; i < icolors.length; i++) {
-            assertEquals(data.getColor(categories[i]), theme.getSeriesColor(icolors[i]));
+            assertEquals(data.getColor(categories[i]), PlotUtils.intToColor(icolors[i]));
         }
 
         data.pointColorInteger(c -> 0);
-        assertEquals(data.getColor(categories[0]), theme.getSeriesColor(0));
+        assertEquals(data.getColor(categories[0]), PlotUtils.intToColor(0));
 
         data.pointColorInteger(new Closure<Integer>(null) {
             @Override
@@ -232,7 +230,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
                 return 1;
             }
         });
-        assertEquals(data.getColor(categories[0]), theme.getSeriesColor(1));
+        assertEquals(data.getColor(categories[0]), PlotUtils.intToColor(1));
 
         data.pointColor(x -> c1);
         assertEquals(data.getColor(1), c1);

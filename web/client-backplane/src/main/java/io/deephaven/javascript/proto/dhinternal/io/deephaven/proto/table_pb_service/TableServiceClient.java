@@ -1,12 +1,13 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateBatchMessage;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FilterTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
@@ -34,6 +35,100 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient",
     namespace = JsPackage.GLOBAL)
 public class TableServiceClient {
+  @JsFunction
+  public interface AsOfJoinTablesCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.AsOfJoinTablesCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.AsOfJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface AsOfJoinTablesMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface AsOfJoinTablesMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn
+        asAsOfJoinTablesMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isAsOfJoinTablesMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn;
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+  }
+
   @JsFunction
   public interface ComboAggregateCallbackFn {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2081,6 +2176,58 @@ public class TableServiceClient {
 
   public TableServiceClient(String serviceHost) {}
 
+  @JsOverlay
+  public final UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage,
+      TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.AsOfJoinTablesCallbackFn callback) {
+    return asOfJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage,
+      TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+    return asOfJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage,
+      TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.AsOfJoinTablesCallbackFn callback);
+
+  public native UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage,
+      TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
+  public final UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.AsOfJoinTablesCallbackFn callback) {
+    return asOfJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse asOfJoinTables(
+      AsOfJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return asOfJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
   public native ResponseStream<ExportedTableCreationResponse> batch(
       BatchTableRequest requestMessage, BrowserHeaders metadata);
 
@@ -2243,10 +2390,10 @@ public class TableServiceClient {
       EmptyTableRequest requestMessage,
       TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback);
 
-  public native ResponseStream<ExportedTableUpdateBatchMessage> exportedTableUpdates(
+  public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
       ExportedTableUpdatesRequest requestMessage, BrowserHeaders metadata);
 
-  public native ResponseStream<ExportedTableUpdateBatchMessage> exportedTableUpdates(
+  public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
       ExportedTableUpdatesRequest requestMessage);
 
   @JsOverlay

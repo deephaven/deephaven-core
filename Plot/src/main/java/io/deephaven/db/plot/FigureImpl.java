@@ -17,7 +17,6 @@ import io.deephaven.db.plot.Chart;
 import io.deephaven.db.plot.Font;
 import io.deephaven.db.plot.PlotStyle;
 import io.deephaven.db.plot.Series;
-import io.deephaven.db.plot.Theme;
 import io.deephaven.db.plot.axisformatters.AxisFormat;
 import io.deephaven.db.plot.axistransformations.AxisTransform;
 import io.deephaven.db.plot.datasets.DataSeries;
@@ -2681,18 +2680,6 @@ public class FigureImpl implements io.deephaven.db.plot.Figure {
         final BaseFigureImpl fc = this.figure.copy();
         final ChartImpl chart = (ChartImpl) chart(fc).span( rowSpan, colSpan);
         return make(chart);
-    }
-
-    @Override public  FigureImpl theme( java.lang.String theme ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).theme( theme);
-        return make(fc);
-    }
-
-    @Override public  FigureImpl theme( io.deephaven.db.plot.Theme theme ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).theme( theme);
-        return make(fc);
     }
 
     @Override public  FigureImpl tickLabelAngle( double angle ) {

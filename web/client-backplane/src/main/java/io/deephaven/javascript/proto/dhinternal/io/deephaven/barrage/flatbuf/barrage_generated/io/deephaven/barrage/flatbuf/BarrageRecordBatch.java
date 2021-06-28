@@ -6,7 +6,6 @@ import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.BodyCompression;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Buffer;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -331,8 +330,6 @@ public class BarrageRecordBatch {
 
   public static native void addBuffers(Builder builder, double buffersOffset);
 
-  public static native void addCompression(Builder builder, double compressionOffset);
-
   public static native void addEffectiveColumnSet(Builder builder, double effectiveColumnSetOffset);
 
   public static native void addEffectiveViewport(Builder builder, double effectiveViewportOffset);
@@ -449,6 +446,22 @@ public class BarrageRecordBatch {
   public static final double createAddedRowsVector(Builder builder, double[] data) {
     return createAddedRowsVector(builder, Js.<JsArray<Double>>uncheckedCast(data));
   }
+
+  public static native double createBarrageRecordBatch(
+      Builder builder,
+      Long firstSeq,
+      Long lastSeq,
+      boolean isSnapshot,
+      double effectiveViewportOffset,
+      double effectiveColumnSetOffset,
+      double addedRowsOffset,
+      double removedRowsOffset,
+      double shiftDataOffset,
+      double addedColumnSetOffset,
+      double modifiedColumnSetOffset,
+      double addedRowsIncludedOffset,
+      double nodesOffset,
+      double buffersOffset);
 
   @Deprecated
   public static native double createEffectiveColumnSetVector(
@@ -683,10 +696,6 @@ public class BarrageRecordBatch {
   public native Buffer buffers(double index);
 
   public native double buffersLength();
-
-  public native BodyCompression compression();
-
-  public native BodyCompression compression(BodyCompression obj);
 
   public native double effectiveColumnSet(double index);
 

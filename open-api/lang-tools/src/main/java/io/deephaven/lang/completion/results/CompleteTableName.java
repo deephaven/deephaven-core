@@ -3,8 +3,8 @@ package io.deephaven.lang.completion.results;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.*;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -27,12 +27,12 @@ public class CompleteTableName extends CompletionBuilder {
 
     public void doCompletion(
         Node node,
-        Set<CompletionItem> results,
+        Set<CompletionItem.Builder> results,
         CompletionRequest request
     ) {
         final int argInd = invoke.indexOfArgument(node);
         final String qt = getCompleter().getQuoteType(node);
-        final DocumentRange range;
+        final DocumentRange.Builder range;
         final String[] prefix = {""}, suffix = {""};
         if (argInd == 0) {
             // The cursor is on namespace side of `,` or there is no 2nd table name argument yet.
@@ -109,14 +109,21 @@ public class CompleteTableName extends CompletionBuilder {
             b.append(suffix[0]);
             if (node != null && node.isWellFormed()) {
                 len++;
-                range.end.character++;
+                range.getEndBuilder().setCharacter(range.getEndBuilder().getCharacter() + 1);
                 // may need to skip this item, in case we are suggesting the exact thing which already exists.
                 if (name.equals(node.toSource())) {
                     // This suggestion is a duplicate; discard it.
                     return;
                 }
             }
-            CompletionItem result = new CompletionItem(start, len, b.toString(), b.toString(), range);
+            final CompletionItem.Builder result = CompletionItem.newBuilder();
+            String item = b.toString();
+            result.setStart(start)
+                    .setLength(len)
+                    .setLabel(item)
+                    .getTextEditBuilder()
+                        .setText(item)
+                        .setRange(range);
             results.add(result);
         });
     }

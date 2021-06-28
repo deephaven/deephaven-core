@@ -3,7 +3,9 @@ package io.deephaven.lang.completion
 import groovy.text.SimpleTemplateEngine
 import io.deephaven.lang.generated.*
 import io.deephaven.lang.parse.CompletionParser
-import io.deephaven.web.shared.ide.lsp.Position
+import io.deephaven.lang.parse.LspTools
+import io.deephaven.proto.backplane.script.grpc.Position
+import io.deephaven.proto.backplane.script.grpc.PositionOrBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -21,12 +23,12 @@ class ChunkerParserTest extends Specification implements ChunkerParseTestMixin {
 $comment3$comment2$comment1
 $comment2$comment1$comment3"""
         doc = p/**/./**/parse/**/(src)
-        Position pos = new Position(0, 0)
+        PositionOrBuilder pos = Position.defaultInstance
         boolean hasComment = false
         then: "Expect all tokens to be iterated in correct order"
         for (Token t : new AllTokenIterableImpl(doc.doc.jjtGetFirstToken())) {
-            pos.lessOrEqual(t.positionStart())
-            t.positionStart().lessOrEqual((pos = t.positionEnd()))
+            LspTools.lessOrEqual(pos, t.positionStart())
+            LspTools.lessOrEqual(t.positionStart(), (pos = t.positionEnd()))
             switch (t.kind) {
                 case ChunkerConstants.MULTI_LINE_COMMENT:
                 case ChunkerConstants.JAVA_DOC_COMMENT:
