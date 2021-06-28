@@ -1022,23 +1022,13 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<JsTable> emptyTable(double size, JsPropertyMap<String> columns) {
-        final String[] columnNames = new String[0];
-        final String[] columnTypes = new String[0];
-        if (columns != null) {
-            columns.forEach(key -> {
-                columnNames[columnNames.length] = key;
-                columnTypes[columnTypes.length] = columns.get(key);
-            });
-        }
+    public Promise<JsTable> emptyTable(double size) {
         return whenServerReady("create emptyTable").then(server -> newState(info, (c, cts, metadata) -> {
             EmptyTableRequest emptyTableRequest = new EmptyTableRequest();
             emptyTableRequest.setResultId(cts.getHandle().makeTicket());
             emptyTableRequest.setSize(size + "");
-            emptyTableRequest.setColumnNamesList(columnNames);
-            emptyTableRequest.setColumnTypesList(columnTypes);
             tableServiceClient.emptyTable(emptyTableRequest, metadata, c::apply);
-        }, "emptyTable(" + size + ", " + Arrays.toString(columnNames) + "," + Arrays.toString(columnTypes) + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "emptyTable(" + size + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     public Promise<JsTable> timeTable(double periodNanos, DateWrapper startTime) {

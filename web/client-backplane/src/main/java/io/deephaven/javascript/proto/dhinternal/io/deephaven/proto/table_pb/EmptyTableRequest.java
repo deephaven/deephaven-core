@@ -1,6 +1,5 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
-import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
@@ -79,32 +78,10 @@ public class EmptyTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnNamesList();
-
-    @JsProperty
-    JsArray<String> getColumnTypesList();
-
-    @JsProperty
     EmptyTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
     String getSize();
-
-    @JsProperty
-    void setColumnNamesList(JsArray<String> columnNamesList);
-
-    @JsOverlay
-    default void setColumnNamesList(String[] columnNamesList) {
-      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-    }
-
-    @JsProperty
-    void setColumnTypesList(JsArray<String> columnTypesList);
-
-    @JsOverlay
-    default void setColumnTypesList(String[] columnTypesList) {
-      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-    }
 
     @JsProperty
     void setResultId(EmptyTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
@@ -179,32 +156,10 @@ public class EmptyTableRequest {
     }
 
     @JsProperty
-    JsArray<String> getColumnNamesList();
-
-    @JsProperty
-    JsArray<String> getColumnTypesList();
-
-    @JsProperty
     EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
     String getSize();
-
-    @JsProperty
-    void setColumnNamesList(JsArray<String> columnNamesList);
-
-    @JsOverlay
-    default void setColumnNamesList(String[] columnNamesList) {
-      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-    }
-
-    @JsProperty
-    void setColumnTypesList(JsArray<String> columnTypesList);
-
-    @JsOverlay
-    default void setColumnTypesList(String[] columnTypesList) {
-      setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-    }
 
     @JsProperty
     void setResultId(EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
@@ -223,23 +178,7 @@ public class EmptyTableRequest {
   public static native EmptyTableRequest.ToObjectReturnType toObject(
       boolean includeInstance, EmptyTableRequest msg);
 
-  public native String addColumnNames(String value, double index);
-
-  public native String addColumnNames(String value);
-
-  public native String addColumnTypes(String value, double index);
-
-  public native String addColumnTypes(String value);
-
-  public native void clearColumnNamesList();
-
-  public native void clearColumnTypesList();
-
   public native void clearResultId();
-
-  public native JsArray<String> getColumnNamesList();
-
-  public native JsArray<String> getColumnTypesList();
 
   public native Ticket getResultId();
 
@@ -248,20 +187,6 @@ public class EmptyTableRequest {
   public native boolean hasResultId();
 
   public native Uint8Array serializeBinary();
-
-  public native void setColumnNamesList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setColumnNamesList(String[] value) {
-    setColumnNamesList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native void setColumnTypesList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setColumnTypesList(String[] value) {
-    setColumnTypesList(Js.<JsArray<String>>uncheckedCast(value));
-  }
 
   public native void setResultId();
 
