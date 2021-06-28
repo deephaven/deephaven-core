@@ -5,8 +5,10 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.config.InputTableStatusListener;
+import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.NullValueColumnSource;
 import io.deephaven.db.v2.sources.WritableChunkSink;
 import io.deephaven.db.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
@@ -43,7 +45,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
     public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition, final Map<String, Object[]> enumValues) {
-        return make(TableTools.emptyTable(0, definition), enumValues);
+        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
     }
 
     /**

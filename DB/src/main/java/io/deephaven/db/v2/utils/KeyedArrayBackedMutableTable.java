@@ -5,6 +5,7 @@ import io.deephaven.db.exceptions.ArgumentException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.tuples.TupleSourceFactory;
@@ -41,7 +42,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition, final String ... keyColumnNames) {
-        return make(TableTools.emptyTable(0, definition), keyColumnNames);
+        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
     }
 
     /**
@@ -54,7 +55,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition, final Map<String, Object[]> enumValues, final String ... keyColumnNames) {
-        return make(TableTools.emptyTable(0, definition), enumValues, keyColumnNames);
+        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
     }
 
     /**

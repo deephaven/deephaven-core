@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -1100,24 +1101,7 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        Map<String, ColumnSource> map = new LinkedHashMap<>();
-        return new QueryTable(Index.FACTORY.getFlatIndex(size), map);
-    }
-
-    /**
-     * Returns a new, empty Deephaven Table.
-     *
-     * @param size            the number of rows to allocate space for
-     * @param tableDefinition the TableDefinition (column names and properties) to use for the new table
-     * @return a Deephaven Table with columns.
-     */
-    public static Table emptyTable(long size, TableDefinition tableDefinition) {
-        Map<String, ColumnSource> map = new LinkedHashMap<>();
-        for (ColumnDefinition columnDefinition : tableDefinition.getColumns()) {
-            //noinspection unchecked
-            map.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(size, columnDefinition.getDataType()));
-        }
-        return new QueryTable(tableDefinition, Index.FACTORY.getFlatIndex(size), map);
+        return new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
     }
 
     private static <MT extends Map<KT, VT>, KT, VT> MT newMapFromLists(Class<MT> mapClass, List<KT> keys, List<VT> values) {
