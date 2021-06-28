@@ -12,18 +12,18 @@ public interface CompletionParseService<ResultType extends ParsedResult, ChangeT
 
     ResultType parse(String document) throws ParseErrorType;
 
-    void open(String text, String uri, String version, Logger log);
+    void open(String text, String uri, String version);
 
     void update(
             String uri,
             String version,
-            List<ChangeType> changes,
-            Logger log
+            List<ChangeType> changes
     );
 
     void remove(String uri);
 
     ResultType finish(String uri);
 
-    void close(final String uri, final Logger log);
+    void close(final String uri);
+
 }

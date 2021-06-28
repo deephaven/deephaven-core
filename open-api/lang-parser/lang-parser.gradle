@@ -13,6 +13,7 @@ dependencies {
     compile project(':open-api-shared-ide')
     compile project(':open-api-shared-fu')
     compile project(':open-api-lang-api')
+    compile project(':log-factory')
     compile project(':proto:proto-backplane-grpc')
 }
 Classpaths.inheritJsInterop project, 'jsinterop-annotations'

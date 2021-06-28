@@ -1,5 +1,6 @@
 package io.deephaven.lang.parse;
 
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.ParseCancelled;
 import io.deephaven.lang.generated.Chunker;
@@ -21,6 +22,11 @@ import java.util.Optional;
  * all others will be cancelled.
  */
 public class PendingParse {
+
+    /**
+     * A logger. For logging things.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(PendingParse.class);
 
     /**
      * A ParseJob represents a unit of work for our parser.
@@ -69,11 +75,13 @@ public class PendingParse {
                 // Cancelled, nothing to do here
                 return null;
             } catch (TokenMgrException | ParseException e) {
-                log.warn()
-                        .append("Parser for ").append(uri)
-                        .append(": Encountered parse exception ").append(e)
-                        .append(" while parsing ").append(text)
-                        .endl();
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn()
+                            .append("Parser for ").append(uri)
+                            .append(": Encountered parse exception ").append(e)
+                            .append(" while parsing ").append(text)
+                            .endl();
+                }
                 return false;
             }
         }
@@ -83,11 +91,6 @@ public class PendingParse {
      * The unique identifier for the document we are responsible for parsing.
      */
     private final String uri;
-
-    /**
-     * A logger.  For logging things.
-     */
-    private final Logger log;
 
     /**
      * The thread doing the parse work.
@@ -122,9 +125,8 @@ public class PendingParse {
      */
     private volatile boolean valid;
 
-    PendingParse(String uri, Logger log) {
+    PendingParse(String uri) {
         this.uri = uri;
-        this.log = log;
         alive = true;
         parseThread = new Thread(this::parse, "ParserFor" + uri);
         parseThread.setDaemon(true);
@@ -229,10 +231,12 @@ public class PendingParse {
                     // completion request is no longer valid, even though parsing _has_ completed.
                     // This can happen if a very large document has issued a completion request,
                     // but the user kept typing; we want to fail the current request quickly.
-                    log.info()
-                        .append("Document changed while awaiting parsing; failing current request ")
-                        .append(localTargetState.version)
-                        .endl();
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info()
+                                .append("Document changed while awaiting parsing; failing current request ")
+                                .append(localTargetState.version)
+                                .endl();
+                    }
                     // this exception tells calling code that it should immediately fail,
                     // rather than fall back to the V1 parser.
                     throw new CompletionCancelled();
@@ -240,7 +244,12 @@ public class PendingParse {
                 try {
                     parseThread.wait();
                 } catch (InterruptedException failure) {
-                    log.warn().append("Unexpected interruption of document parser").append(failure).endl();
+                    if (LOGGER.isWarnEnabled()) {
+                        LOGGER.warn()
+                                .append("Unexpected interruption of document parser")
+                                .append(failure)
+                                .endl();
+                    }
                     Thread.currentThread().interrupt(); // percolate interruption
                     throw new CompletionCancelled(); // calling code will catch this to fail-fast (does not allow fallback).
                 }
