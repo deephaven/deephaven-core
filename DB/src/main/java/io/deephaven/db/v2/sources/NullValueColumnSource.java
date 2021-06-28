@@ -39,7 +39,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
 
     public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
         //noinspection unchecked,rawtypes
-        return INSTANCES.putIfAbsent(new Pair<>(clazz, elementType), p -> new NullValueColumnSource<T2>(clazz, elementType));
+        return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType), p -> new NullValueColumnSource<T2>(clazz, elementType));
     }
 
     public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
