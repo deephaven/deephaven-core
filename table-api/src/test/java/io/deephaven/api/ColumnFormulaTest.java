@@ -1,14 +1,14 @@
 package io.deephaven.api;
 
+import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
-
-import org.junit.jupiter.api.Test;
 
 public class ColumnFormulaTest {
 
     private static final ColumnFormula FOO_EQ_BAR =
-        ColumnFormula.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
+        ColumnFormula.of(ColumnName.of("Foo"), RawString.of("Bar"));
 
     private static final ColumnFormula FOO_EQ_FOO_PLUS_1 =
         ColumnFormula.of(ColumnName.of("Foo"), RawString.of("Foo + 1"));
@@ -25,8 +25,8 @@ public class ColumnFormulaTest {
 
     @Test
     void parsing() {
-        assertThat(ColumnFormula.parse(FOO_EQ_BAR_STR)).isEqualTo(FOO_EQ_BAR);
-        assertThat(ColumnFormula.parse(FOO_EQ_FOO_PLUS_1_STR)).isEqualTo(FOO_EQ_FOO_PLUS_1);
+        parse(FOO_EQ_BAR_STR, FOO_EQ_BAR);
+        parse(FOO_EQ_FOO_PLUS_1_STR, FOO_EQ_FOO_PLUS_1);
     }
 
     @Test
@@ -62,15 +62,23 @@ public class ColumnFormulaTest {
     }
 
     @Test
-    void rhsWhitespace() {
-        // potential place for improvement
-        assertThat(ColumnFormula.parse("Foo= Bar"))
-            .isEqualTo(ColumnFormula.of(ColumnName.of("Foo"), RawString.of(" Bar")));
+    void rhsLeadingWhitespace() {
+        parse("Foo= Bar", ColumnFormula.of(ColumnName.of("Foo"), RawString.of(" Bar")));
     }
 
     @Test
-    void lhsWhitespace() {
-        expectParseFailure("Foo =Bar");
+    void rhsTrailingWhitespace() {
+        parse("Foo=Bar ", ColumnFormula.of(ColumnName.of("Foo"), RawString.of("Bar ")));
+    }
+
+    @Test
+    void lhsLeadingWhitespace() {
+        parse(" Foo=Bar", FOO_EQ_BAR);
+    }
+
+    @Test
+    void lhsTrailingWhitespace() {
+        parse("Foo =Bar", FOO_EQ_BAR);
     }
 
     @Test
@@ -86,6 +94,10 @@ public class ColumnFormulaTest {
     @Test
     void unicodeEquivalent() {
         expectParseFailure("Foo≡Bar");
+    }
+
+    private void parse(String x, ColumnFormula expected) {
+        assertThat(ColumnFormula.parse(x)).isEqualTo(expected);
     }
 
     private void expectParseFailure(String x) {

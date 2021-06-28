@@ -4,15 +4,9 @@
 
 package io.deephaven.db.tables;
 
-import io.deephaven.api.Filter;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.TableOperations;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Function;
-import io.deephaven.base.Pair;
 import io.deephaven.db.tables.lang.DBLanguageParser;
 import io.deephaven.db.tables.remote.*;
 import io.deephaven.db.tables.select.*;
@@ -887,16 +881,25 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      */
     Table leftJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table leftJoin(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        return leftJoin(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd));
+    default Table leftJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return leftJoin(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
     }
 
     default Table leftJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return leftJoin(rightTable, columnsToMatch, Collections.emptyList());
+        return leftJoin(
+                rightTable,
+                MatchPairFactory.getExpressions(columnsToMatch),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     default Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return leftJoin(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
+        return leftJoin(
+                rightTable,
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
     default Table leftJoin(Table rightTable, String columnsToMatch) {
@@ -935,7 +938,27 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         LESS_THAN_EQUAL,
         LESS_THAN,
         GREATER_THAN_EQUAL,
-        GREATER_THAN,
+        GREATER_THAN;
+
+        static AsOfMatchRule of(AsOfJoinRule rule) {
+            switch (rule) {
+                case LESS_THAN_EQUAL:
+                    return AsOfMatchRule.LESS_THAN_EQUAL;
+                case LESS_THAN:
+                    return AsOfMatchRule.LESS_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
+
+        static AsOfMatchRule of(RightAsOfJoinRule rule) {
+            switch (rule) {
+                case GREATER_THAN_EQUAL:
+                    return AsOfMatchRule.GREATER_THAN_EQUAL;
+                case GREATER_THAN:
+                    return AsOfMatchRule.GREATER_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
     }
 
 
@@ -982,9 +1005,19 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      *                       side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table aj(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        Pair<MatchPair[], AsOfMatchRule> matchingCriteria = AjMatchPairFactory.getExpressions(false, columnsToMatch);
-        return aj(rightTable, matchingCriteria.first, MatchPairFactory.getExpressions(columnsToAdd), matchingCriteria.second);
+    default Table aj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return aj(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    default Table aj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+        return aj(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(asOfJoinRule));
     }
 
     /**
@@ -997,7 +1030,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table aj(Table rightTable, Collection<String> columnsToMatch) {
-        return aj(rightTable, columnsToMatch, Collections.emptyList());
+        return aj(
+                rightTable,
+                MatchPairFactory.getExpressions(columnsToMatch),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     /**
@@ -1013,7 +1049,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table aj(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return aj(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
+        return aj(
+                rightTable,
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
     /**
@@ -1083,11 +1122,20 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      *                       side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table raj(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd) {
-        Pair<MatchPair[], AsOfMatchRule> matchCriteria = AjMatchPairFactory.getExpressions(true, columnsToMatch);
-        return raj(rightTable, matchCriteria.first, MatchPairFactory.getExpressions(columnsToAdd), matchCriteria.second);
+    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return raj(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
     }
 
+    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, RightAsOfJoinRule rightAsOfJoinRule) {
+        return raj(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(rightAsOfJoinRule));
+    }
 
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
@@ -1102,7 +1150,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table raj(Table rightTable, Collection<String> columnsToMatch) {
-        return raj(rightTable, columnsToMatch, Collections.emptyList());
+        return raj(
+                rightTable,
+                MatchPairFactory.getExpressions(columnsToMatch),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     /**
@@ -1121,7 +1172,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table raj(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return raj(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd));
+        return raj(
+                rightTable,
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
     /**
@@ -2352,6 +2406,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table snapshotHistory(final Table rightTable);
 
+    @Override
+    default Table snapshot(Table rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
+        return snapshot(rightTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -2489,10 +2548,4 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
-
-    @Override
-    default Table toTable() {
-        return this;
-    }
-
 }

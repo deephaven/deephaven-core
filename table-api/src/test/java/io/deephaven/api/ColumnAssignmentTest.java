@@ -25,8 +25,8 @@ public class ColumnAssignmentTest {
 
     @Test
     void parsing() {
-        assertThat(ColumnAssignment.parse(FOO_EQ_BAR_STR)).isEqualTo(FOO_EQ_BAR);
-        assertThat(ColumnAssignment.parse(FOO_EQ_FOO_STR)).isEqualTo(FOO_EQ_FOO);
+        parse(FOO_EQ_BAR_STR, FOO_EQ_BAR);
+        parse(FOO_EQ_FOO_STR, FOO_EQ_FOO);
     }
 
     @Test
@@ -60,13 +60,23 @@ public class ColumnAssignmentTest {
     }
 
     @Test
-    void rhsWhitespace() {
-        expectParseFailure("Foo= Bar");
+    void rhsLeadingWhitespace() {
+        parse("Foo= Bar", FOO_EQ_BAR);
     }
 
     @Test
-    void lhsWhitespace() {
-        expectParseFailure("Foo =Bar");
+    void rhsTrailingWhitespace() {
+        parse("Foo=Bar ", FOO_EQ_BAR);
+    }
+
+    @Test
+    void lhsLeadingWhitespace() {
+        parse(" Foo=Bar", FOO_EQ_BAR);
+    }
+
+    @Test
+    void lhsTrailingWhitespace() {
+        parse("Foo =Bar", FOO_EQ_BAR);
     }
 
     @Test
@@ -82,6 +92,10 @@ public class ColumnAssignmentTest {
     @Test
     void unicodeEquivalent() {
         expectParseFailure("Foo≡Bar");
+    }
+
+    private void parse(String x, ColumnAssignment expected) {
+        assertThat(ColumnAssignment.parse(x)).isEqualTo(expected);
     }
 
     private void expectParseFailure(String x) {

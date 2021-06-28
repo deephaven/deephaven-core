@@ -4,7 +4,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
-public abstract class ColumnMatch implements JoinMatch {
+public abstract class ColumnMatch implements JoinMatch, Filter {
 
     public static ColumnMatch of(ColumnName left, ColumnName right) {
         return ImmutableColumnMatch.of(left, right);
@@ -16,7 +16,7 @@ public abstract class ColumnMatch implements JoinMatch {
             throw new IllegalArgumentException(String.format("Unable to parse '%s'", x));
         }
         final int ix2 = x.charAt(ix + 1) == '=' ? ix + 1 : ix;
-        return of(ColumnName.of(x.substring(0, ix)), ColumnName.of(x.substring(ix2 + 1)));
+        return of(ColumnName.parse(x.substring(0, ix)), ColumnName.parse(x.substring(ix2 + 1)));
     }
 
     @Parameter
@@ -26,7 +26,13 @@ public abstract class ColumnMatch implements JoinMatch {
     public abstract ColumnName right();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
+    public final <V extends JoinMatch.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
+    @Override
+    public final <V extends Filter.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

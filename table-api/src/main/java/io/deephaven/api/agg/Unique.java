@@ -1,22 +1,26 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.JoinAddition;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
-@Immutable(builder = false, copy = false)
-public abstract class Min implements Aggregation {
+@Immutable
+public abstract class Unique implements Aggregation {
 
-    public static Min of(JoinAddition addition) {
-        return ImmutableMin.of(addition);
+    public static Unique of(JoinAddition addition) {
+        return ImmutableUnique.builder().addition(addition).build();
     }
 
-    public static Min of(String x) {
+    public static Unique of(String x) {
         return of(JoinAddition.parse(x));
     }
 
-    @Parameter
     public abstract JoinAddition addition();
+
+    @Value.Default
+    public boolean includeNulls() {
+        return false;
+    }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

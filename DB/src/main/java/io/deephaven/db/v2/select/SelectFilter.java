@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.select;
 
+import io.deephaven.api.ColumnMatch;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.SelectFilterFactory;
@@ -188,8 +189,14 @@ public interface SelectFilter {
 
         @Override
         public void visit(ColumnName name) {
-            out = SelectFilterFactory.getExpression(name.name()); // todo: improve
+            // todo: improve
+            out = SelectFilterFactory.getExpression(name.name());
+        }
 
+        @Override
+        public void visit(ColumnMatch match) {
+            // todo: improve
+            out = SelectFilterFactory.getExpression(String.format("%s==%s", match.left().name(), match.right().name()));
         }
 
         @Override

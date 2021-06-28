@@ -18,7 +18,7 @@ public abstract class ColumnFormula implements Selectable {
         if (x.charAt(ix + 1) == '=') {
             throw new IllegalArgumentException(String.format("Unable to parse '%s'", x));
         }
-        return of(ColumnName.of(x.substring(0, ix)), Expression.parse(x.substring(ix + 1)));
+        return of(ColumnName.parse(x.substring(0, ix)), Expression.parse(x.substring(ix + 1)));
     }
 
     @Parameter

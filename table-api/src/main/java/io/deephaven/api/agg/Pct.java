@@ -1,13 +1,17 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinMatch;
+import io.deephaven.api.JoinAddition;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 public abstract class Pct implements Aggregation {
 
-    public abstract JoinMatch match();
+    public static Pct of(double percentile, JoinAddition addition) {
+        return ImmutablePct.builder().addition(addition).percentile(percentile).build();
+    }
+
+    public abstract JoinAddition addition();
 
     public abstract double percentile();
 

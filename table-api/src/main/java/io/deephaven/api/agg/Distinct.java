@@ -1,21 +1,21 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinMatch;
+import io.deephaven.api.JoinAddition;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 public abstract class Distinct implements Aggregation {
 
-    public static Distinct of(JoinMatch match) {
-        return ImmutableDistinct.builder().match(match).build();
+    public static Distinct of(JoinAddition addition) {
+        return ImmutableDistinct.builder().addition(addition).build();
     }
 
     public static Distinct of(String x) {
-        return of(JoinMatch.parse(x));
+        return of(JoinAddition.parse(x));
     }
 
-    public abstract JoinMatch match();
+    public abstract JoinAddition addition();
 
     @Default
     public boolean includeNulls() {

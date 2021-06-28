@@ -5,13 +5,13 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
-public abstract class Min implements Aggregation {
+public abstract class AbsSum implements Aggregation {
 
-    public static Min of(JoinAddition addition) {
-        return ImmutableMin.of(addition);
+    public static AbsSum of(JoinAddition addition) {
+        return ImmutableAbsSum.of(addition);
     }
 
-    public static Min of(String x) {
+    public static AbsSum of(String x) {
         return of(JoinAddition.parse(x));
     }
 

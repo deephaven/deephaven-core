@@ -1,15 +1,19 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinMatch;
+import io.deephaven.api.JoinAddition;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
 public abstract class WSum implements Aggregation {
 
+    public static WSum of(ColumnName weight, JoinAddition addition) {
+        return ImmutableWSum.of(addition, weight);
+    }
+
     @Parameter
-    public abstract JoinMatch match();
+    public abstract JoinAddition addition();
 
     @Parameter
     public abstract ColumnName weight();

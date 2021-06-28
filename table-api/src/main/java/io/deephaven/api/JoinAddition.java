@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 public interface JoinAddition {
 
     static JoinAddition parse(String x) {
-        if (ColumnName.isValidColumnName(x)) {
-            return ColumnName.of(x);
+        if (ColumnName.isValidParsedColumnName(x)) {
+            return ColumnName.parse(x);
         }
         return ColumnAssignment.parse(x);
     }

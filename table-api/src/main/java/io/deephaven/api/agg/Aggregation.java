@@ -1,7 +1,9 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.SortColumn;
 
 public interface Aggregation {
 
@@ -15,6 +17,10 @@ public interface Aggregation {
 
     static Sum AggSum(String matchPair) {
         return Sum.of(matchPair);
+    }
+
+    static AbsSum AggAbsSum(String matchPair) {
+        return AbsSum.of(matchPair);
     }
 
     static Var AggVar(String matchPair) {
@@ -41,17 +47,16 @@ public interface Aggregation {
         return Med.of(matchPair);
     }
 
-    static Pct AggPct(double percentile, String matchPair) {
-        return ImmutablePct.builder().match(JoinMatch.parse(matchPair)).percentile(percentile)
-            .build();
+    static Pct AggPct(double percentile, String addition) {
+        return Pct.of(percentile, JoinAddition.parse(addition));
     }
 
-    static WSum AggWSum(String weight, String matchPair) {
-        return ImmutableWSum.of(JoinMatch.parse(matchPair), ColumnName.of(weight));
+    static WSum AggWSum(String weight, String addition) {
+        return WSum.of(ColumnName.of(weight), JoinAddition.parse(addition));
     }
 
-    static WAvg AggWAvg(String weight, String matchPair) {
-        return ImmutableWAvg.of(JoinMatch.parse(matchPair), ColumnName.of(weight));
+    static WAvg AggWAvg(String weight, String addition) {
+        return WAvg.of(ColumnName.of(weight), JoinAddition.parse(addition));
     }
 
     static Count AggCount(String resultColumn) {
@@ -70,7 +75,37 @@ public interface Aggregation {
         return Array.of(matchPair);
     }
 
-    JoinMatch match();
+    static Unique AggUnique(String matchPair) {
+        return Unique.of(matchPair);
+    }
+
+    static SortedFirst AggSortedFirst(String sortedColumn, String matchPair) {
+        return ImmutableSortedFirst.builder().addition(JoinAddition.parse(matchPair))
+            .addColumns(SortColumn.asc(ColumnName.of(sortedColumn))).build();
+    }
+
+    static SortedFirst AggSortedFirst(String[] sortedColumns, String matchPair) {
+        ImmutableSortedFirst.Builder builder =
+            ImmutableSortedFirst.builder().addition(JoinAddition.parse(matchPair));
+        for (String col : sortedColumns) {
+            builder.addColumns(SortColumn.asc(ColumnName.of(col)));
+        }
+        return builder.build();
+    }
+
+    static SortedLast AggSortedLast(String sortedColumn, String matchPair) {
+        return ImmutableSortedLast.builder().addition(JoinAddition.parse(matchPair))
+            .addColumns(SortColumn.asc(ColumnName.of(sortedColumn))).build();
+    }
+
+    static SortedLast AggSortedLast(String[] sortedColumns, String matchPair) {
+        ImmutableSortedLast.Builder builder =
+            ImmutableSortedLast.builder().addition(JoinAddition.parse(matchPair));
+        for (String col : sortedColumns) {
+            builder.addColumns(SortColumn.asc(ColumnName.of(col)));
+        }
+        return builder.build();
+    }
 
     <V extends Visitor> V walk(V visitor);
 
@@ -80,6 +115,8 @@ public interface Aggregation {
         void visit(Max max);
 
         void visit(Sum sum);
+
+        void visit(AbsSum absSum);
 
         void visit(Var var);
 
@@ -106,5 +143,11 @@ public interface Aggregation {
         void visit(Distinct distinct);
 
         void visit(Array array);
+
+        void visit(Unique unique);
+
+        void visit(SortedFirst sortedFirst);
+
+        void visit(SortedLast sortedLast);
     }
 }

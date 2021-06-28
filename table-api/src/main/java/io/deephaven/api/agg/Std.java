@@ -1,22 +1,22 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinMatch;
+import io.deephaven.api.JoinAddition;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 @Immutable(builder = false, copy = false)
 public abstract class Std implements Aggregation {
 
-    public static Std of(JoinMatch match) {
-        return ImmutableStd.of(match);
+    public static Std of(JoinAddition addition) {
+        return ImmutableStd.of(addition);
     }
 
     public static Std of(String x) {
-        return of(JoinMatch.parse(x));
+        return of(JoinAddition.parse(x));
     }
 
     @Parameter
-    public abstract JoinMatch match();
+    public abstract JoinAddition addition();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

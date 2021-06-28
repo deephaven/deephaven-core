@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 public interface JoinMatch {
 
     static JoinMatch parse(String x) {
-        if (ColumnName.isValidColumnName(x)) {
-            return ColumnName.of(x);
+        if (ColumnName.isValidParsedColumnName(x)) {
+            return ColumnName.parse(x);
         }
         return ColumnMatch.parse(x);
     }

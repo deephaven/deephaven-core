@@ -4,6 +4,9 @@
 
 package io.deephaven.db.v2.by;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.*;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
@@ -22,23 +25,6 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
-import io.deephaven.api.agg.Avg;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.CountDistinct;
-import io.deephaven.api.agg.Distinct;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
-import io.deephaven.api.agg.Max;
-import io.deephaven.api.agg.Med;
-import io.deephaven.api.agg.Min;
-import io.deephaven.api.agg.Pct;
-import io.deephaven.api.agg.Std;
-import io.deephaven.api.agg.Sum;
-import io.deephaven.api.agg.Var;
-import io.deephaven.api.agg.WAvg;
-import io.deephaven.api.agg.WSum;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -476,12 +462,36 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     /**
      * Create an aggregation.
      *
+     * @param factory aggregation factory.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *                   the same name, then the column name can be specified.
+     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     */
+    public static ComboBy Agg(AggregationStateFactory factory, final MatchPair... matchPairs) {
+        return new ComboByImpl(factory, matchPairs);
+    }
+
+    /**
+     * Create an aggregation.
+     *
      * @param factoryType aggregation factory type.
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *                   the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggType factoryType, final String... matchPairs) {
+        return Agg(factoryType, MatchPairFactory.getExpressions(matchPairs));
+    }
+
+    /**
+     * Create an aggregation.
+     *
+     * @param factoryType aggregation factory type.
+     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
+     *                   the same name, then the column name can be specified.
+     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     */
+    public static ComboBy Agg(AggType factoryType, final MatchPair... matchPairs) {
         final AggregationStateFactory factory;
         switch (factoryType) {
             case Min:
@@ -1387,88 +1397,116 @@ public class ComboAggregateFactory implements AggregationStateFactory {
             return Objects.requireNonNull(out);
         }
 
-        static String asMatchPair(Aggregation match) {
-            return MatchPair.of(match.match()).toString();
-        }
-
         @Override
         public void visit(Min min) {
-            out = AggMin(asMatchPair(min));
+            out = Agg(AggType.Min, MatchPair.of(min.addition()));
         }
 
         @Override
         public void visit(Max max) {
-            out = AggMax(asMatchPair(max));
+            out = Agg(AggType.Max, MatchPair.of(max.addition()));
         }
 
         @Override
         public void visit(Sum sum) {
-            out = AggSum(asMatchPair(sum));
+            out = Agg(AggType.Sum, MatchPair.of(sum.addition()));
+        }
+
+        @Override
+        public void visit(AbsSum absSum) {
+            out = Agg(AggType.AbsSum, MatchPair.of(absSum.addition()));
         }
 
         @Override
         public void visit(Var var) {
-            out = AggVar(asMatchPair(var));
+            out = Agg(AggType.Var, MatchPair.of(var.addition()));
         }
 
         @Override
         public void visit(Avg avg) {
-            out = AggAvg(asMatchPair(avg));
+            out = Agg(AggType.Avg, MatchPair.of(avg.addition()));
         }
 
         @Override
         public void visit(First first) {
-            out = AggFirst(asMatchPair(first));
+            out = Agg(AggType.First, MatchPair.of(first.addition()));
         }
 
         @Override
         public void visit(Last last) {
-            out = AggLast(asMatchPair(last));
+            out = Agg(AggType.Last, MatchPair.of(last.addition()));
         }
 
         @Override
         public void visit(Std std) {
-            out = AggStd(asMatchPair(std));
+            out = Agg(AggType.Std, MatchPair.of(std.addition()));
         }
 
         @Override
         public void visit(Med med) {
-            out = AggPct(0.50d, med.averageMedian(), asMatchPair(med));
+            out = Agg(new PercentileByStateFactoryImpl(0.50d, med.averageMedian()), MatchPair.of(med.addition()));
         }
 
         @Override
         public void visit(Pct pct) {
-            out = AggPct(pct.percentile(), pct.averageMedian(), asMatchPair(pct));
+            out = Agg(new PercentileByStateFactoryImpl(pct.percentile(), pct.averageMedian()), MatchPair.of(pct.addition()));
         }
 
         @Override
         public void visit(WSum wSum) {
-            out = AggWSum(wSum.weight().name(), asMatchPair(wSum));
+            out = Agg(new WeightedSumStateFactoryImpl(wSum.weight().name()), MatchPair.of(wSum.addition()));
         }
 
         @Override
         public void visit(WAvg wAvg) {
-            out = AggWSum(wAvg.weight().name(), asMatchPair(wAvg));
+            out = Agg(new WeightedAverageStateFactoryImpl(wAvg.weight().name()), MatchPair.of(wAvg.addition()));
         }
 
         @Override
         public void visit(Count count) {
-            out = AggCount(count.column().name());
+            out = new CountComboBy(count.column().name());
         }
 
         @Override
         public void visit(CountDistinct countDistinct) {
-            out = AggCountDistinct(countDistinct.countNulls(), asMatchPair(countDistinct));
+            out = Agg(new CountDistinctStateFactory(countDistinct.countNulls()), MatchPair.of(countDistinct.addition()));
         }
 
         @Override
         public void visit(Distinct distinct) {
-            out = AggDistinct(distinct.includeNulls(), asMatchPair(distinct));
+            out = Agg(new DistinctStateFactory(distinct.includeNulls()), MatchPair.of(distinct.addition()));
         }
 
         @Override
         public void visit(Array array) {
-            out = AggArray(asMatchPair(array));
+            out = Agg(AggType.Array, MatchPair.of(array.addition()));
+        }
+
+        @Override
+        public void visit(Unique unique) {
+            out = Agg(new UniqueStateFactory(unique.includeNulls()), MatchPair.of(unique.addition()));
+        }
+
+        @Override
+        public void visit(SortedFirst sortedFirst) {
+            for (SortColumn column : sortedFirst.columns()) {
+                if (column.order() != SortColumn.Order.ASCENDING) {
+                    throw new UnsupportedOperationException("SortedFirstBy only supports ASCENDING");
+                }
+            }
+            String[] columns = sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
+            out = Agg(new SortedFirstBy(columns), MatchPair.of(sortedFirst.addition()));
+        }
+
+        @Override
+        public void visit(SortedLast sortedLast) {
+            for (SortColumn column : sortedLast.columns()) {
+                if (column.order() != SortColumn.Order.ASCENDING) {
+                    throw new UnsupportedOperationException("SortedLastBy only supports ASCENDING");
+                }
+            }
+            String[] columns = sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
+            out = Agg(new SortedLastBy(columns), MatchPair.of(sortedLast.addition()));
         }
     }
 }

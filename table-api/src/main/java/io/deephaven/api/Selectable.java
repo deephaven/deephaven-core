@@ -8,9 +8,11 @@ import java.util.stream.Collectors;
 public interface Selectable {
 
     static Selectable parse(String x) {
-        if (ColumnName.isValidColumnName(x)) {
-            return ImmutableColumnName.of(x); // todo
+        if (ColumnName.isValidParsedColumnName(x)) {
+            return ColumnName.parse(x);
         }
+        // note: we are unable to parse a selectable into a strongly typed RHS
+        // (either ColumnAssignment, or ColumnFormula with strong RHS).
         return ColumnFormula.parse(x);
     }
 
@@ -26,6 +28,8 @@ public interface Selectable {
 
     interface Visitor {
         void visit(ColumnName columnName);
+
+        void visit(ColumnAssignment columnAssignment);
 
         void visit(ColumnFormula columnFormula);
     }

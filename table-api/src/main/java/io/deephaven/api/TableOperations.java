@@ -76,8 +76,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS select();
-
     TOPS select(String... columns);
 
     TOPS select(Collection<Selectable> columns);
@@ -102,12 +100,37 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS leftJoin(TABLE rightTable, String columnsToMatch);
+
+    TOPS leftJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd);
+
+    TOPS leftJoin(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
+    // -------------------------------------------------------------------------------------------
+
     TOPS join(TABLE rightTable, String columnsToMatch);
 
     TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd);
 
     TOPS join(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
         Collection<JoinAddition> columnsToAdd);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
+    TOPS aj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS raj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
+    TOPS raj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd, RightAsOfJoinRule rightAsOfJoinRule);
 
     // -------------------------------------------------------------------------------------------
 
@@ -120,6 +143,4 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations);
 
     // -------------------------------------------------------------------------------------------
-
-    TABLE toTable();
 }

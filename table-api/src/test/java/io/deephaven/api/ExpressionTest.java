@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 public class ExpressionTest {
 
     @Test
-    void columnNameFoo() {
-        assertThat(Expression.parse("Foo")).isEqualTo(ColumnName.of("Foo"));
+    void foo() {
+        assertThat(Expression.parse("Foo")).isEqualTo(RawString.of("Foo"));
     }
 
     @Test
