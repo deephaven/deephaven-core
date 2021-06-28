@@ -15,6 +15,7 @@ import java.util.Map;
 /**
  * Class to aid in building Tables from a TableDefinition.
  */
+@Deprecated
 public class TableBuilder {
     private final TableDefinition def;
     private final List<Object[]> rows;
