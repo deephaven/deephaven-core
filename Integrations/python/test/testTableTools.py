@@ -59,10 +59,6 @@ class TestTableTools(unittest.TestCase):
             # set some cols which aren't dumb
             tab = tab.update("intCol=(int)i", "fltCol=(float)i*0.5", "dblCol=(double)i*0.3")
 
-        # there is no way to craft a TableDefinition in Python, except to get it from a Table object?
-        with self.subTest(msg="emptyTable(long, TableDefinition)"):
-            # assuming the first test passed...
-            tab2 = TableTools.emptyTable(3, tab.getDefinition())
         with self.subTest(msg="newTable(TableDefinition)"):
             # assuming the first test passed...
             tab3 = TableTools.newTable(tab.getDefinition())
