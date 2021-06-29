@@ -32,4 +32,23 @@ public class TestChunkPooling extends TestCase {
             ChunkPoolReleaseTracking.disable();
         }
     }
+
+    public void testTakeAndGiveEmpty() {
+        ChunkPoolReleaseTracking.enable();
+        try {
+            MultiChunkPool.enableDedicatedPoolForThisThread();
+            final List<PoolableChunk> chunksToGive = new ArrayList<>();
+            for (ChunkType chunkType : ChunkType.values()) {
+                for (int ci = 0; ci < 100; ++ci) {
+                    chunksToGive.add(chunkType.makeWritableChunk(0));
+                }
+                TestCase.assertEquals(1, chunksToGive.stream().distinct().count());
+                chunksToGive.forEach(PoolableChunk::close);
+                chunksToGive.clear();
+                ChunkPoolReleaseTracking.check();
+            }
+        } finally {
+            ChunkPoolReleaseTracking.disable();
+        }
+    }
 }
