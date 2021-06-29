@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.sources.chunk.util.pools;
 
+import io.deephaven.db.tables.utils.ArrayUtils;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -13,6 +14,8 @@ import static io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolConstants.*;
  */
 @SuppressWarnings("rawtypes")
 public final class CharChunkPool implements ChunkPool {
+
+    private final WritableCharChunk<Any> EMPTY = WritableCharChunk.writableChunkWrap(ArrayUtils.EMPTY_CHAR_ARRAY);
 
     /**
      * Sub-pools by power-of-two sizes for {@link WritableCharChunk}s.
@@ -84,6 +87,10 @@ public final class CharChunkPool implements ChunkPool {
     }
 
     public final <ATTR extends Any> WritableCharChunk<ATTR> takeWritableCharChunk(final int capacity) {
+        if (capacity == 0) {
+            //noinspection unchecked
+            return (WritableCharChunk<ATTR>) EMPTY;
+        }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
             final WritableCharChunk result = writableCharChunks[poolIndexForTake].take();
@@ -96,6 +103,9 @@ public final class CharChunkPool implements ChunkPool {
     }
 
     public final void giveWritableCharChunk(@NotNull final WritableCharChunk writableCharChunk) {
+        if (writableCharChunk == EMPTY || writableCharChunk.isAlias(EMPTY)) {
+            return;
+        }
         ChunkPoolReleaseTracking.onGive(writableCharChunk);
         final int capacity = writableCharChunk.capacity();
         final int poolIndexForGive = getPoolIndexForGive(checkCapacityBounds(capacity));
