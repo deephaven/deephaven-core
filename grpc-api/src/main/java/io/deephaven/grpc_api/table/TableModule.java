@@ -5,6 +5,7 @@ import dagger.MapKey;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import io.deephaven.grpc_api.table.ops.AsOfJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl;
@@ -100,4 +101,7 @@ public interface TableModule {
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.FLATTEN)
     GrpcTableOperation<?> bindOperationFlatten(FlattenTableGrpcImpl op);
+
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
+    GrpcTableOperation<?> bindOperationAsOfJoin(AsOfJoinTablesGrpcImpl op);
 }

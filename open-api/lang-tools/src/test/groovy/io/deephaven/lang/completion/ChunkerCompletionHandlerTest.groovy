@@ -6,7 +6,6 @@ import io.deephaven.db.util.VariableProvider
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier
 import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.db.tables.Table
 import io.deephaven.lang.parse.CompletionParser
@@ -149,8 +148,8 @@ b = 2
 c = 3
 """
         String src2 = "t = "
-        p.update(uri, "0", [ makeChange(0, 0, src1) ], log)
-        p.update(uri, "1", [ makeChange(3, 0, src2) ], log)
+        p.update(uri, "0", [ makeChange(0, 0, src1) ])
+        p.update(uri, "1", [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
         VariableProvider variables = Mock(VariableProvider) {

@@ -240,7 +240,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .submit(()->{
                         final ScriptSession scriptSession = exportedConsole.get();
                         final TextDocumentItem doc = request.getTextDocument();
-                        scriptSession.getParser().open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()), log);
+                        scriptSession.getParser().open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
                         safelyExecute(() -> {
                             responseObserver.onNext(OpenDocumentResponse.getDefaultInstance());
                             responseObserver.onCompleted();
@@ -262,7 +262,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     final VersionedTextDocumentIdentifier text = request.getTextDocument();
                     @SuppressWarnings("unchecked")
                     final CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> parser = scriptSession.getParser();
-                    parser.update(text.getUri(), Integer.toString(text.getVersion()), request.getContentChangesList(), log);
+                    parser.update(text.getUri(), Integer.toString(text.getVersion()), request.getContentChangesList());
                     safelyExecute(() -> {
                         responseObserver.onNext(ChangeDocumentResponse.getDefaultInstance());
                         responseObserver.onCompleted();
@@ -319,7 +319,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .onError(responseObserver::onError)
                 .submit(()-> {
                     final ScriptSession scriptSession = exportedConsole.get();
-                    scriptSession.getParser().close(request.getTextDocument().getUri(), log);
+                    scriptSession.getParser().close(request.getTextDocument().getUri());
                     safelyExecute(() -> {
                         responseObserver.onNext(CloseDocumentResponse.getDefaultInstance());
                         responseObserver.onCompleted();
