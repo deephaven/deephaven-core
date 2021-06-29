@@ -87,7 +87,9 @@ task deephavenPythonDockerfile(type: Dockerfile) {
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
     copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
 
-    runCommand('''set -eux;\\
+    runCommand('''set -eux; \\
+                  apt update; \\
+                  apt install liblzo2-2; \\
                   pip3 install setuptools wheel; \\
                   pip3 install *.whl; \\
                   rm *.whl
