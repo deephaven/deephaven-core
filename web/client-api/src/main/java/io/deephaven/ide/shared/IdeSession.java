@@ -297,8 +297,8 @@ public class IdeSession extends HasEventHandling {
         return textDocument;
     }
 
-    public Promise<JsTable> emptyTable(double size, @JsOptional JsPropertyMap<String> columns) {
-        return connection.emptyTable(size, columns);
+    public Promise<JsTable> emptyTable(double size) {
+        return connection.emptyTable(size);
     }
 
     public Promise<JsTable> timeTable(double periodNanos, @JsOptional DateWrapper startTime) {

@@ -4,6 +4,9 @@
 
 package io.deephaven.db.v2.sources;
 
+import io.deephaven.base.Pair;
+import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
@@ -12,29 +15,40 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ShiftData;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A column source that returns null for all keys.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements ShiftData.ShiftCallback {
-    private static final KeyedObjectKey.Basic<Class, NullValueColumnSource> KEY_TYPE = new KeyedObjectKey.Basic<Class, NullValueColumnSource>() {
+    private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE = new KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>>() {
         @Override
-        public Class getKey(NullValueColumnSource columnSource) {
-            return columnSource.getType();
+        public Pair<Class<?>, Class<?>> getKey(NullValueColumnSource columnSource) {
+            //noinspection unchecked,rawtypes
+            return new Pair<>(columnSource.getType(), columnSource.getComponentType());
         }
     };
 
-    private static final KeyedObjectHashMap<Class, NullValueColumnSource> INSTANCES = new KeyedObjectHashMap<>(KEY_TYPE);
-    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE = new BooleanAsByteColumnSource(getInstance(boolean.class));
+    private static final KeyedObjectHashMap<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> INSTANCES = new KeyedObjectHashMap<>(KEY_TYPE);
+    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE = new BooleanAsByteColumnSource(getInstance(boolean.class, null));
 
-    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz) {
-        //noinspection unchecked
-        return INSTANCES.putIfAbsent(clazz, NullValueColumnSource::new);
+    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
+        //noinspection unchecked,rawtypes
+        return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType), p -> new NullValueColumnSource<T2>(clazz, elementType));
     }
 
-    private NullValueColumnSource(Class<T> type) {
-        super(type);
+    public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
+        return Arrays.stream(definition.getColumns())
+                .collect(Collectors.toMap(ColumnDefinition::getName, c -> getInstance(c.getDataType(), c.getComponentType())));
+    }
+
+    private NullValueColumnSource(Class<T> type, @Nullable final Class elementType) {
+        super(type, elementType);
     }
 
     @Override
@@ -154,7 +168,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
             return (ColumnSource)BOOL_AS_BYTE_SOURCE;
         }
 
-        return getInstance(alternateDataType);
+        return getInstance(alternateDataType, null);
     }
 
     @Override
