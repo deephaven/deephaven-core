@@ -286,3 +286,12 @@ def writeTables(*args):
     """
     
     return _custom_writeTables(*args)
+
+@_passThrough
+def setDefaultParquetCompressionCodec(codecName):
+    """
+    Sets the default parquet compression codec for writing parquet.
+      :param codecName: (java.lang.String) the codec name
+    """
+
+    return _java_type_.setDefaultParquetCompressionCodec(codecName)

@@ -25,7 +25,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             try {
                 return new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, absolutePath);
             } catch (IOException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }));
         pools.put(ChannelType.Write, new ChannelPool((path) -> {
@@ -33,7 +33,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             try {
                 return new CachedChannel(wrappedProvider.getWriteChannel(path, false), ChannelType.Write, absolutePath);
             } catch (IOException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }));
         pools.put(ChannelType.WriteAppend, new ChannelPool((path) -> {
@@ -41,7 +41,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             try {
                 return new CachedChannel(wrappedProvider.getWriteChannel(path, true), ChannelType.WriteAppend, absolutePath);
             } catch (IOException e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }));
     }
