@@ -21,7 +21,7 @@ dependencies {
 
     implementation project(':CompilerTools')
 
-    //runtimeOnly 'commons-collections:commons-collections:3.2.2'
+    runtimeOnly 'commons-collections:commons-collections:3.2.2'
     //runtimeOnly 'commons-logging:commons-logging:1.2'
 
     /*

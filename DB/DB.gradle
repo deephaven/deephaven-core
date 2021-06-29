@@ -76,7 +76,6 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
-    testRuntimeOnly 'commons-collections:commons-collections:3.2.2'  // for parquet compression codecs.
 }
 
 task jmhRun(type: JavaExec)  {
