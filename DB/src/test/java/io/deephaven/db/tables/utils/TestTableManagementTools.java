@@ -32,6 +32,7 @@ import java.util.HashSet;
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link TableManagementTools}.
@@ -268,6 +269,7 @@ public class TestTableManagementTools {
         final Table baseTable = newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize));
         return baseTable.by("USym", "Bid").by("USym");
     }
+
     @Test
     public void testWriteAggregatedTable() {
         String path = testRoot + File.separator + "testWriteAggregatedTable";
@@ -280,5 +282,37 @@ public class TestTableManagementTools {
         final long sz = table.size();
         TestTableTools.tableRangesAreEqual(table, readBackTable,0, 0, sz);
         readBackTable.close();
+    }
+
+    public void compressionCodecTestHelper(final String codec) {
+        TableManagementTools.setDefaultParquetCompressionCodec(codec);
+        String path = testRoot + File.separator + "Table1.parquet";
+        TableManagementTools.writeTable(table1, path);
+        assertTrue(new File(path).length() > 0);
+    }
+
+    @Test
+    public void testParquetLzoCompressionCodec() {
+        compressionCodecTestHelper("LZO");
+    }
+
+    @Test
+    public void testParquetLz4CompressionCodec() {
+        compressionCodecTestHelper("LZ4");
+    }
+
+    @Test
+    public void testParquetBrotliCompressionCodec() {
+        compressionCodecTestHelper("BROTLI");
+    }
+
+    @Test
+    public void testParquetZstdCompressionCodec() {
+        compressionCodecTestHelper("ZSTD");
+    }
+
+    @Test
+    public void testParquetGzipCompressionCodec() {
+        compressionCodecTestHelper("GZIP");
     }
 }
