@@ -6,7 +6,6 @@ sourceSets {
     }
 }
 
-
 dependencies {
     compile('org.apache.parquet:parquet-hadoop:1.12.0')
 
@@ -37,5 +36,10 @@ dependencies {
      */
     runtimeOnly('com.fasterxml.woodstox:woodstox-core:5.2.1')
     runtimeOnly('org.apache.hadoop.thirdparty:hadoop-shaded-guava:1.1.1')
+    // runtimeOnly('com.hadoop.compression:hadoop-gpl-compression:0.1.0')
+    runtime('com.hadoop.gplcompression:hadoop-lzo:0.4.20')
     runtimeOnly('org.lz4:lz4-java:1.8.0')
+    // runtimeOnly('org.anarres.lzo:lzo-hadoop:1.0.6')
+    // runtimeOnly('com.github.rdblue:brotli-codec:0.1.1')
+    //    runtimeOnly('org.apache.hadoop:hadoop-lzo:0.4.20')
 }
