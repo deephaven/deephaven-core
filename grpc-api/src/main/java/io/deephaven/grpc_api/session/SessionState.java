@@ -583,14 +583,14 @@ public class SessionState {
 
             // Send an export notification before possibly notifying children of our state change.
             if (exportId != NON_EXPORT_ID) {
-                log.info().append(session.logPrefix).append("export '").append(logIdentity)
+                log.debug().append(session.logPrefix).append("export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
 
                 final ExportNotification notification = makeExportNotification();
                 exportListenerVersion = session.exportListenerVersion;
                 session.exportListeners.forEach(listener -> listener.notify(notification));
             } else {
-                log.info().append(session.logPrefix).append("non-export '").append(logIdentity)
+                log.debug().append(session.logPrefix).append("non-export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
             }
 

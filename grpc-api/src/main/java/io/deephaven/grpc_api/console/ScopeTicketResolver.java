@@ -17,7 +17,6 @@ import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.commons.codec.binary.Hex;
 
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
@@ -153,7 +152,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
         }
         if (ticket.remaining() < 3 || ticket.get(0) != TICKET_PREFIX || ticket.get(1) != '/') {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + Hex.encodeHexString(ticket) + "' (hex)");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialLimit = ticket.limit();

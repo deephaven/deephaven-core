@@ -8,7 +8,6 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.commons.codec.binary.Hex;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -113,7 +112,7 @@ public class ExportTicketResolver extends TicketResolverBase {
         }
         ticket.order(ByteOrder.LITTLE_ENDIAN);
         if (ticket.remaining() != 5 || ticket.get() != TICKET_PREFIX) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + Hex.encodeHexString(ticket) + " (hex)");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + " (hex)");
         }
 
         return ticket.getInt();

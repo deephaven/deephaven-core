@@ -283,7 +283,7 @@ message AsOfJoinTablesRequest {
     GREATER_THAN_EQUAL = 2;
     GREATER_THAN = 3;
   }
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;

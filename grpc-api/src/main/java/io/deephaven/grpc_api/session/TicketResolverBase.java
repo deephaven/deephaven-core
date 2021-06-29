@@ -4,6 +4,10 @@
 
 package io.deephaven.grpc_api.session;
 
+import org.apache.commons.codec.binary.Hex;
+
+import java.nio.ByteBuffer;
+
 public abstract class TicketResolverBase implements TicketResolver {
     private final byte ticketPrefix;
     private final String flightDescriptorRoute;
@@ -21,5 +25,13 @@ public abstract class TicketResolverBase implements TicketResolver {
     @Override
     public String flightDescriptorRoute() {
         return flightDescriptorRoute;
+    }
+
+    protected static String byteBufToHex(final ByteBuffer ticket) {
+        final int initialPosition = ticket.position();
+        final byte[] buf = new byte[ticket.remaining()];
+        ticket.get(buf);
+        ticket.position(initialPosition);
+        return Hex.encodeHexString(buf);
     }
 }
