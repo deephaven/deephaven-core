@@ -12,10 +12,9 @@ import java.util.Collection;
 public interface TableLocationProvider extends NamedImplementation {
 
     /**
-     * Get the {@link TableKey} associated with this provider. May be null, for providers not associated with a
-     * {@link TableDataService}.
+     * Get the {@link TableKey} associated with this provider.
      *
-     * @return The associated {@link TableKey}, or null if there is none
+     * @return The associated {@link TableKey}
      */
     TableKey getKey();
 

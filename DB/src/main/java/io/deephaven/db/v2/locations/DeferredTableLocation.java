@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 public abstract class DeferredTableLocation<CLT extends ColumnLocation> implements TableLocation<CLT> {
 
-    private final TableKey tableKey;
+    private final ImmutableTableKey tableKey;
 
     @FunctionalInterface
     public interface TableLocationCreator<CLT extends ColumnLocation> {
@@ -22,7 +22,7 @@ public abstract class DeferredTableLocation<CLT extends ColumnLocation> implemen
 
     private DeferredTableLocation(@NotNull final TableKey tableKey,
                                   @NotNull final TableLocationCreator<CLT> tableLocationCreator) {
-        this.tableKey = TableLookupKey.getImmutableKey(Require.neqNull(tableKey, "tableKey"));
+        this.tableKey = tableKey.makeImmutable();
         this.tableLocationCreator = Require.neqNull(tableLocationCreator, "tableLocationCreator");
     }
 

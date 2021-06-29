@@ -1,11 +1,16 @@
 package io.deephaven.db.v2.locations;
 
-import org.jetbrains.annotations.NotNull;
+import io.deephaven.base.log.LogOutput;
+
+import javax.annotation.concurrent.Immutable;
 
 /**
  * Table location key for simple standalone tables.
  */
-public final class StandaloneTableKey implements TableKey {
+@Immutable
+public final class StandaloneTableKey implements ImmutableTableKey {
+
+    private static final String NAME = StandaloneTableKey.class.getSimpleName();
 
     private static final TableKey INSTANCE = new StandaloneTableKey();
 
@@ -16,26 +21,18 @@ public final class StandaloneTableKey implements TableKey {
     private StandaloneTableKey() {
     }
 
-    @NotNull
-    @Override
-    public String getNamespace() {
-        return NULL_NAME;
-    }
-
-    @NotNull
-    @Override
-    public String getTableName() {
-        return NULL_NAME;
-    }
-
-    @NotNull
-    @Override
-    public TableType getTableType() {
-        return TableType.STANDALONE_SPLAYED;
-    }
-
     @Override
     public String getImplementationName() {
-        return "StandaloneTableKey";
+        return NAME;
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return logOutput.append(NAME);
+    }
+
+    @Override
+    public String toString() {
+        return NAME;
     }
 }

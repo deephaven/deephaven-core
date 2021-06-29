@@ -3,7 +3,6 @@ package io.deephaven.db.v2.locations.local;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationKey;
-import io.deephaven.db.v2.locations.TableLocationLookupKey;
 import io.deephaven.db.v2.locations.TableLocationState;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;

@@ -5,59 +5,30 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *<br> =====================================================================================================================
- *<br>
- *<br> Building block for Deephaven file-based tables, with helper methods for discovering locations and their sizes.
- *<br>
- *<br> ================================================= INTERFACE =========================================================
- *<br>
- *<br> A location specifies the column and size data location for a splayed table.  The location may be either:
- *<br> (1) the sole location of a stand-alone splayed table, or
- *<br> (2) a single location of a nested partitioned table, in which case it belongs to an internal partition and a column
- *         partition.
- *<br>
- *<br> ================================================== LAYOUTS ==========================================================
- *<br>
- *<br> There are exactly two layouts in use for file-based tables:
- *<br>
- *<br> ---------------------------------------------------------------------------------------------------------------------
- *<br> Splayed: (stand-alone)
- *<br> ---------------------------------------------------------------------------------------------------------------------
- *<br> Such tables have exactly one location.
- *<br>
- *<br> The layout looks like:
- *<br> L0  ROOT (e.g. /db/&lt;namespace type&gt;/&lt;namespace name&gt;/Tables)
- *<br> L1  &lt;table name&gt;
- *<br> L2  COLUMN FILES [&lt;column name&gt;.[dat, ovr, bytes, sym, sym.bytes]], SIZE FILE [table.size]
- *<br>
- *<br> ---------------------------------------------------------------------------------------------------------------------
- *<br> Nested Partitioned:
- *<br> ---------------------------------------------------------------------------------------------------------------------
- *<br> Such tables are horizontally partitioned at two levels:
- *<br>  - The first ("internal") partitioning divides data into manageable fragments or distinct streams.
- *<br>  - The second ("column") partitioning specifies a String column (named by the table's definition, by convention
- *        nearly-always "Date").
- *<br> The locations in use by such a table are identical to those used by a splayed table, except that they are contained
- *     within a column partition, which is in turn contained within an internal partition.
- *<br>
- *<br> The layout looks like:
- *<br>  L0  ROOT (e.g. /db/&lt;namespace type&gt;/&lt;namespace name&gt;/Partitions)
- *<br>  L1  "Internal" Partitions (e.g. "0", "1", ...)
- *<br>  L2  "Column" Partitions (e.g. "2011-10-13", "2011-10-14", ...)
- *<br>  L3  &lt;table name&gt;
- *<br>  L4  COLUMN FILES [&lt;column name&gt;.[dat, ovr, bytes, sym, sym.bytes]], METADATA FILE [table.size]
- *<br>
- *<br> ================================================== COMMENTS =========================================================
- *<br>
- *<br> Future work may allow more fields from TableLocationKey or TableLocationState to be accessed as columns.
- *<br>
- *<br> =====================================================================================================================
+ * <br> =====================================================================================================================
+ * <br>
+ * <br> Building block for Deephaven file-based tables, with helper methods for discovering locations and their sizes.
+ * <br>
+ * <br> ================================================= INTERFACE =========================================================
+ * <br>
+ * <br> A location specifies the column and size data location for a splayed table.  The location may be either:
+ * <br> (1) the sole location of a stand-alone splayed table, or
+ * <br> (2) a single location of a nested partitioned table, in which case it belongs to an internal partition and a column
+ * partition.
+ * <br>
+ * <br> ================================================== COMMENTS =========================================================
+ * <br>
+ * <br> Future work may allow more fields from TableLocationKey or TableLocationState to be accessed as columns.
+ * <br>
+ * <br> =====================================================================================================================
  */
-public interface TableLocation<CLT extends ColumnLocation> extends TableLocationKey, TableLocationState {
+public interface TableLocation<CLT extends ColumnLocation> extends NamedImplementation, LogOutputAppendable, TableLocationState {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.
@@ -73,9 +44,16 @@ public interface TableLocation<CLT extends ColumnLocation> extends TableLocation
     }
 
     /**
-     * @return A TableKey instance for the enclosing table
+     * @return An {@link ImmutableTableKey} instance for the enclosing table
      */
-    @NotNull TableKey getTableKey();
+    @NotNull
+    ImmutableTableKey getTableKey();
+
+    /**
+     * @return An {@link ImmutableTableLocationKey} instance for this location
+     */
+    @NotNull
+    ImmutableTableLocationKey getKey();
 
     /**
      * Enumeration of possible table location formats.
@@ -92,10 +70,12 @@ public interface TableLocation<CLT extends ColumnLocation> extends TableLocation
      *
      * @return The format for this table location
      */
-    @NotNull Format getFormat();
+    @NotNull
+    Format getFormat();
 
     /**
      * Does this location support subscriptions? That is, can this location ever have ticking data?
+     *
      * @return True if this location supports subscriptions
      */
     boolean supportsSubscriptions();
@@ -129,7 +109,8 @@ public interface TableLocation<CLT extends ColumnLocation> extends TableLocation
      * @param name The column name
      * @return The ColumnLocation for the defined column under this table location
      */
-    @NotNull CLT getColumnLocation(@NotNull CharSequence name);
+    @NotNull
+    CLT getColumnLocation(@NotNull CharSequence name);
 
     //------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper
@@ -157,6 +138,7 @@ public interface TableLocation<CLT extends ColumnLocation> extends TableLocation
 
     /**
      * Format the table key without implementation specific bits.
+     *
      * @return a formatted string
      */
     @FinalDefault
@@ -172,6 +154,7 @@ public interface TableLocation<CLT extends ColumnLocation> extends TableLocation
 
     /**
      * Optional toString path with more implementation detail.
+     *
      * @return detailed conversion to string
      */
     @FinalDefault

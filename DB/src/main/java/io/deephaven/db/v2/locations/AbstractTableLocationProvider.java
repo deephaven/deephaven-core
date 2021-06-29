@@ -1,10 +1,9 @@
 package io.deephaven.db.v2.locations;
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -22,8 +21,7 @@ public abstract class AbstractTableLocationProvider
         extends SubscriptionAggregator<TableLocationProvider.Listener>
         implements TableLocationProvider {
 
-    private @NotNull
-    final TableLookupKey<String> tableKey;
+    private final ImmutableTableKey tableKey;
 
     private final KeyedObjectHashMap<TableLocationKey, TableLocation> tableLocations = new KeyedObjectHashMap<>(TableLocationKey.getKeyedObjectKey());
     private final Collection<TableLocation> unmodifiableTableLocations = Collections.unmodifiableCollection(tableLocations.values());
@@ -33,12 +31,23 @@ public abstract class AbstractTableLocationProvider
     private boolean locationCreatedRecorder;
 
     /**
+     * Construct a provider as part of a service.
+     *
+     * @param tableKey              A key that will be used by this provider
      * @param supportsSubscriptions Whether this provider should support subscriptions
-     * @param tableKey              A key that will be used by this provider. Must be effectively immutable, or null
      */
-    protected AbstractTableLocationProvider(final boolean supportsSubscriptions, @Nullable final TableKey tableKey) {
+    protected AbstractTableLocationProvider(@NotNull final TableKey tableKey, final boolean supportsSubscriptions) {
         super(supportsSubscriptions);
-        this.tableKey = TableLookupKey.getImmutableKey(Require.neqNull(tableKey, "tableKey"));
+        this.tableKey = tableKey.makeImmutable();
+    }
+
+    /**
+     * Construct a standalone provider.
+     *
+     * @param supportsSubscriptions Whether this provider should support subscriptions
+     */
+    protected AbstractTableLocationProvider(final boolean supportsSubscriptions) {
+        this(StandaloneTableKey.getInstance(), supportsSubscriptions);
     }
 
     @Override
@@ -46,8 +55,7 @@ public abstract class AbstractTableLocationProvider
         return getClass().getName() + '[' + tableKey + ']';
     }
 
-    @Nullable
-    public final TableLookupKey<String> getKey() {
+    public final TableKey getKey() {
         return tableKey;
     }
 
@@ -83,8 +91,8 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    private @NotNull
-    TableLocation observeTableLocationCreation(@NotNull final TableLocationKey locationKey) {
+    @NotNull
+    private TableLocation observeTableLocationCreation(@NotNull final TableLocationKey locationKey) {
         // NB: This must only be called while the lock on subscriptions is held.
         locationCreatedRecorder = true;
         return makeTableLocation(locationKey);
@@ -96,8 +104,8 @@ public abstract class AbstractTableLocationProvider
      * @param locationKey The table location key
      * @return The new TableLocation
      */
-    protected abstract @NotNull
-    TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey);
+    @NotNull
+    protected abstract TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey);
 
     @Override
     public final TableLocationProvider ensureInitialized() {
@@ -135,14 +143,14 @@ public abstract class AbstractTableLocationProvider
     }
 
     @Override
-    public @NotNull
-    final Collection<TableLocation> getTableLocations() {
+    @NotNull
+    public final Collection<TableLocation> getTableLocations() {
         return unmodifiableTableLocations;
     }
 
     @Override
-    public @Nullable
-    TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
+    @Nullable
+    public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
         return tableLocations.get(tableLocationKey);
     }
 }
