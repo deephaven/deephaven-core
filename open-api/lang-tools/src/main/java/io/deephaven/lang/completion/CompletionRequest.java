@@ -5,6 +5,8 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.util.VariableProvider;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.ChunkerAssign;
 import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.ChunkerString;
@@ -33,6 +35,8 @@ import java.util.*;
  * so that repeated completions will not pay to load the same table definition more than once.
  */
 public class CompletionRequest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompletionRequest.class);
 
     private final String source;
     private final int offset;
@@ -126,47 +130,62 @@ public class CompletionRequest {
                 final ChunkerInvoke colInvoke = ((ChunkerInvoke) argument);
                 String colMethod = colInvoke.getName();
                 final List<Node> colArgs = colInvoke.getArguments();
-                final String colName = colArgs.isEmpty() ? null : toStringLiteral(colArgs.get(0));
+                if (colArgs.isEmpty()) {
+                    // this is normal, if user has typed `newTable(stringCol(`
+                    // in this case, there is no valid table definition, so we'll just skip this column.
+                    // In the future, we may want to consider user-defined zero-arg functions that return ColumnDefinitions
+                    continue;
+                }
+                final String colName = toStringLiteral(colArgs.get(0));
 
                 switch (colMethod) {
                     case "stringCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, String.class));
+                        columns.add(ColumnDefinition.ofString(colName));
                         break;
                     case "dateTimeCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, DBDateTime.class));
+                        columns.add(ColumnDefinition.ofTime(colName));
                         break;
                     case "longCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, long.class));
+                        columns.add(ColumnDefinition.ofLong(colName));
                         break;
                     case "intCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, int.class));
+                        columns.add(ColumnDefinition.ofInt(colName));
                         break;
                     case "shortCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, short.class));
+                        columns.add(ColumnDefinition.ofShort(colName));
                         break;
                     case "byteCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, byte.class));
+                        columns.add(ColumnDefinition.ofByte(colName));
                         break;
                     case "charCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, char.class));
+                        columns.add(ColumnDefinition.ofChar(colName));
                         break;
                     case "doubleCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, double.class));
+                        columns.add(ColumnDefinition.ofDouble(colName));
                         break;
                     case "floatCol":
-                        columns.add(ColumnDefinition.fromGenericType(colName, float.class));
+                        columns.add(ColumnDefinition.ofFloat(colName));
                         break;
                     case "col":
                         // We _could_ technically try to guess from the col() varargs what the type is, but, not worth it atm.
                         columns.add(ColumnDefinition.fromGenericType(colName, Object.class));
                         break;
                     default:
-                        System.out.println("Unhandled newTable() argument " + argument.toSource() + " not a recognized invocation");
+                        LOGGER.warn()
+                                .append("Unhandled newTable() argument ")
+                                .append(argument.toSource())
+                                .append(" not a recognized invocation")
+                                .endl();
                         break;
                 }
             } else {
                 // TODO: handle ColumnDefition/etc variables
-                System.out.println("Unhandled newTable() argument " + argument.toSource() +" of type " + argument.getClass().getName());
+                LOGGER.warn()
+                        .append("Unhandled newTable() argument ")
+                        .append(argument.toSource())
+                        .append(" of type ")
+                        .append(argument.getClass().getName())
+                        .endl();
             }
         }
         def.setColumns(columns.toArray(new ColumnDefinition[0]));
