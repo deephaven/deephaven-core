@@ -24,8 +24,7 @@ public class ExportTicketHelper {
      */
     public static Flight.Ticket exportIdToTicket(int exportId) {
         final byte[] dest = exportIdToBytes(exportId);
-        return Flight.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest, 0, dest.length))
-            .build();
+        return Flight.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest)).build();
     }
 
     /**
