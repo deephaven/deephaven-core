@@ -11,7 +11,7 @@ dependencies {
     compile project(':DB'),
             project(':Util'),
             project(':grpc-api-client'),
-            project(':proto:proto-backplane-grpc'),
+            project(':proto:proto-backplane-grpc-util'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
             "com.google.flatbuffers:flatbuffers-java:1.12.0",

@@ -5,13 +5,11 @@
 package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -153,25 +151,6 @@ public class TicketRouter {
      */
     public String getLogNameFor(final ByteBuffer ticket) {
         return getResolver(ticket.get(0)).getLogNameFor(ticket);
-    }
-
-    /**
-     * Create a human readable string to identify this ticket.
-     *
-     * @param descriptor the descriptor to parse
-     * @return a string that is good for log/error messages
-     */
-    public static String getLogNameFor(final Flight.FlightDescriptor descriptor) {
-        if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Flight descriptor is not a path");
-        }
-
-        final LogOutput logOutput = new LogOutputStringImpl();
-        for (int depth = 0; depth < descriptor.getPathCount(); ++depth) {
-            logOutput.append("/");
-            logOutput.append(descriptor.getPath(depth));
-        }
-        return logOutput.toString();
     }
 
     /**

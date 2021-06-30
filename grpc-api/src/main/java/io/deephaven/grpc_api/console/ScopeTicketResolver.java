@@ -14,8 +14,8 @@ import io.deephaven.db.util.ScriptSession;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
-import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.grpc_api.util.TicketRouterHelper;
 import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
@@ -181,7 +181,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         }
         if (descriptor.getPathCount() != 2) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse descriptor: unexpected path length (found: " + TicketRouter.getLogNameFor(descriptor) + ", expected: 2)");
+                    "Cannot parse descriptor: unexpected path length (found: " + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }
 
         return descriptor.getPath(1);

@@ -4,7 +4,7 @@
 
 package io.deephaven.grpc_api.example;
 
-import io.deephaven.grpc_api.session.ExportTicketResolver;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import com.google.protobuf.ByteString;
@@ -111,7 +111,7 @@ public class ConsoleClient {
     private int nextId = 1;
 
     private void startConsole() {
-        consoleTicket = ExportTicketResolver.exportIdToTicket(nextId++);
+        consoleTicket = ExportTicketHelper.exportIdToTicket(nextId++);
         consoleServiceGrpc.startConsole(StartConsoleRequest.newBuilder()
                 .setResultId(consoleTicket)
                 .setSessionType(sessionType)
@@ -184,7 +184,7 @@ public class ConsoleClient {
                                 log.debug().append("A table was created: ").append(table.toString()).endl();
                                  consoleServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
                                          .setConsoleId(consoleTicket)
-                                         .setTableId(ExportTicketResolver.exportIdToTicket(nextId++))
+                                         .setTableId(ExportTicketHelper.exportIdToTicket(nextId++))
                                          .setTableName(table.getName())
                                          .build(),
                                          new ResponseBuilder<ExportedTableCreationResponse>()
@@ -246,7 +246,7 @@ public class ConsoleClient {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ").append(ExportTicketResolver.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }

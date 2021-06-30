@@ -22,7 +22,7 @@ import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
-import io.deephaven.grpc_api.session.ExportTicketResolver;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
@@ -133,8 +133,8 @@ public class SimpleDeephavenClient {
         return ++nextTableId;
     }
 
-    final Flight.Ticket exportTable = ExportTicketResolver.exportIdToTicket(nextExportId());
-    final Flight.Ticket putResultTicket = ExportTicketResolver.exportIdToTicket(nextExportId());
+    final Flight.Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
+    final Flight.Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
 
     BarrageSourcedTable resultTable;
     BarrageClientSubscription resultSub;
@@ -176,7 +176,7 @@ public class SimpleDeephavenClient {
                 .build());
 
         flightService.getSchema(
-                ExportTicketResolver.exportIdToDescriptor(ExportTicketResolver.ticketToExportId(exportTable)),
+                ExportTicketHelper.exportIdToDescriptor(ExportTicketHelper.ticketToExportId(exportTable)),
                 new ResponseBuilder<Flight.SchemaResult>()
                         .onError(this::onError)
                         .onNext(this::onSchemaResult)
@@ -219,7 +219,7 @@ public class SimpleDeephavenClient {
         resultTable.listenForUpdates(listener);
 
         resultSub = new BarrageClientSubscription(
-                ExportTicketResolver.toReadableString(exportTable),
+                ExportTicketHelper.toReadableString(exportTable),
                 serverChannel, exportTable, SubscriptionRequest.newBuilder()
                 .setTicket(exportTable)
                 .setColumns(BarrageProtoUtil.toByteString(columns))
@@ -238,7 +238,7 @@ public class SimpleDeephavenClient {
         BarrageSourcedTable dummy = BarrageSourcedTable.make(definition, false);
 
         resultSub = new BarrageClientSubscription(
-                ExportTicketResolver.toReadableString(exportTable),
+                ExportTicketHelper.toReadableString(exportTable),
                 serverChannel, exportTable, SubscriptionRequest.newBuilder()
                 .setTicket(exportTable)
                 .setColumns(BarrageProtoUtil.toByteString(columns))
@@ -282,7 +282,7 @@ public class SimpleDeephavenClient {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ").append(ExportTicketResolver.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }
@@ -314,7 +314,7 @@ public class SimpleDeephavenClient {
 
     private void onExportNotificationMessage(final String prefix, final ExportNotification notification) {
         final LogEntry entry = log.info().append(prefix).append("Received ExportNotification: {id: ")
-                .append(ExportTicketResolver.ticketToExportId(notification.getTicket()))
+                .append(ExportTicketHelper.ticketToExportId(notification.getTicket()))
                 .append(", state: ").append(notification.getExportState().toString());
 
         if (!notification.getContext().isEmpty()) {
@@ -330,7 +330,7 @@ public class SimpleDeephavenClient {
         log.info().append("Received ExportedTableUpdatedMessage:").endl();
 
         final LogEntry entry = log.info().append("\tid=")
-                .append(ExportTicketResolver.ticketToExportId(msg.getExportId()))
+                .append(ExportTicketHelper.ticketToExportId(msg.getExportId()))
                 .append(" size=").append(msg.getSize());
 
         if (!msg.getUpdateFailureMessage().isEmpty()) {

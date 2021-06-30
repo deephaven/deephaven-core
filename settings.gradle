@@ -55,6 +55,7 @@ pyMods.each {
 include 'fishconfig-local'
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
+include 'proto:proto-backplane-grpc-util'
 include 'proto:raw-js-openapi'
 include 'protoc'
 

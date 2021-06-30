@@ -59,10 +59,7 @@ public class GrpcUtil {
     }
 
     public static StatusRuntimeException statusRuntimeException(final Code statusCode, final String details) {
-        return StatusProto.toStatusRuntimeException(Status.newBuilder()
-                .setCode(statusCode.getNumber())
-                .setMessage(details)
-                .build());
+        return Exceptions.statusRuntimeException(statusCode, details);
     }
 
     /**
