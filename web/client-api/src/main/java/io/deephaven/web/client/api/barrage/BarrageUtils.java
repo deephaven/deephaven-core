@@ -99,6 +99,7 @@ public class BarrageUtils {
         bb.order(ByteOrder.LITTLE_ENDIAN);
         return bb;
     }
+
     public static TableSnapshot createSnapshot(BarrageRecordBatch header, ByteBuffer body, boolean isViewport, String[] columnTypes) {
         RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsArray()));
 
@@ -110,21 +111,18 @@ public class BarrageUtils {
             includedAdditions = added;
         }
 
-        // discard bitset of add columns, we already know what this is for now...
-        BitSet includedColumns = readBitset(typedArrayToLittleEndianByteBuffer(header.addedColumnSetArray()));
-
         // read the nodes and buffers into iterators so that we can descend into the data columns as necessary
         Iter<BarrageFieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
         Iter<Buffer> buffers = new Iter<>(IntStream.range(0, (int) header.buffersLength()).mapToObj(header::buffers).iterator());
         ColumnData[] columnData = new ColumnData[0];
-        for (int col = includedColumns.nextSetBit(0); col >= 0; col = includedColumns.nextSetBit(col + 1)) {
-            int nextIndex = columnData.length;
-            columnData[nextIndex] = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[nextIndex]);
+        for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
+            columnData[columnIndex] = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
             assertAligned(body);
         }
 
         return new TableSnapshot(added, includedAdditions, columnData);
     }
+
     public static DeltaUpdates createDelta(BarrageRecordBatch header, ByteBuffer body, boolean isViewport, String[] columnTypes) {
         RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsArray()));
 
@@ -140,27 +138,23 @@ public class BarrageUtils {
             includedAdditions = added;
         }
 
-        BitSet addedColumns = readBitset(typedArrayToLittleEndianByteBuffer(header.addedColumnSetArray()));
-
         Iter<BarrageFieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
         Iter<Buffer> buffers = new Iter<>(IntStream.range(0, (int) header.buffersLength()).mapToObj(header::buffers).iterator());
 
         DeltaUpdates.ColumnAdditions[] addedColumnData = new DeltaUpdates.ColumnAdditions[0];
-        for (int col = addedColumns.nextSetBit(0); col >= 0; col = addedColumns.nextSetBit(col + 1)) {
+        for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
             assert nodes.hasNext() && buffers.hasNext();
-            int nextIndex = addedColumnData.length;
-            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[nextIndex]);
+            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
 
-            addedColumnData[nextIndex] = new DeltaUpdates.ColumnAdditions(col, columnData);
+            addedColumnData[columnIndex] = new DeltaUpdates.ColumnAdditions(columnIndex, columnData);
             assertAligned(body);
         }
 
-        BitSet modifiedColumns = readBitset(typedArrayToLittleEndianByteBuffer(header.modifiedColumnSetArray()));
         DeltaUpdates.ColumnModifications[] modifiedColumnData = new DeltaUpdates.ColumnModifications[0];
-        for (int col = modifiedColumns.nextSetBit(0); col >= 0; col = modifiedColumns.nextSetBit(col + 1)) {
+        for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
             assert nodes.hasNext() && buffers.hasNext();
+
             BarrageFieldNode node = nodes.peek();
-            int nextIndex = modifiedColumnData.length;
             RangeSet modifiedRows = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(node.modifiedRowsArray()));
             RangeSet includedModifications;
             if (isViewport) {
@@ -168,13 +162,15 @@ public class BarrageUtils {
             } else {
                 includedModifications = modifiedRows;
             }
-            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedModifications.size(), columnTypes[col]);
-            modifiedColumnData[nextIndex] = new DeltaUpdates.ColumnModifications(col, modifiedRows, includedModifications, columnData);
+
+            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedModifications.size(), columnTypes[columnIndex]);
+            modifiedColumnData[columnIndex] = new DeltaUpdates.ColumnModifications(columnIndex, modifiedRows, includedModifications, columnData);
             assertAligned(body);
         }
 
         return new DeltaUpdates(added, removed, shifted, includedAdditions, addedColumnData, modifiedColumnData);
     }
+
     private static ColumnData readArrowBuffer(ByteBuffer data, Iter<BarrageFieldNode> nodes, Iter<Buffer> buffers, int size, String columnType) {
         assertAligned(data);
 
