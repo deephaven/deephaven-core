@@ -43,6 +43,7 @@ public class ExportTicketHelper {
     /**
      * Convenience method to convert from {@link Flight.Ticket} to export id.
      *
+     * <p>
      * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
      * int export id in little-endian.
      *
@@ -80,6 +81,7 @@ public class ExportTicketHelper {
     /**
      * Convenience method to convert from {@link Flight.FlightDescriptor} to export id.
      *
+     * <p>
      * Descriptor must be a path.
      *
      * @param descriptor the grpc Ticket
