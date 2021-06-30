@@ -48,7 +48,7 @@ public class TableTicket {
 
         int id = 0;
         for (int ii = 4; ii >= 1; --ii) {
-            id += ticket.getAnyAt(ii).asByte();
+            id = (id << 8) | ticket.getAt(ii).intValue();
         }
         this.exportId = id;
     }
