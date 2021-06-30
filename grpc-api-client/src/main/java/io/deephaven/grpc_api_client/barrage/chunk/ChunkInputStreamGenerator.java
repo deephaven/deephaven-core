@@ -20,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {

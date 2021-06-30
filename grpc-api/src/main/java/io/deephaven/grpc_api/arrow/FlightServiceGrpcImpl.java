@@ -59,9 +59,7 @@ import java.util.Iterator;
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     // TODO (core#412): use app_metadata to communicate serialization options
-    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder()
-            .setUseDeephavenNulls(true)
-            .build();
+    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -126,6 +124,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
+                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for DoGet
 
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
                             responseObserver.onNext(bsg.getDoGetInputStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false, null, null, null)));
