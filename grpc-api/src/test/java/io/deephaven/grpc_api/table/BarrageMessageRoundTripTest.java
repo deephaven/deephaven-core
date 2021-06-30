@@ -74,6 +74,8 @@ import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
+    private final BarrageStreamReader STREAM_READER_INSTANCE = new BarrageStreamReader();
+
     private Logger log;
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
@@ -197,7 +199,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     .build();
             final BarrageMarshaller marshaller = new BarrageMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(), BarrageStreamReader.INSTANCE);
+                    barrageTable.getWireComponentTypes(), STREAM_READER_INSTANCE);
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {

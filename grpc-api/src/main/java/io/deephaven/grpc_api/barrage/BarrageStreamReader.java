@@ -32,8 +32,6 @@ import java.util.BitSet;
 import java.util.Iterator;
 
 public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> {
-    public static final BarrageStreamReader INSTANCE = new BarrageStreamReader();
-
     private static final int BODY_TAG =
             makeTag(BarrageData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
     private static final int DATA_HEADER_TAG =

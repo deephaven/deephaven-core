@@ -108,6 +108,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionState.ExportObject<BaseTable> export = ticketRouter.resolve(session, request);
             session.nonExport()
                     .require(export)
+                    .onError(responseObserver::onError)
                     .submit(() -> {
                         final BaseTable table = export.get();
 

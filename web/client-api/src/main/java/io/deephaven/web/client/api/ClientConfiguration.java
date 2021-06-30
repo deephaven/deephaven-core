@@ -7,6 +7,7 @@ import elemental2.core.Uint8Array;
  * ubiquitously available in the client by passing around a single object.
  */
 public class ClientConfiguration {
+    private static final byte EXPORT_PREFIX = 'e';
 
     /**
      * The next number to use when making a ticket. These values must always be positive, as zero
@@ -24,7 +25,7 @@ public class ClientConfiguration {
 
         final int exportId = next++;
         final double[] dest = new double[5];
-        dest[0] = 'e';
+        dest[0] = EXPORT_PREFIX;
         dest[1] = (byte) exportId;
         dest[2] = (byte) (exportId >>> 8);
         dest[3] = (byte) (exportId >>> 16);
