@@ -134,6 +134,10 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             for (int i = 0; i < modColumnData.length; ++i) {
                 modColumnData[i] = new ModColumnData(message.modColumnData[i]);
             }
+
+            if (message.snapshotIndex != null) {
+                message.snapshotIndex.close();
+            }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
         } finally {
