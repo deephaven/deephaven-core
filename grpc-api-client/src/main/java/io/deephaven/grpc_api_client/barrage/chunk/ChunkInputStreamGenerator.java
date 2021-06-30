@@ -179,33 +179,6 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     abstract class DrainableColumn extends InputStream implements Drainable {
-        public static final DrainableColumn EMPTY = new DrainableColumn() {
-            @Override
-            public void visitFieldNodes(final FieldNodeListener listener) {
-                listener.noteLogicalFieldNode(0, 0);
-            }
-
-            @Override
-            public void visitBuffers(final BufferListener listener) {
-                listener.noteLogicalBuffer(0, 0);
-            }
-
-            @Override
-            public int nullCount() {
-                return 0;
-            }
-
-            @Override
-            public int drainTo(OutputStream target) {
-                return 0;
-            }
-
-            @Override
-            public int read() {
-                return 0;
-            }
-        };
-
         /**
          * Append the field nde to the flatbuffer payload via the supplied listener.
          * @param listener the listener to notify for each logical field node in this payload
