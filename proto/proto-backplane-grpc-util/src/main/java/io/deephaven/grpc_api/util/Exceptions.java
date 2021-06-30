@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.util;
 
 import com.google.protobuf.ByteStringAccess;
@@ -46,14 +50,20 @@ public class ExportTicketHelper {
      * @return the export id that the Ticket wraps
      */
     public static int ticketToExportId(final Flight.Ticket ticket) {
-        return ticketToExportId(ticket.getTicket().asReadOnlyByteBuffer());
+        return ticketToExportIdInternal(
+            ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
-     * Convenience method to convert from {@link ByteBuffer} to export id.
+     * Convenience method to convert from {@link ByteBuffer} to export id. Most efficient when
+     * {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
      *
+     * <p>
      * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
      * int export id in little-endian.
+     *
+     * <p>
+     * Does not consume the {@code ticket}.
      *
      * @param ticket the grpc Ticket
      * @return the export id that the Ticket wraps
@@ -63,13 +73,8 @@ public class ExportTicketHelper {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                 "Ticket not supplied");
         }
-        ticket.order(ByteOrder.LITTLE_ENDIAN);
-        if (ticket.remaining() != 5 || ticket.get() != TICKET_PREFIX) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + " (hex)");
-        }
-
-        return ticket.getInt();
+        return ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticketToExportIdInternal(ticket)
+            : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
@@ -131,11 +136,16 @@ public class ExportTicketHelper {
      * @return a log-friendly string
      */
     public static String toReadableString(final Flight.Ticket ticket) {
-        return toReadableString(ticket.getTicket().asReadOnlyByteBuffer());
+        return toReadableString(
+            ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
      * Convenience method to create a human readable string from the flight ticket (as ByteBuffer).
+     * Most efficient when {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
+     *
+     * <p>
+     * Does not consume the {@code ticket}.
      *
      * @param ticket the ticket to convert
      * @return a log-friendly string
@@ -160,5 +170,17 @@ public class ExportTicketHelper {
             sb.append(String.format("%02x", ticket.get(i)));
         }
         return sb.toString();
+    }
+
+    private static int ticketToExportIdInternal(final ByteBuffer ticket) {
+        if (ticket.order() != ByteOrder.LITTLE_ENDIAN) {
+            throw new IllegalStateException("Expected ticket to be in LITTLE_ENDIAN order");
+        }
+        int pos = ticket.position();
+        if (ticket.remaining() != 5 || ticket.get(pos) != TICKET_PREFIX) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + " (hex)");
+        }
+        return ticket.getInt(pos + 1);
     }
 }

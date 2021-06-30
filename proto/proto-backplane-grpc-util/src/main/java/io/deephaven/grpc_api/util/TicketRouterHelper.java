@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
@@ -16,11 +20,11 @@ public class TicketRouterHelper {
                 "Flight descriptor is not a path");
         }
 
-        final StringBuilder logOutput = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         for (int depth = 0; depth < descriptor.getPathCount(); ++depth) {
-            logOutput.append("/");
-            logOutput.append(descriptor.getPath(depth));
+            sb.append("/");
+            sb.append(descriptor.getPath(depth));
         }
-        return logOutput.toString();
+        return sb.toString();
     }
 }
