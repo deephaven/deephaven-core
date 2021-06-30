@@ -88,7 +88,7 @@ public class StartConsoleRequest {
     String getSessionType();
 
     @JsProperty
-    void setResultId(StartConsoleRequest.ToObjectReturnType.ResultIdFieldType resukltId);
+    void setResultId(StartConsoleRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
     void setSessionType(String sessionType);
@@ -168,7 +168,7 @@ public class StartConsoleRequest {
     String getSessionType();
 
     @JsProperty
-    void setResultId(StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType resukltId);
+    void setResultId(StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
     void setSessionType(String sessionType);

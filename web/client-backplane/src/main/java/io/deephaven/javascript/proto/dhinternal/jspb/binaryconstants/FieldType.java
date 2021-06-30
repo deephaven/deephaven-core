@@ -8,7 +8,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.jspb.BinaryConstants.FieldType",
     namespace = JsPackage.GLOBAL)
 public class FieldType {
-  public static int  BOOL,
+  public static int BOOL,
   BYTES,
   DOUBLE,
   ENUM,
