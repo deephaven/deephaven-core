@@ -6,9 +6,26 @@ syntax = "proto3";
 
 package io.deephaven.proto.backplane.grpc;
 
+import "arrow/flight/protocol/flight.proto";
+
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
+/*
+ * User supplied Flight.Ticket(s) should begin with 'e' byte followed by an signed little-endian int. The client is only
+ * allowed to use the positive exportId key-space (client generated exportIds should be greater than 0). The client is
+ * encouraged to use a packed ranges of ids as this yields the smallest footprint server side for long running sessions.
+ *
+ * The client is responsible for releasing all Flight.Tickets that they create or that were created for them via a gRPC
+ * call. The documentation for the gRPC call will indicate that the exports must be released. Exports that need to be
+ * released will always be communicated over the session's ExportNotification stream.
+ *
+ * When a session ends, either explicitly or due to timeout, all exported objects in that session are released
+ * automatically.
+ *
+ * Some parts of the API return a Flight.Ticket that does not need to be released. It is not an error to attempt to
+ * release them.
+ */
 service SessionService {
   /*
    * Handshake between client and server to create a new session. The response includes a metadata header name and the
@@ -32,7 +49,7 @@ service SessionService {
    * Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
    * responsibility to release all resources they no longer want the server to hold on to.
    */
-  rpc Release(Ticket) returns (ReleaseResponse) {}
+  rpc Release(arrow.flight.protocol.Ticket) returns (ReleaseResponse) {}
 
   /*
    * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
@@ -102,21 +119,6 @@ message BasicAuth {
 }
 
 /*
- * This is the id that represents a specific export.
- * - Positive numbers are managed and allocated by the session client.
- * - Negative numbers are allocated by the server when the number of exports for an operation is variable.
- * - Zero is reserved to identify the default QueryScope.
- *
- * The client is responsible for releasing all exports including those allocated by the server. When a session ends,
- * either explicitly or due to timeout, all exported objects in that session are released automatically.
- *
- * All Deephaven tickets are 8-byte signed longs. This object reflects Arrow Flight's ticket for compatibility.
- */
-message Ticket {
-  bytes id = 1;
-}
-
-/*
  * Returns success=true if an item was found to release. The export is released and/or cancelled if applicable.
  */
 message ReleaseResponse {
@@ -128,19 +130,20 @@ message ExportNotificationRequest {
 }
 
 message ExportNotification {
-  Ticket ticket = 1;
+  arrow.flight.protocol.Ticket ticket = 1;
   enum State {
     UNKNOWN = 0; // This item is a dependency, but hasn't been registered yet.
     PENDING = 1; // This item has pending dependencies.
-    QUEUED = 2; // This item is eligible for resolution and has been submitted to the executor.
-    EXPORTED = 3; // This item was successfully exported and is currently being retained.
-    RELEASED = 4; // This item was successfully released.
-    CANCELLED = 5; //  CANCELLED: The user cancelled the item before it exported.
-    FAILED = 6; // This item had a specific error.
-    DEPENDENCY_FAILED = 7; // One of this item's dependencies had an internal error before it exported.
-    DEPENDENCY_NEVER_FOUND = 8; // One of this item's dependencies was already released or never submitted within the out-of-order window.
-    DEPENDENCY_CANCELLED = 9; // Dependency was cancelled, causing a cascading cancel that applies to this export.
-    DEPENDENCY_RELEASED = 10; // Dependency was already released, causing a cascading failure that applies to this export.
+    PUBLISHING = 2; // This item is a client-supplied dependency with no guarantee on timing to EXPORT state.
+    QUEUED = 3; // This item is eligible for resolution and has been submitted to the executor.
+    EXPORTED = 4; // This item was successfully exported and is currently being retained.
+    RELEASED = 5; // This item was successfully released.
+    CANCELLED = 6; //  CANCELLED: The user cancelled the item before it exported.
+    FAILED = 7; // This item had a specific error.
+    DEPENDENCY_FAILED = 8; // One of this item's dependencies had an internal error before it exported.
+    DEPENDENCY_NEVER_FOUND = 9; // One of this item's dependencies was already released or never submitted within the out-of-order window.
+    DEPENDENCY_CANCELLED = 10; // Dependency was cancelled, causing a cascading cancel that applies to this export.
+    DEPENDENCY_RELEASED = 11; // Dependency was already released, causing a cascading failure that applies to this export.
   }
   State export_state = 2;
 

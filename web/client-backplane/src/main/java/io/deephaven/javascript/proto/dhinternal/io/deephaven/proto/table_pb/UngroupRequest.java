@@ -2,7 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -20,9 +20,9 @@ public class UngroupRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(Object o) {
+        static UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(Object o) {
           return Js.cast(o);
         }
 
@@ -53,23 +53,25 @@ public class UngroupRequest {
       }
 
       @JsProperty
-      UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
+      UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
-            Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(String ticket) {
+        setTicket(
+            Js
+                .<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
-            Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
+            Js
+                .<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -133,9 +135,10 @@ public class UngroupRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(Object o) {
+        static UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+            Object o) {
           return Js.cast(o);
         }
 
@@ -166,23 +169,26 @@ public class UngroupRequest {
       }
 
       @JsProperty
-      UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
+      UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
-            Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(String ticket) {
+        setTicket(
+            Js
+                .<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
-            Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
+            Js
+                .<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

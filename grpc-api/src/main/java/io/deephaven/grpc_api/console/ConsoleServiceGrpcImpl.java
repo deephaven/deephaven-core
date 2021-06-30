@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.console;
 
 import com.google.rpc.Code;
@@ -11,6 +15,7 @@ import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -47,30 +52,35 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     public static final String WORKER_CONSOLE_TYPE = Configuration.getInstance().getStringWithDefault("io.deephaven.console.type", "python");
 
-    private volatile ScriptSession globalSession;
-
     private final Map<String, Provider<ScriptSession>> scriptTypes;
+    private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final LogBuffer logBuffer;
     private final LiveTableMonitor liveTableMonitor;
 
+    private final GlobalSessionProvider globalSessionProvider;
+
     @Inject
-    public ConsoleServiceGrpcImpl(final Map<String, Provider<ScriptSession>> scriptTypes, final SessionService sessionService, final LogBuffer logBuffer, final LiveTableMonitor liveTableMonitor) {
+    public ConsoleServiceGrpcImpl(final Map<String, Provider<ScriptSession>> scriptTypes,
+                                  final TicketRouter ticketRouter,
+                                  final SessionService sessionService,
+                                  final LogBuffer logBuffer,
+                                  final LiveTableMonitor liveTableMonitor,
+                                  final GlobalSessionProvider globalSessionProvider) {
         this.scriptTypes = scriptTypes;
+        this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
         this.liveTableMonitor = liveTableMonitor;
+        this.globalSessionProvider = globalSessionProvider;
 
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
             throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
     }
 
-    public synchronized void initializeGlobalScriptSession() {
-        if (globalSession != null) {
-            throw new IllegalStateException("global session already initialized");
-        }
-        globalSession = scriptTypes.get(WORKER_CONSOLE_TYPE).get();
+    public void initializeGlobalScriptSession() {
+        globalSessionProvider.initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
     }
 
     @Override
@@ -104,7 +114,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .submit(() -> {
                         final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
-                            scriptSession = globalSession;
+                            scriptSession = globalSessionProvider.getGlobalSession();
                         } else {
                             scriptSession = new NoLanguageDeephavenSession(sessionType);
                             log.error().append("Session type '" + sessionType + "' is disabled. " +
@@ -140,7 +150,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
+            SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
             session.nonExport()
                     .requiresSerialQueue()
                     .require(exportedConsole)
@@ -178,12 +188,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
-            SessionState.ExportObject<Table> exportedTable = session.getExport(request.getTableId());
+            SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
+            SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
             session.nonExport()
                     .require(exportedConsole, exportedTable)
                     .submit(() -> {
                         exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
+                        responseObserver.onNext(BindTableToVariableResponse.newBuilder().build());
+                        responseObserver.onCompleted();
                     });
         });
     }
@@ -194,7 +206,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
+            SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
 
             session.newExport(request.getTableId())
                     .require(exportedConsole)

@@ -1,8 +1,15 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.table;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
+import io.deephaven.grpc_api.session.ExportTicketResolver;
+import io.deephaven.grpc_api.session.TicketRouter;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
@@ -32,12 +39,12 @@ import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -53,12 +60,15 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
     private static final Logger log = LoggerFactory.getLogger(TableServiceGrpcImpl.class);
 
+    private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
 
     @Inject
-    public TableServiceGrpcImpl(final SessionService sessionService,
+    public TableServiceGrpcImpl(final TicketRouter ticketRouter,
+                                final SessionService sessionService,
                                 final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
+        this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.operationMap = operationMap;
     }
@@ -206,7 +216,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
                 switch (ref.getRefCase()) {
                     case TICKET:
-                        return session.getExport(ref.getTicket());
+                        return ticketRouter.resolve(session, ref.getTicket());
                     case BATCH_OFFSET:
                         final int offset = ref.getBatchOffset();
                         if (offset < 0 || offset >= exportBuilders.size()) {
@@ -227,13 +237,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             for (int i = 0; i < exportBuilders.size(); ++i) {
                 final BatchExportBuilder exportBuilder = exportBuilders.get(i);
-                final long exportId = exportBuilder.exportBuilder.getExportId();
+                final int exportId = exportBuilder.exportBuilder.getExportId();
 
                 final TableReference resultId;
                 if (exportId == SessionState.NON_EXPORT_ID) {
                     resultId = TableReference.newBuilder().setBatchOffset(i).build();
                 } else {
-                    resultId = TableReference.newBuilder().setTicket(SessionState.exportIdToTicket(exportId)).build();
+                    resultId = TableReference.newBuilder().setTicket(ExportTicketResolver.exportIdToTicket(exportId)).build();
                 }
 
                 exportBuilder.exportBuilder.onError((result, errorContext, dependentId) -> {
@@ -276,14 +286,14 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final String[] columnNames = table.getDefinition().getColumnNamesArray();
         final ColumnSource<?>[] columnSources = table.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, columnNames, columnSources, table.getAttributes()));
+        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes()));
 
         return ExportedTableCreationResponse.newBuilder()
                 .setSuccess(true)
                 .setResultId(tableRef)
                 .setIsStatic(!table.isLive())
                 .setSize(table.size())
-                .setSchemaHeader(ByteString.copyFrom(builder.dataBuffer()))
+                .setSchemaHeader(ByteStringAccess.wrap(builder.dataBuffer()))
                 .build();
     }
 
@@ -300,12 +310,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final GrpcTableOperation<T> operation = getOp(op);
             operation.validateRequest(request);
 
-            final Ticket resultId = operation.getResultTicket(request);
+            final Flight.Ticket resultId = operation.getResultTicket(request);
             final TableReference resultRef = TableReference.newBuilder().setTicket(resultId).build();
 
             final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
                     .map(TableReference::getTicket)
-                    .map(session::<Table>getExport)
+                    .map((ticket) -> ticketRouter.<Table>resolve(session, ticket))
                     .collect(Collectors.toList());
 
             session.newExport(resultId)
@@ -332,8 +342,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         BatchExportBuilder(final SessionState session, final BatchTableRequest.Operation op) {
             operation = getOp(op.getOpCase()); // get operation from op code
             request = operation.getRequestFromOperation(op);
-            final Ticket resultId = operation.getResultTicket(request);
-            exportBuilder = resultId.getId().size() == 0 ? session.nonExport() : session.newExport(resultId);
+            final Flight.Ticket resultId = operation.getResultTicket(request);
+            exportBuilder = resultId.getTicket().size() == 0 ? session.nonExport() : session.newExport(resultId);
         }
 
         void resolveDependencies(final Function<TableReference, SessionState.ExportObject<Table>> resolveReference) {

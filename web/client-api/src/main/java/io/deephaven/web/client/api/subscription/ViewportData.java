@@ -439,6 +439,9 @@ public class ViewportData implements TableData {
             final Column column = columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
             final JsArray<Any> updatedColumnData = Js.uncheckedCast(cleanData(modifiedColumn.getValues().getData(), column));
             final JsArray<Any> existingColumnData = Js.uncheckedCast(data[modifiedColumn.getColumnIndex()]);
+            if (updatedColumnData.length == 0) {
+                continue;
+            }
 
             // for each change provided for this column, replace the values in our store
             int i = 0;
@@ -463,6 +466,9 @@ public class ViewportData implements TableData {
                 Column column = columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
                 final JsArray<Any> addedColumnData = Js.uncheckedCast(cleanData(addedColumn.getValues().getData(), column));
                 final JsArray<Any> existingColumnData = Js.uncheckedCast(data[addedColumn.getColumnIndex()]);
+                if (addedColumnData.length == 0) {
+                    continue;
+                }
 
                 int i = 0;
                 OfLong it = updates.getIncludedAdditions().indexIterator();

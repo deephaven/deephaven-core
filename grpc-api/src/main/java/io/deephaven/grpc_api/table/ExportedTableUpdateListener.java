@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
@@ -7,6 +11,7 @@ import io.deephaven.db.v2.NotificationStepReceiver;
 import io.deephaven.db.v2.ShiftAwareSwapListener;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.grpc_api.session.ExportTicketResolver;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -15,10 +20,10 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -61,13 +66,13 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "client cancelled the stream");
         }
 
-        final Ticket ticket = notification.getTicket();
-        final long exportId = SessionState.ticketToExportId(ticket);
+        final Flight.Ticket ticket = notification.getTicket();
+        final int exportId = ExportTicketResolver.ticketToExportId(ticket);
 
         try {
             final ExportNotification.State state = notification.getExportState();
             if (state == ExportNotification.State.EXPORTED) {
-                final SessionState.ExportObject<?> export = session.getExport(exportId);
+                final SessionState.ExportObject<?> export = session.getExport(ticket);
                 if (export.tryRetainReference()) {
                     try {
                         final Object obj = export.get();
@@ -114,7 +119,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
-    private synchronized void onNewTableExport(final Ticket ticket, final long exportId, final BaseTable table) {
+    private synchronized void onNewTableExport(final Flight.Ticket ticket, final int exportId, final BaseTable table) {
         if (!table.isLive()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
@@ -149,7 +154,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param size   the current size of the table
      * @param error  any propagated error of the table
      */
-    private synchronized void sendUpdateMessage(final Ticket ticket, final long size, final Throwable error) {
+    private synchronized void sendUpdateMessage(final Flight.Ticket ticket, final long size, final Throwable error) {
         if (isDestroyed) {
             return;
         }
@@ -174,12 +179,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      */
     private class ListenerImpl extends InstrumentedShiftAwareListener {
         final private BaseTable table;
-        final private long exportId;
+        final private int exportId;
 
         @ReferentialIntegrity
         final ShiftAwareSwapListener swapListener;
 
-        private ListenerImpl(final BaseTable table, final long exportId, final ShiftAwareSwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId, final ShiftAwareSwapListener swapListener) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
@@ -189,12 +194,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         @Override
         public void onUpdate(final Update upstream) {
-            sendUpdateMessage(SessionState.exportIdToTicket(exportId), table.size(), null);
+            sendUpdateMessage(ExportTicketResolver.exportIdToTicket(exportId), table.size(), null);
         }
 
         @Override
         public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
-            sendUpdateMessage(SessionState.exportIdToTicket(exportId), table.size(), error);
+            sendUpdateMessage(ExportTicketResolver.exportIdToTicket(exportId), table.size(), error);
         }
     }
 

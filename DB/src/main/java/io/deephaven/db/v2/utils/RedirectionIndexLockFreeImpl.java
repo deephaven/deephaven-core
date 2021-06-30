@@ -262,14 +262,14 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<Values> src,
+    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
                               @NotNull OrderedKeys orderedKeys) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
 
         final MutableInt offset = new MutableInt();
-        final LongChunk<Values> valuesLongChunk = src.asLongChunk();
+        final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
         orderedKeys.forAllLongs(key -> {
             updates.put(key, valuesLongChunk.get(offset.intValue()));
             offset.increment();

@@ -2,7 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.asofjointablesrequest.MatchRuleMap;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -41,9 +41,9 @@ public class AsOfJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
+        static AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -75,25 +75,26 @@ public class AsOfJoinTablesRequest {
       }
 
       @JsProperty
-      AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
+      AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<AsOfJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -174,9 +175,9 @@ public class AsOfJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
+        static AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -208,25 +209,26 @@ public class AsOfJoinTablesRequest {
       }
 
       @JsProperty
-      AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
+      AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<AsOfJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

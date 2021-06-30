@@ -2,7 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -20,9 +20,9 @@ public class HeadOrTailByRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
+        static HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -54,25 +54,26 @@ public class HeadOrTailByRequest {
       }
 
       @JsProperty
-      HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
+      HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -136,9 +137,9 @@ public class HeadOrTailByRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
+        static HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -170,25 +171,26 @@ public class HeadOrTailByRequest {
       }
 
       @JsProperty
-      HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
+      HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

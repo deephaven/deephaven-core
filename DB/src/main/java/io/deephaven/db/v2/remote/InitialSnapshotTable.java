@@ -27,12 +27,12 @@ public class InitialSnapshotTable extends QueryTable {
     protected Index freeset = Index.FACTORY.getEmptyIndex();
     protected final Index populatedRows;
     protected final Index [] populatedCells;
-    WritableSource [] writableSources;
-    RedirectionIndex redirectionIndex;
+    protected WritableSource [] writableSources;
+    protected RedirectionIndex redirectionIndex;
 
     private final BitSet subscribedColumns;
 
-    InitialSnapshotTable(Map<String, ? extends ColumnSource> result, WritableSource[] writableSources, RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource> result, WritableSource[] writableSources, RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
         super(Index.FACTORY.getEmptyIndex(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
