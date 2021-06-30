@@ -1,7 +1,6 @@
 package io.deephaven.grpc_api.util;
 
 import io.deephaven.io.logger.Logger;
-import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
@@ -12,7 +11,6 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
