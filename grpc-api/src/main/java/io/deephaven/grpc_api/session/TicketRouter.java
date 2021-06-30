@@ -160,7 +160,7 @@ public class TicketRouter {
      * @param visitor the callback to invoke per descriptor path
      */
     public void visitFlightInfo(@Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        byteResolverMap.forEach((route, resolver) ->
+        byteResolverMap.iterator().forEachRemaining(resolver ->
                 resolver.forAllFlightInfo(session, visitor)
         );
     }

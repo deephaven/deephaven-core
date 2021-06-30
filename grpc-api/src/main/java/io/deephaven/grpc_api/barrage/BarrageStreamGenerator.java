@@ -19,7 +19,6 @@ import io.deephaven.barrage.flatbuf.RecordBatch;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -109,6 +108,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     public final ChunkInputStreamGenerator[] addColumnData;
     public final ModColumnData[] modColumnData;
 
+    /**
+     * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
+     *
+     * @param message the generator takes ownership of the message and its internal objects
+     */
     public BarrageStreamGenerator(final BarrageMessage message) {
         this.message = message;
         try {
@@ -130,6 +134,10 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
                 modColumnData[i] = new ModColumnData(message.modColumnData[i]);
+            }
+
+            if (message.snapshotIndex != null) {
+                message.snapshotIndex.close();
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
