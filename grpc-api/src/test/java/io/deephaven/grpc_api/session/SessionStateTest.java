@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.session.ExportTicketResolver.exportIdToTicket;
-import static io.deephaven.grpc_api.session.ExportTicketResolver.ticketToExportId;
+import static io.deephaven.grpc_api.util.ExportTicketHelper.exportIdToTicket;
+import static io.deephaven.grpc_api.util.ExportTicketHelper.ticketToExportId;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.EXPORTED;

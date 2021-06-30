@@ -7,7 +7,7 @@ package io.deephaven.grpc_api.table;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.grpc_api.session.ExportTicketResolver;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
@@ -243,7 +243,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 if (exportId == SessionState.NON_EXPORT_ID) {
                     resultId = TableReference.newBuilder().setBatchOffset(i).build();
                 } else {
-                    resultId = TableReference.newBuilder().setTicket(ExportTicketResolver.exportIdToTicket(exportId)).build();
+                    resultId = TableReference.newBuilder().setTicket(ExportTicketHelper.exportIdToTicket(exportId)).build();
                 }
 
                 exportBuilder.exportBuilder.onError((result, errorContext, dependentId) -> {

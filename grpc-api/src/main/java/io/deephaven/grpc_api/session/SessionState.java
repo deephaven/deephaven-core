@@ -22,6 +22,7 @@ import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.hash.KeyedIntObjectHash;
@@ -204,7 +205,7 @@ public class SessionState {
      * @return a future-like object that represents this export
      */
     public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
-        return getExport(ExportTicketResolver.ticketToExportId(ticket));
+        return getExport(ExportTicketHelper.ticketToExportId(ticket));
     }
 
     /**
@@ -255,7 +256,7 @@ public class SessionState {
      */
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExportIfExists(final Flight.Ticket ticket) {
-        return getExportIfExists(ExportTicketResolver.ticketToExportId(ticket));
+        return getExportIfExists(ExportTicketHelper.ticketToExportId(ticket));
     }
 
     /**
@@ -287,7 +288,7 @@ public class SessionState {
      * @return an export builder
      */
     public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket) {
-        return newExport(ExportTicketResolver.ticketToExportId(ticket));
+        return newExport(ExportTicketHelper.ticketToExportId(ticket));
     }
 
     /**
@@ -544,7 +545,7 @@ public class SessionState {
          * @return the export id or NON_EXPORT_ID if it does not have one
          */
         public Flight.Ticket getExportId() {
-            return ExportTicketResolver.exportIdToTicket(exportId);
+            return ExportTicketHelper.exportIdToTicket(exportId);
         }
 
         /**
@@ -819,7 +820,7 @@ public class SessionState {
          */
         private synchronized ExportNotification makeExportNotification() {
             final ExportNotification.Builder builder = ExportNotification.newBuilder()
-                    .setTicket(ExportTicketResolver.exportIdToTicket(exportId))
+                    .setTicket(ExportTicketHelper.exportIdToTicket(exportId))
                     .setExportState(state);
 
             if (errorId != null) {
@@ -949,7 +950,7 @@ public class SessionState {
 
             // notify that the refresh has completed
             notify(ExportNotification.newBuilder()
-                    .setTicket(ExportTicketResolver.exportIdToTicket(NON_EXPORT_ID))
+                    .setTicket(ExportTicketHelper.exportIdToTicket(NON_EXPORT_ID))
                     .setExportState(ExportNotification.State.EXPORTED)
                     .setContext("refresh is complete")
                     .build());

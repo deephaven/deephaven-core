@@ -52,7 +52,7 @@ dependencies {
             project(':deephaven-jpy-ext'),
             project(':Parquet'),
             project(':DHProcess'),
-            project(':proto:proto-backplane-grpc'),
+            project(':proto:proto-backplane-grpc-util'),
             project(':log-factory'),
             project(':open-api-lang-api'),
             project(':Container'),

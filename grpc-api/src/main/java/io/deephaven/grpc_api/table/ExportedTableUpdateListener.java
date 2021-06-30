@@ -11,8 +11,8 @@ import io.deephaven.db.v2.NotificationStepReceiver;
 import io.deephaven.db.v2.ShiftAwareSwapListener;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.grpc_api.session.ExportTicketResolver;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
@@ -67,7 +67,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         final Flight.Ticket ticket = notification.getTicket();
-        final int exportId = ExportTicketResolver.ticketToExportId(ticket);
+        final int exportId = ExportTicketHelper.ticketToExportId(ticket);
 
         try {
             final ExportNotification.State state = notification.getExportState();
@@ -194,12 +194,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         @Override
         public void onUpdate(final Update upstream) {
-            sendUpdateMessage(ExportTicketResolver.exportIdToTicket(exportId), table.size(), null);
+            sendUpdateMessage(ExportTicketHelper.exportIdToTicket(exportId), table.size(), null);
         }
 
         @Override
         public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
-            sendUpdateMessage(ExportTicketResolver.exportIdToTicket(exportId), table.size(), error);
+            sendUpdateMessage(ExportTicketHelper.exportIdToTicket(exportId), table.size(), error);
         }
     }
 
