@@ -39,3 +39,6 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 }
+
+// testOutOfBand: non-parallel, not a db test, not isolated
+TestTools.addDbTest(project, 'OutOfBand', false, false, false)

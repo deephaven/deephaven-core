@@ -42,12 +42,14 @@ import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
@@ -71,6 +73,7 @@ import static io.deephaven.db.v2.TstUtils.getTable;
 import static io.deephaven.db.v2.TstUtils.i;
 import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
+@Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
