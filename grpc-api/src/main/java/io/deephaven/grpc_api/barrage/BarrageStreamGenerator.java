@@ -312,10 +312,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);
 
+            final MutableInt bufferOffset = new MutableInt();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, 0, 0));
-            final ChunkInputStreamGenerator.BufferListener bufferListener =
-                    (offset, length) -> bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(offset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (offset, length) -> {
+                final long myOffset = offset + bufferOffset.getAndAdd(length);
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(myOffset, length));
+            };
 
             // add the add-column streams
             for (final ChunkInputStreamGenerator col : addColumnData) {
@@ -471,10 +474,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeInfos.setSize(0);
             bufferInfos.setSize(0);
 
+            final MutableInt bufferOffset = new MutableInt();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
-            final ChunkInputStreamGenerator.BufferListener bufferListener =
-                    (offset, length) -> bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(offset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (offset, length) -> {
+                final long myOffset = offset + bufferOffset.getAndAdd(length);
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(myOffset, length));
+            };
 
             for (final ChunkInputStreamGenerator column : addColumnData) {
                 final ChunkInputStreamGenerator.DrainableColumn drainableColumn = column.getInputStream(view.options, myAddedOffsets);
@@ -499,6 +505,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         RecordBatch.startRecordBatch(builder);
         RecordBatch.addNodes(builder, nodesOffset);
         RecordBatch.addBuffers(builder, buffersOffset);
+        RecordBatch.addLength(builder, rowsAdded.original.size());
         final int headerOffset = RecordBatch.endRecordBatch(builder);
 
         builder.finish(wrapInMessage(builder, headerOffset, MessageHeader.RecordBatch));

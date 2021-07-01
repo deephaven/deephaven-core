@@ -12,6 +12,7 @@ import io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.barrage.flatbuf.BarrageRecordBatch;
 import io.deephaven.barrage.flatbuf.Message;
 import io.deephaven.barrage.flatbuf.MessageHeader;
+import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
@@ -24,6 +25,7 @@ import io.deephaven.grpc_api_client.util.GrpcMarshallingException;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageData;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,10 +91,16 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                 final int size = decoder.readRawVarint32();
                 //noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
+                    final MutableInt bufferOffset = new MutableInt();
                     final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
                     final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
-                            new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> new ChunkInputStreamGenerator.BufferInfo(batch.buffers(i)));
+                            new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
+                                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
+                                offset -= bufferOffset.getAndAdd(offset);
+                                final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
+                                return new ChunkInputStreamGenerator.BufferInfo(offset, length);
+                            });
 
                     if (msg.isSnapshot) {
                         final ByteBuffer effectiveViewport = batch.effectiveViewportAsByteBuffer();

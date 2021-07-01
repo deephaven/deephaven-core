@@ -67,7 +67,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         @Override
         public void visitBuffers(final BufferListener listener) {
             // validity
-            listener.noteLogicalBuffer(0, nullCount() == 0 ? 0 : getValidityMapSerializationSizeFor(subset.intSize()));
+            listener.noteLogicalBuffer(0, sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
             // payload
             long length = elementSize * subset.size();
             final long bytesExtended = length & REMAINDER_MOD_8_MASK;
@@ -87,7 +87,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             read = true;
             try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
                 // write the validity array with LSB indexing
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     final SerContext context = new SerContext();
                     final Runnable flush = () -> {
                         try {

@@ -4,7 +4,12 @@
 
 package io.deephaven.grpc_api.session;
 
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
+import io.deephaven.db.tables.Table;
+import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -163,6 +168,26 @@ public class TicketRouter {
         byteResolverMap.iterator().forEachRemaining(resolver ->
                 resolver.forAllFlightInfo(session, visitor)
         );
+    }
+
+    public static Flight.FlightInfo getFlightInfo(final Table table,
+                                                   final Flight.FlightDescriptor descriptor,
+                                                   final Flight.Ticket ticket) {
+        return Flight.FlightInfo.newBuilder()
+                .setSchema(schemaBytesFromTable(table))
+                .setFlightDescriptor(descriptor)
+                .addEndpoint(Flight.FlightEndpoint.newBuilder()
+                        .setTicket(ticket)
+                        .build())
+                .setTotalRecords(table.isLive() ? -1 : table.size())
+                .setTotalBytes(-1)
+                .build();
+    }
+
+    private static ByteString schemaBytesFromTable(final Table table) {
+        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes()));
+        return ByteStringAccess.wrap(builder.dataBuffer());
     }
 
     private TicketResolver getResolver(final byte route) {

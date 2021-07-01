@@ -80,7 +80,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
 
         protected int getRawSize() throws IOException {
             long size = 0;
-            if (nullCount() != 0) {
+            if (sendValidityBuffer()) {
                 size += getValidityMapSerializationSizeFor(subset.intSize());
             }
             size += elementSize * subset.size();
@@ -92,6 +92,10 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
             final int rawSize = getRawSize();
             final int rawMod8 = rawSize & REMAINDER_MOD_8_MASK;
             return (read ? 0 : rawSize + (rawMod8 > 0 ? 8 - rawMod8 : 0));
+        }
+
+        protected boolean sendValidityBuffer() {
+            return !options.useDeephavenNulls || nullCount() != 0;
         }
     }
 

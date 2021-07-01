@@ -21,6 +21,7 @@ import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
@@ -46,6 +47,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -393,10 +395,17 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final int numColumns = resultTable.getColumnSources().size();
             final BarrageMessage msg = new BarrageMessage();
             final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
+
+            final MutableInt bufferOffset = new MutableInt();
             final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                     new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
             final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
-                    new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> new ChunkInputStreamGenerator.BufferInfo(batch.buffers(i)));
+                    new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
+                        int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
+                        offset -= bufferOffset.getAndAdd(offset);
+                        final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
+                        return new ChunkInputStreamGenerator.BufferInfo(offset, length);
+                    });
 
             msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
             msg.shifted = IndexShiftData.EMPTY;

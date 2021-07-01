@@ -156,7 +156,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         public void visitBuffers(final BufferListener listener) {
             // validity
             final int numElements = subset.intSize(DEBUG_NAME);
-            listener.noteLogicalBuffer(0, nullCount() == 0 ? 0 : getValidityMapSerializationSizeFor(numElements));
+            listener.noteLogicalBuffer(0, sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
             long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
@@ -184,7 +184,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         protected int getRawSize() {
             if (cachedSize == -1) {
                 cachedSize = 0;
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     cachedSize += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
                 }
 
@@ -221,7 +221,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             long bytesWritten = 0;
             try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
                 // write the validity array with LSB indexing
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     final SerContext context = new SerContext();
                     final Runnable flush = () -> {
                         try {

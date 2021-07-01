@@ -5,8 +5,10 @@
 package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
+import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
@@ -17,9 +19,12 @@ import java.util.function.Consumer;
 @Singleton
 public class ExportTicketResolver extends TicketResolverBase {
 
+    private final SessionService sessionService;
+
     @Inject
-    public ExportTicketResolver() {
+    public ExportTicketResolver(final SessionService sessionService) {
         super(ExportTicketHelper.TICKET_PREFIX, ExportTicketHelper.FLIGHT_DESCRIPTOR_ROUTE);
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -29,7 +34,25 @@ public class ExportTicketResolver extends TicketResolverBase {
 
     @Override
     public Flight.FlightInfo flightInfoFor(final Flight.FlightDescriptor descriptor) {
-        // sessions do not participate in resolving flight descriptors
+        final SessionState session = sessionService.getOptionalSession();
+        if (session != null) {
+            final SessionState.ExportObject<?> export = session.getExportIfExists(ExportTicketHelper.descriptorToExportId(descriptor));
+            if (export != null && export.tryRetainReference()) {
+                try {
+                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                    synchronized (export) {
+                        if (export.getState() == ExportNotification.State.EXPORTED) {
+                            final Object realExport = export.get();
+                            if (realExport instanceof Table) {
+                                return TicketRouter.getFlightInfo((Table) realExport, descriptor, ExportTicketHelper.descriptorToTicket(descriptor));
+                            }
+                        }
+                    }
+                } finally {
+                    export.dropReference();
+                }
+            }
+        }
         throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No such flight exists");
     }
 
