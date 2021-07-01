@@ -80,7 +80,6 @@ trait ChunkerParseTestMixin {
             throw new IllegalArgumentException("Invalid result index " + resultIndex +"; only had " + results.size() + " results: " + results)
         }
         return doCompletion(command, result.get(resultIndex))
-
     }
 
 
