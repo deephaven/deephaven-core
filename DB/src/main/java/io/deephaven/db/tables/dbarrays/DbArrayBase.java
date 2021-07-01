@@ -72,36 +72,4 @@ public interface DbArrayBase<DBARRAY extends DbArrayBase> extends Serializable, 
             return DbArray::defaultValToString;
         }
     }
-
-    @SuppressWarnings("unchecked")
-    static <T, R extends T> Function<T, R> resolveGetDirect(@NotNull final Class<T> dbArrayType) {
-        if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbBooleanArray) v).getDirect();
-        }
-        if (DbCharArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbCharArray) v).getDirect();
-        }
-        if (DbByteArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbByteArray) v).getDirect();
-        }
-        if (DbShortArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbShortArray) v).getDirect();
-        }
-        if (DbIntArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbIntArray) v).getDirect();
-        }
-        if (DbLongArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbLongArray) v).getDirect();
-        }
-        if (DbFloatArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbFloatArray) v).getDirect();
-        }
-        if (DbDoubleArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbDoubleArray) v).getDirect();
-        }
-        if (DbArray.class.isAssignableFrom(dbArrayType)) {
-            return v -> (R) ((DbArray<?>) v).getDirect();
-        }
-        throw new IllegalArgumentException("Unrecognized DbArray type " + dbArrayType);
-    }
 }
