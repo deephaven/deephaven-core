@@ -9,6 +9,8 @@ import io.deephaven.lang.generated.Token
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.lang.parse.ParsedDocument
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
+import io.deephaven.proto.backplane.script.grpc.CompletionItemOrBuilder
+import io.deephaven.proto.backplane.script.grpc.Position
 import io.deephaven.util.process.ProcessEnvironment
 import spock.lang.Specification
 
@@ -44,6 +46,13 @@ trait ChunkerParseTestMixin {
         return doc
     }
 
+    String doCompletion(String command, CompletionItemOrBuilder fragment) {
+        Position.Builder pos = doc.findEditRange(fragment.textEdit.range)
+        return new StringBuilder(command)
+            .replace(pos.line, pos.character, fragment.textEdit.text)
+            .toString()
+    }
+
     @CompileDynamic
     String doCompletion(String command, int completionPos, int resultIndex) {
         Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
@@ -56,7 +65,6 @@ trait ChunkerParseTestMixin {
             throw new IllegalArgumentException("Invalid result index " + resultIndex +"; only had " + results.size() + " results: " + results)
         }
         return doCompletion(command, result.get(resultIndex))
-
     }
 
 
