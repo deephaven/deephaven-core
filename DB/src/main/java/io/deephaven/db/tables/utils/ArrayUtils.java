@@ -456,6 +456,42 @@ public class ArrayUtils {
         }
     }
 
+    public static <T> T[] nullSafeDbArrayToArray(final DbArray<T> dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static Boolean[] nullSafeDbArrayToArray(final DbBooleanArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static byte[] nullSafeDbArrayToArray(final DbByteArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static char[] nullSafeDbArrayToArray(final DbCharArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static double[] nullSafeDbArrayToArray(final DbDoubleArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static float[] nullSafeDbArrayToArray(final DbFloatArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static int[] nullSafeDbArrayToArray(final DbIntArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static long[] nullSafeDbArrayToArray(final DbLongArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
+    public static short[] nullSafeDbArrayToArray(final DbShortArray dbArray) {
+        return dbArray == null ? null : dbArray.toArray();
+    }
+
     public static boolean equals(Object actualValue, Object expectedValue) {
         final Class<?> ct = actualValue.getClass().getComponentType();
         if (Object.class.isAssignableFrom(ct)) {
