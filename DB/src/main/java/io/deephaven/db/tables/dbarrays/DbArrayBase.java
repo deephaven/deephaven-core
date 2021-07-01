@@ -14,19 +14,17 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
 
-public interface DbArrayBase extends Serializable, LongSizedDataStructure {
+public interface DbArrayBase<DBARRAY extends DbArrayBase> extends Serializable, LongSizedDataStructure {
     long serialVersionUID = -2429677814745466454L;
 
     String NULL_ELEMENT_STRING = " ";
 
-    DbArrayBase subArray(long fromIndex, long toIndex);
-    DbArrayBase subArrayByPositions(long [] positions);
+    DBARRAY subArray(long fromIndex, long toIndex);
+    DBARRAY subArrayByPositions(long [] positions);
 
     Object toArray();
-
     Class getComponentType();
 
     default String toString(int prefixLength) { return ""; }
@@ -38,6 +36,9 @@ public interface DbArrayBase extends Serializable, LongSizedDataStructure {
     default boolean isEmpty() {
         return size() == 0;
     }
+
+    /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    DBARRAY getDirect();
 
     static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;

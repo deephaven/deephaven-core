@@ -17,11 +17,14 @@ import com.numericalmethod.suanshu.number.Real;
 import com.numericalmethod.suanshu.vector.doubles.Vector;
 import com.numericalmethod.suanshu.vector.doubles.dense.DenseVector;
 import com.numericalmethod.suanshu.vector.doubles.dense.VectorMathOperation;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.LongToDoubleFunction;
 import javax.inject.Inject;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -1452,6 +1455,29 @@ public class SuanShuIntegration {
         };
     }
 
+    private static Optional<LongToDoubleFunction> makeDoubleAccessor(@NotNull final DbArrayBase<?> dbArrayBase) {
+        final LongToDoubleFunction accessor;
+        if (dbArrayBase instanceof DbDoubleArray) {
+            accessor = (final long pos) -> getValue(((DbDoubleArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbLongArray) {
+            accessor = (final long pos) -> getValue(((DbLongArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbFloatArray) {
+            accessor = (final long pos) -> getValue(((DbFloatArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbIntArray) {
+            accessor = (final long pos) -> getValue(((DbIntArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbShortArray) {
+            accessor = (final long pos) -> getValue(((DbShortArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbByteArray) {
+            accessor = (final long pos) -> getValue(((DbByteArray) dbArrayBase).get(pos));
+        } else if (dbArrayBase instanceof DbArray && Number.class.isAssignableFrom(dbArrayBase.getComponentType())) {
+            //noinspection unchecked
+            accessor = (final long pos) -> getValue(((DbArray<? extends Number>) dbArrayBase).get(pos));
+        } else {
+            accessor = null;
+        }
+        return Optional.ofNullable(accessor);
+    }
+
     /**
      * Wraps {@link DbArrayBase}... as {@link Matrix}
      * This method assumes {@code dbArrayBases} to be in unconventional [columns][rows] structure, where first dimension denotes columns and second dimension denotes rows.
@@ -1462,83 +1488,7 @@ public class SuanShuIntegration {
      *                                       {@link DbLongArray}, {@link DbDoubleArray}, {@link DbArray}<code>&lt;? extends {@link Number}&gt;</code>}
      */
     public static Matrix ssMat(final DbArrayBase... dbArrayBases) {
-        Require.neqNull(dbArrayBases, "dbArrayBases");
-        final DbArray[] dbArrays = new DbArray[dbArrayBases.length];
-        for (int i = 0; i < dbArrayBases.length; i++) {
-            Require.neqNull(dbArrayBases[i], "dbArrayBases[" + i + "]");
-            if (i > 0) {
-                Require.eq(dbArrayBases[0].intSize(), "dbArrayBases[0].intSize()", dbArrayBases[i].intSize(), "dbArrayBases[" + i + "].intSize()");
-            }
-            if (double.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayDoubleWrapper((DbDoubleArray) dbArrayBases[i]);
-            } else if (long.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayLongWrapper((DbLongArray) dbArrayBases[i]);
-            } else if (float.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayFloatWrapper((DbFloatArray) dbArrayBases[i]);
-            } else if (int.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayIntWrapper((DbIntArray) dbArrayBases[i]);
-            } else if (short.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayShortWrapper((DbShortArray) dbArrayBases[i]);
-            } else if (byte.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = new DbArrayByteWrapper((DbByteArray) dbArrayBases[i]);
-            } else if (Number.class.isAssignableFrom(dbArrayBases[i].getComponentType())) {
-                dbArrays[i] = (DbArray) dbArrayBases[i];
-            } else {
-                throw new UnsupportedOperationException(i + "th element is of type, " + dbArrayBases[i].getClass() + ", which is not supported");
-            }
-        }
-
-
-        return new AbstractMatrix() {
-            private static final long serialVersionUID = 1468546253357645902L;
-
-            @Override
-            public Vector getRow(int row) throws MatrixAccessException {
-                return new AbstractVector() {
-                    private static final long serialVersionUID = -7067215087902513883L;
-
-                    @Override
-                    public double get(int i) {
-                        //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                        return getValue((Number) dbArrays[i - 1].get(row - 1));
-                    }
-
-                    @Override
-                    public int size() {
-                        return dbArrays.length;
-                    }
-                };
-            }
-
-            @Override
-            public Vector getColumn(int column) throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(dbArrays[column - 1]) {
-                    private static final long serialVersionUID = 8517809020282279391L;
-
-                    @Override
-                    public double get(int i) {
-                        //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                        return getValue((Number) dbArrays[column - 1].get(i - 1));
-                    }
-                };
-            }
-
-            @Override
-            public double get(int row, int column) throws MatrixAccessException {
-                //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                return getValue((Number) dbArrays[column - 1].get(row - 1));
-            }
-
-            @Override
-            public int nRows() {
-                return dbArrays[0].intSize();
-            }
-
-            @Override
-            public int nCols() {
-                return dbArrays.length;
-            }
-        };
+        return ssMat(new DbArrayDirect<>(dbArrayBases));
     }
 
     /**
@@ -1553,82 +1503,70 @@ public class SuanShuIntegration {
      */
     public static <T extends DbArrayBase> Matrix ssMat(final DbArray<T> dbArray) {
         Require.neqNull(dbArray, "dbArray");
-        final DbArray[] dbArrays = new DbArray[dbArray.intSize()];
-        for (int i = 0; i < dbArray.intSize(); i++) {
-            Require.neqNull(dbArray.get(i), "dbArray.get(" + i + ")");
-            if (i > 0) {
-                Require.eq(dbArray.get(0).intSize(), "dbArray.get(0).intSize()", dbArray.get(i).intSize(), "dbArray(" + i + ").intSize()");
+        final int nCols = dbArray.intSize();
+        final int nRows = dbArray.isEmpty() ? 0 : dbArray.get(0).intSize();
+        final LongToDoubleFunction[] accessors = new LongToDoubleFunction[nCols];
+        for (int ai = 0; ai < nCols; ai++) {
+            final DbArrayBase<?> dbArrayBase = dbArray.get(ai);
+            if (dbArrayBase == null) {
+                throw new IllegalArgumentException("Null array at index " + ai);
             }
-            if (double.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayDoubleWrapper((DbDoubleArray) dbArray.get(i));
-            } else if (long.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayLongWrapper((DbLongArray) dbArray.get(i));
-            } else if (float.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayFloatWrapper((DbFloatArray) dbArray.get(i));
-            } else if (int.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayIntWrapper((DbIntArray) dbArray.get(i));
-            } else if (short.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayShortWrapper((DbShortArray) dbArray.get(i));
-            } else if (byte.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = new DbArrayByteWrapper((DbByteArray) dbArray.get(i));
-            } else if (Number.class.isAssignableFrom(dbArray.get(i).getComponentType())) {
-                dbArrays[i] = (DbArray) dbArray.get(i);
-            } else {
-                throw new UnsupportedOperationException(i + "th element is of type, " + dbArray.get(i).getClass() + ", which is not supported");
+            if (ai > 0 && dbArrayBase.intSize() != nRows) {
+                throw new IllegalArgumentException("Size mismatch: first array has size " + nRows + ", array at index " + ai + " has size " + dbArrayBase.intSize());
             }
+            final int arrayIndex = ai;
+            accessors[ai] = makeDoubleAccessor(dbArrayBase)
+                    .orElseThrow(() ->new UnsupportedOperationException("Invalid array at index " + arrayIndex + " with type " + dbArrayBase.getClass() + " and component type " + dbArrayBase.getComponentType() + ": must be numeric"));
         }
 
         return new AbstractMatrix() {
-
-            private static final long serialVersionUID = -5225008035428680995L;
+            private static final long serialVersionUID = 1468546253357645902L;
 
             @Override
             public Vector getRow(int row) throws MatrixAccessException {
                 return new AbstractVector() {
-
-                    private static final long serialVersionUID = -626898956956468201L;
+                    private static final long serialVersionUID = -7067215087902513883L;
 
                     @Override
                     public double get(int i) {
                         //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                        return getValue((Number) dbArrays[i - 1].get(row - 1));
+                        return accessors[i - 1].applyAsDouble(row - 1);
                     }
 
                     @Override
                     public int size() {
-                        return dbArrays.length;
+                        return nCols;
                     }
                 };
             }
 
             @Override
-            public Vector getColumn(int column) throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(dbArrays[column - 1]) {
-
-                    private static final long serialVersionUID = 3837683857074150236L;
+            public Vector getColumn(final int column) throws MatrixAccessException {
+                return new AbstractDbArrayBaseVector(dbArray.get(column - 1)) {
+                    private static final long serialVersionUID = 8517809020282279391L;
 
                     @Override
-                    public double get(int i) {
+                    public double get(final int row) {
                         //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                        return getValue((Number) dbArrays[column - 1].get(i - 1));
+                        return accessors[column - 1].applyAsDouble(row - 1);
                     }
                 };
             }
 
             @Override
-            public double get(int row, int column) throws MatrixAccessException {
+            public double get(final int row, final int column) throws MatrixAccessException {
                 //Because 1-based row and column indices in com.numericalmethod.suanshu.matrix.doubles.Matrix
-                return getValue((Number) dbArrays[column - 1].get(row - 1));
+                return accessors[column - 1].applyAsDouble(row - 1);
             }
 
             @Override
             public int nRows() {
-                return dbArrays[0].intSize();
+                return nRows;
             }
 
             @Override
             public int nCols() {
-                return dbArrays.length;
+                return nCols;
             }
         };
     }

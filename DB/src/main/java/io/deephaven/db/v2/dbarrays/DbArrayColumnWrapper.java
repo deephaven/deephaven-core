@@ -17,7 +17,6 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
-import java.util.function.Function;
 
 public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
@@ -114,20 +113,17 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     @Override
     public DbArray<T> getDirect() {
         if (DbArrayBase.class.isAssignableFrom(getComponentType())) {
-            //noinspection rawtypes
-            final Function componentGetDirect = DbArrayBase.resolveGetDirect(getComponentType());
             // recursion!
             final long size = size();
             //noinspection unchecked
-            final T[] array = (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray",  size));
-            Object arrayBase;
+            final T[] array = (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray", size));
             for (int ii = 0; ii < size; ++ii) {
-                arrayBase = get(ii);
+                final T arrayBase = get(ii);
                 if (arrayBase == null) {
                     array[ii] = null;
                 } else {
                     //noinspection unchecked
-                    array[ii] = (T) componentGetDirect.apply(arrayBase);
+                    array[ii] = (T) ((DbArrayBase<?>) arrayBase).getDirect();
                 }
             }
             return new DbArrayDirect<>(array);

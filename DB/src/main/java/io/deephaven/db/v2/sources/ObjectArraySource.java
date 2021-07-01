@@ -15,7 +15,6 @@ import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.function.Function;
 
 @SuppressWarnings("unchecked")
 public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements MutableColumnSourceGetDefaults.ForObject<T> {
@@ -23,17 +22,17 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
             () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill((Object[])item, null));
     transient private T[][] prevBlocks;
     private T[][] blocks;
-    private final Function<T, ? extends T> copyFunction;
+    private final boolean isArrayType;
 
     public ObjectArraySource(Class<T> type) {
         super(type);
-        copyFunction = DbArrayBase.class.isAssignableFrom(type) ? DbArrayBase.resolveGetDirect(type) : null;
+        isArrayType = DbArrayBase.class.isAssignableFrom(type);
         init();
     }
 
     public ObjectArraySource(Class<T> type, Class componentType) {
         super(type, componentType);
-        copyFunction = DbArrayBase.class.isAssignableFrom(type) ? DbArrayBase.resolveGetDirect(type) : null;
+        isArrayType = DbArrayBase.class.isAssignableFrom(type);
         init();
     }
 
@@ -100,8 +99,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     public void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
-        if (value != null && copyFunction != null) {
-            set(destKey, copyFunction.apply(value));
+
+        if (isArrayType && value instanceof DbArrayBase) {
+            final DbArrayBase dbArray = (DbArrayBase) value;
+            set(destKey, (T) dbArray.getDirect());
         } else {
             set(destKey, value);
         }

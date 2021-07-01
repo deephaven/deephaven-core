@@ -15,14 +15,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface DbCharArray extends DbArrayBase {
+public interface DbCharArray extends DbArrayBase<DbCharArray> {
 
     long serialVersionUID = -1373264425081841175L;
 
     char get(long i);
+
+    @Override
     DbCharArray subArray(long fromIndex, long toIndex);
+
+    @Override
     DbCharArray subArrayByPositions(long [] positions);
+
+    @Override
     char[] toArray();
+
+    @Override
     long size();
 
     char getPrev(long i);
@@ -40,6 +48,7 @@ public interface DbCharArray extends DbArrayBase {
     }
 
     /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    @Override
     DbCharArray getDirect();
 
     @Override
