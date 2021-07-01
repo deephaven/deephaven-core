@@ -18,14 +18,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface DbByteArray extends DbArrayBase {
+public interface DbByteArray extends DbArrayBase<DbByteArray> {
 
     long serialVersionUID = 8519130615638683196L;
 
     byte get(long i);
+
+    @Override
     DbByteArray subArray(long fromIndex, long toIndex);
+
+    @Override
     DbByteArray subArrayByPositions(long [] positions);
+
+    @Override
     byte[] toArray();
+
+    @Override
     long size();
 
     byte getPrev(long i);
@@ -36,7 +44,14 @@ public interface DbByteArray extends DbArrayBase {
         return byte.class;
     }
 
+    @Override
+    @FinalDefault
+    default String toString(final int prefixLength) {
+        return toString(this, prefixLength);
+    }
+
     /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    @Override
     DbByteArray getDirect();
 
     @Override
@@ -60,15 +75,16 @@ public interface DbByteArray extends DbArrayBase {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The DbByteArray to convert to a String
+     * @param array       The DbByteArray to convert to a String
+     * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
-    static String toString(@NotNull final DbByteArray array) {
+    static String toString(@NotNull final DbByteArray array, final int prefixLength) {
         if (array.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), 10);
+        final int displaySize = (int) Math.min(array.size(), prefixLength);
         builder.append(primitiveByteValToString(array.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
             builder.append(',').append(primitiveByteValToString(array.get(ei)));
@@ -140,7 +156,7 @@ public interface DbByteArray extends DbArrayBase {
 
         @Override
         public final String toString() {
-            return DbByteArray.toString(this);
+            return DbByteArray.toString(this, 10);
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

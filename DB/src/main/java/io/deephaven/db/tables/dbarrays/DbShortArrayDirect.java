@@ -65,7 +65,7 @@ public class DbShortArrayDirect implements DbShortArray {
 
     @Override
     public final String toString() {
-        return DbShortArray.toString(this);
+        return DbShortArray.toString(this, 10);
     }
 
     @Override
