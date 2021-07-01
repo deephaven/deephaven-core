@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.grpc_api.barrage.BarrageModule",
  "methods": {
-  "bindBarrageServiceBinding": ":param service: io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding<io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options,io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View>\n:return: io.grpc.BindableService",
-  "bindStreamGenerator": ":param factory: io.deephaven.grpc_api.barrage.BarrageStreamGenerator.Factory\n:return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.StreamGenerator.Factory<io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options,io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View>",
-  "optionsAdapter": ":return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.Adapter<io.deephaven.proto.backplane.grpc.SubscriptionRequest,io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.Options>",
+  "bindBarrageServiceBinding": ":param service: io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding<io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator.Options,io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View>\n:return: io.grpc.BindableService",
+  "bindStreamGenerator": ":param factory: io.deephaven.grpc_api.barrage.BarrageStreamGenerator.Factory\n:return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.StreamGenerator.Factory<io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator.Options,io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View>",
+  "optionsAdapter": ":return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.Adapter<io.deephaven.proto.backplane.grpc.SubscriptionRequest,io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator.Options>",
   "provideListenerAdapter": ":return: io.deephaven.grpc_api.barrage.BarrageMessageProducer.Adapter<io.grpc.stub.StreamObserver<java.io.InputStream>,io.grpc.stub.StreamObserver<io.deephaven.grpc_api.barrage.BarrageStreamGenerator.View>>"
  },
  "path": "io.deephaven.grpc_api.barrage.BarrageModule",

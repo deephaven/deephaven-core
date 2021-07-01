@@ -1,7 +1,8 @@
 {
  "className": "io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil",
  "methods": {
-  "makeSchemaPayload": ":param builder: com.google.flatbuffers.FlatBufferBuilder\n:param columnNames: java.lang.String[]\n:param columnSources: io.deephaven.db.v2.sources.ColumnSource<?>[]\n:param attributes: java.util.Map<java.lang.String,java.lang.Object>\n:return: int"
+  "makeSchemaPayload": ":param builder: com.google.flatbuffers.FlatBufferBuilder\n:param table: io.deephaven.db.tables.TableDefinition\n:param attributes: java.util.Map<java.lang.String,java.lang.Object>\n:return: int",
+  "schemaToTableDefinition": ":param schema: io.deephaven.barrage.flatbuf.Schema\n:return: io.deephaven.db.tables.TableDefinition"
  },
  "path": "io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil",
  "typeName": "class"
