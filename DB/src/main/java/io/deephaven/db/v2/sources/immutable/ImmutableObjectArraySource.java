@@ -6,7 +6,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ImmutableObjectArraySource<T> extends AbstractColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T> {
+
     private final Object[] data;
+
+    public ImmutableObjectArraySource(@NotNull final Object[] source, @NotNull final Class<T> dataType) {
+        this(source, dataType, null);
+    }
 
     public ImmutableObjectArraySource(@NotNull final Object[] source, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
         super(dataType, componentType);
