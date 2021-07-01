@@ -10,7 +10,6 @@
   "subArray": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.db.tables.dbarrays.DbIntArray",
   "subArrayByPositions": ":param positions: long[]\n:return: io.deephaven.db.tables.dbarrays.DbIntArray",
   "toArray": ":return: int[]",
-  "toDbArray": ":return: io.deephaven.db.tables.dbarrays.DbArray",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.tables.dbarrays.DbIntArrayDirect",

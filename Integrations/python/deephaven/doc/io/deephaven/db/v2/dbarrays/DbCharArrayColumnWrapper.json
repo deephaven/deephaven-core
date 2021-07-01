@@ -6,8 +6,7 @@
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.db.tables.dbarrays.DbCharArray",
   "subArrayByPositions": ":param positions: long[]\n:return: io.deephaven.db.tables.dbarrays.DbCharArray",
-  "toArray": "*Overload 1*  \n  :return: char[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: char[]",
-  "toDbArray": ":return: io.deephaven.db.tables.dbarrays.DbArray"
+  "toArray": "*Overload 1*  \n  :return: char[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: char[]"
  },
  "path": "io.deephaven.db.v2.dbarrays.DbCharArrayColumnWrapper",
  "typeName": "class"

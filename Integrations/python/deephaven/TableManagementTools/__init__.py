@@ -188,15 +188,32 @@ def readTable(*args):
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 2*  
+      :param location: java.io.File
+      :param readInstructions: io.deephaven.db.v2.parquet.ParquetInstructions
+      :param tableDefinition: io.deephaven.db.tables.TableDefinition
+      :return: io.deephaven.db.tables.Table
+      
+    *Overload 3*  
       :param sourceFilePath: (java.lang.String) - table location; if it ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
       :return: (io.deephaven.db.tables.Table) table
       
-    *Overload 3*  
+    *Overload 4*  
       :param sourceFilePath: (java.io.File) - table location; if its path ends in ".parquet" is assumed to be a single file location, otherwise is a directory.
       :return: (io.deephaven.db.tables.Table) table
     """
     
     return _custom_readTable(*args)
+
+
+@_passThrough
+def setDefaultParquetCompressionCodec(codecName):
+    """
+    Sets the default parquet compression codec for writing parquet.
+    
+    :param codecName: (java.lang.String) - the codec name.
+    """
+    
+    return _java_type_.setDefaultParquetCompressionCodec(codecName)
 
 
 @_passThrough
@@ -208,8 +225,7 @@ def writeParquetTable(source, tableDefinition, codecName, destinationDir, groupi
     
     :param source: (io.deephaven.db.tables.Table) - The table to write
     :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The schema for the tables to write
-    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.  The only supported codecs are
-                            CompressionCodecName.SNAPPY and CompressionCodecName.UNCOMPRESSED.
+    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.
     :param destinationDir: (java.io.File) - The destination path
     :param groupingColumns: (java.lang.String[]) - List of columns the tables are grouped by (the write operation will store the grouping info)
     """
@@ -226,8 +242,7 @@ def writeParquetTables(sources, tableDefinition, codecName, destinations, groupi
     
     :param sources: (io.deephaven.db.tables.Table[]) - The tables to write
     :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The common schema for all the tables to write
-    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.  The only supported codecs are
-                            CompressionCodecName.SNAPPY and CompressionCodecName.UNCOMPRESSED.
+    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.
     :param destinations: (java.io.File[]) - The destinations path
     :param groupingColumns: (java.lang.String[]) - List of columns the tables are grouped by (the write operation will store the grouping info)
     """
@@ -286,12 +301,3 @@ def writeTables(*args):
     """
     
     return _custom_writeTables(*args)
-
-@_passThrough
-def setDefaultParquetCompressionCodec(codecName):
-    """
-    Sets the default parquet compression codec for writing parquet.
-      :param codecName: (java.lang.String) the codec name
-    """
-
-    return _java_type_.setDefaultParquetCompressionCodec(codecName)
