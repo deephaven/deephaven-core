@@ -13,8 +13,8 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE exten
 
     private final Class<ARRAY_TYPE> nativeType;
 
-    public static <ATTR extends Attributes.Any, ARRAY_TYPE extends DbArrayBase<?>>
-    ToPage<ATTR, ARRAY_TYPE[]> create(@NotNull final Class<ARRAY_TYPE> nativeType,
+    public static <ATTR extends Attributes.Any>
+    ToPage<ATTR, ?> create(@NotNull final Class<?> nativeType,
                                       @NotNull final Class<?> componentType,
                                       @NotNull final ToPage<ATTR, ?> toPage) {
         if (!DbArrayBase.class.isAssignableFrom(nativeType)) {
@@ -28,7 +28,8 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE exten
                     " is not compatible with the column's component type " + columnComponentType);
         }
 
-        return new ToDbArrayPage<>(nativeType, toPage);
+        //noinspection rawtypes,unchecked
+        return new ToDbArrayPage(nativeType, toPage);
     }
 
     private ToDbArrayPage(@NotNull final Class<ARRAY_TYPE> nativeType, @NotNull final ToPage<ATTR, RESULT> toPage) {
