@@ -18,14 +18,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface DbFloatArray extends DbArrayBase {
+public interface DbFloatArray extends DbArrayBase<DbFloatArray> {
 
     long serialVersionUID = -1889118072737983807L;
 
     float get(long i);
+
+    @Override
     DbFloatArray subArray(long fromIndex, long toIndex);
+
+    @Override
     DbFloatArray subArrayByPositions(long [] positions);
+
+    @Override
     float[] toArray();
+
+    @Override
     long size();
 
     float getPrev(long i);
@@ -36,7 +44,14 @@ public interface DbFloatArray extends DbArrayBase {
         return float.class;
     }
 
+    @Override
+    @FinalDefault
+    default String toString(final int prefixLength) {
+        return toString(this, prefixLength);
+    }
+
     /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    @Override
     DbFloatArray getDirect();
 
     @Override
@@ -60,15 +75,16 @@ public interface DbFloatArray extends DbArrayBase {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The DbFloatArray to convert to a String
+     * @param array       The DbFloatArray to convert to a String
+     * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
-    static String toString(@NotNull final DbFloatArray array) {
+    static String toString(@NotNull final DbFloatArray array, final int prefixLength) {
         if (array.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), 10);
+        final int displaySize = (int) Math.min(array.size(), prefixLength);
         builder.append(primitiveFloatValToString(array.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
             builder.append(',').append(primitiveFloatValToString(array.get(ei)));
@@ -140,7 +156,7 @@ public interface DbFloatArray extends DbArrayBase {
 
         @Override
         public final String toString() {
-            return DbFloatArray.toString(this);
+            return DbFloatArray.toString(this, 10);
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

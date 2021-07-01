@@ -65,7 +65,7 @@ public class DbByteArrayDirect implements DbByteArray {
 
     @Override
     public final String toString() {
-        return DbByteArray.toString(this);
+        return DbByteArray.toString(this, 10);
     }
 
     @Override

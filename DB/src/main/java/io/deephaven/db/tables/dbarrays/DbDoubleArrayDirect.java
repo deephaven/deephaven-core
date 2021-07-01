@@ -65,7 +65,7 @@ public class DbDoubleArrayDirect implements DbDoubleArray {
 
     @Override
     public final String toString() {
-        return DbDoubleArray.toString(this);
+        return DbDoubleArray.toString(this, 10);
     }
 
     @Override

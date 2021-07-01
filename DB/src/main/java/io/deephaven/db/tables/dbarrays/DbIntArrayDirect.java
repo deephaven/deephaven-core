@@ -65,7 +65,7 @@ public class DbIntArrayDirect implements DbIntArray {
 
     @Override
     public final String toString() {
-        return DbIntArray.toString(this);
+        return DbIntArray.toString(this, 10);
     }
 
     @Override

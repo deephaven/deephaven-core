@@ -65,7 +65,7 @@ public class DbLongArrayDirect implements DbLongArray {
 
     @Override
     public final String toString() {
-        return DbLongArray.toString(this);
+        return DbLongArray.toString(this, 10);
     }
 
     @Override

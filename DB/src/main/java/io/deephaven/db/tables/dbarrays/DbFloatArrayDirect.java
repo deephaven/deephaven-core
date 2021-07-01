@@ -65,7 +65,7 @@ public class DbFloatArrayDirect implements DbFloatArray {
 
     @Override
     public final String toString() {
-        return DbFloatArray.toString(this);
+        return DbFloatArray.toString(this, 10);
     }
 
     @Override
