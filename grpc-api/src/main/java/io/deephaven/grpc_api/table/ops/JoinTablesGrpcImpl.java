@@ -41,6 +41,9 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
         } catch (final ExpressionException err) {
             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
         }
+        if (request.getJoinType() == JoinTablesRequest.Type.UNRECOGNIZED) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized join type");
+        }
     }
 
     @Override
@@ -66,10 +69,6 @@ public class JoinTablesGrpcImpl extends GrpcTableOperation<JoinTablesRequest> {
                     return lhs.join(rhs, columnsToMatch, columnsToAdd);
                 case NATURAL_JOIN:
                     return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
-                case AS_OF_JOIN:
-                    return lhs.aj(rhs, columnsToMatch, columnsToAdd);
-                case REVERSE_AS_OF_JOIN:
-                    return lhs.raj(rhs, columnsToMatch, columnsToAdd);
                 case EXACT_JOIN:
                     return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
                 case LEFT_JOIN:

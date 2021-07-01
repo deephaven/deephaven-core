@@ -1,6 +1,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.exportnotification.StateMap;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -19,9 +20,10 @@ public class ExportNotification {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface TicketFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static ExportNotification.ToObjectReturnType.TicketFieldType.GetIdUnionType of(Object o) {
+        static ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
+            Object o) {
           return Js.cast(o);
         }
 
@@ -52,23 +54,26 @@ public class ExportNotification {
       }
 
       @JsProperty
-      ExportNotification.ToObjectReturnType.TicketFieldType.GetIdUnionType getId();
+      ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(ExportNotification.ToObjectReturnType.TicketFieldType.GetIdUnionType id);
+      void setTicket(
+          ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
-            Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(String ticket) {
+        setTicket(
+            Js
+                .<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
-            Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
+            Js
+                .<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -107,9 +112,10 @@ public class ExportNotification {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface TicketFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static ExportNotification.ToObjectReturnType0.TicketFieldType.GetIdUnionType of(Object o) {
+        static ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
+            Object o) {
           return Js.cast(o);
         }
 
@@ -140,23 +146,26 @@ public class ExportNotification {
       }
 
       @JsProperty
-      ExportNotification.ToObjectReturnType0.TicketFieldType.GetIdUnionType getId();
+      ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(ExportNotification.ToObjectReturnType0.TicketFieldType.GetIdUnionType id);
+      void setTicket(
+          ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
-            Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(String ticket) {
+        setTicket(
+            Js
+                .<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
-            Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
+            Js
+                .<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

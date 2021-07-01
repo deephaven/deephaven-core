@@ -5,6 +5,7 @@ import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageRecordBatch;
@@ -19,7 +20,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
@@ -878,7 +878,7 @@ public class WorkerConnection {
                 request.setTicket(state.getHandle().makeTicket());
 
                 final Ticket handle = new Ticket();
-                handle.setId(config.newTicket());
+                handle.setTicket(config.newTicket());
                 request.setExportId(handle);
                 ResponseStreamWrapper<BarrageData> stream = ResponseStreamWrapper.of(barrageApiClient.doSubscribeNoClientStream(request, metadata));
                 stream.onData(data -> {
@@ -1022,23 +1022,13 @@ public class WorkerConnection {
         }
     }
 
-    public Promise<JsTable> emptyTable(double size, JsPropertyMap<String> columns) {
-        final String[] columnNames = new String[0];
-        final String[] columnTypes = new String[0];
-        if (columns != null) {
-            columns.forEach(key -> {
-                columnNames[columnNames.length] = key;
-                columnTypes[columnTypes.length] = columns.get(key);
-            });
-        }
+    public Promise<JsTable> emptyTable(double size) {
         return whenServerReady("create emptyTable").then(server -> newState(info, (c, cts, metadata) -> {
             EmptyTableRequest emptyTableRequest = new EmptyTableRequest();
             emptyTableRequest.setResultId(cts.getHandle().makeTicket());
             emptyTableRequest.setSize(size + "");
-            emptyTableRequest.setColumnNamesList(columnNames);
-            emptyTableRequest.setColumnTypesList(columnTypes);
             tableServiceClient.emptyTable(emptyTableRequest, metadata, c::apply);
-        }, "emptyTable(" + size + ", " + Arrays.toString(columnNames) + "," + Arrays.toString(columnTypes) + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "emptyTable(" + size + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     public Promise<JsTable> timeTable(double periodNanos, DateWrapper startTime) {

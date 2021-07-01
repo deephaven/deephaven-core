@@ -427,10 +427,7 @@ public class ReplicatePrimitiveCode {
                     return file.getPath();
                 }
             } else {
-                if (file.isDirectory() && sourceClass.getName().startsWith("io.deephaven." + file.getName().toLowerCase())) {
-                    return file.getPath();
-                }
-                if (file.isDirectory() && sourceClass.getName().startsWith("io.deephaven." + file.getName().toLowerCase())) {
+                if (file.isDirectory() && sourceClass.getName().startsWith("io.deephaven." + file.getName().toLowerCase().replace('-', '_'))) {
                     return file.getPath();
                 }
             }

@@ -28,7 +28,7 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     }
 
     protected Table generateTable() {
-            return SparseSelect.sparseSelect(TableTools.emptyTable(nRows, definition).updateView(
+            return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
                     getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey())).toArray(String[]::new)));
     }
 

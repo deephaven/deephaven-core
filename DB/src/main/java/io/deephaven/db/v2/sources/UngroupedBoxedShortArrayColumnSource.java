@@ -42,7 +42,7 @@ public class UngroupedBoxedShortArrayColumnSource extends UngroupedColumnSource<
         long segment = index>>base;
         int offset = (int) (index & ((1<<base) - 1));
         Short[] array = innerSource.get(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_SHORT;
         }
         return array[offset];
@@ -63,7 +63,7 @@ public class UngroupedBoxedShortArrayColumnSource extends UngroupedColumnSource<
         long segment = index>> getPrevBase();
         int offset = (int) (index & ((1<< getPrevBase()) - 1));
         Short[] array = innerSource.getPrev(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_SHORT;
         }
         return array[offset];

@@ -4,11 +4,25 @@ plugins {
 
 evaluationDependsOn ':protoc'
 
+configurations.create('download')
+configurations.download.transitive=false
+
+dependencies {
+  // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
+  // the same output that it contains, and we have declared the correct dependencies as necessary
+  //  compile 'io.deephaven.barrage:barrage-core:0.1.1'
+  download 'io.deephaven.barrage:barrage-core:0.1.1'
+}
+
+
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
   copyIn {
     from(project.projectDir) {
       exclude 'build'
       exclude 'build.gradle'
+    }
+    from(zipTree(configurations.download.singleFile)) {
+      include("flight.proto").into("dependencies/arrow/flight/protocol")
     }
   }
   parentContainers = [ project(':protoc').tasks.findByName('buildDocker') ]

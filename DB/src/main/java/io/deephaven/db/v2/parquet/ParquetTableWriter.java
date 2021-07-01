@@ -233,7 +233,7 @@ public class ParquetTableWriter {
      * @param definition
      * @param path       The destination path
      * @param tableMeta  A map of metadata values to be stores in the file footer
-     * @param codecName  Name oif the codec for compression
+     * @param codecName  Name of the codec for compression
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */

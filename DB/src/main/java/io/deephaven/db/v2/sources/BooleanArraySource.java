@@ -468,6 +468,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
 
         @Override
+        public void startTrackingPrevValues() {
+            BooleanArraySource.this.startTrackingPrevValues();
+        }
+
+        @Override
         public byte getByte(long index) {
             return BooleanArraySource.this.getByte(index);
         }

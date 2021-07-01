@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+    id 'com.diffplug.spotless'
+}
+
+dependencies {
+    api project(':proto:proto-backplane-grpc')
+}
+
+spotless {
+    java {
+        eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+    }
+}

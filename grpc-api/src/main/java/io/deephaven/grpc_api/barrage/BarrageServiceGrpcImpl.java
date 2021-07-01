@@ -1,17 +1,18 @@
 package io.deephaven.grpc_api.barrage;
 
-import io.deephaven.configuration.Configuration;
-import io.deephaven.db.util.liveness.SingletonLivenessManager;
-import io.deephaven.io.logger.Logger;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
-import io.deephaven.db.backplane.util.BarrageProtoUtil;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.db.util.liveness.SingletonLivenessManager;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageServiceGrpc;
 import io.deephaven.proto.backplane.grpc.OutOfBandSubscriptionResponse;
 import io.deephaven.proto.backplane.grpc.SubscriptionRequest;
@@ -33,6 +34,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
 
     private static final Logger log = LoggerFactory.getLogger(BarrageServiceGrpcImpl.class);
 
+    private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory;
     private final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter;
@@ -40,10 +42,12 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
 
     @Inject
     public BarrageServiceGrpcImpl(
+            final TicketRouter ticketRouter,
             final SessionService sessionService,
             final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory,
             final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter,
             final BarrageMessageProducer.Adapter<SubscriptionRequest, Options> optionsAdapter) {
+        this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.operationFactory = operationFactory;
         this.listenerAdapter = listenerAdapter;
@@ -64,7 +68,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
             }
 
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<SubscriptionObserver> subscription = session.getExport(request.getExportId());
+            final SessionState.ExportObject<SubscriptionObserver> subscription = ticketRouter.resolve(session, request.getExportId());
 
             session.nonExport()
                     .require(subscription)
@@ -119,6 +123,8 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
         private boolean isViewport;
         private BarrageMessageProducer<Options, View> bmp;
         private Queue<SubscriptionRequest> preExportSubscriptions;
+
+        private SessionState.ExportObject<?> myExportWork;
 
         private final StreamObserver<View> listener;
 
@@ -196,7 +202,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
                 return;
             }
 
-            final SessionState.ExportObject<Object> parent = session.getExport(subscriptionRequest.getTicket());
+            final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.getTicket());
 
             final SessionState.ExportBuilder<SubscriptionObserver> exportBuilder;
             if (subscriptionRequest.hasExportId()) {
@@ -228,7 +234,7 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
                                 manage(bmp);
                             } else {
                                 listener.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                        "Ticket (" + subscriptionRequest.getTicket().getId() + ") is not a subscribable table."));
+                                        "Ticket (" + subscriptionRequest.getTicket().getTicket() + ") is not a subscribable table."));
                                 return null;
                             }
 

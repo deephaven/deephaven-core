@@ -129,6 +129,11 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
         }
 
         @Override
+        public void startTrackingPrevValues() {
+            DateTimeArraySource.this.startTrackingPrevValues();
+        }
+
+        @Override
         public long getLong(long index) {
             return DateTimeArraySource.this.getLong(index);
         }

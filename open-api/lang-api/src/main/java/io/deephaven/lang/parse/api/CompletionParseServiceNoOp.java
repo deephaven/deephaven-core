@@ -39,12 +39,12 @@ public class CompletionParseServiceNoOp implements CompletionParseService<Parsed
     }
 
     @Override
-    public void open(final String text, final String uri, final String version, final Logger log) {
+    public void open(final String text, final String uri, final String version) {
 
     }
 
     @Override
-    public void update(final String uri, final String version, final List<Object> changes, final Logger log) {
+    public void update(final String uri, final String version, final List<Object> changes) {
 
     }
 
@@ -59,7 +59,8 @@ public class CompletionParseServiceNoOp implements CompletionParseService<Parsed
     }
 
     @Override
-    public void close(final String uri, final Logger log) {
+    public void close(final String uri) {
 
     }
+
 }

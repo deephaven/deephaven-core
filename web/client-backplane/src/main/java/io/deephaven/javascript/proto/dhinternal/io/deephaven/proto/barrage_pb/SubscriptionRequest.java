@@ -1,7 +1,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -187,9 +187,10 @@ public class SubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface TicketFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetIdUnionType of(Object o) {
+        static SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
+            Object o) {
           return Js.cast(o);
         }
 
@@ -220,23 +221,26 @@ public class SubscriptionRequest {
       }
 
       @JsProperty
-      SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetIdUnionType getId();
+      SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetIdUnionType id);
+      void setTicket(
+          SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
-            Js.<SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(String ticket) {
+        setTicket(
+            Js
+                .<SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
-            Js.<SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetIdUnionType>uncheckedCast(
-                id));
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
+            Js
+                .<SubscriptionRequest.ToObjectReturnType.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -373,9 +377,10 @@ public class SubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface TicketFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetIdUnionType of(Object o) {
+        static SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
+            Object o) {
           return Js.cast(o);
         }
 
@@ -406,25 +411,26 @@ public class SubscriptionRequest {
       }
 
       @JsProperty
-      SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetIdUnionType getId();
+      SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetIdUnionType id);
+      void setTicket(
+          SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SubscriptionRequest.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

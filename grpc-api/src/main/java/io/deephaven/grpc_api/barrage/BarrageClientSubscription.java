@@ -1,17 +1,20 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.grpc_api.barrage;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.backplane.barrage.BarrageMessage;
-import io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.db.backplane.util.BarrageProtoUtil;
+import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.proto.backplane.grpc.SubscriptionRequest;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -19,6 +22,8 @@ import io.grpc.MethodDescriptor;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
+import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.BitSet;
@@ -32,30 +37,39 @@ public class BarrageClientSubscription implements LogOutputAppendable {
 
     private volatile boolean connected = false;
 
-//    private final String hostName;
-//    private final int hostPort;
-
-    private final Ticket handle;
+    private final String logName;
+    private final Flight.Ticket handle;
     private final boolean isViewport;
 
     private final ClientCall<SubscriptionRequest, BarrageMessage> call;
 
-    /**
-     * Creates a Backplane table subscription that connects to a remote host.
-     f y*/
     public BarrageClientSubscription(
 //            final AuthSessionClientManager authClientManager,
+            final String logName,
             final Channel channel,
-            final Ticket handle,
+            final Flight.Ticket handle,
+            final SubscriptionRequest initialRequest,
+            final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
+            final BarrageSourcedTable resultTable) {
+        this(logName, channel, handle, initialRequest, streamReader,
+                resultTable.getWireChunkTypes(),
+                resultTable.getWireTypes(),
+                resultTable.getWireComponentTypes(),
+                new WeakReference<>(resultTable));
+    }
+
+    public BarrageClientSubscription(
+//            final AuthSessionClientManager authClientManager,
+            final String logName,
+            final Channel channel,
+            final Flight.Ticket handle,
             final SubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
             final ChunkType[] wireChunkTypes,
             final Class<?>[] wireTypes,
+            final Class<?>[] wireComponentTypes,
             final WeakReference<BarrageMessage.Listener> weakListener) {
-
-//        this.hostName = authClientManager.getHost();
-//        this.hostPort = authClientManager.getPort();
-
+        this.logName = logName;
         this.handle = handle;
         this.isViewport = !initialRequest.getViewport().isEmpty();
 
@@ -73,7 +87,7 @@ public class BarrageClientSubscription implements LogOutputAppendable {
                 .setUseDeephavenNulls(initialRequest.getUseDeephavenNulls())
                 .build();
         final MethodDescriptor<SubscriptionRequest, BarrageMessage> subscribeDescriptor =
-                BarrageServiceGrpcBinding.getClientDoSubscribeDescriptor(options, wireChunkTypes, wireTypes, streamReader);
+                BarrageServiceGrpcBinding.getClientDoSubscribeDescriptor(options, wireChunkTypes, wireTypes, wireComponentTypes, streamReader);
         this.call = channel.newCall(subscribeDescriptor, CallOptions.DEFAULT);
 
         ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<SubscriptionRequest, BarrageMessage>() {
@@ -89,13 +103,8 @@ public class BarrageClientSubscription implements LogOutputAppendable {
                     return;
                 }
                 try {
-                    if (!connected) {
-                        return;
-                    }
-                    final BarrageMessage.Listener listener = weakListener.get();
-                    if (listener == null) {
-                        call.halfClose();
-                        connected = false;
+                    final BarrageMessage.Listener listener = getListener();
+                    if (!connected || listener == null) {
                         return;
                     }
                     listener.handleBarrageMessage(barrageMessage);
@@ -109,12 +118,27 @@ public class BarrageClientSubscription implements LogOutputAppendable {
                 log.error().append(BarrageClientSubscription.this)
                         .append(": Error detected in subscription: ")
                         .append(t).endl();
+
+                final BarrageMessage.Listener listener = getListener();
+                if (!connected || listener == null) {
+                    return;
+                }
+                listener.handleBarrageError(t);
                 handleDisconnect();
             }
 
             @Override
             public void onCompleted() {
                 handleDisconnect();
+            }
+
+            @Nullable
+            private BarrageMessage.Listener getListener() {
+                final BarrageMessage.Listener listener = weakListener.get();
+                if (listener == null) {
+                    close();
+                }
+                return listener;
             }
         });
 
@@ -176,10 +200,7 @@ public class BarrageClientSubscription implements LogOutputAppendable {
 
     @Override
     public LogOutput append(final LogOutput logOutput) {
-        return logOutput.append("Barrage/")
-//                .append(hostName).append(":").append(hostPort)
-                .append("/ClientSubscription/")
-                .append(SessionState.ticketToExportId(handle))
-                .append("/").append(System.identityHashCode(this)).append("/");
+        return logOutput.append("Barrage/").append("/ClientSubscription/").append(logName).append("/")
+                .append(System.identityHashCode(this)).append("/");
     }
 }

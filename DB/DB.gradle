@@ -52,13 +52,11 @@ dependencies {
             project(':deephaven-jpy-ext'),
             project(':Parquet'),
             project(':DHProcess'),
-            project(':proto:proto-backplane-grpc'),
+            project(':proto:proto-backplane-grpc-util'),
             project(':log-factory'),
             project(':open-api-lang-api'),
             project(':Container'),
             "org.flywaydb:flyway-core:5.2.4",
-            'org.apache.arrow:arrow-vector:1.0.1',
-            'io.deephaven.barrage:barrage-format:0.1.1',
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
     compileOnly 'javax.inject:javax.inject:1'
@@ -214,7 +212,6 @@ createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.db.v2.dbarray
 createMainExecTask('replicateCopyKernel', 'io.deephaven.db.v2.utils.copy.ReplicateCopyKernel')
 createMainExecTask('replicateOperators', 'io.deephaven.db.v2.by.ReplicateOperators')
 createMainExecTask('replicateFreezeBy', 'io.deephaven.db.v2.utils.freezeby.ReplicateFreezeBy')
-createMainExecTask('replicateBarrageUtils', 'io.deephaven.db.backplane.barrage.chunk.ReplicateBarrageUtils')
 
 task replicate {
     dependsOn 'replicateTuples'
@@ -241,7 +238,6 @@ task replicate {
     dependsOn 'replicateCopyKernel'
     dependsOn 'replicateOperators'
     dependsOn 'replicateFreezeBy'
-    dependsOn 'replicateBarrageUtils'
 }
 
 test {

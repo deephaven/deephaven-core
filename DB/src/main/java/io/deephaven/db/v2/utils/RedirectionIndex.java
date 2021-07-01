@@ -130,10 +130,10 @@ public interface RedirectionIndex {
     /**
      * Our default, inefficient, implementation. Inheritors who care should provide a better implementation.
      */
-    default void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<Values> src,
+    default void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
                                @NotNull OrderedKeys orderedKeys) {
         final MutableInt offset = new MutableInt();
-        final LongChunk<Values> valuesLongChunk = src.asLongChunk();
+        final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
         orderedKeys.forAllLongs(key -> {
             final long index = valuesLongChunk.get(offset.intValue());
             if (index == Index.NULL_KEY) {

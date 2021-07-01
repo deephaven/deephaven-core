@@ -2,7 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -40,9 +40,9 @@ public class SnapshotTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
+        static SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -74,25 +74,26 @@ public class SnapshotTableRequest {
       }
 
       @JsProperty
-      SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
+      SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -162,9 +163,9 @@ public class SnapshotTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
+        static SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -196,25 +197,26 @@ public class SnapshotTableRequest {
       }
 
       @JsProperty
-      SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
+      SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
