@@ -123,7 +123,9 @@ public class ColumnHolder<T> {
         if (!data.getClass().isArray()) {
             throw new IllegalArgumentException("Data must be provided as an array");
         }
-        if (!data.getClass().getComponentType().isAssignableFrom(dataType)) {
+        if (!data.getClass().getComponentType().isAssignableFrom(dataType)
+                && !(dataType == DBDateTime.class && data.getClass().getComponentType() == long.class)
+                && !(dataType == Boolean.class && data.getClass().getComponentType() == byte.class)) {
             throw new IllegalArgumentException("Incompatible data type: " + dataType + " can not be stored in array of type " + data.getClass());
         }
         this.name = DBNameValidator.validateColumnName(name);
