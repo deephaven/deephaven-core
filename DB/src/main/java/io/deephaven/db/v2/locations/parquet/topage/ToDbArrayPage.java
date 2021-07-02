@@ -9,7 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 
-public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE extends DbArrayBase<?>> extends ToPage.Wrap<ATTR, RESULT, ARRAY_TYPE[]> {
+public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE extends DbArrayBase<?>>
+        extends ToPage.Wrap<ATTR, RESULT, ARRAY_TYPE[]> {
 
     private final Class<ARRAY_TYPE> nativeType;
 
@@ -23,7 +24,7 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE exten
 
         final Class<?> columnComponentType = toPage.getNativeComponentType();
         if (!componentType.isAssignableFrom(columnComponentType)) {
-            throw new IllegalArgumentException("The component type, " + componentType.getCanonicalName() + ", for the" +
+            throw new IllegalArgumentException("The component type " + componentType.getCanonicalName() + " for the" +
                     " array type " + nativeType.getCanonicalName() +
                     " is not compatible with the column's component type " + columnComponentType);
         }
