@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.db.v2.parquet.ParquetInstructions",
+ "methods": {
+  "getColumnNameFromParquetColumnName": ":param parquetColumnName: java.lang.String\n:return: java.lang.String",
+  "getColumnNameFromParquetColumnNameOrDefault": ":param parquetColumnName: java.lang.String\n:return: java.lang.String",
+  "getParquetColumnNameFromColumnNameOrDefault": ":param columnName: java.lang.String\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.db.v2.parquet.ParquetInstructions",
+ "text": "This class provides instructions intended for read and write parquet operations (which take\n it as an optional argument) specifying desired transformations.  Examples are\n mapping column names and use of specific codecs during (de)serialization.",
+ "typeName": "class"
+}

@@ -47,11 +47,6 @@ public class DbBooleanArrayDirect implements DbBooleanArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayBooleanWrapper(this);
-    }
-
-    @Override
     public DbBooleanArrayDirect getDirect() {
         return this;
     }

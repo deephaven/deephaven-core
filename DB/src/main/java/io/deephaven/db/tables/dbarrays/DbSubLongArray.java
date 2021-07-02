@@ -57,11 +57,6 @@ public class DbSubLongArray extends DbLongArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayLongWrapper(this);
-    }
-
-    @Override
     public long getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_LONG;

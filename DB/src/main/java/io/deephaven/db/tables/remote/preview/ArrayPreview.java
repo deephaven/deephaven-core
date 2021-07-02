@@ -1,9 +1,7 @@
 package io.deephaven.db.tables.remote.preview;
 
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
-
-import java.lang.reflect.Array;
-import java.util.function.Function;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 
 /**
  * A Preview Type for Arrays and DbArray.  Converts long arrays to a String "[1, 2, 3, 4, 5...]"
@@ -16,41 +14,17 @@ public class ArrayPreview implements PreviewType {
         if(dbArray == null) {
             return null;
         }
-
-        final String displayString;
-        if(dbArray.size() <= ARRAY_SIZE_CUTOFF) {
-            displayString = dbArray.toString();
-        } else {
-            displayString = dbArray.subArray(0, ARRAY_SIZE_CUTOFF).toString().replace("]", ", ...]");
-        }
-        return new ArrayPreview(displayString);
+        return new ArrayPreview(dbArray.toString(ARRAY_SIZE_CUTOFF));
     }
 
     public static ArrayPreview fromArray(Object array) {
         if(array == null) {
             return null;
         }
-
-        final int arrayLength = Array.getLength(array);
-        final int length = Math.min(arrayLength, ARRAY_SIZE_CUTOFF);
-
-        if (length == 0) {
-            return new ArrayPreview("[]");
+        if (!array.getClass().isArray()) {
+            throw new IllegalArgumentException("Input must be an array, instead input class is " + array.getClass());
         }
-
-        final Function<Object, String> valToString = DbArrayBase.classToHelper(array.getClass().getComponentType());
-
-        final StringBuilder builder = new StringBuilder("[");
-        builder.append(valToString.apply(Array.get(array, 0)));
-        for(int ei = 1; ei < length; ++ei) {
-            builder.append(',').append(valToString.apply(Array.get(array, ei)));
-        }
-        if(arrayLength > ARRAY_SIZE_CUTOFF) {
-            builder.append(", ...]");
-        } else {
-            builder.append("]");
-        }
-        return new ArrayPreview(builder.toString());
+        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType()).dbArrayWrap(array).toString(ARRAY_SIZE_CUTOFF));
     }
 
     private ArrayPreview(String displayString) {

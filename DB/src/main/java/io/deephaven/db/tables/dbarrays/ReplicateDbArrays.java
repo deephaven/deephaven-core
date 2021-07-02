@@ -23,14 +23,6 @@ public class ReplicateDbArrays {
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayBase", -2429677814745466454L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayDirect", 9111886364211462917L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbBooleanArrayDirect", -9116229390345474761L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayBooleanWrapper", -8864545415875733897L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayByteWrapper", -7617549435342988215L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayCharWrapper", 4186419447841973418L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayShortWrapper", -4721120214268745033L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayIntWrapper", 3710738419894435589L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayLongWrapper", -7803689205873236396L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayDoubleWrapper", 6570401045990711791L);
-        serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbArrayFloatWrapper", -161104677395357585L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbCharArray", -1373264425081841175L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbLongArray", -4934601086974582202L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbIntArray", -4282375411744560278L);
@@ -65,7 +57,6 @@ public class ReplicateDbArrays {
         ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayDirect.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
         ReplicatePrimitiveCode.charToAllButBoolean(DbCharArraySlice.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
         ReplicatePrimitiveCode.charToAllButBoolean(DbSubCharArray.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbArrayCharWrapper.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
 
         // Uncomment if running from the IDE:
         // io.deephaven.db.v2.dbarrays.ReplicateDbArrayColumnWrappers.main(new String[0]);

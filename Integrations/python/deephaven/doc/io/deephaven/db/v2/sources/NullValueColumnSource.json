@@ -2,6 +2,7 @@
  "className": "io.deephaven.db.v2.sources.NullValueColumnSource",
  "methods": {
   "allowsReinterpret": "Test if a reinterpret call will succeed.\n\nNote: Java generics information - <ALTERNATE_DATA_TYPE>\n\n:param alternateDataType: (java.lang.Class<ALTERNATE_DATA_TYPE>) - The alternative type to consider\n:return: (boolean) If a reinterpret on this column source with the supplied alternateDataType will succeed.",
+  "createColumnSourceMap": ":param definition: io.deephaven.db.tables.TableDefinition\n:return: java.util.Map<java.lang.String,io.deephaven.db.v2.sources.ColumnSource<?>>",
   "fillChunk": "Populates the given destination chunk with data corresponding to the keys from the given OrderedKeys.\n\n:param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A context containing all mutable/state related data used in retrieving the Chunk.\n:param destination: (io.deephaven.db.v2.sources.chunk.WritableChunk<? superio.deephaven.db.v2.sources.chunk.Attributes.Values>) - The chunk to be populated according to orderedKeys.  No assumptions shall be made\n                    about the size of the chunk shall be made.  The chunk will be populated from position\n                    [0,orderedKeys.size()).\n:param orderedKeys: (io.deephaven.db.v2.utils.OrderedKeys) - An OrderedKeys representing the keys to be fetched",
   "fillPrevChunk": "Populates the given destination chunk with data corresponding to the keys from the given OrderedKeys.\n\n:param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A context containing all mutable/state related data used in retrieving the Chunk.\n:param destination: (io.deephaven.db.v2.sources.chunk.WritableChunk<? superio.deephaven.db.v2.sources.chunk.Attributes.Values>) - The chunk to be populated according to orderedKeys.  No assumptions shall be made\n                    about the size of the chunk shall be made.  The chunk will be populated from position\n                    [0,orderedKeys.size()).\n:param orderedKeys: (io.deephaven.db.v2.utils.OrderedKeys) - An OrderedKeys representing the keys to be fetched",
   "get": ":param index: long\n:return: NullValueColumnSource.T",
@@ -10,7 +11,7 @@
   "getChar": ":param index: long\n:return: char",
   "getDouble": ":param index: long\n:return: double",
   "getFloat": ":param index: long\n:return: float",
-  "getInstance": "Note: Java generics information - <T2>\n\n:param clazz: java.lang.Class<T2>\n:return: io.deephaven.db.v2.sources.NullValueColumnSource<T2>",
+  "getInstance": "Note: Java generics information - <T2>\n\n:param clazz: java.lang.Class<T2>\n:param elementType: java.lang.Class\n:return: io.deephaven.db.v2.sources.NullValueColumnSource<T2>",
   "getInt": ":param index: long\n:return: int",
   "getLong": ":param index: long\n:return: long",
   "getPrev": ":param index: long\n:return: NullValueColumnSource.T",

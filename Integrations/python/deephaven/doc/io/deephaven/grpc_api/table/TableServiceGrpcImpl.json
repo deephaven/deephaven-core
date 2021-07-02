@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.table.TableServiceGrpcImpl",
  "methods": {
+  "asOfJoinTables": ":param request: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "batch": ":param request: io.deephaven.proto.backplane.grpc.BatchTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "buildTableCreationResponse": ":param tableRef: io.deephaven.proto.backplane.grpc.TableReference\n:param table: io.deephaven.db.tables.Table\n:return: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse",
   "comboAggregate": ":param request: io.deephaven.proto.backplane.grpc.ComboAggregateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",

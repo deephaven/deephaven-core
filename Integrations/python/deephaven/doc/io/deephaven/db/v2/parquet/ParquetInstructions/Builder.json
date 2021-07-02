@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.parquet.ParquetInstructions$Builder",
+ "methods": {
+  "addColumnNameMapping": ":param parquetColumnName: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
+  "build": ":return: io.deephaven.db.v2.parquet.ParquetInstructions",
+  "getTakenNames": ":return: java.util.Set<java.lang.String>"
+ },
+ "path": "io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
+ "typeName": "class"
+}

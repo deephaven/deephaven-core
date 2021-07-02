@@ -5,7 +5,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayShortWrapper;
 import io.deephaven.db.tables.dbarrays.DbShortArray;
 import io.deephaven.db.tables.dbarrays.DbShortArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2315,11 +2314,6 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Short> toDbArray() {
-        return new DbArrayShortWrapper(this);
     }
 
     @Override

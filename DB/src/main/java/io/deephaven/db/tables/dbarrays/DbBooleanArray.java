@@ -21,7 +21,6 @@ public interface DbBooleanArray extends DbArrayBase {
     DbBooleanArray subArray(long fromIndex, long toIndex);
     DbBooleanArray subArrayByPositions(long [] positions);
     Boolean[] toArray();
-    DbArray toDbArray();
 
     @Override
     @FinalDefault

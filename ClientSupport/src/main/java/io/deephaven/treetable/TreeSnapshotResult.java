@@ -2,6 +2,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.base.Pair;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
@@ -134,8 +135,9 @@ public class TreeSnapshotResult {
 
         for(int i = 0; i < data.length; i++) {
             if(data[i] != null) {
-                final Class<?> colType = originalTree.getDefinition().getColumn(columnNames.get(i)).getDataType();
-                sources.put(columnNames.get(i), ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i], colType));
+                final ColumnDefinition<?> colDef = originalTree.getDefinition().getColumn(columnNames.get(i));
+                //noinspection unchecked
+                sources.put(columnNames.get(i), ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i], colDef.getDataType(), colDef.getComponentType()));
             }
         }
 

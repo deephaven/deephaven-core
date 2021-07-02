@@ -31,7 +31,7 @@ public class InMemoryTable extends QueryTable {
     private static Map<String, ColumnSource> createColumnsMap(String[] columnNames, Object[] arrayValues) {
         Map<String, ColumnSource> map = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
-            map.put(columnNames[i], ArrayBackedColumnSource.getMemoryColumnSource((arrayValues[i])));
+            map.put(columnNames[i], ArrayBackedColumnSource.getMemoryColumnSourceUntyped((arrayValues[i])));
         }
         return map;
     }

@@ -113,8 +113,4 @@ public class DbCharArrayColumnWrapper extends DbCharArray.Indirect {
         return startPadding + index.size() + endPadding;
     }
 
-    @Override
-    public DbArray toDbArray() {
-        return new DbArrayCharWrapper(this);
-    }
 }

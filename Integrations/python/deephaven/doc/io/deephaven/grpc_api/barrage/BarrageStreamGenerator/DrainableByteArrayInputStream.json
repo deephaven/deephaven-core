@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$DrainableByteArrayInputStream",
+ "methods": {
+  "drainTo": ":param outputStream: java.io.OutputStream\n:return: int",
+  "read": ":return: int"
+ },
+ "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.DrainableByteArrayInputStream",
+ "typeName": "class"
+}
