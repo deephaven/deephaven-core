@@ -57,11 +57,6 @@ public class DbSubIntArray extends DbIntArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayIntWrapper(this);
-    }
-
-    @Override
     public int getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_INT;

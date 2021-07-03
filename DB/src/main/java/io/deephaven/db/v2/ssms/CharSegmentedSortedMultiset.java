@@ -2,7 +2,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayCharWrapper;
 import io.deephaven.db.tables.dbarrays.DbCharArray;
 import io.deephaven.db.tables.dbarrays.DbCharArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2312,11 +2311,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Character> toDbArray() {
-        return new DbArrayCharWrapper(this);
     }
 
     @Override

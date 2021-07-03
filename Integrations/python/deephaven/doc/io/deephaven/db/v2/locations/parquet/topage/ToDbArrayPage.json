@@ -1,10 +1,10 @@
 {
  "className": "io.deephaven.db.v2.locations.parquet.topage.ToDbArrayPage",
  "methods": {
-  "convertResult": ":param object: java.lang.Object\n:return: (io.deephaven.db.tables.dbarrays.DbArrayBase[]) Produce the array of values from the result",
-  "create": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param componentType: java.lang.Class<?>\n:param toPage: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,?>\n:return: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,io.deephaven.db.tables.dbarrays.DbArrayBase[]>",
+  "convertResult": ":param object: java.lang.Object\n:return: (ToDbArrayPage.ARRAY_TYPE[]) Produce the array of values from the result",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param componentType: java.lang.Class<?>\n:param toPage: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,?>\n:return: io.deephaven.db.v2.locations.parquet.topage.ToPage<ATTR,?>",
   "getChunkType": ":return: (io.deephaven.db.v2.sources.chunk.ChunkType) The chunk type used to wrap the arrays produced by this object.",
-  "getNativeType": ":return: (java.lang.Class) The native type for the elements of the arrays produced by this object."
+  "getNativeType": ":return: (java.lang.Class<ToDbArrayPage.ARRAY_TYPE>) The native type for the elements of the arrays produced by this object."
  },
  "path": "io.deephaven.db.v2.locations.parquet.topage.ToDbArrayPage",
  "typeName": "class"

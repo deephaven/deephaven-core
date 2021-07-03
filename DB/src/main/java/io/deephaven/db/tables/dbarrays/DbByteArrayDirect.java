@@ -59,18 +59,13 @@ public class DbByteArrayDirect implements DbByteArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayByteWrapper(this);
-    }
-
-    @Override
     public DbByteArrayDirect getDirect() {
         return this;
     }
 
     @Override
     public final String toString() {
-        return DbByteArray.toString(this);
+        return DbByteArray.toString(this, 10);
     }
 
     @Override

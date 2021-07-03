@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.utils.LongColumnSourceRedirectionIndex",
  "methods": {
   "fillChunk": "Lookup each element in OrderedKeys and write the result to mappedKeysOut\n\n:param fillContext: (io.deephaven.db.v2.utils.RedirectionIndex.FillContext) - the RedirectionIndex FillContext\n:param mappedKeysOut: (io.deephaven.db.v2.sources.chunk.WritableLongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>) - the result chunk\n:param keysToMap: (io.deephaven.db.v2.utils.OrderedKeys) - the keys to lookup in this redirection index",
-  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext\n:param src: io.deephaven.db.v2.sources.chunk.Chunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
+  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext\n:param src: io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys",
   "fillPrevChunk": ":param fillContext: io.deephaven.db.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.db.v2.sources.chunk.WritableLongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>\n:param keysToMap: io.deephaven.db.v2.utils.OrderedKeys",
   "get": ":param key: long\n:return: long",
   "getPrev": ":param key: long\n:return: long",

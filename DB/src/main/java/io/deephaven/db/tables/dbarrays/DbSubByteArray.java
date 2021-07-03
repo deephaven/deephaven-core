@@ -57,11 +57,6 @@ public class DbSubByteArray extends DbByteArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayByteWrapper(this);
-    }
-
-    @Override
     public byte getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_BYTE;

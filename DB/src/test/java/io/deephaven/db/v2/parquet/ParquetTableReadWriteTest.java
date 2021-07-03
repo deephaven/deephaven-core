@@ -126,7 +126,8 @@ public class ParquetTableReadWriteTest {
         final Table tableToSave = getGroupedTable(size, includeSerializable);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
-        final Table fromDisk = ParquetTools.readTable(dest);
+        // TODO (https://github.com/deephaven/deephaven-core/issues/742): Stop passing the expected definition to read
+        final Table fromDisk = ParquetTools.readTable(dest, tableToSave.getDefinition());
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
@@ -135,7 +136,8 @@ public class ParquetTableReadWriteTest {
         TableTools.show(tableToSave, 50);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
         ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
-        final Table fromDisk = ParquetTools.readTable(dest);
+        // TODO (https://github.com/deephaven/deephaven-core/issues/742): Stop passing the expected definition to read
+        final Table fromDisk = ParquetTools.readTable(dest, tableToSave.getDefinition());
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 

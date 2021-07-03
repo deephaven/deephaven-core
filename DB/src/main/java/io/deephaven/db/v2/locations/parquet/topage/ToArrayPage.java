@@ -9,35 +9,37 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 
-public class ToArrayPage<ATTR extends Attributes.Any, RESULT> extends ToPage.Wrap<ATTR, RESULT, Object[]> {
+public class ToArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE>
+        extends ToPage.Wrap<ATTR, RESULT, ARRAY_TYPE[]> {
 
-    private final Class<?> nativeType;
+    private final Class<ARRAY_TYPE> nativeType;
 
-    public static <ATTR extends Attributes.Any>
-    ToPage<ATTR, Object[]> create(@NotNull  Class<?> nativeType, @NotNull Class<?> componentType, @NotNull ToPage<ATTR, ?> toPage) {
-        Class<?> columnComponentType = toPage.getNativeComponentType();
-
+    public static <ATTR extends Attributes.Any, ARRAY_TYPE>
+    ToPage<ATTR, ARRAY_TYPE[]> create(@NotNull final Class<ARRAY_TYPE> nativeType,
+                                      @NotNull final Class<?> componentType,
+                                      @NotNull final ToPage<ATTR, ?> toPage) {
         if (!nativeType.isArray()) {
             throw new IllegalArgumentException("Native type " + nativeType + " is not an array type.");
         }
 
+        final Class<?> columnComponentType = toPage.getNativeComponentType();
         if (!componentType.isAssignableFrom(columnComponentType)) {
-            throw new IllegalArgumentException("The component type, " + componentType.getCanonicalName() + ", for the" +
-                    " native array type " + nativeType.getCanonicalName() +
-                    "is not compatible with the column's component type " + columnComponentType);
+            throw new IllegalArgumentException("The component type " + componentType.getCanonicalName() + " for the" +
+                    " array type " + nativeType.getCanonicalName() +
+                    " is not compatible with the column's component type " + columnComponentType);
         }
 
         return new ToArrayPage<>(nativeType, toPage);
     }
 
-    private ToArrayPage(Class<?> nativeType, ToPage<ATTR, RESULT> toPage) {
+    private ToArrayPage(@NotNull final Class<ARRAY_TYPE> nativeType, @NotNull final ToPage<ATTR, RESULT> toPage) {
         super(toPage);
         this.nativeType = nativeType;
     }
 
     @Override
     @NotNull
-    public final Class getNativeType() {
+    public final Class<ARRAY_TYPE> getNativeType() {
         return nativeType;
     }
 
@@ -49,21 +51,23 @@ public class ToArrayPage<ATTR extends Attributes.Any, RESULT> extends ToPage.Wra
 
     @NotNull
     @Override
-    public final Object [] convertResult(Object object) {
-        DataWithOffsets dataWithOffsets = (DataWithOffsets) object;
+    public final ARRAY_TYPE[] convertResult(Object object) {
+        final DataWithOffsets dataWithOffsets = (DataWithOffsets) object;
 
-        DbArrayBase dbArrayBase = toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
-        IntBuffer offsets = dataWithOffsets.offsets;
+        final DbArrayBase<?> dataWrapper = toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
+        final IntBuffer offsets = dataWithOffsets.offsets;
 
-        Object [] to = (Object []) Array.newInstance(nativeType, offsets.remaining());
+        //noinspection unchecked
+        final ARRAY_TYPE[] to = (ARRAY_TYPE[]) Array.newInstance(nativeType, offsets.remaining());
 
         int lastOffset = 0;
-        for (int i = 0; i < to.length; ++i) {
-            int nextOffset = offsets.get();
+        for (int vi = 0; vi < to.length; ++vi) {
+            final int nextOffset = offsets.get();
             if (nextOffset == DataWithOffsets.NULL_OFFSET) {
-                to[i] = null;
+                to[vi] = null;
             } else {
-                to[i] = dbArrayBase.subArray(lastOffset, nextOffset).toArray();
+                //noinspection unchecked
+                to[vi] = (ARRAY_TYPE) dataWrapper.subArray(lastOffset, nextOffset).toArray();
                 lastOffset = nextOffset;
             }
         }

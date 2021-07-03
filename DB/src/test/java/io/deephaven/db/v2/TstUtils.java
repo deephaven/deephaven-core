@@ -71,12 +71,12 @@ public class TstUtils {
                 continue;
             }
 
-            if (columnSource instanceof DateTimeTreeMapSource && columnHolder.type == long.class) {
+            if (columnSource instanceof DateTimeTreeMapSource && columnHolder.dataType == long.class) {
                 final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource)columnSource;
                 treeMapSource.add(colIndex, (Long[])boxedArray);
             }
-            else if (columnSource.getType() != columnHolder.type) {
-                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()=" + columnSource.getType() + ", columnHolder=" + columnHolder.type);
+            else if (columnSource.getType() != columnHolder.dataType) {
+                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()=" + columnSource.getType() + ", columnHolder=" + columnHolder.dataType);
             }
 
             if (columnSource instanceof TreeMapSource) {
@@ -120,7 +120,7 @@ public class TstUtils {
 
     // TODO: this is just laziness, make it go away
     public static <T> ColumnHolder cG(String name, T... data) {
-        return new ColumnHolder(name, true, data);
+        return ColumnHolder.createColumnHolder(name, true, data);
     }
 
     public static ColumnHolder getRandomStringCol(String colName, int size, Random random) {
@@ -210,7 +210,7 @@ public class TstUtils {
         for (int i = 0; i < data.length; i++) {
             data[i] = random.nextBoolean();
         }
-        return new ColumnHolder(colName, false, data);
+        return ColumnHolder.createColumnHolder(colName, false, data);
     }
 
     public static ColumnHolder getRandomCharCol(String colName, int size, Random random) {
@@ -336,7 +336,7 @@ public class TstUtils {
         for (int i = 0; i < data.length; i++) {
             data[i] = new DBDateTime(random.nextLong());
         }
-        return new ColumnHolder(colName, false, data);
+        return ColumnHolder.createColumnHolder(colName, false, data);
     }
 
     public static void validate(final EvalNuggetInterface en[]) {
@@ -521,12 +521,12 @@ public class TstUtils {
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {
             //noinspection unchecked
-            result = new ImmutableTreeMapSource(columnHolder.type, index, boxedData);
-        } else if (columnHolder.type.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
+            result = new ImmutableTreeMapSource(columnHolder.dataType, index, boxedData);
+        } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
             result = new DateTimeTreeMapSource(index, (long[])columnHolder.data);
         } else {
             //noinspection unchecked
-            result = new TreeMapSource(columnHolder.type, index, boxedData);
+            result = new TreeMapSource(columnHolder.dataType, index, boxedData);
         }
 
         if (columnHolder.grouped) {
@@ -549,10 +549,10 @@ public class TstUtils {
     public static Table prevTable(Table table) {
         final Index index = table.getIndex().getPrevIndex();
 
-        final List<ColumnHolder> cols = new ArrayList<>();
+        final List<ColumnHolder<?>> cols = new ArrayList<>();
         for (Map.Entry<String, ? extends ColumnSource> mapEntry : table.getColumnSourceMap().entrySet()) {
             final String name = mapEntry.getKey();
-            final ColumnSource columnSource = mapEntry.getValue();
+            final ColumnSource<?> columnSource = mapEntry.getValue();
             final List<Object> data = new ArrayList<>();
 
             for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
@@ -562,45 +562,45 @@ public class TstUtils {
             }
 
             if (columnSource.getType() == int.class) {
-                cols.add(new ColumnHolder(name, false, data.stream().mapToInt(x -> x == null ? io.deephaven.util.QueryConstants.NULL_INT : (int) x).toArray()));
+                cols.add(new ColumnHolder<>(name, false, data.stream().mapToInt(x -> x == null ? io.deephaven.util.QueryConstants.NULL_INT : (int) x).toArray()));
             } else if (columnSource.getType() == long.class) {
-                cols.add(new ColumnHolder(name, false, data.stream().mapToLong(x -> x == null ? io.deephaven.util.QueryConstants.NULL_LONG : (long)x).toArray()));
+                cols.add(new ColumnHolder<>(name, false, data.stream().mapToLong(x -> x == null ? io.deephaven.util.QueryConstants.NULL_LONG : (long)x).toArray()));
             } else if (columnSource.getType() == boolean.class) {
-                cols.add(new ColumnHolder(name, false, data.stream().map(x -> (Boolean)x).toArray(Boolean[]::new)));
+                cols.add(ColumnHolder.createColumnHolder(name, false, data.stream().map(x -> (Boolean)x).toArray(Boolean[]::new)));
             } else if (columnSource.getType() == String.class) {
-                cols.add(new ColumnHolder(name, false, data.stream().map(x -> (String)x).toArray(String[]::new)));
+                cols.add(ColumnHolder.createColumnHolder(name, false, data.stream().map(x -> (String)x).toArray(String[]::new)));
             } else if (columnSource.getType() == double.class) {
-                cols.add(new ColumnHolder(name, false, data.stream().mapToDouble(x -> x == null ? io.deephaven.util.QueryConstants.NULL_DOUBLE : (double)x).toArray()));
+                cols.add(new ColumnHolder<>(name, false, data.stream().mapToDouble(x -> x == null ? io.deephaven.util.QueryConstants.NULL_DOUBLE : (double)x).toArray()));
             } else if (columnSource.getType() == float.class) {
                 final float [] floatArray = new float[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
                     floatArray[ii] = value == null ? QueryConstants.NULL_FLOAT : (float)value;
                 }
-                cols.add(new ColumnHolder(name, false, floatArray));
+                cols.add(new ColumnHolder<>(name, false, floatArray));
             } else if (columnSource.getType() == char.class) {
                 final char [] charArray = new char[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
                     charArray[ii] = value == null ? QueryConstants.NULL_CHAR : (char)value;
                 }
-                cols.add(new ColumnHolder(name, false, charArray));
+                cols.add(new ColumnHolder<>(name, false, charArray));
             } else if (columnSource.getType() == byte.class) {
                 final byte [] byteArray = new byte[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
                     byteArray[ii] = value == null ? QueryConstants.NULL_BYTE : (byte)value;
                 }
-                cols.add(new ColumnHolder(name, false, byteArray));
+                cols.add(new ColumnHolder<>(name, false, byteArray));
             } else if (columnSource.getType() == short.class) {
                 final short [] shortArray = new short[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
                     shortArray[ii] = value == null ? QueryConstants.NULL_SHORT : (short)value;
                 }
-                cols.add(new ColumnHolder(name, false, shortArray));
+                cols.add(new ColumnHolder<>(name, false, shortArray));
             } else {
-                cols.add(new ColumnHolder(name, false, data.toArray((Object[])Array.newInstance(columnSource.getType(), data.size()))));
+                cols.add(new ColumnHolder(name, columnSource.getType(), columnSource.getComponentType(), false, data.toArray((Object[])Array.newInstance(columnSource.getType(), data.size()))));
             }
         }
 
@@ -2005,7 +2005,7 @@ public class TstUtils {
 
             final U[] dataArray = data.values().toArray((U[])Array.newInstance(dataType, data.size()));
             if (immutable) {
-                return new ImmutableColumnHolder(name, grouped, dataArray);
+                return new ImmutableColumnHolder<>(name, dataType, null, grouped, dataArray);
             } else if (grouped) {
                 return TstUtils.cG(name, dataArray);
             } else {

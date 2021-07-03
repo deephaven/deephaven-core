@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.db.v2.utils.IndexShiftData",
  "methods": {
+  "append": "*Overload 1*  \n  :param logOutput: io.deephaven.base.log.LogOutput\n  :return: io.deephaven.base.log.LogOutput\n  \n*Overload 2*  \n  :param logOutput: io.deephaven.base.log.LogOutput\n  :param maxShifts: int\n  :return: io.deephaven.base.log.LogOutput",
   "apply": "**Incompatible overloads text - text from the first overload:**\n\nApply all shifts in a memmove-semantics-safe ordering through the provided shiftCallback.\n\n Use this to move from pre-shift keyspace to post-shift keyspace.\n\n*Overload 1*  \n  :param shiftCallback: (io.deephaven.db.v2.utils.IndexShiftData.Callback) - the callback that will process all shifts\n  \n*Overload 2*  \n  :param index: (io.deephaven.db.v2.utils.Index) - the index to shift",
   "applyIterator": ":return: io.deephaven.db.v2.utils.IndexShiftData.Iterator",
   "applyShift": "Apply a shift to the provided index. Moves index from pre-shift keyspace to post-shift keyspace.\n\n:param index: (io.deephaven.db.v2.utils.Index) - The index to apply the shift to\n:param beginRange: (long) - start of range (inclusive)\n:param endRange: (long) - end of range (inclusive)\n:param shiftDelta: (long) - amount range has moved by\n:return: (boolean) Whether there was any overlap found to shift",
@@ -16,7 +17,7 @@
   "intersect": "Intersects this IndexShiftData against the provided Index.\n\n:param index: (io.deephaven.db.v2.utils.Index) - the index to test for intersections (pre-shift keyspace)\n:return: (io.deephaven.db.v2.utils.IndexShiftData) an IndexShiftData containing only non-empty shifts",
   "nonempty": "Queries whether this IndexShiftData is non-empty (i.e. has at least one shift).\n\n:return: (boolean) true if the size() of this Index greater than zero, false if the size is zero",
   "size": "The number of shifts embedded in the payload.\n\n:return: (int) the number of shifts",
-  "toString": "*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param maxShifts: int\n  :return: java.lang.String",
+  "toString": ":return: java.lang.String",
   "unapply": "**Incompatible overloads text - text from the first overload:**\n\nApply all shifts in reverse in a memmove-semantics-safe ordering through the provided shiftCallback.\n\n Use this to move from post-shift keyspace to pre-shift keyspace.\n\n*Overload 1*  \n  :param shiftCallback: (io.deephaven.db.v2.utils.IndexShiftData.Callback) - the callback that will process all reverse shifts\n  \n*Overload 2*  \n  :param index: (io.deephaven.db.v2.utils.Index) - the index to shift\n  \n*Overload 3*  \n  :param index: (io.deephaven.db.v2.utils.Index) - the index to shift\n  :param offset: (long) - an additional offset to apply to all shifts (such as when applying to a wrapped table)",
   "unapplyShift": "Unapply a shift to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.\n\n:param index: (io.deephaven.db.v2.utils.Index) - The index to apply the shift to\n:param beginRange: (long) - start of range (inclusive)\n:param endRange: (long) - end of range (inclusive)\n:param shiftDelta: (long) - amount range has moved by\n:return: (boolean) Whether there was any overlap found to shift",
   "validate": "Verify invariants of internal data structures hold."

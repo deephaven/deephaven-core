@@ -456,29 +456,6 @@ public class ArrayUtils {
         }
     }
 
-    public static DbArray getDbArray(Object dbArray) {
-        if (dbArray instanceof DbArray) {
-            return (DbArray) dbArray;
-        } else if (dbArray instanceof DbBooleanArray) {
-            return ((DbBooleanArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbByteArray) {
-            return ((DbByteArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbCharArray) {
-            return ((DbCharArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbDoubleArray) {
-            return ((DbDoubleArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbFloatArray) {
-            return ((DbFloatArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbIntArray) {
-            return ((DbIntArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbLongArray) {
-            return ((DbLongArray)dbArray).toDbArray();
-        } else if (dbArray instanceof DbShortArray) {
-            return ((DbShortArray)dbArray).toDbArray();
-        }
-        throw new UnsupportedOperationException("Unexpected type " +  dbArray.getClass());
-    }
-
     public static <T> T[] nullSafeDbArrayToArray(final DbArray<T> dbArray) {
         return dbArray == null ? null : dbArray.toArray();
     }

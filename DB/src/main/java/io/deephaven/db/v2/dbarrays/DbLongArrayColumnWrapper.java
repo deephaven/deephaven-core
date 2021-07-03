@@ -116,8 +116,4 @@ public class DbLongArrayColumnWrapper extends DbLongArray.Indirect {
         return startPadding + index.size() + endPadding;
     }
 
-    @Override
-    public DbArray toDbArray() {
-        return new DbArrayLongWrapper(this);
-    }
 }

@@ -5,40 +5,47 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.*;
+import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.dbarrays.DbDoubleArray;
+import io.deephaven.db.tables.utils.ArrayUtils;
 import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.tables.utils.ParquetTools;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 
 import java.io.*;
 import java.nio.file.Files;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 
-/*
-Files to run this with:
-db-query-ny9-dbquery1.prop // before the intraday tables have been merged
-db-query-production[1-7].prop // once the intraday tables have been merged
- */
-public class TestAggregatedSelectV2 extends TestCase {
-    private final static String testRoot = Configuration.getInstance().getWorkspacePath()+ File.separator+"testroot";
+public class TestAggregatedSelect extends TestCase {
 
-    public TestAggregatedSelectV2() {
+    public TestAggregatedSelect() {
         super("TestAggregatedSelect()");
     }
 
-    public Table createTestTable() {
-        final File tableDirectory;
+    private static File tableDirectory;
+
+    @Before
+    public void setUp() {
         try {
-            tableDirectory = Files.createTempDirectory("TestAggregatedSelectV2").toFile();
+            tableDirectory = Files.createTempDirectory("TestAggregatedSelect").toFile();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @After
+    public void tearDown() {
+        FileUtils.deleteRecursivelyOnNFS(tableDirectory);
+    }
+
+    public Table createTestTable() {
         FileUtils.deleteRecursively(tableDirectory);
 
         TableDefinition tableDefinition = TableDefinition.of(
@@ -176,40 +183,40 @@ public class TestAggregatedSelectV2 extends TestCase {
         dumpColumn(result.getColumn("Bid"));
         dumpColumn(result.getColumn("BidSize"));
 
-        DataColumn bidColumn = result.getColumn("Bid");
-        DataColumn bidSizeColumn = result.getColumn("BidSize");
+        //noinspection unchecked
+        DataColumn<DbDoubleArray> bidColumn = result.getColumn("Bid");
+        //noinspection unchecked
+        DataColumn<DbArray<DbDoubleArray>> bidSizeColumn = result.getColumn("BidSize");
 
-        TestCase.assertTrue(DbArrayBase.class.isAssignableFrom(bidColumn.getType()));
+        TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidColumn.getType()));
         TestCase.assertEquals(double.class, bidColumn.getComponentType());
         TestCase.assertEquals(2, bidColumn.size());
 
-        TestCase.assertTrue(DbArrayBase.class.isAssignableFrom(bidSizeColumn.getType()));
+        TestCase.assertTrue(DbArray.class.isAssignableFrom(bidSizeColumn.getType()));
         // The tables strip this of its desired Type, instead it becomes an object.
-        TestCase.assertTrue(DbArrayBase.class.isAssignableFrom(bidSizeColumn.getComponentType()));
+        TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeColumn.getComponentType()));
         TestCase.assertEquals(2, bidSizeColumn.size());
 
         int [] expectedSize = { 1, 2 };
-        for (int ii = 0; ii < bidColumn.size(); ++ii)
-        {
-            DbArrayBase bidArray = (DbArrayBase)bidColumn.get(ii);
-            DbArrayBase bidSizeArray = (DbArrayBase)bidSizeColumn.get(ii);
+        for (int ii = 0; ii < bidColumn.size(); ++ii)  {
+            DbDoubleArray bidArray = bidColumn.get(ii);
+            DbArray<DbDoubleArray> bidSizeArray = bidSizeColumn.get(ii);
 
             TestCase.assertEquals(expectedSize[ii], bidArray.size());
             TestCase.assertEquals(expectedSize[ii], bidSizeArray.size());
 
             TestCase.assertTrue(double.class.isAssignableFrom(bidArray.getComponentType()));
-            TestCase.assertTrue(DbArrayBase.class.isAssignableFrom(bidSizeArray.getComponentType()));
+            TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeArray.getComponentType()));
 
-            for (int jj = 0; jj < bidSizeArray.size(); ++jj)
-            {
-                DbDoubleArray bidSizeInnerArray = (DbDoubleArray)bidSizeArray.toDbArray().get(jj);
+            for (int jj = 0; jj < bidSizeArray.size(); ++jj) {
+                DbDoubleArray bidSizeInnerArray = bidSizeArray.get(jj);
                 TestCase.assertTrue(double.class.isAssignableFrom(bidSizeInnerArray.getComponentType()));
             }
         }
 
-        TestCase.assertEquals(98.0, DoubleNumericPrimitives.avg((DbDoubleArray) result.getColumn("Bid").get(0)));
-        TestCase.assertEquals(98.5, DoubleNumericPrimitives.avg((DbDoubleArray) result.getColumn("Bid").get(1)));
-        TestCase.assertEquals(avgConsecutive(0, 7), DoubleNumericPrimitives.avg((DbDoubleArray) ((DbArrayBase)result.getColumn("BidSize").get(0)).toDbArray().get(0)));
+        TestCase.assertEquals(98.0, DoubleNumericPrimitives.avg(bidColumn.get(0)));
+        TestCase.assertEquals(98.5, DoubleNumericPrimitives.avg(bidColumn.get(1)));
+        TestCase.assertEquals(avgConsecutive(0, 7), DoubleNumericPrimitives.avg(bidSizeColumn.get(0).get(0)));
 
         Table checkPrimitives = result.update("BidAvg=avg(Bid)");
         TableTools.show(checkPrimitives);
@@ -236,17 +243,14 @@ public class TestAggregatedSelectV2 extends TestCase {
 
     private void dumpArray(String prefix, DbArrayBase dbArrayBase) {
         System.out.println(prefix + ": Array of " + dbArrayBase.getComponentType().toString());
-        String prefixsp = new String(new char [prefix.length()]).replace('\0', ' ');
-        for (int jj = 0; jj < dbArrayBase.size(); ++jj)
-        {
-            boolean isArray = DbArrayBase.class.isAssignableFrom(dbArrayBase.getComponentType());
-            if (isArray)
-            {
-                dumpArray(prefix + "[" + jj + "] ", (DbArrayBase)dbArrayBase.toDbArray().get(jj));
-            }
-            else
-            {
-                System.out.println(prefixsp + "[" + jj + "]: " + dbArrayBase.toDbArray().get(jj).toString());
+        String prefixsp = new String(new char[prefix.length()]).replace('\0', ' ');
+        final boolean containsArrays = DbArrayBase.class.isAssignableFrom(dbArrayBase.getComponentType());
+        final ArrayUtils.ArrayAccessor<?> arrayAccessor = ArrayUtils.getArrayAccessor(dbArrayBase.toArray());
+        for (int jj = 0; jj < dbArrayBase.size(); ++jj) {
+            if (containsArrays) {
+                dumpArray(prefix + "[" + jj + "] ", (DbArrayBase) arrayAccessor.get(jj));
+            } else {
+                System.out.println(prefixsp + "[" + jj + "]: " + arrayAccessor.get(jj).toString());
             }
         }
     }
