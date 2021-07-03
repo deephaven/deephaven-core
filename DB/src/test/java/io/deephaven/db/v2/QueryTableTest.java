@@ -2691,8 +2691,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]").by("Symbol").ungroup();
         try {
-            TableManagementTools.writeTable(source, definition, testDirectory, TableManagementTools.StorageFormat.Parquet);
-            final Table table = TableManagementTools.readTable(testDirectory);
+            ParquetTools.writeTable(source, definition, testDirectory);
+            final Table table = ParquetTools.readTable(testDirectory);
             testFunction.accept(table);
             table.close();
         } finally {

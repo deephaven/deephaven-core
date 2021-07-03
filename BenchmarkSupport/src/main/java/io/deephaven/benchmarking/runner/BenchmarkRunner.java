@@ -5,7 +5,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.util.QueryConstants;
@@ -95,7 +95,7 @@ public class BenchmarkRunner {
 
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark");
 
-        TableManagementTools.writeTable(result, result.getDefinition(), outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        ParquetTools.writeTable(result, result.getDefinition(), outputPath.toFile());
     }
 
     private static Table getMergedDetails() {

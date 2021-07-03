@@ -3,7 +3,7 @@ package io.deephaven.benchmarking.runner;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
@@ -42,7 +42,7 @@ public class TableBenchmarkState {
                                      .resolve(BenchmarkTools.getDetailLogPrefix(benchmarkName));
 
         final Table output = outputBuilder.build();
-        TableManagementTools.writeTable(output, RESULT_DEF, outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        ParquetTools.writeTable(output, RESULT_DEF, outputPath.toFile());
     }
 
     public void reset() {
@@ -69,6 +69,6 @@ public class TableBenchmarkState {
     }
 
     static Table readBin(File directory) {
-        return TableManagementTools.readTable(directory, RESULT_DEF);
+        return ParquetTools.readTable(directory, RESULT_DEF);
     }
 }

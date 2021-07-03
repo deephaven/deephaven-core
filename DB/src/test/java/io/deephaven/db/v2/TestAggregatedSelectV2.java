@@ -12,7 +12,7 @@ import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.dbarrays.DbDoubleArray;
 import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import junit.framework.TestCase;
 
 import java.io.*;
@@ -58,8 +58,8 @@ public class TestAggregatedSelectV2 extends TestCase {
             bidSize[ii] =  ii;
         }
 
-        TableManagementTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(tableDirectory);
+        ParquetTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory);
+        return ParquetTools.readTable(tableDirectory);
     }
 
     Table doAggregatedQuery() {

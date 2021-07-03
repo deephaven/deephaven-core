@@ -6,7 +6,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
@@ -138,11 +138,11 @@ public class TestGroupingProviders {
         final String name = "TestTable";
         final TableKey tableKey = new TableLookupKey.Immutable(namespace, name, TableType.STANDALONE_SPLAYED);
 
-        TableManagementTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTable(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
-        TableManagementTools.writeTables(
+        ParquetTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableKey.getTableName()));
+        ParquetTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableKey.getTableName()));
+        ParquetTools.writeTable(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableKey.getTableName()));
+        ParquetTools.writeTable(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableKey.getTableName()));
+        ParquetTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
                 partitionedDataDefinition,
                 IntStream.range(4, 260)
@@ -150,8 +150,8 @@ public class TestGroupingProviders {
                         .toArray(File[]::new)
         );
         // TODO (deephaven/deephaven-core/issues/321): Re-add this part of the test when the parquet bug is fixed
-//        TableManagementTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
-//                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableKey.getTableName()), TableManagementTools.StorageFormat.Parquet);
+//        ParquetTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
+//                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableKey.getTableName()), ParquetTools.StorageFormat.Parquet);
 
         if (!missingGroups) {
             // Put Sym back on for the partitions that dropped it.

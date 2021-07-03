@@ -2,7 +2,7 @@
 """
 Tools for managing and manipulating tables on disk.
 
- Most users will need TableTools and not TableManagementTools.
+ Most users will need TableTools and not ParquetTools.
 """
 
 
@@ -42,10 +42,10 @@ def _defineSymbols():
     global _java_type_, _java_file_type_, _dh_config_, _storage_format_, _compression_codec_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.TableManagementTools")
+        _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.ParquetTools")
         _java_file_type_ = jpy.get_type("java.io.File")
         _dh_config_ = jpy.get_type("io.deephaven.configuration.Configuration")
-        _storage_format_ = jpy.get_type("io.deephaven.db.tables.utils.TableManagementTools$StorageFormat")
+        _storage_format_ = jpy.get_type("io.deephaven.db.tables.utils.ParquetTools$StorageFormat")
         _compression_codec_ = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 
 
@@ -251,18 +251,18 @@ def writeTable(*args):
     *Overload 3*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destPath: (java.lang.String) - destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
-      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
+      :param storageFormat: (io.deephaven.db.tables.utils.ParquetTools.StorageFormat) - Format used for storage
       
     *Overload 4*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param dest: (java.io.File) - destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
-      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
+      :param storageFormat: (io.deephaven.db.tables.utils.ParquetTools.StorageFormat) - Format used for storage
       
     *Overload 5*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition.  Will be written to disk as given.
       :param destFile: (java.io.File) - destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
-      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
+      :param storageFormat: (io.deephaven.db.tables.utils.ParquetTools.StorageFormat) - Format used for storage
     """
     
     return _custom_writeTable(*args)
@@ -282,7 +282,7 @@ def writeTables(*args):
       :param sources: (io.deephaven.db.tables.Table[]) - source tables
       :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - table definition
       :param destinations: (java.io.File[]) - destinations
-      :param storageFormat: (io.deephaven.db.tables.utils.TableManagementTools.StorageFormat) - Format used for storage
+      :param storageFormat: (io.deephaven.db.tables.utils.ParquetTools.StorageFormat) - Format used for storage
     """
     
     return _custom_writeTables(*args)

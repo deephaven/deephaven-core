@@ -37,19 +37,19 @@ import java.util.*;
 /**
  * Tools for managing and manipulating tables on disk.
  *
- * Most users will need {@link TableTools} and not {@link TableManagementTools}.
+ * Most users will need {@link TableTools} and not {@link ParquetTools}.
  */
 @SuppressWarnings("WeakerAccess")
-public class TableManagementTools {
+public class ParquetTools {
 
     public enum StorageFormat {
         Parquet
     }
 
-    private TableManagementTools() {
+    private ParquetTools() {
     }
 
-    private static final Logger log = LoggerFactory.getLogger(TableManagementTools.class);
+    private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
     ///////////  Utilities For Table I/O /////////////////
 
@@ -159,7 +159,7 @@ public class TableManagementTools {
         }
         final TableDefinition def = new TableDefinition(cols);
         return isDirectory
-                ? TableManagementTools.readTable(source, readInstructions, def)
+                ? ParquetTools.readTable(source, readInstructions, def)
                 : readTableFromSingleParquetFile(source, readInstructions, def)
                 ;
     }
@@ -171,7 +171,7 @@ public class TableManagementTools {
      * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
      */
     public static void writeTable(Table sourceTable, String destPath) {
-        writeTable(sourceTable, destPath, StorageFormat.Parquet);
+        writeTable(sourceTable, destPath);
     }
 
     /**
@@ -181,43 +181,16 @@ public class TableManagementTools {
      * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
      */
     public static void writeTable(Table sourceTable, File dest) {
-        writeTable(sourceTable, dest, StorageFormat.Parquet);
+        writeTable(sourceTable, dest);
     }
 
     /**
      * Write out a table to disk.
-     *
-     * @param sourceTable source table
-     * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
-     * @param storageFormat Format used for storage
-     */
-    public static void writeTable(Table sourceTable, String destPath, StorageFormat storageFormat) {
-        writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath), storageFormat);
-    }
-
-    /**
-     * Write out a table to disk.
-     *
-     * @param sourceTable source table
-     * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
-     * @param storageFormat Format used for storage
-     */
-    public static void writeTable(Table sourceTable, File dest, StorageFormat storageFormat) {
-        writeTable(sourceTable, sourceTable.getDefinition(), dest, storageFormat);
-    }
-
-    /**
-     * Write out a table to disk.
-     *
-     * @param sourceTable source table
+     *  @param sourceTable source table
      * @param definition table definition.  Will be written to disk as given.
      * @param destFile destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
-     * @param storageFormat Format used for storage
      */
-    public static void writeTable(Table sourceTable, TableDefinition definition, File destFile, StorageFormat storageFormat) {
-        if (storageFormat != StorageFormat.Parquet) {
-            throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
-        }
+    public static void writeTable(Table sourceTable, TableDefinition definition, File destFile) {
         try {
             final String path = destFile.getPath();
             if (path.endsWith(PARQUET_FILE_EXTENSION)) {
@@ -327,7 +300,7 @@ public class TableManagementTools {
                                           @NotNull final File[] destinations, String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         final File[] absoluteDestinations = Arrays.stream(destinations).map(File::getAbsoluteFile).toArray(File[]::new);
-        final File[] firstCreatedDirs = Arrays.stream(absoluteDestinations).map(TableManagementTools::prepareDestination).toArray(File[]::new);
+        final File[] firstCreatedDirs = Arrays.stream(absoluteDestinations).map(ParquetTools::prepareDestination).toArray(File[]::new);
 
         for (int i = 0; i < sources.length; i++) {
             final Table source = sources[i];
@@ -354,27 +327,8 @@ public class TableManagementTools {
     public static void writeTables(@NotNull final Table[] sources,
                                    @NotNull final TableDefinition tableDefinition,
                                    @NotNull final File[] destinations) {
-        writeTables(sources, tableDefinition, destinations, StorageFormat.Parquet);
-    }
-
-    /**
-     * Write out tables to disk.
-     *
-     * @param sources source tables
-     * @param tableDefinition table definition
-     * @param destinations destinations
-     * @param storageFormat Format used for storage
-     */
-    public static void writeTables(@NotNull final Table[] sources,
-                                   @NotNull final TableDefinition tableDefinition,
-                                   @NotNull final File[] destinations,
-                                   StorageFormat storageFormat) {
-        if (StorageFormat.Parquet == storageFormat) {
-            writeParquetTables(sources, tableDefinition, defaultPerquetCompressionCodec, destinations,
-                    tableDefinition.getGroupingColumnNamesArray());
-        } else {
-            throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);
-        }
+        writeParquetTables(sources, tableDefinition, defaultPerquetCompressionCodec, destinations,
+                tableDefinition.getGroupingColumnNamesArray());
     }
 
     /**

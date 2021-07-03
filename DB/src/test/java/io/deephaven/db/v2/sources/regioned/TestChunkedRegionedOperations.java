@@ -11,7 +11,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
@@ -235,7 +235,7 @@ public class TestChunkedRegionedOperations {
         final List<TableLocationMetadataIndex.TableLocationSnapshot> snapshots = new ArrayList<>();
 
         final TableMap partitionedInputData = inputData.byExternal("PC");
-        TableManagementTools.writeParquetTables(
+        ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition,
                 CompressionCodecName.SNAPPY,
@@ -249,7 +249,7 @@ public class TestChunkedRegionedOperations {
         );
 
         final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").byExternal("PC");
-        TableManagementTools.writeParquetTables(
+        ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition,
                 CompressionCodecName.SNAPPY,

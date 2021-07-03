@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 public class PythonStaticGenerator {
     private static final List<String> customTableTools = Arrays.asList("col", "byteCol", "shortCol", "intCol", "longCol",
             "floatCol", "doubleCol", "charCol", "newTable", "colSource", "objColSource");
-    private static final List<String> customTableManagementTools = Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
+    private static final List<String> customParquetTools = Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
     private static final List<String> customTableInputHandler = Arrays.asList("c", "cKey", "getRestrictedColumnNames");
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
@@ -99,8 +99,8 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if((javaClass.equals("io.deephaven.db.tables.utils.TableManagementTools")
-                && customTableManagementTools.contains(methodName)) ||
+        if((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
+                && customParquetTools.contains(methodName)) ||
                 (javaClass.equals("io.deephaven.db.tables.utils.TableTools")
                         && customTableTools.contains(methodName))) {
             endMethod = "    return _custom_" + methodName + "(" + paramString + ")\n";

@@ -21,7 +21,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * QueryScope imported as qs
 
-* TableManagementTools imported as tmt
+* ParquetTools imported as tmt
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
@@ -88,7 +88,7 @@ from . import Calendars as cals, \
     npy, \
     Plot as plt, \
     QueryScope as qs, \
-    TableManagementTools as tmt, \
+    ParquetTools as tmt, \
     TableTools as ttools, \
     TableLoggers as tloggers
 

@@ -4,7 +4,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
@@ -20,8 +20,6 @@ import java.nio.file.Paths;
  * Unit tests for ObjectCodec ColumnSource and AppendableColumn implementations.
  */
 public class TestCodecColumns {
-
-    private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
 
     // TODO: Figure out how to come up with a BigInteger of a specified width.
 //    private static final ColumnDefinition<BigInteger> FIXED_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
@@ -94,8 +92,8 @@ public class TestCodecColumns {
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
-            TableManagementTools.writeTable(TABLE, dir, storageFormat);
-            final Table result = TableManagementTools.readTable(dir);
+            ParquetTools.writeTable(TABLE, dir);
+            final Table result = ParquetTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(EXPECTED_RESULT_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

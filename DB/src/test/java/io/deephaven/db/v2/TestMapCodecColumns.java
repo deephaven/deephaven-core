@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
@@ -22,8 +22,6 @@ import java.util.Map;
  * Unit tests for ObjectCodec ColumnSource and AppendableColumn implementations.
  */
 public class TestMapCodecColumns {
-    private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
-
     private static final ColumnDefinition<Map<String, String>> STRING_MAP_COLUMN_DEFINITION;
     static {
         // noinspection unchecked
@@ -82,9 +80,9 @@ public class TestMapCodecColumns {
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         try {
-            TableManagementTools.writeTable(TABLE, dir, storageFormat);
+            ParquetTools.writeTable(TABLE, dir);
             // TODO (deephaven/deephaven-core/issues/322): Infer the definition
-            final Table result = TableManagementTools.readTable(dir);
+            final Table result = ParquetTools.readTable(dir);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);
