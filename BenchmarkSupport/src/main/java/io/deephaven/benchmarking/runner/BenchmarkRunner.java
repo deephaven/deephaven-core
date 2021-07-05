@@ -57,14 +57,14 @@ public class BenchmarkRunner {
     }
 
     private static void recordResults(Collection<RunResult> results) {
-        if(results.isEmpty()) {
+        if (results.isEmpty()) {
             return;
         }
 
         // Write an in mem table, load the per iteration tables, nj them, write to disk
         final TableBuilder builder = new TableBuilder(RESULT_TABLE_DEF);
         int runNo = 0;
-        for(final RunResult runResult : results) {
+        for (final RunResult runResult : results) {
             final BenchmarkParams runParams = runResult.getParams();
             final String paramString = BenchmarkTools.buildParameterString(runParams);
             final String benchmarkName = BenchmarkTools.getStrippedBenchmarkName(runParams);
@@ -93,13 +93,15 @@ public class BenchmarkRunner {
         final Table mergedDetails = getMergedDetails();
         final Table result = topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
 
-        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark");
+        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark.parquet");
 
         ParquetTools.writeTable(result, result.getDefinition(), outputPath.toFile());
     }
 
     private static Table getMergedDetails() {
-        final File[] files = FileUtils.missingSafeListFiles(new File(BenchmarkTools.getLogPath()), file -> file.getName().startsWith("Details."));
+        final File[] files = FileUtils.missingSafeListFiles(
+                new File(BenchmarkTools.getLogPath()),
+                file -> file.getName().startsWith(BenchmarkTools.DETAIL_LOG_PREFIX));
         Arrays.sort(files, Utils.getModifiedTimeComparator(false));
 
         boolean OK;

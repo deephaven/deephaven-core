@@ -39,7 +39,7 @@ public class TableBenchmarkState {
 
     public void logOutput() throws IOException {
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
-                                     .resolve(BenchmarkTools.getDetailLogPrefix(benchmarkName));
+                                     .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ".parquet");
 
         final Table output = outputBuilder.build();
         ParquetTools.writeTable(output, RESULT_DEF, outputPath.toFile());
