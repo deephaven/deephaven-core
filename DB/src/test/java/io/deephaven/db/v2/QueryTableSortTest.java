@@ -698,9 +698,11 @@ public class QueryTableSortTest extends QueryTableTestBase {
         QueryScope.addParam("booleans", booleans);
 
         final Table source = emptyTable(10).updateView("Sentinel=i", "Symbol=syms[i % syms.length]", "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]");
+        testDirectory.mkdirs();
+        final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, definition, testDirectory);
-            final Table table = ParquetTools.readTable(testDirectory);
+            ParquetTools.writeTable(source, definition, dest);
+            final Table table = ParquetTools.readTable(dest);
             testFunction.accept(table);
             table.close();
         } finally {

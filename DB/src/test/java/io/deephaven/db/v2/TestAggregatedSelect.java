@@ -65,8 +65,10 @@ public class TestAggregatedSelect extends TestCase {
             bidSize[ii] =  ii;
         }
 
-        ParquetTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, tableDirectory);
-        return ParquetTools.readTable(tableDirectory);
+        tableDirectory.mkdirs();
+        final File dest = new File(tableDirectory, "Table.parquet");
+        ParquetTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, dest);
+        return ParquetTools.readTable(dest);
     }
 
     Table doAggregatedQuery() {

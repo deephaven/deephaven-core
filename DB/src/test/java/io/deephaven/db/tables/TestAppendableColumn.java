@@ -29,9 +29,10 @@ public class TestAppendableColumn extends TestCase {
 
             final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
             Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
-            ParquetTools.writeTable(table, tableDefinition, directory);
+            File dest = new File(directory, "testOverflow.parquet");
+            ParquetTools.writeTable(table, tableDefinition, dest);
 
-            Table tableR = ParquetTools.readTable(directory);
+            Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
             assertNotNull(tableR.getColumnSource("v").getGroupToRange());
             assertEquals(320000, tableR.getIndex().size());

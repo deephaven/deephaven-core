@@ -245,13 +245,13 @@ public class TestParquetTools {
             //TODO: Remove when come up with a workaround for Windows file handling issues.
             return;
         }
-        File path = new File(testRoot + File.separator + "Table1");
-        ParquetTools.writeTable(table1, path);
-        Table result = ParquetTools.readTable(new File(testRoot + File.separator + "Table1"));
+        File dest = new File(testRoot + File.separator + "Table1.parquet");
+        ParquetTools.writeTable(table1, dest);
+        Table result = ParquetTools.readTable(dest);
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
-        ParquetTools.deleteTable(path);
-        TestCase.assertFalse(path.exists());
+        ParquetTools.deleteTable(dest);
+        TestCase.assertFalse(dest.exists());
     }
 
     private Table getAggregatedResultTable() {

@@ -91,9 +91,10 @@ public class TestCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
+        final File dest = new File(dir, "Test.parquet");
         try {
-            ParquetTools.writeTable(TABLE, dir);
-            final Table result = ParquetTools.readTable(dir);
+            ParquetTools.writeTable(TABLE, dest);
+            final Table result = ParquetTools.readTable(dest);
             TableTools.show(result);
             TestCase.assertEquals(EXPECTED_RESULT_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

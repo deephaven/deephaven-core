@@ -79,10 +79,10 @@ public class TestMapCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
+        final File dest = new File(dir, "Table.parquet");
         try {
-            ParquetTools.writeTable(TABLE, dir);
-            // TODO (deephaven/deephaven-core/issues/322): Infer the definition
-            final Table result = ParquetTools.readTable(dir);
+            ParquetTools.writeTable(TABLE, dest);
+            final Table result = ParquetTools.readTable(dest);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);
