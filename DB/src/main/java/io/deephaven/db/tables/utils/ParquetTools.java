@@ -111,7 +111,7 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readParquetTable(new File(sourceFilePath), !sourceFilePath.endsWith(PARQUET_FILE_EXTENSION));
+        return readParquetTableImpl(new File(sourceFilePath), !sourceFilePath.endsWith(PARQUET_FILE_EXTENSION));
     }
 
     /**
@@ -121,7 +121,7 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFilePath) {
-        return readParquetTable(sourceFilePath, !sourceFilePath.getPath().endsWith(PARQUET_FILE_EXTENSION));
+        return readParquetTableImpl(sourceFilePath, !sourceFilePath.getPath().endsWith(PARQUET_FILE_EXTENSION));
     }
 
     private static Class<?> dbArrayType(final Class<?> componentTypeFromParquet) {
@@ -149,8 +149,8 @@ public class ParquetTools {
         if (componentTypeFromParquet.equals(short.class)) {
             return DbShortArray.class;
         }
-        if (componentTypeFromParquet.equals(boolean.class)) {
-            return DbBooleanArray.class;
+        if (componentTypeFromParquet.equals(Boolean.class)) {
+            return DbArray.class;
         }
         return null;
     }
@@ -164,7 +164,7 @@ public class ParquetTools {
         }
     }
 
-    private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
+    private static Table readParquetTableImpl(@NotNull final File source, final boolean isDirectory) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =

@@ -124,7 +124,7 @@ public class TestParquetTools {
 
     @Test
     public void testWriteTable() {
-        String path = testRoot + File.separator + "Table1";
+        String path = testRoot + File.separator + "Table1.parquet";
         ParquetTools.writeTable(table1, path);
         Table result = ParquetTools.readTable(new File(path));
         TableTools.show(result);
@@ -139,7 +139,7 @@ public class TestParquetTools {
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
                 "toS(enumC_[(i+1)% 10]))");
-        path = testRoot + File.separator + "Table2";
+        path = testRoot + File.separator + "Table2.parquet";
         ParquetTools.writeTable(test, path);
         Table test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
@@ -153,7 +153,7 @@ public class TestParquetTools {
         test2.close();
 
         test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
-        path = testRoot + File.separator + "Table3";
+        path = testRoot + File.separator + "Table3.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
@@ -167,7 +167,7 @@ public class TestParquetTools {
             ColumnDefinition.ofString("aString").withGrouping()),
             col("anInt", 1, 2, 3),
             col("aString", "ab", "ab", "bc"));
-        path = testRoot + File.separator + "Table4";
+        path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(new File(path));
         assertNotNull(test2.getColumnSource("aString").getGroupToRange());
@@ -270,7 +270,7 @@ public class TestParquetTools {
 
     @Test
     public void testWriteAggregatedTable() {
-        String path = testRoot + File.separator + "testWriteAggregatedTable";
+        String path = testRoot + File.separator + "testWriteAggregatedTable.parquet";
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
         ParquetTools.writeTable(table, def, new File(path));

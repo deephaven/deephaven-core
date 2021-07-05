@@ -31,7 +31,7 @@ public class TestDbArrayUngroup {
     }
 
     @Test
-    public void testUngroup() throws IOException {
+    public void testUngroup() {
         final Table theTable = TableTools.emptyTable(20).update("A=`a`+i%10", "B=`b`+i%5", "C=`i`+i");
         assertEquals(String.class, theTable.getDefinition().getColumn("C").getDataType());
 
@@ -42,8 +42,9 @@ public class TestDbArrayUngroup {
         final Table ungroupedTable = groupedTable.ungroup();
         assertEquals(String.class, ungroupedTable.getDefinition().getColumn("C").getDataType());
 
-        ParquetTools.writeTable(groupedTable, dataDirectory);
-        final Table actual = ParquetTools.readTable(dataDirectory, groupedTable.getDefinition());
+        File dest = new File(dataDirectory, "testUngroup.parquet");
+        ParquetTools.writeTable(groupedTable, dest);
+        final Table actual = ParquetTools.readTable(dest, groupedTable.getDefinition());
 
         assertTrue(DbArray.class.isAssignableFrom(actual.getDefinition().getColumn("C").getDataType()));
         assertEquals(String.class, actual.getDefinition().getColumn("C").getComponentType());
