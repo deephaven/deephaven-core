@@ -144,13 +144,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     /**
-     * {@link DbArrayBase} class for each type.
-     * Note that {@link DbBooleanArray} is deprecated, superseded by {@link DbArray}.
-     */
-    private static final SimpleTypeMap<Class<? extends DbArrayBase>> COMPONENT_TYPE_TO_DBARRAY_TYPE = SimpleTypeMap.create(
-            DbArray.class, DbCharArray.class, DbByteArray.class, DbShortArray.class, DbIntArray.class, DbLongArray.class, DbFloatArray.class, DbDoubleArray.class, DbArray.class);
-
-    /**
      * Base component type class for each {@link DbArrayBase} type.
      * Note that {@link DbBooleanArray} is deprecated, superseded by {@link DbArray}.
      */
@@ -635,5 +628,4 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
         out.writeInt(objectWidth);
     }
-
 }

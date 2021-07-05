@@ -69,6 +69,6 @@ public class TableBenchmarkState {
     }
 
     static Table readBin(File directory) {
-        return ParquetTools.readTable(directory, RESULT_DEF);
+        return ParquetTools.readTable(directory);
     }
 }

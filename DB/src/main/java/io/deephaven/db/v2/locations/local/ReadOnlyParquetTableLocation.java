@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, ParquetColumnLocation<Attributes.Values>> implements ParquetFormatTableLocation<ParquetColumnLocation<Attributes.Values>> {
 
@@ -40,7 +41,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private final SeekableChannelsProvider cachedChannelProvider = new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()),
             Configuration.getInstance().getIntegerForClassWithDefault(ReadOnlyParquetTableLocation.class, "maxChannels", 100));
 
-    private final File parentDir;
+    private final File parquetFile;
 
     private static class GroupingFile {
         RowGroupReader reader;
@@ -59,8 +60,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, supportsSubscriptions);
         this.readInstructions = readInstructions;
+        this.parquetFile = parquetFile;
         try {
-            parentDir = parquetFile.getParentFile();
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
             rowGroupReader = parquetFileReader.getRowGroup(0);
 
@@ -122,8 +123,10 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private GroupingFile getGroupingFile(String name) {
         return groupingFiles.computeIfAbsent(name,(n)->{
             GroupingFile groupingFile = new GroupingFile();
+            final Function<String, String> defaultGroupingFilenameByColumnName =
+                    ParquetTableWriter.defaultGroupingFileName(parquetFile.getAbsolutePath());
             try {
-                ParquetFileReader parquetFileReader = new ParquetFileReader(parentDir.getAbsolutePath() + "/" + ParquetTableWriter.defaultGroupingFileName.apply(n), cachedChannelProvider, -1);
+                ParquetFileReader parquetFileReader = new ParquetFileReader(defaultGroupingFilenameByColumnName.apply(n), cachedChannelProvider, -1);
                 groupingFile.reader = parquetFileReader.getRowGroup(0);
                 groupingFile.keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
             } catch (IOException e) {

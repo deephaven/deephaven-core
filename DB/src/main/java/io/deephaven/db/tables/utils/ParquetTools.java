@@ -5,9 +5,12 @@
 package io.deephaven.db.tables.utils;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.dbarrays.*;
+import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByParquetFile;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetReaderUtil;
@@ -41,10 +44,6 @@ import java.util.*;
  */
 @SuppressWarnings("WeakerAccess")
 public class ParquetTools {
-
-    public enum StorageFormat {
-        Parquet
-    }
 
     private ParquetTools() {
     }
@@ -125,13 +124,68 @@ public class ParquetTools {
         return readParquetTable(sourceFilePath, !sourceFilePath.getPath().endsWith(PARQUET_FILE_EXTENSION));
     }
 
+    private static Class<?> dbArrayType(final Class<?> componentTypeFromParquet) {
+        if (componentTypeFromParquet == null) {
+            return null;
+        }
+        if (componentTypeFromParquet.equals(int.class)) {
+            return DbIntArray.class;
+        }
+        if (componentTypeFromParquet.equals(long.class)) {
+            return DbLongArray.class;
+        }
+        if (componentTypeFromParquet.equals(byte.class)) {
+            return DbByteArray.class;
+        }
+        if (componentTypeFromParquet.equals(double.class)) {
+            return DbDoubleArray.class;
+        }
+        if (componentTypeFromParquet.equals(float.class)) {
+            return DbFloatArray.class;
+        }
+        if (componentTypeFromParquet.equals(char.class)) {
+            return DbCharArray.class;
+        }
+        if (componentTypeFromParquet.equals(short.class)) {
+            return DbShortArray.class;
+        }
+        if (componentTypeFromParquet.equals(boolean.class)) {
+            return DbBooleanArray.class;
+        }
+        return null;
+    }
+
+    private static Class<?> loadClass(final String colName, final String desc, final String className) {
+        try {
+            return ClassUtil.lookupClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new UncheckedDeephavenException(
+                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader.");
+        }
+    }
+
     private static Table readParquetTable(@NotNull final File source, final boolean isDirectory) {
+        // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
-                (final String name, final Class<?> dataType, Class<?> componentType,
-                 final boolean isGrouping, final String codecName, final String codecArgs) -> {
+                (final String name, final Class<?> typeFromParquet, final String dbSpecialType, final boolean isLegacyType, final boolean isArray,
+                 final boolean isGrouping, final String codecName, final String codecArgs, final String codecType, final String codecComponentType) -> {
+                    Class<?> baseType;
+                    if (typeFromParquet != null && typeFromParquet.equals(boolean.class)) {
+                        baseType = Boolean.class;
+                    } else {
+                        baseType = typeFromParquet;
+                    }
                     final ColumnDefinition<?> colDef;
                     if (codecName != null) {
+                        Class<?> dataType = baseType;
+                        Class<?> componentType = null;
+                        if (codecType != null && !codecType.isEmpty()) {
+                            if (codecComponentType != null && !codecComponentType.isEmpty()) {
+                                componentType = loadClass(name, "codecComponentType", codecComponentType);
+                            }
+                            dataType = loadClass(name, "codecType", codecType);
+                        }
                         final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
                         final int width = codec.expectedObjectWidth();
                         if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
@@ -139,8 +193,34 @@ public class ParquetTools {
                         } else {
                             colDef = ColumnDefinition.ofVariableWidthCodec(name, dataType, componentType, codecName, codecArgs);
                         }
+                    } else if (dbSpecialType != null) {
+                        if (dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                            colDef = ColumnDefinition.fromGenericType(name, StringSet.class, null);
+                        } else if (dbSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                            final Class<?> dbArrayType = dbArrayType(baseType);
+                            if (dbArrayType != null) {
+                                colDef = ColumnDefinition.fromGenericType(name, dbArrayType, baseType);
+                            } else {
+                               throw new UncheckedDeephavenException("Unhandled dbArrayType=" +
+                                       ((baseType == null) ? "null" : baseType.getSimpleName()));
+                            }
+                        } else {
+                            throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + dbSpecialType);
+                        }
                     } else {
-                        colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
+                        if (!StringSet.class.isAssignableFrom(baseType) && isArray) {
+                            if (baseType.equals(byte.class) && isLegacyType) {
+                                colDef = ColumnDefinition.fromGenericType(name, byte[].class, byte.class);
+                            } else {
+                                // TODO: ParquetInstruction.loadAsDbArray
+                                final Class<?> componentType = baseType;
+                                // On Java 12, replace by:  dataType = componentType.arrayType();
+                                final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
+                                colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
+                            }
+                        } else {
+                            colDef = ColumnDefinition.fromGenericType(name, baseType, null);
+                        }
                     }
                     cols.add(isGrouping ? colDef.withGrouping() : colDef);
                 };
@@ -171,7 +251,7 @@ public class ParquetTools {
      * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
      */
     public static void writeTable(Table sourceTable, String destPath) {
-        writeTable(sourceTable, destPath);
+        writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath));
     }
 
     /**
@@ -181,7 +261,7 @@ public class ParquetTools {
      * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
      */
     public static void writeTable(Table sourceTable, File dest) {
-        writeTable(sourceTable, dest);
+        writeTable(sourceTable, sourceTable.getDefinition(), dest);
     }
 
     /**
@@ -190,14 +270,21 @@ public class ParquetTools {
      * @param definition table definition.  Will be written to disk as given.
      * @param destFile destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
      */
-    public static void writeTable(Table sourceTable, TableDefinition definition, File destFile) {
+    public static void writeTable(final Table sourceTable, final TableDefinition definition, final File destFile) {
         try {
             final String path = destFile.getPath();
+            final String[] groupingColumns = definition.getGroupingColumnNamesArray();
             if (path.endsWith(PARQUET_FILE_EXTENSION)) {
-                ParquetTableWriter.write(
-                        sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), defaultPerquetCompressionCodec);
+                if (groupingColumns.length > 0) {
+                    ParquetTableWriter.write(
+                            sourceTable, path, Collections.emptyMap(), defaultPerquetCompressionCodec, sourceTable.getDefinition().getWritable(),
+                            ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
+                } else {
+                    ParquetTableWriter.write(
+                            sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), defaultPerquetCompressionCodec);
+                }
             } else {
-                writeParquetTable(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
+                writeParquetTable(sourceTable, definition, defaultPerquetCompressionCodec, destFile, groupingColumns);
             }
         } catch (Exception e) {
             throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
@@ -241,8 +328,14 @@ public class ParquetTools {
             final String[] groupingColumns) {
         final String basePath = destinationDir.getPath();
         try {
-            ParquetTableWriter.write(source, defaultParquetPath(basePath), Collections.emptyMap(), codecName, tableDefinition.getWritable(),
-                    c -> basePath + File.separator + ParquetTableWriter.defaultGroupingFileName.apply(c), groupingColumns);
+            ParquetTableWriter.write(
+                    source,
+                    defaultParquetPath(basePath),
+                    Collections.emptyMap(),
+                    codecName,
+                    tableDefinition.getWritable(),
+                    ParquetTableWriter.defaultGroupingFileName(basePath),
+                    groupingColumns);
         } catch (Exception e) {
             throw new RuntimeException("Error in table writing", e);
         }
