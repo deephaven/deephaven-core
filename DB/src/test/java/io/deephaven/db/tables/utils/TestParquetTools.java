@@ -177,8 +177,9 @@ public class TestParquetTools {
 
     @Test
     public void testWriteTableEmpty() {
-        ParquetTools.writeTable(emptyTable, new File(testRoot + File.separator + "Empty"));
-        Table result = ParquetTools.readTable(new File(testRoot + File.separator + "Empty"));
+        final File dest =  new File(testRoot + File.separator + "Empty.parquet");
+        ParquetTools.writeTable(emptyTable, dest);
+        Table result = ParquetTools.readTable(dest);
         TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
     }
@@ -216,9 +217,12 @@ public class TestParquetTools {
 
         new File(testRoot + File.separator + "Table1").mkdirs();
         new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
-        ParquetTools.writeTable(table1, new File(testRoot + File.separator + "Table1"));
-        TestCase.assertFalse(new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").exists());
-
+        try {
+            ParquetTools.writeTable(table1, new File(testRoot + File.separator + "Table1"));
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException e) {
+            //Expected
+        }
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
             ParquetTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
