@@ -266,44 +266,50 @@ public class ParquetTools {
 
     /**
      * Write out a table to disk.
-     *  @param sourceTable source table
+     * @param sourceTable source table
      * @param definition table definition.  Will be written to disk as given.
-     * @param destFile destination file; if its path ends in ".parquet", it is assumed to be a single file location path, otherwise a directory.
+     * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created.
      */
     public static void writeTable(final Table sourceTable, final TableDefinition definition, final File destFile) {
+        File firstCreated = prepareDestinationFileLocation(destFile);
         try {
-            final String path = destFile.getPath();
-            final String[] groupingColumns = definition.getGroupingColumnNamesArray();
-            if (path.endsWith(PARQUET_FILE_EXTENSION)) {
-                if (groupingColumns.length > 0) {
-                    ParquetTableWriter.write(
-                            sourceTable, path, Collections.emptyMap(), defaultPerquetCompressionCodec, sourceTable.getDefinition().getWritable(),
-                            ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
-                } else {
-                    ParquetTableWriter.write(
-                            sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), defaultPerquetCompressionCodec);
-                }
-            } else {
-                writeParquetTable(sourceTable, definition, defaultPerquetCompressionCodec, destFile, groupingColumns);
-            }
+            writeParquetTableImpl(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
         } catch (Exception e) {
-            throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
+            if (firstCreated != null) {
+                FileUtils.deleteRecursivelyOnNFS(firstCreated);
+            }
+            throw e;
         }
     }
 
     /**
-     * Delete the destination directory if it exists, then make the destination directory and any missing parent
-     * directories, returning the first created for later rollback.
+     * Make the parent directory of destination if it does not exist, and any missing parents.
      *
-     * @param destination The destination directory
-     * @return The first created directory
+     * @param destination The destination file
+     * @return The first created directory, or null, if no directories were made.
      */
-    static File prepareDestination(@NotNull File destination) {
+    public static File prepareDestinationFileLocation(@NotNull File destination) {
         destination = destination.getAbsoluteFile();
-        if (destination.exists()) {
-            FileUtils.deleteRecursivelyOnNFS(destination);
+        if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
+            throw new UncheckedDeephavenException("Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension.");
         }
-        File firstCreated = destination;
+        if (destination.exists()) {
+            if (destination.isDirectory()) {
+                throw new UncheckedDeephavenException("Destination " + destination + " exists and is a directory.");
+            }
+            if (!destination.canWrite()) {
+                throw new UncheckedDeephavenException("Destination " + destination + " exists but is not writable.");
+            }
+            return null;
+        }
+        final File firstParent = destination.getParentFile();
+        if (firstParent.exists()) {
+            if (firstParent.canWrite()) {
+                return null;
+            }
+            throw new UncheckedDeephavenException("Destination " + destination + " has non writable parent directory.");
+        }
+        File firstCreated = firstParent;
         File parent;
         for (parent = destination.getParentFile(); parent != null && !parent.exists(); parent = parent.getParentFile()) {
             firstCreated = parent;
@@ -314,64 +320,31 @@ public class ParquetTools {
         if (!parent.isDirectory()) {
             throw new IllegalArgumentException("Existing parent file " + parent + " of " + destination + " is not a directory");
         }
-        if (!destination.mkdirs()) {
-            throw new RuntimeException("Couldn't (re)create destination directory " + destination);
+        if (!firstParent.mkdirs()) {
+            throw new UncheckedDeephavenException("Couldn't (re)create destination directory " + firstParent);
         }
         return firstCreated;
     }
 
     private static void writeParquetTableImpl(
-            final Table source,
-            final TableDefinition tableDefinition,
+            final Table sourceTable,
+            final TableDefinition definition,
             final CompressionCodecName codecName,
-            final File destinationDir,
+            final File destFile,
             final String[] groupingColumns) {
-        final String basePath = destinationDir.getPath();
+        final String path = destFile.getPath();
         try {
-            ParquetTableWriter.write(
-                    source,
-                    defaultParquetPath(basePath),
-                    Collections.emptyMap(),
-                    codecName,
-                    tableDefinition.getWritable(),
-                    ParquetTableWriter.defaultGroupingFileName(basePath),
-                    groupingColumns);
-        } catch (Exception e) {
-            throw new RuntimeException("Error in table writing", e);
+            if (groupingColumns.length > 0) {
+                ParquetTableWriter.write(
+                        sourceTable, path, Collections.emptyMap(), codecName, definition,
+                        ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
+            } else {
+                ParquetTableWriter.write(
+                        sourceTable, definition, path, Collections.emptyMap(), codecName);
+            }
         }
-    }
-
-    private static String defaultParquetPath(final String dirPath) {
-        return dirPath + File.separator + ParquetTableWriter.PARQUET_FILE_NAME;
-    }
-
-    /**
-     * Writes a table to disk in parquet format under a given destination.  If you specify grouping columns, there
-     * must already be grouping information for those columns in the source.  This can be accomplished with
-     * {@code .by(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
-     *
-     * @param source          The table to write
-     * @param tableDefinition The schema for the tables to write
-     * @param codecName       Compression codec to use.
-     *
-     * @param destinationDir     The destination path
-     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
-     */
-    public static void writeParquetTable(
-            @NotNull final Table source,
-            @NotNull final TableDefinition tableDefinition,
-            final CompressionCodecName codecName,
-            @NotNull final File destinationDir,
-            final String[] groupingColumns) {
-        final File firstCreatedDir = prepareDestination(destinationDir.getAbsoluteFile());
-
-        try {
-            writeParquetTableImpl(source, tableDefinition, codecName, destinationDir, groupingColumns);
-        } catch (RuntimeException e) {
-            log.error("Error in table writing, cleaning up potentially incomplete table destination path starting from " +
-                    firstCreatedDir.getAbsolutePath(), e);
-            FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
-            throw e;
+        catch (Exception e) {
+            throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
         }
     }
 
@@ -393,7 +366,7 @@ public class ParquetTools {
                                           @NotNull final File[] destinations, String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         final File[] absoluteDestinations = Arrays.stream(destinations).map(File::getAbsoluteFile).toArray(File[]::new);
-        final File[] firstCreatedDirs = Arrays.stream(absoluteDestinations).map(ParquetTools::prepareDestination).toArray(File[]::new);
+        final File[] firstCreatedDirs = Arrays.stream(absoluteDestinations).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
 
         for (int i = 0; i < sources.length; i++) {
             final Table source = sources[i];

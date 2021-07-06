@@ -14,15 +14,15 @@ import java.util.function.Consumer;
  */
 public class StandaloneLocalTableLocationScanner implements LocalTableLocationProviderByScanner.Scanner {
 
-    private final File tableDirectory;
+    private final File tableParentDirectory;
 
-    public StandaloneLocalTableLocationScanner(@NotNull final File tableDirectory) {
-        this.tableDirectory = Require.neqNull(tableDirectory, "tableDirectory");
+    public StandaloneLocalTableLocationScanner(@NotNull final File tableParentDirectory) {
+        this.tableParentDirectory = Require.neqNull(tableParentDirectory, "tableParentDirectory");
     }
 
     @Override
     public String toString() {
-        return "StandaloneLocalTableLocationScanner[" + tableDirectory + ']';
+        return "StandaloneLocalTableLocationScanner[" + tableParentDirectory + ']';
     }
 
     @Override
@@ -31,10 +31,10 @@ public class StandaloneLocalTableLocationScanner implements LocalTableLocationPr
     }
 
     @Override
-    public File computeLocationDirectory(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
+    public String computeLocationBasePath(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
         if (TableLocationKey.COMPARATOR.compare(locationKey, SimpleTableLocationKey.getInstance()) != 0) {
             throw new UnsupportedOperationException(this + ": Unsupported location key: " + locationKey);
         }
-        return tableDirectory;
+        return tableParentDirectory.getAbsolutePath() + File.separatorChar + tableKey.getTableName();
     }
 }

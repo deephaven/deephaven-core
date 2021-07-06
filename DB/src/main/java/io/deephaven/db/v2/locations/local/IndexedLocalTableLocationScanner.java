@@ -36,11 +36,11 @@ public class IndexedLocalTableLocationScanner implements LocalTableLocationProvi
     }
 
     @Override
-    public File computeLocationDirectory(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
-        return new File(tableRootDirectory,
-                locationKey.getInternalPartition().toString()
-                        + File.separatorChar + locationKey.getColumnPartition().toString()
-                        + File.separatorChar + tableKey.getTableName().toString());
+    public String computeLocationBasePath(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
+        return tableRootDirectory.getAbsolutePath()
+                + File.separatorChar + locationKey.getInternalPartition().toString()
+                + File.separatorChar + locationKey.getColumnPartition().toString()
+                + File.separatorChar + tableKey.getTableName().toString();
     }
 
     @Override
