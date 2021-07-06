@@ -64,7 +64,6 @@ public class ParquetTableWriter {
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
-    public static final String PARQUET_FILE_NAME = "table" + PARQUET_FILE_EXTENSION;
 
     private static String minusParquetSuffix(final String s) {
         if (s.endsWith(PARQUET_FILE_EXTENSION)) {

@@ -209,12 +209,13 @@ public class ParquetReaderUtil {
                     if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                         return Optional.of(StringSet.class);
                     }
-                    throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
-                            + " for column " + Arrays.toString(column.getPath())
-                            + " with unknown or incompatible special type " + specialType);
-                } else {
-                    return Optional.of(String.class);
+                    if (!specialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                        throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
+                                + " for column " + Arrays.toString(column.getPath())
+                                + " with unknown or incompatible special type " + specialType);
+                    }
                 }
+                return Optional.of(String.class);
             }
 
             @Override

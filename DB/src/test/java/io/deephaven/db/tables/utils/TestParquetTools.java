@@ -274,7 +274,7 @@ public class TestParquetTools {
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
         ParquetTools.writeTable(table, def, new File(path));
-        Table readBackTable = ParquetTools.readTable(new File(path), def);
+        Table readBackTable = ParquetTools.readTable(new File(path));
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();

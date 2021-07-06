@@ -44,7 +44,7 @@ public class TestDbArrayUngroup {
 
         File dest = new File(dataDirectory, "testUngroup.parquet");
         ParquetTools.writeTable(groupedTable, dest);
-        final Table actual = ParquetTools.readTable(dest, groupedTable.getDefinition());
+        final Table actual = ParquetTools.readTable(dest);
 
         assertTrue(DbArray.class.isAssignableFrom(actual.getDefinition().getColumn("C").getDataType()));
         assertEquals(String.class, actual.getDefinition().getColumn("C").getComponentType());
