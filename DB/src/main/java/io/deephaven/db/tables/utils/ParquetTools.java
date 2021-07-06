@@ -29,6 +29,7 @@ import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.codec.ObjectDecoder;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
+import scala.reflect.internal.util.TableDef;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
@@ -64,7 +65,7 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readParquetTableImpl(new File(sourceFilePath));
+        return readParquetSchemanAndTable(new File(sourceFilePath));
     }
 
     /**
@@ -74,14 +75,37 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetTableImpl(sourceFile);
+        return readParquetSchemanAndTable(sourceFile);
+    }
+
+    /**
+     * Reads in a table from disk, using the provided table definition.
+     *
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param def table definition
+     * @return table
+     */
+    public static Table readTable(@NotNull final String sourceFilePath, final TableDefinition def) {
+        return readTableFromSingleParquetFile(new File(sourceFilePath), ParquetInstructions.EMPTY, def);
+    }
+
+    /**
+     * Reads in a table from disk, using the provided table definition.
+     *
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param def table definition
+     * @return table
+     */
+    public static Table readTable(@NotNull final File sourceFile, final TableDefinition def) {
+        return readTableFromSingleParquetFile(sourceFile, ParquetInstructions.EMPTY, def);
     }
 
     /**
      * Write out a table to disk.
      *
      * @param sourceTable source table
-     * @param destPath destination file path; if it ends in ".parquet", it is assumed to be a file, otherwise a directory.
+     * @param destPath destination file path; the file name should end in ".parquet" extension.
+     *                 If the path includes non-existing directories they are created.
      */
     public static void writeTable(Table sourceTable, String destPath) {
         writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath));
@@ -91,7 +115,8 @@ public class ParquetTools {
      * Write out a table to disk.
      *
      * @param sourceTable source table
-     * @param dest destination; if its path ends in ".parquet", it is assumed to be a single file location, otherwise a directory.
+     * @param dest destination file; the file name should end in ".parquet" extension.
+     *             If the path includes non-existing directories they are created.
      */
     public static void writeTable(Table sourceTable, File dest) {
         writeTable(sourceTable, sourceTable.getDefinition(), dest);
@@ -104,7 +129,7 @@ public class ParquetTools {
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created.
      */
     public static void writeTable(final Table sourceTable, final TableDefinition definition, final File destFile) {
-        File firstCreated = prepareDestinationFileLocation(destFile);
+        final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
         } catch (Exception e) {
@@ -121,7 +146,7 @@ public class ParquetTools {
      * @param destination The destination file
      * @return The first created directory, or null, if no directories were made.
      */
-    public static File prepareDestinationFileLocation(@NotNull File destination) {
+    private static File prepareDestinationFileLocation(@NotNull File destination) {
         destination = destination.getAbsoluteFile();
         if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
             throw new UncheckedDeephavenException("Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension.");
@@ -176,8 +201,14 @@ public class ParquetTools {
                                           final CompressionCodecName codecName,
                                           @NotNull final File[] destinations, String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
-        final File[] absoluteDestinations = Arrays.stream(destinations).map(File::getAbsoluteFile).toArray(File[]::new);
-        final File[] firstCreatedDirs = Arrays.stream(absoluteDestinations).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
+        final File[] absoluteDestinations =
+                Arrays.stream(destinations)
+                        .map(File::getAbsoluteFile)
+                        .toArray(File[]::new);
+        final File[] firstCreatedDirs =
+                Arrays.stream(absoluteDestinations)
+                        .map(ParquetTools::prepareDestinationFileLocation)
+                        .toArray(File[]::new);
 
         for (int i = 0; i < sources.length; i++) {
             final Table source = sources[i];
@@ -218,13 +249,15 @@ public class ParquetTools {
     }
 
     private static Table readTableFromSingleParquetFile(
-            @NotNull final File sourceFile, final ParquetInstructions readInstructions, @NotNull final TableDefinition tableDefinition) {
+            @NotNull final File sourceFile,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
         final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
                 StandaloneTableKey.getInstance(),
                 sourceFile,
                 false,
                 TableDataRefreshService.getSharedRefreshService(),
-                readInstructions != null ? readInstructions : ParquetInstructions.EMPTY);
+                readInstructions);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
@@ -269,65 +302,69 @@ public class ParquetTools {
         }
     }
 
-    private static Table readParquetTableImpl(@NotNull final File source) {
+    private static ParquetReaderUtil.ColumnDefinitionConsumer makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> cols) {
+        return (final String name, final Class<?> typeFromParquet, final String dbSpecialType, final boolean isLegacyType, final boolean isArray,
+                final boolean isGrouping, final String codecName, final String codecArgs, final String codecType, final String codecComponentType) -> {
+            Class<?> baseType;
+            if (typeFromParquet != null && typeFromParquet.equals(boolean.class)) {
+                baseType = Boolean.class;
+            } else {
+                baseType = typeFromParquet;
+            }
+            final ColumnDefinition<?> colDef;
+            if (codecName != null) {
+                Class<?> dataType = baseType;
+                Class<?> componentType = null;
+                if (codecType != null && !codecType.isEmpty()) {
+                    if (codecComponentType != null && !codecComponentType.isEmpty()) {
+                        componentType = loadClass(name, "codecComponentType", codecComponentType);
+                    }
+                    dataType = loadClass(name, "codecType", codecType);
+                }
+                final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
+                final int width = codec.expectedObjectWidth();
+                if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
+                    colDef = ColumnDefinition.ofFixedWidthCodec(name, dataType, componentType, codecName, codecArgs, width);
+                } else {
+                    colDef = ColumnDefinition.ofVariableWidthCodec(name, dataType, componentType, codecName, codecArgs);
+                }
+            } else if (dbSpecialType != null) {
+                if (dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    colDef = ColumnDefinition.fromGenericType(name, StringSet.class, null);
+                } else if (dbSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                    final Class<?> dbArrayType = dbArrayType(baseType);
+                    if (dbArrayType != null) {
+                        colDef = ColumnDefinition.fromGenericType(name, dbArrayType, baseType);
+                    } else {
+                        colDef = ColumnDefinition.fromGenericType(name, DbArray.class, baseType);
+                    }
+                } else {
+                    throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + dbSpecialType);
+                }
+            } else {
+                if (!StringSet.class.isAssignableFrom(baseType) && isArray) {
+                    if (baseType.equals(byte.class) && isLegacyType) {
+                        colDef = ColumnDefinition.fromGenericType(name, byte[].class, byte.class);
+                    } else {
+                        // TODO: ParquetInstruction.loadAsDbArray
+                        final Class<?> componentType = baseType;
+                        // On Java 12, replace by:  dataType = componentType.arrayType();
+                        final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
+                        colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
+                    }
+                } else {
+                    colDef = ColumnDefinition.fromGenericType(name, baseType, null);
+                }
+            }
+            cols.add(isGrouping ? colDef.withGrouping() : colDef);
+        };
+    }
+
+    private static Table readParquetSchemanAndTable(@NotNull final File source) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
-        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer =
-                (final String name, final Class<?> typeFromParquet, final String dbSpecialType, final boolean isLegacyType, final boolean isArray,
-                 final boolean isGrouping, final String codecName, final String codecArgs, final String codecType, final String codecComponentType) -> {
-                    Class<?> baseType;
-                    if (typeFromParquet != null && typeFromParquet.equals(boolean.class)) {
-                        baseType = Boolean.class;
-                    } else {
-                        baseType = typeFromParquet;
-                    }
-                    final ColumnDefinition<?> colDef;
-                    if (codecName != null) {
-                        Class<?> dataType = baseType;
-                        Class<?> componentType = null;
-                        if (codecType != null && !codecType.isEmpty()) {
-                            if (codecComponentType != null && !codecComponentType.isEmpty()) {
-                                componentType = loadClass(name, "codecComponentType", codecComponentType);
-                            }
-                            dataType = loadClass(name, "codecType", codecType);
-                        }
-                        final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
-                        final int width = codec.expectedObjectWidth();
-                        if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
-                            colDef = ColumnDefinition.ofFixedWidthCodec(name, dataType, componentType, codecName, codecArgs, width);
-                        } else {
-                            colDef = ColumnDefinition.ofVariableWidthCodec(name, dataType, componentType, codecName, codecArgs);
-                        }
-                    } else if (dbSpecialType != null) {
-                        if (dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                            colDef = ColumnDefinition.fromGenericType(name, StringSet.class, null);
-                        } else if (dbSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
-                            final Class<?> dbArrayType = dbArrayType(baseType);
-                            if (dbArrayType != null) {
-                                colDef = ColumnDefinition.fromGenericType(name, dbArrayType, baseType);
-                            } else {
-                                colDef = ColumnDefinition.fromGenericType(name, DbArray.class, baseType);
-                            }
-                        } else {
-                            throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + dbSpecialType);
-                        }
-                    } else {
-                        if (!StringSet.class.isAssignableFrom(baseType) && isArray) {
-                            if (baseType.equals(byte.class) && isLegacyType) {
-                                colDef = ColumnDefinition.fromGenericType(name, byte[].class, byte.class);
-                            } else {
-                                // TODO: ParquetInstruction.loadAsDbArray
-                                final Class<?> componentType = baseType;
-                                // On Java 12, replace by:  dataType = componentType.arrayType();
-                                final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                                colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
-                            }
-                        } else {
-                            colDef = ColumnDefinition.fromGenericType(name, baseType, null);
-                        }
-                    }
-                    cols.add(isGrouping ? colDef.withGrouping() : colDef);
-                };
+        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
+
         ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
         try {
             final String path = source.getPath();
