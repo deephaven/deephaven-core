@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.utils.BarrageMessage",
+ "methods": {
+  "clone": ":return: io.deephaven.db.v2.utils.BarrageMessage"
+ },
+ "path": "io.deephaven.db.v2.utils.BarrageMessage",
+ "text": "This is a structured object that represents the barrage update record batch.",
+ "typeName": "class"
+}

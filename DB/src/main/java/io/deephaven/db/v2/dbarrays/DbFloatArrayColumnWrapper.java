@@ -116,8 +116,4 @@ public class DbFloatArrayColumnWrapper extends DbFloatArray.Indirect {
         return startPadding + index.size() + endPadding;
     }
 
-    @Override
-    public DbArray toDbArray() {
-        return new DbArrayFloatWrapper(this);
-    }
 }

@@ -4,9 +4,13 @@
 
 package io.deephaven.db.v2.utils;
 
-public class ImmutableColumnHolder extends ColumnHolder {
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
+
+public class ImmutableColumnHolder<T> extends ColumnHolder<T> {
     @SuppressWarnings("unchecked")
-    public <T> ImmutableColumnHolder(String name, boolean grouped, T... data) {
-        super(name, grouped, data);
+    public ImmutableColumnHolder(@NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType, final boolean grouped, final T... data) {
+        super(name, dataType, componentType, grouped, data);
     }
 }

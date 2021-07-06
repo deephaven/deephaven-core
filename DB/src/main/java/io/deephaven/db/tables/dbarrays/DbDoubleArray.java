@@ -18,16 +18,24 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface DbDoubleArray extends DbArrayBase {
+public interface DbDoubleArray extends DbArrayBase<DbDoubleArray> {
 
     long serialVersionUID = 7218901311693729986L;
 
     double get(long i);
+
+    @Override
     DbDoubleArray subArray(long fromIndex, long toIndex);
+
+    @Override
     DbDoubleArray subArrayByPositions(long [] positions);
+
+    @Override
     double[] toArray();
+
+    @Override
     long size();
-    DbArray toDbArray();
+
     double getPrev(long i);
 
     @Override
@@ -36,7 +44,14 @@ public interface DbDoubleArray extends DbArrayBase {
         return double.class;
     }
 
+    @Override
+    @FinalDefault
+    default String toString(final int prefixLength) {
+        return toString(this, prefixLength);
+    }
+
     /** Return a version of this DbArrayBase that is flattened out to only reference memory.  */
+    @Override
     DbDoubleArray getDirect();
 
     @Override
@@ -60,15 +75,16 @@ public interface DbDoubleArray extends DbArrayBase {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The DbDoubleArray to convert to a String
+     * @param array       The DbDoubleArray to convert to a String
+     * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
-    static String toString(@NotNull final DbDoubleArray array) {
+    static String toString(@NotNull final DbDoubleArray array, final int prefixLength) {
         if (array.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), 10);
+        final int displaySize = (int) Math.min(array.size(), prefixLength);
         builder.append(primitiveDoubleValToString(array.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
             builder.append(',').append(primitiveDoubleValToString(array.get(ei)));
@@ -140,7 +156,7 @@ public interface DbDoubleArray extends DbArrayBase {
 
         @Override
         public final String toString() {
-            return DbDoubleArray.toString(this);
+            return DbDoubleArray.toString(this, 10);
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

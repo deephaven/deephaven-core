@@ -5,7 +5,6 @@ package io.deephaven.db.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayByteWrapper;
 import io.deephaven.db.tables.dbarrays.DbByteArray;
 import io.deephaven.db.tables.dbarrays.DbByteArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2315,11 +2314,6 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Byte> toDbArray() {
-        return new DbArrayByteWrapper(this);
     }
 
     @Override

@@ -82,11 +82,6 @@ public class DbFloatArraySlice extends DbFloatArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayFloatWrapper(this);
-    }
-
-    @Override
     public float getPrev(final long index) {
         if (index < 0 || index >= length) {
             return QueryConstants.NULL_FLOAT;

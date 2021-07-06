@@ -85,11 +85,6 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return this;
-    }
-
-    @Override
     public T getPrev(final long index) {
         if (index < 0 || index >= length) {
             return null;
@@ -103,7 +98,7 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArrayBase getDirect() {
+    public DbArray<T> getDirect() {
         return new DbArrayDirect<>(toArray());
     }
 }

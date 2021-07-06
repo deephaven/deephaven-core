@@ -12,44 +12,25 @@ import io.deephaven.db.v2.sources.ColumnSource;
 /**
  * Data to construct a data column.
  */
-public class ColumnHolder {
+public class ColumnHolder<T> {
     public static final ColumnHolder[] ZERO_LENGTH_COLUMN_HOLDER_ARRAY = new ColumnHolder[0];
 
     public final String name;
-    public final Class type;
-    public final Object data;
+    public final Class<T> dataType;
+    public final Class<?> componentType;
     public final boolean grouped;
+    public final Object data;
 
     /**
      * Construct a new set of column data.
-     *
-     * @param name    column name
-     * @param grouped true if the column is grouped; false otherwise
-     * @param data    column data
-     * @param <T>     column element type
+     *  @param name          column name
+     * @param dataType      column data type
+     * @param componentType column component type (for array or {@link io.deephaven.db.tables.dbarrays.DbArray>} data types)
+     * @param data          column data
      */
     @SuppressWarnings("unchecked")
-    public <T> ColumnHolder(String name, boolean grouped, T... data) {
-        type = data.getClass().getComponentType();
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
-    }
-
-
-    /**
-     * Construct a new set of column data.
-     *
-     * @param name    column name
-     * @param data    column data
-     * @param <T>     column element type
-     */
-    @SuppressWarnings("unchecked")
-    public <T> ColumnHolder(String name, Class<T> clazz, T... data) {
-        type = clazz;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = false;
+    public ColumnHolder(String name, Class<T> dataType, Class<?> componentType, boolean grouped, T... data) {
+        this(name, grouped, dataType, componentType, data);
     }
 
     /**
@@ -60,10 +41,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, long... data) {
-        type = long.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, long.class, null, data);
     }
 
     /**
@@ -74,10 +52,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, int... data) {
-        type = int.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, int.class, null, data);
     }
 
     /**
@@ -88,10 +63,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, short... data) {
-        type = short.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, short.class, null, data);
     }
 
     /**
@@ -102,10 +74,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, char... data) {
-        type = char.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, char.class, null, data);
     }
 
     /**
@@ -116,10 +85,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, byte... data) {
-        type = byte.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, byte.class, null, data);
     }
 
     /**
@@ -130,10 +96,7 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, double... data) {
-        type = double.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, double.class, null, data);
     }
 
     /**
@@ -144,26 +107,33 @@ public class ColumnHolder {
      * @param data    column data
      */
     public ColumnHolder(String name, boolean grouped, float... data) {
-        type = float.class;
-        this.data = data;
-        this.name = DBNameValidator.validateColumnName(name);
-        this.grouped = grouped;
+        this(name, grouped, float.class, null, data);
     }
 
     /**
      * Construct a new set of column data with a specified type.
      * This overload allows the creation of a ColumnHolder where the official data type type does not match the data.
-     *
-     * @param name    column name
-     * @param type    abstract data type for the column
-     * @param grouped true if the column is grouped; false otherwise
-     * @param data    column data
+     *  @param name          column name
+     * @param grouped       true if the column is grouped; false otherwise
+     * @param dataType      column data type
+     * @param componentType column component type (for array or {@link io.deephaven.db.tables.dbarrays.DbArray>} data types)
+     * @param data          column data
      */
-    private ColumnHolder(String name, Class type, boolean grouped, Object data) {
-        this.type = type;
-        this.data = data;
+    private ColumnHolder(String name, boolean grouped, Class<?> dataType, Class<?> componentType, Object data) {
+        if (!data.getClass().isArray()) {
+            throw new IllegalArgumentException("Data must be provided as an array");
+        }
+        if (!data.getClass().getComponentType().isAssignableFrom(dataType)
+                && !(dataType == DBDateTime.class && data.getClass().getComponentType() == long.class)
+                && !(dataType == Boolean.class && data.getClass().getComponentType() == byte.class)) {
+            throw new IllegalArgumentException("Incompatible data type: " + dataType + " can not be stored in array of type " + data.getClass());
+        }
         this.name = DBNameValidator.validateColumnName(name);
+        //noinspection unchecked
+        this.dataType = (Class<T>) dataType;
+        this.componentType = componentType;
         this.grouped = grouped;
+        this.data = data;
     }
 
     /**
@@ -176,47 +146,43 @@ public class ColumnHolder {
      * @param data    column data (long integers representing nanos since the epoch)
      * @return a DBDateTime column holder implemented with longs for storage
      */
-    public static ColumnHolder getDateTimeColumnHolder(String name, boolean grouped, long... data) {
-        return new ColumnHolder(name, DBDateTime.class, grouped, data);
+    public static ColumnHolder<DBDateTime> getDateTimeColumnHolder(String name, boolean grouped, long... data) {
+        return new ColumnHolder<>(name, grouped, DBDateTime.class, null, data);
     }
 
     /**
      * Create a column holder for a Boolean column where the calues are represented as bytes.
      * The given byte array will be converted to a Boolean array.
      *
-     * @param name      column name
-     * @param grouped   true if the column is grouped; false otherwise
-     * @param data      column data (byte values where 1 represents true, 0 represents false, and null otherwise)
+     * @param name    column name
+     * @param grouped true if the column is grouped; false otherwise
+     * @param data    column data (byte values where 1 represents true, 0 represents false, and null otherwise)
      * @return a Boolean column holder
      */
-    public static ColumnHolder getBooleanColumnHolder(String name, boolean grouped, byte... data) {
+    public static ColumnHolder<Boolean> getBooleanColumnHolder(String name, boolean grouped, byte... data) {
         final Boolean[] dbData = new Boolean[data.length];
-        for(int i = 0; i < data.length; i++) {
-            if (data[i] == (byte)0) {
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] == (byte) 0) {
                 dbData[i] = false;
-            } else if(data[i] == (byte)1) {
+            } else if (data[i] == (byte) 1) {
                 dbData[i] = true;
             } else {
                 dbData[i] = null;
             }
         }
-        return new ColumnHolder(name, Boolean.class, grouped, dbData);
+        return new ColumnHolder<>(name, Boolean.class, null, grouped, dbData);
     }
 
     /**
      * Create a column holder from an array object, inferring the data type from the given array object.
      *
-     * @param name      column name
-     * @param grouped   true if the column is grouped; false otherwise
-     * @param data     an object holding the column data (must be an array)
+     * @param name    The column name
+     * @param grouped true if the column is grouped; false otherwise
+     * @param data    The data array
      * @return a column holder with a type matching the component type of the provided array
      */
-    public static ColumnHolder getColumnHolderFromArray(String name, boolean grouped, Object data) {
-        if(!data.getClass().isArray()) {
-            throw new IllegalArgumentException("Data must be provided as an array");
-        }
-        return new ColumnHolder(name, data.getClass().getComponentType(),
-                grouped, data);
+    public static <T> ColumnHolder<T> createColumnHolder(String name, boolean grouped, T... data) {
+        return new ColumnHolder(name, data.getClass().getComponentType(), data.getClass().getComponentType().getComponentType(), grouped, data);
     }
 
     public String getName() {
@@ -229,13 +195,13 @@ public class ColumnHolder {
      *
      * @return column source constructed with data from this column holder
      */
-    public ColumnSource getColumnSource() {
-        if (data.getClass().getComponentType().equals(type)) {
-            return ArrayBackedColumnSource.getMemoryColumnSource(data);
-        } else if (type.equals(DBDateTime.class) && data.getClass().getComponentType().equals(long.class)) {
+    public ColumnSource<?> getColumnSource() {
+        if (data.getClass().getComponentType().equals(dataType)) {
+            return ArrayBackedColumnSource.getMemoryColumnSourceUntyped(data, dataType, componentType);
+        } else if (dataType.equals(DBDateTime.class) && data.getClass().getComponentType().equals(long.class)) {
             return ArrayBackedColumnSource.getDateTimeMemoryColumnSource((long[]) data);
         } else {
-            throw new IllegalStateException("Unsupported column holder data & type: " + type.getName() + ", "
+            throw new IllegalStateException("Unsupported column holder data & type: " + dataType.getName() + ", "
                     + data.getClass().getComponentType().getName());
         }
     }

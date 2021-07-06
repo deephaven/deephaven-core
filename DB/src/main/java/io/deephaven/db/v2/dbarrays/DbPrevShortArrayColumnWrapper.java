@@ -115,8 +115,4 @@ public class DbPrevShortArrayColumnWrapper extends DbShortArray.Indirect {
         return startPadding + index.size() + endPadding;
     }
 
-    @Override
-    public DbArray toDbArray() {
-        return new DbArrayShortWrapper(this);
-    }
 }

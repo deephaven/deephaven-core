@@ -467,17 +467,17 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         DbArrayBase[] dbArrayBases = new DbArrayBase[]{new DbArrayDirect<>(1, 2, "3", 4, 5, 6)};
         try {
             ssMat(dbArrayBases);
-            fail("Error expected as ssMat() does not allow conversion for DbArrayDirect.");
+            fail("Error expected as ssMat() does not allow conversion for DbArrayDirect<Object>");
         } catch (final UnsupportedOperationException usoe) {
-            assertTrue(usoe.getMessage().contains("not supported"));
+            assertTrue(usoe.getMessage().contains("must be numeric"));
         }
 
         dbArrayBases = new DbArrayBase[]{new DbArrayDirect<>("1", "2", "3")};
         try {
             ssMat(dbArrayBases);
-            fail("Error expected as ssMat() does not allow conversion for DbArrayDirect.");
+            fail("Error expected as ssMat() does not allow conversion for DbArrayDirect<String>");
         } catch (final UnsupportedOperationException usoe) {
-            assertTrue(usoe.getMessage().contains("not supported"));
+            assertTrue(usoe.getMessage().contains("must be numeric"));
         }
     }
 

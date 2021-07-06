@@ -221,9 +221,11 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             //noinspection unchecked
             final Class<?> dbArrayComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
             if (inputComponentType == null) {
-                if (DbArray.class.isAssignableFrom(dataType)) {
-                    throw new IllegalArgumentException("Missing required component type for DbArray data type " + dataType);
-                }
+                /* TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning DbArray to know component type
+                 * if (DbArray.class.isAssignableFrom(dataType)) {
+                 *     throw new IllegalArgumentException("Missing required component type for DbArray data type " + dataType);
+                 * }
+                 */
                 return dbArrayComponentType;
             }
             if (!dbArrayComponentType.isAssignableFrom(inputComponentType)) {

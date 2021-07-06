@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.db.v2.locations.parquet.topage.ToDBDateTimePageFromInt96",
+ "methods": {
+  "convertResult": ":param result: java.lang.Object\n:return: (long[]) Produce the array of values from the result",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:return: io.deephaven.db.v2.locations.parquet.topage.ToDBDateTimePageFromInt96<ATTR>",
+  "getChunkType": ":return: (io.deephaven.db.v2.sources.chunk.ChunkType) The chunk type used to wrap the arrays produced by this object.",
+  "getNativeComponentType": ":return: (java.lang.Class<io.deephaven.db.tables.utils.DBDateTime>) The native type for the elements of db arrays produced by this object.",
+  "getNativeType": ":return: (java.lang.Class<java.lang.Long>) The native type for the elements of the arrays produced by this object.",
+  "makeDbArray": ":param result: long[]\n:return: (io.deephaven.db.tables.dbarrays.DbArray<io.deephaven.db.tables.utils.DBDateTime>) the method to create a DBArray from RESULT.",
+  "nullValue": ":return: (java.lang.Object) The null value stored in the elements of the arrays produced by thus object.",
+  "setReferenceTimeZone": "Allows overriding the time zone to be used when interpreting Int96 timestamp values.\n Default is UTC. Can be set globally with the parameter deephaven.parquet.referenceTimeZone.\n Valid values are time zone Strings which would be used in convertDateTime, such as NY.\n\n:param timeZone: (java.lang.String) -"
+ },
+ "path": "io.deephaven.db.v2.locations.parquet.topage.ToDBDateTimePageFromInt96",
+ "text": "Parquet ToPage implementation for DBDateTimes stored as Int96s representing an Impala\n format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)",
+ "typeName": "class"
+}

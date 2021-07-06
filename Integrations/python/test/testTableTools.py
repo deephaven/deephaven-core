@@ -376,61 +376,61 @@ class TestTableTools(unittest.TestCase):
 
         with self.subTest(msg="col with bool"):
             col1 = TableTools.col('bool1', numpy.array([True], dtype=numpy.bool))
-            self.assertEqual(col1.type.toString(), 'class java.lang.Boolean')
+            self.assertEqual(col1.dataType.toString(), 'class java.lang.Boolean')
             # print("table from bool = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('bool2', True, False, None)
-            self.assertEqual(col2.type.toString(), 'class java.lang.Boolean')
+            self.assertEqual(col2.dataType.toString(), 'class java.lang.Boolean')
             # print("table from bool varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with int"):
             col1 = TableTools.col('int1', 1)
-            self.assertEqual(col1.type.toString(), 'long')
+            self.assertEqual(col1.dataType.toString(), 'long')
             # print("table from int = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('int2', 1, 2, None)
-            self.assertEqual(col2.type.toString(), 'long')
+            self.assertEqual(col2.dataType.toString(), 'long')
             # print("table from int varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with float"):
             col1 = TableTools.col('float1', 1.0)
-            self.assertEqual(col1.type.toString(), 'double')
+            self.assertEqual(col1.dataType.toString(), 'double')
             # print("table from float = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('float2', 1.0, 2.0, None)
-            self.assertEqual(col2.type.toString(), 'double')
+            self.assertEqual(col2.dataType.toString(), 'double')
             # print("table from float varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with string"):
             col1 = TableTools.col('string1', 'one')
-            self.assertEqual(col1.type.toString(), 'class java.lang.String')
+            self.assertEqual(col1.dataType.toString(), 'class java.lang.String')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('string2', 'one', 'two', None)
-            self.assertEqual(col2.type.toString(), 'class java.lang.String')
+            self.assertEqual(col2.dataType.toString(), 'class java.lang.String')
             # print("table from string varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with datetime"):
             col1 = TableTools.col('datetime1', datetime.utcnow())
-            self.assertEqual(col1.type.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('datetime2', datetime.utcnow(), datetime.utcnow(), None)
-            self.assertEqual(col2.type.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
             # print("table from datetime varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with date"):
             col1 = TableTools.col('date1', date.today())
-            self.assertEqual(col1.type.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col1.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
             col2 = TableTools.col('date2', date.today(), date.today(), None)
-            self.assertEqual(col2.type.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
+            self.assertEqual(col2.dataType.toString(), 'class io.deephaven.db.tables.utils.DBDateTime')
             # print("table from date varargs = \n{}".format(TableTools.html(TableTools.newTable(col2))))
 
         with self.subTest(msg="col with no argument"):
             col1 = TableTools.col('empty', [])
-            self.assertEqual(col1.type.toString(), 'class java.lang.Object')
+            self.assertEqual(col1.dataType.toString(), 'class java.lang.Object')
             # print("table from empty = \n{}".format(TableTools.html(TableTools.newTable(col1))))
 
     def testPrimitiveColSourceCases(self):
