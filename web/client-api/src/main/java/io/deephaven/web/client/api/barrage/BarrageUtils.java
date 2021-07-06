@@ -250,7 +250,6 @@ public class BarrageUtils {
                     IntBuffer innerOffsets = readOffsets(data, size, buffers.next());
 
                     Buffer payload = buffers.next();
-                    ByteBuffer serializedData = data;
 
                     switch (columnType) {
                         case "java.lang.String[]":
@@ -270,9 +269,9 @@ public class BarrageUtils {
                                         continue;
                                     }
                                     //might be cheaper to do views on the underlying bb (which will be copied anyway into the String)
-                                    serializedData.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                    byte[] stringBytes = new byte[serializedData.remaining()];
-                                    serializedData.get(stringBytes);
+                                    data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
+                                    byte[] stringBytes = new byte[data.remaining()];
+                                    data.get(stringBytes);
                                     strArr[j] = new String(stringBytes, Charset.forName("UTF-8"));
                                 }
                                 strArrArr[i] = strArr;
@@ -286,7 +285,6 @@ public class BarrageUtils {
                 } else {
                     // non-array, variable length stuff, just grab the buffer and read ranges specified by offsets
                     Buffer payload = buffers.next();
-                    ByteBuffer serializedData = data;
 
                     switch (columnType) {
                         case "java.lang.String":
@@ -296,8 +294,8 @@ public class BarrageUtils {
                                     continue;
                                 }
                                 byte[] stringBytes = new byte[offsets.get(i + 1) - offsets.get(i)];
-                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
-                                serializedData.get(stringBytes);
+                                data.position((int)(payload.offset().toFloat64()) + offsets.get(i));
+                                data.get(stringBytes);
                                 stringArray[i] = new String(stringBytes, Charset.forName("UTF-8"));//new String(Js.<char[]>uncheckedCast(stringBytes));
                             }
                             return new StringArrayColumnData(stringArray);
@@ -307,9 +305,9 @@ public class BarrageUtils {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
-                                int scale = serializedData.getInt();
-                                bigDecArray[i] = new BigDecimal(readBigInt(serializedData), scale);
+                                data.position((int)(payload.offset().toFloat64()) + offsets.get(i));
+                                int scale = data.getInt();
+                                bigDecArray[i] = new BigDecimal(readBigInt(data), scale);
                             }
                             return new BigDecimalArrayColumnData(bigDecArray);
                         case "java.math.BigInteger":
@@ -318,8 +316,8 @@ public class BarrageUtils {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
-                                bigIntArray[i] = readBigInt(serializedData);
+                                data.position((int)(payload.offset().toFloat64()) + offsets.get(i));
+                                bigIntArray[i] = readBigInt(data);
                             }
 
                             return new BigIntegerArrayColumnData(bigIntArray);
