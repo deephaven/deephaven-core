@@ -121,18 +121,6 @@ def _custom_readTable(*args):
         return _java_type_.readTable(getFileObject(args[0]), *args[1:])
 
 
-def _custom_renameColumns(*args):
-    return _java_type_.renameColumns(args[0], getFileObject(args[1]), *args[2:])
-
-
-def _custom_updateColumns(currentDefinition, rootDir, levels, *updates):
-    return _java_type_.updateColumns(currentDefinition, getFileObject(rootDir), levels, *updates)
-
-
-def _custom_writeDeephavenTables(sources, tableDefinition, destinations):
-    return _java_type_.writeDeephavenTables(sources, tableDefinition, getFileObject(destinations))
-
-
 def _custom_writeParquetTables(sources, tableDefinition, codecName, destinations, groupingColumns):
     if _isStr(codecName):
         return _java_type_.writeParquetTables(sources, tableDefinition, getattr(_compression_codec_, codecName),
