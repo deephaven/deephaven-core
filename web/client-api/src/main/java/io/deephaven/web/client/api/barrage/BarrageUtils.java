@@ -116,8 +116,7 @@ public class BarrageUtils {
         Iter<Buffer> buffers = new Iter<>(IntStream.range(0, (int) header.buffersLength()).mapToObj(header::buffers).iterator());
         ColumnData[] columnData = new ColumnData[0];
         for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
-            columnData[columnIndex] = readArrowBuffer(body.slice(), nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
-            assertAligned(body);
+            columnData[columnIndex] = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
         }
 
         return new TableSnapshot(added, includedAdditions, columnData);
@@ -144,10 +143,9 @@ public class BarrageUtils {
         DeltaUpdates.ColumnAdditions[] addedColumnData = new DeltaUpdates.ColumnAdditions[0];
         for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
             assert nodes.hasNext() && buffers.hasNext();
-            ColumnData columnData = readArrowBuffer(body.slice(), nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
+            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
 
             addedColumnData[columnIndex] = new DeltaUpdates.ColumnAdditions(columnIndex, columnData);
-            assertAligned(body);
         }
 
         DeltaUpdates.ColumnModifications[] modifiedColumnData = new DeltaUpdates.ColumnModifications[0];
@@ -163,17 +161,14 @@ public class BarrageUtils {
                 includedModifications = modifiedRows;
             }
 
-            ColumnData columnData = readArrowBuffer(body.slice(), nodes, buffers, (int) includedModifications.size(), columnTypes[columnIndex]);
+            ColumnData columnData = readArrowBuffer(body, nodes, buffers, (int) includedModifications.size(), columnTypes[columnIndex]);
             modifiedColumnData[columnIndex] = new DeltaUpdates.ColumnModifications(columnIndex, modifiedRows, includedModifications, columnData);
-            assertAligned(body);
         }
 
         return new DeltaUpdates(added, removed, shifted, includedAdditions, addedColumnData, modifiedColumnData);
     }
 
     private static ColumnData readArrowBuffer(ByteBuffer data, Iter<BarrageFieldNode> nodes, Iter<Buffer> buffers, int size, String columnType) {
-        assertAligned(data);
-
         //explicit cast to be clear that we're rounding down
         BitSet valid = readValidityBufferAsBitset(data, size, buffers.next());
         boolean hasNulls = nodes.next().nullCount().toFloat64() != 0;
@@ -183,29 +178,29 @@ public class BarrageUtils {
             // for simple well-supported typedarray types, wrap and return
             case "int":
                 assert positions.length().toFloat64() >= size * 4;
-                Int32Array intArray = new Int32Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Int32Array intArray = new Int32Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new IntArrayColumnData(Js.uncheckedCast(intArray));
             case "short":
                 assert positions.length().toFloat64() >= size * 2;
-                Int16Array shortArray = new Int16Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Int16Array shortArray = new Int16Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new ShortArrayColumnData(Js.uncheckedCast(shortArray));
             case "boolean":
             case "java.lang.Boolean":
             case "byte":
                 assert positions.length().toFloat64() >= size;
-                Uint8Array byteArray = new Uint8Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Int8Array byteArray = new Int8Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new ByteArrayColumnData(Js.uncheckedCast(byteArray));
             case "double":
                 assert positions.length().toFloat64() >= size * 8;
-                Float64Array doubleArray = new Float64Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Float64Array doubleArray = new Float64Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new DoubleArrayColumnData(Js.uncheckedCast(doubleArray));
             case "float":
                 assert positions.length().toFloat64() >= size * 4;
-                Float32Array floatArray = new Float32Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Float32Array floatArray = new Float32Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new FloatArrayColumnData(Js.uncheckedCast(floatArray));
             case "char":
                 assert positions.length().toFloat64() >= size * 2;
-                Uint16Array charArray = new Uint16Array(TypedArrayHelper.unwrap(data).buffer, (int) (data.position() + positions.offset().toFloat64()), size);
+                Uint16Array charArray = new Uint16Array(TypedArrayHelper.unwrap(data).buffer, (int) positions.offset().toFloat64(), size);
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
@@ -213,7 +208,7 @@ public class BarrageUtils {
                 assert positions.length().toFloat64() >= size * 8;
                 long[] longArray = new long[size];
 
-                data.position((int) (data.position() + positions.offset().toFloat64()));
+                data.position((int) positions.offset().toFloat64());
                 for (int i = 0; i < size; i++) {
                     longArray[i] = data.getLong();
                 }
@@ -221,7 +216,7 @@ public class BarrageUtils {
             // all other types are read out in some custom way
             case "java.time.LocalTime"://LocalDateArrayColumnData
                 assert positions.length().toFloat64() >= size * 6;
-                data.position((int) (data.position() + positions.offset().toFloat64()));
+                data.position((int) positions.offset().toFloat64());
                 LocalDate[] localDateArray = new LocalDate[size];
                 for (int i = 0; i < size; i++) {
                     int year = data.getInt();
@@ -234,7 +229,7 @@ public class BarrageUtils {
                 assert positions.length().toFloat64() == size * 7;
                 LocalTime[] localTimeArray = new LocalTime[size];
 
-                data.position((int) (data.position() + positions.offset().toFloat64()));
+                data.position((int) positions.offset().toFloat64());
                 for (int i = 0; i < size; i++) {
                     int nano = data.getInt();
                     byte hour = data.get();
@@ -255,7 +250,7 @@ public class BarrageUtils {
                     IntBuffer innerOffsets = readOffsets(data, size, buffers.next());
 
                     Buffer payload = buffers.next();
-                    ByteBuffer serializedData = data.slice();
+                    ByteBuffer serializedData = data;
 
                     switch (columnType) {
                         case "java.lang.String[]":
@@ -291,9 +286,7 @@ public class BarrageUtils {
                 } else {
                     // non-array, variable length stuff, just grab the buffer and read ranges specified by offsets
                     Buffer payload = buffers.next();
-                    ByteBuffer serializedData = data.slice();
-//                    serializedData.position((int)(payload.offset().toFloat64()));
-//                    serializedData.limit((int)(payload.length().toFloat64()));
+                    ByteBuffer serializedData = data;
 
                     switch (columnType) {
                         case "java.lang.String":
@@ -337,10 +330,6 @@ public class BarrageUtils {
         }
     }
 
-    private static void assertAligned(ByteBuffer data) {
-        assert data.position() % 8 == 0 : data.position();
-    }
-
     private static BigInteger readBigInt(ByteBuffer data) {
         int length = data.getInt();
         byte[] bytes = new byte[length];
@@ -353,10 +342,8 @@ public class BarrageUtils {
             // these buffers are optional (and empty) if the column is empty, or if it has primitives and we've allowed DH nulls
             return new BitSet(0);
         }
-        int startPosition = data.position();
-        data.position((int) (data.position() + buffer.offset().toFloat64()));
+        data.position((int) buffer.offset().toFloat64());
         BitSet valid = readBitSetWithLength(data, (int) (buffer.length().toFloat64()));
-        data.position(startPosition);
         return valid;
     }
 
@@ -372,11 +359,9 @@ public class BarrageUtils {
             IntBuffer emptyOffsets = IntBuffer.allocate(1);
             return emptyOffsets;
         }
-        int startPosition = data.position();
-        data.position((int) (startPosition + buffer.offset().toFloat64()));
+        data.position((int) buffer.offset().toFloat64());
         IntBuffer offsets = data.slice().asIntBuffer();
         offsets.limit(size + 1);
-        data.position(startPosition);
         return offsets;
     }
 
