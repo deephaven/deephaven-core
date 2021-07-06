@@ -240,7 +240,7 @@ public class BarrageUtils {
                     byte hour = data.get();
                     byte minute = data.get();
                     byte second = data.get();
-                    data.position(data.position() + 1);
+                    data.position(data.position() + 1);//aligned for next read
                     localTimeArray[i] = new LocalTime(hour, minute, second, nano);
                 }
                 return new LocalTimeArrayColumnData(localTimeArray);
@@ -256,8 +256,6 @@ public class BarrageUtils {
 
                     Buffer payload = buffers.next();
                     ByteBuffer serializedData = data.slice();
-                    serializedData.position((int)(payload.offset().toFloat64()));
-                    serializedData.limit((int)(payload.length().toFloat64()));
 
                     switch (columnType) {
                         case "java.lang.String[]":
@@ -277,8 +275,7 @@ public class BarrageUtils {
                                         continue;
                                     }
                                     //might be cheaper to do views on the underlying bb (which will be copied anyway into the String)
-                                    serializedData.position(offsets.get(i));
-                                    serializedData.limit(offsets.get(i + 1));
+                                    serializedData.position((int) (payload.offset().toFloat64()) + offsets.get(i));
                                     byte[] stringBytes = new byte[serializedData.remaining()];
                                     serializedData.get(stringBytes);
                                     strArr[j] = new String(stringBytes, Charset.forName("UTF-8"));
@@ -295,8 +292,8 @@ public class BarrageUtils {
                     // non-array, variable length stuff, just grab the buffer and read ranges specified by offsets
                     Buffer payload = buffers.next();
                     ByteBuffer serializedData = data.slice();
-                    serializedData.position((int)(payload.offset().toFloat64()));
-                    serializedData.limit((int)(payload.length().toFloat64()));
+//                    serializedData.position((int)(payload.offset().toFloat64()));
+//                    serializedData.limit((int)(payload.length().toFloat64()));
 
                     switch (columnType) {
                         case "java.lang.String":
@@ -306,7 +303,7 @@ public class BarrageUtils {
                                     continue;
                                 }
                                 byte[] stringBytes = new byte[offsets.get(i + 1) - offsets.get(i)];
-                                serializedData.position(offsets.get(i));
+                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
                                 serializedData.get(stringBytes);
                                 stringArray[i] = new String(stringBytes, Charset.forName("UTF-8"));//new String(Js.<char[]>uncheckedCast(stringBytes));
                             }
@@ -317,7 +314,7 @@ public class BarrageUtils {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                serializedData.position(offsets.get(i));
+                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
                                 int scale = serializedData.getInt();
                                 bigDecArray[i] = new BigDecimal(readBigInt(serializedData), scale);
                             }
@@ -328,7 +325,7 @@ public class BarrageUtils {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                serializedData.position(offsets.get(i));
+                                serializedData.position((int)(payload.offset().toFloat64()) + offsets.get(i));
                                 bigIntArray[i] = readBigInt(serializedData);
                             }
 
