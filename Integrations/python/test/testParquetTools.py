@@ -31,7 +31,7 @@ class TestParquetTools(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # define a junk table workspace directory
-        cls.rootDir = os.path.join(ParquetTools.getWorkspaceRoot(), 'junk')
+        cls.rootDir = os.path.join(ParquetTools.getWorkspaceRoot(), 'TestParquetTools')
 
     def testCreation(self):
         """
@@ -40,8 +40,9 @@ class TestParquetTools(unittest.TestCase):
 
         table = TableTools.emptyTable(3).update("x=i", "y=(double)(i/10.0)", "z=(double)(i*i)")
         definition = table.getDefinition()
-        fileLocation = os.path.join(self.rootDir, 'table1')
-        fileLocation2 = os.path.join(self.rootDir, 'table2')
+        baseDir = os.path.join(self.rootDir, "testCreation")
+        fileLocation = os.path.join(baseDir, 'table1.parquet')
+        fileLocation2 = os.path.join(baseDir, 'table2.parquet')
 
         # make sure that the test workspace is clean
         if os.path.exists(fileLocation):
@@ -55,19 +56,13 @@ class TestParquetTools(unittest.TestCase):
             ParquetTools.writeTable(table, fileLocation)
             time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
-            shutil.rmtree(fileLocation)
+            shutil.rmtree(baseDir)
             time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTable(Table, File)"):
             ParquetTools.writeTable(table, ParquetTools.getFileObject(fileLocation))
             time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
-            shutil.rmtree(fileLocation)
-            time.sleep(0.01)  # avoid race condition on file existence...
-        with self.subTest(msg="writeTable(Table, String, StorageFormat) - Parquet"):
-            ParquetTools.writeTable(table, fileLocation, 'Parquet')
-            time.sleep(0.01)  # avoid race condition on file existence...
-            self.assertTrue(os.path.exists(fileLocation))
-            shutil.rmtree(fileLocation)
+            shutil.rmtree(baseDir)
             time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTables(Table[], TableDefinition, File[]"):
             ParquetTools.writeTables([table, table], definition, [fileLocation, fileLocation2])
@@ -89,6 +84,7 @@ class TestParquetTools(unittest.TestCase):
                 ParquetTools.deleteTable(fileLocation2)
                 time.sleep(0.01)  # avoid race condition on file existence...
                 self.assertFalse(os.path.exists(fileLocation2))
+        shutil.rmtree(baseDir)
 
     @classmethod
     def tearDownClass(cls):
