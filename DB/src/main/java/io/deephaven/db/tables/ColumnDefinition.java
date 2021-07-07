@@ -11,7 +11,6 @@ import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.util.codec.ObjectCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -118,7 +117,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (codecArguments != null) {
             cd.setObjectCodecArguments(codecArguments);
         }
-        cd.setObjectWidth(width);
         return cd;
     }
 
@@ -369,9 +367,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             if (!Objects.equals(getObjectCodecArguments(), other.getObjectCodecArguments())) {
                 differences.add(prefix + lhs + " object codec arguments '" + getObjectCodecArguments() + "' does not match " + rhs + " object codec arguments '" + other.getObjectCodecArguments() + "'");
             }
-            if (getObjectWidth() != other.getObjectWidth()) {
-                differences.add(prefix + lhs + " object width " + getObjectWidth() + " does not match " + rhs + " object width " + other.getObjectWidth());
-            }
         }
     }
 
@@ -380,14 +375,14 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             return false;
         }
         final ColumnDefinition otherCD = (ColumnDefinition)other;
-        return name.equals(otherCD.name) &&
-                dataType.equals(otherCD.dataType) &&
-                getSymbolTableType() == otherCD.getSymbolTableType() &&
-                Objects.equals(componentType, otherCD.componentType) &&
-                columnType == otherCD.columnType &&
-                Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass()) &&
-                Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments()) &&
-                getObjectWidth() == otherCD.getObjectWidth();
+        return name.equals(otherCD.name)
+                && dataType.equals(otherCD.dataType)
+                && getSymbolTableType() == otherCD.getSymbolTableType()
+                && Objects.equals(componentType, otherCD.componentType)
+                && columnType == otherCD.columnType
+                && Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass())
+                && Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments())
+                ;
     }
 
     public ColumnDefinition rename(String newName) {
@@ -435,12 +430,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             return SymbolTableType.NONE;
         }
         return SymbolTableType.COLUMN_LOCATION;
-    }
-
-    public boolean isFixedWidthObjectType() {
-        //noinspection ConstantConditions
-        assert ObjectCodec.VARIABLE_WIDTH_SENTINEL == Integer.MIN_VALUE;
-        return objectWidth != ObjectCodec.VARIABLE_WIDTH_SENTINEL;
     }
 
     private String name;
@@ -506,15 +495,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.objectCodecArguments=objectCodecArguments;
     }
 
-    private int objectWidth=Integer.MIN_VALUE;
-    public int getObjectWidth() {
-        return objectWidth;
-    }
-
-    void setObjectWidth(int objectWidth) {
-        this.objectWidth=objectWidth;
-    }
-
     @Override
     public void copyValues(ColumnDefinition x) {
         name = x.name;
@@ -524,7 +504,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         isVarSizeString = x.isVarSizeString;
         objectCodecClass = x.objectCodecClass;
         objectCodecArguments = x.objectCodecArguments;
-        objectWidth = x.objectWidth;
     }
 
     @Override
@@ -538,7 +517,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         builder.append("|isVarSizeString=").append(isVarSizeString);
         builder.append("|objectCodecClass=").append(objectCodecClass);
         builder.append("|objectCodecArguments=").append(objectCodecArguments);
-        builder.append("|objectWidth=").append(objectWidth);
 
         return builder.toString();
     }
@@ -554,7 +532,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|isVarSizeString=").append(isVarSizeString);
         logOutput.append("|objectCodecClass=").append(String.valueOf(objectCodecClass));
         logOutput.append("|objectCodecArguments=").append(String.valueOf(objectCodecArguments));
-        logOutput.append("|objectWidth=").append(objectWidth);
 
         return logOutput;
     }
@@ -576,7 +553,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         isVarSizeString = (Boolean)in.readObject();
         objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
         objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
-        objectWidth = in.readInt();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -587,6 +563,5 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(isVarSizeString);
         if (objectCodecClass == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecClass); }
         if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
-        out.writeInt(objectWidth);
     }
 }

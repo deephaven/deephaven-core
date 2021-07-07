@@ -94,9 +94,6 @@ public class CodecLookup {
         if (codec == null) {
             throw new UnsupportedOperationException("Failed to find a matching codec for " + columnDefinition);
         }
-        if (columnDefinition.isFixedWidthObjectType() && codec.expectedObjectWidth() != columnDefinition.getObjectWidth()) {
-            throw new UnsupportedOperationException("Fixed-width codec mismatch for " + columnDefinition + ", expected width " + codec.expectedObjectWidth());
-        }
         return codec;
     }
 
