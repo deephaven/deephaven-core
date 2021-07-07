@@ -4,7 +4,10 @@
 
 package io.deephaven.db.v2.select;
 
-import io.deephaven.api.*;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
@@ -25,7 +28,7 @@ import java.util.Objects;
 public interface SelectColumn {
 
     static SelectColumn of(Selectable selectable) {
-        return selectable.walk(new SelectColumnAdapter()).getOut();
+        return selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
     }
 
     static SelectColumn[] from(Collection<Selectable> selectables) {
@@ -142,42 +145,26 @@ public interface SelectColumn {
      */
     SelectColumn copy();
 
-    class SelectColumnAdapter implements Selectable.Visitor {
-
+    class ExpressionAdapter implements Expression.Visitor {
+        private final ColumnName lhs;
         private SelectColumn out;
 
-        private SelectColumnAdapter() {}
+        ExpressionAdapter(ColumnName lhs) {
+            this.lhs = Objects.requireNonNull(lhs);
+        }
 
         public SelectColumn getOut() {
             return Objects.requireNonNull(out);
         }
 
         @Override
-        public void visit(ColumnName columnName) {
-            out = new SourceColumn(columnName.name());
+        public void visit(ColumnName name) {
+            out = new SourceColumn(lhs.name(), name.name());
         }
 
         @Override
-        public void visit(ColumnAssignment columnAssignment) {
-            out = new SourceColumn(columnAssignment.existingColumn().name(), columnAssignment.newColumn().name());
-        }
-
-        @Override
-        public void visit(ColumnFormula columnFormula) {
-            final String lhs = columnFormula.newColumn().name();
-            columnFormula.expression().walk(new Expression.Visitor() {
-                @Override
-                public void visit(ColumnName name) {
-                    final String rhs = name.name();
-                    out = new SourceColumn(rhs, lhs);
-                }
-
-                @Override
-                public void visit(RawString rawString) {
-                    final String rhs = rawString.value();
-                    out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs, rhs));
-                }
-            });
+        public void visit(RawString rawString) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs, rawString.value()));
         }
     }
 }

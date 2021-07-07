@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DBNameValidator {
     private static final String COLUMN_PREFIX = "column_";
@@ -18,10 +20,12 @@ public class DBNameValidator {
     private static final String STERILE_TABLE_AND_NAMESPACE_REGEX = "[^a-zA-Z0-9_$\\-\\+@]";
 
     private enum ValidationCode {
-        OK(""), RESERVED(
-            "Invalid <type> name \"<name>\": \"<name>\" is a reserved keyword"), INVALID(
-                "Invalid <type> name \"<name>\""), NULL_NAME(
-                    "Invalid <type> name: name can not be null or empty");
+        // @formatter:off
+        OK(""),
+        RESERVED("Invalid <type> name \"<name>\": \"<name>\" is a reserved keyword"),
+        INVALID("Invalid <type> name \"<name>\""),
+        NULL_NAME("Invalid <type> name: name can not be null or empty");
+        // @formatter:on
 
         private final String message;
 
@@ -40,15 +44,20 @@ public class DBNameValidator {
     }
 
     // table names should not start with numbers. Partition names should be able to
+    // TODO(deephaven-core#822): Allow more table names
     private final static Pattern TABLE_NAME_PATTERN =
         Pattern.compile("([a-zA-Z_$])[a-zA-Z0-9_$[-][+]@]*");
     private final static Pattern PARTITION_NAME_PATTERN =
         Pattern.compile("([a-zA-Z0-9$])[a-zA-Z0-9_$[-][+]@\\.]*");
 
     public enum Type {
-        COLUMN(true, true, "column", null), QUERY_PARAM(true, true, "query variable", null), TABLE(
-            false, false, "table", TABLE_NAME_PATTERN), NAMESPACE(false, false, "namespace",
-                TABLE_NAME_PATTERN), PARTITION(false, false, "partition", PARTITION_NAME_PATTERN);
+        // @formatter:off
+        COLUMN(true, true, "column", null),
+        QUERY_PARAM(true, true, "query variable", null),
+        TABLE(false, false, "table", TABLE_NAME_PATTERN),
+        NAMESPACE(false, false, "namespace", TABLE_NAME_PATTERN),
+        PARTITION(false, false, "partition", PARTITION_NAME_PATTERN);
+        // @formatter:on
 
         private final boolean checkReservedVariableNames;
         private final boolean checkValidJavaWord;
@@ -80,7 +89,8 @@ public class DBNameValidator {
     }
 
     private static final Set<String> DB_RESERVED_VARIABLE_NAMES =
-        Collections.unmodifiableSet(new HashSet<>(Arrays.asList("in", "not", "i", "ii", "k")));
+        Stream.of("in", "not", "i", "ii", "k").collect(
+            Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
     public static String validateTableName(String name) {
         return Type.TABLE.validate(name);
@@ -171,13 +181,15 @@ public class DBNameValidator {
     /**
      * Attempts to return a legal name based on the passed in {@code name}.
      *
+     * <p>
      * Illegal characters are simply removed. Custom replacement is possible through
      * {@code customReplace}
      *
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned.
-     * Theses duplicates are resolved by adding sequential digits at the end of the variable name.
+     * <p>
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
+     * duplicates are resolved by adding sequential digits at the end of the variable name.
      *
-     *
+     * <p>
      * Column names A variable's name can be any legal identifier - an unlimited-length sequence of
      * Unicode letters and digits, beginning with a letter, the dollar sign "$", or the underscore
      * character "_". Subsequent characters may be letters, digits, dollar signs, or underscore
@@ -228,13 +240,15 @@ public class DBNameValidator {
     /**
      * Attempts to return a legal name based on the passed in {@code name}.
      *
+     * <p>
      * Illegal characters are simply removed. Custom replacement is possible through
      * {@code customReplace}
      *
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned.
-     * Theses duplicates are resolved by adding sequential digits at the end of the variable name.
+     * <p>
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
+     * duplicates are resolved by adding sequential digits at the end of the variable name.
      *
-     *
+     * <p>
      * Query parameters follow the same rules as column names
      *
      * @param name, customReplace, takenNames can not be null
@@ -281,13 +295,15 @@ public class DBNameValidator {
     /**
      * Attempts to return a legal name based on the passed in {@code name}.
      *
+     * <p>
      * Illegal characters are simply removed. Custom replacement is possible through
      * {@code customReplace}
      *
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned.
-     * Theses duplicates are resolved by adding sequential digits at the end of the variable name.
+     * <p>
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
+     * duplicates are resolved by adding sequential digits at the end of the variable name.
      *
-     *
+     * <p>
      * Table Names- check the regex {@code TABLE_NAME_PATTERN}
      *
      * @param name, customReplace, takenNames can not be null
@@ -362,13 +378,15 @@ public class DBNameValidator {
     /**
      * Attempts to return a legal name based on the passed in {@code name}.
      *
+     * <p>
      * Illegal characters are simply removed. Custom replacement is possible through
      * {@code customReplace}
      *
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned.
-     * Theses duplicates are resolved by adding sequential digits at the end of the variable name.
+     * <p>
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
+     * duplicates are resolved by adding sequential digits at the end of the variable name.
      *
-     *
+     * <p>
      * Namespace Names- check the regex {@code TABLE_NAME_PATTERN}
      *
      * @param name, customReplace, takenNames can not be null
@@ -541,6 +559,7 @@ public class DBNameValidator {
         return result.toArray(new String[result.size()]);
     }
 
+    @FunctionalInterface
     private interface Legalizer {
         String apply(String name, Function<String, String> customReplace, Set<String> takenNames);
     }

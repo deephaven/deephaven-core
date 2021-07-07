@@ -6,6 +6,7 @@ package io.deephaven.db.tables;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.db.tables.lang.DBLanguageParser;
 import io.deephaven.db.tables.remote.*;
@@ -950,7 +951,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
             throw new IllegalStateException("Unexpected rule " + rule);
         }
 
-        static AsOfMatchRule of(RightAsOfJoinRule rule) {
+        static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
             switch (rule) {
                 case GREATER_THAN_EQUAL:
                     return AsOfMatchRule.GREATER_THAN_EQUAL;
@@ -993,18 +994,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
     }
 
-    /**
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list.
-     * Matching is done exactly for the first n-1 columns and via a binary search for the last match pair.
-     * The columns of the original table are returned intact, together with the columns from rightTable defined in
-     * a comma separated list "columnsToAdd"
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd   A comma separated list with the columns from the left side that need to be added to the right
-     *                       side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table aj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return aj(
                 rightTable,
@@ -1036,18 +1025,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
-    /**
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list.
-     * Matching is done exactly for the first n-1 columns and via a binary search for the last match pair.
-     * The columns of the original table are returned intact, together with the columns from rightTable defined in
-     * a comma separated list "columnsToAdd"
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd   A comma separated list with the columns from the left side that need to be added to the right
-     *                       side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table aj(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return aj(
                 rightTable,
@@ -1055,19 +1032,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
                 MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
-    /**
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list.
-     * Matching is done exactly for the first n-1 columns and via a binary search for the last match pair.
-     * The columns of the original table are returned intact, together with all the columns from rightTable.
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table aj(Table rightTable, String columnsToMatch) {
         return aj(rightTable, StringUtils.splitToCollection(columnsToMatch));
     }
-
 
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
@@ -1106,22 +1073,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
     }
 
-
-    /**
-     * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
-     * given timestamp instead of the row before.
-     * <p>
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list.
-     * Matching is done exactly for the first n-1 columns and via a binary search for the last match pair.
-     * The columns of the original table are returned intact, together with the columns from rightTable defined in
-     * a comma separated list "columnsToAdd"
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd   A comma separated list with the columns from the left side that need to be added to the right
-     *                       side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
         return raj(
                 rightTable,
@@ -1129,12 +1080,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
                 MatchPair.fromAddition(columnsToAdd));
     }
 
-    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, RightAsOfJoinRule rightAsOfJoinRule) {
+    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return raj(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
                 MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(rightAsOfJoinRule));
+                AsOfMatchRule.of(reverseAsOfJoinRule));
     }
 
     /**
@@ -1178,18 +1129,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
                 MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
     }
 
-    /**
-     * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
-     * given timestamp instead of the row before.
-     * <p>
-     * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list.
-     * Matching is done exactly for the first n-1 columns and via a binary search for the last match pair.
-     * The columns of the original table are returned intact, together with the all columns from rightTable.
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table raj(Table rightTable, String columnsToMatch) {
         return raj(rightTable, StringUtils.splitToCollection(columnsToMatch));
     }
@@ -1242,7 +1181,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification with zero key-columns and includes all right columns
      */
     default Table join(Table rightTable) {
-        return join(rightTable, Collections.emptyList(), Collections.emptyList());
+        return join(
+                rightTable,
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     /**
@@ -1273,31 +1215,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return join(rightTable, Collections.emptyList(), Collections.emptyList(), numRightBitsToReserve);
     }
 
-    /**
-     * Perform a cross join with the right table.
-     * <p>
-     * Returns a table that is the cartesian product of left rows X right rows, with one column for each of the left
-     * table's columns, and one column corresponding to each of the right table's columns that are not key-columns.
-     * The rows are ordered first by the left table then by the right table. If columnsToMatch is non-empty then the
-     * product is filtered by the supplied match conditions.
-     * <p>
-     * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless specified,
-     * join reserves 16 bits to represent a right row. When there are too few bits to represent all of the right rows
-     * for a given aggregation group the table will shift a bit from the left side to the right side. The default of 16
-     * bits was carefully chosen because it results in an efficient implementation to process live updates.
-     * <p>
-     * An {@link io.deephaven.db.v2.utils.OutOfKeySpaceException} is thrown when the total number of bits needed
-     * to express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
-     * - If the left table is sparse, consider flattening the left table.
-     * - If there are no key-columns and the right table is sparse, consider flattening the right table.
-     * - If the maximum size of a right table's group is small, you can reserve fewer bits by setting numRightBitsToReserve on initialization.
-     * <p>
-     * Note: If you can prove that a given group has at most one right-row then you should prefer using {@link #naturalJoin}.
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @return a new table joined according to the specification in columnsToMatch and includes all non-key-columns from the right table
-     */
     default Table join(Table rightTable, String columnsToMatch) {
         return join(
             rightTable,
@@ -1332,36 +1249,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and includes all non-key-columns from the right table
      */
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
-        return join(rightTable, StringUtils.splitToCollection(columnsToMatch), Collections.emptyList(), numRightBitsToReserve);
+        return join(
+                rightTable,
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                numRightBitsToReserve);
     }
 
-    /**
-     * Perform a cross join with the right table.
-     * <p>
-     * Returns a table that is the cartesian product of left rows X right rows, with one column for each of the left
-     * table's columns, and one column corresponding to each of the right table's columns that are included in the
-     * columnsToAdd argument. The rows are ordered first by the left table then by the right table. If columnsToMatch
-     * is non-empty then the product is filtered by the supplied match conditions.
-     * <p>
-     * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless specified,
-     * join reserves 16 bits to represent a right row. When there are too few bits to represent all of the right rows
-     * for a given aggregation group the table will shift a bit from the left side to the right side. The default of 16
-     * bits was carefully chosen because it results in an efficient implementation to process live updates.
-     * <p>
-     * An {@link io.deephaven.db.v2.utils.OutOfKeySpaceException} is thrown when the total number of bits needed
-     * to express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
-     * - If the left table is sparse, consider flattening the left table.
-     * - If there are no key-columns and the right table is sparse, consider flattening the right table.
-     * - If the maximum size of a right table's group is small, you can reserve fewer bits by setting numRightBitsToReserve on initialization.
-     * <p>
-     * Note: If you can prove that a given group has at most one right-row then you should prefer using {@link #naturalJoin}.
-     *
-     * @param rightTable     The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd   A comma separated list with the columns from the right side that need to be added to the left
-     *                       side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return join(
             rightTable,
@@ -1398,39 +1292,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
-        return join(rightTable, StringUtils.splitToCollection(columnsToMatch), StringUtils.splitToCollection(columnsToAdd), numRightBitsToReserve);
-    }
-
-    /**
-     * Perform a cross join with the right table.
-     * <p>
-     * Returns a table that is the cartesian product of left rows X right rows, with one column for each of the left
-     * table's columns, and one column corresponding to each of the right table's columns that are included in the
-     * columnsToAdd argument. The rows are ordered first by the left table then by the right table. If columnsToMatch
-     * is non-empty then the product is filtered by the supplied match conditions.
-     * <p>
-     * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless specified,
-     * join reserves 16 bits to represent a right row. When there are too few bits to represent all of the right rows
-     * for a given aggregation group the table will shift a bit from the left side to the right side. The default of 16
-     * bits was carefully chosen because it results in an efficient implementation to process live updates.
-     * <p>
-     * An {@link io.deephaven.db.v2.utils.OutOfKeySpaceException} is thrown when the total number of bits needed
-     * to express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
-     * - If the left table is sparse, consider flattening the left table.
-     * - If there are no key-columns and the right table is sparse, consider flattening the right table.
-     * - If the maximum size of a right table's group is small, you can reserve fewer bits by setting numRightBitsToReserve on initialization.
-     * <p>
-     * Note: If you can prove that a given group has at most one right-row then you should prefer using {@link #naturalJoin}.
-     *
-     * @param rightTable            The right side table on the join.
-     * @param columnsToMatch        A collection of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd          A collection of the columns from the right side that need to be added to the left
-     *                              side as a result of the match.
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    default Table join(Table rightTable, Collection<String> columnsToMatch, Collection<String> columnsToAdd, int numRightBitsToReserve) {
-        return join(rightTable, MatchPairFactory.getExpressions(columnsToMatch), MatchPairFactory.getExpressions(columnsToAdd), numRightBitsToReserve);
+        return join(
+                rightTable,
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)),
+                numRightBitsToReserve);
     }
 
     /**
@@ -1495,11 +1361,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
     @Override
-    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, int numRightBitsToReserve) {
         return join(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
-            MatchPair.fromAddition(columnsToAdd));
+            MatchPair.fromAddition(columnsToAdd),
+            numRightBitsToReserve);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1544,7 +1411,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     @AsyncMethod
     default Table by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations) {
         return by(
-            ComboAggregateFactory.AggCombo(ComboBy.from(aggregations)),
+            new ComboAggregateFactory(ComboBy.fromOptimized(aggregations)),
             SelectColumn.from(groupByColumns));
     }
 
@@ -2379,19 +2246,6 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * Snapshot "rightTable", triggered by "this" Table, and return a new Table as a result.
-     * "this" Table is the triggering table, i.e. the table whose change events cause a new snapshot to be taken.
-     * The result table includes a "snapshot key" which is a subset (possibly all) of this Table's columns. The
-     * remaining columns in the result table come from "rightTable", the table being snapshotted.
-     *
-     * @param rightTable The table to be snapshotted
-     * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns
-     *                     to be included in the result at snapshot time. As a special case, an empty stampColumns
-     *                     is taken to mean "include all columns".
-     * @return The result table
-     */
     Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
 
     default Table snapshot(Table rightTable, String... stampColumns) {
@@ -2548,4 +2402,9 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
+
+    @Override
+    default Table toTable() {
+        return this;
+    }
 }

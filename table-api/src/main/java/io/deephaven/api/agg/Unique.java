@@ -1,25 +1,30 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinAddition;
-import org.immutables.value.Value;
+import io.deephaven.api.BuildableStyle;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
+@BuildableStyle
 public abstract class Unique implements Aggregation {
 
-    public static Unique of(JoinAddition addition) {
-        return ImmutableUnique.builder().addition(addition).build();
+    public static Unique of(Pair pair) {
+        return ImmutableUnique.builder().pair(pair).build();
     }
 
     public static Unique of(String x) {
-        return of(JoinAddition.parse(x));
+        return of(Pair.parse(x));
     }
 
-    public abstract JoinAddition addition();
+    public abstract Pair pair();
 
-    @Value.Default
+    @Default
     public boolean includeNulls() {
         return false;
+    }
+
+    public final Unique withNulls() {
+        return ImmutableUnique.builder().pair(pair()).includeNulls(true).build();
     }
 
     @Override

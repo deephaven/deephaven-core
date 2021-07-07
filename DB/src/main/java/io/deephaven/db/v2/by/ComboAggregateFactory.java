@@ -6,7 +6,29 @@ package io.deephaven.db.v2.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.*;
+import io.deephaven.api.agg.AbsSum;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Avg;
+import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.CountDistinct;
+import io.deephaven.api.agg.Distinct;
+import io.deephaven.api.agg.First;
+import io.deephaven.api.agg.Last;
+import io.deephaven.api.agg.Max;
+import io.deephaven.api.agg.Med;
+import io.deephaven.api.agg.Min;
+import io.deephaven.api.agg.Multi;
+import io.deephaven.api.agg.Pair;
+import io.deephaven.api.agg.Pct;
+import io.deephaven.api.agg.SortedFirst;
+import io.deephaven.api.agg.SortedLast;
+import io.deephaven.api.agg.Std;
+import io.deephaven.api.agg.Sum;
+import io.deephaven.api.agg.Unique;
+import io.deephaven.api.agg.Var;
+import io.deephaven.api.agg.WAvg;
+import io.deephaven.api.agg.WSum;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
@@ -15,7 +37,12 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.*;
+import io.deephaven.db.v2.BaseTable;
+import io.deephaven.db.v2.QueryTable;
+import io.deephaven.db.v2.ReverseLookup;
+import io.deephaven.db.v2.RollupAttributeCopier;
+import io.deephaven.db.v2.RollupInfo;
+import io.deephaven.db.v2.TableMap;
 import io.deephaven.db.v2.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ObjectArraySource;
@@ -29,7 +56,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -463,8 +499,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create an aggregation.
      *
      * @param factory aggregation factory.
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
-     *                   the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggregationStateFactory factory, final MatchPair... matchPairs) {
@@ -487,8 +522,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * Create an aggregation.
      *
      * @param factoryType aggregation factory type.
-     * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
-     *                   the same name, then the column name can be specified.
+     * @param matchPairs the columns to apply the aggregation to.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggType factoryType, final MatchPair... matchPairs) {
@@ -593,12 +627,20 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     public interface ComboBy {
 
-        static ComboBy of(Aggregation agg) {
+        static List<ComboBy> of(Aggregation agg) {
             return agg.walk(new ComboByAggregationAdapter()).getOut();
         }
 
-        static ComboBy[] from(Collection<Aggregation> agg) {
-            return agg.stream().map(ComboBy::of).toArray(ComboBy[]::new);
+        static List<ComboBy> from(Collection<Aggregation> agg) {
+            return agg.stream().map(ComboBy::of).flatMap(List::stream).collect(Collectors.toList());
+        }
+
+        static List<ComboBy> fromOptimized(Collection<Aggregation> agg) {
+            ComboByAggregationAdapterOptimizer builder = new ComboByAggregationAdapterOptimizer();
+            for (Aggregation a : agg) {
+                a.walk(builder);
+            }
+            return builder.build();
         }
 
         AggregationStateFactory getUnderlyingStateFactory();
@@ -1392,74 +1434,81 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     private static class ComboByAggregationAdapter implements Aggregation.Visitor {
 
         private ComboBy out;
+        private List<ComboBy> multi;
 
-        public ComboBy getOut() {
-            return Objects.requireNonNull(out);
+        public List<ComboBy> getOut() {
+            if (multi != null) {
+                return multi;
+            }
+            if (out != null) {
+                return Collections.singletonList(out);
+            }
+            throw new IllegalStateException();
         }
 
         @Override
         public void visit(Min min) {
-            out = Agg(AggType.Min, MatchPair.of(min.addition()));
+            out = Agg(AggType.Min, MatchPair.of(min.pair()));
         }
 
         @Override
         public void visit(Max max) {
-            out = Agg(AggType.Max, MatchPair.of(max.addition()));
+            out = Agg(AggType.Max, MatchPair.of(max.pair()));
         }
 
         @Override
         public void visit(Sum sum) {
-            out = Agg(AggType.Sum, MatchPair.of(sum.addition()));
+            out = Agg(AggType.Sum, MatchPair.of(sum.pair()));
         }
 
         @Override
         public void visit(AbsSum absSum) {
-            out = Agg(AggType.AbsSum, MatchPair.of(absSum.addition()));
+            out = Agg(AggType.AbsSum, MatchPair.of(absSum.pair()));
         }
 
         @Override
         public void visit(Var var) {
-            out = Agg(AggType.Var, MatchPair.of(var.addition()));
+            out = Agg(AggType.Var, MatchPair.of(var.pair()));
         }
 
         @Override
         public void visit(Avg avg) {
-            out = Agg(AggType.Avg, MatchPair.of(avg.addition()));
+            out = Agg(AggType.Avg, MatchPair.of(avg.pair()));
         }
 
         @Override
         public void visit(First first) {
-            out = Agg(AggType.First, MatchPair.of(first.addition()));
+            out = Agg(AggType.First, MatchPair.of(first.pair()));
         }
 
         @Override
         public void visit(Last last) {
-            out = Agg(AggType.Last, MatchPair.of(last.addition()));
+            out = Agg(AggType.Last, MatchPair.of(last.pair()));
         }
 
         @Override
         public void visit(Std std) {
-            out = Agg(AggType.Std, MatchPair.of(std.addition()));
+            out = Agg(AggType.Std, MatchPair.of(std.pair()));
         }
 
         @Override
         public void visit(Med med) {
-            out = Agg(new PercentileByStateFactoryImpl(0.50d, med.averageMedian()), MatchPair.of(med.addition()));
+            out = Agg(new PercentileByStateFactoryImpl(0.50d, med.averageMedian()), MatchPair.of(med.pair()));
         }
 
         @Override
         public void visit(Pct pct) {
-            out = Agg(new PercentileByStateFactoryImpl(pct.percentile(), pct.averageMedian()), MatchPair.of(pct.addition()));
+            out = Agg(new PercentileByStateFactoryImpl(pct.percentile(), pct.averageMedian()), MatchPair.of(pct.pair()));
         }
 
         @Override
         public void visit(WSum wSum) {
-            out = Agg(new WeightedSumStateFactoryImpl(wSum.weight().name()), MatchPair.of(wSum.addition()));
+            out = Agg(new WeightedSumStateFactoryImpl(wSum.weight().name()), MatchPair.of(wSum.pair()));
         }
 
         @Override
         public void visit(WAvg wAvg) {
-            out = Agg(new WeightedAverageStateFactoryImpl(wAvg.weight().name()), MatchPair.of(wAvg.addition()));
+            out = Agg(new WeightedAverageStateFactoryImpl(wAvg.weight().name()), MatchPair.of(wAvg.pair()));
         }
 
         @Override
@@ -1469,44 +1518,245 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public void visit(CountDistinct countDistinct) {
-            out = Agg(new CountDistinctStateFactory(countDistinct.countNulls()), MatchPair.of(countDistinct.addition()));
+            out = Agg(new CountDistinctStateFactory(countDistinct.countNulls()), MatchPair.of(countDistinct.pair()));
         }
 
         @Override
         public void visit(Distinct distinct) {
-            out = Agg(new DistinctStateFactory(distinct.includeNulls()), MatchPair.of(distinct.addition()));
+            out = Agg(new DistinctStateFactory(distinct.includeNulls()), MatchPair.of(distinct.pair()));
         }
 
         @Override
         public void visit(Array array) {
-            out = Agg(AggType.Array, MatchPair.of(array.addition()));
+            out = Agg(AggType.Array, MatchPair.of(array.pair()));
         }
 
         @Override
         public void visit(Unique unique) {
-            out = Agg(new UniqueStateFactory(unique.includeNulls()), MatchPair.of(unique.addition()));
+            out = Agg(new UniqueStateFactory(unique.includeNulls()), MatchPair.of(unique.pair()));
         }
 
         @Override
         public void visit(SortedFirst sortedFirst) {
-            for (SortColumn column : sortedFirst.columns()) {
-                if (column.order() != SortColumn.Order.ASCENDING) {
-                    throw new UnsupportedOperationException("SortedFirstBy only supports ASCENDING");
-                }
-            }
+            // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
             String[] columns = sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-            out = Agg(new SortedFirstBy(columns), MatchPair.of(sortedFirst.addition()));
+            out = Agg(new SortedFirstBy(columns), MatchPair.of(sortedFirst.pair()));
         }
 
         @Override
         public void visit(SortedLast sortedLast) {
-            for (SortColumn column : sortedLast.columns()) {
-                if (column.order() != SortColumn.Order.ASCENDING) {
-                    throw new UnsupportedOperationException("SortedLastBy only supports ASCENDING");
-                }
-            }
+            // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
             String[] columns = sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-            out = Agg(new SortedLastBy(columns), MatchPair.of(sortedLast.addition()));
+            out = Agg(new SortedLastBy(columns), MatchPair.of(sortedLast.pair()));
+        }
+
+        @Override
+        public void visit(Multi<?> multi) {
+            List<ComboBy> results = new ArrayList<>();
+            for (Aggregation aggregation : multi.aggregations()) {
+                results.addAll(ComboBy.of(aggregation));
+            }
+            this.multi = results;
+        }
+    }
+
+    private static class ComboByAggregationAdapterOptimizer implements Aggregation.Visitor {
+
+        private final List<Pair> absSums = new ArrayList<>();
+        private final List<Pair> arrays = new ArrayList<>();
+        private final List<Pair> avgs = new ArrayList<>();
+        private final List<ColumnName> counts = new ArrayList<>();
+        private final Map<Boolean, List<Pair>> countDistincts = new HashMap<>();
+        private final Map<Boolean, List<Pair>> distincts = new HashMap<>();
+        private final List<Pair> firsts = new ArrayList<>();
+        private final List<Pair> lasts = new ArrayList<>();
+        private final List<Pair> maxs = new ArrayList<>();
+        private final Map<Boolean, List<Pair>> medians = new HashMap<>();
+        private final List<Pair> mins = new ArrayList<>();
+        private final Map<io.deephaven.base.Pair<Boolean, Double>, List<Pair>> pcts = new HashMap<>();
+        private final Map<List<SortColumn>, List<Pair>> sortedFirsts = new HashMap<>();
+        private final Map<List<SortColumn>, List<Pair>> sortedLasts = new HashMap<>();
+        private final List<Pair> stds = new ArrayList<>();
+        private final List<Pair> sums = new ArrayList<>();
+        private final Map<Boolean, List<Pair>> uniques = new HashMap<>();
+        private final List<Pair> vars = new ArrayList<>();
+        private final Map<ColumnName, List<Pair>> wAvgs = new HashMap<>();
+        private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
+
+        List<ComboBy> build() {
+            List<ComboBy> combos = new ArrayList<>();
+            if (!absSums.isEmpty()) {
+                combos.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
+            }
+            if (!arrays.isEmpty()) {
+                combos.add(Agg(AggType.Array, MatchPair.fromPairs(arrays)));
+            }
+            if (!avgs.isEmpty()) {
+                combos.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
+            }
+            for (ColumnName count : counts) {
+                combos.add(new CountComboBy(count.name()));
+            }
+            for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
+                combos.add(Agg(new CountDistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+            for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
+                combos.add(Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+            if (!firsts.isEmpty()) {
+                combos.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
+            }
+            if (!lasts.isEmpty()) {
+                combos.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
+            }
+            if (!maxs.isEmpty()) {
+                combos.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
+            }
+            for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
+                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+            if (!mins.isEmpty()) {
+                combos.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
+            }
+            for (Map.Entry<io.deephaven.base.Pair<Boolean, Double>, List<Pair>> e : pcts.entrySet()) {
+                combos.add(Agg(new PercentileByStateFactoryImpl(e.getKey().getSecond(), e.getKey().getFirst()), MatchPair.fromPairs(e.getValue())));
+            }
+            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
+                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
+                combos.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
+            }
+            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
+                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
+                combos.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
+            }
+            if (!stds.isEmpty()) {
+                combos.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
+            }
+            if (!sums.isEmpty()) {
+                combos.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
+            }
+            for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
+                combos.add(Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+            if (!vars.isEmpty()) {
+                combos.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
+            }
+            for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
+                combos.add(Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+            }
+            for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
+                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+            }
+            return combos;
+        }
+
+        @Override
+        public void visit(AbsSum absSum) {
+            absSums.add(absSum.pair());
+        }
+
+        @Override
+        public void visit(Array array) {
+            arrays.add(array.pair());
+        }
+
+        @Override
+        public void visit(Avg avg) {
+            avgs.add(avg.pair());
+        }
+
+        @Override
+        public void visit(Count count) {
+            counts.add(count.column());
+        }
+
+        @Override
+        public void visit(CountDistinct countDistinct) {
+            countDistincts.computeIfAbsent(countDistinct.countNulls(), b -> new ArrayList<>()).add(countDistinct.pair());
+        }
+
+        @Override
+        public void visit(Distinct distinct) {
+            distincts.computeIfAbsent(distinct.includeNulls(), b -> new ArrayList<>()).add(distinct.pair());
+        }
+
+        @Override
+        public void visit(First first) {
+            firsts.add(first.pair());
+        }
+
+        @Override
+        public void visit(Last last) {
+            lasts.add(last.pair());
+        }
+
+        @Override
+        public void visit(Max max) {
+            maxs.add(max.pair());
+        }
+
+        @Override
+        public void visit(Med med) {
+            medians.computeIfAbsent(med.averageMedian(), b -> new ArrayList<>()).add(med.pair());
+        }
+
+        @Override
+        public void visit(Min min) {
+            mins.add(min.pair());
+        }
+
+        @Override
+        public void visit(Multi<?> multi) {
+            for (Aggregation aggregation : multi.aggregations()) {
+                aggregation.walk(this);
+            }
+        }
+
+        @Override
+        public void visit(Pct pct) {
+            pcts.computeIfAbsent(new io.deephaven.base.Pair<>(pct.averageMedian(), pct.percentile()), b -> new ArrayList<>()).add(pct.pair());
+        }
+
+        @Override
+        public void visit(SortedFirst sortedFirst) {
+            sortedFirsts.computeIfAbsent(sortedFirst.columns(), b -> new ArrayList<>()).add(sortedFirst.pair());
+        }
+
+        @Override
+        public void visit(SortedLast sortedLast) {
+            sortedLasts.computeIfAbsent(sortedLast.columns(), b -> new ArrayList<>()).add(sortedLast.pair());
+        }
+
+        @Override
+        public void visit(Std std) {
+            stds.add(std.pair());
+        }
+
+        @Override
+        public void visit(Sum sum) {
+            sums.add(sum.pair());
+        }
+
+        @Override
+        public void visit(Unique unique) {
+            uniques.computeIfAbsent(unique.includeNulls(), b -> new ArrayList<>()).add(unique.pair());
+        }
+
+        @Override
+        public void visit(Var var) {
+            vars.add(var.pair());
+        }
+
+        @Override
+        public void visit(WAvg wAvg) {
+            wAvgs.computeIfAbsent(wAvg.weight(), b -> new ArrayList<>()).add(wAvg.pair());
+        }
+
+        @Override
+        public void visit(WSum wSum) {
+            wSums.computeIfAbsent(wSum.weight(), b -> new ArrayList<>()).add(wSum.pair());
         }
     }
 }

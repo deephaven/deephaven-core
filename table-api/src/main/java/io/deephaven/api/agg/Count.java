@@ -1,10 +1,12 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-@Immutable(builder = false, copy = false)
+@Immutable
+@SimpleStyle
 public abstract class Count implements Aggregation {
 
     public static Count of(ColumnName name) {
@@ -14,6 +16,8 @@ public abstract class Count implements Aggregation {
     public static Count of(String x) {
         return of(ColumnName.of(x));
     }
+
+    // Note: Count doesn't need Pair since there is no column as input.
 
     @Parameter
     public abstract ColumnName column();

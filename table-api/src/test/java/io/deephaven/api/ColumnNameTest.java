@@ -26,31 +26,36 @@ public class ColumnNameTest {
     }
 
     @Test
+    void name() {
+        assertThat(FOO.name()).isEqualTo("Foo");
+    }
+
+    @Test
     void empty() {
-        expectParseFailure("");
+        invalid("");
     }
 
     @Test
     void leadingWhitespace() {
-        expectParseFailure(" Foo");
+        invalid(" Foo");
     }
 
     @Test
     void trailingWhitespace() {
-        expectParseFailure("Foo ");
+        invalid("Foo ");
     }
 
     @Test
     void innerWhitespace() {
-        expectParseFailure("Foo Bar");
+        invalid("Foo Bar");
     }
 
     @Test
     void withEquals() {
-        expectParseFailure("Foo=Bar");
+        invalid("Foo=Bar");
     }
 
-    private void expectParseFailure(String x) {
+    private void invalid(String x) {
         try {
             ColumnName.of(x);
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);

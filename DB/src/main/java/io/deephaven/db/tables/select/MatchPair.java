@@ -4,13 +4,11 @@
 
 package io.deephaven.db.tables.select;
 
+import io.deephaven.api.agg.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.db.tables.utils.DBNameValidator;
 
-import io.deephaven.api.ColumnAssignment;
-import io.deephaven.api.ColumnMatch;
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import java.io.Serializable;
@@ -26,12 +24,16 @@ public class MatchPair implements Serializable {
 
     public static final MatchPair [] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
 
-    public static MatchPair of(JoinMatch joinMatch) {
-        return joinMatch.walk(new Adapter()).getOut();
+    public static MatchPair of(Pair pair) {
+        return new MatchPair(pair.output().name(), pair.input().name());
     }
 
-    public static MatchPair of(JoinAddition joinAddition) {
-        return joinAddition.walk(new Adapter()).getOut();
+    public static MatchPair of(JoinMatch match) {
+        return new MatchPair(match.left().name(), match.right().name());
+    }
+
+    public static MatchPair of(JoinAddition addition) {
+        return new MatchPair(addition.newColumn().name(), addition.existingColumn().name());
     }
 
     public static MatchPair[] fromMatches(Collection<JoinMatch> matches) {
@@ -40,6 +42,10 @@ public class MatchPair implements Serializable {
 
     public static MatchPair[] fromAddition(Collection<JoinAddition> matches) {
         return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static MatchPair[] fromPairs(Collection<Pair> pairs) {
+        return pairs.stream().map(MatchPair::of).toArray(MatchPair[]::new);
     }
 
     public final String leftColumn;
@@ -132,30 +138,5 @@ public class MatchPair implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(leftColumn, rightColumn);
-    }
-
-    private static class Adapter implements JoinMatch.Visitor, JoinAddition.Visitor {
-        private MatchPair out;
-
-        public MatchPair getOut() {
-            return Objects.requireNonNull(out);
-        }
-
-        @Override
-        public void visit(ColumnName columnName) {
-            out = new MatchPair(columnName.name(), columnName.name());
-        }
-
-        @Override
-        public void visit(ColumnMatch columnMatch) {
-            out = new MatchPair(columnMatch.left().name(), columnMatch.right().name());
-        }
-
-        @Override
-        public void visit(ColumnAssignment columnAssignment) {
-            out = new MatchPair(
-                columnAssignment.newColumn().name(),
-                columnAssignment.existingColumn().name());
-        }
     }
 }

@@ -1,10 +1,19 @@
 package io.deephaven.api;
 
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.filter.Filter;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-@Immutable(builder = false, copy = false)
-public abstract class RawString implements Expression, Filter {
+import java.io.Serializable;
+
+/**
+ * An un-parsed string; used for cases where the server has string-parsing that hasn't been
+ * structurally represented at the api layer yet.
+ */
+@Immutable
+@SimpleStyle
+public abstract class RawString implements Expression, Filter, Serializable {
 
     public static RawString of(String x) {
         return ImmutableRawString.of(x);

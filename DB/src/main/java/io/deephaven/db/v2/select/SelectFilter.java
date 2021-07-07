@@ -4,7 +4,7 @@
 
 package io.deephaven.db.v2.select;
 
-import io.deephaven.api.ColumnMatch;
+import io.deephaven.api.filter.FilterMatch;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.SelectFilterFactory;
@@ -12,7 +12,7 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Filter;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.RawString;
 import java.util.Collection;
 import java.util.Objects;
@@ -194,7 +194,7 @@ public interface SelectFilter {
         }
 
         @Override
-        public void visit(ColumnMatch match) {
+        public void visit(FilterMatch match) {
             // todo: improve
             out = SelectFilterFactory.getExpression(String.format("%s==%s", match.left().name(), match.right().name()));
         }

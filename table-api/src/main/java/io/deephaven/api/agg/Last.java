@@ -1,22 +1,23 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinAddition;
+import io.deephaven.api.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-@Immutable(builder = false, copy = false)
+@Immutable
+@SimpleStyle
 public abstract class Last implements Aggregation {
 
-    public static Last of(JoinAddition addition) {
-        return ImmutableLast.of(addition);
+    public static Last of(Pair pair) {
+        return ImmutableLast.of(pair);
     }
 
     public static Last of(String x) {
-        return of(JoinAddition.parse(x));
+        return of(Pair.parse(x));
     }
 
     @Parameter
-    public abstract JoinAddition addition();
+    public abstract Pair pair();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

@@ -1,25 +1,30 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinAddition;
+import io.deephaven.api.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
+@BuildableStyle
 public abstract class Med implements Aggregation {
 
-    public static Med of(JoinAddition addition) {
-        return ImmutableMed.builder().addition(addition).build();
+    public static Med of(Pair pair) {
+        return ImmutableMed.builder().pair(pair).build();
     }
 
     public static Med of(String x) {
-        return of(JoinAddition.parse(x));
+        return of(Pair.parse(x));
     }
 
-    public abstract JoinAddition addition();
+    public abstract Pair pair();
 
     @Default
     public boolean averageMedian() {
         return true;
+    }
+
+    public final Med withoutAverage() {
+        return ImmutableMed.builder().pair(pair()).averageMedian(false).build();
     }
 
     @Override

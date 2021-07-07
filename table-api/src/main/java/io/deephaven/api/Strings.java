@@ -1,5 +1,10 @@
 package io.deephaven.api;
 
+import io.deephaven.api.agg.Pair;
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterMatch;
+
 import java.util.Objects;
 
 /**
@@ -16,20 +21,37 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(ColumnMatch match) {
+    public static String of(FilterMatch match) {
         return String.format("%s==%s", of(match.left()), of(match.right()));
     }
 
-    public static String of(ColumnFormula formula) {
-        return String.format("%s=%s", of(formula.newColumn()), of(formula.expression()));
+    public static String of(Pair pair) {
+        if (pair.input().equals(pair.output())) {
+            return of(pair.output());
+        }
+        return String.format("%s=%s", of(pair.output()), of(pair.input()));
     }
 
-    public static String of(ColumnAssignment assignment) {
-        return String.format("%s=%s", of(assignment.newColumn()), of(assignment.existingColumn()));
+    public static String of(JoinMatch match) {
+        if (match.left().equals(match.right())) {
+            return of(match.left());
+        }
+        return String.format("%s==%s", of(match.left()), of(match.right()));
+    }
+
+    public static String of(JoinAddition addition) {
+        if (addition.newColumn().equals(addition.existingColumn())) {
+            return of(addition.newColumn());
+        }
+        return String.format("%s=%s", of(addition.newColumn()), of(addition.existingColumn()));
     }
 
     public static String of(Selectable selectable) {
-        return selectable.walk(new UniversalAdapter()).getOut();
+        if (selectable.newColumn().equals(selectable.expression())) {
+            return selectable.newColumn().name();
+        }
+        String rhs = selectable.expression().walk(new UniversalAdapter()).getOut();
+        return String.format("%s=%s", selectable.newColumn().name(), rhs);
     }
 
     public static String of(Expression expression) {
@@ -40,19 +62,10 @@ public class Strings {
         return filter.walk(new UniversalAdapter()).getOut();
     }
 
-    public static String of(JoinAddition joinAddition) {
-        return joinAddition.walk(new UniversalAdapter()).getOut();
-    }
-
-    public static String of(JoinMatch joinMatch) {
-        return joinMatch.walk(new UniversalAdapter()).getOut();
-    }
-
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter implements Filter.Visitor, Expression.Visitor,
-        Selectable.Visitor, JoinAddition.Visitor, JoinMatch.Visitor {
+    private static class UniversalAdapter implements Filter.Visitor, Expression.Visitor {
         private String out;
 
         public String getOut() {
@@ -70,18 +83,8 @@ public class Strings {
         }
 
         @Override
-        public void visit(ColumnFormula columnFormula) {
-            out = of(columnFormula);
-        }
-
-        @Override
-        public void visit(ColumnAssignment columnAssignment) {
-            out = of(columnAssignment);
-        }
-
-        @Override
-        public void visit(ColumnMatch columnMatch) {
-            out = of(columnMatch);
+        public void visit(FilterMatch filterMatch) {
+            out = of(filterMatch);
         }
     }
 }

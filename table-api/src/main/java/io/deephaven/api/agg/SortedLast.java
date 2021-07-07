@@ -1,16 +1,21 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.JoinAddition;
+import io.deephaven.api.BuildableStyle;
 import io.deephaven.api.SortColumn;
-import org.immutables.value.Value;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 
 @Immutable
+@BuildableStyle
 public abstract class SortedLast implements Aggregation {
 
-    public abstract JoinAddition addition();
+    public static Builder builder() {
+        return ImmutableSortedLast.builder();
+    }
+
+    public abstract Pair pair();
 
     public abstract List<SortColumn> columns();
 
@@ -20,10 +25,35 @@ public abstract class SortedLast implements Aggregation {
         return visitor;
     }
 
-    @Value.Check
+    @Check
     final void nonEmptyColumns() {
         if (columns().isEmpty()) {
             throw new IllegalArgumentException("columns() must be non-empty");
         }
+    }
+
+    @Check
+    final void checkSortOrder() {
+        // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+        if (!columns().stream().map(SortColumn::order).allMatch(SortedLast::isAscending)) {
+            throw new IllegalArgumentException(
+                "Can only construct SortedLast with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
+        }
+    }
+
+    private static boolean isAscending(SortColumn.Order o) {
+        return o == SortColumn.Order.ASCENDING;
+    }
+
+    public interface Builder {
+        Builder pair(Pair pair);
+
+        Builder addColumns(SortColumn element);
+
+        Builder addColumns(SortColumn... elements);
+
+        Builder addAllColumns(Iterable<? extends SortColumn> elements);
+
+        SortedLast build();
     }
 }
