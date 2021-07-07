@@ -95,7 +95,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
         }
 
         protected boolean sendValidityBuffer() {
-            return !options.useDeephavenNulls || nullCount() != 0;
+            // There are two cases we don't send a validity buffer - the simplest case is following the arrow flight
+            // spec, which says that if there are no nulls present, the buffer is optional. Our implementation of
+            // nullCount() for primitive types will return zero if the useDeephavenNulls flag is set, so the buffer
+            // will also be omitted in that case.
+            return nullCount() != 0;
         }
     }
 
