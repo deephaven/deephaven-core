@@ -160,7 +160,7 @@ public class ParquetTools {
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final String destPath) {
-        writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath));
+        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, new File(destPath));
     }
 
     /**
@@ -168,27 +168,56 @@ public class ParquetTools {
      *
      * @param sourceTable source table
      * @param dest destination file; the file name should end in ".parquet" extension.
-     *             If the path includes non-existing directories they are created.
+     *             If the path includes non-existing directories they are created
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File dest) {
-        writeTable(sourceTable, sourceTable.getDefinition(), dest);
+        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, dest);
     }
 
     /**
      * Write out a table to disk.
      * @param sourceTable source table
-     * @param definition table definition.  Will be written to disk as given.
-     * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created.
+     * @param definition table definition.  Will be written to destination as given
+     * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final TableDefinition definition,
             @NotNull final File destFile) {
+        writeTable(sourceTable, definition, ParquetInstructions.EMPTY, destFile);
+    }
+
+    /**
+     * Write out a table to disk.
+     * @param sourceTable source table
+     * @param definition table definition.  Will be written to destination as given
+     * @param writeInstructions instructions for customizations while writing
+     * @param destFilePath destination path; it must end in ".parquet".  Any non existing directories in the path are created
+     */
+    public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final TableDefinition definition,
+                                  @NotNull final ParquetInstructions writeInstructions,
+                                  @NotNull final String destFilePath) {
+        writeTable(sourceTable, definition, writeInstructions, new File(destFilePath));
+    }
+
+    /**
+     * Write out a table to disk.
+     * @param sourceTable source table
+     * @param definition table definition.  Will be written to destination as given
+     * @param writeInstructions instructions for customizations while writing
+     * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+     */
+    public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final TableDefinition definition,
+                                  @NotNull final ParquetInstructions writeInstructions,
+                                  @NotNull final File destFile) {
         final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
-            writeParquetTableImpl(sourceTable, definition, ParquetInstructions.EMPTY, destFile, definition.getGroupingColumnNamesArray());
+            writeParquetTableImpl(
+                    sourceTable, definition, writeInstructions, destFile, definition.getGroupingColumnNamesArray());
         } catch (Exception e) {
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);

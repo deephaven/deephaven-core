@@ -204,7 +204,7 @@ public class ParquetTableWriter {
     ) throws SchemaMappingException, IOException {
 
         final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(table, definition, path, tableMeta, compressionCodecName);
+        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, tableMeta, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
 
@@ -223,9 +223,10 @@ public class ParquetTableWriter {
         parquetFileWriter.close();
     }
 
-    private static Table pretransformTable(Table t, TableDefinition definition) {
+    private static Table pretransformTable(final Table table, final TableDefinition definition) {
         List<String> updateViewColumnsTransform = new ArrayList<>();
         List<String> viewColumnsTransform = new ArrayList<>();
+        Table t = table;
         for (ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
             if (t.hasColumns(colName)) {
@@ -247,7 +248,12 @@ public class ParquetTableWriter {
     }
 
     @NotNull
-    private static ParquetFileWriter getParquetFileWriter(Table t, TableDefinition definition, String path, Map<String, String> tableMeta, CompressionCodecName codecName) throws SchemaMappingException, IOException {
+    private static ParquetFileWriter getParquetFileWriter(
+            final TableDefinition definition,
+            final String path,
+            final Map<String, String> tableMeta,
+            final CompressionCodecName codecName
+    ) throws SchemaMappingException, IOException {
         final MappedSchema mappedSchema = MappedSchema.create(definition);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
