@@ -12,9 +12,10 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.barrage.flatbuf.BarrageRecordBatch;
 import io.deephaven.barrage.flatbuf.Buffer;
-import io.deephaven.barrage.flatbuf.Message;
 import io.deephaven.barrage.flatbuf.FieldNode;
+import io.deephaven.barrage.flatbuf.Message;
 import io.deephaven.barrage.flatbuf.MessageHeader;
+import io.deephaven.barrage.flatbuf.MetadataVersion;
 import io.deephaven.barrage.flatbuf.RecordBatch;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.TableDefinition;
@@ -404,7 +405,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         Message.startMessage(builder);
         Message.addHeaderType(builder, headerType);
         Message.addHeader(builder, headerOffset);
-        Message.addVersion(builder, (short)0);
+        Message.addVersion(builder, MetadataVersion.V5);
         Message.addBodyLength(builder, 0);
         return Message.endMessage(builder);
     }
