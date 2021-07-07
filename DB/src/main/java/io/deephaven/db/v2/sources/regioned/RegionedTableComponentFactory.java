@@ -4,12 +4,10 @@
 
 package io.deephaven.db.v2.sources.regioned;
 
-import io.deephaven.base.string.EncodingInfo;
-import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.base.string.cache.StringCache;
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.db.v2.SourceTableComponentFactory;
-import io.deephaven.db.v2.sources.regioned.decoder.EncodedStringDecoder;
 import io.deephaven.db.v2.sources.regioned.decoder.SimpleStringDecoder;
 import io.deephaven.util.codec.ObjectDecoder;
 
@@ -18,7 +16,9 @@ import io.deephaven.util.codec.ObjectDecoder;
  */
 public interface RegionedTableComponentFactory extends SourceTableComponentFactory {
 
-    <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(ColumnDefinition<DATA_TYPE> columnDefinition);
+    <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
+            ColumnDefinition<DATA_TYPE> columnDefinition,
+            ColumnToCodecMappings codecMappings);
 
     static <DATA_TYPE> ObjectDecoder<DATA_TYPE> getStringDecoder(
             final Class<DATA_TYPE> dataType,

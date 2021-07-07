@@ -125,7 +125,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         listener = mock(ShiftAwareListener.class);
 
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(true), with(equal(TABLE_DEFINITION.getColumns())));
+            oneOf(componentFactory).createColumnSourceManager(with(true), ColumnToCodecMappings.EMPTY, with(equal(TABLE_DEFINITION.getColumns())));
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
         }});
@@ -403,7 +403,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         // Test 1: Drop a column
         // Setup the table
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(true), with(equal(includedColumns1)));
+            oneOf(componentFactory).createColumnSourceManager(with(true), ColumnToCodecMappings.EMPTY, with(equal(includedColumns1)));
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
         }});
@@ -439,7 +439,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 DOUBLE_COLUMN_DEFINITION
         };
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(true), with(equal(includedColumns2)));
+            oneOf(componentFactory).createColumnSourceManager(with(true), ColumnToCodecMappings.EMPTY, with(equal(includedColumns2)));
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
         }});
@@ -484,7 +484,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 PARTITIONING_COLUMN_DEFINITION,
         };
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(true), with(equal(includedColumns3)));
+            oneOf(componentFactory).createColumnSourceManager(with(true), ColumnToCodecMappings.EMPTY, with(equal(includedColumns3)));
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
         }});
@@ -562,7 +562,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     public void testWhereDate() {
         doInitializeCheck(tableLocations, makePassingLocations(5), false, false);
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(true, TABLE_DEFINITION.getColumns());
+            oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY, TABLE_DEFINITION.getColumns());
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
         }});
@@ -612,7 +612,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     public void testWhereDateSize() {
         doInitializeCheck(tableLocations, makePassingLocations(5), false, false);
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(true, TABLE_DEFINITION.getColumns());
+            oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY, TABLE_DEFINITION.getColumns());
             will(returnValue(columnSourceManager));
             oneOf(columnSourceManager).disableGrouping();
             allowing(columnSources[3]).getInt(with(any(long.class)));

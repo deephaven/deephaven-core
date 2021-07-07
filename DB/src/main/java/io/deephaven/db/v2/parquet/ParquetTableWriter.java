@@ -204,7 +204,7 @@ public class ParquetTableWriter {
     ) throws SchemaMappingException, IOException {
 
         final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, tableMeta, compressionCodecName);
+        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
 
@@ -214,7 +214,7 @@ public class ParquetTableWriter {
             String name = nameToSource.getKey();
             ColumnSource<?> columnSource = nameToSource.getValue();
             try {
-                writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name));
+                writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name), writeInstructions);
             } catch (IllegalAccessException  e) {
                 throw new RuntimeException("Failed to write column " + name, e);
             }
@@ -251,14 +251,15 @@ public class ParquetTableWriter {
     private static ParquetFileWriter getParquetFileWriter(
             final TableDefinition definition,
             final String path,
+            final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
             final CompressionCodecName codecName
-    ) throws SchemaMappingException, IOException {
-        final MappedSchema mappedSchema = MappedSchema.create(definition);
+    ) throws IOException {
+        final MappedSchema mappedSchema = MappedSchema.create(definition, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
-            Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column);
+            Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column, writeInstructions);
             if (codecData != null) {
                 extraMetaData.put(CODEC_NAME_PREFIX + colName, codecData.getLeft());
                 final String codecArgs = codecData.getRight();
@@ -282,15 +283,25 @@ public class ParquetTableWriter {
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
     }
 
-    private static void writeColumnSource(Index index, RowGroupWriter rowGroupWriter, String name, ColumnSource columnSource, ColumnDefinition columnDefinition) throws IllegalAccessException, IOException {
-
+    private static void writeColumnSource(
+            final Index tableIndex,
+            final RowGroupWriter rowGroupWriter,
+            final String name,
+            final ColumnSource columnSourceIn,
+            final ColumnDefinition columnDefinition,
+            final ParquetInstructions writeInstructions
+    ) throws IllegalAccessException, IOException {
+        Index index = tableIndex;
+        ColumnSource columnSource = columnSourceIn;
         ColumnSource lengthSource = null;
         Index lengthIndex = null;
         int targetSize = getTargetSize(columnSource.getType());
         Supplier<Integer> rowStepGetter;
         Supplier<Integer> valuesStepGetter;
         int stepsCount;
-        if (columnSource.getComponentType() != null && !CodecLookup.explicitCodecPresent(columnDefinition) && !CodecLookup.codecRequired(columnDefinition)) {
+        if (columnSource.getComponentType() != null
+                && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
+                && !CodecLookup.codecRequired(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource> columns = new HashMap<>();
             columns.put("array", columnSource);
@@ -427,7 +438,7 @@ public class ParquetTableWriter {
                 }
             }
         } else {
-            try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType)) {
+            try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
                 boolean supportNulls = supportNulls(columnType);
                 Object bufferToWrite = transferObject.getBuffer();
                 Object nullValue = getNullValue(columnType);
@@ -522,7 +533,12 @@ public class ParquetTableWriter {
     }
 
 
-    private static <DATA_TYPE> TransferObject getDestinationBuffer(ColumnSource<DATA_TYPE> columnSource, ColumnDefinition<DATA_TYPE> columnDefinition, int targetSize, Class<DATA_TYPE> columnType) {
+    private static <DATA_TYPE> TransferObject getDestinationBuffer(
+            final ColumnSource<DATA_TYPE> columnSource,
+            final ColumnDefinition<DATA_TYPE> columnDefinition,
+            final int targetSize,
+            final Class<DATA_TYPE> columnType,
+            final ParquetInstructions instructions) {
         if (int.class.equals(columnType)) {
             int[] array = new int[targetSize];
             WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(array);
@@ -552,7 +568,7 @@ public class ParquetTableWriter {
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, targetSize);
         }
-        final ObjectCodec<DATA_TYPE> codec = CodecLookup.lookup(columnDefinition);
+        final ObjectCodec<DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
         return new CodecTransfer(columnSource, codec, targetSize);
     }
 

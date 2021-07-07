@@ -10,11 +10,11 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.ColumnSourceManager;
+import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.util.codec.*;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Externalizable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,8 +47,11 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     }
 
     @Override
-    public ColumnSourceManager createColumnSourceManager(final boolean isRefreshing, @NotNull final ColumnDefinition<?>... columnDefinitions) {
-        return new RegionedColumnSourceManager(isRefreshing, this, columnDefinitions);
+    public ColumnSourceManager createColumnSourceManager(
+            final boolean isRefreshing,
+            @NotNull final ColumnToCodecMappings codecMappings,
+            @NotNull final ColumnDefinition<?>... columnDefinitions) {
+        return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
     }
 
     /**
@@ -62,7 +65,10 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
+    public <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
+            @NotNull final ColumnToCodecMappings codecMappings
+    ) {
         Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
@@ -93,7 +99,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                 return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
                         RegionedTableComponentFactory.getStringDecoder(String.class, columnDefinition));
             } else {
-                final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition);
+                final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition, codecMappings);
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
             }
         } catch (IllegalArgumentException except) {

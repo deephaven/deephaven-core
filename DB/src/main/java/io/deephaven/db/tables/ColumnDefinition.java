@@ -100,12 +100,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public static <T> ColumnDefinition<T> ofFixedWidthCodec(
-            @NotNull final String name, @NotNull final Class<T> dataType,
-            @Nullable final String codecName, @Nullable final String codecArguments, final int width) {
-        return ofFixedWidthCodec(name, dataType, null, codecName, codecArguments, width);
-    }
-
-    public static <T> ColumnDefinition<T> ofFixedWidthCodec(
             @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
             @Nullable final String codecName, @Nullable final String codecArguments, final int width) {
         Objects.requireNonNull(name);

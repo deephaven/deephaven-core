@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
+import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -14,7 +15,7 @@ import java.util.function.Function;
  * it as an optional argument) specifying desired transformations.  Examples are
  * mapping column names and use of specific codecs during (de)serialization.
  */
-public abstract class ParquetInstructions {
+public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
     public static void setDefaultCompressionCodecName(final String name) {
         defaultCompressionCodecName = name;
@@ -29,8 +30,8 @@ public abstract class ParquetInstructions {
     }
     public abstract String getParquetColumnNameFromColumnNameOrDefault(final String columnName);
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
-    public abstract String getCodecName(final String columnName);
-    public abstract String getCodecArgs(final String columnName);
+    @Override public abstract String getCodecName(final String columnName);
+    @Override public abstract String getCodecArgs(final String columnName);
     public abstract String getCompressionCodecName();
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
@@ -266,7 +267,11 @@ public abstract class ParquetInstructions {
             return (columnNameToInstructions == null) ? Collections.emptySet() : columnNameToInstructions.keySet();
         }
 
-        public void addCodec(final String columnName, final String codecName, final String codecArgs) {
+        public Builder addColumnCodec(final String columnName, final String codecName) {
+            return addColumnCodec(columnName, codecName, null);
+        }
+
+        public Builder addColumnCodec(final String columnName, final String codecName, final String codecArgs) {
             final ColumnInstructions ci;
             if (columnNameToInstructions == null) {
                 newColumnNameToInstructionsMap();
@@ -277,10 +282,12 @@ public abstract class ParquetInstructions {
             }
             ci.codecName = codecName;
             ci.codecArgs = codecArgs;
+            return this;
         }
 
-        public void setCompressionCodecName(final String compressionCodecName) {
+        public Builder setCompressionCodecName(final String compressionCodecName) {
             this.compressionCodecName = compressionCodecName;
+            return this;
         }
 
         public ParquetInstructions build() {

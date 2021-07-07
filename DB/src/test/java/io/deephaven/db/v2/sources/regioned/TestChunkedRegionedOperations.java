@@ -169,8 +169,13 @@ public class TestChunkedRegionedOperations {
             ColumnDefinition.fromGenericType("SymS", StringSet.class),
             ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
             ColumnDefinition.fromGenericType("Ext", SimpleExternalizable.class),
-            ColumnDefinition.ofFixedWidthCodec("Fix", BigInteger.class, BigIntegerCodec.class.getName(), "4", new BigIntegerCodec(4).expectedObjectWidth()),
-            ColumnDefinition.ofVariableWidthCodec("Var", BigInteger.class, BigIntegerCodec.class.getName()));
+            ColumnDefinition.fromGenericType("Fix", BigInteger.class),
+            ColumnDefinition.fromGenericType("Var", BigInteger.class)
+        );
+        final ParquetInstructions parquetInstructions = new ParquetInstructions.Builder()
+                .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
+                .addColumnCodec("Var", BigIntegerCodec.class.getName())
+                .build();
 
         final Table inputData = ((QueryTable)TableTools.emptyTable(TABLE_SIZE)
                 .update(
@@ -238,11 +243,11 @@ public class TestChunkedRegionedOperations {
         ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition,
-                ParquetInstructions.EMPTY,
+                parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName());
+                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
                         })
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
@@ -252,11 +257,11 @@ public class TestChunkedRegionedOperations {
         ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition,
-                ParquetInstructions.EMPTY,
+                parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName());
+                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
                         })
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
