@@ -2,6 +2,7 @@ package io.deephaven.db.v2.parquet;
 
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -14,7 +15,11 @@ import java.util.function.Function;
  * mapping column names and use of specific codecs during (de)serialization.
  */
 public abstract class ParquetInstructions {
-    private static final String DEFAULT_COMPRESSION_CODEC_NAME = "SNAPPY";
+    private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
+    public static void setDefaultCompressionCodecName(final String name) {
+        defaultCompressionCodecName = name;
+    }
+
     public ParquetInstructions() {
     }
 
@@ -48,7 +53,7 @@ public abstract class ParquetInstructions {
 
         @Override
         public String getCompressionCodecName() {
-            return DEFAULT_COMPRESSION_CODEC_NAME;
+            return defaultCompressionCodecName;
         }
     };
 
@@ -176,7 +181,7 @@ public abstract class ParquetInstructions {
         // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
         // different than the columnName (ie, the column name mapping is not the default mapping)
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
-        private String compressionCodecName = DEFAULT_COMPRESSION_CODEC_NAME;
+        private String compressionCodecName = defaultCompressionCodecName;
 
         public Builder() {
         }

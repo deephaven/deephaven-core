@@ -48,16 +48,6 @@ public class ParquetTools {
 
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
-    private static volatile CompressionCodecName defaultPerquetCompressionCodec = CompressionCodecName.SNAPPY;
-
-    /**
-     * Sets the default parquet compression codec for writing parquet.
-     * @param codecName the codec name.
-     */
-    public static void setDefaultParquetCompressionCodec(final String codecName) {
-        defaultPerquetCompressionCodec = CompressionCodecName.valueOf(codecName);
-    }
-
     /**
      * Reads in a table from disk.
      *
@@ -198,7 +188,7 @@ public class ParquetTools {
             @NotNull final File destFile) {
         final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
-            writeParquetTableImpl(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
+            writeParquetTableImpl(sourceTable, definition, ParquetInstructions.EMPTY, destFile, definition.getGroupingColumnNamesArray());
         } catch (Exception e) {
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);
@@ -256,16 +246,16 @@ public class ParquetTools {
      * must already be grouping information for those columns in the sources.  This can be accomplished with
      * {@code .by(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
      *
-     * @param sources         The tables to write
-     * @param tableDefinition The common schema for all the tables to write
-     * @param codecName       Compression codec to use.
+     * @param sources            The tables to write
+     * @param tableDefinition    The common schema for all the tables to write
+     * @param writeInstructions  Write instructions for customizations while writing
      *
      * @param destinations    The destinations path
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
      */
     public static void writeParquetTables(@NotNull final Table[] sources,
                                           @NotNull final TableDefinition tableDefinition,
-                                          final CompressionCodecName codecName,
+                                          @NotNull final ParquetInstructions writeInstructions,
                                           @NotNull final File[] destinations, String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         final File[] absoluteDestinations =
@@ -280,7 +270,7 @@ public class ParquetTools {
         for (int i = 0; i < sources.length; i++) {
             final Table source = sources[i];
             try {
-                writeParquetTableImpl(source, tableDefinition, codecName, destinations[i], groupingColumns);
+                writeParquetTableImpl(source, tableDefinition, writeInstructions, destinations[i], groupingColumns);
             } catch (RuntimeException e) {
                 for (final File firstCreatedDir : firstCreatedDirs) {
                     if (firstCreatedDir == null) {
@@ -305,7 +295,7 @@ public class ParquetTools {
     public static void writeTables(@NotNull final Table[] sources,
                                    @NotNull final TableDefinition tableDefinition,
                                    @NotNull final File[] destinations) {
-        writeParquetTables(sources, tableDefinition, defaultPerquetCompressionCodec, destinations,
+        writeParquetTables(sources, tableDefinition, ParquetInstructions.EMPTY, destinations,
                 tableDefinition.getGroupingColumnNamesArray());
     }
 
@@ -455,18 +445,18 @@ public class ParquetTools {
     private static void writeParquetTableImpl(
             final Table sourceTable,
             final TableDefinition definition,
-            final CompressionCodecName codecName,
+            final ParquetInstructions writeInstructions,
             final File destFile,
             final String[] groupingColumns) {
         final String path = destFile.getPath();
         try {
             if (groupingColumns.length > 0) {
                 ParquetTableWriter.write(
-                        sourceTable, path, Collections.emptyMap(), codecName, definition,
+                        sourceTable, path, Collections.emptyMap(), writeInstructions, definition,
                         ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
             } else {
                 ParquetTableWriter.write(
-                        sourceTable, definition, path, Collections.emptyMap(), codecName);
+                        sourceTable, definition, path, Collections.emptyMap(), writeInstructions);
             }
         }
         catch (Exception e) {

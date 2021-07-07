@@ -238,7 +238,7 @@ public class TestChunkedRegionedOperations {
         ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition,
-                CompressionCodecName.SNAPPY,
+                ParquetInstructions.EMPTY,
                 Arrays.stream(partitionedInputData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
@@ -252,7 +252,7 @@ public class TestChunkedRegionedOperations {
         ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition,
-                CompressionCodecName.SNAPPY,
+                ParquetInstructions.EMPTY,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));

@@ -137,7 +137,7 @@ public class ParquetTableWriter {
     public static void write(
             Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns
     ) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, CompressionCodecName.UNCOMPRESSED, t.getDefinition(), groupingPathFactory, groupingColumns);
+        write(t, path, incomingMeta, ParquetInstructions.EMPTY, t.getDefinition(), groupingPathFactory, groupingColumns);
     }
 
     public static void write(Table t, String path, Map<String, String> incomingMeta, String... groupingColumns) throws SchemaMappingException, IOException {
@@ -147,19 +147,24 @@ public class ParquetTableWriter {
     /**
      * Writes a table in parquet format under a given path
      *
-     * @param t                   The table to write
-     * @param path                The destination path
-     * @param incomingMeta        A map of metadata values to be stores in the file footer
-     * @param codecName           Compression codec to use
-     * @param definition
+     * @param t                    The table to write
+     * @param path                 The destination path
+     * @param incomingMeta         A map of metadata values to be stores in the file footer
+     * @param writeInstructions    Write instructions for customizations while writing
+     * @param definition           Table definition
      * @param groupingPathFactory
      * @param groupingColumns     List of columns the tables are grouped by (the write operation will store the grouping info)
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
     public static void write(
-            Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName,
-            TableDefinition definition, Function<String, String> groupingPathFactory, String... groupingColumns
+            final Table t,
+            final String path,
+            final Map<String, String> incomingMeta,
+            final ParquetInstructions writeInstructions,
+            final TableDefinition definition,
+            final Function<String, String> groupingPathFactory,
+            final String... groupingColumns
     ) throws SchemaMappingException, IOException {
         Map<String, String> tableMeta = Collections.emptyMap();
         if (groupingColumns.length > 0) {
@@ -167,32 +172,41 @@ public class ParquetTableWriter {
             tableMeta.put(GROUPING, String.join(",", groupingColumns));
             Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
             for (int i = 0; i < auxiliaryTables.length; i++) {
-                write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), groupingPathFactory.apply(groupingColumns[i]), Collections.emptyMap(), codecName);
+                write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), groupingPathFactory.apply(groupingColumns[i]), Collections.emptyMap(), writeInstructions);
             }
         }
-        write(t, definition, path, tableMeta, codecName);
+        write(t, definition, path, tableMeta, writeInstructions);
     }
 
-    public static void write(Table t, String path, Map<String, String> incomingMeta, CompressionCodecName codecName, TableDefinition definition, String... groupingColumns) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, codecName, definition, defaultGroupingFileName(path), groupingColumns);
+    public static void write(
+            final Table t, final String path, final Map<String, String> incomingMeta, final ParquetInstructions writeInstructions,
+            final TableDefinition definition, final String... groupingColumns) throws SchemaMappingException, IOException {
+        write(t, path, incomingMeta, writeInstructions, definition, defaultGroupingFileName(path), groupingColumns);
     }
 
     /**
      * Writes a table in parquet format under a given path
      *
-     * @param t          The table to write
-     * @param definition The table definition
-     * @param path       The destination path
-     * @param tableMeta  A map of metadata values to be stores in the file footer
-     * @param codecName  Name of the codec for compression
+     * @param table              The table to write
+     * @param definition         The table definition
+     * @param path               The destination path
+     * @param tableMeta          A map of metadata values to be stores in the file footer
+     * @param writeInstructions  Write instructions for customizations while writing
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
-    public static void write(Table t, TableDefinition definition, String path, Map<String, String> tableMeta, CompressionCodecName codecName) throws SchemaMappingException, IOException {
+    public static void write(
+            final Table table,
+            final TableDefinition definition,
+            final String path,
+            final Map<String, String> tableMeta,
+            final ParquetInstructions writeInstructions
+    ) throws SchemaMappingException, IOException {
 
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(t, definition, path, tableMeta, codecName);
+        final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
+        ParquetFileWriter parquetFileWriter = getParquetFileWriter(table, definition, path, tableMeta, compressionCodecName);
 
-        t = pretransformTable(t, definition);
+        final Table t = pretransformTable(table, definition);
 
         RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(t.size());
         // noinspection rawtypes

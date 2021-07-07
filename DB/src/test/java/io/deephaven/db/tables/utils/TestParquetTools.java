@@ -16,6 +16,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -289,7 +290,7 @@ public class TestParquetTools {
     }
 
     public void compressionCodecTestHelper(final String codec) {
-        ParquetTools.setDefaultParquetCompressionCodec(codec);
+        ParquetInstructions.setDefaultCompressionCodecName(codec);
         String path = testRoot + File.separator + "Table1.parquet";
         ParquetTools.writeTable(table1, path);
         assertTrue(new File(path).length() > 0);
