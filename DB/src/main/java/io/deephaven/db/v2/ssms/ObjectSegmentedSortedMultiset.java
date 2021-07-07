@@ -11,7 +11,6 @@ import io.deephaven.db.tables.dbarrays.DbArrayDirect;
 import java.util.Objects;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.utils.ArrayUtils;
 import io.deephaven.db.util.DhObjectComparisons;
 import io.deephaven.db.v2.by.SumIntChunk;
@@ -23,7 +22,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, DbArray {
@@ -2326,11 +2324,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Object> toDbArray() {
-        return this;
     }
 
     @Override

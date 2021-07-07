@@ -1,6 +1,6 @@
 package io.deephaven.web.client.api.state;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.state.ClientTableState;
 
@@ -22,13 +22,13 @@ public class StateCache {
     private final Map<TableTicket, ClientTableState> allStates = new HashMap<>();
 
     public Optional<ClientTableState> get(Ticket ticket) {
-        return get(new TableTicket(ticket.getId_asU8()));
+        return get(new TableTicket(ticket.getTicket_asU8()));
     }
     public Optional<ClientTableState> get(TableTicket handle) {
         return Optional.ofNullable(allStates.get(handle));
     }
     public ClientTableState getNullable(Ticket handle) {
-        return getNullable(new TableTicket(handle.getId_asU8()));
+        return getNullable(new TableTicket(handle.getTicket_asU8()));
     }
     public ClientTableState getNullable(TableTicket handle) {
         return allStates.get(handle);

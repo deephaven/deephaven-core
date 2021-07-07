@@ -4,8 +4,6 @@
 
 package io.deephaven.db.v2;
 
-import static io.deephaven.db.tables.utils.TableTools.emptyTable;
-
 import io.deephaven.base.Function;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.db.exceptions.UncheckedTableException;
@@ -20,13 +18,14 @@ import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.NullValueColumnSource;
 import io.deephaven.db.v2.sources.UnionColumnSource;
 import io.deephaven.db.v2.sources.UnionSourceManager;
 import io.deephaven.db.v2.utils.AbstractNotification;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
+import io.deephaven.db.v2.utils.Index;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -307,7 +306,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     public TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function) {
         final TableDefinition returnDefinition;
         if (constituentDefinition != null) {
-            final Table emptyTable = emptyTable(0, constituentDefinition);
+            final Table emptyTable = new QueryTable(constituentDefinition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(constituentDefinition));
             returnDefinition = function.apply(SENTINEL_KEY, emptyTable).getDefinition();
         } else {
             returnDefinition = null;

@@ -10,9 +10,9 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.db.v2.sources.ReinterpretUtilities;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.backplane.barrage.BarrageMessage;
 import io.deephaven.db.exceptions.QueryCancellationException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -31,6 +31,7 @@ import io.deephaven.db.v2.NotificationStepSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.util.QueryConstants;
@@ -42,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.deephaven.db.v2.sources.chunk.Attributes.Values;
@@ -439,21 +441,21 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize a bitset of columns to include in the snapshot
-     * @param keysToSnapshot an Index of keys to include in the snapshot
+     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param keysToSnapshot An Index of keys within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
                                                            @NotNull final BaseTable table,
-                                                           final BitSet columnsToSerialize,
-                                                           final Index keysToSnapshot) {
+                                                           @Nullable final BitSet columnsToSerialize,
+                                                           @Nullable final Index keysToSnapshot) {
         return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot, makeSnapshotControl(false, table));
     }
 
     static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
                                                     @NotNull final BaseTable table,
-                                                    final BitSet columnsToSerialize,
-                                                    final Index keysToSnapshot,
+                                                    @Nullable final BitSet columnsToSerialize,
+                                                    @Nullable final Index keysToSnapshot,
                                                     @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
@@ -471,21 +473,21 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize a bitset of columns to include in the snapshot
-     * @param positionsToSnapshot an Index of keys to include in the snapshot
+     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param positionsToSnapshot An Index of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
                                                                           @NotNull final BaseTable table,
-                                                                          final BitSet columnsToSerialize,
-                                                                          final Index positionsToSnapshot) {
+                                                                          @Nullable final BitSet columnsToSerialize,
+                                                                          @Nullable final Index positionsToSnapshot) {
         return constructInitialSnapshotInPositionSpace(logIdentityObject, table,  columnsToSerialize, positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
                                                                    @NotNull final BaseTable table,
-                                                                   final BitSet columnsToSerialize,
-                                                                   final Index positionsToSnapshot,
+                                                                   @Nullable final BitSet columnsToSerialize,
+                                                                   @Nullable final Index positionsToSnapshot,
                                                                    @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
@@ -507,24 +509,57 @@ public class ConstructSnapshot {
         return snapshot;
     }
 
+    /**
+     * Create a {@link BarrageMessage snapshot} of the specified table including all columns and rows.
+     * Note that this method is notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
+     *
+     * @param logIdentityObject An object used to prepend to log rows.
+     * @param table the table to snapshot.
+     * @return a snapshot of the entire base table.
+     */
+    public static BarrageMessage constructBackplaneSnapshot(final Object logIdentityObject,
+                                                            final BaseTable table) {
+        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null);
+    }
+
+    /**
+     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
+     * Note that this method uses an index that is in Position space, and that it is notification-oblivious, i.e. it
+     * makes no attempt to ensure that notifications are not missed.
+     *
+     * @param logIdentityObject An object used to prepend to log rows.
+     * @param table the table to snapshot.
+     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param positionsToSnapshot An Index of positions within the table to include, null for all
+     * @return a snapshot of the entire base table.
+     */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
                                                                            final BaseTable table,
-                                                                           final BitSet columnsToSerialize,
-                                                                           final Index positionsToSnapshot) {
+                                                                           @Nullable final BitSet columnsToSerialize,
+                                                                           @Nullable final Index positionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize, positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
+    /**
+     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
+     * Note that this method uses an index that is in Position space.
+     *
+     * @param logIdentityObject An object used to prepend to log rows.
+     * @param table the table to snapshot.
+     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param positionsToSnapshot An Index of positions within the table to include, null for all
+     * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
+     * @return a snapshot of the entire base table.
+     */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
                                                                            @NotNull final BaseTable table,
-                                                                           final BitSet columnsToSerialize,
-                                                                           final Index positionsToSnapshot,
+                                                                           @Nullable final BitSet columnsToSerialize,
+                                                                           @Nullable final Index positionsToSnapshot,
                                                                            @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
         snapshot.isSnapshot = true;
         snapshot.shifted = IndexShiftData.EMPTY;
-        snapshot.modColumnData = new BarrageMessage.ModColumnData[0];
-        snapshot.modColumns = new BitSet();
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
             final Index keysToSnapshot;
@@ -1195,7 +1230,7 @@ public class ConstructSnapshot {
      * <p>Populate a BarrageMessage with the specified positions to snapshot and columns.
      * <p>>Note that care must be taken while using this method to ensure the underlying table is locked or does not
      * change, otherwise the resulting snapshot may be inconsistent. In general users should instead use
-     * {@link #constructBackplaneSnapshotInPositionSpace} for simple use cases or {@link #callDataSnapshotFunction} for
+     * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for
      * more advanced uses.
      *
      * @param usePrev             Use previous values?
@@ -1214,9 +1249,10 @@ public class ConstructSnapshot {
                                             final Index positionsToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
         snapshot.rowsRemoved = Index.CURRENT_FACTORY.getEmptyIndex();
-        snapshot.modColumns = new BitSet();
-        snapshot.addColumns = columnsToSerialize == null ? new BitSet() : (BitSet) columnsToSerialize.clone();
-        snapshot.addColumnData = new BarrageMessage.AddColumnData[snapshot.addColumns.cardinality()];
+        snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
+
+        // TODO (core#412): when sending app metadata; this can be reduced to a zero-len array
+        snapshot.modColumnData = new BarrageMessage.ModColumnData[table.getColumnSources().size()];
 
         if (positionsToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowsAdded.intersect(positionsToSnapshot);
@@ -1230,8 +1266,7 @@ public class ConstructSnapshot {
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         try (final SharedContext sharedContext = (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
-            for (int ii = snapshot.addColumns.nextSetBit(0), jj = 0; ii != -1; ii = snapshot.addColumns.nextSetBit(ii + 1), jj++) {
-
+            for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
                     final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
                             .append(" Bad snapshot before column ").append(ii);
@@ -1240,20 +1275,38 @@ public class ConstructSnapshot {
                     return false;
                 }
 
-                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                snapshot.addColumnData[jj] = acd;
-
                 final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
-                acd.data = getSnapshotDataAsChunk(columnSource, sharedContext, snapshot.rowsIncluded, usePrev);
+
+                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+                snapshot.addColumnData[ii] = acd;
+                final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
+                final Index rows = columnIsEmpty ? Index.FACTORY.getEmptyIndex() : snapshot.rowsIncluded;
+                // Note: cannot use shared context across several calls of differing lengths and no sharing necessary when empty
+                acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
+                acd.componentType = columnSource.getComponentType();
+
+                final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
+                snapshot.modColumnData[ii] = mcd;
+                mcd.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
+                mcd.rowsIncluded = Index.CURRENT_FACTORY.getEmptyIndex();
+                mcd.data = getSnapshotDataAsChunk(columnSource, null, Index.FACTORY.getEmptyIndex(), usePrev);
+                mcd.type = acd.type;
+                mcd.componentType = acd.componentType;
             }
         }
 
-        log.info().append(System.identityHashCode(logIdentityObject))
+        final LogEntry infoEntry = log.info().append(System.identityHashCode(logIdentityObject))
                 .append(": Snapshot candidate step=").append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
                 .append(", rows=").append(snapshot.rowsIncluded).append("/").append(positionsToSnapshot)
-                .append(", cols=").append(FormatBitSet.formatBitSet(snapshot.addColumns))
-                .append(", usePrev=").append(usePrev).endl();
+                .append(", cols=");
+        if (columnsToSerialize == null) {
+            infoEntry.append("ALL");
+        } else {
+            infoEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+        }
+        infoEntry.append(", usePrev=").append(usePrev).endl();
+
         return true;
     }
 
@@ -1273,167 +1326,45 @@ public class ConstructSnapshot {
     }
 
     private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext, final Index index, final boolean usePrev) {
-        final Class type = columnSource.getType();
+        final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
+        final Class<?> type = sourceToUse.getType();
         final int size = index.intSize();
-        if (type == DBDateTime.class) {
-            if (columnSource.allowsReinterpret(long.class)) {
-                final ColumnSource<Long> longSource = columnSource.reinterpret(long.class);
-                try (final ColumnSource.FillContext context = longSource.makeFillContext(size, sharedContext)) {
-                    final long [] resultArray = new long[size];
-                    final WritableLongChunk<Values> result = WritableLongChunk.writableChunkWrap(resultArray);
-                    if (usePrev) {
-                        longSource.fillPrevChunk(context, result, index);
-                    } else {
-                        longSource.fillChunk(context, result, index);
-                    }
-                    return resultArray;
-                }
+        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(size, sharedContext)) {
+            final ChunkType chunkType = sourceToUse.getChunkType();
+            final Object resultArray = chunkType.makeArray(size);
+            final WritableChunk<Values> result = chunkType.writableChunkWrap(resultArray, 0, size);
+            if (usePrev) {
+                sourceToUse.fillPrevChunk(context, result, index);
             } else {
-                try (final WritableObjectChunk<DBDateTime, Values> objectResult = WritableObjectChunk.makeWritableChunk(size)) {
-                    try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                        if (usePrev) {
-                            columnSource.fillPrevChunk(context, objectResult, index);
-                        } else {
-                            columnSource.fillChunk(context, objectResult, index);
-                        }
-                    }
-
-                    final long[] longResult = new long[size];
-                    for (int ii = 0; ii < objectResult.size(); ++ii) {
-                        final DBDateTime dbDateTime = objectResult.get(ii);
-                        longResult[ii] = dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos();
-                    }
-                    return longResult;
-                }
+                sourceToUse.fillChunk(context, result, index);
             }
-        } else if (type == boolean.class || type == Boolean.class) {
-            if (columnSource.allowsReinterpret(byte.class)) {
-                final ColumnSource<Byte> byteSource = columnSource.reinterpret(byte.class);
-                try (final ColumnSource.FillContext context = byteSource.makeFillContext(size, sharedContext)) {
-                    final byte [] byteArray = new byte[size];
-                    final WritableByteChunk<Values> result = WritableByteChunk.writableChunkWrap(byteArray);
-                    if (usePrev) {
-                        byteSource.fillPrevChunk(context, result, index);
-                    } else {
-                        byteSource.fillChunk(context, result, index);
-                    }
-                    return byteArray;
-                }
-            } else {
-                try (final WritableObjectChunk<Boolean, Values> objectResult = WritableObjectChunk.makeWritableChunk(size)) {
-                    try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                        if (usePrev) {
-                            columnSource.fillPrevChunk(context, objectResult, index);
-                        } else {
-                            columnSource.fillChunk(context, objectResult, index);
-                        }
-                    }
-
-                    final byte[] byteResult = new byte[size];
-                    for (int ii = 0; ii < objectResult.size(); ++ii) {
-                        byteResult[ii] = BooleanUtils.booleanAsByte(objectResult.get(ii));
-                    }
-                    return byteResult;
-                }
-            }
-        } else {
-            try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                final ChunkType chunkType = columnSource.getChunkType();
-                final Object resultArray = chunkType.makeArray(size);
-                final WritableChunk<Values> result = chunkType.writableChunkWrap(resultArray, 0, size);
-                if (usePrev) {
-                    columnSource.fillPrevChunk(context, result, index);
-                } else {
-                    columnSource.fillChunk(context, result, index);
-                }
-                if (chunkType == ChunkType.Object) {
+            if (chunkType == ChunkType.Object) {
+                //noinspection unchecked
+                final T [] values = (T[]) Array.newInstance(type, size);
+                for (int ii = 0; ii < values.length; ++ii) {
                     //noinspection unchecked
-                    final T [] values = (T[]) Array.newInstance(type, size);
-                    for (int ii = 0; ii < values.length; ++ii) {
-                        //noinspection unchecked
-                        values[ii] = (T)result.asObjectChunk().get(ii);
-                    }
-                    return values;
-
+                    values[ii] = (T)result.asObjectChunk().get(ii);
                 }
-                return resultArray;
+                return values;
+
             }
+            return resultArray;
         }
     }
 
     private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource, final SharedContext sharedContext, final Index index, final boolean usePrev) {
-        final Class<T> type = columnSource.getType();
+        final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final int size = index.intSize();
-        if (type == DBDateTime.class) {
-            if (columnSource.allowsReinterpret(long.class)) {
-                final ColumnSource<Long> longSource = columnSource.reinterpret(long.class);
-                try (final ColumnSource.FillContext context = longSource.makeFillContext(size, sharedContext)) {
-                    final WritableLongChunk<Values> result = WritableLongChunk.makeWritableChunk(size);
-                    if (usePrev) {
-                        longSource.fillPrevChunk(context, result, index);
-                    } else {
-                        longSource.fillChunk(context, result, index);
-                    }
-                    return result;
-                }
+        try (final ColumnSource.FillContext context = sharedContext != null
+                ? sourceToUse.makeFillContext(size, sharedContext) : sourceToUse.makeFillContext(size)) {
+            final ChunkType chunkType = sourceToUse.getChunkType();
+            final WritableChunk<Values> result = chunkType.makeWritableChunk(size);
+            if (usePrev) {
+                sourceToUse.fillPrevChunk(context, result, index);
             } else {
-                try (final WritableObjectChunk<DBDateTime, Values> objectResult = WritableObjectChunk.makeWritableChunk(size)) {
-                    try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                        if (usePrev) {
-                            columnSource.fillPrevChunk(context, objectResult, index);
-                        } else {
-                            columnSource.fillChunk(context, objectResult, index);
-                        }
-                    }
-
-                    final WritableLongChunk<Attributes.Values> longResult = WritableLongChunk.makeWritableChunk(size);
-                    for (int ii = 0; ii < objectResult.size(); ++ii) {
-                        final DBDateTime dbDateTime = objectResult.get(ii);
-                        longResult.set(ii, dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos());
-                    }
-                    return longResult;
-                }
+                sourceToUse.fillChunk(context, result, index);
             }
-        } else if (type == boolean.class || type == Boolean.class) {
-            if (columnSource.allowsReinterpret(byte.class)) {
-                final ColumnSource<Byte> byteSource = columnSource.reinterpret(byte.class);
-                try (final ColumnSource.FillContext context = byteSource.makeFillContext(size, sharedContext)) {
-                    final WritableByteChunk<Values> result = WritableByteChunk.makeWritableChunk(size);
-                    if (usePrev) {
-                        byteSource.fillPrevChunk(context, result, index);
-                    } else {
-                        byteSource.fillChunk(context, result, index);
-                    }
-                    return result;
-                }
-            } else {
-                try (final WritableObjectChunk<Boolean, Values> objectResult = WritableObjectChunk.makeWritableChunk(size)) {
-                    try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                        if (usePrev) {
-                            columnSource.fillPrevChunk(context, objectResult, index);
-                        } else {
-                            columnSource.fillChunk(context, objectResult, index);
-                        }
-                    }
-
-                    final WritableByteChunk<Attributes.Values> byteResult = WritableByteChunk.makeWritableChunk(size);
-                    for (int ii = 0; ii < objectResult.size(); ++ii) {
-                        byteResult.set(ii, BooleanUtils.booleanAsByte(objectResult.get(ii)));
-                    }
-                    return byteResult;
-                }
-            }
-        } else {
-            try (final ColumnSource.FillContext context = columnSource.makeFillContext(size, sharedContext)) {
-                final ChunkType chunkType = columnSource.getChunkType();
-                final WritableChunk<Values> result = chunkType.makeWritableChunk(size);
-                if (usePrev) {
-                    columnSource.fillPrevChunk(context, result, index);
-                } else {
-                    columnSource.fillChunk(context, result, index);
-                }
-                return result;
-            }
+            return result;
         }
     }
 

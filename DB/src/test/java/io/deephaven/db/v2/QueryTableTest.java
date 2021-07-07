@@ -28,6 +28,7 @@ import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
+import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
@@ -2144,7 +2145,17 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1), Arrays.asList(t1.getColumn("X").get(0, 9)));
         assertEquals(Arrays.asList(4, 4, 4, 5, 5, 5, 6, 6, 6), Arrays.asList(t1.getColumn("Z").get(0, 9)));
         assertEquals(Arrays.asList("a","b","c","a","b","c","a","b","c"),Arrays.asList(t1.getColumn("Y").get(0,9)));
+    }
 
+    public void testUngroupConstructSnapshotOfBoxedNull() {
+        final Table t = testRefreshingTable(i(0)).update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
+        final Table ungrouped = t.ungroup();
+
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable)ungrouped)) {
+            assertEquals(snap.rowsAdded, i(0, 1, 2));
+            assertEquals(snap.addColumnData[0].data.asIntChunk().get(0), io.deephaven.util.QueryConstants.NULL_INT);
+            assertEquals(snap.addColumnData[1].data.asIntChunk().get(2), io.deephaven.util.QueryConstants.NULL_INT);
+        }
     }
 
     public void testUngroupableColumnSources() {
@@ -2227,7 +2238,7 @@ public class QueryTableTest extends QueryTableTestBase {
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long bigIndex = 1L << 55;
-                addToTable(table, i(bigIndex), intCol("X", 3), new ColumnHolder("Y", String[].class, (String[]) new String[]{"f"}));
+                addToTable(table, i(bigIndex), intCol("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false, new String[]{"f"}));
                 table.notifyListeners(i(bigIndex), i(), i());
             });
             showWithIndex(t1);
@@ -2270,7 +2281,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
             // This is too big, we should fail
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(9), c("X", 3), new ColumnHolder("Y", String[].class, new String[]{"f", "g", "h", "i", "j", "k"}));
+                addToTable(table, i(9), c("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false, new String[]{"f", "g", "h", "i", "j", "k"}));
                 table.notifyListeners(i(9), i(), i());
             });
             showWithIndex(t1);

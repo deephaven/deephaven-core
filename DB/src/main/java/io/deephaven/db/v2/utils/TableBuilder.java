@@ -1,20 +1,23 @@
 package io.deephaven.db.v2.utils;
 
-import io.deephaven.db.tables.DataColumn;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.QueryTable;
+import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Class to aid in building Tables from a TableDefinition.
  */
+@Deprecated
 public class TableBuilder {
     private final TableDefinition def;
-    private final List<Class> colTypes;
     private final List<Object[]> rows;
 
     /**
@@ -27,7 +30,6 @@ public class TableBuilder {
 
     public TableBuilder(TableDefinition def, int initialSize) {
         this.def = def;
-        colTypes = def.getColumnTypes();
         rows = new ArrayList<>(initialSize);
     }
 
@@ -53,13 +55,14 @@ public class TableBuilder {
      * @param items the item array to be checked
      */
     private void checkRow(Object[] items) {
+        List<Class> colTypes = def.getColumnTypes();
         if(items.length != colTypes.size()) {
             throw new IllegalArgumentException("Incorrect column count: expected " + colTypes.size() + " got " + items.length);
         }
 
         for(int i = 0; i < colTypes.size(); i++) {
             //noinspection unchecked
-            if(items[i] != null && !io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed(colTypes.get(i)).isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
+            if(items[i] != null && !TypeUtils.getUnboxedTypeIfBoxed(colTypes.get(i)).isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
                 throw new IllegalArgumentException("Incorrect type for column " + def.getColumnNames().get(i)
                         + ": expected " + colTypes.get(i).getName()
                         + " got " + items[i].getClass().getName());
@@ -73,18 +76,21 @@ public class TableBuilder {
      * @return the table
      */
     public Table build() {
-        final Table result = TableTools.emptyTable(rows.size(), def);
-
-        // Re-write column oriented
-        for(int col = 0; col < colTypes.size(); col++) {
-            final DataColumn source = result.getColumn(col);
-            for(int row = 0; row < rowCount(); row++) {
-                //noinspection unchecked
-                source.set(row, rows.get(row)[col]);
-            }
+        Map<String, ArrayBackedColumnSource<Object>> map = new LinkedHashMap<>();
+        for (ColumnDefinition<?> columnDefinition : def.getColumns()) {
+            //noinspection unchecked
+            map.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(rows.size(), columnDefinition.getDataType()));
         }
 
-        return result;
+        // Re-write column oriented
+        int col = 0;
+        for (ArrayBackedColumnSource<Object> source : map.values()) {
+            for (int row = 0; row < rowCount(); row++) {
+                source.set(row, rows.get(row)[col]);
+            }
+            col++;
+        }
+        return new QueryTable(def, Index.FACTORY.getFlatIndex(rows.size()), map);
     }
 
     /**

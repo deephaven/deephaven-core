@@ -89,11 +89,6 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         }
 
         @Override
-        public DbArray<DBDateTime> toDbArray() {
-            return this;
-        }
-
-        @Override
         public Class<DBDateTime> getComponentType() {
             return DBDateTime.class;
         }
@@ -119,7 +114,7 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         }
 
         @Override
-        public DbArrayBase getDirect() {
+        public DbArray<DBDateTime> getDirect() {
             return underlying.getDirectAsDate();
         }
 

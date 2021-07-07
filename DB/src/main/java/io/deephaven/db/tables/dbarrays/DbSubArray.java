@@ -60,11 +60,6 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return this;
-    }
-
-    @Override
     public T getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return null;
@@ -78,7 +73,7 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public DbArrayBase getDirect() {
+    public DbArray<T> getDirect() {
         return new DbArrayDirect<>(toArray());
     }
 }

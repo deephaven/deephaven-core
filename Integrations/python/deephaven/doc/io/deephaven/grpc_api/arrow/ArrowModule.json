@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.arrow.ArrowModule",
+ "methods": {
+  "bindFlightServiceBinding": ":param service: io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding\n:return: io.grpc.BindableService"
+ },
+ "path": "io.deephaven.grpc_api.arrow.ArrowModule",
+ "typeName": "interface"
+}

@@ -58,6 +58,16 @@ public class TableManagementTools {
         return new SimpleSourceTable(tableDefinition, description, RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
+    private static volatile CompressionCodecName defaultPerquetCompressionCodec = CompressionCodecName.SNAPPY;
+
+    /**
+     * Sets the default parquet compression codec for writing parquet.
+     * @param codecName the codec name.
+     */
+    public static void setDefaultParquetCompressionCodec(final String codecName) {
+        defaultPerquetCompressionCodec = CompressionCodecName.valueOf(codecName);
+    }
+
     /**
      * Reads in a table from disk.
      *
@@ -212,9 +222,9 @@ public class TableManagementTools {
             final String path = destFile.getPath();
             if (path.endsWith(PARQUET_FILE_EXTENSION)) {
                 ParquetTableWriter.write(
-                        sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), CompressionCodecName.SNAPPY);
+                        sourceTable, sourceTable.getDefinition(), path, Collections.emptyMap(), defaultPerquetCompressionCodec);
             } else {
-                writeParquetTable(sourceTable, definition, CompressionCodecName.SNAPPY, destFile, definition.getGroupingColumnNamesArray());
+                writeParquetTable(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
             }
         } catch (Exception e) {
             throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
@@ -276,8 +286,7 @@ public class TableManagementTools {
      *
      * @param source          The table to write
      * @param tableDefinition The schema for the tables to write
-     * @param codecName       Compression codec to use.  The only supported codecs are
-     *                        {@link CompressionCodecName#SNAPPY} and {@link CompressionCodecName#UNCOMPRESSED}.
+     * @param codecName       Compression codec to use.
      *
      * @param destinationDir     The destination path
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
@@ -307,8 +316,7 @@ public class TableManagementTools {
      *
      * @param sources         The tables to write
      * @param tableDefinition The common schema for all the tables to write
-     * @param codecName       Compression codec to use.  The only supported codecs are
-     *                        {@link CompressionCodecName#SNAPPY} and {@link CompressionCodecName#UNCOMPRESSED}.
+     * @param codecName       Compression codec to use.
      *
      * @param destinations    The destinations path
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
@@ -362,7 +370,7 @@ public class TableManagementTools {
                                    @NotNull final File[] destinations,
                                    StorageFormat storageFormat) {
         if (StorageFormat.Parquet == storageFormat) {
-            writeParquetTables(sources, tableDefinition, CompressionCodecName.SNAPPY, destinations,
+            writeParquetTables(sources, tableDefinition, defaultPerquetCompressionCodec, destinations,
                     tableDefinition.getGroupingColumnNamesArray());
         } else {
             throw new IllegalArgumentException("Unrecognized storage format " + storageFormat);

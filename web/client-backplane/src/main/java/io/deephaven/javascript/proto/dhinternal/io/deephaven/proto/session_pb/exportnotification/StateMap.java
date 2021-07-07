@@ -41,6 +41,9 @@ public interface StateMap {
   @JsProperty(name = "PENDING")
   double getPENDING();
 
+  @JsProperty(name = "PUBLISHING")
+  double getPUBLISHING();
+
   @JsProperty(name = "QUEUED")
   double getQUEUED();
 
@@ -73,6 +76,9 @@ public interface StateMap {
 
   @JsProperty(name = "PENDING")
   void setPENDING(double PENDING);
+
+  @JsProperty(name = "PUBLISHING")
+  void setPUBLISHING(double PUBLISHING);
 
   @JsProperty(name = "QUEUED")
   void setQUEUED(double QUEUED);

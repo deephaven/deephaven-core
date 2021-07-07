@@ -9,7 +9,7 @@ package io.deephaven.proto.backplane.grpc;
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
-import "io/deephaven/proto/session.proto";
+import "arrow/flight/protocol/flight.proto";
 
 service TableService {
 
@@ -149,7 +149,7 @@ service TableService {
 message TableReference {
   oneof ref {
     // an exported ticket
-    Ticket ticket = 1;
+    arrow.flight.protocol.Ticket ticket = 1;
     // an offset into a BatchRequest -- used to reference a result that will not be exported
     sint32 batch_offset = 2;
   }
@@ -181,76 +181,74 @@ message ExportedTableUpdatesRequest {
 }
 
 message ExportedTableUpdateMessage {
-  Ticket export_id = 1;
+  arrow.flight.protocol.Ticket export_id = 1;
   sint64 size = 2 [jstype=JS_STRING];
   string update_failure_message = 3;
 }
 
 message EmptyTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   sint64 size = 2 [jstype=JS_STRING];
-  repeated string column_names = 3;
-  repeated string column_types = 4;
 }
 
 message TimeTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   sint64 start_time_nanos = 2 [jstype=JS_STRING];
   sint64 period_nanos = 3 [jstype=JS_STRING];
 }
 
 message SelectOrUpdateRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_specs = 3;
 }
 
 message SelectDistinctRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_names = 3;
 }
 
 message DropColumnsRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_names = 3;
 }
 
 message UnstructuredFilterTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string filters = 3;
 }
 
 message HeadOrTailRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   sint64 num_rows = 3 [jstype=JS_STRING];
 }
 
 message HeadOrTailByRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   sint64 num_rows = 3 [jstype=JS_STRING];
   repeated string group_by_column_specs = 4;
 }
 
 message UngroupRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   bool null_fill = 3;
   repeated string columns_to_ungroup = 4;
 }
 
 message MergeTablesRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   repeated TableReference source_ids = 2;
   string key_column = 3; // if specified, the result will be sorted by this column
 }
 
 message SnapshotTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
 
   // The table on which to invoke the snapshot function. If unset, an empty(1) table will be used.
   TableReference left_id = 2;
@@ -263,7 +261,7 @@ message SnapshotTableRequest {
 }
 
 message JoinTablesRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
@@ -285,7 +283,7 @@ message AsOfJoinTablesRequest {
     GREATER_THAN_EQUAL = 2;
     GREATER_THAN = 3;
   }
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
@@ -296,7 +294,7 @@ message AsOfJoinTablesRequest {
 }
 
 message ComboAggregateRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated Aggregate aggregates = 3;
   repeated string group_by_columns = 4;
@@ -342,13 +340,13 @@ message SortDescriptor {
 }
 
 message SortTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
   repeated SortDescriptor sorts = 3;
 }
 
 message FilterTableRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
 
   repeated Condition filters = 3;
@@ -471,7 +469,7 @@ message SearchCondition {
 }
 
 message FlattenRequest {
-  Ticket result_id = 1;
+  arrow.flight.protocol.Ticket result_id = 1;
   TableReference source_id = 2;
 }
 

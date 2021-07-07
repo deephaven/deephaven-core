@@ -12,4 +12,7 @@ public interface SessionModule {
     BindableService bindSessionServiceGrpcImpl(SessionServiceGrpcImpl sessionServiceGrpc);
     @Binds @IntoSet
     ServerInterceptor bindSessionServiceInterceptor(SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
+
+    @Binds @IntoSet
+    TicketResolver bindSessionTicketResolverServerSideExports(ExportTicketResolver resolver);
 }

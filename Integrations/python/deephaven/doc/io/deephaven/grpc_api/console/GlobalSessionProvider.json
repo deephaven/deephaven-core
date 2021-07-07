@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.console.GlobalSessionProvider",
+ "methods": {
+  "getGlobalSession": ":return: io.deephaven.db.util.ScriptSession",
+  "initializeGlobalScriptSession": ":param globalSession: io.deephaven.db.util.ScriptSession"
+ },
+ "path": "io.deephaven.grpc_api.console.GlobalSessionProvider",
+ "typeName": "class"
+}

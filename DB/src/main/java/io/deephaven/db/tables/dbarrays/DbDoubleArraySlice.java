@@ -82,11 +82,6 @@ public class DbDoubleArraySlice extends DbDoubleArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayDoubleWrapper(this);
-    }
-
-    @Override
     public double getPrev(final long index) {
         if (index < 0 || index >= length) {
             return QueryConstants.NULL_DOUBLE;

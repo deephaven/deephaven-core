@@ -82,11 +82,6 @@ public class DbShortArraySlice extends DbShortArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayShortWrapper(this);
-    }
-
-    @Override
     public short getPrev(final long index) {
         if (index < 0 || index >= length) {
             return QueryConstants.NULL_SHORT;

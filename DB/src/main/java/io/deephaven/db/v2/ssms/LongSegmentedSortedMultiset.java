@@ -9,7 +9,6 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.dbarrays.DbArrayLongWrapper;
 import io.deephaven.db.tables.dbarrays.DbLongArray;
 import io.deephaven.db.tables.dbarrays.DbLongArrayDirect;
 import io.deephaven.db.tables.utils.ArrayUtils;
@@ -2319,11 +2318,6 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public long size() {
         return size;
-    }
-
-    @Override
-    public DbArray<Long> toDbArray() {
-        return new DbArrayLongWrapper(this);
     }
 
     @Override

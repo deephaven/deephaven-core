@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.table.TableModule",
  "methods": {
+  "bindOperationAsOfJoin": ":param op: io.deephaven.grpc_api.table.ops.AsOfJoinTablesGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationComboAgg": ":param op: io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationDropColumns": ":param op: io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationEmptyTable": ":param op: io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",

@@ -54,11 +54,6 @@ public class DbSubCharArray extends DbCharArray.Indirect {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayCharWrapper(this);
-    }
-
-    @Override
     public char getPrev(final long index) {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_CHAR;

@@ -36,8 +36,9 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     public static TableDefinition inferFrom(Map<String, ? extends ColumnSource> sources) {
         List<ColumnDefinition> definitions = new ArrayList<>(sources.size());
         for (Entry<String, ? extends ColumnSource> e : sources.entrySet()) {
-            final ColumnDefinition<?> inferred = ColumnDefinition
-              .fromGenericType(e.getKey(), e.getValue().getType(), e.getValue().getComponentType());
+            final String name = e.getKey();
+            final ColumnSource<?> source = e.getValue();
+            final ColumnDefinition<?> inferred = ColumnDefinition.fromGenericType(name, source.getType(), source.getComponentType());
             definitions.add(inferred);
         }
         return new TableDefinition(definitions);

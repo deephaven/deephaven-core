@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -989,7 +990,8 @@ public class TableTools {
         } else if (data.getClass().getComponentType() == Float.class) {
             return floatCol(name, ArrayUtils.getUnboxedArray((Float[]) data));
         }
-        return new ColumnHolder(name, false, data);
+        //noinspection unchecked
+        return new ColumnHolder(name, data.getClass().getComponentType(), data.getClass().getComponentType().getComponentType(), false, data);
     }
 
     /**
@@ -1000,7 +1002,7 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder stringCol(String name, String... data) {
-        return new ColumnHolder(name, false, data);
+        return new ColumnHolder(name, String.class, null, false, data);
     }
 
     /**
@@ -1011,7 +1013,7 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder dateTimeCol(String name, DBDateTime... data) {
-        return new ColumnHolder(name, false, data);
+        return new ColumnHolder(name, DBDateTime.class, null, false, data);
     }
 
     /**
@@ -1100,24 +1102,7 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        Map<String, ColumnSource> map = new LinkedHashMap<>();
-        return new QueryTable(Index.FACTORY.getFlatIndex(size), map);
-    }
-
-    /**
-     * Returns a new, empty Deephaven Table.
-     *
-     * @param size            the number of rows to allocate space for
-     * @param tableDefinition the TableDefinition (column names and properties) to use for the new table
-     * @return a Deephaven Table with columns.
-     */
-    public static Table emptyTable(long size, TableDefinition tableDefinition) {
-        Map<String, ColumnSource> map = new LinkedHashMap<>();
-        for (ColumnDefinition columnDefinition : tableDefinition.getColumns()) {
-            //noinspection unchecked
-            map.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(size, columnDefinition.getDataType()));
-        }
-        return new QueryTable(tableDefinition, Index.FACTORY.getFlatIndex(size), map);
+        return new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
     }
 
     private static <MT extends Map<KT, VT>, KT, VT> MT newMapFromLists(Class<MT> mapClass, List<KT> keys, List<VT> values) {

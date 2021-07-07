@@ -4,7 +4,10 @@
 
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 import gnu.trove.list.TIntList;
@@ -21,7 +24,7 @@ import java.io.Serializable;
  * Internally the shifts are ordered by rangeStart. The {@link IndexShiftData.Builder} will verify that no two ranges
  * overlap before or after shifting and assert that the constructed {@code IndexShiftData} will be valid.
  */
-public final class IndexShiftData implements Serializable {
+public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     private static final int BEGIN_RANGE_ATTR  = 0;
     private static final int END_RANGE_ATTR    = 1;
@@ -165,31 +168,36 @@ public final class IndexShiftData implements Serializable {
 
     @Override
     public String toString() {
-        return toString(200);
+        return append(new LogOutputStringImpl()).toString();
     }
 
-    public String toString(int maxShifts) {
+    @Override
+    public LogOutput append(final LogOutput logOutput) {
+        return append(logOutput, 200);
+    }
+
+    public LogOutput append(final LogOutput logOutput, final int maxShifts) {
         int count = 0;
-        final StringBuilder result = new StringBuilder("{");
+        logOutput.append("{");
         boolean isFirst = true;
         for (int idx = 0; idx < size(); ++idx) {
             final long shift = getShiftDelta(idx);
-            result.append(isFirst ? "" : ",")
+            logOutput.append(isFirst ? "" : ",")
                     .append("[").append(getBeginRange(idx))
                     .append(",").append(getEndRange(idx))
                     .append(shift < 0 ? "]" : "]+").append(shift);
             isFirst = false;
             if (++count >= maxShifts) {
-                result.append(",...");
+                logOutput.append(",...");
                 break;
             }
         }
-        result.append("}");
-        return result.toString();
+        logOutput.append("}");
+        return logOutput;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof IndexShiftData)) {
             return false;
         }

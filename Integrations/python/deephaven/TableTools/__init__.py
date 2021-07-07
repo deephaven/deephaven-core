@@ -531,21 +531,15 @@ def doubleCol(name, *data):
 
 
 @_passThrough
-def emptyTable(*args):
+def emptyTable(size):
     """
     Returns a new, empty Deephaven Table.
     
-    *Overload 1*  
-      :param size: (long) - the number of rows to allocate space for
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table with no columns.
-      
-    *Overload 2*  
-      :param size: (long) - the number of rows to allocate space for
-      :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - the TableDefinition (column names and properties) to use for the new table
-      :return: (io.deephaven.db.tables.Table) a Deephaven Table with columns.
+    :param size: (long) - the number of rows to allocate space for
+    :return: (io.deephaven.db.tables.Table) a Deephaven Table with no columns.
     """
     
-    return _java_type_.emptyTable(*args)
+    return _java_type_.emptyTable(size)
 
 
 @_passThrough

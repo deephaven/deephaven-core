@@ -42,7 +42,7 @@ public class UngroupedBoxedLongArrayColumnSource extends UngroupedColumnSource<L
         long segment = index>>base;
         int offset = (int) (index & ((1<<base) - 1));
         Long[] array = innerSource.get(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_LONG;
         }
         return array[offset];
@@ -63,7 +63,7 @@ public class UngroupedBoxedLongArrayColumnSource extends UngroupedColumnSource<L
         long segment = index>> getPrevBase();
         int offset = (int) (index & ((1<< getPrevBase()) - 1));
         Long[] array = innerSource.getPrev(segment);
-        if(array == null || offset >= array.length) {
+        if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_LONG;
         }
         return array[offset];

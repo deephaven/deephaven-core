@@ -59,18 +59,13 @@ public class DbShortArrayDirect implements DbShortArray {
     }
 
     @Override
-    public DbArray toDbArray() {
-        return new DbArrayShortWrapper(this);
-    }
-
-    @Override
     public DbShortArrayDirect getDirect() {
         return this;
     }
 
     @Override
     public final String toString() {
-        return DbShortArray.toString(this);
+        return DbShortArray.toString(this, 10);
     }
 
     @Override

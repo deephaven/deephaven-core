@@ -1,7 +1,6 @@
 package io.deephaven.grpc_api.util;
 
 import io.deephaven.io.logger.Logger;
-import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
@@ -18,26 +17,6 @@ import java.util.function.Function;
 
 public class GrpcUtil {
     private static Logger log = LoggerFactory.getLogger(GrpcUtil.class);
-
-    public static ByteString longToByteString(long value) {
-        // Note: Little-Endian
-        final byte[] result = new byte[8];
-        for (int i = 0; i < 8; i++) {
-            result[i] = (byte) (value & 0xffL);
-            value >>= 8;
-        }
-        return ByteString.copyFrom(result);
-    }
-
-    public static long byteStringToLong(final ByteString value) {
-        // Note: Little-Endian
-        long result = 0;
-        for (int i = 7; i >= 0; i--) {
-            final byte bval = value.byteAt(i);
-            result = (result << 8) + (bval & 0xffL);
-        }
-        return result;
-    }
 
     public static void rpcWrapper(final Logger log, final StreamObserver<?> response, final Runnable lambda) {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -70,23 +49,38 @@ public class GrpcUtil {
     }
 
     public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err, final Code statusCode) {
+        if (err instanceof StatusRuntimeException) {
+            return (StatusRuntimeException) err;
+        }
+
         final UUID errorId = UUID.randomUUID();
         log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
         return statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
     }
 
     public static StatusRuntimeException statusRuntimeException(final Code statusCode, final String details) {
-        return StatusProto.toStatusRuntimeException(Status.newBuilder()
-                .setCode(statusCode.getNumber())
-                .setMessage(details)
-                .build());
+        return Exceptions.statusRuntimeException(statusCode, details);
     }
 
-    public static <T, V> StreamObserver<T> wrapOnNext(final StreamObserver<V> delegate, final Function<T, V> wrap) {
+    /**
+     * This helper allows one to propagate the onError/onComplete calls through to the delegate, while applying the
+     * provided mapping function to the original input objects. The mapper may return null to skip sending a message
+     * to the delegated stream observer.
+     *
+     * @param delegate  the stream observer to ultimately receive this message
+     * @param mapper    the function that maps from input objects to the objects the stream observer expects
+     * @param <T>       input type
+     * @param <V>       output type
+     * @return          a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
+     */
+    public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate, final Function<T, V> mapper) {
         return new StreamObserver<T>() {
             @Override
             public void onNext(final T value) {
-                delegate.onNext(wrap.apply(value));
+                final V mapped = mapper.apply(value);
+                if (mapped != null) {
+                    delegate.onNext(mapped);
+                }
             }
 
             @Override

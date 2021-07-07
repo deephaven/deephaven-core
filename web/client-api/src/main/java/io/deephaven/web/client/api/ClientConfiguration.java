@@ -1,6 +1,5 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.Int32Array;
 import elemental2.core.Uint8Array;
 
 /**
@@ -8,6 +7,7 @@ import elemental2.core.Uint8Array;
  * ubiquitously available in the client by passing around a single object.
  */
 public class ClientConfiguration {
+    private static final byte EXPORT_PREFIX = 'e';
 
     /**
      * The next number to use when making a ticket. These values must always be positive, as zero
@@ -19,13 +19,20 @@ public class ClientConfiguration {
     }
 
     public Uint8Array newTicket() {
-        // THe current implementation takes the simplest approach of assuming that we can't have more than
-        // Integer.MAX_VALUE tickets in a session.
         if (next == Integer.MAX_VALUE) {
             throw new IllegalStateException("Ran out of tickets!");
         }
-        Int32Array ints = new Int32Array(2);
-        ints.set(new double[] {next++, 0});
-        return new Uint8Array(ints.buffer);
+
+        final int exportId = next++;
+        final double[] dest = new double[5];
+        dest[0] = EXPORT_PREFIX;
+        dest[1] = (byte) exportId;
+        dest[2] = (byte) (exportId >>> 8);
+        dest[3] = (byte) (exportId >>> 16);
+        dest[4] = (byte) (exportId >>> 24);
+
+        final Uint8Array bytes = new Uint8Array(5);
+        bytes.set(dest);
+        return bytes;
     }
 }
