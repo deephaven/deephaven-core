@@ -45,9 +45,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
         @Override
         public int nullCount() {
-            if (options.useDeephavenNulls) {
-                return 0;
-            }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllLongs(row -> {
