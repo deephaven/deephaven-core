@@ -14,6 +14,7 @@ import java.util.function.Function;
  * mapping column names and use of specific codecs during (de)serialization.
  */
 public abstract class ParquetInstructions {
+    private static final String DEFAULT_COMPRESSION_CODEC_NAME = "SNAPPY";
     public ParquetInstructions() {
     }
 
@@ -25,6 +26,7 @@ public abstract class ParquetInstructions {
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
     public abstract String getCodecName(final String columnName);
     public abstract String getCodecArgs(final String columnName);
+    public abstract String getCompressionCodecName();
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
         @Override
@@ -42,6 +44,11 @@ public abstract class ParquetInstructions {
         @Override
         public String getCodecArgs(final String columnName) {
             return null;
+        }
+
+        @Override
+        public String getCompressionCodecName() {
+            return DEFAULT_COMPRESSION_CODEC_NAME;
         }
     };
 
@@ -92,12 +99,15 @@ public abstract class ParquetInstructions {
          * different than the columnName (ie, the column name mapping is not the default mapping)
          */
         private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
+        private final String compressionCodecName;
 
         protected ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
-                final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName) {
+                final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName,
+                final String compressionCodecName) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
+            this.compressionCodecName = compressionCodecName;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue, Function<ColumnInstructions, String> fun) {
@@ -138,6 +148,11 @@ public abstract class ParquetInstructions {
             return getOrDefault(columnName, null, ColumnInstructions::getCodecArgs);
         }
 
+        @Override
+        public String getCompressionCodecName() {
+            return compressionCodecName;
+        }
+
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
             return (columnNameToInstructions == null)
@@ -161,6 +176,7 @@ public abstract class ParquetInstructions {
         // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
         // different than the columnName (ie, the column name mapping is not the default mapping)
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
+        private String compressionCodecName = DEFAULT_COMPRESSION_CODEC_NAME;
 
         public Builder() {
         }
@@ -258,12 +274,16 @@ public abstract class ParquetInstructions {
             ci.codecArgs = codecArgs;
         }
 
+        public void setCompressionCodecName(final String compressionCodecName) {
+            this.compressionCodecName = compressionCodecName;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
             final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnNameOut = parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
-            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut);
+            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName);
         }
     }
 }

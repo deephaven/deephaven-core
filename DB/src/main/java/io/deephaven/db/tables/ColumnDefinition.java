@@ -7,7 +7,6 @@ package io.deephaven.db.tables;
 import io.deephaven.base.Copyable;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.tables.dbarrays.*;
@@ -35,13 +34,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     public static final int COLUMNTYPE_GROUPING=2;
     public static final int COLUMNTYPE_PARTITIONING=4;
     public static final int COLUMNTYPE_VIRTUAL=8;
-
-    public static final int ENCODING_ISO_8859_1=1;
-    public static final int ENCODING_UTF_8=2;
-    public static final int ENCODING_US_ASCII=4;
-    public static final int ENCODING_UTF_16=8;
-    public static final int ENCODING_UTF_16BE=16;
-    public static final int ENCODING_UTF_16LE=32;
 
     public static ColumnDefinition<Boolean> ofBoolean(@NotNull final String name) {
         return new ColumnDefinition<>(name, Boolean.class);

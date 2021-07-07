@@ -65,7 +65,20 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readParquetSchemanAndTable(new File(sourceFilePath));
+        return readParquetSchemanAndTable(new File(sourceFilePath), ParquetInstructions.EMPTY);
+    }
+
+    /**
+     * Reads in a table from disk.
+     *
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param readInstructions instructions for customizations while reading
+     * @return table
+     */
+    public static Table readTable(
+            @NotNull final String sourceFilePath,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readParquetSchemanAndTable(new File(sourceFilePath), readInstructions);
     }
 
     /**
@@ -75,7 +88,20 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetSchemanAndTable(sourceFile);
+        return readParquetSchemanAndTable(sourceFile, ParquetInstructions.EMPTY);
+    }
+
+    /**
+     * Reads in a table from disk.
+     *
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param readInstructions instructions for customizations while reading
+     * @return table
+     */
+    public static Table readTable(
+            @NotNull final File sourceFile,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readParquetSchemanAndTable(sourceFile, readInstructions);
     }
 
     /**
@@ -85,8 +111,25 @@ public class ParquetTools {
      * @param def table definition
      * @return table
      */
-    public static Table readTable(@NotNull final String sourceFilePath, final TableDefinition def) {
+    public static Table readTable(
+            @NotNull final String sourceFilePath,
+            final TableDefinition def) {
         return readTableFromSingleParquetFile(new File(sourceFilePath), ParquetInstructions.EMPTY, def);
+    }
+
+    /**
+     * Reads in a table from disk, using the provided table definition.
+     *
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param def table definition
+     * @param readInstructions instructions for customizations while reading
+     * @return table
+     */
+    public static Table readTable(
+            @NotNull final String sourceFilePath,
+            @NotNull final TableDefinition def,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readTableFromSingleParquetFile(new File(sourceFilePath), readInstructions, def);
     }
 
     /**
@@ -96,8 +139,25 @@ public class ParquetTools {
      * @param def table definition
      * @return table
      */
-    public static Table readTable(@NotNull final File sourceFile, final TableDefinition def) {
+    public static Table readTable(
+            @NotNull final File sourceFile,
+            @NotNull final TableDefinition def) {
         return readTableFromSingleParquetFile(sourceFile, ParquetInstructions.EMPTY, def);
+    }
+
+    /**
+     * Reads in a table from disk, using the provided table definition.
+     *
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param def table definition
+     * @param readInstructions instructions for customizations while reading
+     * @return table
+     */
+    public static Table readTable(
+            @NotNull final File sourceFile,
+            @NotNull final TableDefinition def,
+            @NotNull final ParquetInstructions readInstructions) {
+        return readTableFromSingleParquetFile(sourceFile, readInstructions, def);
     }
 
     /**
@@ -107,7 +167,9 @@ public class ParquetTools {
      * @param destPath destination file path; the file name should end in ".parquet" extension.
      *                 If the path includes non-existing directories they are created.
      */
-    public static void writeTable(Table sourceTable, String destPath) {
+    public static void writeTable(
+            @NotNull final Table sourceTable,
+            @NotNull final String destPath) {
         writeTable(sourceTable, sourceTable.getDefinition(), new File(destPath));
     }
 
@@ -118,7 +180,9 @@ public class ParquetTools {
      * @param dest destination file; the file name should end in ".parquet" extension.
      *             If the path includes non-existing directories they are created.
      */
-    public static void writeTable(Table sourceTable, File dest) {
+    public static void writeTable(
+            @NotNull final Table sourceTable,
+            @NotNull final File dest) {
         writeTable(sourceTable, sourceTable.getDefinition(), dest);
     }
 
@@ -128,7 +192,10 @@ public class ParquetTools {
      * @param definition table definition.  Will be written to disk as given.
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created.
      */
-    public static void writeTable(final Table sourceTable, final TableDefinition definition, final File destFile) {
+    public static void writeTable(
+            @NotNull final Table sourceTable,
+            @NotNull final TableDefinition definition,
+            @NotNull final File destFile) {
         final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(sourceTable, definition, defaultPerquetCompressionCodec, destFile, definition.getGroupingColumnNamesArray());
@@ -363,12 +430,12 @@ public class ParquetTools {
         };
     }
 
-    private static Table readParquetSchemanAndTable(@NotNull final File source) {
+    private static Table readParquetSchemanAndTable(
+            @NotNull final File source, @NotNull ParquetInstructions readInstructions) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
 
-        ParquetInstructions readInstructions = ParquetInstructions.EMPTY;
         try {
             final String path = source.getPath();
             readInstructions = ParquetReaderUtil.readParquetSchema(
