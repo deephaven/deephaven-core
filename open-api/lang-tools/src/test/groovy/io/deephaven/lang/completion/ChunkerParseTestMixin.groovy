@@ -8,6 +8,7 @@ import io.deephaven.lang.generated.Node
 import io.deephaven.lang.generated.Token
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.lang.parse.ParsedDocument
+import io.deephaven.lang.parse.api.Languages
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.proto.backplane.script.grpc.CompletionItemOrBuilder
 import io.deephaven.proto.backplane.script.grpc.Position
@@ -42,15 +43,13 @@ trait ChunkerParseTestMixin {
 
     ParsedDocument parse(String command) {
         CompletionParser p = new CompletionParser();
+        p.setLanguage(getLanguage());
         doc = p.parse(command)
         return doc
     }
 
-    String doCompletion(String command, CompletionItemOrBuilder fragment) {
-        Position.Builder pos = doc.findEditRange(fragment.textEdit.range)
-        return new StringBuilder(command)
-            .replace(pos.line, pos.character, fragment.textEdit.text)
-            .toString()
+    String getLanguage() {
+        return Languages.LANGUAGE_GROOVY
     }
 
     @CompileDynamic
@@ -67,6 +66,13 @@ trait ChunkerParseTestMixin {
         return doCompletion(command, result.get(resultIndex))
     }
 
+    String doCompletion(String command, CompletionItemOrBuilder fragment) {
+        Position.Builder pos = doc.findEditRange(fragment.textEdit.range)
+
+        return new StringBuilder(command)
+                .replace(pos.line, pos.character, fragment.textEdit.text)
+                .toString()
+    }
 
     @CompileDynamic
     void assertAllValid(ParsedDocument parsed, String src) {

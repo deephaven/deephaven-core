@@ -50,14 +50,20 @@ public class PendingParse {
         private final String text;
 
         /**
+         * The language of this parse job. Should be one of the fields in {@link io.deephaven.lang.parse.api.Languages}
+         */
+        private final String language;
+
+        /**
          * The final parsed result.  Only non-null after a parse operation has completed.
          * Note that we only ever read this field inside a synchronized() block, so no need for volatile here.
          */
         private ParsedDocument result;
 
-        private ParseJob(@NotNull final String version, @NotNull final String text) {
+        private ParseJob(@NotNull final String version, @NotNull final String text, final String language) {
             this.text = text;
             this.version = version;
+            this.language = language;
         }
 
         /**
@@ -182,9 +188,10 @@ public class PendingParse {
      * Called when the document has been updated and we need to reparse the latest document text.
      * @param version The monaco-supplied version string.  Monatomically increasing (TODO: test editor undo operations)
      * @param text The full text of the document
+     * @param language
      * @param force A boolean to signal if we should forcibly parse, ignoring current state.
      */
-    void requestParse(@NotNull final String version, @NotNull final String text, final boolean force) {
+    void requestParse(@NotNull final String version, @NotNull final String text, final String language, final boolean force) {
         final ParseJob localTargetState;
         // hm, if we fail the version check, we should actually send a message to the client, and tell them
         // to send us the full document text so that we can get into a good state.  Failing the check means our
@@ -202,7 +209,7 @@ public class PendingParse {
                 // next, set the targetState so the parse thread can pick up the work we want.
                 // we do this inside this synchronized block, so the logic in finishParse() can consider targetState atomic
                 // (we only *read* targetState field outside of a synchronized block).
-                targetState = new ParseJob(version, text);
+                targetState = new ParseJob(version, text, language);
                 // allows parse attempts to occur.  We set valid=false when we invalidate() a parse upon receiving document updates.
                 valid = true;
                 // now, just in case this thread was paused in this method call, we want to be sure that the job is picked up,

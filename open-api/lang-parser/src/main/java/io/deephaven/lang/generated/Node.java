@@ -111,6 +111,7 @@ public interface Node {
         StringBuilder b = new StringBuilder();
         Token next = jjtGetFirstToken();
         while (next != jjtGetLastToken()) {
+            assert next != null;
             append(b, next);
             if (next == next.next) {
                 break;

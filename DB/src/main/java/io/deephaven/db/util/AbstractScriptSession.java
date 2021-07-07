@@ -83,6 +83,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         final Iterator<CompletionParseService> itr = loader.iterator();
         if (itr.hasNext()) {
             parser = itr.next();
+            parser.setLanguage(scriptType());
         } else {
             // hm, should maybe log to the user that we are using a do-nothing completer...
             parser = new CompletionParseServiceNoOp();

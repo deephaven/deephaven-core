@@ -26,4 +26,6 @@ public interface CompletionParseService<ResultType extends ParsedResult, ChangeT
 
     void close(final String uri);
 
+    void setLanguage(String language);
+
 }

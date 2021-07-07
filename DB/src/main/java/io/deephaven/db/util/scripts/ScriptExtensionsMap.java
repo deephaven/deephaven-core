@@ -1,5 +1,7 @@
 package io.deephaven.db.util.scripts;
 
+import io.deephaven.lang.parse.api.Languages;
+
 import java.util.*;
 
 /**
@@ -7,10 +9,10 @@ import java.util.*;
  */
 public class ScriptExtensionsMap extends HashMap<String, List<String>> {
     private ScriptExtensionsMap() {
-        put("Groovy", Collections.singletonList("groovy"));
-        put("Python", Collections.singletonList("py"));
-        put("Scala", Collections.singletonList("scala"));
-        put("JavaScript", Arrays.asList("js", "javascript"));
+        put(Languages.LANGUAGE_GROOVY, Collections.singletonList("groovy"));
+        put(Languages.LANGUAGE_PYTHON, Collections.singletonList("py"));
+        put(Languages.LANGUAGE_SCALA, Collections.singletonList("scala"));
+        put(Languages.LANGUAGE_JAVASCRIPT, Arrays.asList("js", "javascript"));
     }
 
     private static Map<String,List<String>> instance;

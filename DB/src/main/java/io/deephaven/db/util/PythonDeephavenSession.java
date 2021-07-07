@@ -15,6 +15,8 @@ import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.parse.api.CompletionParseService;
+import io.deephaven.lang.parse.api.Languages;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
@@ -30,8 +32,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
-
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
@@ -45,8 +45,6 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             .getProperty("PythonDeephavenSession.defaultScriptPath")
             .replace("<devroot>", Configuration.getInstance().getDevRootPath())
             .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
-
-    public static String SCRIPT_TYPE = "Python";
 
     private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
@@ -203,7 +201,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public String scriptType() { return SCRIPT_TYPE; }
+    public String scriptType() { return Languages.LANGUAGE_PYTHON; }
 
     @Override
     public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState) {
@@ -285,4 +283,5 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
         throw new OperationException("Can not convert pyObject=" + pyObject + " to a Table.");
     }
+
 }

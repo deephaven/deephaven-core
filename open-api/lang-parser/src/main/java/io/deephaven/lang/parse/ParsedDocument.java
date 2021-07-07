@@ -15,6 +15,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import static io.deephaven.lang.parse.LspTools.equal;
+
 /**
  * Represents a parsed document.
  *
@@ -315,11 +317,23 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
 
     private int findFromToken(Position pos, Token tok, boolean start) {
         final Token startTok = tok;
-        if (start && tok.positionStart().equals(pos)) {
+        if (start && equal(tok.positionStart(), pos)) {
             return tok.tokenBegin;
         }
-        if (!start && tok.positionEnd(true).equals(pos)) {
-            return tok.tokenBegin + Math.min(1, tok.image.length());
+        if (!start) {
+            Position.Builder posEnd = tok.positionEnd(true);
+            if (equal(posEnd, pos)) {
+                return tok.tokenBegin + Math.min(1, tok.image.length());
+            }
+            if (tok.kind == ChunkerConstants.EOF) {
+                // special case; if we're actually on the EOF token, we should allow it to extend to the end.
+                posEnd = tok.positionEnd(false);
+                if (equal(posEnd, pos)) {
+                    // plain add 1 here, b/c replaceRange is allowed to surpass end of document (monaco requires this),
+                    // so we cheat it here by picking up the EOF on the end and then giving back the extra position we ignored before.
+                    return tok.tokenBegin + 1;
+                }
+            }
         }
         while (tok.next != null) {
             if (tok.containsPosition(pos)) {
@@ -346,7 +360,7 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
                 tok = tok.next;
             }
         }
-        throw new IllegalArgumentException("Token " + startTok + " does not contain position " + pos);
+        throw new IllegalArgumentException("Token '" + startTok + "' at position [" + startTok.positionStart() +" : " + startTok.positionEnd() + "] does not contain position " + pos);
     }
 
     public void extendEnd(CompletionItem.Builder item, Position requested, Node node) {
@@ -384,4 +398,5 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
     public Map<String, List<ChunkerAssign>> getAssignments() {
         return assignments;
     }
+
 }

@@ -22,6 +22,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.db.util.scripts.StateOverrideScriptPathLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.parse.api.Languages;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
@@ -53,7 +54,6 @@ import java.util.stream.StreamSupport;
 public class GroovyDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
-    public static final String SCRIPT_TYPE = "Groovy";
     private static final String PACKAGE = CompilerTools.DYNAMIC_GROOVY_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.db.util.Script";
 
@@ -609,7 +609,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public String scriptType() {
-        return SCRIPT_TYPE;
+        return Languages.LANGUAGE_GROOVY;
     }
 
     @Override

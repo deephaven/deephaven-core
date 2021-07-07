@@ -51,6 +51,10 @@ public class LspTools {
         return p.getLine() == end.getLine() ? p.getCharacter() >= end.getCharacter() : p.getLine() > end.getLine();
     }
 
+    public static boolean equal(PositionOrBuilder p, PositionOrBuilder end) {
+        return p.getLine() == end.getLine() && p.getCharacter() == end.getCharacter();
+    }
+
     public static int extend(Position.Builder p, PositionOrBuilder requested) {
         if (p.getLine() != requested.getLine()) {
             throw new IllegalArgumentException("Can only extend on same-line; " + p + " and " + requested + " are not on same line");

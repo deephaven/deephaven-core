@@ -376,6 +376,17 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
             }
 
             @Override
+            public Object visitChunkerPythonMethod(final ChunkerPythonMethod node, final Object data) {
+                // not relevant here
+                return null;
+            }
+
+            @Override
+            public Object visitChunkerGroovyMethodDef(final ChunkerGroovyMethodDef node, final Object data) {
+                return null;
+            }
+
+            @Override
             public Object visitChunkerStatement(ChunkerStatement node, Object data) {
                 return unsupported(node);
             }
@@ -383,6 +394,21 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
             @Override
             public Object visitChunkerJavaClassDecl(ChunkerJavaClassDecl node, Object data) {
                 return unsupported(node);
+            }
+
+            @Override
+            public Object visitChunkerPythonClassDecl(final ChunkerPythonClassDecl node, final Object data) {
+                throw unsupported(node);
+            }
+
+            @Override
+            public Object visitChunkerPythonLambda(final ChunkerPythonLambda node, final Object data) {
+                return null;
+            }
+
+            @Override
+            public Object visitChunkerDict(final ChunkerDict node, final Object data) {
+                return null;
             }
 
             @Override
@@ -453,6 +479,12 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
             @Override
             public Object visitChunkerInvoke(ChunkerInvoke node, Object data) {
                 invokeComplete(results, node, request, direction);
+                return null;
+            }
+
+            @Override
+            public Object visitChunkerPythonFunctionSig(final ChunkerPythonFunctionSig node, final Object data) {
+                // not relevant for autocompletion ...yet.
                 return null;
             }
 

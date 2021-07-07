@@ -2,6 +2,7 @@ package io.deephaven.lang.completion
 
 import io.deephaven.db.util.VariableProvider
 import io.deephaven.lang.parse.CompletionParser
+import io.deephaven.lang.parse.api.Languages
 import spock.lang.Specification
 
 class ChunkerGroovyTest extends Specification implements ChunkerParseTestMixin {
@@ -76,6 +77,7 @@ val = {
     def "Parser should survive moderately complex groovy with classes, types and closures"() {
         given:
             CompletionParser p = new CompletionParser()
+            p.setLanguage(Languages.LANGUAGE_GROOVY)
             String src
         when:
             src = """

@@ -3,6 +3,7 @@ package io.deephaven.db.util;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
+import io.deephaven.lang.parse.api.Languages;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -15,13 +16,12 @@ import java.util.function.Supplier;
  * ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user scripts.
  */
 public class NoLanguageDeephavenSession extends AbstractScriptSession implements ScriptSession {
-    private static final String SCRIPT_TYPE = "NoLanguage";
 
     private final String scriptType;
     private final Map<String, Object> variables;
 
     public NoLanguageDeephavenSession() {
-        this(SCRIPT_TYPE);
+        this(Languages.LANGUAGE_OTHER);
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
@@ -57,10 +57,10 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     protected void evaluate(String command, @Nullable String scriptName) {
-        if (!scriptType.equals(SCRIPT_TYPE)) {
+        if (!scriptType.equals(Languages.LANGUAGE_OTHER)) {
             throw new UnsupportedOperationException(scriptType + " session mode is not enabled");
         }
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support evaluate");
+        throw new UnsupportedOperationException(Languages.LANGUAGE_OTHER + " session does not support evaluate");
     }
 
     @Override
@@ -85,7 +85,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     public String scriptType() {
-        return SCRIPT_TYPE;
+        return scriptType;
     }
 
     @Override
@@ -98,16 +98,16 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(scriptType + " session does not support setUseOriginalScriptLoaderState");
     }
 
     @Override
     public void clearScriptPathLoader() {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(scriptType + " session does not support setUseOriginalScriptLoaderState");
     }
 
     @Override
     public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support setUseOriginalScriptLoaderState");
+        throw new UnsupportedOperationException(scriptType + " session does not support setUseOriginalScriptLoaderState");
     }
 }

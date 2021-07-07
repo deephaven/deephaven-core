@@ -21,9 +21,14 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
+    private String language;
 
     public ParsedDocument parse(String document) throws ParseException {
         Chunker chunker = new Chunker(document);
+        if (language != null) {
+            // default language is set to groovy, but we don't want to decide that here.
+            chunker.setLanguage(language);
+        }
         final ChunkerDocument doc = chunker.Document();
         return new ParsedDocument(doc, document);
     }
@@ -41,7 +46,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
                     .endl();
         }
         startParse(uri)
-                .requestParse(String.valueOf(version), text, false);
+                .requestParse(String.valueOf(version), text, language, false);
     }
 
     private PendingParse startParse(String uri) {
@@ -98,7 +103,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
             String suffix = offset + length < document.length() ? document.substring(offset + length) : "";
             document = prefix + change.getText() + suffix;
         }
-        doc.requestParse(version, document, forceParse);
+        doc.requestParse(version, document, language, forceParse);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
                     .append("Finished updating ")
@@ -133,5 +138,10 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         if (removed != null) {
             removed.cancel();
         }
+    }
+
+    @Override
+    public void setLanguage(final String language) {
+        this.language = language;
     }
 }

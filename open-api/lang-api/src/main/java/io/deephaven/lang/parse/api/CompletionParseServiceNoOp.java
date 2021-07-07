@@ -63,4 +63,8 @@ public class CompletionParseServiceNoOp implements CompletionParseService<Parsed
 
     }
 
+    @Override
+    public void setLanguage(final String language) {
+    }
+
 }

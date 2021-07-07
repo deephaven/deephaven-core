@@ -7,6 +7,7 @@ import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.parse.api.Languages;
 import org.jetbrains.annotations.Nullable;
 import scala.Option;
 import scala.collection.JavaConverters;
@@ -36,8 +37,6 @@ import java.util.stream.Collectors;
  */
 public class ScalaDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(ScalaDeephavenSession.class);
-
-    public static String SCRIPT_TYPE = "Scala";
 
     private final IMain interpreter;
     private final ErrorHandler errorHandler;
@@ -197,7 +196,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
 
     @Override
     public String scriptType() {
-        return SCRIPT_TYPE;
+        return Languages.LANGUAGE_SCALA;
     }
 
     @Override
