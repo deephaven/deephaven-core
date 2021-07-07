@@ -12,7 +12,6 @@ import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
 import io.deephaven.util.codec.ObjectCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

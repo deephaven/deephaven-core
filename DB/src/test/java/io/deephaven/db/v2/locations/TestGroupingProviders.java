@@ -150,8 +150,8 @@ public class TestGroupingProviders {
                         .toArray(File[]::new)
         );
         // TODO (deephaven/deephaven-core/issues/321): Re-add this part of the test when the parquet bug is fixed
-//        ParquetTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
-//                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableKey.getTableName()), ParquetTools.StorageFormat.Parquet);
+        ParquetTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
+                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableKey.getTableName() + ".parquet"));
 
         if (!missingGroups) {
             // Put Sym back on for the partitions that dropped it.

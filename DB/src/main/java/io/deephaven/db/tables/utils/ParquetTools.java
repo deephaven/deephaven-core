@@ -216,6 +216,9 @@ public class ParquetTools {
                 writeParquetTableImpl(source, tableDefinition, codecName, destinations[i], groupingColumns);
             } catch (RuntimeException e) {
                 for (final File firstCreatedDir : firstCreatedDirs) {
+                    if (firstCreatedDir == null) {
+                        continue;
+                    }
                     log.error("Error in table writing, cleaning up potentially incomplete table destination path starting from " +
                             firstCreatedDir.getAbsolutePath(), e);
                     FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);

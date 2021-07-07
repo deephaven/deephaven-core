@@ -15,6 +15,7 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
+import io.deephaven.db.v2.TstUtils;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -187,22 +188,23 @@ public class TestParquetTools {
     @Test
     public void testWriteTableMissingColumns() {
         // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
-//        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
-//                "B    = NULL_BYTE",
-//                "C    = NULL_CHAR",
-//                "S    = NULL_SHORT",
-//                "I    = NULL_INT",
-//                "L    = NULL_LONG",
-//                "F    = NULL_FLOAT",
-//                "D    = NULL_DOUBLE",
-//                "Bl   = (Boolean) null",
-//                "Str  = (String) null",
-//                "DT   = (DBDateTime) null"
-//        );
-//        ParquetTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{new File(testRoot + File.separator + "Null")});
-//        final Table result = ParquetTools.readTable(new File(testRoot + File.separator + "Null"));
-//        TstUtils.assertTableEquals(nullTable, result);
-//        result.close();
+        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
+                "B    = NULL_BYTE",
+                "C    = NULL_CHAR",
+                "S    = NULL_SHORT",
+                "I    = NULL_INT",
+                "L    = NULL_LONG",
+                "F    = NULL_FLOAT",
+                "D    = NULL_DOUBLE",
+                "Bl   = (Boolean) null",
+                "Str  = (String) null",
+                "DT   = (DBDateTime) null"
+        );
+        final File dest = new File(testRoot + File.separator + "Null.parquet");
+        ParquetTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{dest});
+        final Table result = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(nullTable, result);
+        result.close();
     }
 
     @Test

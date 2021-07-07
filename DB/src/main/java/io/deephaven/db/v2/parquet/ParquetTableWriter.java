@@ -181,7 +181,7 @@ public class ParquetTableWriter {
      * Writes a table in parquet format under a given path
      *
      * @param t          The table to write
-     * @param definition
+     * @param definition The table definition
      * @param path       The destination path
      * @param tableMeta  A map of metadata values to be stores in the file footer
      * @param codecName  Name of the codec for compression
@@ -192,13 +192,13 @@ public class ParquetTableWriter {
 
         ParquetFileWriter parquetFileWriter = getParquetFileWriter(t, definition, path, tableMeta, codecName);
 
-        t = t.view(definition.getColumnNamesArray());
         t = pretransformTable(t, definition);
 
         RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(t.size());
+        // noinspection rawtypes
         for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
             String name = nameToSource.getKey();
-            ColumnSource columnSource = nameToSource.getValue();
+            ColumnSource<?> columnSource = nameToSource.getValue();
             try {
                 writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name));
             } catch (IllegalAccessException  e) {
@@ -210,14 +210,24 @@ public class ParquetTableWriter {
     }
 
     private static Table pretransformTable(Table t, TableDefinition definition) {
-        List<String> columnsTransform = new ArrayList<>();
-        for (ColumnDefinition column : definition.getColumns()) {
-            if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                columnsTransform.add(column.getName() + " = " + column.getName() + ".values()");
+        List<String> updateViewColumnsTransform = new ArrayList<>();
+        List<String> viewColumnsTransform = new ArrayList<>();
+        for (ColumnDefinition<?> column : definition.getColumns()) {
+            final String colName = column.getName();
+            if (t.hasColumns(colName)) {
+                if (StringSet.class.isAssignableFrom(column.getDataType())) {
+                    updateViewColumnsTransform.add(colName + " = " + colName + ".values()");
+                }
+                viewColumnsTransform.add(colName);
+            } else {
+                viewColumnsTransform.add(colName + " = " + TableTools.nullTypeAsString(column.getDataType()));
             }
         }
-        if (columnsTransform.size() > 0) {
-            t = t.updateView(columnsTransform.toArray(new String[0]));
+        if (viewColumnsTransform.size() > 0) {
+            t = t.view(viewColumnsTransform.toArray((new String[0])));
+        }
+        if (updateViewColumnsTransform.size() > 0) {
+            t = t.updateView(updateViewColumnsTransform.toArray(new String[0]));
         }
         return t;
     }

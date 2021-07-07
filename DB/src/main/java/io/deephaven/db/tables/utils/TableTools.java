@@ -1661,4 +1661,26 @@ public class TableTools {
                 throw new UnsupportedOperationException();
         }
     }
+
+    public static String nullTypeAsString(final Class<?> dataType) {
+        if (dataType == int.class) {
+            return "NULL_INT";
+        }
+        if (dataType == long.class) {
+            return "NULL_LONG";
+        }
+        if (dataType == char.class) {
+            return "NULL_CHAR";
+        }
+        if (dataType == double.class) {
+            return "NULL_DOUBLE";
+        }
+        if (dataType == float.class) {
+            return "NULL_FLOAT";
+        }
+        if (dataType == short.class) {
+            return "NULL_SHORT";
+        }
+        return "(" + dataType.getName() + ")" + " null";
+    }
 }
