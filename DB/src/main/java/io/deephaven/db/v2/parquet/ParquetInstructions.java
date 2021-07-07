@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * This class provides instructions intended for read and write parquet operations (which take
@@ -22,6 +23,8 @@ public abstract class ParquetInstructions {
     }
     public abstract String getParquetColumnNameFromColumnNameOrDefault(final String columnName);
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
+    public abstract String getCodecName(final String columnName);
+    public abstract String getCodecArgs(final String columnName);
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
         @Override
@@ -30,6 +33,14 @@ public abstract class ParquetInstructions {
         }
         @Override
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
+            return null;
+        }
+        @Override
+        public String getCodecName(final String columnName) {
+            return null;
+        }
+        @Override
+        public String getCodecArgs(final String columnName) {
             return null;
         }
     };
@@ -89,16 +100,20 @@ public abstract class ParquetInstructions {
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
         }
 
-        @Override
-        public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
+        private String getOrDefault(final String columnName, final String defaultValue, Function<ColumnInstructions, String> fun) {
             if (columnNameToInstructions == null) {
-                return columnName;
+                return defaultValue;
             }
             final ColumnInstructions ci = columnNameToInstructions.get(columnName);
             if (ci == null) {
-                return columnName;
+                return defaultValue;
             }
-            return ci.getParquetColumnName();
+            return fun.apply(ci);
+        }
+
+        @Override
+        public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
+            return getOrDefault(columnName, columnName, ColumnInstructions::getParquetColumnName);
         }
 
         @Override
@@ -111,6 +126,16 @@ public abstract class ParquetInstructions {
                 return parquetColumnName;
             }
             return ci.getColumnName();
+        }
+
+        @Override
+        public String getCodecName(final String columnName) {
+            return getOrDefault(columnName, null, ColumnInstructions::getCodecName);
+        }
+
+        @Override
+        public String getCodecArgs(final String columnName) {
+            return getOrDefault(columnName, null, ColumnInstructions::getCodecArgs);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -218,6 +243,19 @@ public abstract class ParquetInstructions {
 
         public Set<String> getTakenNames() {
             return (columnNameToInstructions == null) ? Collections.emptySet() : columnNameToInstructions.keySet();
+        }
+
+        public void addCodec(final String columnName, final String codecName, final String codecArgs) {
+            final ColumnInstructions ci;
+            if (columnNameToInstructions == null) {
+                newColumnNameToInstructionsMap();
+                ci = new ColumnInstructions(columnName);
+                columnNameToInstructions.put(columnName, ci);
+            } else {
+                ci = columnNameToInstructions.putIfAbsent(columnName, ColumnInstructions::new);
+            }
+            ci.codecName = codecName;
+            ci.codecArgs = codecArgs;
         }
 
         public ParquetInstructions build() {

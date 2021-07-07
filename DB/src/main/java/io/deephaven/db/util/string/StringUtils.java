@@ -47,12 +47,11 @@ public class StringUtils implements Serializable {
         if (!USE_COMPRESSED_STRINGS) {
             return tableDefinition;
         }
-        final ColumnDefinition resultColumns[] = Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
+        final ColumnDefinition<?>[] resultColumns = Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
         for (int ci = 0; ci < resultColumns.length; ++ci) {
             final ColumnDefinition<?> column = resultColumns[ci];
             if (column.getDataType() == String.class
-                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING
-                    && column.getEncodingInfo().isSimple()) {
+                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING) {
                 resultColumns[ci] = column.withDataType(CompressedString.class);
             }
         }

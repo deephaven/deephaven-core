@@ -371,9 +371,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             if (columnType != other.columnType) {
                 differences.add(prefix + lhs + " columnType " + columnType + " does not match " + rhs + " columnType " + other.columnType);
             }
-            if (getEncodingInfo(encoding) != getEncodingInfo(other.encoding)) {
-                differences.add(prefix + lhs + " encoding '" + getEncodingInfo(encoding) + "' does not match " + rhs + " encoding '" + getEncodingInfo(other.encoding) + "'");
-            }
             if (!Objects.equals(getObjectCodecClass(), other.getObjectCodecClass())) {
                 differences.add(prefix + lhs + " object codec class '" + getObjectCodecClass() + "' does not match " + rhs + " object codec class '" + other.getObjectCodecClass() + "'");
             }
@@ -396,7 +393,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                 getSymbolTableType() == otherCD.getSymbolTableType() &&
                 Objects.equals(componentType, otherCD.componentType) &&
                 columnType == otherCD.columnType &&
-                getEncodingInfo(encoding) == getEncodingInfo(otherCD.encoding) &&
                 Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass()) &&
                 Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments()) &&
                 getObjectWidth() == otherCD.getObjectWidth();
@@ -447,22 +443,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             return SymbolTableType.NONE;
         }
         return SymbolTableType.COLUMN_LOCATION;
-    }
-
-    public EncodingInfo getEncodingInfo() {
-        return getEncodingInfo(encoding);
-    }
-
-    public static EncodingInfo getEncodingInfo(final int encoding) {
-        switch (encoding) {
-            case ENCODING_ISO_8859_1: return EncodingInfo.ISO_8859_1;
-            case ENCODING_UTF_8:      return EncodingInfo.UTF_8;
-            case ENCODING_US_ASCII:   return EncodingInfo.US_ASCII;
-            case ENCODING_UTF_16:     return EncodingInfo.UTF_16;
-            case ENCODING_UTF_16BE:   return EncodingInfo.UTF_16BE;
-            case ENCODING_UTF_16LE:   return EncodingInfo.UTF_16LE;
-            default:                  return EncodingInfo.ISO_8859_1; // Should be 0, or Integer.MIN_VALUE (null).
-        }
     }
 
     public boolean isFixedWidthObjectType() {
@@ -516,11 +496,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.isVarSizeString=isVarSizeString;
     }
 
-    private int encoding=Integer.MIN_VALUE;
-    public int getEncoding() {
-        return encoding;
-    }
-
     private String objectCodecClass;
     public String getObjectCodecClass() {
         return objectCodecClass;
@@ -555,7 +530,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         componentType = x.componentType;
         columnType = x.columnType;
         isVarSizeString = x.isVarSizeString;
-        encoding = x.encoding;
         objectCodecClass = x.objectCodecClass;
         objectCodecArguments = x.objectCodecArguments;
         objectWidth = x.objectWidth;
@@ -570,7 +544,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         builder.append("|componentType=").append(componentType);
         builder.append("|columnType=").append(columnType);
         builder.append("|isVarSizeString=").append(isVarSizeString);
-        builder.append("|encoding=").append(encoding);
         builder.append("|objectCodecClass=").append(objectCodecClass);
         builder.append("|objectCodecArguments=").append(objectCodecArguments);
         builder.append("|objectWidth=").append(objectWidth);
@@ -587,7 +560,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|componentType=").append(String.valueOf(componentType));
         logOutput.append("|columnType=").append(columnType);
         logOutput.append("|isVarSizeString=").append(isVarSizeString);
-        logOutput.append("|encoding=").append(encoding);
         logOutput.append("|objectCodecClass=").append(String.valueOf(objectCodecClass));
         logOutput.append("|objectCodecArguments=").append(String.valueOf(objectCodecArguments));
         logOutput.append("|objectWidth=").append(objectWidth);
@@ -610,7 +582,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         componentType = (Class)in.readObject();
         columnType = in.readInt();
         isVarSizeString = (Boolean)in.readObject();
-        encoding = in.readInt();
         objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
         objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
         objectWidth = in.readInt();
@@ -622,7 +593,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(componentType);
         out.writeInt(columnType);
         out.writeObject(isVarSizeString);
-        out.writeInt(encoding);
         if (objectCodecClass == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecClass); }
         if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
         out.writeInt(objectWidth);
