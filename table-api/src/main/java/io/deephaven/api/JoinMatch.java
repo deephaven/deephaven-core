@@ -1,8 +1,5 @@
 package io.deephaven.api;
 
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,21 +19,18 @@ import java.util.stream.Collectors;
  * @see TableOperations#whereIn(Object, Collection)
  * @see TableOperations#whereNotIn(Object, Collection)
  */
-@Immutable
-@SimpleStyle
-public abstract class JoinMatch {
+public interface JoinMatch {
 
-    public static JoinMatch of(ColumnName leftAndRight) {
-        return of(leftAndRight, leftAndRight);
+    static JoinMatch of(ColumnName left, ColumnName right) {
+        if (left.equals(right)) {
+            return left;
+        }
+        return JoinMatchImpl.of(left, right);
     }
 
-    public static JoinMatch of(ColumnName left, ColumnName right) {
-        return ImmutableJoinMatch.of(left, right);
-    }
-
-    public static JoinMatch parse(String x) {
+    static JoinMatch parse(String x) {
         if (ColumnName.isValidParsedColumnName(x)) {
-            return of(ColumnName.parse(x));
+            return ColumnName.parse(x);
         }
         final int ix = x.indexOf('=');
         if (ix < 0 || ix + 1 == x.length()) {
@@ -55,7 +49,7 @@ public abstract class JoinMatch {
         return of(left, right);
     }
 
-    public static List<JoinMatch> from(Collection<String> values) {
+    static List<JoinMatch> from(Collection<String> values) {
         return values.stream().map(JoinMatch::parse).collect(Collectors.toList());
     }
 
@@ -64,14 +58,12 @@ public abstract class JoinMatch {
      *
      * @return the left column name
      */
-    @Parameter
-    public abstract ColumnName left();
+    ColumnName left();
 
     /**
      * The column name from the right table.
      * 
      * @return the right column name
      */
-    @Parameter
-    public abstract ColumnName right();
+    ColumnName right();
 }

@@ -15,7 +15,8 @@ import java.io.Serializable;
  */
 @Immutable
 @SimpleStyle
-public abstract class ColumnName implements Selectable, Value, Expression, Pair, Serializable {
+public abstract class ColumnName
+    implements Selectable, Value, Expression, Pair, JoinMatch, Serializable {
 
     public static boolean isValidColumnName(String name) {
         try {
@@ -80,6 +81,16 @@ public abstract class ColumnName implements Selectable, Value, Expression, Pair,
 
     @Override
     public final ColumnName output() {
+        return this;
+    }
+
+    @Override
+    public final ColumnName left() {
+        return this;
+    }
+
+    @Override
+    public final ColumnName right() {
         return this;
     }
 }
