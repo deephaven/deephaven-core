@@ -13,7 +13,7 @@ import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByParquetFile;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
-import io.deephaven.db.v2.parquet.ParquetReaderUtil;
+import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -35,7 +35,6 @@ import java.util.*;
 
 /**
  * Tools for managing and manipulating tables on disk in parquet format.
- *
  */
 @SuppressWarnings("WeakerAccess")
 public class ParquetTools {
@@ -46,9 +45,9 @@ public class ParquetTools {
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
     /**
-     * Reads in a table from disk.
+     * Reads in a table from a file.
      *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
@@ -56,9 +55,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk.
+     * Reads in a table from a file.
      *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
      * @param readInstructions instructions for customizations while reading
      * @return table
      */
@@ -69,9 +68,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk.
+     * Reads in a table from a file.
      *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
@@ -79,9 +78,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk.
+     * Reads in a table from a file.
      *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension
      * @param readInstructions instructions for customizations while reading
      * @return table
      */
@@ -92,9 +91,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk, using the provided table definition.
+     * Reads in a table from a file using the provided table definition.
      *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
      * @param def table definition
      * @return table
      */
@@ -105,9 +104,10 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk, using the provided table definition.
+     * Reads in a table from a file, using the provided table definition
+     * (instead of the definition implied by the file).
      *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
      * @param def table definition
      * @param readInstructions instructions for customizations while reading
      * @return table
@@ -120,9 +120,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk, using the provided table definition.
+     * Reads in a table from a file, using the provided table definition.
      *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension
      * @param def table definition
      * @return table
      */
@@ -133,9 +133,9 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from disk, using the provided table definition.
+     * Reads in a table from a file, using the provided table definition.
      *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension.
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension
      * @param def table definition
      * @param readInstructions instructions for customizations while reading
      * @return table
@@ -148,11 +148,13 @@ public class ParquetTools {
     }
 
     /**
-     * Write out a table to disk.
+     * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param destPath destination file path; the file name should end in ".parquet" extension.
-     *                 If the path includes non-existing directories they are created.
+     * @param destPath destination file path; the file name should end in ".parquet" extension
+     *                 If the path includes non-existing directories they are created
+     *                 If there is an error any intermediate directories previously created are removed;
+     *                 note this makes this method unsafe for concurrent use
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
@@ -161,10 +163,10 @@ public class ParquetTools {
     }
 
     /**
-     * Write out a table to disk.
+     * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param dest destination file; the file name should end in ".parquet" extension.
+     * @param dest destination file; the file name should end in ".parquet" extension
      *             If the path includes non-existing directories they are created
      */
     public static void writeTable(
@@ -174,10 +176,12 @@ public class ParquetTools {
     }
 
     /**
-     * Write out a table to disk.
+     * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition.  Will be written to destination as given
+     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+     *                 If there is an error any intermediate directories previously created are removed;
+     *                 note this makes this method unsafe for concurrent use
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
@@ -187,11 +191,13 @@ public class ParquetTools {
     }
 
     /**
-     * Write out a table to disk.
+     * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition.  Will be written to destination as given
+     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      * @param destFilePath destination path; it must end in ".parquet".  Any non existing directories in the path are created
+     *                     If there is an error any intermediate directories previously created are removed;
+     *                     note this makes this method unsafe for concurrent use
      */
     public static void writeTable(@NotNull final Table sourceTable,
                                   @NotNull final TableDefinition definition,
@@ -201,11 +207,13 @@ public class ParquetTools {
     }
 
     /**
-     * Write out a table to disk.
+     * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition.  Will be written to destination as given
+     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+     *                 If there is an error any intermediate directories previously created are removed;
+     *                 note this makes this method unsafe for concurrent use
      */
     public static void writeTable(@NotNull final Table sourceTable,
                                   @NotNull final TableDefinition definition,
@@ -218,37 +226,39 @@ public class ParquetTools {
         } catch (Exception e) {
             if (firstCreated != null) {
                 FileUtils.deleteRecursivelyOnNFS(firstCreated);
+            } else {
+                destFile.delete();
             }
             throw e;
         }
     }
 
     /**
-     * Make the parent directory of destination if it does not exist, and any missing parents.
+     * Make any missing ancestor directories of {@code destination}.
      *
      * @param destination The destination file
-     * @return The first created directory, or null, if no directories were made.
+     * @return The first created directory, or null if no directories were made.
      */
     private static File prepareDestinationFileLocation(@NotNull File destination) {
         destination = destination.getAbsoluteFile();
         if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
-            throw new UncheckedDeephavenException("Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension.");
+            throw new UncheckedDeephavenException("Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension");
         }
         if (destination.exists()) {
             if (destination.isDirectory()) {
-                throw new UncheckedDeephavenException("Destination " + destination + " exists and is a directory.");
+                throw new UncheckedDeephavenException("Destination " + destination + " exists and is a directory");
             }
             if (!destination.canWrite()) {
-                throw new UncheckedDeephavenException("Destination " + destination + " exists but is not writable.");
+                throw new UncheckedDeephavenException("Destination " + destination + " exists but is not writable");
             }
             return null;
         }
         final File firstParent = destination.getParentFile();
-        if (firstParent.exists()) {
+        if (firstParent.isDirectory()) {
             if (firstParent.canWrite()) {
                 return null;
             }
-            throw new UncheckedDeephavenException("Destination " + destination + " has non writable parent directory.");
+            throw new UncheckedDeephavenException("Destination " + destination + " has non writable parent directory");
         }
         File firstCreated = firstParent;
         File parent;
@@ -268,21 +278,23 @@ public class ParquetTools {
     }
 
     /**
-     * Writes tables to disk in parquet format under a given destinations.  If you specify grouping columns, there
+     * Writes tables to disk in parquet format to a supplied set of destinations.  If you specify grouping columns, there
      * must already be grouping information for those columns in the sources.  This can be accomplished with
      * {@code .by(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
      *
      * @param sources            The tables to write
      * @param tableDefinition    The common schema for all the tables to write
      * @param writeInstructions  Write instructions for customizations while writing
-     *
-     * @param destinations    The destinations path
+     * @param destinations    The destinations paths.    Any non existing directories in the paths provided are created.
+     *                        If there is an error any intermediate directories previously created are removed;
+     *                        note this makes this method unsafe for concurrent use
      * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping info)
      */
     public static void writeParquetTables(@NotNull final Table[] sources,
                                           @NotNull final TableDefinition tableDefinition,
                                           @NotNull final ParquetInstructions writeInstructions,
-                                          @NotNull final File[] destinations, String[] groupingColumns) {
+                                          @NotNull final File[] destinations,
+                                          @NotNull final String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         final File[] absoluteDestinations =
                 Arrays.stream(destinations)
@@ -292,18 +304,21 @@ public class ParquetTools {
                 Arrays.stream(absoluteDestinations)
                         .map(ParquetTools::prepareDestinationFileLocation)
                         .toArray(File[]::new);
-
         for (int i = 0; i < sources.length; i++) {
             final Table source = sources[i];
             try {
                 writeParquetTableImpl(source, tableDefinition, writeInstructions, destinations[i], groupingColumns);
             } catch (RuntimeException e) {
+                for (final File destination : destinations) {
+                    destination.delete();
+                }
                 for (final File firstCreatedDir : firstCreatedDirs) {
                     if (firstCreatedDir == null) {
                         continue;
                     }
-                    log.error("Error in table writing, cleaning up potentially incomplete table destination path starting from " +
-                            firstCreatedDir.getAbsolutePath(), e);
+                    log.error().append("Error in table writing, cleaning up potentially incomplete table destination path starting from ")
+                            .append(firstCreatedDir.getAbsolutePath())
+                            .append(e);
                     FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
                 }
                 throw e;
@@ -330,6 +345,7 @@ public class ParquetTools {
      *
      * @param path path to delete
      */
+    @VisibleForTesting
     public static void deleteTable(File path) {
         FileUtils.deleteRecursivelyOnNFS(path);
     }
@@ -384,57 +400,57 @@ public class ParquetTools {
             return ClassUtil.lookupClass(className);
         } catch (ClassNotFoundException e) {
             throw new UncheckedDeephavenException(
-                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader.");
+                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader");
         }
     }
 
-    private static ParquetReaderUtil.ColumnDefinitionConsumer makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> cols) {
-        return (final String name, final Class<?> typeFromParquet, final String dbSpecialType, final boolean isLegacyType, final boolean isArray,
-                final boolean isGrouping, final String codecType, final String codecComponentType) -> {
+    private static ParquetSchemaReader.ColumnDefinitionConsumer
+    makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> colsOut) {
+        return (final ParquetSchemaReader.ColumnDefinition parquetColDef) -> {
             Class<?> baseType;
-            if (typeFromParquet != null && typeFromParquet.equals(boolean.class)) {
+            if (parquetColDef.baseType != null && parquetColDef.baseType.equals(boolean.class)) {
                 baseType = Boolean.class;
             } else {
-                baseType = typeFromParquet;
+                baseType = parquetColDef.baseType;
             }
             final ColumnDefinition<?> colDef;
-            if (codecType != null && !codecType.isEmpty()) {
+            if (parquetColDef.codecType != null && !parquetColDef.codecType.isEmpty()) {
                 final Class<?> componentType =
-                (codecComponentType != null && !codecComponentType.isEmpty())
-                        ? loadClass(name, "codecComponentType", codecComponentType)
+                (parquetColDef.codecComponentType != null && !parquetColDef.codecComponentType.isEmpty())
+                        ? loadClass(parquetColDef.name, "codecComponentType", parquetColDef.codecComponentType)
                         : null
                         ;
-                final Class<?> dataType = loadClass(name, "codecType", codecType);
-                colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
-            } else if (dbSpecialType != null) {
-                if (dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                    colDef = ColumnDefinition.fromGenericType(name, StringSet.class, null);
-                } else if (dbSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                final Class<?> dataType = loadClass(parquetColDef.name, "codecType", parquetColDef.codecType);
+                colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
+            } else if (parquetColDef.dhSpecialType != null) {
+                if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
+                } else if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
                     final Class<?> dbArrayType = dbArrayType(baseType);
                     if (dbArrayType != null) {
-                        colDef = ColumnDefinition.fromGenericType(name, dbArrayType, baseType);
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dbArrayType, baseType);
                     } else {
-                        colDef = ColumnDefinition.fromGenericType(name, DbArray.class, baseType);
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, DbArray.class, baseType);
                     }
                 } else {
-                    throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + dbSpecialType);
+                    throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + parquetColDef.dhSpecialType);
                 }
             } else {
-                if (!StringSet.class.isAssignableFrom(baseType) && isArray) {
-                    if (baseType.equals(byte.class) && isLegacyType) {
-                        colDef = ColumnDefinition.fromGenericType(name, byte[].class, byte.class);
+                if (!StringSet.class.isAssignableFrom(baseType) && parquetColDef.isArray) {
+                    if (baseType.equals(byte.class) && parquetColDef.isLegacyType) {
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
                     } else {
                         // TODO: ParquetInstruction.loadAsDbArray
                         final Class<?> componentType = baseType;
                         // On Java 12, replace by:  dataType = componentType.arrayType();
                         final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
-                        colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
                     }
                 } else {
-                    colDef = ColumnDefinition.fromGenericType(name, baseType, null);
+                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
                 }
             }
-            cols.add(isGrouping ? colDef.withGrouping() : colDef);
+            colsOut.add(parquetColDef.isGrouping ? colDef.withGrouping() : colDef);
         };
     }
 
@@ -448,11 +464,11 @@ public class ParquetTools {
             @NotNull final File source, @NotNull ParquetInstructions readInstructions, MutableObject<ParquetInstructions> instructionsOut) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
-        final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
+        final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
 
         try {
             final String path = source.getPath();
-            readInstructions = ParquetReaderUtil.readParquetSchema(
+            readInstructions = ParquetSchemaReader.readParquetSchema(
                     path,
                     readInstructions,
                     colConsumer,
@@ -463,7 +479,7 @@ public class ParquetTools {
                 instructionsOut.setValue(readInstructions);
             }
         } catch (java.io.IOException e) {
-            throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
+            throw new IllegalArgumentException("Error trying to load table definition from parquet file", e);
         }
         final TableDefinition def = new TableDefinition(cols);
         return readTableFromSingleParquetFile(source, readInstructions, def);
@@ -479,15 +495,15 @@ public class ParquetTools {
         try {
             if (groupingColumns.length > 0) {
                 ParquetTableWriter.write(
-                        sourceTable, path, Collections.emptyMap(), writeInstructions, definition,
+                        sourceTable, definition, writeInstructions, path, Collections.emptyMap(),
                         ParquetTableWriter.defaultGroupingFileName(path), groupingColumns);
             } else {
                 ParquetTableWriter.write(
-                        sourceTable, definition, path, Collections.emptyMap(), writeInstructions);
+                        sourceTable, definition, writeInstructions, path, Collections.emptyMap());
             }
         }
         catch (Exception e) {
-            throw new UncheckedDeephavenException("Error writing table to " + destFile + ": " + e, e);
+            throw new UncheckedDeephavenException("Error writing table to " + destFile, e);
         }
     }
 }

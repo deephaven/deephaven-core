@@ -58,7 +58,7 @@ public class ParquetTableWriter {
     public static final String CODEC_COMPONENT_TYPE_PREFIX = "dh_codec_comp_type:";
     public static final String SPECIAL_TYPE_NAME_PREFIX = "dh_special_type:";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
-    public static final String DBARRAY_SPECIAL_TYPE = "DbArray";
+    public static final String DBARRAY_SPECIAL_TYPE = "Vector";
     private static final int LOCAL_CHUNK_SIZE = 1024;
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
@@ -137,7 +137,7 @@ public class ParquetTableWriter {
     public static void write(
             Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns
     ) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, ParquetInstructions.EMPTY, t.getDefinition(), groupingPathFactory, groupingColumns);
+        write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory, groupingColumns);
     }
 
     public static void write(Table t, String path, Map<String, String> incomingMeta, String... groupingColumns) throws SchemaMappingException, IOException {
@@ -148,10 +148,10 @@ public class ParquetTableWriter {
      * Writes a table in parquet format under a given path
      *
      * @param t                    The table to write
+     * @param definition           Table definition
+     * @param writeInstructions    Write instructions for customizations while writing
      * @param path                 The destination path
      * @param incomingMeta         A map of metadata values to be stores in the file footer
-     * @param writeInstructions    Write instructions for customizations while writing
-     * @param definition           Table definition
      * @param groupingPathFactory
      * @param groupingColumns     List of columns the tables are grouped by (the write operation will store the grouping info)
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
@@ -159,10 +159,10 @@ public class ParquetTableWriter {
      */
     public static void write(
             final Table t,
+            final TableDefinition definition,
+            final ParquetInstructions writeInstructions,
             final String path,
             final Map<String, String> incomingMeta,
-            final ParquetInstructions writeInstructions,
-            final TableDefinition definition,
             final Function<String, String> groupingPathFactory,
             final String... groupingColumns
     ) throws SchemaMappingException, IOException {
@@ -172,16 +172,16 @@ public class ParquetTableWriter {
             tableMeta.put(GROUPING, String.join(",", groupingColumns));
             Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
             for (int i = 0; i < auxiliaryTables.length; i++) {
-                write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), groupingPathFactory.apply(groupingColumns[i]), Collections.emptyMap(), writeInstructions);
+                write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), writeInstructions, groupingPathFactory.apply(groupingColumns[i]), Collections.emptyMap());
             }
         }
-        write(t, definition, path, tableMeta, writeInstructions);
+        write(t, definition, writeInstructions, path, tableMeta);
     }
 
     public static void write(
-            final Table t, final String path, final Map<String, String> incomingMeta, final ParquetInstructions writeInstructions,
-            final TableDefinition definition, final String... groupingColumns) throws SchemaMappingException, IOException {
-        write(t, path, incomingMeta, writeInstructions, definition, defaultGroupingFileName(path), groupingColumns);
+            final Table t, final TableDefinition definition, final ParquetInstructions writeInstructions, final String path,
+            final Map<String, String> incomingMeta, final String... groupingColumns) throws SchemaMappingException, IOException {
+        write(t, definition, writeInstructions, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
 
     /**
@@ -189,18 +189,18 @@ public class ParquetTableWriter {
      *
      * @param table              The table to write
      * @param definition         The table definition
+     * @param writeInstructions  Write instructions for customizations while writing
      * @param path               The destination path
      * @param tableMeta          A map of metadata values to be stores in the file footer
-     * @param writeInstructions  Write instructions for customizations while writing
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
     public static void write(
             final Table table,
             final TableDefinition definition,
+            final ParquetInstructions writeInstructions,
             final String path,
-            final Map<String, String> tableMeta,
-            final ParquetInstructions writeInstructions
+            final Map<String, String> tableMeta
     ) throws SchemaMappingException, IOException {
 
         final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());

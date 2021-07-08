@@ -1,7 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.ClassUtil;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.parquet.*;
@@ -22,41 +21,45 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-public class ParquetReaderUtil {
+public class ParquetSchemaReader {
     @FunctionalInterface
     public interface ColumnDefinitionConsumer {
-        // objectWidth == -1 means not present.
-        void accept(
-                String name, Class<?> baseType, final String dbSpecialType,
-                boolean isLegacyType, boolean isArray, boolean isGroupingColumn,
-                String codecType, String codecComponentType);
+        void accept(final ColumnDefinition def);
     }
 
-    public static final class ColDefHelper {
-        String name;
-        Class<?> baseType;
-        String dbSpecialType;
-        boolean isLegacyType;
-        boolean isArray;
-        boolean isGroupingColumn;
-        String codecType;
-        String codecComponentType;
-        final ColumnDefinitionConsumer consumer;
-        ColDefHelper(final ColumnDefinitionConsumer consumer) {
-            this.consumer = consumer;
-        }
+    public static final class ColumnDefinition {
+        // Yes you guessed right.  This is the column name.
+        public String name;
+        // The parquet type.
+        public Class<?> baseType;
+        // Some types require special annotations to support regular parquet tools and efficient DH handling.
+        // Examples are StringSet and DbArray; a parquet file with a DbIntArray special type metadata annotation,
+        // but storing types as repeated int, can be loaded both by other parquet tools and efficiently by DH.
+        public String dhSpecialType;
+        // Parquet 1.0 did not support logical types; if we encounter types like this this is true.
+        // For example. in parquet 1.0 binary columns with no annotation are used to represent strings.
+        // They are also used to represent other things that are not strings.  Good luck, may the force be with you.
+        public boolean isLegacyType;
+        // Your guess is good here.
+        public boolean isArray;
+        // Your guess is good here.
+        public boolean isGrouping;
+        // When codec metadata is present (which will be returned as modified read instructions below for actual codec
+        // name and args), we expect codec type and component type to be present.  When they are present,
+        // codecType and codecComponentType take precedence over any other DH type deducing heuristics (and
+        // thus baseType in this structure can be ignored).
+        public String codecType;
+        public String codecComponentType;
+        // We reuse the guts of this poor object between calls to avoid allocating.
+        // Like prometheus nailed to a mountain, this poor object has to suffer his guts being eaten forever.
+        // Or not forever but at least for one stack frame activation of readParquetSchema and as many columns
+        // that function finds in the file.
         void reset() {
             name = null;
             baseType = null;
-            dbSpecialType = null;
-            isLegacyType = isArray = isGroupingColumn = false;
+            dhSpecialType = null;
+            isLegacyType = isArray = isGrouping = false;
             codecType = codecComponentType = null;
-        }
-        void accept() {
-            consumer.accept(
-                    name, baseType, dbSpecialType,
-                    isLegacyType, isArray, isGroupingColumn,
-                    codecType, codecComponentType);
         }
     }
 
@@ -93,7 +96,7 @@ public class ParquetReaderUtil {
         }
 
         ParquetInstructions.Builder instructionsBuilder = null;
-        final ColDefHelper colDef = new ColDefHelper(consumer);
+        final ColumnDefinition colDef = new ColumnDefinition();
         for (ColumnDescriptor column : schema.getColumns()) {
             colDef.reset();
             currentColumn.setValue(column);
@@ -119,8 +122,8 @@ public class ParquetReaderUtil {
                 }
             }
             colDef.name = colName;
-            colDef.dbSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
-            colDef.isGroupingColumn = groupingCols.contains(colName);
+            colDef.dhSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
+            colDef.isGrouping = groupingCols.contains(colName);
             String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
             String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
             colDef.codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
@@ -133,7 +136,7 @@ public class ParquetReaderUtil {
             colDef.isArray = column.getMaxRepetitionLevel() > 0;
             if (colDef.codecType != null && !colDef.codecType.isEmpty()) {
                 colDef.codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);
-                colDef.accept();
+                consumer.accept(colDef);
                 continue;
             }
             if (logicalTypeAnnotation == null) {
@@ -160,15 +163,14 @@ public class ParquetReaderUtil {
                         break;
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
-                        final Supplier<String> exceptionTextSupplier = ()
-                                -> "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
-                                    + " for column " + Arrays.toString(column.getPath());
-                        if (colDef.dbSpecialType != null) {
-                            if (colDef.dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                                colDef.dbSpecialType = ParquetTableWriter.STRING_SET_SPECIAL_TYPE;
+                        if (colDef.dhSpecialType != null) {
+                            if (colDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                                colDef.dhSpecialType = ParquetTableWriter.STRING_SET_SPECIAL_TYPE;
                             } else {
-                                throw new UncheckedDeephavenException(exceptionTextSupplier.get()
-                                        + " with unknown special type " + colDef.dbSpecialType);
+                                throw new UncheckedDeephavenException(
+                                        "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
+                                            + " for column " + Arrays.toString(column.getPath())
+                                            + " with unknown special type " + colDef.dhSpecialType);
                             }
                         }
                         if (codecName == null || codecName.isEmpty()) {
@@ -190,13 +192,15 @@ public class ParquetReaderUtil {
             } else {
                 colDef.baseType = logicalTypeAnnotation.accept(visitor).orElseThrow(() -> {
                     final String logicalTypeString = errorString.getValue();
-                    return new UncheckedDeephavenException("Unable to read column " + Arrays.toString(column.getPath())
-                            + ((logicalTypeString != null)
-                            ? (logicalTypeString + " not supported")
-                            : "no mappable logical type annotation found."));
+                    String msg = "Unable to read column " + Arrays.toString(column.getPath()) + ": ";
+                    msg += (logicalTypeString != null)
+                            ? (logicalTypeString + "not supported")
+                            : "no mappable logical type annotation found"
+                        ;
+                    return new UncheckedDeephavenException(msg);
                 });
             }
-            colDef.accept();
+            consumer.accept(colDef);
         }
         if (instructionsBuilder == null) {
             return readInstructions;

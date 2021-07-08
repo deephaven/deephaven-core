@@ -531,8 +531,7 @@ public class TableTools {
      * @param columns    a list of columns to include in the export
      * @throws IOException if source files cannot be read or target file cannot be written
      */
-    @ScriptApi
-    public static void writeCsv(String sourcePath, String destPath, String... columns) throws IOException {
+    static void writeCsv(String sourcePath, String destPath, String... columns) throws IOException {
         writeCsv(sourcePath, destPath, false, columns);
     }
 
@@ -544,8 +543,7 @@ public class TableTools {
      * @param columns    a list of columns to include in the export
      * @throws IOException if source files cannot be read or target file cannot be written
      */
-    @ScriptApi
-    public static void writeCsv(String sourcePath, String destPath, boolean nullsAsEmpty, String... columns) throws IOException {
+    static void writeCsv(String sourcePath, String destPath, boolean nullsAsEmpty, String... columns) throws IOException {
         writeCsv(sourcePath, destPath, DBTimeZone.TZ_DEFAULT, nullsAsEmpty, columns);
     }
 
@@ -573,8 +571,7 @@ public class TableTools {
      * @param columns      a list of columns to include in the export
      * @throws IOException if source files cannot be read or target file cannot be written
      */
-    @ScriptApi
-    public static void writeCsv(String sourcePath, String destPath, DBTimeZone timeZone, boolean nullsAsEmpty, String... columns) throws IOException {
+    static void writeCsv(String sourcePath, String destPath, DBTimeZone timeZone, boolean nullsAsEmpty, String... columns) throws IOException {
         Table source = ParquetTools.readTable(sourcePath);
         writeCsv(source, destPath, false, timeZone, nullsAsEmpty, columns);
     }
@@ -1680,6 +1677,9 @@ public class TableTools {
         }
         if (dataType == short.class) {
             return "NULL_SHORT";
+        }
+        if (dataType == byte.class) {
+            return "NULL_BYTE";
         }
         return "(" + dataType.getName() + ")" + " null";
     }

@@ -1,11 +1,9 @@
 package io.deephaven.benchmarking.impl;
 
 import io.deephaven.base.StringUtils;
-import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.benchmarking.BenchmarkTable;
 
 import java.util.*;
-
 
 public class PersistentBenchmarkTableBuilder extends AbstractBenchmarkTableBuilder<PersistentBenchmarkTableBuilder> {
 

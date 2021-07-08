@@ -5,6 +5,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -39,7 +40,7 @@ public class TableBenchmarkState {
 
     public void logOutput() throws IOException {
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
-                                     .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ".parquet");
+                                     .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();
         ParquetTools.writeTable(output, RESULT_DEF, outputPath.toFile());

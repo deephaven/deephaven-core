@@ -2,7 +2,6 @@ package io.deephaven.benchmarking.impl;
 
 import io.deephaven.hash.KeyedObjectHash;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import org.jetbrains.annotations.NotNull;

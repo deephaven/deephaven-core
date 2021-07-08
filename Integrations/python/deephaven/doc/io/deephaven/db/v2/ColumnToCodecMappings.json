@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.ColumnToCodecMappings",
+ "methods": {
+  "getCodecArgs": ":param columnName: java.lang.String\n:return: java.lang.String",
+  "getCodecName": ":param columnName: java.lang.String\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.db.v2.ColumnToCodecMappings",
+ "typeName": "interface"
+}

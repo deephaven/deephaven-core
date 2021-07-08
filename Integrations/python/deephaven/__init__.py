@@ -21,7 +21,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * QueryScope imported as qs
 
-* ParquetTools imported as tmt
+* ParquetTools imported as pt
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
@@ -62,7 +62,7 @@ __all__ = [
     'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'LayoutHintBuilder',
     'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "qs", "tmt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "qs", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
 
 
@@ -88,7 +88,7 @@ from . import Calendars as cals, \
     npy, \
     Plot as plt, \
     QueryScope as qs, \
-    ParquetTools as tmt, \
+    ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers
 
@@ -110,7 +110,7 @@ def initialize():
     plt._defineSymbols()
     figw._defineSymbols()
     qs._defineSymbols()
-    tmt._defineSymbols()
+    pt._defineSymbols()
     ttools._defineSymbols()
     tloggers._defineSymbols()
     import deephaven.npy.table2numpy

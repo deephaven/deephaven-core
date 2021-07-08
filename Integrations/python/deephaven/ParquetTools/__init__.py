@@ -159,28 +159,62 @@ def deleteTable(path):
 
 
 @_passThrough
+def readParquetSchemaAndTable(source, readInstructions, instructionsOut):
+    """
+    :param source: java.io.File
+    :param readInstructions: io.deephaven.db.v2.parquet.ParquetInstructions
+    :param instructionsOut: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.db.v2.parquet.ParquetInstructions>
+    :return: io.deephaven.db.tables.Table
+    """
+    
+    return _java_type_.readParquetSchemaAndTable(source, readInstructions, instructionsOut)
+
+
+@_passThrough
 def readTable(*args):
     """
     **Incompatible overloads text - text from the first overload:**
     
-    Reads in a table from disk, using the provided table definition.
+    Reads in a table from a file using the provided table definition.
     
     *Overload 1*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension.
+      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 2*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension.
+      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 3*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension.
-      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 4*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension.
+      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
+      :return: (io.deephaven.db.tables.Table) table
+      
+    *Overload 5*  
+      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
       :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :return: (io.deephaven.db.tables.Table) table
+      
+    *Overload 6*  
+      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
+      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
+      :return: (io.deephaven.db.tables.Table) table
+      
+    *Overload 7*  
+      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
+      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :return: (io.deephaven.db.tables.Table) table
+      
+    *Overload 8*  
+      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
+      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
     """
     
@@ -188,52 +222,63 @@ def readTable(*args):
 
 
 @_passThrough
-def setDefaultParquetCompressionCodec(codecName):
+def writeParquetTables(sources, tableDefinition, writeInstructions, destinations, groupingColumns):
     """
-    Sets the default parquet compression codec for writing parquet.
-    
-    :param codecName: (java.lang.String) - the codec name.
-    """
-    
-    return _java_type_.setDefaultParquetCompressionCodec(codecName)
-
-
-@_passThrough
-def writeParquetTables(sources, tableDefinition, codecName, destinations, groupingColumns):
-    """
-    Writes tables to disk in parquet format under a given destinations.  If you specify grouping columns, there
+    Writes tables to disk in parquet format to a supplied set of destinations.  If you specify grouping columns, there
      must already be grouping information for those columns in the sources.  This can be accomplished with
      .by(<grouping columns>).ungroup() or .sort(<grouping column>).
     
     :param sources: (io.deephaven.db.tables.Table[]) - The tables to write
     :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The common schema for all the tables to write
-    :param codecName: (org.apache.parquet.hadoop.metadata.CompressionCodecName) - Compression codec to use.
-    :param destinations: (java.io.File[]) - The destinations path
+    :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Write instructions for customizations while writing
+    :param destinations: (java.io.File[]) - The destinations paths.    Any non existing directories in the paths provided are created.
+                            If there is an error any intermediate directories previously created are removed;
+                            note this makes this method unsafe for concurrent use
     :param groupingColumns: (java.lang.String[]) - List of columns the tables are grouped by (the write operation will store the grouping info)
     """
     
-    return _custom_writeParquetTables(sources, tableDefinition, codecName, destinations, groupingColumns)
+    return _custom_writeParquetTables(sources, tableDefinition, writeInstructions, destinations, groupingColumns)
 
 
 @_passThrough
 def writeTable(*args):
     """
-    Write out a table to disk.
+    Write a table to a file.
     
     *Overload 1*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param destPath: (java.lang.String) - destination file path; the file name should end in ".parquet" extension.
-                       If the path includes non-existing directories they are created.
+      :param destPath: (java.lang.String) - destination file path; the file name should end in ".parquet" extension
+                       If the path includes non-existing directories they are created
+                       If there is an error any intermediate directories previously created are removed;
+                       note this makes this method unsafe for concurrent use
       
     *Overload 2*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param dest: (java.io.File) - destination file; the file name should end in ".parquet" extension.
-                   If the path includes non-existing directories they are created.
+      :param dest: (java.io.File) - destination file; the file name should end in ".parquet" extension
+                   If the path includes non-existing directories they are created
       
     *Overload 3*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition.  Will be written to disk as given.
-      :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created.
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
+      :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+                       If there is an error any intermediate directories previously created are removed;
+                       note this makes this method unsafe for concurrent use
+      
+    *Overload 4*  
+      :param sourceTable: (io.deephaven.db.tables.Table) - source table
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param destFilePath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
+                           If there is an error any intermediate directories previously created are removed;
+                           note this makes this method unsafe for concurrent use
+      
+    *Overload 5*  
+      :param sourceTable: (io.deephaven.db.tables.Table) - source table
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+                       If there is an error any intermediate directories previously created are removed;
+                       note this makes this method unsafe for concurrent use
     """
     
     return _custom_writeTable(*args)

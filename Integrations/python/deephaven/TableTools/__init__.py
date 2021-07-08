@@ -721,6 +721,16 @@ def newTable(*args):
 
 
 @_passThrough
+def nullTypeAsString(dataType):
+    """
+    :param dataType: java.lang.Class<?>
+    :return: java.lang.String
+    """
+    
+    return _java_type_.nullTypeAsString(dataType)
+
+
+@_passThrough
 def objColSource(*values):
     """
     Creates a column of appropriate object type, used for creating in-memory tables.
@@ -1103,78 +1113,60 @@ def writeCsv(*args):
     *Overload 1*  
       :param sourcePath: (java.lang.String) - path to the table files to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
+      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 2*  
-      :param sourcePath: (java.lang.String) - path to the table files to be exported
+      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
+      :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param nullsAsEmpty: boolean
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 3*  
-      :param sourcePath: (java.lang.String) - path to the table files to be exported
+      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
+      :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 4*  
-      :param sourcePath: (java.lang.String) - path to the table files to be exported
+      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 5*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 6*  
-      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
+    *Overload 6*  
+      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
+      :param out: (java.io.PrintStream) - the stream to write to
+      :param columns: (java.lang.String...) - a list of columns to include in the export
+      
     *Overload 7*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
+      :param out: (java.io.PrintStream) - the stream to write to
+      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 8*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
+      :param compressed: (boolean) - whether to zip the file being written
+      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 9*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param out: (java.io.PrintStream) - the stream to write to
+      :param destPath: (java.lang.String) - path to the CSV file to be written
+      :param compressed: (boolean) - whether to zip the file being written
+      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 10*  
-      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param out: (java.io.PrintStream) - the stream to write to
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 11*  
-      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 12*  
-      :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.db.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 13*  
       :param source: (io.deephaven.db.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
@@ -1183,7 +1175,7 @@ def writeCsv(*args):
       :param separator: (char) - the delimiter for the CSV
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
-    *Overload 14*  
+    *Overload 11*  
       :param sources: (io.deephaven.db.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
@@ -1191,7 +1183,7 @@ def writeCsv(*args):
       :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
-    *Overload 15*  
+    *Overload 12*  
       :param sources: (io.deephaven.db.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
@@ -1200,7 +1192,7 @@ def writeCsv(*args):
       :param nullsAsEmpty: boolean
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
-    *Overload 16*  
+    *Overload 13*  
       :param sources: (io.deephaven.db.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written

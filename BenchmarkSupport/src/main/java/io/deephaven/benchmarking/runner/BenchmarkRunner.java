@@ -7,6 +7,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.Utils;
@@ -93,7 +94,7 @@ public class BenchmarkRunner {
         final Table mergedDetails = getMergedDetails();
         final Table result = topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
 
-        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark.parquet");
+        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         ParquetTools.writeTable(result, result.getDefinition(), outputPath.toFile());
     }

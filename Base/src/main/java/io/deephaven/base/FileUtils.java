@@ -110,8 +110,8 @@ public class FileUtils {
      * @param trashFile Filename to move regular files to before deletion. .nfs files may be created in its parent directory.
      * @param fileToBeDeleted File or directory at which to begin recursive deletion.
      */
-    public static void deleteRecursivelyOnNFS(File trashFile, File fileToBeDeleted) {
-        if(fileToBeDeleted.isDirectory()) {
+    public static void deleteRecursivelyOnNFS(final File trashFile, final File fileToBeDeleted) {
+        if (fileToBeDeleted.isDirectory()) {
             File contents[] = fileToBeDeleted.listFiles();
             if(contents != null) {
                 for(File childFile : contents) {
@@ -121,11 +121,11 @@ public class FileUtils {
             if(!fileToBeDeleted.delete()) {
                 throw new RuntimeException("Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath());
             }
-        } else if(fileToBeDeleted.exists()) {
-            if(!fileToBeDeleted.renameTo(trashFile)) {
+        } else if (fileToBeDeleted.exists()) {
+            if (!fileToBeDeleted.renameTo(trashFile)) {
                 throw new RuntimeException("Failed to move file " + fileToBeDeleted.getAbsolutePath() + " to temporary location " + trashFile.getAbsolutePath());
             }
-            if(!trashFile.delete()) {
+            if (!trashFile.delete()) {
                 throw new RuntimeException("Failed to delete temporary location " + trashFile.getAbsolutePath() + " for file " + fileToBeDeleted.getAbsolutePath());
             }
         }
