@@ -1,9 +1,6 @@
 package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
-import org.immutables.value.Value;
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,21 +15,18 @@ import java.util.stream.Collectors;
  * @see TableOperations#updateView(Collection)
  * @see TableOperations#select(Collection)
  */
-@Immutable
-@SimpleStyle
-public abstract class Selectable {
+public interface Selectable {
 
-    public static Selectable of(ColumnName newAndExisting) {
-        return of(newAndExisting, newAndExisting);
+    static Selectable of(ColumnName newColumn, Expression expression) {
+        if (newColumn.equals(expression)) {
+            return newColumn;
+        }
+        return SelectableImpl.of(newColumn, expression);
     }
 
-    public static Selectable of(ColumnName newColumn, Expression expression) {
-        return ImmutableSelectable.of(newColumn, expression);
-    }
-
-    public static Selectable parse(String x) {
+    static Selectable parse(String x) {
         if (ColumnName.isValidParsedColumnName(x)) {
-            return of(ColumnName.parse(x));
+            return ColumnName.parse(x);
         }
         final int ix = x.indexOf('=');
         if (ix < 0 || ix + 1 == x.length()) {
@@ -43,14 +37,15 @@ public abstract class Selectable {
             throw new IllegalArgumentException(String.format(
                 "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
         }
-        return of(ColumnName.parse(x.substring(0, ix)), RawString.of(x.substring(ix + 1)));
+        return SelectableImpl.of(ColumnName.parse(x.substring(0, ix)),
+            RawString.of(x.substring(ix + 1)));
     }
 
-    public static List<Selectable> from(String... values) {
+    static List<Selectable> from(String... values) {
         return from(Arrays.asList(values));
     }
 
-    public static List<Selectable> from(Collection<String> values) {
+    static List<Selectable> from(Collection<String> values) {
         return values.stream().map(Selectable::parse).collect(Collectors.toList());
     }
 
@@ -59,14 +54,12 @@ public abstract class Selectable {
      *
      * @return the new column name
      */
-    @Parameter
-    public abstract ColumnName newColumn();
+    ColumnName newColumn();
 
     /**
      * The expression.
      *
      * @return the expression
      */
-    @Parameter
-    public abstract Expression expression();
+    Expression expression();
 }

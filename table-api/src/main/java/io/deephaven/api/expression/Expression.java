@@ -1,12 +1,13 @@
 package io.deephaven.api.expression;
 
 import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.value.Value;
 
 /**
  * Represents an evaluate-able expression structure.
  *
- * @see io.deephaven.api.Selectable
+ * @see Selectable
  */
 public interface Expression {
 

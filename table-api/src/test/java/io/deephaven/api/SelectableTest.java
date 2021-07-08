@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class SelectableTest {
 
-    private static final Selectable FOO = Selectable.of(ColumnName.of("Foo"));
+    private static final Selectable FOO = ColumnName.of("Foo");
     private static final Selectable FOO_BAR =
         Selectable.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
     private static final Selectable FOO_EXP =

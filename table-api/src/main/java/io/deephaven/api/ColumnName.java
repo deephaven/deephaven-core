@@ -14,7 +14,7 @@ import java.io.Serializable;
  */
 @Immutable
 @SimpleStyle
-public abstract class ColumnName implements Value, Expression, Serializable {
+public abstract class ColumnName implements Selectable, Value, Expression, Serializable {
 
     public static boolean isValidColumnName(String name) {
         try {
@@ -60,5 +60,15 @@ public abstract class ColumnName implements Value, Expression, Serializable {
     @Check
     final void checkName() {
         DBNameValidator.validateColumnName(name());
+    }
+
+    @Override
+    public final ColumnName newColumn() {
+        return this;
+    }
+
+    @Override
+    public final Expression expression() {
+        return this;
     }
 }
