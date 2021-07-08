@@ -251,7 +251,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             if (subscribedColumns.cardinality() != expected.getColumns().length) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
-                    columns.add(Selectable.of(ColumnName.of(expected.getColumns()[i].getName())));
+                    columns.add(ColumnName.of(expected.getColumns()[i].getName()));
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);
@@ -281,7 +281,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             if (subscribedColumns.cardinality() != expected.getColumns().length) {
                 final List<Selectable> columns = new ArrayList<>();
                 for (int i = subscribedColumns.nextSetBit(0); i >= 0; i = subscribedColumns.nextSetBit(i + 1)) {
-                    columns.add(Selectable.of(ColumnName.of(expected.getColumns()[i].getName())));
+                    columns.add(ColumnName.of(expected.getColumns()[i].getName()));
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);
