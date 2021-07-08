@@ -24,12 +24,9 @@ import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.codec.ObjectDecoder;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
-import scala.reflect.internal.util.TableDef;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
@@ -55,7 +52,7 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readParquetSchemanAndTable(new File(sourceFilePath), ParquetInstructions.EMPTY);
+        return readParquetSchemaAndTable(new File(sourceFilePath), ParquetInstructions.EMPTY);
     }
 
     /**
@@ -68,7 +65,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String sourceFilePath,
             @NotNull final ParquetInstructions readInstructions) {
-        return readParquetSchemanAndTable(new File(sourceFilePath), readInstructions);
+        return readParquetSchemaAndTable(new File(sourceFilePath), readInstructions);
     }
 
     /**
@@ -78,7 +75,7 @@ public class ParquetTools {
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetSchemanAndTable(sourceFile, ParquetInstructions.EMPTY);
+        return readParquetSchemaAndTable(sourceFile, ParquetInstructions.EMPTY);
     }
 
     /**
@@ -91,7 +88,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
-        return readParquetSchemanAndTable(sourceFile, readInstructions);
+        return readParquetSchemaAndTable(sourceFile, readInstructions);
     }
 
     /**
@@ -393,7 +390,7 @@ public class ParquetTools {
 
     private static ParquetReaderUtil.ColumnDefinitionConsumer makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> cols) {
         return (final String name, final Class<?> typeFromParquet, final String dbSpecialType, final boolean isLegacyType, final boolean isArray,
-                final boolean isGrouping, final String codecName, final String codecArgs, final String codecType, final String codecComponentType) -> {
+                final boolean isGrouping, final String codecType, final String codecComponentType) -> {
             Class<?> baseType;
             if (typeFromParquet != null && typeFromParquet.equals(boolean.class)) {
                 baseType = Boolean.class;
@@ -401,22 +398,14 @@ public class ParquetTools {
                 baseType = typeFromParquet;
             }
             final ColumnDefinition<?> colDef;
-            if (codecName != null) {
-                Class<?> dataType = baseType;
-                Class<?> componentType = null;
-                if (codecType != null && !codecType.isEmpty()) {
-                    if (codecComponentType != null && !codecComponentType.isEmpty()) {
-                        componentType = loadClass(name, "codecComponentType", codecComponentType);
-                    }
-                    dataType = loadClass(name, "codecType", codecType);
-                }
-                final ObjectCodec<?> codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
-                final int width = codec.expectedObjectWidth();
-                if (width != ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
-                    colDef = ColumnDefinition.ofFixedWidthCodec(name, dataType, componentType, codecName, codecArgs, width);
-                } else {
-                    colDef = ColumnDefinition.ofVariableWidthCodec(name, dataType, componentType, codecName, codecArgs);
-                }
+            if (codecType != null && !codecType.isEmpty()) {
+                final Class<?> componentType =
+                (codecComponentType != null && !codecComponentType.isEmpty())
+                        ? loadClass(name, "codecComponentType", codecComponentType)
+                        : null
+                        ;
+                final Class<?> dataType = loadClass(name, "codecType", codecType);
+                colDef = ColumnDefinition.fromGenericType(name, dataType, componentType);
             } else if (dbSpecialType != null) {
                 if (dbSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                     colDef = ColumnDefinition.fromGenericType(name, StringSet.class, null);
@@ -449,8 +438,14 @@ public class ParquetTools {
         };
     }
 
-    private static Table readParquetSchemanAndTable(
+    private static Table readParquetSchemaAndTable(
             @NotNull final File source, @NotNull ParquetInstructions readInstructions) {
+        return readParquetSchemaAndTable(source, readInstructions, null);
+    }
+
+    @VisibleForTesting
+    public static Table readParquetSchemaAndTable(
+            @NotNull final File source, @NotNull ParquetInstructions readInstructions, MutableObject<ParquetInstructions> instructionsOut) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetReaderUtil.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
@@ -464,6 +459,9 @@ public class ParquetTools {
                     (final String colName, final Set<String> takenNames) ->
                             DBNameValidator.legalizeColumnName(
                                     colName, s -> s.replace(" ", "_"), takenNames));
+            if (instructionsOut != null) {
+                instructionsOut.setValue(readInstructions);
+            }
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("Error trying to load table definition from parquet file: " + e, e);
         }

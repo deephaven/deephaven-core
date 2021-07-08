@@ -29,7 +29,7 @@ public class ParquetReaderUtil {
         void accept(
                 String name, Class<?> baseType, final String dbSpecialType,
                 boolean isLegacyType, boolean isArray, boolean isGroupingColumn,
-                String codecName, String codecArgs, String codecType, String codecComponentType);
+                String codecType, String codecComponentType);
     }
 
     public static final class ColDefHelper {
@@ -39,8 +39,6 @@ public class ParquetReaderUtil {
         boolean isLegacyType;
         boolean isArray;
         boolean isGroupingColumn;
-        String codecName;
-        String codecArgs;
         String codecType;
         String codecComponentType;
         final ColumnDefinitionConsumer consumer;
@@ -52,13 +50,13 @@ public class ParquetReaderUtil {
             baseType = null;
             dbSpecialType = null;
             isLegacyType = isArray = isGroupingColumn = false;
-            codecName = codecArgs = codecType = codecComponentType = null;
+            codecType = codecComponentType = null;
         }
         void accept() {
             consumer.accept(
                     name, baseType, dbSpecialType,
                     isLegacyType, isArray, isGroupingColumn,
-                    codecName, codecArgs, codecType, codecComponentType);
+                    codecType, codecComponentType);
         }
     }
 
@@ -123,9 +121,15 @@ public class ParquetReaderUtil {
             colDef.name = colName;
             colDef.dbSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
             colDef.isGroupingColumn = groupingCols.contains(colName);
-            colDef.codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
-            colDef.codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
+            String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
+            String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
             colDef.codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
+            if (codecName != null && !codecName.isEmpty()) {
+                if (instructionsBuilder == null) {
+                    instructionsBuilder = new ParquetInstructions.Builder();
+                }
+                instructionsBuilder.addColumnCodec(colName, codecName, codecArgs);
+            }
             colDef.isArray = column.getMaxRepetitionLevel() > 0;
             if (colDef.codecType != null && !colDef.codecType.isEmpty()) {
                 colDef.codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);
@@ -167,11 +171,15 @@ public class ParquetReaderUtil {
                                         + " with unknown special type " + colDef.dbSpecialType);
                             }
                         }
-                        if (colDef.codecName == null || colDef.codecName.isEmpty()) {
-                            colDef.codecName = SimpleByteArrayCodec.class.getName();
-                            colDef.codecArgs =  (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
-                                ? Integer.toString(primitiveType.getTypeLength())
-                                : null;
+                        if (codecName == null || codecName.isEmpty()) {
+                            if (instructionsBuilder == null) {
+                                instructionsBuilder = new ParquetInstructions.Builder();
+                            }
+                            codecName = SimpleByteArrayCodec.class.getName();
+                            codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                    ? Integer.toString(primitiveType.getTypeLength())
+                                    : null;
+                            instructionsBuilder.addColumnCodec(colName, codecName, codecArgs);
                         }
                         // fallthrough
                     default:

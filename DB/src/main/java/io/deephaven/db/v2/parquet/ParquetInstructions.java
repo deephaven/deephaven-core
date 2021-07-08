@@ -3,6 +3,7 @@ package io.deephaven.db.v2.parquet;
 import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,6 +34,20 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     @Override public abstract String getCodecName(final String columnName);
     @Override public abstract String getCodecArgs(final String columnName);
     public abstract String getCompressionCodecName();
+
+    @VisibleForTesting
+    public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
+        if (i1 == EMPTY) {
+            if (i2 == EMPTY) {
+                return true;
+            }
+            return ((ReadOnly) i2).columnNameToInstructions.size() == 0;
+        }
+        if (i2 == EMPTY) {
+            return ((ReadOnly) i1).columnNameToInstructions.size() == 0;
+        }
+        return ReadOnly.sameCodecMappings((ReadOnly) i1, (ReadOnly) i2);
+    }
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
         @Override
@@ -97,7 +112,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
     }
 
-    private static class ReadOnly extends ParquetInstructions {
+    private static final class ReadOnly extends ParquetInstructions {
         private final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions;
         /**
          * Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
@@ -173,6 +188,41 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     ? null
                     : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone()
                     ;
+        }
+
+        private static boolean stringsBothNullOrEquals(final String s1, final String s2) {
+            if (s1 != null || s2 != null) {
+                if (s1 == null || s2 == null) {
+                    return false;
+                }
+                if (!s1.equals(s2)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static boolean sameCodecMappings(final ReadOnly r1, final ReadOnly r2) {
+            final Set<String> r1ColumnNames = r1.columnNameToInstructions.keySet();
+            if (r2.columnNameToInstructions.size() != r1ColumnNames.size()) {
+                return false;
+            }
+            for (String colName : r1ColumnNames) {
+                if (!r2.columnNameToInstructions.containsKey(colName)) {
+                    return false;
+                }
+                final String r1CodecName = r1.getCodecName(colName);
+                final String r2CodecName = r2.getCodecName(colName);
+                if (!stringsBothNullOrEquals(r1CodecName, r2CodecName)) {
+                    return false;
+                }
+                final String r1CodecArgs = r1.getCodecArgs(colName);
+                final String r2CodecArgs = r2.getCodecArgs(colName);
+                if (!stringsBothNullOrEquals(r1CodecArgs, r2CodecArgs)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
