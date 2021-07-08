@@ -137,6 +137,15 @@ public class CompletionRequest {
                     continue;
                 }
                 final String colName = toStringLiteral(colArgs.get(0));
+                if (colName == null) {
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace()
+                                .append("Unable to trace first argument back to a string literal: ")
+                                .append(colInvoke.toSource())
+                                .endl();
+                    }
+                    continue;
+                }
 
                 switch (colMethod) {
                     case "stringCol":
