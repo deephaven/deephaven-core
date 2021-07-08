@@ -11,7 +11,7 @@ public class PairTest {
 
     private static final Pair FOO_BAR = Pair.of(ColumnName.of("Bar"), ColumnName.of("Foo"));
 
-    private static final Pair FOO = Pair.of(ColumnName.of("Foo"), ColumnName.of("Foo"));
+    private static final Pair FOO = ColumnName.of("Foo");
 
     private static final String FOO_BAR_STR = "Foo=Bar";
 
@@ -48,7 +48,7 @@ public class PairTest {
 
     @Test
     void noEq() {
-        parse("FooBar", Pair.of(ColumnName.of("FooBar")));
+        parse("FooBar", ColumnName.of("FooBar"));
     }
 
     @Test

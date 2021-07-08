@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
 import io.deephaven.db.tables.utils.DBNameValidator;
@@ -14,7 +15,7 @@ import java.io.Serializable;
  */
 @Immutable
 @SimpleStyle
-public abstract class ColumnName implements Selectable, Value, Expression, Serializable {
+public abstract class ColumnName implements Selectable, Value, Expression, Pair, Serializable {
 
     public static boolean isValidColumnName(String name) {
         try {
@@ -69,6 +70,16 @@ public abstract class ColumnName implements Selectable, Value, Expression, Seria
 
     @Override
     public final Expression expression() {
+        return this;
+    }
+
+    @Override
+    public final ColumnName input() {
+        return this;
+    }
+
+    @Override
+    public final ColumnName output() {
         return this;
     }
 }
