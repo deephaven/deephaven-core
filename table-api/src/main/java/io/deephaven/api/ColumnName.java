@@ -1,7 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.filter.Filter;
+import io.deephaven.api.value.Value;
 import io.deephaven.db.tables.utils.DBNameValidator;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -14,7 +14,7 @@ import java.io.Serializable;
  */
 @Immutable
 @SimpleStyle
-public abstract class ColumnName implements Expression, Filter, Serializable {
+public abstract class ColumnName implements Value, Expression, Serializable {
 
     public static boolean isValidColumnName(String name) {
         try {
@@ -52,7 +52,7 @@ public abstract class ColumnName implements Expression, Filter, Serializable {
     }
 
     @Override
-    public final <V extends Filter.Visitor> V walk(V visitor) {
+    public final <V extends Value.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

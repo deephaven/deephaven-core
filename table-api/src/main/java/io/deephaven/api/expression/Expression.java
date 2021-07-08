@@ -1,7 +1,7 @@
 package io.deephaven.api.expression;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.value.Value;
 
 /**
  * Represents an evaluate-able expression structure.
@@ -13,7 +13,9 @@ public interface Expression {
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        void visit(ColumnName name);
+        // TODO (deephaven-core#830): Add more table api Expression structuring
+
+        void visit(Value value);
 
         void visit(RawString rawString);
     }

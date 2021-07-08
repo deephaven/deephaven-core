@@ -5,9 +5,10 @@
 package io.deephaven.db.v2.select;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.expression.Expression;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.value.Value;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
@@ -145,7 +146,7 @@ public interface SelectColumn {
      */
     SelectColumn copy();
 
-    class ExpressionAdapter implements Expression.Visitor {
+    class ExpressionAdapter implements Expression.Visitor, Value.Visitor {
         private final ColumnName lhs;
         private SelectColumn out;
 
@@ -158,13 +159,23 @@ public interface SelectColumn {
         }
 
         @Override
+        public void visit(Value value) {
+            value.walk((Value.Visitor)this);
+        }
+
+        @Override
         public void visit(ColumnName name) {
-            out = new SourceColumn(lhs.name(), name.name());
+            out = new SourceColumn(name.name(), lhs.name());
         }
 
         @Override
         public void visit(RawString rawString) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs, rawString.value()));
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rawString.value()));
+        }
+
+        @Override
+        public void visit(long x) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%d", lhs.name(), x));
         }
     }
 }

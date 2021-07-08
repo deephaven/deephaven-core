@@ -1,8 +1,8 @@
 package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
+import io.deephaven.api.value.Value;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,19 +10,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FilterTest {
 
     @Test
-    void columnNameFilterToString() {
-        assertThat(toString(ColumnName.of("Foo"))).isEqualTo("Foo");
+    void condition() {
+        toString(FilterCondition.gt(ColumnName.of("Foo"), Value.of(42L)), "Foo > 42");
     }
 
     @Test
-    void rawStringFilterToString() {
-        assertThat(toString(RawString.of("Foo - 1 > Bar"))).isEqualTo("Foo - 1 > Bar");
+    void isNull() {
+        toString(Filter.isNull(ColumnName.of("Foo")), "isNull(Foo)");
     }
 
     @Test
-    void filterMatchFilterToString() {
-        assertThat(toString(FilterMatch.of(ColumnName.of("Foo"), ColumnName.of("Bar"))))
-            .isEqualTo("Foo==Bar");
+    void not() {
+        toString(Filter.not(Filter.isNull(ColumnName.of("Foo"))), "!(isNull(Foo))");
+    }
+
+    private static void toString(Filter filter, String expected) {
+        assertThat(toString(filter)).isEqualTo(expected);
     }
 
     private static String toString(Filter filter) {

@@ -11,12 +11,27 @@ import java.util.Collection;
  * @see io.deephaven.api.TableOperations#where(Collection)
  */
 public interface Filter {
+
+    static FilterIsNull isNull(ColumnName column) {
+        return FilterIsNull.of(column);
+    }
+
+    static FilterNot not(Filter filter) {
+        return FilterNot.of(filter);
+    }
+
+    FilterNot not();
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        void visit(ColumnName name);
+        // TODO (deephaven-core#829): Add more table api Filter structuring
 
-        void visit(FilterMatch match);
+        void visit(FilterIsNull isNull);
+
+        void visit(FilterCondition match);
+
+        void visit(FilterNot not);
 
         void visit(RawString rawString);
     }

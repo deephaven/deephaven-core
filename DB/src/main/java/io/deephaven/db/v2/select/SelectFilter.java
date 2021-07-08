@@ -4,21 +4,23 @@
 
 package io.deephaven.db.v2.select;
 
-import io.deephaven.api.filter.FilterMatch;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Strings;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterNot;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.SelectFilterFactory;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.RawString;
-import java.util.Collection;
-import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Interface for individual filters within a where clause.
@@ -188,15 +190,18 @@ public interface SelectFilter {
         }
 
         @Override
-        public void visit(ColumnName name) {
-            // todo: improve
-            out = SelectFilterFactory.getExpression(name.name());
+        public void visit(FilterCondition match) {
+            out = ConditionFilter.createConditionFilter(Strings.of(match));
         }
 
         @Override
-        public void visit(FilterMatch match) {
-            // todo: improve
-            out = SelectFilterFactory.getExpression(String.format("%s==%s", match.left().name(), match.right().name()));
+        public void visit(FilterNot not) {
+            out = ConditionFilter.createConditionFilter(Strings.of(not));
+        }
+
+        @Override
+        public void visit(FilterIsNull isNull) {
+            out = ConditionFilter.createConditionFilter(Strings.of(isNull));
         }
 
         @Override

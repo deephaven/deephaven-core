@@ -2,6 +2,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterNot;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -21,6 +22,11 @@ public abstract class RawString implements Expression, Filter, Serializable {
 
     @Parameter
     public abstract String value();
+
+    @Override
+    public final FilterNot not() {
+        return FilterNot.of(this);
+    }
 
     @Override
     public final <V extends Expression.Visitor> V walk(V visitor) {

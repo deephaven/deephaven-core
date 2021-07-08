@@ -3,7 +3,10 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterMatch;
+import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.value.Value;
 
 import java.util.Objects;
 
@@ -21,8 +24,33 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(FilterMatch match) {
-        return String.format("%s==%s", of(match.left()), of(match.right()));
+    public static String of(FilterCondition match) {
+        String lhs = of(match.lhs());
+        String rhs = of(match.rhs());
+        switch (match.operator()) {
+            case LESS_THAN:
+                return String.format("%s < %s", lhs, rhs);
+            case LESS_THAN_OR_EQUAL:
+                return String.format("%s <= %s", lhs, rhs);
+            case GREATER_THAN:
+                return String.format("%s > %s", lhs, rhs);
+            case GREATER_THAN_OR_EQUAL:
+                return String.format("%s >= %s", lhs, rhs);
+            case EQUALS:
+                return String.format("%s == %s", lhs, rhs);
+            case NOT_EQUALS:
+                return String.format("%s != %s", lhs, rhs);
+            default:
+                throw new IllegalStateException("Unexpected match operator: " + match.operator());
+        }
+    }
+
+    public static String of(FilterNot not) {
+        return String.format("!(%s)", of(not.filter()));
+    }
+
+    public static String of(FilterIsNull isNull) {
+        return String.format("isNull(%s)", of(isNull.column()));
     }
 
     public static String of(Pair pair) {
@@ -47,11 +75,12 @@ public class Strings {
     }
 
     public static String of(Selectable selectable) {
+        String lhs = of(selectable.newColumn());
         if (selectable.newColumn().equals(selectable.expression())) {
-            return selectable.newColumn().name();
+            return lhs;
         }
         String rhs = selectable.expression().walk(new UniversalAdapter()).getOut();
-        return String.format("%s=%s", selectable.newColumn().name(), rhs);
+        return String.format("%s=%s", lhs, rhs);
     }
 
     public static String of(Expression expression) {
@@ -62,10 +91,17 @@ public class Strings {
         return filter.walk(new UniversalAdapter()).getOut();
     }
 
+    public static String of(Value value) {
+        UniversalAdapter universalAdapter = new UniversalAdapter();
+        value.walk((Value.Visitor) universalAdapter);
+        return universalAdapter.getOut();
+    }
+
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter implements Filter.Visitor, Expression.Visitor {
+    private static class UniversalAdapter
+        implements Filter.Visitor, Expression.Visitor, Value.Visitor {
         private String out;
 
         public String getOut() {
@@ -83,8 +119,28 @@ public class Strings {
         }
 
         @Override
-        public void visit(FilterMatch filterMatch) {
-            out = of(filterMatch);
+        public void visit(FilterCondition filterCondition) {
+            out = of(filterCondition);
+        }
+
+        @Override
+        public void visit(FilterIsNull isNull) {
+            out = of(isNull);
+        }
+
+        @Override
+        public void visit(FilterNot not) {
+            out = of(not);
+        }
+
+        @Override
+        public void visit(Value value) {
+            out = of(value);
+        }
+
+        @Override
+        public void visit(long x) {
+            out = Long.toString(x);
         }
     }
 }
