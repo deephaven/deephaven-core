@@ -13,13 +13,25 @@ import java.io.Serializable;
 public abstract class SortColumn implements Serializable {
 
     public enum Order {
-        ASCENDING, DESCENDING;
+        ASCENDING, DESCENDING
     }
 
+    /**
+     * Create an {@link Order#ASCENDING} sort column.
+     *
+     * @param columnName the column name
+     * @return the ascending sort column
+     */
     public static SortColumn asc(ColumnName columnName) {
         return ImmutableSortColumn.of(columnName, Order.ASCENDING);
     }
 
+    /**
+     * Create a {@link Order#DESCENDING} sort column.
+     *
+     * @param columnName the column name
+     * @return the descending sort column
+     */
     public static SortColumn desc(ColumnName columnName) {
         return ImmutableSortColumn.of(columnName, Order.DESCENDING);
     }

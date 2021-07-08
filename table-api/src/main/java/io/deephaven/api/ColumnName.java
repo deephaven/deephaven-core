@@ -47,6 +47,26 @@ public abstract class ColumnName
     @Parameter
     public abstract String name();
 
+    /**
+     * Equivalent to {@code SortColumn.asc(this)}.
+     *
+     * @return the ascending sort column
+     * @see SortColumn#asc(ColumnName)
+     */
+    public final SortColumn asc() {
+        return SortColumn.asc(this);
+    }
+
+    /**
+     * Equivalent to {@code SortColumn.desc(this)}.
+     *
+     * @return the descending sort column
+     * @see SortColumn#desc(ColumnName)
+     */
+    public final SortColumn desc() {
+        return SortColumn.desc(this);
+    }
+
     @Override
     public final <V extends Expression.Visitor> V walk(V visitor) {
         visitor.visit(this);
