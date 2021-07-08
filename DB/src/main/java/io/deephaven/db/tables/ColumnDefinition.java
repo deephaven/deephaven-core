@@ -74,46 +74,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return new ColumnDefinition<>(name, DBDateTime.class);
     }
 
-    public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-            @NotNull final String name, @NotNull final Class<T> dataType,
-            @Nullable final String codecName) {
-        return ofVariableWidthCodec(name, dataType, null, codecName, null);
-    }
-
-    public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
-            @Nullable final String codecName) {
-        return ofVariableWidthCodec(name, dataType, componentType, codecName, null);
-    }
-
-    public static <T> ColumnDefinition<T> ofVariableWidthCodec(
-            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
-            @Nullable final String codecName, @Nullable final String codecArgs) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(dataType);
-        Objects.requireNonNull(codecName);
-        final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
-        maybeSetComponentType(cd, dataType, componentType);
-        cd.setObjectCodecClass(codecName);
-        cd.setObjectCodecArguments(codecArgs);
-        return cd;
-    }
-
-    public static <T> ColumnDefinition<T> ofFixedWidthCodec(
-            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType,
-            @Nullable final String codecName, @Nullable final String codecArguments, final int width) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(dataType);
-        Objects.requireNonNull(codecName);
-        final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
-        maybeSetComponentType(cd, dataType, componentType);
-        cd.setObjectCodecClass(codecName);
-        if (codecArguments != null) {
-            cd.setObjectCodecArguments(codecArguments);
-        }
-        return cd;
-    }
-
     public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name, @NotNull final Class<T> dataType) {
         return fromGenericType(name, dataType, null);
     }
@@ -355,12 +315,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             if (columnType != other.columnType) {
                 differences.add(prefix + lhs + " columnType " + columnType + " does not match " + rhs + " columnType " + other.columnType);
             }
-            if (!Objects.equals(getObjectCodecClass(), other.getObjectCodecClass())) {
-                differences.add(prefix + lhs + " object codec class '" + getObjectCodecClass() + "' does not match " + rhs + " object codec class '" + other.getObjectCodecClass() + "'");
-            }
-            if (!Objects.equals(getObjectCodecArguments(), other.getObjectCodecArguments())) {
-                differences.add(prefix + lhs + " object codec arguments '" + getObjectCodecArguments() + "' does not match " + rhs + " object codec arguments '" + other.getObjectCodecArguments() + "'");
-            }
         }
     }
 
@@ -374,8 +328,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                 && getSymbolTableType() == otherCD.getSymbolTableType()
                 && Objects.equals(componentType, otherCD.componentType)
                 && columnType == otherCD.columnType
-                && Objects.equals(getObjectCodecClass(), otherCD.getObjectCodecClass())
-                && Objects.equals(getObjectCodecArguments(), otherCD.getObjectCodecArguments())
                 ;
     }
 
@@ -471,24 +423,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.isVarSizeString=isVarSizeString;
     }
 
-    private String objectCodecClass;
-    public String getObjectCodecClass() {
-        return objectCodecClass;
-    }
-
-    void setObjectCodecClass(String objectCodecClass) {
-        this.objectCodecClass=objectCodecClass;
-    }
-
-    private String objectCodecArguments;
-    public String getObjectCodecArguments() {
-        return objectCodecArguments;
-    }
-
-    void setObjectCodecArguments(String objectCodecArguments) {
-        this.objectCodecArguments=objectCodecArguments;
-    }
-
     @Override
     public void copyValues(ColumnDefinition x) {
         name = x.name;
@@ -496,8 +430,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         componentType = x.componentType;
         columnType = x.columnType;
         isVarSizeString = x.isVarSizeString;
-        objectCodecClass = x.objectCodecClass;
-        objectCodecArguments = x.objectCodecArguments;
     }
 
     @Override
@@ -509,8 +441,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         builder.append("|componentType=").append(componentType);
         builder.append("|columnType=").append(columnType);
         builder.append("|isVarSizeString=").append(isVarSizeString);
-        builder.append("|objectCodecClass=").append(objectCodecClass);
-        builder.append("|objectCodecArguments=").append(objectCodecArguments);
 
         return builder.toString();
     }
@@ -524,8 +454,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|componentType=").append(String.valueOf(componentType));
         logOutput.append("|columnType=").append(columnType);
         logOutput.append("|isVarSizeString=").append(isVarSizeString);
-        logOutput.append("|objectCodecClass=").append(String.valueOf(objectCodecClass));
-        logOutput.append("|objectCodecArguments=").append(String.valueOf(objectCodecArguments));
 
         return logOutput;
     }
@@ -545,8 +473,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         componentType = (Class)in.readObject();
         columnType = in.readInt();
         isVarSizeString = (Boolean)in.readObject();
-        objectCodecClass = in.readUTF(); objectCodecClass = "\0".equals(objectCodecClass) ? null : objectCodecClass;
-        objectCodecArguments = in.readUTF(); objectCodecArguments = "\0".equals(objectCodecArguments) ? null : objectCodecArguments;
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -555,7 +481,5 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(componentType);
         out.writeInt(columnType);
         out.writeObject(isVarSizeString);
-        if (objectCodecClass == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecClass); }
-        if (objectCodecArguments == null) { out.writeUTF("\0"); } else { out.writeUTF(objectCodecArguments); }
     }
 }
