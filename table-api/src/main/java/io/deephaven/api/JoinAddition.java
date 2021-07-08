@@ -1,8 +1,5 @@
 package io.deephaven.api;
 
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,21 +15,18 @@ import java.util.stream.Collectors;
  * @see TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
  * @see TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
  */
-@Immutable
-@SimpleStyle
-public abstract class JoinAddition {
+public interface JoinAddition {
 
-    public static JoinAddition of(ColumnName newAndExisting) {
-        return of(newAndExisting, newAndExisting);
+    static JoinAddition of(ColumnName newColumn, ColumnName existingColumn) {
+        if (newColumn.equals(existingColumn)) {
+            return newColumn;
+        }
+        return JoinAdditionImpl.of(newColumn, existingColumn);
     }
 
-    public static JoinAddition of(ColumnName newColumn, ColumnName existingColumn) {
-        return ImmutableJoinAddition.of(newColumn, existingColumn);
-    }
-
-    public static JoinAddition parse(String x) {
+    static JoinAddition parse(String x) {
         if (ColumnName.isValidParsedColumnName(x)) {
-            return of(ColumnName.parse(x));
+            return ColumnName.parse(x);
         }
         final int ix = x.indexOf('=');
         if (ix < 0) {
@@ -44,7 +38,7 @@ public abstract class JoinAddition {
         return of(newColumn, existingColumn);
     }
 
-    public static List<JoinAddition> from(Collection<String> values) {
+    static List<JoinAddition> from(Collection<String> values) {
         return values.stream().map(JoinAddition::parse).collect(Collectors.toList());
     }
 
@@ -53,15 +47,12 @@ public abstract class JoinAddition {
      *
      * @return the new column name
      */
-    @Parameter
-    public abstract ColumnName newColumn();
+    ColumnName newColumn();
 
     /**
      * The existing column name, from the right table of a join operation.
      *
      * @return the existing column name
      */
-    @Parameter
-    public abstract ColumnName existingColumn();
-
+    ColumnName existingColumn();
 }

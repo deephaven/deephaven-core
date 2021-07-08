@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class JoinAdditionTest {
 
-    public static final JoinAddition FOO = JoinAddition.of(ColumnName.of("Foo"));
+    public static final JoinAddition FOO = ColumnName.of("Foo");
     public static final JoinAddition FOO_BAR =
         JoinAddition.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
 
