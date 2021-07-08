@@ -94,11 +94,11 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         normalColumnSource = columnSources[NORMAL_INDEX];
 
         checking(new Expectations() {{
-            oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)), ColumnToCodecMappings.EMPTY);
+            oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
             will(returnValue(partitioningColumnSource));
-            oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)), ColumnToCodecMappings.EMPTY);
+            oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
             will(returnValue(groupingColumnSource));
-            oneOf(componentFactory).createRegionedColumnSource(with(same(normalColumnDefinition)), ColumnToCodecMappings.EMPTY);
+            oneOf(componentFactory).createRegionedColumnSource(with(same(normalColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
             will(returnValue(normalColumnSource));
         }});
 
