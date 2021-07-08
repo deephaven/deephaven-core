@@ -38,7 +38,7 @@ public interface Aggregation extends Serializable {
     }
 
     static Count AggCount(String resultColumn) {
-        return AggregationFinisher.count().of(resultColumn);
+        return Count.of(resultColumn);
     }
 
     static CountDistinct AggCountDistinct(String pair) {

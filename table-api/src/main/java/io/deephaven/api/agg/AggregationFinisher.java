@@ -11,9 +11,10 @@ import java.util.function.Function;
 
 /**
  * The aggregation finisher is a helper to aid in building aggregations whose construction can be
- * finished by a string parameter, {@link #of(String)}. A vararg overload is provided to build a
- * {@link Multi}, {@link #of(String...)}, which can be useful to reduce the syntax required to build
- * multiple aggregations of the same basic type.
+ * finished by a {@link Pair}. A vararg overload is provided to build a {@link Multi},
+ * {@link #of(Pair...)}, which can be useful to reduce the syntax required to build multiple
+ * aggregations of the same basic type. Helpers are provided that translate the string-equivalents
+ * via {@link Pair#parse(String)}.
  *
  * <p>
  * Not all aggregations may be suitable for construction in this style.
@@ -34,10 +35,6 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
 
     public static AggregationFinisher<Avg> avg() {
         return ImmutableAggregationFinisher.of(Avg::of);
-    }
-
-    public static AggregationFinisher<Count> count() {
-        return ImmutableAggregationFinisher.of(Count::of);
     }
 
     public static AggregationFinisher<CountDistinct> countDistinct() {
@@ -69,7 +66,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
     }
 
     public static AggregationFinisher<Pct> pct(double percentile) {
-        return ImmutableAggregationFinisher.of(s -> Pct.of(percentile, Pair.parse(s)));
+        return ImmutableAggregationFinisher.of(pair -> Pct.of(percentile, pair));
     }
 
     static AggregationFinisher<SortedFirst> sortedFirst(SortColumn sortColumn) {
@@ -78,7 +75,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
 
     static AggregationFinisher<SortedFirst> sortedFirst(Iterable<SortColumn> sortColumns) {
         return ImmutableAggregationFinisher
-            .of(s -> SortedFirst.builder().addAllColumns(sortColumns).pair(Pair.parse(s)).build());
+            .of(pair -> SortedFirst.builder().addAllColumns(sortColumns).pair(pair).build());
     }
 
     static AggregationFinisher<SortedLast> sortedLast(SortColumn sortColumn) {
@@ -87,7 +84,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
 
     static AggregationFinisher<SortedLast> sortedLast(Iterable<SortColumn> sortColumns) {
         return ImmutableAggregationFinisher
-            .of(s -> SortedLast.builder().addAllColumns(sortColumns).pair(Pair.parse(s)).build());
+            .of(pair -> SortedLast.builder().addAllColumns(sortColumns).pair(pair).build());
     }
 
     public static AggregationFinisher<Std> std() {
@@ -107,18 +104,30 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
     }
 
     public static AggregationFinisher<WAvg> wAvg(ColumnName weightColumn) {
-        return ImmutableAggregationFinisher.of(s -> WAvg.of(weightColumn, Pair.parse(s)));
+        return ImmutableAggregationFinisher.of(pair -> WAvg.of(weightColumn, pair));
     }
 
     public static AggregationFinisher<WSum> wSum(ColumnName weightColumn) {
-        return ImmutableAggregationFinisher.of(s -> WSum.of(weightColumn, Pair.parse(s)));
+        return ImmutableAggregationFinisher.of(pair -> WSum.of(weightColumn, pair));
     }
 
     @Parameter
-    public abstract Function<String, AGG> function();
+    public abstract Function<Pair, AGG> function();
+
+    public final AGG of(Pair pair) {
+        return function().apply(pair);
+    }
+
+    public final Multi<AGG> of(Pair... pairs) {
+        Multi.Builder<AGG> builder = Multi.builder();
+        for (Pair pair : pairs) {
+            builder.addAggregations(of(pair));
+        }
+        return builder.build();
+    }
 
     public final AGG of(String arg) {
-        return function().apply(arg);
+        return of(Pair.parse(arg));
     }
 
     public final Multi<AGG> of(String... arguments) {
