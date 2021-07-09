@@ -1294,7 +1294,7 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
         final IsScope previous = scope.get(scope.size() - 1);
         if (scope.size() == 1) {
             // previous is all we have; just lookup the table definition
-            final TableDefinition definition = offset.getTableDefinition(variables, previous.getName());
+            final TableDefinition definition = offset.getTableDefinition(this, doc, variables, previous.getName());
             if (definition == null) {
                 // log missing definition...
             }
@@ -1325,7 +1325,7 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
                     }
                 } else {
                     // look for the table in binding
-                    final TableDefinition def = offset.getTableDefinition(variables, root.getName());
+                    final TableDefinition def = offset.getTableDefinition(this, doc, variables, root.getName());
                     if (def != null) {
                         final ColumnDefinition col = def.getColumn(columnName);
                         if (col == null) {
