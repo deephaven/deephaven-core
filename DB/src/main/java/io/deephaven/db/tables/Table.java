@@ -1361,6 +1361,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
     @Override
+    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+        return join(
+            rightTable,
+            MatchPair.fromMatches(columnsToMatch),
+            MatchPair.fromAddition(columnsToAdd));
+    }
+
+    @Override
     default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, int numRightBitsToReserve) {
         return join(
             rightTable,

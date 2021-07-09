@@ -356,6 +356,22 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      */
     TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd);
 
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
+     * Delegates to {@link #join(Object, Collection, Collection, int)}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch The match pair conditions.
+     * @param columnsToAdd The columns from the right side that need to be added to the left side as
+     *        a result of the match.
+     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
+     */
+    TOPS join(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
+        Collection<JoinAddition> columnsToAdd);
+
     /**
      * Perform a cross join with the {@code rightTable}.
      *
