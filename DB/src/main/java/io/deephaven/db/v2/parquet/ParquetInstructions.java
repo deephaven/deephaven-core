@@ -150,11 +150,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
             if (parquetColumnNameToInstructions == null) {
-                return parquetColumnName;
+                return null;
             }
             final ColumnInstructions ci = parquetColumnNameToInstructions.get(parquetColumnName);
             if (ci == null) {
-                return parquetColumnName;
+                return null;
             }
             return ci.getColumnName();
         }
