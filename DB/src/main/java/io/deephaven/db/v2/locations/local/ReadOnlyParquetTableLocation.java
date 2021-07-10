@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, ParquetColumnLocation<Attributes.Values>> implements ParquetFormatTableLocation<ParquetColumnLocation<Attributes.Values>> {
+class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, ParquetColumnLocation<Attributes.Values>> implements TableLocation {
 
     private final Map<String, String> keyValueMetaData;
     private final RowGroupReader rowGroupReader;

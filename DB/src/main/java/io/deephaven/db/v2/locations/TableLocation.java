@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
  * <br>
  * <br> =====================================================================================================================
  */
-public interface TableLocation<CLT extends ColumnLocation> extends NamedImplementation, LogOutputAppendable, TableLocationState {
+public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.
@@ -64,14 +64,6 @@ public interface TableLocation<CLT extends ColumnLocation> extends NamedImplemen
          */
         PARQUET
     }
-
-    /**
-     * Get the format that was used to persist this table location.
-     *
-     * @return The format for this table location
-     */
-    @NotNull
-    Format getFormat();
 
     /**
      * Does this location support subscriptions? That is, can this location ever have ticking data?
@@ -110,7 +102,7 @@ public interface TableLocation<CLT extends ColumnLocation> extends NamedImplemen
      * @return The ColumnLocation for the defined column under this table location
      */
     @NotNull
-    CLT getColumnLocation(@NotNull CharSequence name);
+    ColumnLocation getColumnLocation(@NotNull CharSequence name);
 
     //------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper

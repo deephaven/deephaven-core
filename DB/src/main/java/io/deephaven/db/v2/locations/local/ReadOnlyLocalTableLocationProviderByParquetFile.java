@@ -7,7 +7,6 @@ import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Map;
 
 public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableLocationProvider {
 
@@ -38,11 +37,11 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableL
 
     @Override
     @NotNull
-    protected final TableLocation<?> makeTableLocation(@NotNull final TableLocationKey locationKey) {
+    protected final TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
         return new DeferredTableLocation.DataDriven<>(getTableKey(), locationKey, this::makeLocation);
     }
 
-    private TableLocation<?> makeLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
+    private TableLocation makeLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
         if (Utils.fileExistsPrivileged(fileLocation)) {
             return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, supportsSubscriptions(), readInstructions);
         } else {

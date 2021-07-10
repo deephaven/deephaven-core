@@ -5,19 +5,18 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.v2.locations.local.TableLocationMetadataIndex;
 import org.jetbrains.annotations.NotNull;
 
-public abstract class DeferredTableLocation<CLT extends ColumnLocation> implements TableLocation<CLT> {
+public abstract class DeferredTableLocation<CLT extends ColumnLocation> implements TableLocation {
 
     private final ImmutableTableKey tableKey;
 
     @FunctionalInterface
     public interface TableLocationCreator<CLT extends ColumnLocation> {
-        TableLocation<CLT> makeTableLocation(@NotNull TableKey tableKey, @NotNull TableLocationKey tableLocationKey);
+        TableLocation makeTableLocation(@NotNull TableKey tableKey, @NotNull TableLocationKey tableLocationKey);
     }
 
-    private volatile TableLocation<CLT> tableLocation;
+    private volatile TableLocation tableLocation;
     private TableLocationCreator<CLT> tableLocationCreator;
 
     private DeferredTableLocation(@NotNull final TableKey tableKey,
@@ -29,7 +28,7 @@ public abstract class DeferredTableLocation<CLT extends ColumnLocation> implemen
     abstract TableLocationKey getTableLocationKey();
 
     @NotNull
-    private TableLocation<? extends CLT> getTableLocation() {
+    private TableLocation getTableLocation() {
         if (tableLocation == null) {
             synchronized (this) {
                 if (tableLocation == null) {
@@ -49,7 +48,7 @@ public abstract class DeferredTableLocation<CLT extends ColumnLocation> implemen
 
     @Override
     public final String getImplementationName() {
-        final TableLocation<CLT> localTableLocation = tableLocation;
+        final TableLocation localTableLocation = tableLocation;
         if (localTableLocation == null) {
             return "DeferredTableLocation";
         }
@@ -132,12 +131,6 @@ public abstract class DeferredTableLocation<CLT extends ColumnLocation> implemen
         //--------------------------------------------------------------------------------------------------------------
 
         @Override
-        @NotNull
-        public final Format getFormat() {
-            return super.getTableLocation().getFormat();
-        }
-
-        @Override
         public final boolean supportsSubscriptions() {
             return super.getTableLocation().supportsSubscriptions();
         }
@@ -201,12 +194,6 @@ public abstract class DeferredTableLocation<CLT extends ColumnLocation> implemen
         //--------------------------------------------------------------------------------------------------------------
         // Remaining TableLocation implementation
         //--------------------------------------------------------------------------------------------------------------
-
-        @NotNull
-        @Override
-        public final Format getFormat() {
-            return tableLocationSnapshot.getFormat();
-        }
 
         @Override
         public final boolean supportsSubscriptions() {

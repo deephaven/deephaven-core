@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends ColumnLocation>
         extends SubscriptionAggregator<TableLocation.Listener>
-        implements TableLocation<CLT> {
+        implements TableLocation {
 
     private @NotNull final TKT tableKey;
     private @NotNull final TableLocationLookupKey<String> tableLocationKey;

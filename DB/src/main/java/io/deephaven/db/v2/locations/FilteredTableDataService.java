@@ -31,7 +31,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
          * @param location The location
          * @return True if the location should be visible, false otherwise
          */
-        boolean accept(@NotNull TableLocation<?> location);
+        boolean accept(@NotNull TableLocation location);
     }
 
     /**
