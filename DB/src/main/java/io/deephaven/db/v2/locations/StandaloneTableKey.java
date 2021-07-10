@@ -5,7 +5,7 @@ import io.deephaven.base.log.LogOutput;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Table location key for simple standalone tables.
+ * {@link TableKey} implementation for standalone tables that are created without a {@link TableDataService}.
  */
 @Immutable
 public final class StandaloneTableKey implements ImmutableTableKey {

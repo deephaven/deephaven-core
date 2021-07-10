@@ -31,7 +31,7 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableL
 
     @Override
     public void refresh() {
-        handleTableLocationKey(SimpleTableLocationKey.getInstance());
+        handleTableLocationKey(StandaloneTableLocationKey.getInstance());
         setInitialized();
     }
 
