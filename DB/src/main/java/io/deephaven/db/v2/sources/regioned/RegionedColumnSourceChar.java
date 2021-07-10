@@ -2,9 +2,8 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
@@ -12,7 +11,7 @@ import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 /**
  * Regioned column source implementation for columns of chars.
  */
-abstract class RegionedColumnSourceChar<ATTR extends Attributes.Values>
+abstract class RegionedColumnSourceChar<ATTR extends Values>
         extends RegionedColumnSourceArray<Character, ATTR, ColumnRegionChar<ATTR>>
         implements ColumnSourceGetDefaults.ForChar {
 
@@ -25,23 +24,20 @@ abstract class RegionedColumnSourceChar<ATTR extends Attributes.Values>
         return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getChar(elementIndex);
     }
 
-    interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionChar<Attributes.Values>> {
+    interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionChar<Values>> {
         @Override
-        default ColumnRegionChar<Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                               @NotNull ColumnLocation<?> columnLocation,
-                                                               int regionIndex) {
+        default ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                    @NotNull final ColumnLocation<?> columnLocation,
+                                                    final int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionChar<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                return columnLocation.makeColumnRegionChar(columnDefinition);
             }
 
             return null;
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceChar<Attributes.Values> implements MakeRegionDefault {
+    public static final class AsValues extends RegionedColumnSourceChar<Values> implements MakeRegionDefault {
         public AsValues() {
             super(ColumnRegionChar.createNull());
         }
@@ -54,7 +50,7 @@ abstract class RegionedColumnSourceChar<ATTR extends Attributes.Values>
      */
 
     @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Attributes.Values>
+    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
             extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Character, ColumnRegionChar<ATTR>>
             implements ColumnSourceGetDefaults.ForChar {
 
@@ -67,8 +63,8 @@ abstract class RegionedColumnSourceChar<ATTR extends Attributes.Values>
             return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getChar(elementIndex);
         }
 
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Attributes.Values> implements MakeRegionDefault {
-            AsValues(RegionedColumnSourceBase<DATA_TYPE, Attributes.Values, ColumnRegionReferencing<Attributes.Values, ColumnRegionChar<Attributes.Values>>> outerColumnSource) {
+        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
+            AsValues(RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionChar<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
         }

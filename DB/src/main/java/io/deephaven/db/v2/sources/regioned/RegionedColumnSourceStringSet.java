@@ -32,14 +32,12 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
     }
 
     @Override
-    public ColumnRegionObject<StringSet, Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                                       @NotNull ColumnLocation<?> columnLocation,
-                                                                       int regionIndex) {
+    public ColumnRegionObject<StringSet, Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                                       @NotNull final ColumnLocation<?> columnLocation,
+                                                                       final int regionIndex) {
         if (columnLocation.exists()) {
-            if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                return new ParquetColumnRegionObject<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-            }
-            throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+            //noinspection unchecked
+            return (ColumnRegionObject<StringSet, Attributes.Values>) columnLocation.makeColumnRegionObject(columnDefinition);
         }
 
         return null;
@@ -75,10 +73,8 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
                                                                          @NotNull ColumnLocation<?> columnLocation,
                                                                          int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return null;
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                // TODO-RWC: This seems like it's no longer useful...
+                return null;
             }
 
             return null;

@@ -43,6 +43,7 @@ class RegionedColumnSourceSymbol<T, OFFSET_CACHE extends OffsetLookupCache<T, Ch
                @NotNull ColumnLocation<?> columnLocation,
                int regionIndex) {
         if (columnLocation.exists()) {
+            // TODO-RWC: I have no idea what to do here...
             if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
                 Chunk<Attributes.Values> chunk = columnLocation.asParquetFormat().getDictionary(columnDefinition);
                 return chunk == null ? null : ParquetColumnRegionSymbolTable.create(type, chunk);

@@ -34,10 +34,7 @@ abstract class RegionedColumnSourceShort<ATTR extends Attributes.Values>
                                                                @NotNull ColumnLocation<?> columnLocation,
                                                                int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionShort<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                return columnLocation.makeColumnRegionShort(columnDefinition);
             }
 
             return null;

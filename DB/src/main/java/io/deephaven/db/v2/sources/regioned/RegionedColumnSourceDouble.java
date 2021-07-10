@@ -30,14 +30,11 @@ abstract class RegionedColumnSourceDouble<ATTR extends Attributes.Values>
 
     interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionDouble<Attributes.Values>> {
         @Override
-        default ColumnRegionDouble<Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                               @NotNull ColumnLocation<?> columnLocation,
-                                                               int regionIndex) {
+        default ColumnRegionDouble<Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                                 @NotNull final ColumnLocation<?> columnLocation,
+                                                                 final int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionDouble<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                return columnLocation.makeColumnRegionDouble(columnDefinition);
             }
 
             return null;

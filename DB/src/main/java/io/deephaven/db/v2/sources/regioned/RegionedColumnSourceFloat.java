@@ -5,7 +5,6 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
@@ -34,10 +33,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Attributes.Values>
                                                                @NotNull ColumnLocation<?> columnLocation,
                                                                int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionFloat<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                return columnLocation.makeColumnRegionFloat(columnDefinition);
             }
 
             return null;

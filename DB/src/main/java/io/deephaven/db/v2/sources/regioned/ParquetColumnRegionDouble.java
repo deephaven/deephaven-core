@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionDouble<ATTR extends Attributes.Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionDouble<ATTR>, ParquetColumnRegion<ATTR> {
 
-    ParquetColumnRegionDouble(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionDouble(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 

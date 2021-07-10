@@ -8,14 +8,16 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.AbstractColumnLocation;
-import io.deephaven.db.v2.locations.ParquetFormatColumnLocation;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
+import io.deephaven.db.v2.sources.chunk.Attributes.Values;
+import io.deephaven.db.v2.sources.regioned.*;
 import io.deephaven.db.v2.utils.ChunkBoxer;
-import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,27 +28,32 @@ import java.util.function.Supplier;
 
 import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
 
-class ParquetColumnLocation<ATTR extends Attributes.Any> extends AbstractColumnLocation<ReadOnlyParquetTableLocation> implements ParquetFormatColumnLocation<ATTR, ReadOnlyParquetTableLocation> {
+final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation<ReadOnlyParquetTableLocation> {
 
+    private static final int CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
+
+    /**
+     * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to ensure
+     * visibility of the derived fields.
+     */
     private volatile ColumnChunkPageStore.Creator<ATTR> pageStoreCreator;
 
     private ColumnChunkPageStore<ATTR> pageStore;
     private Chunk<ATTR> dictionary;
-    private ColumnChunkPageStore<Attributes.DictionaryKeys> dictionaryKeysPageStore;
+    private ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
     private Supplier<?> getMetadata;
 
     /**
      * Construct a new ColumnLocation for the specified TableLocation and column name.
      *
      * @param tableLocation The table location enclosing this column location
-     * @param name The name of the column
+     * @param name          The name of the column
      */
     ParquetColumnLocation(@NotNull final ReadOnlyParquetTableLocation tableLocation,
                           @NotNull final String name,
                           final ColumnChunkPageStore.Creator<ATTR> pageStoreCreator) {
 
         super(tableLocation, name);
-
         this.pageStoreCreator = pageStoreCreator;
     }
 
@@ -69,37 +76,110 @@ class ParquetColumnLocation<ATTR extends Attributes.Any> extends AbstractColumnL
 
     @Override
     @Nullable
-    public final <METADATA_TYPE> METADATA_TYPE getMetadata(ColumnDefinition columnDefinition) {
+    public final <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         //noinspection unchecked
         return getMetadata == null ? null : (METADATA_TYPE) getMetadata.get();
     }
 
-    @NotNull
     @Override
-    public final ColumnChunkPageStore<ATTR> getPageStore(ColumnDefinition columnDefinition) {
+    public ColumnRegionChar<Values> makeColumnRegionChar(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionChar<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionByte<Values> makeColumnRegionByte(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionByte<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionShort<Values> makeColumnRegionShort(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionShort<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionInt<Values> makeColumnRegionInt(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionInt<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionLong<Values> makeColumnRegionLong(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionLong<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionFloat<Values> makeColumnRegionFloat(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionFloat<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionDouble<Values> makeColumnRegionDouble(@NotNull final ColumnDefinition<?> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionDouble<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull final ColumnDefinition<TYPE> columnDefinition) {
+        //noinspection unchecked
+        return new ParquetColumnRegionObject<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+    }
+
+    @Override
+    public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
+        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore = getDictionaryKeysPageStore(columnDefinition);
+        return dictionaryKeysPageStore == null ? null :
+                new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
+    }
+
+    /**
+     * Get the {@link ColumnChunkPageStore} backing this column location.
+     *
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return The page store
+     */
+    @NotNull
+    public final ColumnChunkPageStore<ATTR> getPageStore(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return pageStore;
     }
 
-    @Override
-    public final Chunk<ATTR> getDictionary(ColumnDefinition columnDefinition) {
+    /**
+     * Get the {@link Dictionary} backing this column location.
+     *
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return The dictionary, or null if it doesn't exist
+     */
+    @Nullable
+    public Chunk<ATTR> getDictionary(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return dictionary;
     }
 
-    @Override
-    public final ColumnChunkPageStore<Attributes.DictionaryKeys> getDictionaryKeysPageStore(ColumnDefinition columnDefinition) {
+    /**
+     * Get the {@link ColumnChunkPageStore} backing the indices for this column location. Only usable when there's
+     * a dictionary.
+     *
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return The page store
+     */
+    @Nullable
+    private ColumnChunkPageStore<DictionaryKeys> getDictionaryKeysPageStore(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return dictionaryKeysPageStore;
     }
 
-    private void fetchValues(ColumnDefinition columnDefinition) {
+    private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
         try {
             if (pageStoreCreator != null) {
                 synchronized (this) {
                     if (pageStoreCreator != null) {
-                        ColumnChunkPageStore.Values<ATTR> values = pageStoreCreator.get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+                        final ColumnChunkPageStore.Values<ATTR> values = pageStoreCreator.get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
                         pageStore = values.pageStore;
                         dictionary = values.dictionary;
                         dictionaryKeysPageStore = values.dictionaryKeysPageStore;
@@ -113,98 +193,93 @@ class ParquetColumnLocation<ATTR extends Attributes.Any> extends AbstractColumnL
         }
     }
 
-    private static int CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class,
-            "chunkSize", 4096);
+    public static final class MetaDataTableFactory {
 
-    static class MetaDataTableFactory {
-        private final ColumnChunkPageStore<Attributes.Values> keyColumn;
+        private final ColumnChunkPageStore<Values> keyColumn;
         private final ColumnChunkPageStore<Attributes.UnorderedKeyIndices> firstColumn;
         private final ColumnChunkPageStore<Attributes.UnorderedKeyIndices> lastColumn;
 
         private volatile Object metaData;
 
-        MetaDataTableFactory(ColumnChunkPageStore<Attributes.Values> keyColumn,
-                             ColumnChunkPageStore<Attributes.UnorderedKeyIndices> firstColumn,
-                             ColumnChunkPageStore<Attributes.UnorderedKeyIndices> lastColumn) {
+        MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
+                             @NotNull final ColumnChunkPageStore<Attributes.UnorderedKeyIndices> firstColumn,
+                             @NotNull final ColumnChunkPageStore<Attributes.UnorderedKeyIndices> lastColumn) {
             this.keyColumn = Require.neqNull(keyColumn, "keyColumn");
             this.firstColumn = Require.neqNull(firstColumn, "firstColumn");
             this.lastColumn = Require.neqNull(lastColumn, "lastColumn");
         }
 
-        public final Object get() {
+        public Object get() {
             if (metaData == null) {
                 synchronized (this) {
                     if (metaData == null) {
 
-                        int numRows = (int) keyColumn.length();
+                        final int numRows = (int) keyColumn.length();
 
-                        try (ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
-                             BuildGrouping buildGrouping = BuildGrouping.builder(firstColumn.getChunkType(), numRows);
-                             ChunkSource.GetContext keyContext = keyColumn.makeGetContext(CHUNK_SIZE);
-                             ChunkSource.GetContext firstContext = firstColumn.makeGetContext(CHUNK_SIZE);
-                             ChunkSource.GetContext lastContext = lastColumn.makeGetContext(CHUNK_SIZE)) {
+                        try (final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
+                             final BuildGrouping buildGrouping = BuildGrouping.builder(firstColumn.getChunkType(), numRows);
+                             final ChunkSource.GetContext keyContext = keyColumn.makeGetContext(CHUNK_SIZE);
+                             final ChunkSource.GetContext firstContext = firstColumn.makeGetContext(CHUNK_SIZE);
+                             final ChunkSource.GetContext lastContext = lastColumn.makeGetContext(CHUNK_SIZE);
+                             final OrderedKeys rows = OrderedKeys.forRange(0, numRows - 1);
+                             final OrderedKeys.Iterator rowsIterator = rows.getOrderedKeysIterator()) {
 
-                            Index index = Index.FACTORY.getIndexByRange(0, numRows - 1);
+                            while (rowsIterator.hasMore()) {
+                                final OrderedKeys chunkRows = rowsIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
 
-                            for (OrderedKeys.Iterator iterator = index.getOrderedKeysIterator(); iterator.hasMore(); ) {
-                                OrderedKeys chunkOrderedKeys = iterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
-
-                                buildGrouping.build(boxerKernel.box(keyColumn.getChunk(keyContext, chunkOrderedKeys)),
-                                        firstColumn.getChunk(firstContext, chunkOrderedKeys),
-                                        lastColumn.getChunk(lastContext, chunkOrderedKeys));
+                                buildGrouping.build(boxerKernel.box(keyColumn.getChunk(keyContext, chunkRows)),
+                                        firstColumn.getChunk(firstContext, chunkRows),
+                                        lastColumn.getChunk(lastContext, chunkRows));
                             }
 
                             metaData = buildGrouping.getGrouping();
-
                         }
                     }
                 }
             }
-
             return metaData;
         }
 
         private interface BuildGrouping extends Context {
-            void build(ObjectChunk<?, ? extends Attributes.Values> keyChunk,
-                       Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
-                       Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk);
+            void build(@NotNull ObjectChunk<?, ? extends Values> keyChunk,
+                       @NotNull Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
+                       @NotNull Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk);
 
             Object getGrouping();
 
-            static BuildGrouping builder(ChunkType chunkType, int numRows) {
+            static BuildGrouping builder(@NotNull final ChunkType chunkType, final int numRows) {
                 switch (chunkType) {
                     case Int:
                         return new IntBuildGrouping(numRows);
-
                     case Long:
                         return new LongBuildGrouping(numRows);
-
                     default:
                         throw new IllegalArgumentException("Unknown type for an index: " + chunkType);
                 }
             }
 
-            class IntBuildGrouping implements BuildGrouping {
-                Map<Object, int []> grouping;
+            final class IntBuildGrouping implements BuildGrouping {
 
-                IntBuildGrouping(int numRows) {
+                private final Map<Object, int[]> grouping;
+
+                IntBuildGrouping(final int numRows) {
                     grouping = new LinkedHashMap<>(numRows);
                 }
 
                 @Override
-                public void build(ObjectChunk<?, ? extends Attributes.Values> keyChunk,
-                                  Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
-                                  Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk) {
-                    IntChunk<? extends Attributes.UnorderedKeyIndices> firstIntChunk = firstChunk.asIntChunk();
-                    IntChunk<? extends Attributes.UnorderedKeyIndices> lastIntChunk = lastChunk.asIntChunk();
+                public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
+                                  @NotNull final Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
+                                  @NotNull final Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk) {
+                    final IntChunk<? extends Attributes.UnorderedKeyIndices> firstIntChunk = firstChunk.asIntChunk();
+                    final IntChunk<? extends Attributes.UnorderedKeyIndices> lastIntChunk = lastChunk.asIntChunk();
 
-                    for (int i = 0; i < keyChunk.size(); ++i) {
-                        int[] range = new int[2];
+                    for (int ki = 0; ki < keyChunk.size(); ++ki) {
+                        final int[] range = new int[2];
 
-                        range[0] = firstIntChunk.get(i);
-                        range[1] = lastIntChunk.get(i);
+                        range[0] = firstIntChunk.get(ki);
+                        range[1] = lastIntChunk.get(ki);
 
-                        grouping.put(keyChunk.get(i), range);
+                        grouping.put(keyChunk.get(ki), range);
                     }
                 }
 
@@ -214,27 +289,28 @@ class ParquetColumnLocation<ATTR extends Attributes.Any> extends AbstractColumnL
                 }
             }
 
-            class LongBuildGrouping implements BuildGrouping {
-                Map<Object, long []> grouping;
+            final class LongBuildGrouping implements BuildGrouping {
 
-                LongBuildGrouping(int numRows) {
+                private final Map<Object, long[]> grouping;
+
+                LongBuildGrouping(final int numRows) {
                     grouping = new LinkedHashMap<>(numRows);
                 }
 
                 @Override
-                public void build(ObjectChunk<?, ? extends Attributes.Values> keyChunk,
-                                  Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
-                                  Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk) {
-                    LongChunk<? extends Attributes.UnorderedKeyIndices> firstLongChunk = firstChunk.asLongChunk();
-                    LongChunk<? extends Attributes.UnorderedKeyIndices> lastLongChunk = lastChunk.asLongChunk();
+                public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
+                                  @NotNull final Chunk<? extends Attributes.UnorderedKeyIndices> firstChunk,
+                                  @NotNull final Chunk<? extends Attributes.UnorderedKeyIndices> lastChunk) {
+                    final LongChunk<? extends Attributes.UnorderedKeyIndices> firstLongChunk = firstChunk.asLongChunk();
+                    final LongChunk<? extends Attributes.UnorderedKeyIndices> lastLongChunk = lastChunk.asLongChunk();
 
-                    for (int i = 0; i < keyChunk.size(); ++i) {
-                        long[] range = new long[2];
+                    for (int ki = 0; ki < keyChunk.size(); ++ki) {
+                        final long[] range = new long[2];
 
-                        range[0] = firstLongChunk.get(i);
-                        range[1] = lastLongChunk.get(i);
+                        range[0] = firstLongChunk.get(ki);
+                        range[1] = lastLongChunk.get(ki);
 
-                        grouping.put(keyChunk.get(i), range);
+                        grouping.put(keyChunk.get(ki), range);
                     }
                 }
 

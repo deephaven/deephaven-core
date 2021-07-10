@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link TableLocation} sub-interface for table locations stored in the Apache Parquet columnar format.
  */
-public interface ParquetFormatTableLocation<CLT extends ParquetFormatColumnLocation> extends TableLocation<CLT> {
+public interface ParquetFormatTableLocation<CLT extends ColumnLocation> extends TableLocation<CLT> {
 
     @Override
     @FinalDefault
