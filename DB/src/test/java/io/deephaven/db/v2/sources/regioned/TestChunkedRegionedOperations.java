@@ -164,7 +164,7 @@ public class TestChunkedRegionedOperations {
             ColumnDefinition.ofDouble("D"),
             ColumnDefinition.ofBoolean("Bl"),
             ColumnDefinition.ofString("Sym"),
-            ColumnDefinition.ofString("Str").withVarSizeString(),
+            ColumnDefinition.ofString("Str"),
             ColumnDefinition.ofTime("DT"),
             ColumnDefinition.fromGenericType("SymS", StringSet.class),
             ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),

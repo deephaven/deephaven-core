@@ -478,24 +478,21 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     public Table getColumnDefinitionsTable() {
         List<String> columnNames = new ArrayList<>();
         List<String> columnDataTypes = new ArrayList<>();
-        List<Boolean> columnIsVarSizeString = new ArrayList<>();
         List<String> columnTypes = new ArrayList<>();
         List<Boolean> columnPartitioning = new ArrayList<>();
         List<Boolean> columnGrouping = new ArrayList<>();
         for (ColumnDefinition<?> cDef : columns) {
             columnNames.add(cDef.getName());
             columnDataTypes.add(cDef.getDataType().getName());
-            columnIsVarSizeString.add(cDef.getIsVarSizeString());
             columnTypes.add(ColumnDefinition.COLUMN_TYPE_FORMATTER.format(cDef.getColumnType()));
             columnPartitioning.add(cDef.isPartitioning());
             columnGrouping.add(cDef.isGrouping());
 
         }
-        final String[] resultColumnNames = {"Name", "DataType", "IsVarSizeString", "ColumnType", "IsPartitioning", "IsGrouping"};
+        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
         final Object[] resultValues = {
                 columnNames.toArray(new String[columnNames.size()]),
                 columnDataTypes.toArray(new String[columnDataTypes.size()]),
-                columnIsVarSizeString.toArray(new Boolean[columnIsVarSizeString.size()]),
                 columnTypes.toArray(new String[columnTypes.size()]),
                 columnPartitioning.toArray(new Boolean[columnPartitioning.size()]),
                 columnGrouping.toArray(new Boolean[columnGrouping.size()])

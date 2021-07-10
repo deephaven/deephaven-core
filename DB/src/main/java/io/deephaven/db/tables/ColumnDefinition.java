@@ -198,14 +198,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     private ColumnDefinition(String name, Class<TYPE> dataType, int columnType) {
-        this(name, dataType, columnType, false);
-    }
-
-    private ColumnDefinition(String name, Class<TYPE> dataType, int columnType, boolean isVarSizeString) {
         this.name = Objects.requireNonNull(name);
         setDataType(Objects.requireNonNull(dataType));
         setColumnType(columnType);
-        setIsVarSizeString(isVarSizeString);
     }
 
     private ColumnDefinition(ColumnDefinition source) {
@@ -239,12 +234,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     public <Other> ColumnDefinition<Other> withDataType(Class<Other> dataType) {
         ColumnDefinition clone = clone();
         clone.setDataType(dataType);
-        return clone;
-    }
-
-    public ColumnDefinition<TYPE> withVarSizeString() {
-        ColumnDefinition clone = clone();
-        clone.setIsVarSizeString(true);
         return clone;
     }
 
@@ -372,9 +361,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (!CharSequence.class.isAssignableFrom(dataType) || !isDirect()) {
             return null;
         }
-        if (Objects.equals(isVarSizeString, Boolean.TRUE)) {
-            return SymbolTableType.NONE;
-        }
         return SymbolTableType.COLUMN_LOCATION;
     }
 
@@ -414,22 +400,12 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.columnType=columnType;
     }
 
-    private Boolean isVarSizeString;
-    public Boolean getIsVarSizeString() {
-        return isVarSizeString;
-    }
-
-    void setIsVarSizeString(Boolean isVarSizeString) {
-        this.isVarSizeString=isVarSizeString;
-    }
-
     @Override
     public void copyValues(ColumnDefinition x) {
         name = x.name;
         dataType = x.dataType;
         componentType = x.componentType;
         columnType = x.columnType;
-        isVarSizeString = x.isVarSizeString;
     }
 
     @Override
@@ -440,7 +416,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         builder.append("|dataType=").append(dataType);
         builder.append("|componentType=").append(componentType);
         builder.append("|columnType=").append(columnType);
-        builder.append("|isVarSizeString=").append(isVarSizeString);
 
         return builder.toString();
     }
@@ -453,7 +428,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|dataType=").append(String.valueOf(dataType));
         logOutput.append("|componentType=").append(String.valueOf(componentType));
         logOutput.append("|columnType=").append(columnType);
-        logOutput.append("|isVarSizeString=").append(isVarSizeString);
 
         return logOutput;
     }
@@ -472,7 +446,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         dataType = (Class)in.readObject();
         componentType = (Class)in.readObject();
         columnType = in.readInt();
-        isVarSizeString = (Boolean)in.readObject();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -480,6 +453,5 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(dataType);
         out.writeObject(componentType);
         out.writeInt(columnType);
-        out.writeObject(isVarSizeString);
     }
 }
