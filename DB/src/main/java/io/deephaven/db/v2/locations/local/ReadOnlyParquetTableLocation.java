@@ -21,6 +21,7 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.codec.SimpleStringAsByteArrayCodec;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -154,7 +155,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
-            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name);
+            final String codecFromInstructions = readInstructions.getCodecName(columnDefinition.getName());
+            final String codecName = (codecFromInstructions != null)
+                    ? codecFromInstructions
+                    : keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name)
+                    ;
             final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
@@ -202,16 +207,19 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             //noinspection rawtypes
                             final ObjectCodec codec;
                             if (isCodec) {
-                                final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
-                                codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
+                                final String codecArgs =
+                                        (codecFromInstructions != null)
+                                        ? readInstructions.getCodecArgs(columnDefinition.getName())
+                                        : keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name)
+                                        ;
+                                codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
                             } else {
-                                final String codecParams;
-                                if (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY) {
-                                    codecParams = Integer.toString(type.getTypeLength());
-                                } else {
-                                    codecParams = null;
-                                }
-                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecParams);
+                                final String codecArgs =
+                                        (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                        ? Integer.toString(type.getTypeLength())
+                                        : null
+                                        ;
+                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecArgs);
                             }
                             //noinspection unchecked
                             toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());

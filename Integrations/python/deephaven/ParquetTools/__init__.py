@@ -87,38 +87,18 @@ def getWorkspaceRoot():
     """
     Helper function for extracting the root directory for the workspace configuration
     """
-
     return _dh_config_.getInstance().getWorkspacePath()
-
-
-def _custom_addColumns(*args):
-    return _java_type_.addColumns(args[0], getFileObject(args[1]), *args[2:])
-
-
-def _custom_addGroupingMetadata(*args):
-    if len(args) == 1:
-        return _java_type_.addGroupingMetadata(getFileObject(args[0]))
-    else:
-        return _java_type_.addGroupingMetadata(getFileObject(args[0]), *args[1:])
-
 
 def _custom_deleteTable(path):
     return _java_type_.deleteTable(getFileObject(path))
 
-
-def _custom_dropColumns(*args):
-    return _java_type_.dropColumns(args[0], getFileObject(args[1]), *args[2:])
-
-
-def _custom_getAllDbDirs(tableName, rootDir, levelsDepth):
-    return [el.getAbsolutePath() for el in _java_type_.getAllDbDirs(tableName, getFileObject(rootDir), levelsDepth).toArray()]
-
-
 def _custom_readTable(*args):
     if len(args) == 1:
         return _java_type_.readTable(getFileObject(args[0]))
+    elif len(args) == 2:
+        return _java_type_.readTable(getFileObject(args[0]), getattr(_java_type_, args[1]))
     else:
-        return _java_type_.readTable(getFileObject(args[0]), *args[1:])
+        return _java_type_.readTable(getFileObject(args[0]), getattr(_java_type_, args[1]), *args[2:])
 
 
 def _custom_writeParquetTables(sources, tableDefinition, codecName, destinations, groupingColumns):
@@ -134,7 +114,7 @@ def _custom_writeTable(*args):
     if len(args) == 2:
         return _java_type_.writeTable(args[0], getFileObject(args[1]))
     elif len(args) == 3:
-        return _java_type_.writeTable(args[0], getFileObject(args[1]), args[2])
+        return _java_type_.writeTable(args[0], getattr(_java_type_, args[1]), getFileObject(args[2]))
 
 
 def _custom_writeTables(sources, tableDefinition, destinations):
@@ -222,6 +202,15 @@ def readTable(*args):
 
 
 @_passThrough
+def setDefaultCompressionCodecName(compressionCodecName):
+    """
+    :param compressionCodecName: java.lang.String
+    """
+    
+    return _java_type_.setDefaultCompressionCodecName(compressionCodecName)
+
+
+@_passThrough
 def writeParquetTables(sources, tableDefinition, writeInstructions, destinations, groupingColumns):
     """
     Writes tables to disk in parquet format to a supplied set of destinations.  If you specify grouping columns, there
@@ -266,13 +255,20 @@ def writeTable(*args):
       
     *Overload 4*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+                       If there is an error any intermediate directories previously created are removed;
+                       note this makes this method unsafe for concurrent use
+      
+    *Overload 5*  
+      :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       :param destFilePath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
                            If there is an error any intermediate directories previously created are removed;
                            note this makes this method unsafe for concurrent use
       
-    *Overload 5*  
+    *Overload 6*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing

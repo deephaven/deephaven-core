@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.ParquetReaderUtil$ColDefHelper",
- "methods": {},
- "path": "io.deephaven.db.v2.parquet.ParquetReaderUtil.ColDefHelper",
- "typeName": "class"
-}

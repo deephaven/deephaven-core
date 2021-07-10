@@ -193,6 +193,21 @@ public class ParquetTools {
     /**
      * Write a table to a file.
      * @param sourceTable source table
+     * @param writeInstructions instructions for customizations while writing
+     * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
+     *                 If there is an error any intermediate directories previously created are removed;
+     *                 note this makes this method unsafe for concurrent use
+     */
+    public static void writeTable(
+            @NotNull final Table sourceTable,
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final File destFile) {
+        writeTable(sourceTable, sourceTable.getDefinition(), writeInstructions, destFile);
+    }
+
+    /**
+     * Write a table to a file.
+     * @param sourceTable source table
      * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      * @param destFilePath destination path; it must end in ".parquet".  Any non existing directories in the path are created
@@ -505,5 +520,15 @@ public class ParquetTools {
         catch (Exception e) {
             throw new UncheckedDeephavenException("Error writing table to " + destFile, e);
         }
+    }
+
+    public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
+    public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
+    public static final ParquetInstructions GZIP = ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
+    public static final ParquetInstructions ZSTD = ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
+
+    public static void setDefaultCompressionCodecName(final String compressionCodecName) {
+        ParquetInstructions.setDefaultCompressionCodecName(compressionCodecName);
     }
 }

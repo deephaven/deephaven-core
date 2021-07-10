@@ -5,7 +5,8 @@
   "addColumnNameMapping": ":param parquetColumnName: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
   "build": ":return: io.deephaven.db.v2.parquet.ParquetInstructions",
   "getTakenNames": ":return: java.util.Set<java.lang.String>",
-  "setCompressionCodecName": ":param compressionCodecName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder"
+  "setCompressionCodecName": ":param compressionCodecName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
+  "setIsLegacyParquet": ":param isLegacyParquet: boolean\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder"
  },
  "path": "io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
  "typeName": "class"

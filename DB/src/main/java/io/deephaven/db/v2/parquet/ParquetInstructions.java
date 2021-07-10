@@ -34,6 +34,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     @Override public abstract String getCodecName(final String columnName);
     @Override public abstract String getCodecArgs(final String columnName);
     public abstract String getCompressionCodecName();
+    public abstract boolean isLegacyParquet();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -70,6 +71,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String getCompressionCodecName() {
             return defaultCompressionCodecName;
+        }
+
+        @Override
+        public boolean isLegacyParquet() {
+            return false;
         }
     };
 
@@ -121,14 +127,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          */
         private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
         private final String compressionCodecName;
+        private final boolean isLegacyParquet;
 
         protected ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
                 final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName,
-                final String compressionCodecName) {
+                final String compressionCodecName,
+                final boolean isLegacyParquet) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
+            this.isLegacyParquet = isLegacyParquet;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue, Function<ColumnInstructions, String> fun) {
@@ -150,11 +159,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
             if (parquetColumnNameToInstructions == null) {
-                return parquetColumnName;
+                return null;
             }
             final ColumnInstructions ci = parquetColumnNameToInstructions.get(parquetColumnName);
             if (ci == null) {
-                return parquetColumnName;
+                return null;
             }
             return ci.getColumnName();
         }
@@ -172,6 +181,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String getCompressionCodecName() {
             return compressionCodecName;
+        }
+
+        @Override
+        public boolean isLegacyParquet() {
+            return isLegacyParquet;
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -233,6 +247,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         // different than the columnName (ie, the column name mapping is not the default mapping)
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
         private String compressionCodecName = defaultCompressionCodecName;
+        private boolean isLegacyParquet;
 
         public Builder() {
         }
@@ -340,12 +355,21 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        public Builder setIsLegacyParquet(final boolean isLegacyParquet) {
+            this.isLegacyParquet = isLegacyParquet;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
             final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnNameOut = parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
-            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName);
+            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName, isLegacyParquet);
         }
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 }

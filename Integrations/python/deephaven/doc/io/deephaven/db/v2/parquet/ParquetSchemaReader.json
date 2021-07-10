@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.parquet.ParquetSchemaReader",
+ "methods": {
+  "readParquetSchema": "Obtain schema information from a parquet file\n\n:param filePath: (java.lang.String) - Location for input parquet file\n:param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Parquet read instructions specifying transformations like column mappings and codecs.\n                          Note a new read instructions based on this one may be returned by this method to provide necessary\n                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.\n:param consumer: (io.deephaven.db.v2.parquet.ParquetSchemaReader.ColumnDefinitionConsumer) - A ColumnDefinitionConsumer whose accept method would be called for each column in the file\n:param legalizeColumnNameFunc: java.util.function.BiFunction<java.lang.String,java.util.Set<java.lang.String>,java.lang.String>\n:return: (io.deephaven.db.v2.parquet.ParquetInstructions) Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary\n         transformations added."
+ },
+ "path": "io.deephaven.db.v2.parquet.ParquetSchemaReader",
+ "typeName": "class"
+}

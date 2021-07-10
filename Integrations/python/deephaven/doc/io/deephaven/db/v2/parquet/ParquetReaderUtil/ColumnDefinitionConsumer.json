@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.ParquetReaderUtil$ColumnDefinitionConsumer",
- "methods": {
-  "accept": ":param name: java.lang.String\n:param baseType: java.lang.Class<?>\n:param dhSpecialType: java.lang.String\n:param isLegacyType: boolean\n:param isArray: boolean\n:param isGroupingColumn: boolean\n:param codecType: java.lang.String\n:param codecComponentType: java.lang.String"
- },
- "path": "io.deephaven.db.v2.parquet.ParquetReaderUtil.ColumnDefinitionConsumer",
- "typeName": "interface"
-}

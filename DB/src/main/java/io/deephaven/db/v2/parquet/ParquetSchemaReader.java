@@ -9,6 +9,7 @@ import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
+import io.deephaven.util.codec.SimpleStringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -19,7 +20,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 public class ParquetSchemaReader {
     @FunctionalInterface
@@ -166,24 +166,32 @@ public class ParquetSchemaReader {
                         if (colDef.dhSpecialType != null) {
                             if (colDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                                 colDef.dhSpecialType = ParquetTableWriter.STRING_SET_SPECIAL_TYPE;
+                                colDef.baseType = byte.class;
+                                colDef.isArray = true;
                             } else {
                                 throw new UncheckedDeephavenException(
                                         "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
                                             + " for column " + Arrays.toString(column.getPath())
                                             + " with unknown special type " + colDef.dhSpecialType);
                             }
-                        }
-                        if (codecName == null || codecName.isEmpty()) {
+                        } else if (codecName == null || codecName.isEmpty()) {
                             if (instructionsBuilder == null) {
-                                instructionsBuilder = new ParquetInstructions.Builder();
+                                instructionsBuilder = new ParquetInstructions.Builder(readInstructions);
                             }
-                            codecName = SimpleByteArrayCodec.class.getName();
                             codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
                                     ? Integer.toString(primitiveType.getTypeLength())
                                     : null;
+                            if (readInstructions.isLegacyParquet()) {
+                                colDef.baseType = String.class;
+                                codecName = SimpleStringAsByteArrayCodec.class.getName();
+                            } else {
+                                colDef.baseType = byte.class;
+                                colDef.isArray = true;
+                                codecName = SimpleByteArrayCodec.class.getName();
+                            }
                             instructionsBuilder.addColumnCodec(colName, codecName, codecArgs);
                         }
-                        // fallthrough
+                        break;
                     default:
                         colDef.baseType = byte.class;
                         colDef.isArray = true;
