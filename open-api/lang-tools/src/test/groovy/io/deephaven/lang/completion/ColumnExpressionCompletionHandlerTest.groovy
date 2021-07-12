@@ -158,4 +158,42 @@ t = t.update('A=') .update( 'B=')
         System.clearProperty(ChunkerCompleter.PROP_SUGGEST_STATIC_METHODS)
     }
 
+    def "Completion should infer column structure from newTable invocation"() {
+        setup:
+        System.setProperty(ChunkerCompleter.PROP_SUGGEST_STATIC_METHODS, 'false')
+        CompletionParser p = new CompletionParser()
+        String src = """
+t = newTable(
+  stringCol("strCol", "1", "2", "3"),
+  intCol("intCol", 1, 2, 3)
+)
+t.where('"""
+        doc = p.parse(src)
+
+        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        VariableProvider variables = Mock(VariableProvider) {
+            _ * getTableDefinition('t') >> null
+            0 * _
+        }
+
+        ChunkerCompleter completer = new ChunkerCompleter(log, variables)
+
+        when: "Cursor is inside where('"
+        Set<CompletionItem.Builder> result = completer.runCompletion(doc, src.length())
+
+        then: "Expect column names from newTable() are returned"
+        println(result)
+        result.size() == 2
+        doCompletion(src, result.first()) == src + "strCol = "
+        doCompletion(src, result.last()) == src + "intCol = "
+
+        cleanup:
+        System.clearProperty(ChunkerCompleter.PROP_SUGGEST_STATIC_METHODS)
+    }
+    @Override
+    VariableProvider getVariables() {
+        return Mock(VariableProvider) {
+            _ * getVariableNames() >> []
+        }
+    }
 }

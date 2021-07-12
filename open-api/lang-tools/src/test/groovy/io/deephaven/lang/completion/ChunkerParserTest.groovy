@@ -1,6 +1,7 @@
 package io.deephaven.lang.completion
 
 import groovy.text.SimpleTemplateEngine
+import io.deephaven.db.util.VariableProvider
 import io.deephaven.lang.generated.*
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.lang.parse.LspTools
@@ -219,6 +220,13 @@ t = db.
         where:
         // test with multiple forms of quotes,
         q   << [ '"' , "'" ]
+    }
+
+    @Override
+    VariableProvider getVariables() {
+        return Mock(VariableProvider) {
+            _ * getVariableNames() >> []
+        }
     }
 
     static String quotify(String str, String q) {
