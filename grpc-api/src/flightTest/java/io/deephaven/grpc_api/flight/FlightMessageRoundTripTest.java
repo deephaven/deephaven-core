@@ -3,6 +3,7 @@ package io.deephaven.grpc_api.flight;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.TableDiff;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
@@ -13,14 +14,12 @@ import io.deephaven.grpc_api.session.SessionServiceGrpcImpl;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
-import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.netty.NettyServerBuilder;
-import io.grpc.testing.GrpcServerRule;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.RootAllocator;
@@ -28,13 +27,13 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -234,13 +233,32 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testRoundTripData() throws InterruptedException {
+        // tables without columns, as flight-based way of doing emptyTable
+        // TODO actual size reported as -1
 //        assertRoundTripDataEqual(TableTools.emptyTable(0));
 //        assertRoundTripDataEqual(TableTools.emptyTable(10));
-//        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(String)null"));
-//        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(int)0"));
+
+        // simple values, no nulls
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=String.valueOf(i)"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(int)i"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=\"\""));
-//        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=\"a\""));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=0"));
+
+        // non-flat index
+        assertRoundTripDataEqual(TableTools.emptyTable(10).where("i % 2 == 0").update("I=i"));
+
+        // all null values in columns
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(int)null"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=(String)null"));
+
+        // some nulls in columns
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? i : (int)null"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
+
+        // list columns TODO
+//        assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
     }
+
     private static int nextTicket = 1;
     private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException {
         // bind the table in the session
@@ -255,18 +273,24 @@ public class FlightMessageRoundTripTest {
         // turn data around and send with DoPut
         int flightDescriptorTicketValue = nextTicket++;
         FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+        // start the DoPut and send the schema
         FlightClient.ClientStreamListener putStream = client.startPut(descriptor, root, new AsyncPutListener());
+        // send the body of the table
         putStream.putNext();
 
-        Thread.sleep(1000);
+        Thread.sleep(100);// make sure the ltm ticks before we seal TODO REMOVE WHEN NATE FIXES
+
+        // tell the server we are finished sending data
         putStream.completed();
+        // block until we're done, so we can get the table and see what is inside
         putStream.getResult();
 
-
-        Thread.sleep(10_000);
+        // get the table that was uploaded, and confirm it matches what we originally sent
         Table uploadedTable = currentSession.<Table>getExport(flightDescriptorTicketValue).get();
 
+        // check that contents match
         assertEquals(deephavenTable.size(), uploadedTable.size());
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
+        assertEquals(0, (long) TableTools.diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
     }
 }
