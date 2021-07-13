@@ -400,11 +400,12 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
             return;
         }
         if (unsubscribed) {
-            if (getIndex().nonempty()) {
-                final Index allRows = getIndex().clone();
-                getIndex().remove(allRows);
-                notifyListeners(Index.FACTORY.getEmptyIndex(), allRows, Index.FACTORY.getEmptyIndex());
-            }
+            //TODO Nate will fix this
+//            if (getIndex().nonempty()) {
+//                final Index allRows = getIndex().clone();
+//                getIndex().remove(allRows);
+//                notifyListeners(Index.FACTORY.getEmptyIndex(), allRows, Index.FACTORY.getEmptyIndex());
+//            }
             registrar.removeTable(this);
             clearPendingData();
             // we are quite certain the shadow copies should have been drained on the last refresh
