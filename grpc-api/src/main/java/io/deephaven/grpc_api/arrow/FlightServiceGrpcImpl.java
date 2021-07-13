@@ -353,6 +353,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 do {
                     process(nmi);
 
+                    if (pendingSeq == null) {
+                        return;
+                    }
                     synchronized (this) {
                         ++nextSeq;
                         nmi = pendingSeq.top();
