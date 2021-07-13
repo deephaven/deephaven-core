@@ -144,7 +144,7 @@ public abstract class SourceTable extends RedefinableTable {
                     liveTableRegistrar.addTable(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
-                    maybeAddLocations(locationProvider.getTableLocations());
+                    maybeAddLocations(locationProvider.getTableLocationKeys());
                 }
             });
             locationsInitialized = true;

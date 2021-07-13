@@ -50,7 +50,7 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attribute
 
     @Nullable
     @Override
-    public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> makeRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation<?> columnLocation, int regionIndex) {
+    public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> makeRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation, int regionIndex) {
         NATIVE_REGION_TYPE nativeRegionType = nativeSource.makeRegion(columnDefinition, columnLocation, regionIndex);
         return nativeRegionType == null ? null : new ColumnRegionReferencingImpl<>(getNativeType(), nativeRegionType);
     }

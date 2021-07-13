@@ -1,6 +1,7 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -23,8 +24,10 @@ public abstract class AbstractTableLocationProvider
 
     private final ImmutableTableKey tableKey;
 
-    private final KeyedObjectHashMap<TableLocationKey, TableLocation> tableLocations = new KeyedObjectHashMap<>(TableLocationKey.getKeyedObjectKey());
-    private final Collection<TableLocation> unmodifiableTableLocations = Collections.unmodifiableCollection(tableLocations.values());
+    private final KeyedObjectHashMap<TableLocationKey, TableLocation> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
+    @SuppressWarnings("unchecked")
+    private final Collection<ImmutableTableLocationKey> unmodifiableTableLocationKeys =
+            (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>)  Collections.unmodifiableCollection(tableLocations.keySet());
 
     private volatile boolean initialized;
 
@@ -55,7 +58,7 @@ public abstract class AbstractTableLocationProvider
         return getClass().getName() + '[' + tableKey + ']';
     }
 
-    public final TableKey getKey() {
+    public final ImmutableTableKey getKey() {
         return tableKey;
     }
 
@@ -65,7 +68,7 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        tableLocations.forEach(listener::handleTableLocation);
+        unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKey);
     }
 
     /**
@@ -82,12 +85,12 @@ public abstract class AbstractTableLocationProvider
                 // putIfAbsent, and keeps observeTableLocationCreation out of the business of subscription processing.
                 locationCreatedRecorder = false;
                 final TableLocation tableLocation = tableLocations.putIfAbsent(locationKey, this::observeTableLocationCreation);
-                if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocation, tableLocation, true)) {
+                if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, tableLocation.getKey(), true)) {
                     onEmpty();
                 }
             }
         } else {
-            tableLocations.putIfAbsent(locationKey, this::makeTableLocation);
+            tableLocations.putIfAbsent(locationKey, PlaceholderTableLocation::new);
         }
     }
 
@@ -95,7 +98,7 @@ public abstract class AbstractTableLocationProvider
     private TableLocation observeTableLocationCreation(@NotNull final TableLocationKey locationKey) {
         // NB: This must only be called while the lock on subscriptions is held.
         locationCreatedRecorder = true;
-        return makeTableLocation(locationKey);
+        return new PlaceholderTableLocation(locationKey);
     }
 
     /**
@@ -144,13 +147,106 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     @NotNull
-    public final Collection<TableLocation> getTableLocations() {
-        return unmodifiableTableLocations;
+    public final Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+        return unmodifiableTableLocationKeys;
+    }
+
+    @Override
+    public final boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
+        return tableLocations.containsKey(tableLocationKey);
     }
 
     @Override
     @Nullable
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-        return tableLocations.get(tableLocationKey);
+        final TableLocation current = tableLocations.get(tableLocationKey);
+        if (current instanceof PlaceholderTableLocation) {
+            return tableLocations.putIfAbsent(current.getKey(), this::makeTableLocation);
+        }
+        return current;
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Default key definition implementation
+    //------------------------------------------------------------------------------------------------------------------
+
+    private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, TableLocation> {
+
+        private static final KeyedObjectKey<TableLocationKey, TableLocation> INSTANCE = new LocationKeyDefinition();
+
+        private LocationKeyDefinition() {
+        }
+
+        @Override
+        public TableLocationKey getKey(@NotNull final TableLocation tableLocation) {
+            return tableLocation.getKey();
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Placeholder TableLocation implementation (for deferred instantiation)
+    //------------------------------------------------------------------------------------------------------------------
+
+    private final class PlaceholderTableLocation implements TableLocation {
+
+        private final ImmutableTableLocationKey key;
+
+        private PlaceholderTableLocation(@NotNull final TableLocationKey key) {
+            this.key = key.makeImmutable();
+        }
+
+        @NotNull
+        @Override
+        public ImmutableTableKey getTableKey() {
+            return AbstractTableLocationProvider.this.getKey();
+        }
+
+        @NotNull
+        @Override
+        public ImmutableTableLocationKey getKey() {
+            return key;
+        }
+
+        @Override
+        public boolean supportsSubscriptions() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void subscribe(@NotNull Listener listener) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void unsubscribe(@NotNull Listener listener) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void refresh() {
+            throw new UnsupportedOperationException();
+        }
+
+        @NotNull
+        @Override
+        public ColumnLocation getColumnLocation(@NotNull CharSequence name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @NotNull
+        @Override
+        public Object getStateLock() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSize() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getLastModifiedTimeMillis() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

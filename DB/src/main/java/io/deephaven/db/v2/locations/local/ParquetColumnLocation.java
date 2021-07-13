@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 
 import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
 
-final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation<ReadOnlyParquetTableLocation> {
+final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation {
 
     private static final int CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
 
@@ -133,8 +133,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     @Override
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore = getDictionaryKeysPageStore(columnDefinition);
-        return dictionaryKeysPageStore == null ? null :
-                new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
+        return dictionaryKeysPageStore == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
     }
 
     /**

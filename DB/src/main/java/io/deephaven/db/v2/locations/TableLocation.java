@@ -6,27 +6,15 @@ package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * <br> =====================================================================================================================
- * <br>
- * <br> Building block for Deephaven file-based tables, with helper methods for discovering locations and their sizes.
- * <br>
- * <br> ================================================= INTERFACE =========================================================
- * <br>
- * <br> A location specifies the column and size data location for a splayed table.  The location may be either:
- * <br> (1) the sole location of a stand-alone splayed table, or
- * <br> (2) a single location of a nested partitioned table, in which case it belongs to an internal partition and a column
- * partition.
- * <br>
- * <br> ================================================== COMMENTS =========================================================
- * <br>
- * <br> Future work may allow more fields from TableLocationKey or TableLocationState to be accessed as columns.
- * <br>
- * <br> =====================================================================================================================
+ * Building block for Deephaven "source" tables, with helper methods for discovering locations and their sizes.
+ * A location allows access to columns, size, and possibly other metadata for a single partition that may be included
+ * in a source table.
  */
 public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState {
 
@@ -54,16 +42,6 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @NotNull
     ImmutableTableLocationKey getKey();
-
-    /**
-     * Enumeration of possible table location formats.
-     */
-    enum Format {
-        /**
-         * The Apache Parquet columnar format.
-         */
-        PARQUET
-    }
 
     /**
      * Does this location support subscriptions? That is, can this location ever have ticking data?
@@ -113,19 +91,13 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     default LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(getTableKey())
                 .append(':').append(getImplementationName())
-                .append('[').append((getInternalPartition() == NULL_PARTITION ? "" : getInternalPartition()))
-                .append('/').append(getColumnPartition() == NULL_PARTITION ? "" : getColumnPartition())
+                .append('[').append(getKey())
                 .append(']');
     }
 
-    @Override
     @FinalDefault
     default String toStringHelper() {
-        return getTableKey().toString()
-                + ':' + getImplementationName()
-                + '[' + (getInternalPartition() == NULL_PARTITION ? "" : getInternalPartition())
-                + '/' + (getColumnPartition() == NULL_PARTITION ? "" : getColumnPartition())
-                + ']';
+        return new LogOutputStringImpl().append(this).toString();
     }
 
     /**
@@ -135,13 +107,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @FinalDefault
     default String toGenericString() {
-        return "TableLocation"
-                + '[' + getTableKey().getNamespace()
-                + '/' + getTableKey().getTableName()
-                + '/' + getTableKey().getTableType().getDescriptor()
-                + "]:[" + (getInternalPartition() == NULL_PARTITION ? "" : getInternalPartition())
-                + '/' + (getColumnPartition() == NULL_PARTITION ? "" : getColumnPartition())
-                + ']';
+        return "TableLocation[" + getTableKey() + "]:[" + getKey() + ']';
     }
 
     /**

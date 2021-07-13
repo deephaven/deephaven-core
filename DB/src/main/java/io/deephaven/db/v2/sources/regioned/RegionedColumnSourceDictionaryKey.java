@@ -13,7 +13,7 @@ class RegionedColumnSourceDictionaryKey<T> extends RegionedColumnSourceInt.Nativ
 
     @Override
     public ColumnRegionInt<DictionaryKeys> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                      @NotNull final ColumnLocation<?> columnLocation,
+                                                      @NotNull final ColumnLocation columnLocation,
                                                       final int regionIndex) {
         if (columnLocation.exists()) {
             return columnLocation.makeDictionaryKeysRegion(columnDefinition);

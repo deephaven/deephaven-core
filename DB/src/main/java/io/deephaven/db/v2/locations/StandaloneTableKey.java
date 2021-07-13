@@ -1,6 +1,7 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.log.LogOutput;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -34,5 +35,15 @@ public final class StandaloneTableKey implements ImmutableTableKey {
     @Override
     public String toString() {
         return NAME;
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object other) {
+        return other instanceof StandaloneTableKey;
     }
 }

@@ -78,7 +78,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         locationProvider = mock(TableLocationProvider.class);
         tableLocation = mock(TableLocation.class);
         checking(new Expectations() {{
-            allowing(locationProvider).getTableLocations();
+            allowing(locationProvider).getTableLocationKeys();
             will(returnValue(Collections.singleton(tableLocation)));
             allowing(tableLocation).supportsSubscriptions();
             will(returnValue(true));

@@ -3,7 +3,6 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.StringSetImpl;
 import io.deephaven.util.codec.ObjectDecoder;
@@ -33,7 +32,7 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
 
     @Override
     public ColumnRegionObject<StringSet, Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                                       @NotNull final ColumnLocation<?> columnLocation,
+                                                                       @NotNull final ColumnLocation columnLocation,
                                                                        final int regionIndex) {
         if (columnLocation.exists()) {
             //noinspection unchecked
@@ -44,7 +43,7 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
     }
 
     @Override
-    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation<?> columnLocation) {
+    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
         stringSetBitmaskColumn.addRegion(columnDefinition, columnLocation);
         dictionaryColumn.addRegion(columnDefinition, columnLocation);
         return super.addRegion(columnDefinition, columnLocation);
@@ -70,7 +69,7 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
 
         @Override
         public ColumnRegionLong<Attributes.StringSetBitmasks> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                                         @NotNull ColumnLocation<?> columnLocation,
+                                                                         @NotNull ColumnLocation columnLocation,
                                                                          int regionIndex) {
             if (columnLocation.exists()) {
                 // TODO-RWC: This seems like it's no longer useful...

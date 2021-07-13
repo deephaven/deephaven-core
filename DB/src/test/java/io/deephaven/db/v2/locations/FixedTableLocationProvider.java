@@ -51,7 +51,7 @@ public class FixedTableLocationProvider implements TableLocationProvider {
 
     @NotNull
     @Override
-    public Collection<TableLocation> getTableLocations() {
+    public Collection<TableLocation> getTableLocationKeys() {
         return locations;
     }
 

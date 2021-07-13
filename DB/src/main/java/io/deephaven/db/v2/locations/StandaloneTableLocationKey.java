@@ -1,6 +1,8 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.log.LogOutput;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link TableLocationKey} implementation for unpartitioned standalone tables.
@@ -31,5 +33,23 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
     @Override
     public String toString() {
         return NAME;
+    }
+
+    @Override
+    public int compareTo(@NotNull final TableLocationKey other) {
+        if (other instanceof StandaloneTableLocationKey) {
+            return 0;
+        }
+        throw new ClassCastException();
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object other) {
+        return other instanceof StandaloneTableLocationKey;
     }
 }

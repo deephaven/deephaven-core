@@ -30,7 +30,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Attributes.Values>
     interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionFloat<Attributes.Values>> {
         @Override
         default ColumnRegionFloat<Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                               @NotNull ColumnLocation<?> columnLocation,
+                                                               @NotNull ColumnLocation columnLocation,
                                                                int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionFloat(columnDefinition);

@@ -22,6 +22,6 @@ public interface MakeRegion<ATTR extends Attributes.Values, REGION_TYPE extends 
      */
     @Nullable
     REGION_TYPE makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                           @NotNull ColumnLocation<?> columnLocation,
+                           @NotNull ColumnLocation columnLocation,
                            int regionIndex);
 }

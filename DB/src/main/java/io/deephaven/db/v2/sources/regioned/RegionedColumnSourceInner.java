@@ -32,7 +32,7 @@ abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Valu
     }
 
     @Override
-    public final int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation<?> columnLocation) {
+    public final int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
         return outerColumnSource.addRegion(columnDefinition, columnLocation);
     }
 

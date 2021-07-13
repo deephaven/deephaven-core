@@ -20,29 +20,29 @@ import java.util.stream.Collectors;
 public class FilteredTableDataService extends AbstractTableDataService {
 
     private final TableDataService serviceToFilter;
-    private final LocationFilter locationFilter;
+    private final LocationKeyFilter locationKeyFilter;
 
     @FunctionalInterface
-    public interface LocationFilter {
+    public interface LocationKeyFilter {
 
         /**
-         * Determine whether location should be visible via this service.
+         * Determine whether a {@link TableLocationKey} should be visible via this service.
          *
-         * @param location The location
-         * @return True if the location should be visible, false otherwise
+         * @param locationKey The location key
+         * @return True if the location key should be visible, false otherwise
          */
-        boolean accept(@NotNull TableLocation location);
+        boolean accept(@NotNull TableLocationKey locationKey);
     }
 
     /**
-     * @param serviceToFilter The service that's being filtered.
-     * @param locationFilter  The filter function.
+     * @param serviceToFilter The service that's being filtered
+     * @param locationKeyFilter  The filter function
      */
     public FilteredTableDataService(@NotNull final TableDataService serviceToFilter,
-                                    @NotNull final LocationFilter locationFilter) {
+                                    @NotNull final LocationKeyFilter locationKeyFilter) {
         super("Filtered-" + Require.neqNull(serviceToFilter, "serviceToFilter").getName());
         this.serviceToFilter = Require.neqNull(serviceToFilter, "serviceToFilter");
-        this.locationFilter = Require.neqNull(locationFilter, "locationFilter");
+        this.locationKeyFilter = Require.neqNull(locationKeyFilter, "locationKeyFilter");
     }
 
     @Override
@@ -81,7 +81,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public TableKey getKey() {
+        public ImmutableTableKey getKey() {
             return inputProvider.getKey();
         }
 
@@ -123,15 +123,22 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public @NotNull
-        Collection<TableLocation> getTableLocations() {
-            return inputProvider.getTableLocations().stream().filter(locationFilter::accept).collect(Collectors.toSet());
+        Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+            return inputProvider.getTableLocationKeys().stream().filter(locationKeyFilter::accept).collect(Collectors.toList());
+        }
+
+        @Override
+        public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
+            return locationKeyFilter.accept(tableLocationKey) && inputProvider.hasTableLocationKey(tableLocationKey);
         }
 
         @Nullable
         @Override
         public TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey) {
-            final TableLocation location = inputProvider.getTableLocationIfPresent(tableLocationKey);
-            return location != null && locationFilter.accept(location) ? location : null;
+            if (!locationKeyFilter.accept(tableLocationKey)) {
+                return null;
+            }
+            return inputProvider.getTableLocationIfPresent(tableLocationKey);
         }
 
         @Override
@@ -147,18 +154,18 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocation(@NotNull final TableLocation tableLocation) {
+        public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent unsubscribe operations.
-            if (outputListener != null && locationFilter.accept(tableLocation)) {
-                outputListener.handleTableLocation(tableLocation);
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
+                outputListener.handleTableLocationKey(tableLocationKey);
             }
         }
 
         @Override
         public void handleException(@NotNull TableDataException exception) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            // See note in handleTableLocation.
+            // See note in handleTableLocationKey.
             if (outputListener != null) {
                 outputListener.handleException(exception);
             }
@@ -179,7 +186,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     public String toString() {
         return getImplementationName() + '{' +
                 (getName() != null ? "name=" + getName() + ", " : "") +
-                "locationFilter=" + locationFilter +
+                "locationKeyFilter=" + locationKeyFilter +
                 ", serviceToFilter=" + serviceToFilter +
                 '}';
     }
@@ -188,7 +195,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     public String describe() {
         return getImplementationName() + '{' +
                 (getName() != null ? "name=" + getName() + ", " : "") +
-                "locationFilter=" + locationFilter +
+                "locationKeyFilter=" + locationKeyFilter +
                 ", serviceToFilter=" + serviceToFilter.describe() +
                 '}';
     }

@@ -27,7 +27,7 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionChar<Values>> {
         @Override
         default ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation<?> columnLocation,
+                                                    @NotNull final ColumnLocation columnLocation,
                                                     final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionChar(columnDefinition);

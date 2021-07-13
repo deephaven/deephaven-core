@@ -46,7 +46,7 @@ public class SingleTableLocationProvider implements TableLocationProvider {
 
     @NotNull
     @Override
-    public Collection<TableLocation> getTableLocations() {
+    public Collection<TableLocation> getTableLocationKeys() {
         return Collections.singleton(tableLocation);
     }
 

@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
+// TODO-RWC: Get rid of deferred locations. Operate on keys until coalesce. Do keys have a map of partitioning info, or do we build it outside?
+
 public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableLocationProvider {
 
     private final File fileLocation;

@@ -8,8 +8,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.regioned.*;
@@ -20,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Per-TableLocation, per-column key, state, and factory object.
  */
-public interface ColumnLocation<TLT extends TableLocation> extends StringUtils.StringKeyedObject, NamedImplementation, LogOutputAppendable {
+public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImplementation, LogOutputAppendable {
 
     /**
      * Get the {@link TableLocation} enclosing this ColumnLocation.
@@ -28,7 +26,7 @@ public interface ColumnLocation<TLT extends TableLocation> extends StringUtils.S
      * @return the {@link TableLocation} enclosing this ColumnLocation
      */
     @NotNull
-    TLT getTableLocation();
+    TableLocation getTableLocation();
 
     /**
      * Get the column name for this ColumnLocation.

@@ -7,6 +7,7 @@ package io.deephaven.db.v2.locations;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.Formatter;
 import io.deephaven.hash.KeyedObjectHashSet;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -94,7 +95,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public TableKey getKey() {
+        public ImmutableTableKey getKey() {
             return tableKey;
         }
 
@@ -110,7 +111,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
                     p.subscribe(listener);
                 } else {
                     p.refresh();
-                    p.getTableLocations().forEach(listener::handleTableLocation);
+                    p.getTableLocationKeys().forEach(listener::handleTableLocationKey);
                 }
             });
         }
@@ -137,27 +138,32 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
         @Override
         @NotNull
-        public Collection<TableLocation> getTableLocations() {
-            final Set<TableLocation> locations = new KeyedObjectHashSet<>(TableLocationKey.getKeyedObjectKey());
-
+        public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+            final Set<ImmutableTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-                final TableLocation duplicateLocation = inputProviders.stream().map(TableLocationProvider::getTableLocations)
+                inputProviders.stream()
+                        .map(TableLocationProvider::getTableLocationKeys)
                         .flatMap(Collection::stream)
-                        .filter(x -> !locations.add(x))
-                        .findFirst().orElse(null);
-                if (duplicateLocation == null) {
-                    return Collections.unmodifiableCollection(locations);
-                }
-
-                // bad news; there is a duplicate location
-                // Look this key up again to find out which elements accept it (and it should throw an exception)
-                getTableLocationIfPresent(duplicateLocation);
-                // throw a backup exception (for the unlikely case where getTableLocationIfPresent doesn't throw.
-                throw new TableDataException("Data Routing Configuration error: TableDataService elements overlap at location " +
-                        duplicateLocation.toGenericString() +
-                        ". Full TableDataService configuration:\n" +
-                        Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
+                        .filter(x -> !locationKeys.add(x))
+                        .findFirst()
+                        .ifPresent(duplicateLocationKey -> {
+                            final String overlappingProviders = inputProviders.stream()
+                                    .filter(inputProvider -> inputProvider.hasTableLocationKey(duplicateLocationKey))
+                                    .map(TableLocationProvider::getName)
+                                    .collect(Collectors.joining(","));
+                            throw new TableDataException("Data Routing Configuration error: TableDataService elements overlap at location " +
+                                    duplicateLocationKey +
+                                    " in providers " + overlappingProviders +
+                                    ". Full TableDataService configuration:\n" +
+                                    Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
+                        });
+                return Collections.unmodifiableCollection(locationKeys);
             }
+        }
+
+        @Override
+        public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
+            return inputProviders.stream().anyMatch(inputProvider -> inputProvider.hasTableLocationKey(tableLocationKey));
         }
 
         @Override
@@ -205,5 +211,22 @@ public class CompositeTableDataService extends AbstractTableDataService {
                 (getName() == null ? "" : "name=" + getName() + ", ") +
                 "serviceSelector=" + serviceSelector.describe() +
                 '}';
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Location key definition implementation
+    //------------------------------------------------------------------------------------------------------------------
+
+    private static final class KeyKeyDefinition extends KeyedObjectKey.Basic<ImmutableTableLocationKey, ImmutableTableLocationKey> {
+
+        private static final KeyedObjectKey<ImmutableTableLocationKey, ImmutableTableLocationKey> INSTANCE = new KeyKeyDefinition();
+
+        private KeyKeyDefinition() {
+        }
+
+        @Override
+        public ImmutableTableLocationKey getKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+            return tableLocationKey;
+        }
     }
 }

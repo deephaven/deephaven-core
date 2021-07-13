@@ -44,7 +44,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
         }
 
         public ColumnRegionObject<DATA_TYPE, Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                                @NotNull final ColumnLocation<?> columnLocation,
+                                                                @NotNull final ColumnLocation columnLocation,
                                                                 final int regionIndex) {
             if (columnLocation.exists()) {
                 //noinspection unchecked

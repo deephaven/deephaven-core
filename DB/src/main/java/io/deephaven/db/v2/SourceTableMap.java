@@ -88,7 +88,7 @@ class SourceTableMap extends LocalTableMap {
             readyLocationStates = null;
             processNewLocationsLiveTable = null;
             tableLocationProvider.refresh();
-            sortAndAddLocations(tableLocationProvider.getTableLocations().stream().filter(locationMatcher));
+            sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream().filter(locationMatcher));
         }
 
         if (isRefreshing()) {

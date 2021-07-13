@@ -5,7 +5,6 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +30,7 @@ abstract class RegionedColumnSourceInt<ATTR extends Attributes.Values>
     interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionInt<Attributes.Values>> {
         @Override
         default ColumnRegionInt<Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                               @NotNull ColumnLocation<?> columnLocation,
+                                                               @NotNull ColumnLocation columnLocation,
                                                                int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionInt(columnDefinition);

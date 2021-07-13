@@ -6,12 +6,12 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Partial ColumnLocation implementation for use by TableDataService implementations.
  */
-public abstract class AbstractColumnLocation<TLT extends TableLocation> implements ColumnLocation<TLT> {
+public abstract class AbstractColumnLocation implements ColumnLocation {
 
-    private final TLT tableLocation;
+    private final TableLocation tableLocation;
     private final String name;
 
-    protected AbstractColumnLocation(@NotNull final TLT tableLocation, @NotNull final String name) {
+    protected AbstractColumnLocation(@NotNull final TableLocation tableLocation, @NotNull final String name) {
         this.tableLocation = Require.neqNull(tableLocation, "tableLocation");
         this.name = Require.neqNull(name, "name");
     }
@@ -26,7 +26,7 @@ public abstract class AbstractColumnLocation<TLT extends TableLocation> implemen
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull final TLT getTableLocation() {
+    public @NotNull final TableLocation getTableLocation() {
         return tableLocation;
     }
 

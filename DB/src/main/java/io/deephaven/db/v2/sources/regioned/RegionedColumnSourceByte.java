@@ -30,7 +30,7 @@ abstract class RegionedColumnSourceByte<ATTR extends Attributes.Values>
     interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionByte<Attributes.Values>> {
         @Override
         default ColumnRegionByte<Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                               @NotNull final ColumnLocation<?> columnLocation,
+                                                               @NotNull final ColumnLocation columnLocation,
                                                                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionByte(columnDefinition);

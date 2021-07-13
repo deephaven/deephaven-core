@@ -40,7 +40,7 @@ class RegionedColumnSourceSymbol<T, OFFSET_CACHE extends OffsetLookupCache<T, Ch
     @Override
     public ColumnRegionObject<T, Attributes.Values>
     makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-               @NotNull ColumnLocation<?> columnLocation,
+               @NotNull ColumnLocation columnLocation,
                int regionIndex) {
         if (columnLocation.exists()) {
             // TODO-RWC: I have no idea what to do here...
