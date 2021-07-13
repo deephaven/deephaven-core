@@ -151,6 +151,7 @@ class _ListenAndReturn:
         self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
 
 
+# I think this is the place to handle errors for input, should make sure multiple input column sets are mutually exclusive
 def _parse_input(inputs, table):
     """
     Converts the list of user inputs into a new list of inputs with the following rules:
