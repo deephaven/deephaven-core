@@ -483,6 +483,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
+
+            //TODO nate will verify that this is safe and convince ryan
+            resultExportBuilder.getExport().manage(resultTable);
         }
     }
 
