@@ -262,22 +262,17 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 final byte[] bytes = decoder.readRawBytes(size);
                 mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
                 continue;
-            } else if (tag != BODY_TAG) {
+            } else if (tag == BODY_TAG) {
+                // at this point, we're in the body, we will read it and then break, the rest of the payload should be the body
+                final int size = decoder.readRawVarint32();
+                //noinspection UnstableApiUsage
+                mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
+                break;
+            } else {
                 log.info().append("Skipping tag: ").append(tag).endl();
                 decoder.skipField(tag);
                 continue;
             }
-
-            if (mi.inputStream != null) {
-                // latest input stream wins
-                mi.inputStream.close();
-                mi.inputStream = null;
-            }
-
-            final int size = decoder.readRawVarint32();
-
-            //noinspection UnstableApiUsage
-            mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
         }
 
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
