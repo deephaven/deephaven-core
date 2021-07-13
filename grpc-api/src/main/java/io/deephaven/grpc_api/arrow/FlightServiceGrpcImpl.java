@@ -400,8 +400,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
                     new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
-                        offset -= bufferOffset.getAndAdd(offset);
                         final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
+                        final int endOfLastBuffer = bufferOffset.getValue();
+                        bufferOffset.setValue(offset + length);
+                        offset -= endOfLastBuffer;
                         return new ChunkInputStreamGenerator.BufferInfo(offset, length);
                     });
 
