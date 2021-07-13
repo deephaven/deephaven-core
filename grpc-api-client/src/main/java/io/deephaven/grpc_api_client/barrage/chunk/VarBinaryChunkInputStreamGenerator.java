@@ -334,7 +334,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (offsetsBuffer.offset > 0) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.offset));
             }
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES + offsetsBuffer.offset;
+            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
             if (offsetsBuffer.length < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }

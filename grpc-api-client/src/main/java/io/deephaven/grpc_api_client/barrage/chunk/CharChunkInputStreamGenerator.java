@@ -173,7 +173,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, payloadBuffer.offset));
             }
 
-            final long payloadRead = (long) nodeInfo.numElements * elementSize + payloadBuffer.offset;
+            final long payloadRead = (long) nodeInfo.numElements * elementSize;
             if (payloadBuffer.length < payloadRead) {
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }
