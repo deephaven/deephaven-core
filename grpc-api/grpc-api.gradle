@@ -66,4 +66,5 @@ TestTools.addDbTest(project, 'OutOfBand', false, false, false)
 check.dependsOn(tasks.register('flightTest', Test) {
     classpath = sourceSets.flightTest.runtimeClasspath
     testClassesDirs = sourceSets.flightTest.output.classesDirs
+    systemProperty "LiveTableMonitor.allowUnitTestMode", false
 })
