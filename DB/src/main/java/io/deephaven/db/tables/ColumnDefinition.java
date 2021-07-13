@@ -237,6 +237,12 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return clone;
     }
 
+    public ColumnDefinition<TYPE> withSymbolTable() {
+        ColumnDefinition clone = clone();
+        clone.hasSymbolTable(true);
+        return clone;
+    }
+
     public boolean isGrouping() {
         return (columnType == COLUMNTYPE_GROUPING);
     }
@@ -391,9 +397,15 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         this.componentType=componentType;
     }
 
-    private int columnType=Integer.MIN_VALUE;
+    private int columnType = Integer.MIN_VALUE;
     public int getColumnType() {
         return columnType;
+    }
+
+    private boolean hasSymbolTable = false;
+    public boolean hasSymbolTable() { return hasSymbolTable; }
+    public void hasSymbolTable(final boolean v) {
+        hasSymbolTable = v;
     }
 
     void setColumnType(int columnType) {
@@ -416,6 +428,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         builder.append("|dataType=").append(dataType);
         builder.append("|componentType=").append(componentType);
         builder.append("|columnType=").append(columnType);
+        builder.append("|hasSymbolTable=").append(hasSymbolTable);
 
         return builder.toString();
     }
@@ -428,6 +441,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|dataType=").append(String.valueOf(dataType));
         logOutput.append("|componentType=").append(String.valueOf(componentType));
         logOutput.append("|columnType=").append(columnType);
+        logOutput.append("|hasSymbolTable=").append(hasSymbolTable);
 
         return logOutput;
     }
@@ -446,6 +460,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         dataType = (Class)in.readObject();
         componentType = (Class)in.readObject();
         columnType = in.readInt();
+        hasSymbolTable = in.readBoolean();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -453,5 +468,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(dataType);
         out.writeObject(componentType);
         out.writeInt(columnType);
+        out.writeBoolean(hasSymbolTable);
     }
 }

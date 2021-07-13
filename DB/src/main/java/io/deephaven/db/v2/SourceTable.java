@@ -93,7 +93,7 @@ public abstract class SourceTable extends RedefinableTable {
                 @NotNull final SourceTableComponentFactory componentFactory,
                 @NotNull final TableLocationProvider locationProvider,
                 final LiveTableRegistrar liveTableRegistrar) {
-        super(StringUtils.rewriteStringColumnTypes(tableDefinition), description);
+        super(tableDefinition, description);
 
         this.componentFactory = Require.neqNull(componentFactory, "componentFactory");
         this.locationProvider = Require.neqNull(locationProvider, "locationProvider");

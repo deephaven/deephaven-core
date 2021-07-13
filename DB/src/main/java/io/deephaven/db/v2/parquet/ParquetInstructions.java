@@ -8,6 +8,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -140,7 +141,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.isLegacyParquet = isLegacyParquet;
         }
 
-        private String getOrDefault(final String columnName, final String defaultValue, Function<ColumnInstructions, String> fun) {
+        private String getOrDefault(final String columnName, final String defaultValue, final Function<ColumnInstructions, String> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -204,18 +205,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     ;
         }
 
-        private static boolean stringsBothNullOrEquals(final String s1, final String s2) {
-            if (s1 != null || s2 != null) {
-                if (s1 == null || s2 == null) {
-                    return false;
-                }
-                if (!s1.equals(s2)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         private static boolean sameCodecMappings(final ReadOnly r1, final ReadOnly r2) {
             final Set<String> r1ColumnNames = r1.columnNameToInstructions.keySet();
             if (r2.columnNameToInstructions.size() != r1ColumnNames.size()) {
@@ -227,12 +216,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 }
                 final String r1CodecName = r1.getCodecName(colName);
                 final String r2CodecName = r2.getCodecName(colName);
-                if (!stringsBothNullOrEquals(r1CodecName, r2CodecName)) {
+                if (!Objects.equals(r1CodecName, r2CodecName)) {
                     return false;
                 }
                 final String r1CodecArgs = r1.getCodecArgs(colName);
                 final String r2CodecArgs = r2.getCodecArgs(colName);
-                if (!stringsBothNullOrEquals(r1CodecArgs, r2CodecArgs)) {
+                if (!Objects.equals(r1CodecArgs, r2CodecArgs)) {
                     return false;
                 }
             }

@@ -177,23 +177,23 @@ def readTable(*args):
       
     *Overload 5*  
       :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
-      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 6*  
       :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
-      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
       :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 7*  
       :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
-      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 8*  
       :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
-      :param def: (io.deephaven.db.tables.TableDefinition) - table definition
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
       :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
     """
@@ -243,7 +243,7 @@ def writeTable(*args):
       
     *Overload 2*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param dest: (java.io.File) - destination file; the file name should end in ".parquet" extension
+      :param destFile: (java.io.File) - destination file; the file name should end in ".parquet" extension
                    If the path includes non-existing directories they are created
       
     *Overload 3*  
@@ -264,7 +264,7 @@ def writeTable(*args):
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
-      :param destFilePath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
+      :param destPath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
                            If there is an error any intermediate directories previously created are removed;
                            note this makes this method unsafe for concurrent use
       

@@ -5,10 +5,17 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 
-public class SimpleStringAsByteArrayCodec implements ObjectCodec<String> {
+/**
+ *
+ * <p>Codec for non-nullable Strings from UTF8 byte arrays.
+ * <p>One particular instance where this is useful is reading parquet 1.0 data
+ *    encoded as binary as String.
+ *
+ */
+public class UTF8StringAsByteArrayCodec implements ObjectCodec<String> {
     private final int expectedWidth;
 
-    public SimpleStringAsByteArrayCodec(@Nullable final String arguments) {
+    public UTF8StringAsByteArrayCodec(@Nullable final String arguments) {
         if (arguments == null || arguments.trim().isEmpty()) {
             expectedWidth = ObjectCodec.VARIABLE_WIDTH_SENTINEL;
             return;
@@ -37,7 +44,7 @@ public class SimpleStringAsByteArrayCodec implements ObjectCodec<String> {
     @Override
     public byte[] encode(@Nullable final String input) {
         if (input == null) {
-            throw new IllegalArgumentException(SimpleStringAsByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
+            throw new IllegalArgumentException(UTF8StringAsByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
         }
         return input.getBytes(StandardCharsets.UTF_8);
     }

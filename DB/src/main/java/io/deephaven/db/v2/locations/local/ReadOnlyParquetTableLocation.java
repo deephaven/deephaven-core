@@ -21,7 +21,6 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
-import io.deephaven.util.codec.SimpleStringAsByteArrayCodec;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -207,15 +206,13 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             //noinspection rawtypes
                             final ObjectCodec codec;
                             if (isCodec) {
-                                final String codecArgs =
-                                        (codecFromInstructions != null)
+                                final String codecArgs = (codecFromInstructions != null)
                                         ? readInstructions.getCodecArgs(columnDefinition.getName())
                                         : keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name)
                                         ;
                                 codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
                             } else {
-                                final String codecArgs =
-                                        (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                final String codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
                                         ? Integer.toString(type.getTypeLength())
                                         : null
                                         ;

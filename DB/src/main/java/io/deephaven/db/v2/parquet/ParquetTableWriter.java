@@ -9,7 +9,10 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.db.v2.select.FormulaColumn;
+import io.deephaven.db.v2.select.NullSelectColumn;
+import io.deephaven.db.v2.select.SelectColumn;
+import io.deephaven.db.v2.select.SourceColumn;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ReinterpretUtilities;
@@ -36,11 +39,9 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -166,16 +167,35 @@ public class ParquetTableWriter {
             final Function<String, String> groupingPathFactory,
             final String... groupingColumns
     ) throws SchemaMappingException, IOException {
-        Map<String, String> tableMeta = Collections.emptyMap();
-        if (groupingColumns.length > 0) {
-            tableMeta = new HashMap<>(incomingMeta);
-            tableMeta.put(GROUPING, String.join(",", groupingColumns));
-            Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
-            for (int i = 0; i < auxiliaryTables.length; i++) {
-                write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), writeInstructions, groupingPathFactory.apply(groupingColumns[i]), Collections.emptyMap());
+        ArrayList<String> cleanupPaths = null;
+        try {
+            Map<String, String> tableMeta = Collections.emptyMap();
+            if (groupingColumns.length > 0) {
+                cleanupPaths = new ArrayList<>(groupingColumns.length);
+                tableMeta = new HashMap<>(incomingMeta);
+                tableMeta.put(GROUPING, String.join(",", groupingColumns));
+                Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
+                for (int i = 0; i < auxiliaryTables.length; i++) {
+                    final String groupingPath = groupingPathFactory.apply(groupingColumns[i]);
+                    cleanupPaths.add(groupingPath);
+                    write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), writeInstructions, groupingPath, Collections.emptyMap());
+                }
             }
+            write(t, definition, writeInstructions, path, tableMeta);
         }
-        write(t, definition, writeInstructions, path, tableMeta);
+        catch (Exception e) {
+            if (cleanupPaths != null) {
+                for (String cleanupPath : cleanupPaths) {
+                    try {
+                        new File(cleanupPath).delete();
+                    }
+                    catch (Exception x) {
+                        // ignore.
+                    }
+                }
+            }
+            throw e;
+        }
     }
 
     public static void write(
@@ -224,25 +244,26 @@ public class ParquetTableWriter {
     }
 
     private static Table pretransformTable(final Table table, final TableDefinition definition) {
-        List<String> updateViewColumnsTransform = new ArrayList<>();
-        List<String> viewColumnsTransform = new ArrayList<>();
+        List<SelectColumn> updateViewColumnsTransform = new ArrayList<>();
+        List<SelectColumn> viewColumnsTransform = new ArrayList<>();
         Table t = table;
         for (ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
             if (t.hasColumns(colName)) {
                 if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                    updateViewColumnsTransform.add(colName + " = " + colName + ".values()");
+                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName, colName + ".values()"));
                 }
-                viewColumnsTransform.add(colName);
+                viewColumnsTransform.add(new SourceColumn(colName));
             } else {
-                viewColumnsTransform.add(colName + " = " + TableTools.nullTypeAsString(column.getDataType()));
+                //noinspection unchecked
+                viewColumnsTransform.add(new NullSelectColumn(column.getDataType(), column.getComponentType(), colName));
             }
         }
         if (viewColumnsTransform.size() > 0) {
-            t = t.view(viewColumnsTransform.toArray((new String[0])));
+            t = t.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
         }
         if (updateViewColumnsTransform.size() > 0) {
-            t = t.updateView(updateViewColumnsTransform.toArray(new String[0]));
+            t = t.updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
         }
         return t;
     }

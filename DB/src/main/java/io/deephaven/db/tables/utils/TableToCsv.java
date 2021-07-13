@@ -4,6 +4,8 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.db.tables.Table;
+
 import java.io.IOException;
 
 public class TableToCsv {
@@ -16,6 +18,7 @@ public class TableToCsv {
             columns = new String[0];
         }
 
-        TableTools.writeCsv(args[0], args[1], columns);
+        Table source = ParquetTools.readTable(args[0]);
+        TableTools.writeCsv(source, args[1], false, DBTimeZone.TZ_DEFAULT, false, columns);
     }
 }
