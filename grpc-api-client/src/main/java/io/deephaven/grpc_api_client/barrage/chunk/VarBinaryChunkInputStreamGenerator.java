@@ -156,7 +156,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         public void visitBuffers(final BufferListener listener) {
             // validity
             final int numElements = subset.intSize(DEBUG_NAME);
-            listener.noteLogicalBuffer(0, sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
+            listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
             long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
@@ -164,7 +164,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (bytesExtended > 0) {
                 numOffsetBytes += 8 - bytesExtended;
             }
-            listener.noteLogicalBuffer(0, numOffsetBytes);
+            listener.noteLogicalBuffer(numOffsetBytes);
 
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
@@ -177,7 +177,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (payloadExtended > 0) {
                 numPayloadBytes.add(8 - payloadExtended);
             }
-            listener.noteLogicalBuffer(0, numPayloadBytes.longValue());
+            listener.noteLogicalBuffer(numPayloadBytes.longValue());
         }
 
         @Override
@@ -315,13 +315,10 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
              final WritableIntChunk<Attributes.Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
-            if (validityBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.offset));
-            }
             for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
-            final long valBufRead = jj * 8L + validityBuffer.offset;
+            final long valBufRead = jj * 8L;
             if (valBufRead < validityBuffer.length) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
             }
@@ -331,9 +328,6 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             }
 
             // Read offsets:
-            if (offsetsBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.offset));
-            }
             final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
             if (offsetsBuffer.length < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");

@@ -99,9 +99,13 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                                 int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
                                 final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
                                 final int endOfLastBuffer = bufferOffset.getValue();
+                                if (offset < endOfLastBuffer) {
+                                    throw new UnsupportedOperationException("payload buffers overlap");
+                                } else if (offset > endOfLastBuffer) {
+                                    throw new UnsupportedOperationException("payload buffer does not begin immediately after previous buffer");
+                                }
                                 bufferOffset.setValue(offset + length);
-                                offset -= endOfLastBuffer;
-                                return new ChunkInputStreamGenerator.BufferInfo(offset, length);
+                                return new ChunkInputStreamGenerator.BufferInfo(length);
                             });
 
                     if (msg.isSnapshot) {

@@ -64,14 +64,14 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         @Override
         public void visitBuffers(final BufferListener listener) {
             // validity
-            listener.noteLogicalBuffer(0, sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
+            listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
             // payload
             long length = elementSize * subset.size();
             final long bytesExtended = length & REMAINDER_MOD_8_MASK;
             if (bytesExtended > 0) {
                 length += 8 - bytesExtended;
             }
-            listener.noteLogicalBuffer(0, length);
+            listener.noteLogicalBuffer(length);
         }
 
         @Override
@@ -153,13 +153,10 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }
             int jj = 0;
-            if (validityBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.offset));
-            }
             for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
-            final long valBufRead = jj * 8L + validityBuffer.offset;
+            final long valBufRead = jj * 8L;
             if (valBufRead < validityBuffer.length) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
             }
@@ -168,10 +165,6 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 isValid.set(jj, -1); // -1 is bit-wise representation of all ones
             }
             // consumed entire validity buffer by here
-
-            if (payloadBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, payloadBuffer.offset));
-            }
 
             final long payloadRead = (long) nodeInfo.numElements * elementSize;
             if (payloadBuffer.length < payloadRead) {

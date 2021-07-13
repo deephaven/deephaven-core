@@ -316,9 +316,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             final MutableInt bufferOffset = new MutableInt();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, 0, 0));
-            final ChunkInputStreamGenerator.BufferListener bufferListener = (offset, length) -> {
-                final long myOffset = offset + bufferOffset.getAndAdd(length);
-                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(myOffset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
             };
 
             // add the add-column streams
@@ -361,8 +360,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodesOffset = builder.endVector();
 
             BarrageRecordBatch.startBuffersVector(builder, bufferInfos.size());
+
+            long totalBufferLength = 0;
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, bufferInfos.get(i).offset, bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength, bufferInfos.get(i).length);
+                totalBufferLength += bufferInfos.get(i).length;
             }
             buffersOffset = builder.endVector();
         }
@@ -478,9 +480,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             final MutableInt bufferOffset = new MutableInt();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
-            final ChunkInputStreamGenerator.BufferListener bufferListener = (offset, length) -> {
-                final long myOffset = offset + bufferOffset.getAndAdd(length);
-                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(myOffset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
             };
 
             for (final ChunkInputStreamGenerator column : addColumnData) {
@@ -497,8 +498,10 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodesOffset = builder.endVector();
 
             RecordBatch.startBuffersVector(builder, bufferInfos.size());
+            long totalBufferLength = 0;
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, bufferInfos.get(i).offset, bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength, bufferInfos.get(i).length);
+                totalBufferLength += bufferInfos.get(i).length;
             }
             buffersOffset = builder.endVector();
         }

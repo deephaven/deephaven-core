@@ -130,7 +130,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         public void visitBuffers(final BufferListener listener) {
             // validity
             final int numElements = subset.intSize(DEBUG_NAME);
-            listener.noteLogicalBuffer(0, sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
+            listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
             long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
@@ -138,7 +138,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             if (bytesExtended > 0) {
                 numOffsetBytes += 8 - bytesExtended;
             }
-            listener.noteLogicalBuffer(0, numOffsetBytes);
+            listener.noteLogicalBuffer(numOffsetBytes);
 
             // payload
             innerStream.visitBuffers(listener);
@@ -250,13 +250,10 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
              final WritableIntChunk<Attributes.ChunkPositions> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
-            if (validityBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.offset));
-            }
             for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
-            final long valBufRead = jj * 8L + validityBuffer.offset;
+            final long valBufRead = jj * 8L;
             if (valBufRead < validityBuffer.length) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
             }
@@ -267,10 +264,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             // consumed entire validity buffer by here
 
             // Read offsets:
-            if (offsetsBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.offset));
-            }
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES + offsetsBuffer.offset;
+            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
             if (offsetsBuffer.length < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }

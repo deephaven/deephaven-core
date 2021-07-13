@@ -419,7 +419,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((offset, length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(offset, length)));
+                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
 
@@ -434,7 +434,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((offset, length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(offset, length)));
+                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
@@ -455,7 +455,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((offset, length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(offset, length)));
+                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);

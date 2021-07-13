@@ -72,6 +72,8 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
 
     /** unsubscribed must never be reset to false once it has been set to true */
     private volatile boolean unsubscribed = false;
+    /** sealed must never be reset to false once it has been set to true */
+    private volatile boolean sealed = false;
     private final boolean isViewPort;
 
     /**
@@ -171,14 +173,14 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
     public synchronized void sealTable() {
         // TODO (core#803): sealing of static table data acquired over flight/barrage
         setRefreshing(false);
-        unsubscribed = true;
+        sealed = true;
         doWakeup();
     }
 
     @Override
     public void handleBarrageMessage(final BarrageMessage update) {
-        if (unsubscribed) {
-            beginLog(LogLevel.INFO).append(": Discarding update for unsubscribed table!").endl();
+        if (unsubscribed || sealed) {
+            beginLog(LogLevel.INFO).append(": Discarding update for unsubscribed/sealed table!").endl();
             return;
         }
 
@@ -395,21 +397,17 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
         if (pendingError != null) {
             notifyListenersOnError(pendingError, null);
             // once we notify on error we are done, we can not notify any further, we are failed
-            clearPendingData();
-            sealTable();
+            cleanup();
             return;
         }
         if (unsubscribed) {
-            //TODO Nate will fix this
-//            if (getIndex().nonempty()) {
-//                final Index allRows = getIndex().clone();
-//                getIndex().remove(allRows);
-//                notifyListeners(Index.FACTORY.getEmptyIndex(), allRows, Index.FACTORY.getEmptyIndex());
-//            }
-            registrar.removeTable(this);
-            clearPendingData();
-            // we are quite certain the shadow copies should have been drained on the last refresh
-            Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
+            if (getIndex().nonempty()) {
+                // publish one last clear downstream; this data would be stale
+                final Index allRows = getIndex().clone();
+                getIndex().remove(allRows);
+                notifyListeners(Index.FACTORY.getEmptyIndex(), allRows, Index.FACTORY.getEmptyIndex());
+            }
+            cleanup();
             return;
         }
 
@@ -436,13 +434,20 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
             maybeEnablePrevTracking();
             notifyListeners(coalescer.coalesce());
         }
+
+        if (sealed) {
+            cleanup();
+        }
     }
 
-    private void clearPendingData() {
+    private void cleanup() {
+        registrar.removeTable(this);
         synchronized (pendingUpdatesLock) {
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();
         }
+        // we are quite certain the shadow copies should have been drained on the last refresh
+        Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
     }
 
     @Override

@@ -30,7 +30,6 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.session.SessionService;
@@ -233,14 +232,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         });
     }
 
-    private static final int BODY_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int DATA_HEADER_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int APP_METADATA_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.APP_METADATA_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int FLIGHT_DESCRIPTOR_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
+    private static final int TAG_TYPE_BITS = 3;
+    private static final int BODY_TAG = (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int DATA_HEADER_TAG = (Flight.FlightData.DATA_HEADER_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int APP_METADATA_TAG = (Flight.FlightData.APP_METADATA_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int FLIGHT_DESCRIPTOR_TAG = (Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
     private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
     private static MessageInfo parseProtoMessage(final InputStream stream) throws IOException {
@@ -248,30 +244,34 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
-        for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
-            if (tag == DATA_HEADER_TAG) {
-                final int size = decoder.readRawVarint32();
-                mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                continue;
-            } else if (tag == APP_METADATA_TAG) {
-                final int size = decoder.readRawVarint32();
-                mi.app_metadata = BarragePutMetadata.getRootAsBarragePutMetadata(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                continue;
-            } else if (tag == FLIGHT_DESCRIPTOR_TAG) {
-                final int size = decoder.readRawVarint32();
-                final byte[] bytes = decoder.readRawBytes(size);
-                mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
-                continue;
-            } else if (tag == BODY_TAG) {
-                // at this point, we're in the body, we will read it and then break, the rest of the payload should be the body
-                final int size = decoder.readRawVarint32();
-                //noinspection UnstableApiUsage
-                mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
-                break;
-            } else {
-                log.info().append("Skipping tag: ").append(tag).endl();
-                decoder.skipField(tag);
-                continue;
+        // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
+        // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
+        for (int tag = decoder.readTag(); tag != 0 && mi.inputStream != null; tag = decoder.readTag()) {
+            final int size;
+            switch (tag) {
+                case DATA_HEADER_TAG:
+                    size = decoder.readRawVarint32();
+                    mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    break;
+                case APP_METADATA_TAG:
+                    size = decoder.readRawVarint32();
+                    mi.app_metadata = BarragePutMetadata.getRootAsBarragePutMetadata(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    break;
+                case FLIGHT_DESCRIPTOR_TAG:
+                    size = decoder.readRawVarint32();
+                    final byte[] bytes = decoder.readRawBytes(size);
+                    mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
+                    break;
+                case BODY_TAG:
+                    // at this point, we're in the body, we will read it and then break, the rest of the payload should be the body
+                    size = decoder.readRawVarint32();
+                    //noinspection UnstableApiUsage
+                    mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
+                    break;
+
+                default:
+                    log.info().append("Skipping tag: ").append(tag).endl();
+                    decoder.skipField(tag);
             }
         }
 
@@ -402,9 +402,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
                         final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
                         final int endOfLastBuffer = bufferOffset.getValue();
+                        if (offset < endOfLastBuffer) {
+                            throw new UnsupportedOperationException("payload buffers overlap");
+                        } else if (offset > endOfLastBuffer) {
+                            throw new UnsupportedOperationException("payload buffer does not begin immediately after previous buffer");
+                        }
                         bufferOffset.setValue(offset + length);
-                        offset -= endOfLastBuffer;
-                        return new ChunkInputStreamGenerator.BufferInfo(offset, length);
+                        return new ChunkInputStreamGenerator.BufferInfo(length);
                     });
 
             msg.rowsRemoved = Index.FACTORY.getEmptyIndex();

@@ -278,8 +278,6 @@ public class FlightMessageRoundTripTest {
         // send the body of the table
         putStream.putNext();
 
-        Thread.sleep(100);// make sure the ltm ticks before we seal TODO REMOVE WHEN NATE FIXES
-
         // tell the server we are finished sending data
         putStream.completed();
         // block until we're done, so we can get the table and see what is inside

@@ -152,11 +152,9 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     final class BufferInfo {
-        public final long offset;
         public final long length;
 
-        public BufferInfo(final long offset, final long length) {
-            this.offset = offset;
+        public BufferInfo(final long length) {
             this.length = length;
         }
     }
@@ -168,7 +166,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
 
     @FunctionalInterface
     interface BufferListener {
-        void noteLogicalBuffer(final long offset, final long length);
+        void noteLogicalBuffer(final long length);
     }
 
     abstract class DrainableColumn extends InputStream implements Drainable {
