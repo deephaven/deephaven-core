@@ -38,6 +38,8 @@ _class_name_ = "io.deephaven.integrations.numpy.Java2NumpyCopy"
 _Java2NumpyCopy_ = None
 
 
+# the following two methods will only be used once I implement some parts of this code in java. They are here now for
+# completeness but will not be used until I need to invoke java methods.
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
