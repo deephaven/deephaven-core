@@ -285,6 +285,8 @@ public class FlightMessageRoundTripTest {
         // block until we're done, so we can get the table and see what is inside
         putStream.getResult();
 
+        Thread.sleep(100);//ensure that the server finished publishing TODO find a better solution
+
         // get the table that was uploaded, and confirm it matches what we originally sent
         Table uploadedTable = currentSession.<Table>getExport(flightDescriptorTicketValue).get();
 
