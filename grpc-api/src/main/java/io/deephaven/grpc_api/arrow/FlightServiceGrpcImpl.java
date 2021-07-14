@@ -454,8 +454,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "pending sequences to apply but received final app_metadata");
                 }
 
-                resultTable.sealTable(); // no more changes allowed; this is officially static content
-                resultExportBuilder.submit(() -> resultTable);
+                // no more changes allowed; this is officially static content
+                resultTable.sealTable();
+                resultExportBuilder.submit(() -> {
+                    // transfer ownership to submit's liveness scope, drop our extra reference
+                    resultTable.manageWithCurrentScope();
+                    resultTable.dropReference();
+                    return resultTable;
+                });
 
                 observer.onCompleted();
                 onRequestDone();
@@ -484,7 +490,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
 
-            //TODO nate will verify that this is safe and convince ryan
+            // manage the unfinished table, we will need to unmanage this delicately before we actually resolve the export
             resultExportBuilder.getExport().manage(resultTable);
         }
     }
