@@ -406,10 +406,6 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
                         int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
-                        final int endOfLastBuffer = bufferOffset.getValue();
-                        if (offset != endOfLastBuffer) {
-                            throw new UnsupportedOperationException("payload buffers overlap");
-                        }
                         if (i < batch.buffersLength() - 1) {
                             final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i + 1).offset());
                             // our parsers handle overhanging buffers

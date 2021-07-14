@@ -97,12 +97,11 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                     final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
                             new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
                                 int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
-                                final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
-                                final int endOfLastBuffer = bufferOffset.getValue();
-                                if (offset < endOfLastBuffer) {
-                                    throw new UnsupportedOperationException("payload buffers overlap");
-                                } else if (offset > endOfLastBuffer) {
-                                    throw new UnsupportedOperationException("payload buffer does not begin immediately after previous buffer");
+                                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
+                                if (i < batch.buffersLength() - 1) {
+                                    final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i + 1).offset());
+                                    // our parsers handle overhanging buffers
+                                    length += Math.max(0, nextOffset - offset - length);
                                 }
                                 bufferOffset.setValue(offset + length);
                                 return new ChunkInputStreamGenerator.BufferInfo(length);

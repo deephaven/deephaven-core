@@ -26,6 +26,7 @@ import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -75,6 +76,8 @@ public class FlightMessageRoundTripTest {
             TestComponent build();
         }
     }
+
+    private Server server;
     private FlightClient client;
     private SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient;
     private UUID sessionToken;
@@ -176,7 +179,7 @@ public class FlightMessageRoundTripTest {
         component.interceptors().forEach(serverBuilder::intercept);
         serverBuilder.addService(component.sessionGrpcService());
         serverBuilder.addService(component.flightService());
-        Server server = serverBuilder.build().start();
+        server = serverBuilder.build().start();
         int actualPort = server.getPort();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort)).allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
@@ -204,6 +207,11 @@ public class FlightMessageRoundTripTest {
 
         currentSession = component.sessionService().getSessionForToken(sessionToken);
     }
+    @After
+    public void teardown() {
+        server.shutdownNow();
+    }
+
     @Test
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToTicket(1);
@@ -236,7 +244,6 @@ public class FlightMessageRoundTripTest {
     @Test
     public void testRoundTripData() throws InterruptedException, ExecutionException {
         // tables without columns, as flight-based way of doing emptyTable
-        // TODO actual size reported as -1
         assertRoundTripDataEqual(TableTools.emptyTable(0));
         assertRoundTripDataEqual(TableTools.emptyTable(10));
 
@@ -257,7 +264,7 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? i : (int)null"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
-        // list columns TODO
+        // list columns TODO(#755): support for DBArray
 //        assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
     }
 
