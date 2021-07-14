@@ -151,6 +151,7 @@ class _ListenAndReturn:
         self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
 
 
+# could be that this should be broken up into two pieces, one to check errors and one to transform input?
 def _parse_input(inputs, table):
     """
     Converts the list of user inputs into a new list of inputs with the following rules:
