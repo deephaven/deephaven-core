@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -232,7 +234,7 @@ public class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testRoundTripData() throws InterruptedException {
+    public void testRoundTripData() throws InterruptedException, ExecutionException {
         // tables without columns, as flight-based way of doing emptyTable
         // TODO actual size reported as -1
 //        assertRoundTripDataEqual(TableTools.emptyTable(0));
@@ -260,7 +262,7 @@ public class FlightMessageRoundTripTest {
     }
 
     private static int nextTicket = 1;
-    private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException {
+    private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
         Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToTicket(nextTicket++);
         currentSession.newExport(dhTableTicket).submit(() -> deephavenTable);
@@ -283,10 +285,15 @@ public class FlightMessageRoundTripTest {
         // block until we're done, so we can get the table and see what is inside
         putStream.getResult();
 
-        Thread.sleep(100);//ensure that the server finished publishing TODO find a better solution
-
         // get the table that was uploaded, and confirm it matches what we originally sent
-        Table uploadedTable = currentSession.<Table>getExport(flightDescriptorTicketValue).get();
+        CompletableFuture<Table> tableFuture = new CompletableFuture<>();
+        SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
+        currentSession.nonExport()
+                .onError(exception -> tableFuture.cancel(true))
+                .require(tableExport)
+                .submit(() -> tableFuture.complete(tableExport.get()));
+
+        Table uploadedTable = tableFuture.get();
 
         // check that contents match
         assertEquals(deephavenTable.size(), uploadedTable.size());

@@ -477,7 +477,6 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeInfos.setSize(0);
             bufferInfos.setSize(0);
 
-            final MutableInt bufferOffset = new MutableInt();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
