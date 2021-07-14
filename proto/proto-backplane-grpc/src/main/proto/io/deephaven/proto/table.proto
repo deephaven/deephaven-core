@@ -521,8 +521,8 @@ message BatchTableRequest {
       ComboAggregateRequest combo_aggregate = 20;
       SnapshotTableRequest snapshot = 21;
       FlattenRequest flatten = 22;
-      AsOfJoinTablesRequest as_of_join = 24;
-      RunChartDownsampleRequest run_chart_downsample = 23;
+      AsOfJoinTablesRequest as_of_join = 23;
+      RunChartDownsampleRequest run_chart_downsample = 24;
     }
   }
 }
