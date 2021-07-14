@@ -21,4 +21,6 @@ RUN set -eux; \
     /includes/io/deephaven/proto/barrage.proto \
     /includes/io/deephaven/proto/console.proto \
     /includes/io/deephaven/proto/session.proto \
-    /includes/io/deephaven/proto/table.proto
+    /includes/io/deephaven/proto/table.proto \
+    /includes/grpc/health/v1/health.proto
+

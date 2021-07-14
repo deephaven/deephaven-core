@@ -68,7 +68,7 @@ services:
     depends_on:
       - grpc-api
     expose:
-      - '8080'
+      - '8008'
 #      - '8443' #unused
     deploy:
       resources:

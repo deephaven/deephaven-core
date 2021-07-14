@@ -13,6 +13,6 @@ RUN set -eux; \
     rm "grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \
     mv "/app/dist/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64" /app/dist/grpcwebproxy
 
-EXPOSE 8080 8443
+EXPOSE 8008 8443
 
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]

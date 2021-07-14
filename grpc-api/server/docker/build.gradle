@@ -20,7 +20,26 @@ dependencies {
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
 
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+String GRPC_HEALTH_PROBE_VERSION = 'v0.3.1'
+TaskProvider<Task> downloadHealthProbe = tasks.register('downloadGrpcHealthProbe') {
+  Task dl ->
+    String dlUrl = "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64"
+    Provider<RegularFile> outputFile = layout.buildDirectory.file('healthProbe/grpc_health_probe').forUseAtConfigurationTime()
+    File file = outputFile.get().asFile
+    dl.outputs.file(file)
+    dl.inputs.property("healthProbeVersion", GRPC_HEALTH_PROBE_VERSION)
+    dl.doFirst {
+      file.withOutputStream { OutputStream output ->
+        new URL(dlUrl).withInputStream { InputStream input ->
+          output << input
+        }
+      }
+      file.setExecutable(true)
+    }
+}
+
+Sync dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 
 docker {
 
@@ -61,12 +80,16 @@ docker {
     from(dockerLicenses.outputs) {
       into 'licenses'
     }
+    from(downloadHealthProbe.get().outputs.files) {
+      into 'health_probe'
+    }
   }
 
   dockerCreateDockerfile {
     //volume("/app/resources")
 
     copyFile('licenses/', '/')
+    copyFile('health_probe/', '/health')
 
     volume("/data")
     volume("/cache")
