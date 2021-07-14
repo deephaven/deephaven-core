@@ -42,9 +42,6 @@ public class Operation {
       }
 
       @JsProperty
-      double getAsOfJoinType();
-
-      @JsProperty
       double getAsOfMatchRule();
 
       @JsProperty
@@ -61,9 +58,6 @@ public class Operation {
 
       @JsProperty
       Object getRightId();
-
-      @JsProperty
-      void setAsOfJoinType(double asOfJoinType);
 
       @JsProperty
       void setAsOfMatchRule(double asOfMatchRule);
@@ -321,32 +315,10 @@ public class Operation {
       }
 
       @JsProperty
-      JsArray<String> getColumnNamesList();
-
-      @JsProperty
-      JsArray<String> getColumnTypesList();
-
-      @JsProperty
       Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType getResultId();
 
       @JsProperty
       String getSize();
-
-      @JsProperty
-      void setColumnNamesList(JsArray<String> columnNamesList);
-
-      @JsOverlay
-      default void setColumnNamesList(String[] columnNamesList) {
-        setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-      }
-
-      @JsProperty
-      void setColumnTypesList(JsArray<String> columnTypesList);
-
-      @JsOverlay
-      default void setColumnTypesList(String[] columnTypesList) {
-        setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-      }
 
       @JsProperty
       void setResultId(Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType resultId);
@@ -1501,9 +1473,6 @@ public class Operation {
       }
 
       @JsProperty
-      double getAsOfJoinType();
-
-      @JsProperty
       double getAsOfMatchRule();
 
       @JsProperty
@@ -1520,9 +1489,6 @@ public class Operation {
 
       @JsProperty
       Object getRightId();
-
-      @JsProperty
-      void setAsOfJoinType(double asOfJoinType);
 
       @JsProperty
       void setAsOfMatchRule(double asOfMatchRule);
@@ -1780,32 +1746,10 @@ public class Operation {
       }
 
       @JsProperty
-      JsArray<String> getColumnNamesList();
-
-      @JsProperty
-      JsArray<String> getColumnTypesList();
-
-      @JsProperty
       Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType getResultId();
 
       @JsProperty
       String getSize();
-
-      @JsProperty
-      void setColumnNamesList(JsArray<String> columnNamesList);
-
-      @JsOverlay
-      default void setColumnNamesList(String[] columnNamesList) {
-        setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-      }
-
-      @JsProperty
-      void setColumnTypesList(JsArray<String> columnTypesList);
-
-      @JsOverlay
-      default void setColumnTypesList(String[] columnTypesList) {
-        setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-      }
 
       @JsProperty
       void setResultId(

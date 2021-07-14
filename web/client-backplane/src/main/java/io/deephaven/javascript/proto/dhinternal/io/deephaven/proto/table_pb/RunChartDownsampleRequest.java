@@ -2,7 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -21,9 +21,9 @@ public class RunChartDownsampleRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType of(
+        static RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -55,25 +55,26 @@ public class RunChartDownsampleRequest {
       }
 
       @JsProperty
-      RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType getId();
+      RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
-      void setId(RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 
@@ -169,10 +170,10 @@ public class RunChartDownsampleRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ResultIdFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetIdUnionType {
+      public interface GetTicketUnionType {
         @JsOverlay
-        static RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType of(
-            Object o) {
+        static RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType
+            of(Object o) {
           return Js.cast(o);
         }
 
@@ -203,25 +204,30 @@ public class RunChartDownsampleRequest {
       }
 
       @JsProperty
-      RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType getId();
+      RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType
+          getTicket();
 
       @JsProperty
-      void setId(RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType id);
+      void setTicket(
+          RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType
+              ticket);
 
       @JsOverlay
-      default void setId(String id) {
-        setId(
+      default void setTicket(String ticket) {
+        setTicket(
             Js
-                .<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType
+                        .GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
 
       @JsOverlay
-      default void setId(Uint8Array id) {
-        setId(
+      default void setTicket(Uint8Array ticket) {
+        setTicket(
             Js
-                .<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetIdUnionType>
-                    uncheckedCast(id));
+                .<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType
+                        .GetTicketUnionType>
+                    uncheckedCast(ticket));
       }
     }
 

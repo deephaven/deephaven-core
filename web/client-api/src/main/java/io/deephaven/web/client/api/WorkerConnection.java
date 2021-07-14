@@ -732,7 +732,7 @@ public class WorkerConnection {
     }
 
     public ClientTableState newStateFromUnsolicitedTable(ExportedTableCreationResponse unsolicitedTable, String fetchSummary) {
-        TableTicket tableTicket = new TableTicket(unsolicitedTable.getResultId().getTicket().getId_asU8());
+        TableTicket tableTicket = new TableTicket(unsolicitedTable.getResultId().getTicket().getTicket_asU8());
         JsTableFetch failFetch = (callback, newState, metadata1) -> {
             throw new IllegalStateException("Cannot reconnect, must recreate the unsolicited table on the server: " + fetchSummary);
         };

@@ -986,10 +986,10 @@ public class FigureDescriptor {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TicketFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface GetIdUnionType {
+          public interface GetTicketUnionType {
             @JsOverlay
             static FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType
-                    .TicketFieldType.GetIdUnionType
+                    .TicketFieldType.GetTicketUnionType
                 of(Object o) {
               return Js.cast(o);
             }
@@ -1024,31 +1024,31 @@ public class FigureDescriptor {
 
           @JsProperty
           FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType
-                  .GetIdUnionType
-              getId();
+                  .GetTicketUnionType
+              getTicket();
 
           @JsProperty
-          void setId(
+          void setTicket(
               FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType
-                      .TicketFieldType.GetIdUnionType
-                  id);
+                      .TicketFieldType.GetTicketUnionType
+                  ticket);
 
           @JsOverlay
-          default void setId(String id) {
-            setId(
+          default void setTicket(String ticket) {
+            setTicket(
                 Js
                     .<FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType
-                            .TicketFieldType.GetIdUnionType>
-                        uncheckedCast(id));
+                            .TicketFieldType.GetTicketUnionType>
+                        uncheckedCast(ticket));
           }
 
           @JsOverlay
-          default void setId(Uint8Array id) {
-            setId(
+          default void setTicket(Uint8Array ticket) {
+            setTicket(
                 Js
                     .<FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType
-                            .TicketFieldType.GetIdUnionType>
-                        uncheckedCast(id));
+                            .TicketFieldType.GetTicketUnionType>
+                        uncheckedCast(ticket));
           }
         }
 
@@ -2185,10 +2185,10 @@ public class FigureDescriptor {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TicketFieldType {
           @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-          public interface GetIdUnionType {
+          public interface GetTicketUnionType {
             @JsOverlay
             static FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType
-                    .TicketFieldType.GetIdUnionType
+                    .TicketFieldType.GetTicketUnionType
                 of(Object o) {
               return Js.cast(o);
             }
@@ -2223,31 +2223,31 @@ public class FigureDescriptor {
 
           @JsProperty
           FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType
-                  .GetIdUnionType
-              getId();
+                  .GetTicketUnionType
+              getTicket();
 
           @JsProperty
-          void setId(
+          void setTicket(
               FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType
-                      .TicketFieldType.GetIdUnionType
-                  id);
+                      .TicketFieldType.GetTicketUnionType
+                  ticket);
 
           @JsOverlay
-          default void setId(String id) {
-            setId(
+          default void setTicket(String ticket) {
+            setTicket(
                 Js
                     .<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType
-                            .TicketFieldType.GetIdUnionType>
-                        uncheckedCast(id));
+                            .TicketFieldType.GetTicketUnionType>
+                        uncheckedCast(ticket));
           }
 
           @JsOverlay
-          default void setId(Uint8Array id) {
-            setId(
+          default void setTicket(Uint8Array ticket) {
+            setTicket(
                 Js
                     .<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType
-                            .TicketFieldType.GetIdUnionType>
-                        uncheckedCast(id));
+                            .TicketFieldType.GetTicketUnionType>
+                        uncheckedCast(ticket));
           }
         }
 
