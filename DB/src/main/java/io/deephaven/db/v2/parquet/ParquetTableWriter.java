@@ -174,7 +174,7 @@ public class ParquetTableWriter {
                 cleanupPaths = new ArrayList<>(groupingColumns.length);
                 tableMeta = new HashMap<>(incomingMeta);
                 tableMeta.put(GROUPING, String.join(",", groupingColumns));
-                Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
+                final Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 for (int i = 0; i < auxiliaryTables.length; i++) {
                     final String groupingPath = groupingPathFactory.apply(groupingColumns[i]);
                     cleanupPaths.add(groupingPath);

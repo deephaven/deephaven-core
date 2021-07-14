@@ -301,8 +301,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (!dataType.equals(other.dataType)) {
             differences.add(prefix + lhs + " dataType '" + dataType + "' does not match " + rhs + " dataType '" + other.dataType + "'");
         } else {
-            if (getSymbolTableType() != other.getSymbolTableType()) {
-                differences.add(prefix + lhs + " SymbolTableType '" + getSymbolTableType() + "' does not match " + rhs + " SymbolTableType '" + other.getSymbolTableType() + "'");
+            if (hasSymbolTable() != other.hasSymbolTable()) {
+                differences.add(prefix + lhs + " hasSymbolTable '" + hasSymbolTable() + "' does not match " + rhs + " hasSymbolTable '" + other.hasSymbolTable() + "'");
             }
             if (!Objects.equals(componentType, other.componentType)) {
                 differences.add(prefix + lhs + " componentType '" + componentType + "' does not match " + rhs + " componentType '" + other.componentType + "'");
@@ -313,14 +313,14 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         }
     }
 
-    public boolean equals(Object other) {
-        if(!(other instanceof ColumnDefinition)) {
+    public boolean equals(final Object other) {
+        if (!(other instanceof ColumnDefinition)) {
             return false;
         }
         final ColumnDefinition otherCD = (ColumnDefinition)other;
         return name.equals(otherCD.name)
                 && dataType.equals(otherCD.dataType)
-                && getSymbolTableType() == otherCD.getSymbolTableType()
+                && hasSymbolTable() == otherCD.hasSymbolTable()
                 && Objects.equals(componentType, otherCD.componentType)
                 && columnType == otherCD.columnType
                 ;
@@ -330,44 +330,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         final ColumnDefinition renamed = clone();
         renamed.setName(newName);
         return renamed;
-    }
-
-    public enum SymbolTableType {
-        NONE("None"),
-        COLUMN_LOCATION("ColumnLocation");
-
-        /**
-         * Get the XML attribute value for this enum value.
-         *
-         * @return the XML attribute value for this enum value
-         */
-        public String getAttributeValue() {
-            return attributeValue;
-        }
-
-        private final String attributeValue;
-        SymbolTableType(String value) {
-            this.attributeValue = value;
-        }
-
-        /**
-         * Return the SymbolTableType with the given attribute value.
-         *
-         * @param attributeValue the attributeValue matching one of the enum attributeValues
-         * @return the SymbolTableType with the given attribute value
-         * @throws IllegalArgumentException if no match is found
-         */
-        public static SymbolTableType reverseLookup(String attributeValue) {
-            return Arrays.stream(values()).filter(v -> v.attributeValue.equals(attributeValue)).findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("No enum constant with attribute value '" + attributeValue + "'"));
-        }
-    }
-
-    public SymbolTableType getSymbolTableType() {
-        if (!CharSequence.class.isAssignableFrom(dataType) || !isDirect()) {
-            return null;
-        }
-        return SymbolTableType.COLUMN_LOCATION;
     }
 
     private String name;

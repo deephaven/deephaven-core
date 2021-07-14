@@ -380,8 +380,8 @@ public class ParquetTools {
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
-    private static final SimpleTypeMap<Class<?>> dbArrayTypeMap = SimpleTypeMap.create(
-            null, DbCharArray.class, null, DbShortArray.class, DbIntArray.class, DbLongArray.class,
+    private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
+            null, DbCharArray.class, DbByteArray.class, DbShortArray.class, DbIntArray.class, DbLongArray.class,
             DbFloatArray.class, DbDoubleArray.class, DbArray.class);
 
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
@@ -397,7 +397,7 @@ public class ParquetTools {
     makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> colsOut) {
         return (final ParquetSchemaReader.ParquetMessageDefinition parquetColDef) -> {
             Class<?> baseType;
-            if (parquetColDef.baseType != null && parquetColDef.baseType.equals(boolean.class)) {
+            if (parquetColDef.baseType != null && parquetColDef.baseType == boolean.class) {
                 baseType = Boolean.class;
             } else {
                 baseType = parquetColDef.baseType;
@@ -415,7 +415,7 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
-                    final Class<?> dbArrayType = dbArrayTypeMap.get(baseType);
+                    final Class<?> dbArrayType = DB_ARRAY_TYPE_MAP.get(baseType);
                     if (dbArrayType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dbArrayType, baseType);
                     } else {
@@ -426,7 +426,7 @@ public class ParquetTools {
                 }
             } else {
                 if (parquetColDef.isArray) {
-                    if (baseType.equals(byte.class) && parquetColDef.noLogicalType) {
+                    if (baseType == byte.class && parquetColDef.noLogicalType) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
                     } else {
                         // TODO: ParquetInstruction.loadAsDbArray

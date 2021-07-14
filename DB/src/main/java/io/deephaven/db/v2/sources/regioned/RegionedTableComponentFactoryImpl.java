@@ -73,7 +73,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
 
         if (columnDefinition.isPartitioning()) {
             Require.eq(dataType, "dataType", String.class);
-            Require.eqNull(columnDefinition.getSymbolTableType(), "columnDefinition.getSymbolTableType()");
+            Require.eqFalse(columnDefinition.hasSymbolTable(), "columnDefinition.hasSymbolTable()");
             return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourcePartitioning();
         }
 
@@ -84,17 +84,13 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
 
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
-                switch (columnDefinition.getSymbolTableType()) {
-                    case NONE:
-                        return new RegionedColumnSourceObject.AsValues<>(dataType,
-                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition));
-                    case COLUMN_LOCATION:
-                        return new RegionedColumnSourceObjectWithDictionary<>(dataType,
-                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition));
-                    default:
-                        throw new UnsupportedOperationException("Unknown symbol type " + columnDefinition.getSymbolTableType() +
-                                " in column definition " + columnDefinition);
-                }
+                return columnDefinition.hasSymbolTable()
+                        ? new RegionedColumnSourceObjectWithDictionary<>(
+                                dataType,
+                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
+                        : new RegionedColumnSourceObject.AsValues<>(dataType,
+                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
+                        ;
             } else if (StringSet.class.isAssignableFrom(dataType)) {
                 return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
                         RegionedTableComponentFactory.getStringDecoder(String.class, columnDefinition));
