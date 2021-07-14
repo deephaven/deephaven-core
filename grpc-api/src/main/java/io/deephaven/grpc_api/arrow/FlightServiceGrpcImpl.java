@@ -159,6 +159,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 @Override
                 public void onError(final Throwable t) {
                     // ok; we're done then
+                    if (marshaller.resultTable != null) {
+                        marshaller.resultTable.dropReference();
+                        marshaller.resultTable = null;
+                    }
                     marshaller.resultExportBuilder.submit(() -> { throw new UncheckedDeephavenException(t); });
                     marshaller.onRequestDone();
                 }
@@ -246,7 +250,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
         // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
-        for (int tag = decoder.readTag(); tag != 0 && mi.inputStream != null; tag = decoder.readTag()) {
+        for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
             final int size;
             switch (tag) {
                 case DATA_HEADER_TAG:
@@ -272,6 +276,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 default:
                     log.info().append("Skipping tag: ").append(tag).endl();
                     decoder.skipField(tag);
+            }
+
+            // we do not actually remove the content from our stream; prevent reading the next tag via break
+            if (mi.inputStream != null) {
+                break;
             }
         }
 
@@ -352,13 +361,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 MessageInfo nmi = mi;
                 do {
                     process(nmi);
-
-                    if (pendingSeq == null) {
-                        return;
-                    }
                     synchronized (this) {
                         ++nextSeq;
-                        nmi = pendingSeq.top();
+                        nmi = pendingSeq == null ? null : pendingSeq.top();
                         if (nmi == null || nmi.app_metadata.sequence() != nextSeq) {
                             break;
                         }
@@ -400,12 +405,15 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
                     new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
                         int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
-                        final int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
+                        int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
                         final int endOfLastBuffer = bufferOffset.getValue();
-                        if (offset < endOfLastBuffer) {
+                        if (offset != endOfLastBuffer) {
                             throw new UnsupportedOperationException("payload buffers overlap");
-                        } else if (offset > endOfLastBuffer) {
-                            throw new UnsupportedOperationException("payload buffer does not begin immediately after previous buffer");
+                        }
+                        if (i < batch.buffersLength() - 1) {
+                            final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i + 1).offset());
+                            // our parsers handle overhanging buffers
+                            length += Math.max(0, nextOffset - offset - length);
                         }
                         bufferOffset.setValue(offset + length);
                         return new ChunkInputStreamGenerator.BufferInfo(length);
@@ -415,7 +423,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             msg.shifted = IndexShiftData.EMPTY;
 
             // include all columns as add-columns
-            int numRowsAdded = -1;
+            int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
             msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
             for (int ci = 0; ci < numColumns; ++ci) {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
@@ -427,9 +435,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     throw new UncheckedDeephavenException(unexpected);
                 }
 
-                if (numRowsAdded == -1) {
-                    numRowsAdded = acd.data.size();
-                } else if (acd.data.size() != numRowsAdded) {
+                if (acd.data.size() != numRowsAdded) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                 }
                 acd.type = columnTypes[ci];
@@ -494,8 +500,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
 
-            // manage the unfinished table, we will need to unmanage this delicately before we actually resolve the export
-            resultExportBuilder.getExport().manage(resultTable);
+            // retain reference until we can pass this result to be owned by the export object
+            resultTable.retainReference();
         }
     }
 

@@ -237,8 +237,8 @@ public class FlightMessageRoundTripTest {
     public void testRoundTripData() throws InterruptedException, ExecutionException {
         // tables without columns, as flight-based way of doing emptyTable
         // TODO actual size reported as -1
-//        assertRoundTripDataEqual(TableTools.emptyTable(0));
-//        assertRoundTripDataEqual(TableTools.emptyTable(10));
+        assertRoundTripDataEqual(TableTools.emptyTable(0));
+        assertRoundTripDataEqual(TableTools.emptyTable(10));
 
         // simple values, no nulls
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=String.valueOf(i)"));

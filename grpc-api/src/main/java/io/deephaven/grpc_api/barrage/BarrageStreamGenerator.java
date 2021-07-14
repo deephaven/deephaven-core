@@ -35,6 +35,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageData;
 import io.grpc.Drainable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -313,10 +314,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);
 
-            final MutableInt bufferOffset = new MutableInt();
+            final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, 0, 0));
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                totalBufferLength.add(length);
                 bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
             };
 
@@ -360,11 +362,9 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodesOffset = builder.endVector();
 
             BarrageRecordBatch.startBuffersVector(builder, bufferInfos.size());
-
-            long totalBufferLength = 0;
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, totalBufferLength, bufferInfos.get(i).length);
-                totalBufferLength += bufferInfos.get(i).length;
+                totalBufferLength.subtract(bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
             }
             buffersOffset = builder.endVector();
         }
@@ -477,9 +477,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeInfos.setSize(0);
             bufferInfos.setSize(0);
 
+            final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                totalBufferLength.add(length);
                 bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
             };
 
@@ -497,10 +499,9 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodesOffset = builder.endVector();
 
             RecordBatch.startBuffersVector(builder, bufferInfos.size());
-            long totalBufferLength = 0;
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, totalBufferLength, bufferInfos.get(i).length);
-                totalBufferLength += bufferInfos.get(i).length;
+                totalBufferLength.subtract(bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
             }
             buffersOffset = builder.endVector();
         }
