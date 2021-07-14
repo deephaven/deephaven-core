@@ -64,14 +64,15 @@ message LogSubscriptionRequest {
     repeated string levels = 2;
 }
 message LogSubscriptionData {
-//    arrow.flight.protocol.Ticket console_id = 1;
     int64 micros = 1;
     string log_level = 2;
     string message = 3;
+    reserved 4;//if we can scope logs to a script session
+    //    arrow.flight.protocol.Ticket console_id = 4;
 }
 message ExecuteCommandRequest {
     arrow.flight.protocol.Ticket console_id = 1;
-    reserved 2;
+    reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
 }
 message ExecuteCommandResponse {
@@ -86,7 +87,7 @@ message VariableDefinition {
 }
 message BindTableToVariableRequest {
     arrow.flight.protocol.Ticket console_id = 1;
-    reserved 2;
+    reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string variable_name = 3;
     arrow.flight.protocol.Ticket table_id = 4;
 }
@@ -198,9 +199,8 @@ message FetchPandasTableRequest {
 
 message FetchFigureRequest {
     arrow.flight.protocol.Ticket console_id = 1;
-    reserved 2;
 
-    string figure_name = 3;
+    string figure_name = 2;
 }
 message FetchFigureResponse {
     FigureDescriptor figure_descriptor = 1;
@@ -463,7 +463,7 @@ message FigureDescriptor {
 
 message FetchTableMapRequest {
     arrow.flight.protocol.Ticket console_id = 1;
-    reserved 2;
+    reserved 2;// ticket to place the result in
 }
 message FetchTableMapResponse {
 
