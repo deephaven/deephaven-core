@@ -151,9 +151,6 @@ class _ListenAndReturn:
         self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
 
 
-# I think this is the place to handle errors for input
-# should make sure multiple input column sets are mutually exclusive
-# should make sure entries in columns are actually strings
 def _parse_input(inputs, table):
     """
     Converts the list of user inputs into a new list of inputs with the following rules:
@@ -180,23 +177,42 @@ def _parse_input(inputs, table):
         raise ValueError('The input list cannot have length 0.')
     # first input list of features
     elif len(inputs) == 1:
+        # ensure input class is used
+        if not isinstance(inputs[0], Input):
+            raise TypeError('Please use the Input class provided with learn to pass input.')
         # if list of features is empty, replace with all columns and return
         if len(inputs[0].columns) == 0:
             new_inputs[0].columns = list(table.getMeta().getColumn("Name").getDirect())
             return new_inputs
         else:
+            # ensure there are only strings in the given column set
+            if not all(isinstance(col, str) for col in inputs[0].columns):
+                raise TypeError('Input column lists may only contain strings.')
             return new_inputs
     else:
+        # verify all input is of type Input
+        if not all(isinstance(input, Input) for input in inputs):
+            raise TypeError('Please use the Input class provided with learn to pass input.')
         # now that we know input length at least 2, ensure target non-empty
         if len(inputs[0].columns) == 0:
             raise ValueError('Target input cannot be empty.')
         else:
             target = inputs[0].columns
+            # ensure target is a string
+            if not isinstance(target[0], str):
+                raise TypeError('Target must be a string.')
             # look through every other input to find empty list
             for i in range(1,len(inputs)):
+                # if empty list found, replace with list of all column names except for target
                 if len(inputs[i].columns) == 0:
                     new_inputs[i].columns = list(table.dropColumns(target).getMeta().getColumn("Name").getDirect())
                 else:
+                    # ensure target does not appear in any other column list
+                    if target[0] in inputs[i].columns:
+                        raise ValueError('Target column cannot be present in any other input.')
+                    # ensure there are only strings in the given column set
+                    if not all(isinstance(col, str) for col in inputs[i].columns):
+                        raise TypeError('Input column lists may only contain strings.')
                     pass
             return new_inputs
 
