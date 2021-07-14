@@ -14,7 +14,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -24,7 +24,6 @@ import java.util.stream.IntStream;
  * Utility to read barrage record batches.
  */
 public class BarrageUtils {
-
     /**
      * Iterator wrapper that allows peeking at the next item, if any.
      */
@@ -272,7 +271,7 @@ public class BarrageUtils {
                                     data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
                                     byte[] stringBytes = new byte[data.remaining()];
                                     data.get(stringBytes);
-                                    strArr[j] = new String(stringBytes, Charset.forName("UTF-8"));
+                                    strArr[j] = new String(stringBytes, StandardCharsets.UTF_8);
                                 }
                                 strArrArr[i] = strArr;
                             }
@@ -296,7 +295,7 @@ public class BarrageUtils {
                                 byte[] stringBytes = new byte[offsets.get(i + 1) - offsets.get(i)];
                                 data.position((int)(payload.offset().toFloat64()) + offsets.get(i));
                                 data.get(stringBytes);
-                                stringArray[i] = new String(stringBytes, Charset.forName("UTF-8"));//new String(Js.<char[]>uncheckedCast(stringBytes));
+                                stringArray[i] = new String(stringBytes, StandardCharsets.UTF_8);//new String(Js.<char[]>uncheckedCast(stringBytes));
                             }
                             return new StringArrayColumnData(stringArray);
                         case "java.math.BigDecimal":

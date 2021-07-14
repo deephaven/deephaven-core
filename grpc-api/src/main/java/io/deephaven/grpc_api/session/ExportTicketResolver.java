@@ -39,13 +39,10 @@ public class ExportTicketResolver extends TicketResolverBase {
             final SessionState.ExportObject<?> export = session.getExportIfExists(ExportTicketHelper.descriptorToExportId(descriptor));
             if (export != null && export.tryRetainReference()) {
                 try {
-                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized (export) {
-                        if (export.getState() == ExportNotification.State.EXPORTED) {
-                            final Object realExport = export.get();
-                            if (realExport instanceof Table) {
-                                return TicketRouter.getFlightInfo((Table) realExport, descriptor, ExportTicketHelper.descriptorToTicket(descriptor));
-                            }
+                    if (export.getState() == ExportNotification.State.EXPORTED) {
+                        final Object realExport = export.get();
+                        if (realExport instanceof Table) {
+                            return TicketRouter.getFlightInfo((Table) realExport, descriptor, ExportTicketHelper.descriptorToTicket(descriptor));
                         }
                     }
                 } finally {
