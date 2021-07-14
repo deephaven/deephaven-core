@@ -1,0 +1,216 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dh-local
+  labels:
+    run: dh-local
+spec:
+  type: NodePort
+  ports:
+    - port: 10000
+      targetPort: 9000
+      protocol: TCP
+      name: http
+    - port: 10443
+      targetPort: 10400
+      protocol: TCP
+      name: https
+  selector:
+    run: dh-local
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dh-local
+spec:
+  selector:
+    matchLabels:
+      run: dh-local
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: dh-local
+    spec:
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: nginxsecret
+        - name: configmap-volume
+          configMap:
+            name: nginxconfigmap
+        - name: cred-cache
+          emptyDir:
+            medium: Memory
+
+      containers:
+        - name: grpc-api
+          image: ghcr.io/deephaven/grpc-api:0.2.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: false
+          env:
+          - name: CONTAINER_NAME
+            value: grpc-api
+          - name: kubernetes.max.concurrent.requests
+            value: '1024'
+          - name: kubernetes.max.concurrent.requests.per.host
+            value: '128'
+          - name: JAVA_OPTS
+            value: '-Xmx2560m -server -XX:+CMSClassUnloadingEnabled'
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+
+        - name: grpc-proxy
+          image: ghcr.io/deephaven/grpc-proxy:0.2.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: false
+      #    resources:
+      #      # See: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node/resource-qos.md
+      #      limits:
+      #        # 4 cpus
+      #        cpu: '4000m'
+      #        # ~8G RAM
+      #        memory: '8000Mi'
+      #    command: ['cat']
+          env:
+          - name: BACKEND_ADDR
+            value: "dh-local:8080"
+          - name: CONTAINER_NAME
+            value: grpc-proxy
+          - name: kubernetes.max.concurrent.requests
+            value: '1024'
+          - name: kubernetes.max.concurrent.requests.per.host
+            value: '128'
+          - name: JAVA_OPTS
+            value: '-Xmx2560m -server -XX:+CMSClassUnloadingEnabled'
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+        - name: web
+          image: ghcr.io/deephaven/web:0.2.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: false
+          env:
+          - name: CONTAINER_NAME
+            value: web
+          - name: kubernetes.max.concurrent.requests
+            value: '1024'
+          - name: kubernetes.max.concurrent.requests.per.host
+            value: '128'
+          - name: JAVA_OPTS
+            value: '-Xmx2560m -server -XX:+CMSClassUnloadingEnabled'
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+        - name: envoy
+          image: ghcr.io/deephaven/envoy:0.2.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: false
+          ports:
+            - containerPort: 8888
+              protocol: TCP
+          env:
+          - name: CONTAINER_NAME
+            value: envoy
+          - name: kubernetes.max.concurrent.requests
+            value: '1024'
+          - name: kubernetes.max.concurrent.requests.per.host
+            value: '128'
+          - name: JAVA_OPTS
+            value: '-Xmx2560m -server -XX:+CMSClassUnloadingEnabled'
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
