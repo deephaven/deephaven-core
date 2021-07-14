@@ -296,3 +296,67 @@ def eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
 ########################################################################################################################
 # Finally, we should provide some common gather and scatter functions
 ########################################################################################################################
+
+# numpy gather functions
+def np_1d(idx, col, dtype=np.float32):
+    rst = np.empty([len(idx)], dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        rst[i] = col[0].get(kk)
+
+    return rst
+
+def np_2d(idx, cols, dtype=np.float32):
+    rst = np.empty([len(idx), len(cols)], dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        for (j,col) in enumerate(cols):
+            rst[i,j] = col.get(kk)
+
+    return rst
+
+# dataframe gather functions
+def df_1d(idx, cols):
+
+    return
+
+def df_2d(idx, cols):
+
+    return
+
+# pytorch gather functions
+def pt_1d(idx, col, dtype=torch.float32):
+    rst = torch.empty(len(idx), dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        rst[i] = col[0].get(kk)
+
+    return rst
+
+def pt_2d(idx, cols, dtype=torch.float32):
+    rst = torch.empty(len(idx), len(cols), dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        for (j,col) in enumerate(cols):
+            rst[i,j] = col.get(kk)
+
+    return rst
+
+# tensorflow gather functions
+# these tensorflow functions do not work at the moment
+def tf_1d(idx, col, dtype=tf.float32):
+    rst = tf.Variable(len(idx), dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        rst[i] = col[0].get(kk)
+
+    return rst
+
+def tf_2d(idx, cols, dtype=tf.float32):
+    rst = tf.Variable(len(idx), len(cols), dtype=dtype)
+
+    for (i,kk) in enumerate(idx):
+        for (j,col) in enumerate(cols):
+            rst[i,j] = col.get(kk)
+
+    return rst
