@@ -4,35 +4,37 @@
 
 package io.deephaven.db.v2.locations;
 
-import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.string.StringUtils;
+import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
  */
-public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends ColumnLocation>
+public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
 
-    private @NotNull final TKT tableKey;
-    private @NotNull final TableLocationLookupKey<String> tableLocationKey;
+    private @NotNull
+    final ImmutableTableKey tableKey;
+    private @NotNull
+    final ImmutableTableLocationKey tableLocationKey;
 
     private final TableLocationStateHolder state = new TableLocationStateHolder();
-    private final KeyedObjectHashMap<CharSequence, CLT> columnLocations = new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
+    private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations = new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
     /**
-     * @param tableKey Table key for the table this location belongs to
-     * @param tableLocationKey A key whose field values will be deep-copied to this location
+     * @param tableKey              Table key for the table this location belongs to
+     * @param tableLocationKey      A key whose field values will be deep-copied to this location
      * @param supportsSubscriptions Whether subscriptions are to be supported
      */
-    protected AbstractTableLocation(@NotNull final TKT tableKey,
+    protected AbstractTableLocation(@NotNull final TableKey tableKey,
                                     @NotNull final TableLocationKey tableLocationKey,
                                     final boolean supportsSubscriptions) {
         super(supportsSubscriptions);
-        this.tableKey = Require.neqNull(tableKey, "tableKey");
-        this.tableLocationKey = new TableLocationLookupKey.Immutable(Require.neqNull(tableLocationKey, "tableLocationKey"));
+        this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
+        this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
     }
 
     @Override
@@ -40,26 +42,14 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
         return toStringHelper();
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    // TableLocationKey implementation
-    //------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public @NotNull final String getInternalPartition() {
-        return tableLocationKey.getInternalPartition();
-    }
-
-    @Override
-    public @NotNull final String getColumnPartition() {
-        return tableLocationKey.getColumnPartition();
-    }
 
     //------------------------------------------------------------------------------------------------------------------
     // TableLocationState implementation
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull final Object getStateLock() {
+    public @NotNull
+    final Object getStateLock() {
         return state.getStateLock();
     }
 
@@ -78,8 +68,15 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull TKT getTableKey() {
+    @NotNull
+    public final ImmutableTableKey getTableKey() {
         return tableKey;
+    }
+
+    @Override
+    @NotNull
+    public final ImmutableTableLocationKey getKey() {
+        return tableLocationKey;
     }
 
     @Override
@@ -90,7 +87,7 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param size The new size
+     * @param size                   The new size
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final long size, final long lastModifiedTimeMillis) {
@@ -102,6 +99,7 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
     /**
      * Update all state fields from source's values, as in {@link #handleUpdate(long, long)}.
      * See {@link TableLocationState} for documentation of values.
+     *
      * @param source The source to copy state values from
      */
     public void handleUpdate(@NotNull final TableLocationState source) {
@@ -119,15 +117,18 @@ public abstract class AbstractTableLocation<TKT extends TableKey, CLT extends Co
     }
 
     @Override
-    public @NotNull CLT getColumnLocation(@NotNull CharSequence name) {
+    public @NotNull
+    ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 
-    protected abstract @NotNull CLT makeColumnLocation(@NotNull final String name);
+    protected abstract @NotNull
+    ColumnLocation makeColumnLocation(@NotNull final String name);
 
     /**
      * Clear all column locations (usually because a truncated location was observed).
      */
+    @SuppressWarnings("unused")
     protected final void clearColumnLocations() {
         columnLocations.clear();
     }
