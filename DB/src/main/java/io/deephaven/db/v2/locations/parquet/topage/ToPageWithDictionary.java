@@ -1,11 +1,13 @@
 package io.deephaven.db.v2.locations.parquet.topage;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.v2.sources.StringSetImpl;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.parquet.ColumnPageReader;
 import io.deephaven.parquet.DataWithOffsets;
+import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -39,6 +41,14 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
     @Override
     @NotNull
     public final Object getResult(ColumnPageReader columnPageReader) throws IOException {
+        if (columnPageReader.getDictionary() == null) {
+            if (nativeType == String.class) {
+                //noinspection unchecked
+                return ToStringPage.INSTANCE.getResult(columnPageReader);
+            }
+            throw new UncheckedDeephavenException("Unsupported nateiveType " + nativeType.getName());
+
+        }
         int [] keys = new int [columnPageReader.numValues()];
         IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT);
 
@@ -48,15 +58,30 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
     @Override
     @NotNull
     public final T[] convertResult(Object result) {
-       int [] from = (int []) result;
-       //noinspection unchecked
-       T [] to = (T[])Array.newInstance(nativeType, from.length);
+        if (!(result instanceof int[])) {
+            if (nativeType == String.class) {
+                Binary[] from = (Binary[]) result;
+                //noinspection unchecked
+                T[] to = (T[])Array.newInstance(nativeType, from.length);
 
-       for (int i = 0; i < from.length; ++i) {
-           to[i] = dictionary.get(from[i]);
-       }
+                for (int i = 0; i < from.length; ++i) {
+                    //noinspection unchecked
+                    to[i] = (T) from[i].toStringUsingUTF8();
+                }
 
-       return to;
+                return to;
+            }
+            throw new UncheckedDeephavenException("Unsupported nateiveType " + nativeType.getName());
+        }
+        int[] from = (int []) result;
+        //noinspection unchecked
+        T[] to = (T[])Array.newInstance(nativeType, from.length);
+
+        for (int i = 0; i < from.length; ++i) {
+            to[i] = dictionary.get(from[i]);
+        }
+
+        return to;
     }
 
     @Override

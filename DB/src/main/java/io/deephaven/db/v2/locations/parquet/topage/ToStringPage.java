@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class ToStringPage<ATTR extends Attributes.Any> implements ToPage<ATTR, String[]> {
 
-    private static final ToStringPage INSTANCE = new ToStringPage();
+    static final ToStringPage INSTANCE = new ToStringPage();
 
     public static <ATTR extends Attributes.Any>
     ToPage<ATTR, String[]> create(Class<?> nativeType, org.apache.parquet.column.Dictionary dictionary) {
