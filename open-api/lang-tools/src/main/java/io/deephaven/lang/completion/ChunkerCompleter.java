@@ -542,7 +542,7 @@ public class ChunkerCompleter implements CompletionHandler {
     private Object unsupported(Node node) {
         if (log.isTraceEnabled()) {
             Node parent = node;
-            while (parent.jjtGetParent() != null && !(parent.jjtGetParent() instanceof ChunkerDocument)) {
+            while(parent.jjtGetParent() != null && ! (parent.jjtGetParent() instanceof ChunkerDocument)) {
                 parent = parent.jjtGetParent();
             }
             log.trace()
