@@ -1,13 +1,12 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.db.v2.locations.local;
 
+import io.deephaven.db.v2.locations.PollingTableLocationProvider;
 import io.deephaven.db.v2.locations.TableDataException;
-import io.deephaven.db.v2.locations.TableKey;
+import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationKey;
-import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
+import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -23,27 +22,27 @@ import java.security.PrivilegedExceptionAction;
 import java.util.function.Consumer;
 
 /**
- * Local table location scanner that can handle two-level partitioning.
+ * Location scanner for parquet locations in a layout that is similar to legacy nested-partitioning, absent one layer of
+ * directories.
  */
-public class NestedPartitionedLocalTableLocationScanner implements PollingTableLocationProviderByScanner.Scanner {
+public class LegacyNestedParquetTableLocationScanner implements PollingTableLocationProvider.Scanner {
+
+    private static final String PARQUET_FILE_EXTENSION = ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
     private static final ThreadLocal<TableLocationLookupKey.Reusable> reusableLocationKey = ThreadLocal.withInitial(TableLocationLookupKey.Reusable::new);
 
     private final File tableRootDirectory;
+    private final ParquetInstructions readInstructions;
 
-    /**
-     * Make a scanner for multiple partitions, nested from a single root directory.
-     *
-     * @param tableRootDirectory The root directory to begin scans from
-     */
-    @VisibleForTesting
-    public NestedPartitionedLocalTableLocationScanner(@NotNull final File tableRootDirectory) {
+    public LegacyNestedParquetTableLocationScanner(@NotNull final File tableRootDirectory,
+                                                   @NotNull final ParquetInstructions readInstructions) {
         this.tableRootDirectory = tableRootDirectory;
+        this.readInstructions = readInstructions;
     }
 
     @Override
     public String toString() {
-        return "NestedPartitionedLocalTableLocationScanner[" + tableRootDirectory + ']';
+        return "LegacyNestedParquetTableLocationScanner[" + tableRootDirectory + ']';
     }
 
     @Override
@@ -79,10 +78,13 @@ public class NestedPartitionedLocalTableLocationScanner implements PollingTableL
     }
 
     @Override
-    public String computeLocationBasePath(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
-        return tableRootDirectory.getAbsolutePath()
-                + File.separatorChar + locationKey.getInternalPartition().toString()
-                + File.separatorChar + locationKey.getColumnPartition().toString()
-                + File.separatorChar + tableKey.getTableName().toString();
+    @NotNull
+    public final TableLocation makeLocation(@NotNull final TableLocationKey locationKey) {
+        final File parquetFile = new File(scanner.computeLocationBasePath(tableKey, tableLocationKey) + PARQUET_FILE_EXTENSION);
+        if (Utils.fileExistsPrivileged(parquetFile)) {
+            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, parquetFile, supportsSubscriptions(), readInstructions);
+        } else {
+            throw new UnsupportedOperationException(this + ": Unrecognized data format in location " + tableLocationKey);
+        }
     }
 }

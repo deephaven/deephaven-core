@@ -10,7 +10,7 @@ import java.io.File;
 
 // TODO-RWC: Get rid of deferred locations. Operate on keys until coalesce. Do keys have a map of partitioning info, or do we build it outside?
 
-public class ReadOnlyLocalTableLocationProviderByParquetFile extends PollingTableLocationProvider {
+public class ReadOnlyLocalTableLocationProviderByParquetFile extends AbstractTableLocationProvider {
 
     private final File fileLocation;
     private final ParquetInstructions readInstructions;
@@ -18,10 +18,8 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends PollingTabl
     public ReadOnlyLocalTableLocationProviderByParquetFile(
             @NotNull final TableKey tableKey,
             @NotNull final File fileLocation,
-            final boolean supportsSubscriptions,
-            @NotNull final TableDataRefreshService refreshService,
             @NotNull final ParquetInstructions readInstructions) {
-        super(tableKey, supportsSubscriptions, refreshService);
+        super(tableKey, false);
         this.fileLocation = fileLocation;
         this.readInstructions = readInstructions;
     }
@@ -40,14 +38,6 @@ public class ReadOnlyLocalTableLocationProviderByParquetFile extends PollingTabl
     @Override
     @NotNull
     protected final TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
-        return new DeferredTableLocation.DataDriven<>(getTableKey(), locationKey, this::makeLocation);
-    }
-
-    private TableLocation makeLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
-        if (Utils.fileExistsPrivileged(fileLocation)) {
-            return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, fileLocation, supportsSubscriptions(), readInstructions);
-        } else {
-            throw new UnsupportedOperationException(this + ": Unrecognized data format in location " + tableLocationKey);
-        }
+        return new ReadOnlyParquetTableLocation(StandaloneTableKey.getInstance(), locationKey, fileLocation, false, readInstructions);
     }
 }

@@ -20,7 +20,6 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TableMap;
 import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.local.*;
-import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
@@ -34,7 +33,6 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.codec.BigIntegerCodec;
 import junit.framework.TestCase;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -45,7 +43,6 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.experimental.categories.Category;
 
@@ -62,8 +59,6 @@ public class TestChunkedRegionedOperations {
 
     private static final long TABLE_SIZE = 100_000;
     private static final long STRIPE_SIZE = TABLE_SIZE / 10;
-
-    private static final AtomicInteger SETUP_COUNTER = new AtomicInteger(0);
 
     private QueryScope originalScope;
     private File dataDirectory;
@@ -237,18 +232,13 @@ public class TestChunkedRegionedOperations {
         final String name = "TestTable";
         final TableKey tableKey = new TableLookupKey.Immutable(namespace, name, TableType.STANDALONE_SPLAYED);
 
-        final List<TableLocationMetadataIndex.TableLocationSnapshot> snapshots = new ArrayList<>();
-
         final TableMap partitionedInputData = inputData.byExternal("PC");
         ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition,
                 parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
-                        .map(pcv -> {
-                            snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
-                        })
+                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet"))
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
         );
@@ -259,10 +249,7 @@ public class TestChunkedRegionedOperations {
                 partitionedMissingDataDefinition,
                 parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
-                        .map(pcv -> {
-                            snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
-                        })
+                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet"))
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
         );
@@ -279,15 +266,10 @@ public class TestChunkedRegionedOperations {
         actual = new NestedPartitionedDiskBackedTable(
                 partitionedDataDefinition,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new ReadOnlyLocalTableLocationProvider(
+                new PollingTableLocationProvider(
                         tableKey,
-                        ((SETUP_COUNTER.getAndIncrement() & 1) == 0
-                                ? new IndexedLocalTableLocationScanner(dataDirectory, new TableLocationMetadataIndex(snapshots.toArray(new TableLocationMetadataIndex.TableLocationSnapshot[0])))
-                                : new NestedPartitionedLocalTableLocationScanner(dataDirectory)
-                        ),
-                        false,
-                        TableDataRefreshService.Null.INSTANCE,
-                        ParquetInstructions.EMPTY
+                        new LegacyNestedParquetTableLocationScanner(dataDirectory, ParquetInstructions.EMPTY),
+                        null
                 ),
                 null,
                 Collections.emptySet()

@@ -11,9 +11,7 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.locations.local.NestedPartitionedLocalTableLocationScanner;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProvider;
-import io.deephaven.db.v2.locations.util.TableDataRefreshService;
+import io.deephaven.db.v2.locations.local.LegacyNestedParquetTableLocationScanner;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import junit.framework.TestCase;
@@ -163,12 +161,10 @@ public class TestGroupingProviders {
         final Table actual = new NestedPartitionedDiskBackedTable(
                 partitionedDataDefinition,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new ReadOnlyLocalTableLocationProvider(
+                new PollingTableLocationProvider(
                         tableKey,
-                        new NestedPartitionedLocalTableLocationScanner(dataDirectory),
-                        false,
-                        TableDataRefreshService.Null.INSTANCE,
-                        ParquetInstructions.EMPTY
+                        new LegacyNestedParquetTableLocationScanner(dataDirectory, ParquetInstructions.EMPTY),
+                        null
                 ),
                 null,
                 Collections.emptySet()
