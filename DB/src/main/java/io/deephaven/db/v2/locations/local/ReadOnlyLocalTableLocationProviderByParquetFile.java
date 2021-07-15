@@ -10,7 +10,7 @@ import java.io.File;
 
 // TODO-RWC: Get rid of deferred locations. Operate on keys until coalesce. Do keys have a map of partitioning info, or do we build it outside?
 
-public class ReadOnlyLocalTableLocationProviderByParquetFile extends LocalTableLocationProvider {
+public class ReadOnlyLocalTableLocationProviderByParquetFile extends PollingTableLocationProvider {
 
     private final File fileLocation;
     private final ParquetInstructions readInstructions;

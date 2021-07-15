@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 /**
  * Local table location scanner that can handle a simple splayed table.
  */
-public class StandaloneLocalTableLocationScanner implements LocalTableLocationProviderByScanner.Scanner {
+public class StandaloneLocalTableLocationScanner implements PollingTableLocationProviderByScanner.Scanner {
 
     private final File tableParentDirectory;
 

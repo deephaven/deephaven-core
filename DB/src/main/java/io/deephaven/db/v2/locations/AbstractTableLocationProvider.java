@@ -12,7 +12,7 @@ import java.util.Collections;
  * Partial {@link TableLocationProvider} implementation for use standalone or as part of {@link TableDataService}
  * implementations.
  * <p>
- * It implements an interface similar to TableLocationProvider.Listener for implementation classes to use when
+ * It implements an interface similar to {@link TableLocationProvider.Listener} for implementation classes to use when
  * communicating with the parent.
  * <p>
  * Note that implementations are responsible for determining when it's appropriate to call {@link #setInitialized()}
@@ -24,10 +24,10 @@ public abstract class AbstractTableLocationProvider
 
     private final ImmutableTableKey tableKey;
 
-    private final KeyedObjectHashMap<TableLocationKey, TableLocation> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
+    private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
     @SuppressWarnings("unchecked")
     private final Collection<ImmutableTableLocationKey> unmodifiableTableLocationKeys =
-            (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>)  Collections.unmodifiableCollection(tableLocations.keySet());
+            (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>) Collections.unmodifiableCollection(tableLocations.keySet());
 
     private volatile boolean initialized;
 
@@ -75,30 +75,31 @@ public abstract class AbstractTableLocationProvider
      * Deliver a possibly-new key.
      *
      * @param locationKey The new key
+     * @apiNote This method is intended to be used by implementation classes or by tightly-coupled discovery tools.
      */
-    public final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
+    protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
         if (supportsSubscriptions()) {
             synchronized (subscriptions) {
                 // Since we're holding the lock on subscriptions, the following code is overly complicated - we could
-                // certainly just deliver the notification in observeTableLocationCreation. That said, I'm happier with
-                // this approach, as it minimizes lock duration for tableLocations, exemplifies correct use of
-                // putIfAbsent, and keeps observeTableLocationCreation out of the business of subscription processing.
+                // certainly just deliver the notification in observeInsert. That said, I'm happier with this approach,
+                // as it minimizes lock duration for tableLocations, exemplifies correct use of putIfAbsent, and keeps
+                // observeInsert out of the business of subscription processing.
                 locationCreatedRecorder = false;
-                final TableLocation tableLocation = tableLocations.putIfAbsent(locationKey, this::observeTableLocationCreation);
-                if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, tableLocation.getKey(), true)) {
+                final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
+                if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
                     onEmpty();
                 }
             }
         } else {
-            tableLocations.putIfAbsent(locationKey, PlaceholderTableLocation::new);
+            tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
         }
     }
 
     @NotNull
-    private TableLocation observeTableLocationCreation(@NotNull final TableLocationKey locationKey) {
+    private Object observeInsert(@NotNull final TableLocationKey locationKey) {
         // NB: This must only be called while the lock on subscriptions is held.
         locationCreatedRecorder = true;
-        return new PlaceholderTableLocation(locationKey);
+        return locationKey.makeImmutable();
     }
 
     /**
@@ -159,94 +160,49 @@ public abstract class AbstractTableLocationProvider
     @Override
     @Nullable
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-        final TableLocation current = tableLocations.get(tableLocationKey);
-        if (current instanceof PlaceholderTableLocation) {
-            return tableLocations.putIfAbsent(current.getKey(), this::makeTableLocation);
+        Object current = tableLocations.get(tableLocationKey);
+        if (current instanceof TableLocation) {
+            return (TableLocation) current;
         }
-        return current;
+        synchronized (tableLocations) {
+            current = tableLocations.get(tableLocationKey);
+            if (current instanceof TableLocation) {
+                return (TableLocation) current;
+            }
+            final TableLocation result = makeTableLocation((TableLocationKey) current);
+            tableLocations.add(result);
+            return result;
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------
-    // Default key definition implementation
+    // Key definition implementation
     //------------------------------------------------------------------------------------------------------------------
 
-    private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, TableLocation> {
+    private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, Object> {
 
-        private static final KeyedObjectKey<TableLocationKey, TableLocation> INSTANCE = new LocationKeyDefinition();
+        private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE = new LocationKeyDefinition();
 
         private LocationKeyDefinition() {
         }
 
         @Override
-        public TableLocationKey getKey(@NotNull final TableLocation tableLocation) {
-            return tableLocation.getKey();
+        public TableLocationKey getKey(@NotNull final Object keyOrLocation) {
+            return toKey(keyOrLocation);
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    // Placeholder TableLocation implementation (for deferred instantiation)
-    //------------------------------------------------------------------------------------------------------------------
-
-    private final class PlaceholderTableLocation implements TableLocation {
-
-        private final ImmutableTableLocationKey key;
-
-        private PlaceholderTableLocation(@NotNull final TableLocationKey key) {
-            this.key = key.makeImmutable();
+    private static TableLocationKey toKey(@NotNull final Object keyOrLocation) {
+        if (keyOrLocation instanceof TableLocation) {
+            return ((TableLocation) keyOrLocation).getKey();
         }
-
-        @NotNull
-        @Override
-        public ImmutableTableKey getTableKey() {
-            return AbstractTableLocationProvider.this.getKey();
+        if (keyOrLocation instanceof TableLocationKey) {
+            return ((TableLocationKey) keyOrLocation);
         }
+        throw new IllegalArgumentException("toKey expects a TableLocation or a TableLocationKey, instead received a " + keyOrLocation.getClass());
+    }
 
-        @NotNull
-        @Override
-        public ImmutableTableLocationKey getKey() {
-            return key;
-        }
-
-        @Override
-        public boolean supportsSubscriptions() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void subscribe(@NotNull Listener listener) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void unsubscribe(@NotNull Listener listener) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void refresh() {
-            throw new UnsupportedOperationException();
-        }
-
-        @NotNull
-        @Override
-        public ColumnLocation getColumnLocation(@NotNull CharSequence name) {
-            throw new UnsupportedOperationException();
-        }
-
-        @NotNull
-        @Override
-        public Object getStateLock() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getSize() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getLastModifiedTimeMillis() {
-            throw new UnsupportedOperationException();
-        }
+    private static ImmutableTableLocationKey toKeyImmutable(@NotNull final Object keyOrLocation) {
+        return (ImmutableTableLocationKey) toKey(keyOrLocation);
     }
 }
