@@ -48,7 +48,6 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
