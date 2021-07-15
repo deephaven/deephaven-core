@@ -22,7 +22,7 @@ public class ToStringPage<ATTR extends Attributes.Any> implements ToPage<ATTR, S
                             new Dictionary<>( i -> dictionary.decodeToBinary(i).toStringUsingUTF8(), dictionary.getMaxId()+1),
                             (final Object result) -> {
                                 final Binary[] from = (Binary[]) result;
-                                final String[] to = (String[]) Array.newInstance(nativeType, from.length);
+                                final String[] to = new String[from.length];
                                 return convertResult(to, from);
                             }
                     );
