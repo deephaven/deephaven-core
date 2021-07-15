@@ -21,7 +21,7 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
     private final Class<T> nativeType;
     private final Dictionary<T, ATTR> dictionary;
 
-    ToPageWithDictionary(Class<T> nativeType, Dictionary<T, ATTR> dictionary) {
+    ToPageWithDictionary(final Class<T> nativeType, final Dictionary<T, ATTR> dictionary) {
         this.nativeType = nativeType;
         this.dictionary = dictionary;
     }
@@ -40,16 +40,16 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
     @Override
     @NotNull
-    public final Object getResult(ColumnPageReader columnPageReader) throws IOException {
+    public final Object getResult(final ColumnPageReader columnPageReader) throws IOException {
         if (columnPageReader.getDictionary() == null) {
             if (nativeType == String.class) {
                 //noinspection unchecked
                 return ToStringPage.INSTANCE.getResult(columnPageReader);
             }
-            throw new UncheckedDeephavenException("Unsupported nateiveType " + nativeType.getName());
+            throw new UncheckedDeephavenException("Unsupported nativeType " + nativeType.getName());
 
         }
-        int [] keys = new int [columnPageReader.numValues()];
+        int[] keys = new int [columnPageReader.numValues()];
         IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT);
 
         return offsets == null ? keys : new DataWithOffsets(offsets, keys);
@@ -57,7 +57,7 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
     @Override
     @NotNull
-    public final T[] convertResult(Object result) {
+    public final T[] convertResult(final Object result) {
         if (!(result instanceof int[])) {
             if (nativeType == String.class) {
                 Binary[] from = (Binary[]) result;
@@ -71,7 +71,7 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
                 return to;
             }
-            throw new UncheckedDeephavenException("Unsupported nateiveType " + nativeType.getName());
+            throw new UncheckedDeephavenException("Unsupported nativeType " + nativeType.getName());
         }
         int[] from = (int []) result;
         //noinspection unchecked
@@ -118,7 +118,7 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
             }
 
             @Override
-            public Object getResult(ColumnPageReader columnPageReader) throws IOException {
+            public Object getResult(final ColumnPageReader columnPageReader) throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
             }
         };
