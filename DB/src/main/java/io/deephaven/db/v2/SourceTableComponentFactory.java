@@ -11,5 +11,8 @@ import io.deephaven.db.tables.ColumnDefinition;
  */
 public interface SourceTableComponentFactory {
 
-    ColumnSourceManager createColumnSourceManager(boolean isRefreshing, ColumnDefinition<?>... columnDefinitions);
+    ColumnSourceManager createColumnSourceManager(
+            boolean isRefreshing,
+            ColumnToCodecMappings codecMappings,
+            ColumnDefinition<?>... columnDefinitions);
 }

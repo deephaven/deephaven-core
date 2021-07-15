@@ -2,7 +2,6 @@ package io.deephaven.benchmarking.impl;
 
 import io.deephaven.hash.KeyedObjectHash;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import org.jetbrains.annotations.NotNull;
@@ -18,8 +17,6 @@ public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableB
     protected final KeyedObjectHash<String, ColumnGenerator> columns = new KeyedObjectHash<>(new ColumnGeneratorKey());
     protected long rngSeed = 0;
     final long size;
-    TableManagementTools.StorageFormat storageFormat;
-
 
     public AbstractBenchmarkTableBuilder(String name, int size) {
         if(name == null || name.isEmpty()) {

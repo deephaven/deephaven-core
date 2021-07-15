@@ -5,8 +5,9 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.Utils;
@@ -57,14 +58,14 @@ public class BenchmarkRunner {
     }
 
     private static void recordResults(Collection<RunResult> results) {
-        if(results.isEmpty()) {
+        if (results.isEmpty()) {
             return;
         }
 
         // Write an in mem table, load the per iteration tables, nj them, write to disk
         final TableBuilder builder = new TableBuilder(RESULT_TABLE_DEF);
         int runNo = 0;
-        for(final RunResult runResult : results) {
+        for (final RunResult runResult : results) {
             final BenchmarkParams runParams = runResult.getParams();
             final String paramString = BenchmarkTools.buildParameterString(runParams);
             final String benchmarkName = BenchmarkTools.getStrippedBenchmarkName(runParams);
@@ -93,13 +94,15 @@ public class BenchmarkRunner {
         final Table mergedDetails = getMergedDetails();
         final Table result = topLevel.naturalJoin(mergedDetails, "Benchmark,Mode,Run,Iteration,Params");
 
-        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark");
+        final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
-        TableManagementTools.writeTable(result, result.getDefinition(), outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        ParquetTools.writeTable(result, result.getDefinition(), outputPath.toFile());
     }
 
     private static Table getMergedDetails() {
-        final File[] files = FileUtils.missingSafeListFiles(new File(BenchmarkTools.getLogPath()), file -> file.getName().startsWith("Details."));
+        final File[] files = FileUtils.missingSafeListFiles(
+                new File(BenchmarkTools.getLogPath()),
+                file -> file.getName().startsWith(BenchmarkTools.DETAIL_LOG_PREFIX));
         Arrays.sort(files, Utils.getModifiedTimeComparator(false));
 
         boolean OK;

@@ -43,16 +43,22 @@ public class StringUtils implements Serializable {
                                                                                : new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterCompressedStringImpl.INSTANCE, STRING_CACHE_SIZE, 2)
                                    : null;
 
+    /**
+     * Re-write all non-partitioning String columns in the definition to use CompressedString data type.
+     * Note this should only be called when it's known that the source will only provide String data with single-byte encodings.
+     *
+     * @param tableDefinition table definition
+     * @return the new table definition
+     */
     public static TableDefinition rewriteStringColumnTypes(final TableDefinition tableDefinition) {
         if (!USE_COMPRESSED_STRINGS) {
             return tableDefinition;
         }
-        final ColumnDefinition resultColumns[] = Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
+        final ColumnDefinition<?>[] resultColumns = Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
         for (int ci = 0; ci < resultColumns.length; ++ci) {
             final ColumnDefinition<?> column = resultColumns[ci];
             if (column.getDataType() == String.class
-                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING
-                    && column.getEncodingInfo().isSimple()) {
+                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING) {
                 resultColumns[ci] = column.withDataType(CompressedString.class);
             }
         }

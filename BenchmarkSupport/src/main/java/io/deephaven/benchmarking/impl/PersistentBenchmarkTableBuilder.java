@@ -1,11 +1,9 @@
 package io.deephaven.benchmarking.impl;
 
 import io.deephaven.base.StringUtils;
-import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.benchmarking.BenchmarkTable;
 
 import java.util.*;
-
 
 public class PersistentBenchmarkTableBuilder extends AbstractBenchmarkTableBuilder<PersistentBenchmarkTableBuilder> {
 
@@ -41,11 +39,6 @@ public class PersistentBenchmarkTableBuilder extends AbstractBenchmarkTableBuild
 
     public PersistentBenchmarkTableBuilder setPartitionCount(int nPartitions) {
         partitionCount = nPartitions;
-        return this;
-    }
-
-    public PersistentBenchmarkTableBuilder setStorageFormat(TableManagementTools.StorageFormat storageFormat) {
-        this.storageFormat = storageFormat;
         return this;
     }
 

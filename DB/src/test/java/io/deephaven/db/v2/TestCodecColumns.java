@@ -4,10 +4,12 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Test;
 
 import java.io.File;
@@ -21,8 +23,6 @@ import java.nio.file.Paths;
  */
 public class TestCodecColumns {
 
-    private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
-
     // TODO: Figure out how to come up with a BigInteger of a specified width.
 //    private static final ColumnDefinition<BigInteger> FIXED_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
 //    static {
@@ -34,38 +34,29 @@ public class TestCodecColumns {
 //    }
 
     private static final ColumnDefinition<byte[]> VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
-    static {
-        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBA", byte[].class, byte.class, SimpleByteArrayCodec.class.getName());
-    }
-
     private static final ColumnDefinition<ColumnDefinition> VARIABLE_WIDTH_COLUMN_DEFINITION_2;
-    static {
-        VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ColumnDefinition.class);
-    }
-
-    private static final ColumnDefinition<ColumnDefinition> VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC;
-    static {
-        VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC = ColumnDefinition.ofVariableWidthCodec("VWCD", ColumnDefinition.class, null, ExternalizableCodec.class.getName(), ColumnDefinition.class.getName());
-    }
-
     private static final ColumnDefinition<byte[]> FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION;
-    static {
-        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.ofFixedWidthCodec("FWBA", byte[].class, byte.class, SimpleByteArrayCodec.class.getName(), "9", 9);
-    }
-
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION;
-    static {
-        VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("VWBI", BigInteger.class, BigIntegerCodec.class.getName());
-    }
-
     private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S;
+    private static final ParquetInstructions expectedReadInstructions, writeInstructions;
     static {
+        final ParquetInstructions.Builder readBuilder = new ParquetInstructions.Builder();
+        final ParquetInstructions.Builder writeBuilder = new ParquetInstructions.Builder();
+        VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("VWBA", byte[].class, byte.class);
+        writeBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
+        readBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
+        VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ColumnDefinition.class);
+        readBuilder.addColumnCodec("VWCD", ExternalizableCodec.class.getName(), ColumnDefinition.class.getName());
+        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("FWBA", byte[].class, byte.class);
+        writeBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
+        readBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
+        VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("VWBI", BigInteger.class);
+        writeBuilder.addColumnCodec("VWBI", BigIntegerCodec.class.getName());
+        readBuilder.addColumnCodec("VWBI", BigIntegerCodec.class.getName());
         VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S = ColumnDefinition.fromGenericType("VWBIS", BigInteger.class);
-    }
-
-    private static final ColumnDefinition<BigInteger> VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC;
-    static {
-        VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC = ColumnDefinition.ofVariableWidthCodec("VWBIS", BigInteger.class, SerializableCodec.class.getName());
+        readBuilder.addColumnCodec("VWBIS", SerializableCodec.class.getName());
+        expectedReadInstructions = readBuilder.build();
+        writeInstructions = writeBuilder.build();
     }
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
@@ -74,13 +65,6 @@ public class TestCodecColumns {
             FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S);
-
-    private static final TableDefinition EXPECTED_RESULT_DEFINITION = TableDefinition.of(
-            VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
-            VARIABLE_WIDTH_COLUMN_DEFINITION_2_EXPLICIT_CODEC,
-            FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION,
-            VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
-            VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S_EXPLICIT_CODEC);
 
     private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
             TableTools.col("VWBA", new byte[]{0,1,2}, null, new byte[]{3,4,5,6}),
@@ -93,11 +77,15 @@ public class TestCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
+        final File dest = new File(dir, "Test.parquet");
         try {
-            TableManagementTools.writeTable(TABLE, dir, storageFormat);
-            final Table result = TableManagementTools.readTable(dir);
+            ParquetTools.writeTable(TABLE, TABLE.getDefinition(), writeInstructions, dest);
+            final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
+            final Table result = ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
             TableTools.show(result);
-            TestCase.assertEquals(EXPECTED_RESULT_DEFINITION, result.getDefinition());
+            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+            final ParquetInstructions readInstructions = instructionsOut.getValue();
+            TestCase.assertTrue(ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
             TstUtils.assertTableEquals(TABLE, result);
         } finally {
             FileUtils.deleteRecursively(dir);

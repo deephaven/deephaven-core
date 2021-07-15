@@ -6,18 +6,18 @@ import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Map;
 
 /**
  * Location provider for read-only table locations.
  */
 public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProviderByScanner {
 
-    private static final String PARQUET_FILE_NAME = "table.parquet";
+    private static final String PARQUET_FILE_EXTENSION = ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
     private final ParquetInstructions readInstructions;
 
@@ -60,14 +60,13 @@ public class ReadOnlyLocalTableLocationProvider extends LocalTableLocationProvid
         return new ReadOnlyParquetTableLocation(
                 tableKey,
                 tableLocationKey,
-                new File(scanner.computeLocationDirectory(tableKey, tableLocationKey), PARQUET_FILE_NAME),
+                new File(scanner.computeLocationBasePath(tableKey, tableLocationKey) + PARQUET_FILE_EXTENSION),
                 false,
                 readInstructions);
     }
 
     private TableLocation makeDataDrivenLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
-        final File directory = scanner.computeLocationDirectory(tableKey, tableLocationKey);
-        final File parquetFile = new File(directory, PARQUET_FILE_NAME);
+        final File parquetFile = new File(scanner.computeLocationBasePath(tableKey, tableLocationKey) + PARQUET_FILE_EXTENSION);
         if (Utils.fileExistsPrivileged(parquetFile)) {
             return new ReadOnlyParquetTableLocation(tableKey, tableLocationKey, parquetFile, supportsSubscriptions(), readInstructions);
         } else {

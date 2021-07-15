@@ -15,6 +15,8 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
+import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -35,12 +37,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link TableManagementTools}.
+ * Tests for {@link ParquetTools}.
  */
-public class TestTableManagementTools {
-    private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
-
-    private final static String testRoot = Configuration.getInstance().getWorkspacePath() + File.separator + "TestTableManagementTools";
+public class TestParquetTools {
+    private final static String testRoot = Configuration.getInstance().getWorkspacePath() + File.separator + "TestParquetTools";
     private final static File testRootFile = new File(testRoot);
 
     private static Table table1;
@@ -126,9 +126,9 @@ public class TestTableManagementTools {
 
     @Test
     public void testWriteTable() {
-        String path = testRoot + File.separator + "Table1";
-        TableManagementTools.writeTable(table1, path);
-        Table result = TableManagementTools.readTable(new File(path));
+        String path = testRoot + File.separator + "Table1.parquet";
+        ParquetTools.writeTable(table1, path);
+        Table result = ParquetTools.readTable(new File(path));
         TableTools.show(result);
         TableTools.show(table1);
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -141,9 +141,9 @@ public class TestTableManagementTools {
                 "toS(enumC_[(i + 9) % 10])," +
                 "toS(enumC_[i])," +
                 "toS(enumC_[(i+1)% 10]))");
-        path = testRoot + File.separator + "Table2";
-        TableManagementTools.writeTable(test, path);
-        Table test2 = TableManagementTools.readTable(path);
+        path = testRoot + File.separator + "Table2.parquet";
+        ParquetTools.writeTable(test, path);
+        Table test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))), Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
@@ -155,9 +155,9 @@ public class TestTableManagementTools {
         test2.close();
 
         test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=EnumSet.of((TestEnum)enumC_[(i + 9) % 10],(TestEnum)enumC_[i],(TestEnum)enumC_[(i+1)% 10])");
-        path = testRoot + File.separator + "Table3";
-        TableManagementTools.writeTable(test, path);
-        test2 = TableManagementTools.readTable(path);
+        path = testRoot + File.separator + "Table3.parquet";
+        ParquetTools.writeTable(test, path);
+        test2 = ParquetTools.readTable(path);
         assertEquals(10, test2.size());
         assertEquals(2, test2.getColumns().length);
         assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)), Arrays.asList(test2.getColumn("enumC").get(0, 10)));
@@ -169,9 +169,9 @@ public class TestTableManagementTools {
             ColumnDefinition.ofString("aString").withGrouping()),
             col("anInt", 1, 2, 3),
             col("aString", "ab", "ab", "bc"));
-        path = testRoot + File.separator + "Table4";
-        TableManagementTools.writeTable(test, path);
-        test2 = TableManagementTools.readTable(new File(path));
+        path = testRoot + File.separator + "Table4.parquet";
+        ParquetTools.writeTable(test, path);
+        test2 = ParquetTools.readTable(new File(path));
         assertNotNull(test2.getColumnSource("aString").getGroupToRange());
         test2.close();
     }
@@ -179,8 +179,9 @@ public class TestTableManagementTools {
 
     @Test
     public void testWriteTableEmpty() {
-        TableManagementTools.writeTable(emptyTable, new File(testRoot + File.separator + "Empty"), storageFormat);
-        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Empty"));
+        final File dest =  new File(testRoot + File.separator + "Empty.parquet");
+        ParquetTools.writeTable(emptyTable, dest);
+        Table result = ParquetTools.readTable(dest);
         TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
     }
@@ -188,29 +189,30 @@ public class TestTableManagementTools {
     @Test
     public void testWriteTableMissingColumns() {
         // TODO (deephaven/deephaven-core/issues/321): Fix the apparent bug in the parquet table writer.
-//        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
-//                "B    = NULL_BYTE",
-//                "C    = NULL_CHAR",
-//                "S    = NULL_SHORT",
-//                "I    = NULL_INT",
-//                "L    = NULL_LONG",
-//                "F    = NULL_FLOAT",
-//                "D    = NULL_DOUBLE",
-//                "Bl   = (Boolean) null",
-//                "Str  = (String) null",
-//                "DT   = (DBDateTime) null"
-//        );
-//        TableManagementTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{new File(testRoot + File.separator + "Null")});
-//        final Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Null"));
-//        TstUtils.assertTableEquals(nullTable, result);
-//        result.close();
+        final Table nullTable = TableTools.emptyTable(10_000L).updateView(
+                "B    = NULL_BYTE",
+                "C    = NULL_CHAR",
+                "S    = NULL_SHORT",
+                "I    = NULL_INT",
+                "L    = NULL_LONG",
+                "F    = NULL_FLOAT",
+                "D    = NULL_DOUBLE",
+                "Bl   = (Boolean) null",
+                "Str  = (String) null",
+                "DT   = (DBDateTime) null"
+        );
+        final File dest = new File(testRoot + File.separator + "Null.parquet");
+        ParquetTools.writeTables(new Table[]{TableTools.emptyTable(10_000L)}, nullTable.getDefinition(), new File[]{dest});
+        final Table result = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(nullTable, result);
+        result.close();
     }
 
     @Test
     public void testWriteTableExceptions() throws IOException {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {
-            TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"), storageFormat);
+            ParquetTools.writeTable(table1, new File(testRoot + File.separator + "unexpectedFile" + File.separator + "Table1"));
             TestCase.fail("Expected exception");
         } catch (UncheckedDeephavenException e) {
             //Expected
@@ -218,12 +220,15 @@ public class TestTableManagementTools {
 
         new File(testRoot + File.separator + "Table1").mkdirs();
         new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
-        TableManagementTools.writeTable(table1, new File(testRoot + File.separator + "Table1"), storageFormat);
-        TestCase.assertFalse(new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").exists());
-
+        try {
+            ParquetTools.writeTable(table1, new File(testRoot + File.separator + "Table1"));
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException e) {
+            //Expected
+        }
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
-            TableManagementTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
+            ParquetTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
             TestCase.fail("Expected exception");
         } catch (UnsupportedOperationException e) {
             //Expected exception
@@ -233,7 +238,7 @@ public class TestTableManagementTools {
 
         new File(testRoot + File.separator + "Nested").setReadOnly();
         try {
-            TableManagementTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"), storageFormat);
+            ParquetTools.writeTable(brokenTable, new File(testRoot + File.separator + "Nested" + File.separator + "Broken"));
             TestCase.fail("Expected exception");
         } catch (RuntimeException e) {
             //Expected exception
@@ -247,13 +252,13 @@ public class TestTableManagementTools {
             //TODO: Remove when come up with a workaround for Windows file handling issues.
             return;
         }
-        File path = new File(testRoot + File.separator + "Table1");
-        TableManagementTools.writeTable(table1, path, storageFormat);
-        Table result = TableManagementTools.readTable(new File(testRoot + File.separator + "Table1"));
+        File dest = new File(testRoot + File.separator + "Table1.parquet");
+        ParquetTools.writeTable(table1, dest);
+        Table result = ParquetTools.readTable(dest);
         TestTableTools.tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
-        TableManagementTools.deleteTable(path);
-        TestCase.assertFalse(path.exists());
+        ParquetTools.deleteTable(dest);
+        TestCase.assertFalse(dest.exists());
     }
 
     private Table getAggregatedResultTable() {
@@ -272,11 +277,11 @@ public class TestTableManagementTools {
 
     @Test
     public void testWriteAggregatedTable() {
-        String path = testRoot + File.separator + "testWriteAggregatedTable";
+        String path = testRoot + File.separator + "testWriteAggregatedTable.parquet";
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
-        TableManagementTools.writeTable(table, def, new File(path), TableManagementTools.StorageFormat.Parquet);
-        Table readBackTable = TableManagementTools.readTable(new File(path), def);
+        ParquetTools.writeTable(table, def, new File(path));
+        Table readBackTable = ParquetTools.readTable(new File(path));
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();
@@ -285,9 +290,9 @@ public class TestTableManagementTools {
     }
 
     public void compressionCodecTestHelper(final String codec) {
-        TableManagementTools.setDefaultParquetCompressionCodec(codec);
+        ParquetInstructions.setDefaultCompressionCodecName(codec);
         String path = testRoot + File.separator + "Table1.parquet";
-        TableManagementTools.writeTable(table1, path);
+        ParquetTools.writeTable(table1, path);
         assertTrue(new File(path).length() > 0);
     }
 

@@ -54,8 +54,12 @@ class TypeInfos {
         return Optional.ofNullable(BY_CLASS.get(clazz));
     }
 
-    private static TypeInfo lookupTypeInfo(@NotNull final ColumnDefinition<?> column) {
-        if (CodecLookup.codecRequired(column) || CodecLookup.explicitCodecPresent(column)) {
+    private static TypeInfo lookupTypeInfo(
+            @NotNull final ColumnDefinition<?> column,
+            @NotNull final ParquetInstructions instructions
+    ) {
+        if (CodecLookup.codecRequired(column)
+                || CodecLookup.explicitCodecPresent(instructions.getCodecName(column.getName()))) {
             return new CodecType<>();
         }
         final Class<?> componentType = column.getComponentType();
@@ -69,10 +73,15 @@ class TypeInfos {
         return lookupTypeInfo(dataType).orElseThrow(IllegalStateException::new);
     }
 
-    static Pair<String, String> getCodecAndArgs(ColumnDefinition<?> columnDefinition) {
+    static Pair<String, String> getCodecAndArgs(
+            @NotNull final ColumnDefinition<?> columnDefinition,
+            @NotNull final ParquetInstructions instructions
+    ) {
         // Explicit codecs always take precedence
-        if (CodecLookup.explicitCodecPresent(columnDefinition)) {
-            return new ImmutablePair<>(columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
+        final String colName = columnDefinition.getName();
+        final String codecNameFromInstructions = instructions.getCodecName(colName);
+        if (CodecLookup.explicitCodecPresent(codecNameFromInstructions)) {
+            return new ImmutablePair<>(codecNameFromInstructions, instructions.getCodecArgs(colName));
         }
         // No need to impute a codec for any basic formats we already understand
         if (!CodecLookup.codecRequired(columnDefinition)) {
@@ -86,8 +95,11 @@ class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static TypeInfo getTypeInfo(ColumnDefinition<?> column) throws SchemaMappingException {
-        return lookupTypeInfo(column);
+    static TypeInfo getTypeInfo(
+            @NotNull final ColumnDefinition<?> column,
+            @NotNull final ParquetInstructions instructions
+    ) {
+        return lookupTypeInfo(column, instructions);
     }
 
     private static boolean isRequired(ColumnDefinition<?> columnDefinition) {
@@ -312,13 +324,17 @@ class TypeInfos {
             return getTypes().contains(clazz);
         }
 
-        default Type createSchemaType(@NotNull final ColumnDefinition<?> columnDefinition) {
+        default Type createSchemaType(
+                @NotNull final ColumnDefinition<?> columnDefinition,
+                @NotNull final ParquetInstructions instructions
+        ) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
 
             final PrimitiveBuilder<PrimitiveType> builder;
             final boolean isRepeating;
-            if (CodecLookup.explicitCodecPresent(columnDefinition) || CodecLookup.codecRequired(columnDefinition)) {
+            if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))
+                    || CodecLookup.codecRequired(columnDefinition)) {
                 builder = getBuilder(isRequired(columnDefinition), false, dataType);
                 isRepeating = false;
             } else if (componentType != null) {

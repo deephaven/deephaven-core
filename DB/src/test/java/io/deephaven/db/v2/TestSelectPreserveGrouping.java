@@ -5,7 +5,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.ColumnHolder;
@@ -67,7 +67,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
 
     public void testPreserveDeferredGrouping() throws IOException {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
-
+        final File dest = new File(testDirectory, "Table.parquet");
         try {
             final ColumnHolder symHolder = TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
             final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
@@ -84,9 +84,9 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             assertTrue(x.getDefinition().getColumn("Sym").isGrouping());
 
             System.out.println(x.getDefinition());
-            TableManagementTools.writeTable(x, testDirectory);
+            ParquetTools.writeTable(x, dest);
 
-            final Table readBack = TableManagementTools.readTable(testDirectory);
+            final Table readBack = ParquetTools.readTable(dest);
             TableTools.showWithIndex(readBack);
 
             assertTrue(readBack.getIndex().hasGrouping(readBack.getColumnSource("Sym")));

@@ -93,14 +93,14 @@ public abstract class SourceTable extends RedefinableTable {
                 @NotNull final SourceTableComponentFactory componentFactory,
                 @NotNull final TableLocationProvider locationProvider,
                 final LiveTableRegistrar liveTableRegistrar) {
-        super(StringUtils.rewriteStringColumnTypes(tableDefinition), description);
+        super(tableDefinition, description);
 
         this.componentFactory = Require.neqNull(componentFactory, "componentFactory");
         this.locationProvider = Require.neqNull(locationProvider, "locationProvider");
         this.liveTableRegistrar = liveTableRegistrar;
 
         final boolean isLive = liveTableRegistrar != null;
-        columnSourceManager = componentFactory.createColumnSourceManager(isLive, definition.getColumns() /* NB: this is the *re-written* definition passed to the super-class constructor. */);
+        columnSourceManager = componentFactory.createColumnSourceManager(isLive, ColumnToCodecMappings.EMPTY, definition.getColumns() /* NB: this is the *re-written* definition passed to the super-class constructor. */);
         if (isLive) {
             // NB: There's no reason to start out trying to group, if this is a live table.
             columnSourceManager.disableGrouping();

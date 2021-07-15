@@ -11,7 +11,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
@@ -164,13 +164,18 @@ public class TestChunkedRegionedOperations {
             ColumnDefinition.ofDouble("D"),
             ColumnDefinition.ofBoolean("Bl"),
             ColumnDefinition.ofString("Sym"),
-            ColumnDefinition.ofString("Str").withVarSizeString(),
+            ColumnDefinition.ofString("Str").withSymbolTable(),
             ColumnDefinition.ofTime("DT"),
             ColumnDefinition.fromGenericType("SymS", StringSet.class),
             ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
             ColumnDefinition.fromGenericType("Ext", SimpleExternalizable.class),
-            ColumnDefinition.ofFixedWidthCodec("Fix", BigInteger.class, BigIntegerCodec.class.getName(), "4", new BigIntegerCodec(4).expectedObjectWidth()),
-            ColumnDefinition.ofVariableWidthCodec("Var", BigInteger.class, BigIntegerCodec.class.getName()));
+            ColumnDefinition.fromGenericType("Fix", BigInteger.class),
+            ColumnDefinition.fromGenericType("Var", BigInteger.class)
+        );
+        final ParquetInstructions parquetInstructions = new ParquetInstructions.Builder()
+                .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
+                .addColumnCodec("Var", BigIntegerCodec.class.getName())
+                .build();
 
         final Table inputData = ((QueryTable)TableTools.emptyTable(TABLE_SIZE)
                 .update(
@@ -235,28 +240,28 @@ public class TestChunkedRegionedOperations {
         final List<TableLocationMetadataIndex.TableLocationSnapshot> snapshots = new ArrayList<>();
 
         final TableMap partitionedInputData = inputData.byExternal("PC");
-        TableManagementTools.writeParquetTables(
+        ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition,
-                CompressionCodecName.SNAPPY,
+                parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName());
+                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
                         })
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
         );
 
         final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").byExternal("PC");
-        TableManagementTools.writeParquetTables(
+        ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition,
-                CompressionCodecName.SNAPPY,
+                parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
                         .map(pcv -> {
                             snapshots.add(new TableLocationMetadataIndex.TableLocationSnapshot("IP", "P" + pcv, TableLocation.Format.PARQUET, STRIPE_SIZE, 0L));
-                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName());
+                            return new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet");
                         })
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
