@@ -11,6 +11,8 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
 import com.google.rpc.Code;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarragePutMetadata;
 import io.deephaven.barrage.flatbuf.Message;
@@ -250,6 +252,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
         // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
+        decodeLoop:
         for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
             final int size;
             switch (tag) {
@@ -271,16 +274,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     size = decoder.readRawVarint32();
                     //noinspection UnstableApiUsage
                     mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
-                    break;
+                    // we do not actually remove the content from our stream; prevent reading the next tag via a labeled break
+                    break decodeLoop;
 
                 default:
                     log.info().append("Skipping tag: ").append(tag).endl();
                     decoder.skipField(tag);
-            }
-
-            // we do not actually remove the content from our stream; prevent reading the next tag via break
-            if (mi.inputStream != null) {
-                break;
             }
         }
 
@@ -399,21 +398,22 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final BarrageMessage msg = new BarrageMessage();
             final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
 
-            final MutableInt bufferOffset = new MutableInt();
             final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                     new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
-            final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
-                    new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
-                        int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
-                        int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
-                        if (i < batch.buffersLength() - 1) {
-                            final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i + 1).offset());
-                            // our parsers handle overhanging buffers
-                            length += Math.max(0, nextOffset - offset - length);
-                        }
-                        bufferOffset.setValue(offset + length);
-                        return new ChunkInputStreamGenerator.BufferInfo(length);
-                    });
+
+            final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+            for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+                if (bi < batch.buffersLength() - 1) {
+                    final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                    // our parsers handle overhanging buffers
+                    length += Math.max(0, nextOffset - offset - length);
+                }
+                bufferInfo.add(length);
+            }
+            final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
             msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
             msg.shifted = IndexShiftData.EMPTY;

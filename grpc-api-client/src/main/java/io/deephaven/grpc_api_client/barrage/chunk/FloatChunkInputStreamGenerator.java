@@ -7,6 +7,7 @@
 
 package io.deephaven.grpc_api_client.barrage.chunk;
 
+import gnu.trove.iterator.TLongIterator;
 import io.deephaven.db.v2.sources.chunk.FloatChunk;
 import io.deephaven.util.QueryConstants;
 import com.google.common.io.LittleEndianDataOutputStream;
@@ -137,12 +138,12 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     static Chunk<Attributes.Values> extractChunkFromInputStream(
             final int elementSize, final Options options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final Iterator<BufferInfo> bufferInfoIter,
+            final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final BufferInfo validityBuffer = bufferInfoIter.next();
-        final BufferInfo payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.next();
+        final long payloadBuffer = bufferInfoIter.next();
 
         final WritableFloatChunk<Attributes.Values> chunk = WritableFloatChunk.makeWritableChunk(nodeInfo.numElements);
 
@@ -152,16 +153,16 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
 
         final int numValidityLongs = options.useDeephavenNulls ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls && validityBuffer.length != 0) {
+            if (options.useDeephavenNulls && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }
             int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
+            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
             final long valBufRead = jj * 8L;
-            if (valBufRead < validityBuffer.length) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
+            if (valBufRead < validityBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
             }
             // we support short validity buffers
             for (; jj < numValidityLongs; ++jj) {
@@ -170,7 +171,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             // consumed entire validity buffer by here
 
             final long payloadRead = (long) nodeInfo.numElements * elementSize;
-            if (payloadBuffer.length < payloadRead) {
+            if (payloadBuffer < payloadRead) {
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }
 
@@ -196,7 +197,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                 }
             }
 
-            final long overhangPayload = payloadBuffer.length - payloadRead;
+            final long overhangPayload = payloadBuffer - payloadRead;
             if (overhangPayload > 0) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, overhangPayload));
             }

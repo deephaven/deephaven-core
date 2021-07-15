@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.barrage.flatbuf.BarrageRecordBatch;
 import io.deephaven.barrage.flatbuf.Message;
@@ -94,18 +96,20 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                     final MutableInt bufferOffset = new MutableInt();
                     final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
-                    final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
-                            new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> {
-                                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).offset());
-                                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i).length());
-                                if (i < batch.buffersLength() - 1) {
-                                    final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(i + 1).offset());
-                                    // our parsers handle overhanging buffers
-                                    length += Math.max(0, nextOffset - offset - length);
-                                }
-                                bufferOffset.setValue(offset + length);
-                                return new ChunkInputStreamGenerator.BufferInfo(length);
-                            });
+
+                    final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+                    for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                        int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                        int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+                        if (bi < batch.buffersLength() - 1) {
+                            final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                            // our parsers handle overhanging buffers
+                            length += Math.max(0, nextOffset - offset - length);
+                        }
+                        bufferOffset.setValue(offset + length);
+                        bufferInfo.add(length);
+                    }
+                    final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
                     if (msg.isSnapshot) {
                         final ByteBuffer effectiveViewport = batch.effectiveViewportAsByteBuffer();

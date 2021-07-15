@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.base.Charsets;
+import gnu.trove.iterator.TLongIterator;
 import io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.barrage.flatbuf.FieldNode;
 import io.deephaven.db.util.LongSizedDataStructure;
@@ -91,7 +92,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final Options options,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final Iterator<BufferInfo> bufferInfoIter,
+            final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
         switch (chunkType) {
             case Boolean:

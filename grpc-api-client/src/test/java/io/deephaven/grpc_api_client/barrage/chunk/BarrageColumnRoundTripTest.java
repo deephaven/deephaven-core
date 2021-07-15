@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataInputStream;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -418,8 +419,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null);
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
-                final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
+                final TLongArrayList bufferNodes = new TLongArrayList();
+                column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
 
@@ -433,8 +434,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, Index.CURRENT_FACTORY.getEmptyIndex());
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
-                final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
+                final TLongArrayList bufferNodes = new TLongArrayList();
+                column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
@@ -454,8 +455,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, subset);
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
-                final ArrayList<ChunkInputStreamGenerator.BufferInfo> bufferNodes = new ArrayList<>();
-                column.visitBuffers((length) -> bufferNodes.add(new ChunkInputStreamGenerator.BufferInfo(length)));
+                final TLongArrayList bufferNodes = new TLongArrayList();
+                column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
