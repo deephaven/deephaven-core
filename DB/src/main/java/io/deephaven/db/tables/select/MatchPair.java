@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables.select;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -15,6 +16,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Holds a pair of column names.
@@ -36,16 +38,20 @@ public class MatchPair implements Serializable {
         return new MatchPair(addition.newColumn().name(), addition.existingColumn().name());
     }
 
-    public static MatchPair[] fromMatches(Collection<JoinMatch> matches) {
+    public static MatchPair[] fromMatches(Collection<? extends JoinMatch> matches) {
         return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
     }
 
-    public static MatchPair[] fromAddition(Collection<JoinAddition> matches) {
+    public static MatchPair[] fromAddition(Collection<? extends JoinAddition> matches) {
         return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
     }
 
-    public static MatchPair[] fromPairs(Collection<Pair> pairs) {
+    public static MatchPair[] fromPairs(Collection<? extends Pair> pairs) {
         return pairs.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static Stream<ColumnName> outputs(Collection<MatchPair> pairs) {
+        return pairs.stream().map(MatchPair::left).map(ColumnName::of);
     }
 
     public final String leftColumn;

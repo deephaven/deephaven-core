@@ -20,6 +20,11 @@ public class FilterTest {
     }
 
     @Test
+    void isNotNull() {
+        toString(Filter.isNotNull(ColumnName.of("Foo")), "!isNull(Foo)");
+    }
+
+    @Test
     void not() {
         toString(Filter.not(Filter.isNull(ColumnName.of("Foo"))), "!(isNull(Foo))");
     }

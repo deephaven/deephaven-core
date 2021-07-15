@@ -87,7 +87,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS where(String... filters);
 
-    TOPS where(Collection<Filter> filters);
+    TOPS where(Collection<? extends Filter> filters);
 
     // -------------------------------------------------------------------------------------------
 
@@ -115,7 +115,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
-    TOPS whereIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
+    TOPS whereIn(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
 
@@ -143,31 +143,31 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
-    TOPS whereNotIn(TABLE rightTable, Collection<JoinMatch> columnsToMatch);
+    TOPS whereNotIn(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
 
     TOPS view(String... columns);
 
-    TOPS view(Collection<Selectable> columns);
+    TOPS view(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
     TOPS updateView(String... columns);
 
-    TOPS updateView(Collection<Selectable> columns);
+    TOPS updateView(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
     TOPS update(String... columns);
 
-    TOPS update(Collection<Selectable> columns);
+    TOPS update(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
     TOPS select(String... columns);
 
-    TOPS select(Collection<Selectable> columns);
+    TOPS select(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------
 
@@ -211,8 +211,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        a result of the match.
      * @return the natural-joined table
      */
-    TOPS naturalJoin(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS naturalJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
 
@@ -257,8 +257,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        a result of the match.
      * @return the exact-joined table
      */
-    TOPS exactJoin(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS exactJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
 
@@ -320,8 +320,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *         the source table is added. The new columns (those corresponding to the input table)
      *         contain an aggregation of all values from the left side that match the join criteria.
      */
-    TOPS leftJoin(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS leftJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
 
@@ -369,8 +369,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS join(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS join(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     /**
      * Perform a cross join with the {@code rightTable}.
@@ -415,8 +415,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param reserveBits The number of bits to reserve for rightTable groups.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS join(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd, int reserveBits);
+    TOPS join(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd, int reserveBits);
 
     // -------------------------------------------------------------------------------------------
 
@@ -460,8 +460,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS aj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     /**
      * Perform an as-of join with the {@code rightTable}.
@@ -479,8 +479,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param asOfJoinRule The binary search operator for the last match pair.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS aj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
+    TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
 
     // -------------------------------------------------------------------------------------------
 
@@ -524,8 +524,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS raj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd);
+    TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd);
 
     /**
      * Perform a reverse-as-of join with the {@code rightTable}.
@@ -548,8 +548,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param reverseAsOfJoinRule The binary search operator for the last match pair.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    TOPS raj(TABLE rightTable, Collection<JoinMatch> columnsToMatch,
-        Collection<JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule);
+    TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+        Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule);
 
     // -------------------------------------------------------------------------------------------
 
@@ -557,9 +557,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS by(String... groupByColumns);
 
-    TOPS by(Collection<Selectable> groupByColumns);
+    TOPS by(Collection<? extends Selectable> groupByColumns);
 
-    TOPS by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations);
+    TOPS by(Collection<? extends Selectable> groupByColumns,
+        Collection<? extends Aggregation> aggregations);
 
     // -------------------------------------------------------------------------------------------
 

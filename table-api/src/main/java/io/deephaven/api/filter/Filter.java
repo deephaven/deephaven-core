@@ -16,6 +16,10 @@ public interface Filter {
         return FilterIsNull.of(column);
     }
 
+    static FilterIsNotNull isNotNull(ColumnName column) {
+        return FilterIsNotNull.of(column);
+    }
+
     static FilterNot not(Filter filter) {
         return FilterNot.of(filter);
     }
@@ -28,6 +32,8 @@ public interface Filter {
         // TODO (deephaven-core#829): Add more table api Filter structuring
 
         void visit(FilterIsNull isNull);
+
+        void visit(FilterIsNotNull isNotNull);
 
         void visit(FilterCondition match);
 

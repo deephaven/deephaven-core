@@ -4,6 +4,7 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.value.Value;
@@ -51,6 +52,10 @@ public class Strings {
 
     public static String of(FilterIsNull isNull) {
         return String.format("isNull(%s)", of(isNull.column()));
+    }
+
+    public static String of(FilterIsNotNull isNotNull) {
+        return String.format("!isNull(%s)", of(isNotNull.column()));
     }
 
     public static String of(Pair pair) {
@@ -126,6 +131,11 @@ public class Strings {
         @Override
         public void visit(FilterIsNull isNull) {
             out = of(isNull);
+        }
+
+        @Override
+        public void visit(FilterIsNotNull isNotNull) {
+            out = of(isNotNull);
         }
 
         @Override

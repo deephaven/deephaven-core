@@ -99,6 +99,50 @@ public class FilterConditionTest {
         toString(FOO_NEQ_BAR, "Foo != Bar");
     }
 
+    @Test
+    void invert() {
+        assertThat(FOO_EQ_42.invert()).isEqualTo(FOO_NEQ_42);
+        assertThat(FOO_NEQ_42.invert()).isEqualTo(FOO_EQ_42);
+        assertThat(FOO_GT_42.invert()).isEqualTo(FOO_LTE_42);
+        assertThat(FOO_GTE_42.invert()).isEqualTo(FOO_LT_42);
+        assertThat(FOO_LT_42.invert()).isEqualTo(FOO_GTE_42);
+        assertThat(FOO_LTE_42.invert()).isEqualTo(FOO_GT_42);
+    }
+
+    @Test
+    void transpose() {
+        assertThat(FOO_EQ_42.transpose()).isEqualTo(FilterCondition.eq(V42, FOO));
+        assertThat(FOO_NEQ_42.transpose()).isEqualTo(FilterCondition.neq(V42, FOO));
+        assertThat(FOO_GT_42.transpose()).isEqualTo(FilterCondition.lt(V42, FOO));
+        assertThat(FOO_GTE_42.transpose()).isEqualTo(FilterCondition.lte(V42, FOO));
+        assertThat(FOO_LT_42.transpose()).isEqualTo(FilterCondition.gt(V42, FOO));
+        assertThat(FOO_LTE_42.transpose()).isEqualTo(FilterCondition.gte(V42, FOO));
+
+        assertThat(FilterCondition.eq(V42, FOO).transpose()).isEqualTo(FOO_EQ_42);
+        assertThat(FilterCondition.neq(V42, FOO).transpose()).isEqualTo(FOO_NEQ_42);
+        assertThat(FilterCondition.lt(V42, FOO).transpose()).isEqualTo(FOO_GT_42);
+        assertThat(FilterCondition.lte(V42, FOO).transpose()).isEqualTo(FOO_GTE_42);
+        assertThat(FilterCondition.gt(V42, FOO).transpose()).isEqualTo(FOO_LT_42);
+        assertThat(FilterCondition.gte(V42, FOO).transpose()).isEqualTo(FOO_LTE_42);
+    }
+
+    @Test
+    void maybeTranspose() {
+        assertThat(FOO_EQ_42.maybeTranspose()).isEqualTo(FOO_EQ_42);
+        assertThat(FOO_NEQ_42.maybeTranspose()).isEqualTo(FOO_NEQ_42);
+        assertThat(FOO_GT_42.maybeTranspose()).isEqualTo(FOO_GT_42);
+        assertThat(FOO_GTE_42.maybeTranspose()).isEqualTo(FOO_GTE_42);
+        assertThat(FOO_LT_42.maybeTranspose()).isEqualTo(FOO_LT_42);
+        assertThat(FOO_LTE_42.maybeTranspose()).isEqualTo(FOO_LTE_42);
+
+        assertThat(FilterCondition.eq(V42, FOO).maybeTranspose()).isEqualTo(FOO_EQ_42);
+        assertThat(FilterCondition.neq(V42, FOO).maybeTranspose()).isEqualTo(FOO_NEQ_42);
+        assertThat(FilterCondition.lt(V42, FOO).maybeTranspose()).isEqualTo(FOO_GT_42);
+        assertThat(FilterCondition.lte(V42, FOO).maybeTranspose()).isEqualTo(FOO_GTE_42);
+        assertThat(FilterCondition.gt(V42, FOO).maybeTranspose()).isEqualTo(FOO_LT_42);
+        assertThat(FilterCondition.gte(V42, FOO).maybeTranspose()).isEqualTo(FOO_LTE_42);
+    }
+
     private static void toString(FilterCondition condition, String expected) {
         assertThat(toString(condition)).isEqualTo(expected);
     }

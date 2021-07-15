@@ -6,6 +6,7 @@ package io.deephaven.db.tables;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.db.tables.lang.DBLanguageParser;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A Deephaven table.
@@ -358,7 +360,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     @AsyncMethod
-    default Table where(Collection<Filter> filters) {
+    default Table where(Collection<? extends Filter> filters) {
         return where(SelectFilter.from(filters));
     }
 
@@ -432,12 +434,12 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table whereIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
         return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
     @Override
-    default Table whereNotIn(Table rightTable, Collection<JoinMatch> columnsToMatch) {
+    default Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
         return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
     }
 
@@ -515,7 +517,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table select(Collection<Selectable> columns) {
+    default Table select(Collection<? extends Selectable> columns) {
         return select(SelectColumn.from(columns));
     }
 
@@ -548,7 +550,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table update(Collection<Selectable> columns) {
+    default Table update(Collection<? extends Selectable> columns) {
         return update(SelectColumn.from(columns));
     }
 
@@ -599,7 +601,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     @AsyncMethod
-    default Table view(Collection<Selectable> columns) {
+    default Table view(Collection<? extends Selectable> columns) {
         return view(SelectColumn.from(columns));
     }
 
@@ -613,7 +615,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     @AsyncMethod
-    default Table updateView(Collection<Selectable> columns) {
+    default Table updateView(Collection<? extends Selectable> columns) {
         return updateView(SelectColumn.from(columns));
     }
 
@@ -882,7 +884,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      */
     Table leftJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
-    default Table leftJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return leftJoin(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
@@ -914,7 +916,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table exactJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
     @Override
-    default Table exactJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return exactJoin(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
@@ -994,14 +996,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
     }
 
-    default Table aj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return aj(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
                 MatchPair.fromAddition(columnsToAdd));
     }
 
-    default Table aj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return aj(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
@@ -1073,14 +1075,14 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
     }
 
-    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return raj(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
                 MatchPair.fromAddition(columnsToAdd));
     }
 
-    default Table raj(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return raj(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
@@ -1136,7 +1138,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table naturalJoin(Table rightTable, MatchPair columnsToMatch[], MatchPair[] columnsToAdd);
 
     @Override
-    default Table naturalJoin(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return naturalJoin(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
@@ -1361,7 +1363,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
     @Override
-    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd) {
+    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return join(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
@@ -1369,7 +1371,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     }
 
     @Override
-    default Table join(Table rightTable, Collection<JoinMatch> columnsToMatch, Collection<JoinAddition> columnsToAdd, int numRightBitsToReserve) {
+    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve) {
         return join(
             rightTable,
             MatchPair.fromMatches(columnsToMatch),
@@ -1411,16 +1413,35 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Override
     @AsyncMethod
-    default Table by(Collection<Selectable> groupByColumns) {
+    default Table by(Collection<? extends Selectable> groupByColumns) {
         return by(SelectColumn.from(groupByColumns));
     }
 
     @Override
     @AsyncMethod
-    default Table by(Collection<Selectable> groupByColumns, Collection<Aggregation> aggregations) {
-        return by(
-            new ComboAggregateFactory(ComboBy.fromOptimized(aggregations)),
-            SelectColumn.from(groupByColumns));
+    default Table by(Collection<? extends Selectable> groupByColumns, Collection<? extends Aggregation> aggregations) {
+        List<ComboBy> optimized = ComboBy.optimize(aggregations);
+        List<ColumnName> optimizedOrder = optimized.stream()
+                .map(ComboBy::getResultPairs)
+                .flatMap(Stream::of)
+                .map(MatchPair::left)
+                .map(ColumnName::of)
+                .collect(Collectors.toList());
+        List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
+
+        Table aggregationTable = by(
+                new ComboAggregateFactory(optimized),
+                SelectColumn.from(groupByColumns));
+
+        if (userOrder.equals(optimizedOrder)) {
+            return aggregationTable;
+        }
+
+        // We need to re-order the columns to match the user-provided order
+        List<ColumnName> newOrder = Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
+                .collect(Collectors.toList());
+
+        return aggregationTable.view(newOrder);
     }
 
     default Table headBy(long nRows, SelectColumn... groupByColumns) {

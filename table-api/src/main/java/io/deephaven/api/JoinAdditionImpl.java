@@ -22,8 +22,7 @@ abstract class JoinAdditionImpl implements JoinAddition {
     final void checkNotSameColumn() {
         if (newColumn().equals(existingColumn())) {
             // To make sure that JoinAddition#equals() works as we would expect, we should always
-            // use
-            // canonical ColumnName when applicable.
+            // use canonical ColumnName when applicable.
             throw new IllegalArgumentException(
                 "Should not construct JoinAdditionImpl with equal columns, use the ColumnName directly");
         }

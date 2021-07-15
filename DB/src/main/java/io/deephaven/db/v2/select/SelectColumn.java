@@ -32,7 +32,7 @@ public interface SelectColumn {
         return selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
     }
 
-    static SelectColumn[] from(Collection<Selectable> selectables) {
+    static SelectColumn[] from(Collection<? extends Selectable> selectables) {
         return selectables.stream().map(SelectColumn::of).toArray(SelectColumn[]::new);
     }
 
@@ -159,23 +159,23 @@ public interface SelectColumn {
         }
 
         @Override
-        public void visit(Value value) {
-            value.walk((Value.Visitor)this);
+        public void visit(Value rhs) {
+            rhs.walk((Value.Visitor)this);
         }
 
         @Override
-        public void visit(ColumnName name) {
-            out = new SourceColumn(name.name(), lhs.name());
+        public void visit(ColumnName rhs) {
+            out = new SourceColumn(rhs.name(), lhs.name());
         }
 
         @Override
-        public void visit(RawString rawString) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rawString.value()));
+        public void visit(RawString rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
         }
 
         @Override
-        public void visit(long x) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%d", lhs.name(), x));
+        public void visit(long rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
         }
     }
 }

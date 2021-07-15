@@ -7,6 +7,13 @@ import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 
+/**
+ * Note: the sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at
+ * the moment.
+ * 
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast
+ *      aggregations with sort direction</a>
+ */
 @Immutable
 @BuildableStyle
 public abstract class SortedFirst implements Aggregation {

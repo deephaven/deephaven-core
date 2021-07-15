@@ -37,6 +37,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.util.tuples.generated.ByteDoubleTuple;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.ReverseLookup;
@@ -62,6 +63,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -627,17 +629,30 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     public interface ComboBy {
 
-        static List<ComboBy> of(Aggregation agg) {
-            return agg.walk(new ComboByAggregationAdapter()).getOut();
+        /**
+         * Equivalent to {@code optimize(Collections.singleton(aggregation))}.
+         *
+         * @param aggregation the aggregation
+         * @return the optimized combos
+         * @see #optimize(Collection)
+         */
+        static List<ComboBy> optimize(Aggregation aggregation) {
+            return optimize(Collections.singleton(aggregation));
         }
 
-        static List<ComboBy> from(Collection<Aggregation> agg) {
-            return agg.stream().map(ComboBy::of).flatMap(List::stream).collect(Collectors.toList());
-        }
-
-        static List<ComboBy> fromOptimized(Collection<Aggregation> agg) {
+        /**
+         * Optimizes the aggregations, collapsing relevant aggregations into single {@link ComboBy comboBys} where
+         * application.
+         *
+         * <p>
+         * Note: due to the optimization, the combo bys may not be in the same order as specified in {@code aggregations}.
+         *
+         * @param aggregations the aggregations
+         * @return the optimized combos
+         */
+        static List<ComboBy> optimize(Collection<? extends Aggregation> aggregations) {
             ComboByAggregationAdapterOptimizer builder = new ComboByAggregationAdapterOptimizer();
-            for (Aggregation a : agg) {
+            for (Aggregation a : aggregations) {
                 a.walk(builder);
             }
             return builder.build();
@@ -1431,135 +1446,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 
-    private static class ComboByAggregationAdapter implements Aggregation.Visitor {
-
-        private ComboBy out;
-        private List<ComboBy> multi;
-
-        public List<ComboBy> getOut() {
-            if (multi != null) {
-                return multi;
-            }
-            if (out != null) {
-                return Collections.singletonList(out);
-            }
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public void visit(Min min) {
-            out = Agg(AggType.Min, MatchPair.of(min.pair()));
-        }
-
-        @Override
-        public void visit(Max max) {
-            out = Agg(AggType.Max, MatchPair.of(max.pair()));
-        }
-
-        @Override
-        public void visit(Sum sum) {
-            out = Agg(AggType.Sum, MatchPair.of(sum.pair()));
-        }
-
-        @Override
-        public void visit(AbsSum absSum) {
-            out = Agg(AggType.AbsSum, MatchPair.of(absSum.pair()));
-        }
-
-        @Override
-        public void visit(Var var) {
-            out = Agg(AggType.Var, MatchPair.of(var.pair()));
-        }
-
-        @Override
-        public void visit(Avg avg) {
-            out = Agg(AggType.Avg, MatchPair.of(avg.pair()));
-        }
-
-        @Override
-        public void visit(First first) {
-            out = Agg(AggType.First, MatchPair.of(first.pair()));
-        }
-
-        @Override
-        public void visit(Last last) {
-            out = Agg(AggType.Last, MatchPair.of(last.pair()));
-        }
-
-        @Override
-        public void visit(Std std) {
-            out = Agg(AggType.Std, MatchPair.of(std.pair()));
-        }
-
-        @Override
-        public void visit(Med med) {
-            out = Agg(new PercentileByStateFactoryImpl(0.50d, med.averageMedian()), MatchPair.of(med.pair()));
-        }
-
-        @Override
-        public void visit(Pct pct) {
-            out = Agg(new PercentileByStateFactoryImpl(pct.percentile(), pct.averageMedian()), MatchPair.of(pct.pair()));
-        }
-
-        @Override
-        public void visit(WSum wSum) {
-            out = Agg(new WeightedSumStateFactoryImpl(wSum.weight().name()), MatchPair.of(wSum.pair()));
-        }
-
-        @Override
-        public void visit(WAvg wAvg) {
-            out = Agg(new WeightedAverageStateFactoryImpl(wAvg.weight().name()), MatchPair.of(wAvg.pair()));
-        }
-
-        @Override
-        public void visit(Count count) {
-            out = new CountComboBy(count.column().name());
-        }
-
-        @Override
-        public void visit(CountDistinct countDistinct) {
-            out = Agg(new CountDistinctStateFactory(countDistinct.countNulls()), MatchPair.of(countDistinct.pair()));
-        }
-
-        @Override
-        public void visit(Distinct distinct) {
-            out = Agg(new DistinctStateFactory(distinct.includeNulls()), MatchPair.of(distinct.pair()));
-        }
-
-        @Override
-        public void visit(Array array) {
-            out = Agg(AggType.Array, MatchPair.of(array.pair()));
-        }
-
-        @Override
-        public void visit(Unique unique) {
-            out = Agg(new UniqueStateFactory(unique.includeNulls()), MatchPair.of(unique.pair()));
-        }
-
-        @Override
-        public void visit(SortedFirst sortedFirst) {
-            // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-            String[] columns = sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-            out = Agg(new SortedFirstBy(columns), MatchPair.of(sortedFirst.pair()));
-        }
-
-        @Override
-        public void visit(SortedLast sortedLast) {
-            // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-            String[] columns = sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-            out = Agg(new SortedLastBy(columns), MatchPair.of(sortedLast.pair()));
-        }
-
-        @Override
-        public void visit(Multi<?> multi) {
-            List<ComboBy> results = new ArrayList<>();
-            for (Aggregation aggregation : multi.aggregations()) {
-                results.addAll(ComboBy.of(aggregation));
-            }
-            this.multi = results;
-        }
-    }
-
     private static class ComboByAggregationAdapterOptimizer implements Aggregation.Visitor {
 
         private final List<Pair> absSums = new ArrayList<>();
@@ -1573,7 +1459,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private final List<Pair> maxs = new ArrayList<>();
         private final Map<Boolean, List<Pair>> medians = new HashMap<>();
         private final List<Pair> mins = new ArrayList<>();
-        private final Map<io.deephaven.base.Pair<Boolean, Double>, List<Pair>> pcts = new HashMap<>();
+        private final Map<ByteDoubleTuple, List<Pair>> pcts = new HashMap<>();
         private final Map<List<SortColumn>, List<Pair>> sortedFirsts = new HashMap<>();
         private final Map<List<SortColumn>, List<Pair>> sortedLasts = new HashMap<>();
         private final List<Pair> stds = new ArrayList<>();
@@ -1583,128 +1469,241 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private final Map<ColumnName, List<Pair>> wAvgs = new HashMap<>();
         private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
 
+        // We'll do our best to maintain the original combo ordering.
+        // This will maintain the user-specified order as long as the user aggregation types were all next to each other.
+        //
+        // ie:
+        //
+        // by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] ) will not need to be re-ordered
+        //
+        // by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] ) will need to be re-ordered
+        private final LinkedHashSet<BuildLogic> buildOrder = new LinkedHashSet<>();
+
+        @FunctionalInterface
+        private interface BuildLogic {
+            void appendTo(List<ComboBy> outs);
+        }
+
+        // Unfortunately, it doesn't look like we can add ad-hoc lambdas to buildOrder, they don't appear to be equal
+        // across multiple constructions.
+        private final BuildLogic buildAbsSums = this::buildAbsSums;
+        private final BuildLogic buildArrays = this::buildArrays;
+        private final BuildLogic buildAvgs = this::buildAvgs;
+        private final BuildLogic buildCounts = this::buildCounts;
+        private final BuildLogic buildCountDistincts = this::buildCountDistincts;
+        private final BuildLogic buildDistincts = this::buildDistincts;
+        private final BuildLogic buildFirsts = this::buildFirsts;
+        private final BuildLogic buildLasts = this::buildLasts;
+        private final BuildLogic buildMaxes = this::buildMaxes;
+        private final BuildLogic buildMedians = this::buildMedians;
+        private final BuildLogic buildMins = this::buildMins;
+        private final BuildLogic buildPcts = this::buildPcts;
+        private final BuildLogic buildSortedFirsts = this::buildSortedFirsts;
+        private final BuildLogic buildSortedLasts = this::buildSortedLasts;
+        private final BuildLogic buildStds = this::buildStds;
+        private final BuildLogic buildSums = this::buildSums;
+        private final BuildLogic buildUniques = this::buildUniques;
+        private final BuildLogic buildVars = this::buildVars;
+        private final BuildLogic buildWAvgs = this::buildWAvgs;
+        private final BuildLogic buildWSums = this::buildWSums;
+
+
         List<ComboBy> build() {
             List<ComboBy> combos = new ArrayList<>();
-            if (!absSums.isEmpty()) {
-                combos.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
+            for (BuildLogic buildLogic : buildOrder) {
+                buildLogic.appendTo(combos);
             }
-            if (!arrays.isEmpty()) {
-                combos.add(Agg(AggType.Array, MatchPair.fromPairs(arrays)));
+            return combos;
+        }
+
+        private void buildWSums(List<ComboBy> combos) {
+            for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
+                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
-            if (!avgs.isEmpty()) {
-                combos.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
+        }
+
+        private void buildWAvgs(List<ComboBy> combos) {
+            for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
+                combos.add(Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
-            for (ColumnName count : counts) {
-                combos.add(new CountComboBy(count.name()));
+        }
+
+        private void buildVars(List<ComboBy> combos) {
+            if (!vars.isEmpty()) {
+                combos.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
             }
-            for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
-                combos.add(Agg(new CountDistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+        }
+
+        private void buildUniques(List<ComboBy> combos) {
+            for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
+                combos.add(Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
-            for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
-                combos.add(Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+        }
+
+        private void buildSums(List<ComboBy> combos) {
+            if (!sums.isEmpty()) {
+                combos.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
             }
-            if (!firsts.isEmpty()) {
-                combos.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
+        }
+
+        private void buildStds(List<ComboBy> combos) {
+            if (!stds.isEmpty()) {
+                combos.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
             }
-            if (!lasts.isEmpty()) {
-                combos.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
-            }
-            if (!maxs.isEmpty()) {
-                combos.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
-            }
-            for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
-            }
-            if (!mins.isEmpty()) {
-                combos.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
-            }
-            for (Map.Entry<io.deephaven.base.Pair<Boolean, Double>, List<Pair>> e : pcts.entrySet()) {
-                combos.add(Agg(new PercentileByStateFactoryImpl(e.getKey().getSecond(), e.getKey().getFirst()), MatchPair.fromPairs(e.getValue())));
-            }
-            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
-                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-                combos.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
-            }
+        }
+
+        private void buildSortedLasts(List<ComboBy> combos) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
                 // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
                 String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
                 combos.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
             }
-            if (!stds.isEmpty()) {
-                combos.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
+        }
+
+        private void buildSortedFirsts(List<ComboBy> combos) {
+            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
+                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+                String[] columns = e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
+                combos.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
             }
-            if (!sums.isEmpty()) {
-                combos.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
+        }
+
+        private void buildPcts(List<ComboBy> combos) {
+            for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
+                combos.add(Agg(new PercentileByStateFactoryImpl(e.getKey().getSecondElement(), e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
             }
-            for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
-                combos.add(Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+        }
+
+        private void buildMins(List<ComboBy> combos) {
+            if (!mins.isEmpty()) {
+                combos.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
             }
-            if (!vars.isEmpty()) {
-                combos.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
+        }
+
+        private void buildMedians(List<ComboBy> combos) {
+            for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
+                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
-            for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
-                combos.add(Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+        }
+
+        private void buildMaxes(List<ComboBy> combos) {
+            if (!maxs.isEmpty()) {
+                combos.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
             }
-            for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+        }
+
+        private void buildLasts(List<ComboBy> combos) {
+            if (!lasts.isEmpty()) {
+                combos.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
             }
-            return combos;
+        }
+
+        private void buildFirsts(List<ComboBy> combos) {
+            if (!firsts.isEmpty()) {
+                combos.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
+            }
+        }
+
+        private void buildDistincts(List<ComboBy> combos) {
+            for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
+                combos.add(Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+        }
+
+        private void buildCountDistincts(List<ComboBy> combos) {
+            for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
+                combos.add(Agg(new CountDistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+            }
+        }
+
+        private void buildCounts(List<ComboBy> combos) {
+            for (ColumnName count : counts) {
+                combos.add(new CountComboBy(count.name()));
+            }
+        }
+
+        private void buildAvgs(List<ComboBy> combos) {
+            if (!avgs.isEmpty()) {
+                combos.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
+            }
+        }
+
+        private void buildArrays(List<ComboBy> combos) {
+            if (!arrays.isEmpty()) {
+                combos.add(Agg(AggType.Array, MatchPair.fromPairs(arrays)));
+            }
+        }
+
+        private void buildAbsSums(List<ComboBy> combos) {
+            if (!absSums.isEmpty()) {
+                combos.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
+            }
         }
 
         @Override
         public void visit(AbsSum absSum) {
             absSums.add(absSum.pair());
+            buildOrder.add(buildAbsSums);
         }
 
         @Override
         public void visit(Array array) {
             arrays.add(array.pair());
+            buildOrder.add(buildArrays);
         }
 
         @Override
         public void visit(Avg avg) {
             avgs.add(avg.pair());
+            buildOrder.add(buildAvgs);
         }
 
         @Override
         public void visit(Count count) {
             counts.add(count.column());
+            buildOrder.add(buildCounts);
         }
 
         @Override
         public void visit(CountDistinct countDistinct) {
             countDistincts.computeIfAbsent(countDistinct.countNulls(), b -> new ArrayList<>()).add(countDistinct.pair());
+            buildOrder.add(buildCountDistincts);
         }
 
         @Override
         public void visit(Distinct distinct) {
             distincts.computeIfAbsent(distinct.includeNulls(), b -> new ArrayList<>()).add(distinct.pair());
+            buildOrder.add(buildDistincts);
         }
 
         @Override
         public void visit(First first) {
             firsts.add(first.pair());
+            buildOrder.add(buildFirsts);
         }
 
         @Override
         public void visit(Last last) {
             lasts.add(last.pair());
+            buildOrder.add(buildLasts);
         }
 
         @Override
         public void visit(Max max) {
             maxs.add(max.pair());
+            buildOrder.add(buildMaxes);
         }
 
         @Override
         public void visit(Med med) {
             medians.computeIfAbsent(med.averageMedian(), b -> new ArrayList<>()).add(med.pair());
+            buildOrder.add(buildMedians);
         }
 
         @Override
         public void visit(Min min) {
             mins.add(min.pair());
+            buildOrder.add(buildMins);
         }
 
         @Override
@@ -1716,47 +1715,56 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         @Override
         public void visit(Pct pct) {
-            pcts.computeIfAbsent(new io.deephaven.base.Pair<>(pct.averageMedian(), pct.percentile()), b -> new ArrayList<>()).add(pct.pair());
+            pcts.computeIfAbsent(new ByteDoubleTuple(pct.averageMedian() ? (byte)1 : (byte)0, pct.percentile()), b -> new ArrayList<>()).add(pct.pair());
+            buildOrder.add(buildPcts);
         }
 
         @Override
         public void visit(SortedFirst sortedFirst) {
             sortedFirsts.computeIfAbsent(sortedFirst.columns(), b -> new ArrayList<>()).add(sortedFirst.pair());
+            buildOrder.add(buildSortedFirsts);
         }
 
         @Override
         public void visit(SortedLast sortedLast) {
             sortedLasts.computeIfAbsent(sortedLast.columns(), b -> new ArrayList<>()).add(sortedLast.pair());
+            buildOrder.add(buildSortedLasts);
         }
 
         @Override
         public void visit(Std std) {
             stds.add(std.pair());
+            buildOrder.add(buildStds);
         }
 
         @Override
         public void visit(Sum sum) {
             sums.add(sum.pair());
+            buildOrder.add(buildSums);
         }
 
         @Override
         public void visit(Unique unique) {
             uniques.computeIfAbsent(unique.includeNulls(), b -> new ArrayList<>()).add(unique.pair());
+            buildOrder.add(buildUniques);
         }
 
         @Override
         public void visit(Var var) {
             vars.add(var.pair());
+            buildOrder.add(buildVars);
         }
 
         @Override
         public void visit(WAvg wAvg) {
             wAvgs.computeIfAbsent(wAvg.weight(), b -> new ArrayList<>()).add(wAvg.pair());
+            buildOrder.add(buildWAvgs);
         }
 
         @Override
         public void visit(WSum wSum) {
             wSums.computeIfAbsent(wSum.weight(), b -> new ArrayList<>()).add(wSum.pair());
+            buildOrder.add(buildWSums);
         }
     }
 }
