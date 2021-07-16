@@ -317,33 +317,11 @@ public class BatchTableRequest {
         }
 
         @JsProperty
-        JsArray<String> getColumnNamesList();
-
-        @JsProperty
-        JsArray<String> getColumnTypesList();
-
-        @JsProperty
         BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType
             getResultId();
 
         @JsProperty
         String getSize();
-
-        @JsProperty
-        void setColumnNamesList(JsArray<String> columnNamesList);
-
-        @JsOverlay
-        default void setColumnNamesList(String[] columnNamesList) {
-          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-        }
-
-        @JsProperty
-        void setColumnTypesList(JsArray<String> columnTypesList);
-
-        @JsOverlay
-        default void setColumnTypesList(String[] columnTypesList) {
-          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-        }
 
         @JsProperty
         void setResultId(
@@ -1059,6 +1037,83 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface RunChartDownsampleFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ZoomRangeFieldType {
+          @JsOverlay
+          static BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+                  .ZoomRangeFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          String getMaxDateNanos();
+
+          @JsProperty
+          String getMinDateNanos();
+
+          @JsProperty
+          void setMaxDateNanos(String maxDateNanos);
+
+          @JsProperty
+          void setMinDateNanos(String minDateNanos);
+        }
+
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getPixelCount();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getSourceId();
+
+        @JsProperty
+        String getXColumnName();
+
+        @JsProperty
+        JsArray<String> getYColumnNamesList();
+
+        @JsProperty
+        BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+                .ZoomRangeFieldType
+            getZoomRange();
+
+        @JsProperty
+        void setPixelCount(double pixelCount);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setSourceId(Object sourceId);
+
+        @JsProperty
+        void setXColumnName(String xColumnName);
+
+        @JsProperty
+        void setYColumnNamesList(JsArray<String> yColumnNamesList);
+
+        @JsOverlay
+        default void setYColumnNamesList(String[] yColumnNamesList) {
+          setYColumnNamesList(Js.<JsArray<String>>uncheckedCast(yColumnNamesList));
+        }
+
+        @JsProperty
+        void setZoomRange(
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+                    .ZoomRangeFieldType
+                zoomRange);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SelectDistinctFieldType {
         @JsOverlay
         static BatchTableRequest.ToObjectReturnType.OpsListFieldType.SelectDistinctFieldType
@@ -1372,6 +1427,10 @@ public class BatchTableRequest {
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType getMerge();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+          getRunChartDownsample();
+
+      @JsProperty
       Object getSelect();
 
       @JsProperty
@@ -1447,6 +1506,11 @@ public class BatchTableRequest {
 
       @JsProperty
       void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
+
+      @JsProperty
+      void setRunChartDownsample(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
+              runChartDownsample);
 
       @JsProperty
       void setSelect(Object select);
@@ -1815,33 +1879,11 @@ public class BatchTableRequest {
         }
 
         @JsProperty
-        JsArray<String> getColumnNamesList();
-
-        @JsProperty
-        JsArray<String> getColumnTypesList();
-
-        @JsProperty
         BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType.ResultIdFieldType
             getResultId();
 
         @JsProperty
         String getSize();
-
-        @JsProperty
-        void setColumnNamesList(JsArray<String> columnNamesList);
-
-        @JsOverlay
-        default void setColumnNamesList(String[] columnNamesList) {
-          setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-        }
-
-        @JsProperty
-        void setColumnTypesList(JsArray<String> columnTypesList);
-
-        @JsOverlay
-        default void setColumnTypesList(String[] columnTypesList) {
-          setColumnTypesList(Js.<JsArray<String>>uncheckedCast(columnTypesList));
-        }
 
         @JsProperty
         void setResultId(
@@ -2557,6 +2599,83 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface RunChartDownsampleFieldType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ZoomRangeFieldType {
+          @JsOverlay
+          static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+                  .ZoomRangeFieldType
+              create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+          }
+
+          @JsProperty
+          String getMaxDateNanos();
+
+          @JsProperty
+          String getMinDateNanos();
+
+          @JsProperty
+          void setMaxDateNanos(String maxDateNanos);
+
+          @JsProperty
+          void setMinDateNanos(String minDateNanos);
+        }
+
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getPixelCount();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getSourceId();
+
+        @JsProperty
+        String getXColumnName();
+
+        @JsProperty
+        JsArray<String> getYColumnNamesList();
+
+        @JsProperty
+        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+                .ZoomRangeFieldType
+            getZoomRange();
+
+        @JsProperty
+        void setPixelCount(double pixelCount);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setSourceId(Object sourceId);
+
+        @JsProperty
+        void setXColumnName(String xColumnName);
+
+        @JsProperty
+        void setYColumnNamesList(JsArray<String> yColumnNamesList);
+
+        @JsOverlay
+        default void setYColumnNamesList(String[] yColumnNamesList) {
+          setYColumnNamesList(Js.<JsArray<String>>uncheckedCast(yColumnNamesList));
+        }
+
+        @JsProperty
+        void setZoomRange(
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+                    .ZoomRangeFieldType
+                zoomRange);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SelectDistinctFieldType {
         @JsOverlay
         static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.SelectDistinctFieldType
@@ -2871,6 +2990,10 @@ public class BatchTableRequest {
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType getMerge();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+          getRunChartDownsample();
+
+      @JsProperty
       Object getSelect();
 
       @JsProperty
@@ -2946,6 +3069,11 @@ public class BatchTableRequest {
 
       @JsProperty
       void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
+
+      @JsProperty
+      void setRunChartDownsample(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
+              runChartDownsample);
 
       @JsProperty
       void setSelect(Object select);

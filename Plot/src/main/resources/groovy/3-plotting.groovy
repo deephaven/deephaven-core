@@ -6,6 +6,12 @@
 // import static io.deephaven.db.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
+import io.deephaven.db.plot.PlotStyle
+import io.deephaven.db.plot.axistransformations.AxisTransforms
+import io.deephaven.db.plot.colors.ColorMaps
+
+import static io.deephaven.db.plot.PlottingConvenience.*
+
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {
     publishVariable( "COLOR_" + c, io.deephaven.gui.color.Color.valueOf(c) )
 }

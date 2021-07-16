@@ -1,6 +1,8 @@
-package io.deephaven.db.plot;
+package io.deephaven.figures;
 
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.api.Selectable;
+import io.deephaven.db.plot.*;
+import io.deephaven.db.plot.Font;
 import io.deephaven.db.plot.axistransformations.AxisTransform;
 import io.deephaven.db.plot.axistransformations.AxisTransformBusinessCalendar;
 import io.deephaven.db.plot.datasets.AbstractDataSeries;
@@ -23,11 +25,18 @@ import io.deephaven.db.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray;
 import io.deephaven.db.plot.util.PlotUtils;
 import io.deephaven.db.plot.util.tables.*;
 import io.deephaven.db.plot.util.tables.TableHandle;
+import io.deephaven.db.tables.Table;
+import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
-import io.deephaven.web.shared.data.*;
-import io.deephaven.web.shared.data.plot.*;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.*;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.Holiday;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.LocalDate;
 import io.deephaven.util.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.format.DateTimeFormat;
@@ -39,73 +48,88 @@ import java.util.List;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class FigureWidgetTranslator {
-
-    private final List<String> errorList = new ArrayList<>();
     private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
 
-    public FigureWidgetTranslator() {
+    private final List<String> errorList = new ArrayList<>();
+    private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
+    private final Map<TableMapHandle, Integer> tableMapPositionMap = new HashMap<>();
+
+    private FigureWidgetTranslator() {
     }
 
-    public FigureDescriptor translate(DisplayableFigureDescriptor descriptor) {
-        FigureDescriptor clientFigure = new FigureDescriptor();
+    public static FigureDescriptor translate(FigureWidget figure, SessionState sessionState) {
+        return new FigureWidgetTranslator().translateFigure(figure, sessionState);
+    }
+    private FigureDescriptor translateFigure(FigureWidget f, SessionState sessionState) {
+        FigureDescriptor.Builder clientFigure = FigureDescriptor.newBuilder();
+        BaseFigureImpl figure = f.getFigure();
 
-        BaseFigureImpl figure = descriptor.getFigure().getFigure();
-        clientFigure.setTitle(figure.getTitle());
-        clientFigure.setTitleColor(toCssColorString(figure.getTitleColor()));
-        clientFigure.setTitleFont(toCssFont(figure.getTitleFont()));
+        // translate tables first, so we can use them to look up tables as needed
+        int i = 0;
+        for (Map.Entry<Table, List<TableHandle>> entry : figure.getTableHandles().stream().collect(Collectors.groupingBy(TableHandle::getTable)).entrySet()) {
+            Set<String> relevantColumns = entry.getValue().stream().map(TableHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
+            Table table = entry.getKey().view(Selectable.from(relevantColumns));
+
+            for (TableHandle handle : entry.getValue()) {
+                tablePositionMap.put(handle, i);
+            }
+            i++;
+
+            SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(table);
+            clientFigure.addTables(TableServiceGrpcImpl.buildTableCreationResponse(TableReference.newBuilder().setTicket(tableExportObject.getExportId()).build(), table));
+        }
+
+        // TODO (deephaven-core#62) implement once tablemaps are ready
+//        i = 0;
+//        for (Map.Entry<TableMap, List<TableMapHandle>> entry : figure.getTableMapHandles().stream().collect(Collectors.groupingBy(TableMapHandle::getTableMap)).entrySet()) {
+//            Set<String> relevantColumns = entry.getValue().stream().map(TableMapHandle::getColumns).flatMap(Set::stream).collect(Collectors.toSet());
+//            TableMap tableMap = new TableMapSupplier(entry.getKey(), Collections.singletonList(t -> t.view(relevantColumns)));
+//
+//            for (TableMapHandle handle : entry.getValue()) {
+//                tableMapPositionMap.put(handle, i);
+//            }
+//            i++;
+//
+//            SessionState.ExportObject<TableMap> tableExportObject = sessionState.newServerSideExport(tableMap);
+//            clientFigure.addTableMap(...)
+//        }
+
+        assignOptionalField(figure.getTitle(), clientFigure::setTitle, clientFigure::clearTitle);
+        assignOptionalField(toCssColorString(figure.getTitleColor()), clientFigure::setTitleColor, clientFigure::clearTitleColor);
+        assignOptionalField(toCssFont(figure.getTitleFont()), clientFigure::setTitleFont, clientFigure::clearTitleFont);
 
         List<ChartImpl> charts = figure.getCharts().getCharts();
-        int size = charts.size();
-        ChartDescriptor[] clientCharts = new ChartDescriptor[size];
-        for (int i = 0; i < size; i++) {
-            clientCharts[i] = translate(charts.get(i));
+
+        for (ChartImpl chart : charts) {
+            clientFigure.addCharts(translate(chart));
         }
-        clientFigure.setCharts(clientCharts);
 
         clientFigure.setCols(figure.getWidth());
         clientFigure.setRows(figure.getHeight());
 
-        clientFigure.setResizable(figure.isResizable());
-
         clientFigure.setUpdateInterval(figure.getUpdateInterval());
 
-        // TODO (deephaven/deephaven-core/41): Update this to match new DisplayableFigureDescriptor and whatever the JS plotting API needs post-GRPC.
-//        final int[] tableHandleIds = new int[descriptor.getDeflatedTables().size()];
-//        for (int i = 0; i < descriptor.getDeflatedTables().size(); i++) {
-//            final ExportedTableDescriptorMessage t = (ExportedTableDescriptorMessage) descriptor.getDeflatedTables().get(i);
-//            final ExportedTableDescriptorMessage nonPreemptive = (ExportedTableDescriptorMessage) descriptor.getDeflatedNonPreemptiveTables().get(i);
-//
-//            if (nonPreemptive != null) {
-//                tableHandleIds[i] = nonPreemptive.getId();
-//                tablesToRelease.add(t.getId());
-//            } else {
-//                tableHandleIds[i] = t.getId();
-//            }
-//        }
-//
-//        final int[][] plotHandleIds = descriptor.getDeflatedIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new);
-//        clientFigure.setTableIds(tableHandleIds);
-//        clientFigure.setPlotHandleIds(plotHandleIds);
-//
-//        clientFigure.setTableMaps(descriptor.getDeflatedTableMaps().stream().map(etmd -> {
-//            ExportedTableMapHandleManager.Descriptor tableMapDescriptor = (ExportedTableMapHandleManager.Descriptor) etmd;
-//            return new TableMapHandle(tableMapDescriptor.handleId);
-//        }).toArray(TableMapHandle[]::new));
-//        clientFigure.setTableMapIds(descriptor.getDeflatedTableMapIds().stream().map(set -> set.stream().mapToInt(Integer::intValue).toArray()).toArray(int[][]::new));
+        clientFigure.addAllErrors(errorList);
 
-        clientFigure.setErrors(errorList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-
-        return clientFigure;
+        return clientFigure.build();
     }
 
-    private ChartDescriptor translate(ChartImpl chart) {
+    private static <T> void assignOptionalField(T value, Consumer<T> setter, Runnable clear) {
+        if (value != null) {
+            setter.accept(value);
+        } else {
+            clear.run();
+        }
+    }
+
+    private FigureDescriptor.ChartDescriptor translate(ChartImpl chart) {
         assert chart.dimension() == 2 : "Only dim=2 supported";
-        ChartDescriptor clientChart = new ChartDescriptor();
+        FigureDescriptor.ChartDescriptor.Builder clientChart = FigureDescriptor.ChartDescriptor.newBuilder();
 
         boolean swappedPositions = chart.getPlotOrientation() != ChartImpl.PlotOrientation.VERTICAL;
         Map<String, AxisDescriptor> axes = new HashMap<>();
@@ -114,8 +138,8 @@ public class FigureWidgetTranslator {
 
         // The first X axis is on the bottom, later instances should be on the top. Likewise, the first Y axis
         // is on the left, and later instances appear on the right.
-        AxisDescriptor firstX = null;
-        AxisDescriptor firstY = null;
+        AxisDescriptor.Builder firstX = null;
+        AxisDescriptor.Builder firstY = null;
 
         for (int i = 0; i < chart.getAxis().length; i++) {
             final AxisDescriptor.AxisType type;
@@ -132,26 +156,26 @@ public class FigureWidgetTranslator {
                     // so we don't consider it later
                     continue;
                 }
-                AxisDescriptor clientAxis = new AxisDescriptor();
+                AxisDescriptor.Builder clientAxis = AxisDescriptor.newBuilder();
                 clientAxis.setId(type.name() + axis.id());
                 clientAxis.setFormatType(AxisDescriptor.AxisFormatType.valueOf(axis.getType().name()));
                 clientAxis.setLog(axis.isLog());
-                clientAxis.setLabel(axis.getLabel());
-                clientAxis.setLabelFont(toCssFont(axis.getLabelFont()));
+                assignOptionalField(axis.getLabel(), clientAxis::setLabel, clientAxis::clearLabel);
+                assignOptionalField(toCssFont(axis.getLabelFont()), clientAxis::setLabelFont, clientAxis::clearLabelFont);
 //                clientAxis.setFormat(axis.getFormat().toString());
-                clientAxis.setFormatPattern(axis.getFormatPattern());
-                clientAxis.setColor(toCssColorString(axis.getColor()));
+                assignOptionalField(axis.getFormatPattern(), clientAxis::setFormatPattern, clientAxis::clearFormatPattern);
+                assignOptionalField(toCssColorString(axis.getColor()), clientAxis::setColor, clientAxis::clearColor);
                 clientAxis.setMinRange(axis.getMinRange());
                 clientAxis.setMaxRange(axis.getMaxRange());
                 clientAxis.setMinorTicksVisible(axis.isMinorTicksVisible());
                 clientAxis.setMajorTicksVisible(axis.isMajorTicksVisible());
                 clientAxis.setMinorTickCount(axis.getMinorTickCount());
                 clientAxis.setGapBetweenMajorTicks(axis.getGapBetweenMajorTicks());
-                clientAxis.setMajorTickLocations(axis.getMajorTickLocations());
+                assignOptionalField(axis.getMajorTickLocations(), arr -> DoubleStream.of(arr).forEach(clientAxis::addMajorTickLocations), clientAxis::clearMajorTickLocations);
 //                clientAxis.setAxisTransform(axis.getAxisTransform().toString());
                 clientAxis.setTickLabelAngle(axis.getTickLabelAngle());
                 clientAxis.setInvert(axis.getInvert());
-                clientAxis.setTimeAxis(axis.isTimeAxis());
+                clientAxis.setIsTimeAxis(axis.isTimeAxis());
 
                 final AxisTransform axisTransform = axis.getAxisTransform();
                 if (axisTransform instanceof AxisTransformBusinessCalendar) {
@@ -175,15 +199,15 @@ public class FigureWidgetTranslator {
                     }
                 }
 
-                axes.put(type.name() + axis.id(), clientAxis);
+                axes.put(type.name() + axis.id(), clientAxis.build());
             }
         }
-        clientChart.setAxes(axes.values().toArray(new AxisDescriptor[0]));
+        clientChart.addAllAxes(axes.values());
 
         Stream.Builder<SeriesDescriptor> clientSeriesCollection = Stream.builder();
-        Stream.Builder<MultiSeriesDescriptor> clientMultiSeriesCollection = Stream.builder();
+        Stream.Builder<FigureDescriptor.MultiSeriesDescriptor> clientMultiSeriesCollection = Stream.builder();
 
-        chart.getAxes().stream().forEach(axesImpl -> {
+        chart.getAxes().forEach(axesImpl -> {
 
             // assign some bookkeeping axis instances just once
             AxisDescriptor xAxis = axes.get("X" + axesImpl.xAxis().id());
@@ -209,21 +233,21 @@ public class FigureWidgetTranslator {
             // use the description map since it is known to be ordered correctly
             axesImpl.dataSeries().getSeriesDescriptions().values().stream().map(SeriesCollection.SeriesDescription::getSeries).forEach(seriesInternal -> {
                 if (seriesInternal instanceof AbstractDataSeries) {
-                    SeriesDescriptor clientSeries = new SeriesDescriptor();
-                    clientSeries.setPlotStyle(SeriesPlotStyle.valueOf(axesImpl.getPlotStyle().name()));
+                    SeriesDescriptor.Builder clientSeries = SeriesDescriptor.newBuilder();
+                    clientSeries.setPlotStyle(FigureDescriptor.SeriesPlotStyle.valueOf(axesImpl.getPlotStyle().name()));
                     clientSeries.setName(String.valueOf(seriesInternal.name()));
                     Stream.Builder<SourceDescriptor> clientAxes = Stream.builder();
 
                     AbstractDataSeries s = (AbstractDataSeries) seriesInternal;
 
-                    clientSeries.setLinesVisible(s.getLinesVisible());
-                    clientSeries.setShapesVisible(s.getPointsVisible());
+                    assignOptionalField(s.getLinesVisible(), clientSeries::setLinesVisible, clientSeries::clearLinesVisible);
+                    assignOptionalField(s.getPointsVisible(), clientSeries::setShapesVisible, clientSeries::clearShapesVisible);
                     clientSeries.setGradientVisible(s.getGradientVisible());
-                    clientSeries.setLineColor(toCssColorString(s.getLineColor()));
+                    assignOptionalField(toCssColorString(s.getLineColor()), clientSeries::setLineColor, clientSeries::clearLineColor);
 //                            clientSeries.setLineStyle(s.getLineStyle().toString());
-                    clientSeries.setPointLabelFormat(s.getPointLabelFormat());
-                    clientSeries.setXToolTipPattern(s.getXToolTipPattern());
-                    clientSeries.setYToolTipPattern(s.getYToolTipPattern());
+                    assignOptionalField(s.getPointLabelFormat(), clientSeries::setPointLabelFormat, clientSeries::clearPointLabelFormat);
+                    assignOptionalField(s.getXToolTipPattern(), clientSeries::setXToolTipPattern, clientSeries::clearXToolTipPattern);
+                    assignOptionalField(s.getYToolTipPattern(), clientSeries::setYToolTipPattern, clientSeries::clearYToolTipPattern);
 
                     // build the set of axes that the series is watching, and give each a type, starting
                     // with the x and y we have so far mapped to this
@@ -282,12 +306,12 @@ public class FigureWidgetTranslator {
                         //TODO color label size shape
                     }
 
-                    clientSeries.setDataSources(clientAxes.build().toArray(SourceDescriptor[]::new));
-                    clientSeriesCollection.add(clientSeries);
+                    clientSeries.addAllDataSources(clientAxes.build().collect(Collectors.toList()));
+                    clientSeriesCollection.add(clientSeries.build());
                 } else if (seriesInternal instanceof AbstractMultiSeries) {
                     AbstractMultiSeries multiSeries = (AbstractMultiSeries) seriesInternal;
 
-                    MultiSeriesDescriptor clientSeries = new MultiSeriesDescriptor();
+                    MultiSeriesDescriptor.Builder clientSeries = MultiSeriesDescriptor.newBuilder();
                     clientSeries.setPlotStyle(SeriesPlotStyle.valueOf(axesImpl.getPlotStyle().name()));
                     clientSeries.setName(String.valueOf(seriesInternal.name()));
 
@@ -302,201 +326,70 @@ public class FigureWidgetTranslator {
                             MultiXYSeries multiXYSeries = (MultiXYSeries) tableMapMultiSeries;
                             clientAxes.add(makeTableMapSourceDescriptor(plotHandleId, multiXYSeries.getXCol(), SourceType.X, xAxis));
                             clientAxes.add(makeTableMapSourceDescriptor(plotHandleId, multiXYSeries.getYCol(), SourceType.Y, yAxis));
-                            assignMapWithDefaults(
-                                    mergeColors(
-                                            multiXYSeries.lineColorSeriesNameTointMap(),
-                                            multiXYSeries.lineColorSeriesNameToStringMap(),
-                                            multiXYSeries.lineColorSeriesNameToPaintMap()
-                                    ),
-                                    clientSeries::setLineColorDefault,
-                                    clientSeries::setLineColorKeys,
-                                    clientSeries::setLineColorValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    mergeColors(
-                                            multiXYSeries.pointColorSeriesNameTointMap(),
-                                            multiXYSeries.pointColorSeriesNameToStringMap(),
-                                            multiXYSeries.pointColorSeriesNameToPaintMap()
-                                    ),
-                                    clientSeries::setPointColorDefault,
-                                    clientSeries::setPointColorKeys,
-                                    clientSeries::setPointColorValues,
-                                    String[]::new
-                            );
-                            this.assignMapWithDefaults(
-                                    multiXYSeries.linesVisibleSeriesNameToBooleanMap(),
-                                    clientSeries::setLinesVisibleDefault,
-                                    clientSeries::setLinesVisibleKeys,
-                                    clientSeries::setLinesVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.pointsVisibleSeriesNameToBooleanMap(),
-                                    clientSeries::setPointsVisibleDefault,
-                                    clientSeries::setPointsVisibleKeys,
-                                    clientSeries::setPointsVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.gradientVisibleSeriesNameTobooleanMap(),
-                                    clientSeries::setGradientVisibleDefault,
-                                    clientSeries::setGradientVisibleKeys,
-                                    clientSeries::setGradientVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.pointLabelFormatSeriesNameToStringMap(),
-                                    clientSeries::setPointLabelFormatDefault,
-                                    clientSeries::setPointLabelFormatKeys,
-                                    clientSeries::setPointLabelFormatValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.xToolTipPatternSeriesNameToStringMap(),
-                                    clientSeries::setXToolTipPatternDefault,
-                                    clientSeries::setXToolTipPatternKeys,
-                                    clientSeries::setXToolTipPatternValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.yToolTipPatternSeriesNameToStringMap(),
-                                    clientSeries::setYToolTipPatternDefault,
-                                    clientSeries::setYToolTipPatternKeys,
-                                    clientSeries::setYToolTipPatternValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiXYSeries.pointLabelSeriesNameToObjectMap(),
-                                    Objects::toString,
-                                    clientSeries::setPointLabelDefault,
-                                    clientSeries::setPointLabelKeys,
-                                    clientSeries::setPointLabelValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
+                            clientSeries.setLineColor(stringMapWithDefault(mergeColors(
+                                    multiXYSeries.lineColorSeriesNameTointMap(),
+                                    multiXYSeries.lineColorSeriesNameToStringMap(),
+                                    multiXYSeries.lineColorSeriesNameToPaintMap()
+                            )));
+                            clientSeries.setPointColor(stringMapWithDefault(mergeColors(
+                                    multiXYSeries.pointColorSeriesNameTointMap(),
+                                    multiXYSeries.pointColorSeriesNameToStringMap(),
+                                    multiXYSeries.pointColorSeriesNameToPaintMap()
+                            )));
+                            clientSeries.setLinesVisible(boolMapWithDefault(multiXYSeries.linesVisibleSeriesNameToBooleanMap()));
+                            clientSeries.setPointsVisible(boolMapWithDefault(multiXYSeries.pointsVisibleSeriesNameToBooleanMap()));
+                            clientSeries.setGradientVisible(boolMapWithDefault(multiXYSeries.gradientVisibleSeriesNameTobooleanMap()));
+                            clientSeries.setPointLabelFormat(stringMapWithDefault(multiXYSeries.pointLabelFormatSeriesNameToStringMap()));
+                            clientSeries.setXToolTipPattern(stringMapWithDefault(multiXYSeries.xToolTipPatternSeriesNameToStringMap()));
+                            clientSeries.setYToolTipPattern(stringMapWithDefault(multiXYSeries.yToolTipPatternSeriesNameToStringMap()));
+                            clientSeries.setPointLabel(stringMapWithDefault(multiXYSeries.pointColorSeriesNameToStringMap(), Objects::toString));
+                            clientSeries.setPointSize(doubleMapWithDefault(
                                     multiXYSeries.pointSizeSeriesNameToNumberMap(),
-                                    number -> number == null ? null : number.doubleValue(),
-                                    clientSeries::setPointSizeDefault,
-                                    clientSeries::setPointSizeKeys,
-                                    clientSeries::setPointSizeValues,
-                                    Double[]::new
-                            );
+                                    number -> number == null ? null : number.doubleValue()
+                            ));
 
-                            assignMapWithDefaults(
-                                    mergeShapes(
-                                            multiXYSeries.pointShapeSeriesNameToStringMap(),
-                                            multiXYSeries.pointShapeSeriesNameToShapeMap()
-                                    ),
-                                    clientSeries::setPointShapeDefault,
-                                    clientSeries::setPointShapeKeys,
-                                    clientSeries::setPointShapeValues,
-                                    String[]::new
-                            );
-
+                            clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
+                                    multiXYSeries.pointShapeSeriesNameToStringMap(),
+                                    multiXYSeries.pointShapeSeriesNameToShapeMap()
+                            )));
                         } else if (tableMapMultiSeries instanceof MultiCatSeries) {
                             MultiCatSeries multiCatSeries = (MultiCatSeries) tableMapMultiSeries;
                             clientAxes.add(makeTableMapSourceDescriptor(plotHandleId, multiCatSeries.getCategoryCol(), catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
                             clientAxes.add(makeTableMapSourceDescriptor(plotHandleId, multiCatSeries.getNumericCol(), numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
-                            assignMapWithDefaults(
-                                    mergeColors(
-                                            multiCatSeries.lineColorSeriesNameTointMap(),
-                                            multiCatSeries.lineColorSeriesNameToStringMap(),
-                                            multiCatSeries.lineColorSeriesNameToPaintMap()
-                                    ),
-                                    clientSeries::setLineColorDefault,
-                                    clientSeries::setLineColorKeys,
-                                    clientSeries::setLineColorValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    mergeColors(
-                                            multiCatSeries.pointColorSeriesNameTointMap(),
-                                            multiCatSeries.pointColorSeriesNameToStringMap(),
-                                            multiCatSeries.pointColorSeriesNameToPaintMap()
-                                    ),
-                                    clientSeries::setPointColorDefault,
-                                    clientSeries::setPointColorKeys,
-                                    clientSeries::setPointColorValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.linesVisibleSeriesNameToBooleanMap(),
-                                    clientSeries::setLinesVisibleDefault,
-                                    clientSeries::setLinesVisibleKeys,
-                                    clientSeries::setLinesVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.pointsVisibleSeriesNameToBooleanMap(),
-                                    clientSeries::setPointsVisibleDefault,
-                                    clientSeries::setPointsVisibleKeys,
-                                    clientSeries::setPointsVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.gradientVisibleSeriesNameTobooleanMap(),
-                                    clientSeries::setGradientVisibleDefault,
-                                    clientSeries::setGradientVisibleKeys,
-                                    clientSeries::setGradientVisibleValues,
-                                    Boolean[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.pointLabelFormatSeriesNameToStringMap(),
-                                    clientSeries::setPointLabelFormatDefault,
-                                    clientSeries::setPointLabelFormatKeys,
-                                    clientSeries::setPointLabelFormatValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.xToolTipPatternSeriesNameToStringMap(),
-                                    clientSeries::setXToolTipPatternDefault,
-                                    clientSeries::setXToolTipPatternKeys,
-                                    clientSeries::setXToolTipPatternValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.yToolTipPatternSeriesNameToStringMap(),
-                                    clientSeries::setYToolTipPatternDefault,
-                                    clientSeries::setYToolTipPatternKeys,
-                                    clientSeries::setYToolTipPatternValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
-                                    multiCatSeries.pointLabelSeriesNameToObjectMap(),
-                                    Objects::toString,
-                                    clientSeries::setPointLabelDefault,
-                                    clientSeries::setPointLabelKeys,
-                                    clientSeries::setPointLabelValues,
-                                    String[]::new
-                            );
-                            assignMapWithDefaults(
+                            clientSeries.setLineColor(stringMapWithDefault(mergeColors(
+                                    multiCatSeries.lineColorSeriesNameTointMap(),
+                                    multiCatSeries.lineColorSeriesNameToStringMap(),
+                                    multiCatSeries.lineColorSeriesNameToPaintMap()
+                            )));
+                            clientSeries.setPointColor(stringMapWithDefault(mergeColors(
+                                    multiCatSeries.pointColorSeriesNameTointMap(),
+                                    multiCatSeries.pointColorSeriesNameToStringMap(),
+                                    multiCatSeries.pointColorSeriesNameToPaintMap()
+                            )));
+                            clientSeries.setLinesVisible(boolMapWithDefault(multiCatSeries.linesVisibleSeriesNameToBooleanMap()));
+                            clientSeries.setPointsVisible(boolMapWithDefault(multiCatSeries.pointsVisibleSeriesNameToBooleanMap()));
+                            clientSeries.setGradientVisible(boolMapWithDefault(multiCatSeries.gradientVisibleSeriesNameTobooleanMap()));
+                            clientSeries.setPointLabelFormat(stringMapWithDefault(multiCatSeries.pointLabelFormatSeriesNameToStringMap()));
+                            clientSeries.setXToolTipPattern(stringMapWithDefault(multiCatSeries.xToolTipPatternSeriesNameToStringMap()));
+                            clientSeries.setYToolTipPattern(stringMapWithDefault(multiCatSeries.yToolTipPatternSeriesNameToStringMap()));
+                            clientSeries.setPointLabel(stringMapWithDefault(multiCatSeries.pointLabelSeriesNameToObjectMap(), Objects::toString));
+                            clientSeries.setPointSize(doubleMapWithDefault(
                                     multiCatSeries.pointSizeSeriesNameToNumberMap(),
-                                    number -> number == null ? null : number.doubleValue(),
-                                    clientSeries::setPointSizeDefault,
-                                    clientSeries::setPointSizeKeys,
-                                    clientSeries::setPointSizeValues,
-                                    Double[]::new
-                            );
+                                    number -> number == null ? null : number.doubleValue()
+                            ));
 
-                            assignMapWithDefaults(
-                                    mergeShapes(
-                                            multiCatSeries.pointShapeSeriesNameToStringMap(),
-                                            multiCatSeries.pointShapeSeriesNameToShapeMap()
-                                    ),
-                                    clientSeries::setPointShapeDefault,
-                                    clientSeries::setPointShapeKeys,
-                                    clientSeries::setPointShapeValues,
-                                    String[]::new
-                            );
+                            clientSeries.setPointShape(stringMapWithDefault(mergeShapes(
+                                    multiCatSeries.pointShapeSeriesNameToStringMap(),
+                                    multiCatSeries.pointShapeSeriesNameToShapeMap()
+                            )));
                         }
                     } else {
                         errorList.add("OpenAPI presently does not support series of type " + multiSeries.getClass());
                     }
 
-                    clientSeries.setDataSources(clientAxes.build().toArray(MultiSeriesSourceDescriptor[]::new));
+                    clientSeries.addAllDataSources(clientAxes.build().collect(Collectors.toList()));
 
-                    clientMultiSeriesCollection.add(clientSeries);
+                    clientMultiSeriesCollection.add(clientSeries.build());
                 } else {
                     errorList.add("OpenAPI presently does not support series of type " + seriesInternal.getClass());
                     //TODO handle multi-series, possibly transformed case?
@@ -504,64 +397,59 @@ public class FigureWidgetTranslator {
             });
         });
 
-        clientChart.setSeries(clientSeriesCollection.build().toArray(SeriesDescriptor[]::new));
-        clientChart.setMultiSeries(clientMultiSeriesCollection.build().toArray(MultiSeriesDescriptor[]::new));
+        clientChart.addAllSeries(clientSeriesCollection.build().collect(Collectors.toList()));
+        clientChart.addAllMultiSeries(clientMultiSeriesCollection.build().collect(Collectors.toList()));
 
-        clientChart.setChartType(ChartDescriptor.ChartType.valueOf(chart.getChartType().name()));
+        clientChart.setChartType(FigureDescriptor.ChartDescriptor.ChartType.valueOf(chart.getChartType().name()));
         clientChart.setColspan(chart.colSpan());
-        clientChart.setLegendColor(toCssColorString(chart.getLegendColor()));
-        clientChart.setLegendFont(toCssFont(chart.getLegendFont()));
+        assignOptionalField(toCssColorString(chart.getLegendColor()), clientChart::setLegendColor, clientChart::clearLegendColor);
+        assignOptionalField(toCssFont(chart.getLegendFont()), clientChart::setLegendFont, clientChart::clearLegendFont);
         clientChart.setRowspan(chart.rowSpan());
         clientChart.setShowLegend(chart.isShowLegend());
-        clientChart.setTitle(chart.getTitle());
-        clientChart.setTitleColor(toCssColorString(chart.getTitleColor()));
-        clientChart.setTitleFont(toCssFont(chart.getTitleFont()));
+        assignOptionalField(chart.getTitle(), clientChart::setTitle, clientChart::clearTitle);
+        assignOptionalField(toCssColorString(chart.getTitleColor()), clientChart::setTitleColor, clientChart::clearTitleColor);
+        assignOptionalField(toCssFont(chart.getTitleFont()), clientChart::setTitleFont, clientChart::clearTitleFont);
 
-        return clientChart;
+        return clientChart.build();
     }
 
     @NotNull
     private BusinessCalendarDescriptor translateBusinessCalendar(AxisTransformBusinessCalendar axisTransform) {
         final BusinessCalendar businessCalendar = axisTransform.getBusinessCalendar();
-        final BusinessCalendarDescriptor businessCalendarDescriptor = new BusinessCalendarDescriptor();
+        final BusinessCalendarDescriptor.Builder businessCalendarDescriptor = BusinessCalendarDescriptor.newBuilder();
         businessCalendarDescriptor.setName(businessCalendar.name());
         businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getTimeZone().getID());
-        final BusinessCalendarDescriptor.DayOfWeek[] businessDays = Arrays.stream(
-                BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
+        Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
             final DayOfWeek day = DayOfWeek.valueOf(dayOfWeek.name());
             return businessCalendar.isBusinessDay(day);
-        }).toArray(BusinessCalendarDescriptor.DayOfWeek[]::new);
-        businessCalendarDescriptor.setBusinessDays(businessDays);
-        final BusinessPeriod[] businessPeriods = businessCalendar.getDefaultBusinessPeriods().stream().map(period ->{
+        }).forEach(businessCalendarDescriptor::addBusinessDays);
+        businessCalendar.getDefaultBusinessPeriods().stream().map(period ->{
             final String[] array = period.split(",");
-            final BusinessPeriod businessPeriod = new BusinessPeriod();
+            final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
             businessPeriod.setOpen(array[0]);
             businessPeriod.setClose(array[1]);
             return businessPeriod;
-        }).toArray(BusinessPeriod[]::new);
-        businessCalendarDescriptor.setBusinessPeriods(businessPeriods);
+        }).forEach(businessCalendarDescriptor::addBusinessPeriods);
 
-        final Holiday[] holidays = businessCalendar.getHolidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).map(entry -> {
-            final LocalDate localDate = new LocalDate();
+        businessCalendar.getHolidays().entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).map(entry -> {
+            final LocalDate.Builder localDate = LocalDate.newBuilder();
             localDate.setYear(entry.getKey().getYear());
-            localDate.setMonthValue((byte) entry.getKey().getMonthValue());
-            localDate.setDayOfMonth((byte) entry.getKey().getDayOfMonth());
-            final BusinessPeriod[] businessPeriodsHoliday = Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
+            localDate.setMonth(entry.getKey().getMonthValue());
+            localDate.setDay(entry.getKey().getDayOfMonth());
+            final Holiday.Builder holiday = Holiday.newBuilder();
+            Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
                 final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone()).print(bp.getStartTime().getMillis());
                 final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone()).print(bp.getEndTime().getMillis());
-                final BusinessPeriod businessPeriod = new BusinessPeriod();
+                final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                 businessPeriod.setOpen(open);
                 businessPeriod.setClose(close);
                 return businessPeriod;
-            }).toArray(BusinessPeriod[]::new);
-            final Holiday holiday = new Holiday();
+            }).forEach(holiday::addBusinessPeriods);
             holiday.setDate(localDate);
-            holiday.setBusinessPeriods(businessPeriodsHoliday);
-            return holiday;
-        }).toArray(Holiday[]::new);
-        businessCalendarDescriptor.setHolidays(holidays);
+            return holiday.build();
+        }).forEach(businessCalendarDescriptor::addHolidays);
 
-        return businessCalendarDescriptor;
+        return businessCalendarDescriptor.build();
     }
 
     private PlotUtils.HashMapWithDefault<String, String> mergeShapes(PlotUtils.HashMapWithDefault<String, String> strings, PlotUtils.HashMapWithDefault<String, Shape> shapes) {
@@ -653,40 +541,60 @@ public class FigureWidgetTranslator {
         return null;
     }
 
-    private <V> void assignMapWithDefaults(PlotUtils.HashMapWithDefault<? extends Comparable<?>, V> map, Consumer<V> defaultSetter, Consumer<String[]> keySetter, Consumer<V[]> valueSetter, IntFunction<V[]> empty) {
-        assignMapWithDefaults(map, Function.identity(), defaultSetter, keySetter, valueSetter, empty);
+    private StringMapWithDefault stringMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, String> map) {
+        return stringMapWithDefault(map, Function.identity());
     }
-    private <T, V> void assignMapWithDefaults(PlotUtils.HashMapWithDefault<? extends Comparable<?>, T> map, Function<T, V> mapFunc, Consumer<V> defaultSetter, Consumer<String[]> keySetter, Consumer<V[]> valueSetter, IntFunction<V[]> empty) {
-        defaultSetter.accept(mapFunc.apply(map.getDefault()));
+    private <T> StringMapWithDefault stringMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, T> map, Function<T, String> mappingFunc) {
+        StringMapWithDefault.Builder result = StringMapWithDefault.newBuilder();
+        result.setDefaultString(mappingFunc.apply(map.getDefault()));
         LinkedHashMap<? extends Comparable<?>, T> ordered = new LinkedHashMap<>(map);
-        keySetter.accept(ordered.keySet().stream().map(Comparable::toString).toArray(String[]::new));
-        valueSetter.accept(ordered.values().stream().map(mapFunc).toArray(empty));
+        result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
+        result.addAllValues(ordered.values().stream().map(mappingFunc).collect(Collectors.toList()));
+        return result.build();
+    }
+    private DoubleMapWithDefault doubleMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, Double> map) {
+        return doubleMapWithDefault(map, Function.identity());
+    }
+    private <T> DoubleMapWithDefault doubleMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, T> map, Function<T, Double> mappingFunc) {
+        DoubleMapWithDefault.Builder result = DoubleMapWithDefault.newBuilder();
+        result.setDefaultDouble(mappingFunc.apply(map.getDefault()));
+        LinkedHashMap<? extends Comparable<?>, T> ordered = new LinkedHashMap<>(map);
+        result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
+        result.addAllValues(ordered.values().stream().map(mappingFunc).collect(Collectors.toList()));
+        return result.build();
+    }
+    private BoolMapWithDefault boolMapWithDefault(PlotUtils.HashMapWithDefault<? extends Comparable<?>, Boolean> map) {
+        BoolMapWithDefault.Builder result = BoolMapWithDefault.newBuilder();
+        LinkedHashMap<? extends Comparable<?>, Boolean> ordered = new LinkedHashMap<>(map);
+        result.addAllKeys(ordered.keySet().stream().map(Comparable::toString).collect(Collectors.toList()));
+        result.addAllValues(new ArrayList<>(ordered.values()));
+        return result.build();
     }
 
     private MultiSeriesSourceDescriptor makeTableMapSourceDescriptor(int plotHandleId, String columnName, SourceType sourceType, AxisDescriptor axis) {
-        MultiSeriesSourceDescriptor source = new MultiSeriesSourceDescriptor();
-        source.setAxis(axis);
+        MultiSeriesSourceDescriptor.Builder source = MultiSeriesSourceDescriptor.newBuilder();
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
         source.setTableMapId(plotHandleId);
         source.setColumnName(columnName);
-        return source;
+        return source.build();
     }
 
     private SourceDescriptor makeSourceDescriptor(TableHandle tableHandle, String columnName, SourceType sourceType, AxisDescriptor axis) {
-        SourceDescriptor source = new SourceDescriptor();
+        SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
 
         source.setColumnName(columnName);
-        source.setTableId(tableHandle.id());
-        source.setAxis(axis);
+        source.setTableId(tablePositionMap.get(tableHandle));
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
 
-        return source;
+        return source.build();
     }
 
     private SourceDescriptor makeSourceDescriptor(SwappableTable swappableTable, String columnName, SourceType sourceType, AxisDescriptor axis) {
-        SourceDescriptor source = new SourceDescriptor();
+        SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
 
-        source.setAxis(axis);
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
 
         if (swappableTable instanceof SwappableTableOneClickAbstract) {
@@ -700,25 +608,25 @@ public class FigureWidgetTranslator {
             errorList.add("OpenAPI does not presently support swappable table of type " + swappableTable.getClass());
         }
 
-        return source;
+        return source.build();
     }
 
     private SourceDescriptor makeSourceDescriptor(IndexableNumericData data, SourceType sourceType, AxisDescriptor axis) {
-        SourceDescriptor source = new SourceDescriptor();
-        source.setAxis(axis);
+        SourceDescriptor.Builder source = SourceDescriptor.newBuilder();
+        source.setAxisId(axis.getId());
         source.setType(sourceType);
         if (data instanceof IndexableNumericDataTable) {
             ColumnHandlerFactory.ColumnHandler columnHandler = ((IndexableNumericDataTable) data).getColumnHandler();
 
             source.setColumnName(columnHandler.getColumnName());
-            source.setTableId(columnHandler.getTableHandle().id());
+            source.setTableId(tablePositionMap.get(columnHandler.getTableHandle()));
         } else if (data instanceof IndexableNumericDataSwappableTable) {
             IndexableNumericDataSwappableTable swappableTable = (IndexableNumericDataSwappableTable) data;
             if (swappableTable.getSwappableTable() instanceof SwappableTableOneClickAbstract) {
                 SwappableTableOneClickAbstract oneClick = (SwappableTableOneClickAbstract) swappableTable.getSwappableTable();
                 if (oneClick instanceof SwappableTableOneClickMap && ((SwappableTableOneClickMap) oneClick).getTransform() != null) {
                     errorList.add("OpenAPI does not presently support swappable tables that also use transform functions");
-                    return source;
+                    return source.build();
                 }
                 source.setColumnName(swappableTable.getColumn());
                 source.setColumnType(swappableTable.getSwappableTable().getTableDefinition().getColumn(swappableTable.getColumn()).getDataType().getCanonicalName());
@@ -732,19 +640,19 @@ public class FigureWidgetTranslator {
             //TODO read out the array for constant data
             errorList.add("OpenAPI does not presently support source of type " + data.getClass());
         }
-        return source;
+        return source.build();
     }
 
     private OneClickDescriptor makeOneClick(SwappableTableOneClickAbstract swappableTable) {
-        OneClickDescriptor oneClick = new OneClickDescriptor();
-        oneClick.setColumns(swappableTable.getByColumns().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        oneClick.setColumnTypes(swappableTable.getByColumns()
+        OneClickDescriptor.Builder oneClick = OneClickDescriptor.newBuilder();
+        oneClick.addAllColumns(swappableTable.getByColumns());
+        oneClick.addAllColumnTypes(swappableTable.getByColumns()
                 .stream()
                 .map(colName -> swappableTable.getTableMapHandle().getTableDefinition().getColumn(colName).getDataType().getCanonicalName())
-                .toArray(String[]::new)
+                .collect(Collectors.toList())
         );
         oneClick.setRequireAllFiltersToDisplay(swappableTable.isRequireAllFiltersToDisplay());
-        return oneClick;
+        return oneClick.build();
     }
 
     private String toCssColorString(io.deephaven.gui.color.Paint color) {

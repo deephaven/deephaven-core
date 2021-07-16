@@ -1,6 +1,6 @@
 package io.deephaven.web.client.api.widget.calendar;
 
-import io.deephaven.web.shared.data.BusinessPeriod;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.businesscalendardescriptor.BusinessPeriod;
 import jsinterop.annotations.JsProperty;
 
 public class JsBusinessPeriod {

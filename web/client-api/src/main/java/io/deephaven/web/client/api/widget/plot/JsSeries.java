@@ -1,11 +1,10 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsObject;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.shared.data.plot.SeriesDescriptor;
-import io.deephaven.web.shared.data.plot.SeriesPlotStyle;
-import io.deephaven.web.shared.data.plot.SourceDescriptor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -36,18 +35,18 @@ public class JsSeries {
 
         this.sources = new SeriesDataSource[0];
 
-        for (int i = 0; i < series.getDataSources().length; i++) {
-            SourceDescriptor dataSource = series.getDataSources()[i];
-            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxis().getId()), dataSource);
+        for (int i = 0; i < series.getDataSourcesList().length; i++) {
+            SourceDescriptor dataSource = series.getDataSourcesList().getAt(i);
+            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
-                if (dataSource.getOneClick() != null) {
+                if (dataSource.hasOneClick()) {
                     assert i == 0;
                     oneClick = new OneClick(jsFigure, dataSource.getOneClick(), this);
                 }
             } else {
-                assert dataSource.getOneClick() != null;
+                assert dataSource.hasOneClick();
                 assert dataSource.getOneClick().equals(oneClick.getDescriptor());
             }
         }
@@ -103,7 +102,7 @@ public class JsSeries {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public SeriesPlotStyle getPlotStyle() {
+    public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }
 
@@ -114,17 +113,23 @@ public class JsSeries {
 
     @JsProperty(name = "isLinesVisible")
     public Boolean getLinesVisible() {
-        return descriptor.getLinesVisible();
+        if (descriptor.hasLinesVisible()) {
+            return descriptor.getLinesVisible();
+        }
+        return null;
     }
 
     @JsProperty(name = "isShapesVisible")
     public Boolean getShapesVisible() {
-        return descriptor.getShapesVisible();
+        if (descriptor.hasShapesVisible()) {
+            return descriptor.getShapesVisible();
+        }
+        return null;
     }
 
     @JsProperty
     public boolean isGradientVisible() {
-        return descriptor.isGradientVisible();
+        return descriptor.getGradientVisible();
     }
 
     @JsProperty
@@ -132,7 +137,7 @@ public class JsSeries {
         return descriptor.getLineColor();
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getLineStyle() {
 //        return descriptor.getLineStyle();
@@ -140,17 +145,26 @@ public class JsSeries {
 
     @JsProperty
     public String getPointLabelFormat() {
-        return descriptor.getPointLabelFormat();
+        if (descriptor.hasPointLabelFormat()) {
+            return descriptor.getPointLabelFormat();
+        }
+        return null;
     }
 
     @JsProperty
     public String getXToolTipPattern() {
-        return descriptor.getXToolTipPattern();
+        if (descriptor.hasXToolTipPattern()) {
+            return descriptor.getXToolTipPattern();
+        }
+        return null;
     }
 
     @JsProperty
     public String getYToolTipPattern() {
-        return descriptor.getYToolTipPattern();
+        if (descriptor.hasYToolTipPattern()) {
+            return descriptor.getYToolTipPattern();
+        }
+        return null;
     }
 
     @JsProperty
@@ -160,7 +174,10 @@ public class JsSeries {
 
     @JsProperty
     public Double getShapeSize() {
-        return descriptor.getShapeSize();
+        if (descriptor.hasShapeSize()) {
+            return descriptor.getShapeSize();
+        }
+        return null;
     }
 
     @JsProperty

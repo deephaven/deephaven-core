@@ -4,10 +4,10 @@ import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.client.fu.JsPromise;
-import io.deephaven.web.shared.data.plot.OneClickDescriptor;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -54,9 +54,9 @@ public class OneClick {
 
     @JsProperty
     public Object getColumns() {
-        JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumns().length];
+        JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
         for (int i = 0; i < fakeColumns.length; i++) {
-            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumns()[i], "type", oneClick.getColumnTypes()[i]);
+            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type", oneClick.getColumnsList().getAt(i));
         }
         return fakeColumns;
     }
@@ -97,8 +97,8 @@ public class OneClick {
             return null;
         }
 
-        if (oneClick.getColumns().length == 1) {
-            Object key = values.get(oneClick.getColumns()[0]);
+        if (oneClick.getColumnsList().length == 1) {
+            Object key = values.get(oneClick.getColumnsList().getAt(0));
             if (key != null) {
                 return new Object[]{ key };
             } else {
@@ -106,9 +106,9 @@ public class OneClick {
             }
         }
 
-        String[] key = new String[oneClick.getColumns().length];
-        for (int i = 0; i < oneClick.getColumns().length; i++) {
-            Any value = values.get(oneClick.getColumns()[i]);
+        String[] key = new String[oneClick.getColumnsList().length];
+        for (int i = 0; i < oneClick.getColumnsList().length; i++) {
+            Any value = values.get(oneClick.getColumnsList().getAt(i));
             if (value != null) {
                 key[i] = value.asString();
             }
@@ -247,7 +247,7 @@ public class OneClick {
     }
 
     public boolean allValuesSet() {
-        return values.size == oneClick.getColumns().length;
+        return values.size == oneClick.getColumnsList().length;
     }
 
     public boolean allRequiredValuesSet() {
@@ -256,7 +256,7 @@ public class OneClick {
 
     @JsProperty
     public boolean isRequireAllFiltersToDisplay() {
-        return oneClick.isRequireAllFiltersToDisplay();
+        return oneClick.getRequireAllFiltersToDisplay();
     }
 
     public OneClickDescriptor getDescriptor() {

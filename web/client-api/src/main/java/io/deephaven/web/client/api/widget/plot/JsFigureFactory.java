@@ -3,10 +3,12 @@ package io.deephaven.web.client.api.widget.plot;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.client.fu.JsPromise;
-import io.deephaven.web.shared.data.plot.*;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
@@ -36,9 +38,11 @@ public class JsFigureFactory {
         }
 
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
+        FetchFigureResponse response = new FetchFigureResponse();
+        response.setFigureDescriptor(figureDescriptor);
         return JsPromise.all(tables.map((table, index, all) -> table.copy(false)))
             .then(tableCopies -> new JsFigure(
-                c -> c.onSuccess(figureDescriptor),
+                c -> c.apply(null, response),
                 (figure, descriptor1) -> {
                     // We need to listen for disconnects and reconnects
                     boolean[] isTableDisconnected = new boolean[tableCopies.length];
@@ -102,8 +106,6 @@ public class JsFigureFactory {
         descriptor.setTitle(jsDescriptor.title);
         descriptor.setTitleFont(jsDescriptor.titleFont);
         descriptor.setTitleColor(jsDescriptor.titleColor);
-        descriptor.setResizable(jsDescriptor.isResizable);
-        descriptor.setDefaultTheme(jsDescriptor.isDefaultTheme);
         descriptor.setUpdateInterval(jsDescriptor.updateInterval);
         descriptor.setCols(jsDescriptor.cols);
         descriptor.setRows(jsDescriptor.rows);
@@ -111,21 +113,15 @@ public class JsFigureFactory {
         JsArray<JsTable> tables = jsDescriptor.getTables();
         // The only thing used by the Figure with the tableIds (outside of the default fetchTables function) is the
         // length of these tableIds.
-        descriptor.setTableIds(new int[tables.length]);
-
-        // There's just a straight mapping of plot handles to table ids
-        int[][] plotHandleIds = new int[tables.length][];
-        for (int i = 0; i < tables.length; i++) {
-            plotHandleIds[i] = new int[]{i};
-        }
-        descriptor.setPlotHandleIds(plotHandleIds);
+        descriptor.setTablesList(new JsArray<>());
+        descriptor.getTablesList().length = tables.length;
 
         JsArray<JsChartDescriptor> charts = jsDescriptor.charts;
         ChartDescriptor[] chartDescriptors = new ChartDescriptor[charts.length];
         for (int i = 0; i < charts.length; i++) {
             chartDescriptors[i] = convertJsChartDescriptor(charts.getAt(i), tables);
         }
-        descriptor.setCharts(chartDescriptors);
+        descriptor.setChartsList(chartDescriptors);
 
         return descriptor;
     }
@@ -137,7 +133,7 @@ public class JsFigureFactory {
         descriptor.setRowspan(jsDescriptor.rowspan);
 
         if (jsDescriptor.chartType != null) {
-            descriptor.setChartType(ChartDescriptor.ChartType.valueOf(jsDescriptor.chartType));
+            descriptor.setChartType(Js.coerceToInt(jsDescriptor.chartType));
         }
 
         descriptor.setTitle(jsDescriptor.title);
@@ -159,17 +155,17 @@ public class JsFigureFactory {
             axes[i].setId(Integer.toString(i));
             axisMap.put(jsAxis, axes[i]);
         }
-        descriptor.setAxes(axes);
+        descriptor.setAxesList(axes);
 
         JsArray<JsSeriesDescriptor> jsSeries = jsDescriptor.series;
         SeriesDescriptor[] seriesDescriptors = new SeriesDescriptor[jsSeries.length];
         for (int i = 0; i < jsSeries.length; i++) {
             seriesDescriptors[i] = convertJsSeriesDescriptor(jsSeries.getAt(i), tables, axisMap);
         }
-        descriptor.setSeries(seriesDescriptors);
+        descriptor.setSeriesList(seriesDescriptors);
 
         // TODO: IDS-5767 Add support for byExternal and multiseries descriptors
-        descriptor.setMultiSeries(new MultiSeriesDescriptor[0]);
+        descriptor.setMultiSeriesList(new MultiSeriesDescriptor[0]);
 
         return descriptor;
     }
@@ -177,9 +173,9 @@ public class JsFigureFactory {
     private static AxisDescriptor convertJsAxisDescriptor(JsAxisDescriptor jsDescriptor) {
         AxisDescriptor descriptor = new AxisDescriptor();
 
-        descriptor.setFormatType(AxisDescriptor.AxisFormatType.valueOf(jsDescriptor.formatType));
-        descriptor.setType(AxisDescriptor.AxisType.valueOf(jsDescriptor.type));
-        descriptor.setPosition(AxisDescriptor.AxisPosition.valueOf(jsDescriptor.position));
+        descriptor.setFormatType(Js.coerceToInt(jsDescriptor.formatType));
+        descriptor.setType(Js.coerceToInt(jsDescriptor.type));
+        descriptor.setPosition(Js.coerceToInt(jsDescriptor.position));
         descriptor.setLog(jsDescriptor.log);
         descriptor.setLabel(jsDescriptor.label);
         descriptor.setLabelFont(jsDescriptor.labelFont);
@@ -192,10 +188,10 @@ public class JsFigureFactory {
         descriptor.setMajorTicksVisible(jsDescriptor.majorTicksVisible);
         descriptor.setMinorTickCount(jsDescriptor.minorTickCount);
         descriptor.setGapBetweenMajorTicks(jsDescriptor.gapBetweenMajorTicks);
-        descriptor.setMajorTickLocations(Js.uncheckedCast(jsDescriptor.majorTickLocations));
+        descriptor.setMajorTickLocationsList(Js.<JsArray<Double>>uncheckedCast(jsDescriptor.majorTickLocations));
         descriptor.setTickLabelAngle(jsDescriptor.tickLabelAngle);
         descriptor.setInvert(jsDescriptor.invert);
-        descriptor.setTimeAxis(jsDescriptor.isTimeAxis);
+        descriptor.setIsTimeAxis(jsDescriptor.isTimeAxis);
 
         return descriptor;
     }
@@ -203,10 +199,14 @@ public class JsFigureFactory {
     private static SeriesDescriptor convertJsSeriesDescriptor(JsSeriesDescriptor jsDescriptor, JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
         SeriesDescriptor descriptor = new SeriesDescriptor();
 
-        descriptor.setPlotStyle(SeriesPlotStyle.valueOf(jsDescriptor.plotStyle));
+        descriptor.setPlotStyle(Js.coerceToInt(jsDescriptor.plotStyle));
         descriptor.setName(jsDescriptor.name);
-        descriptor.setLinesVisible(jsDescriptor.linesVisible);
-        descriptor.setShapesVisible(jsDescriptor.shapesVisible);
+        if (jsDescriptor.linesVisible != null) {
+            descriptor.setLinesVisible(jsDescriptor.linesVisible);
+        }
+        if (jsDescriptor.shapesVisible != null) {
+            descriptor.setShapesVisible(jsDescriptor.shapesVisible);
+        }
         descriptor.setGradientVisible(jsDescriptor.gradientVisible != null ? jsDescriptor.gradientVisible : false);
         descriptor.setLineColor(jsDescriptor.lineColor);
         descriptor.setPointLabelFormat(jsDescriptor.pointLabelFormat);
@@ -214,7 +214,9 @@ public class JsFigureFactory {
         descriptor.setYToolTipPattern(jsDescriptor.yToolTipPattern);
 
         descriptor.setShapeLabel(jsDescriptor.shapeLabel);
-        descriptor.setShapeSize(jsDescriptor.shapeSize);
+        if (jsDescriptor.shapeSize != null) {
+            descriptor.setShapeSize(jsDescriptor.shapeSize);
+        }
         descriptor.setShapeColor(jsDescriptor.shapeColor);
         descriptor.setShape(jsDescriptor.shape);
 
@@ -223,7 +225,7 @@ public class JsFigureFactory {
         for (int i = 0; i < jsDataSources.length; i++) {
             dataSources[i] = convertJsSourceDescriptor(jsDataSources.getAt(i), tables, axisMap);
         }
-        descriptor.setDataSources(dataSources);
+        descriptor.setDataSourcesList(dataSources);
 
         return descriptor;
     }
@@ -231,10 +233,10 @@ public class JsFigureFactory {
     private static SourceDescriptor convertJsSourceDescriptor(JsSourceDescriptor jsDescriptor, JsArray<JsTable> tables, Map<JsAxisDescriptor, AxisDescriptor> axisMap) {
         SourceDescriptor descriptor = new SourceDescriptor();
 
-        descriptor.setAxis(axisMap.get(jsDescriptor.axis));
+        descriptor.setAxisId(axisMap.get(jsDescriptor.axis).getId());
         descriptor.setTableId(tables.indexOf(jsDescriptor.table));
         descriptor.setColumnName(jsDescriptor.columnName);
-        descriptor.setType(SourceType.valueOf(jsDescriptor.type));
+        descriptor.setType(Js.coerceToInt(jsDescriptor.type));
 
         return descriptor;
     }

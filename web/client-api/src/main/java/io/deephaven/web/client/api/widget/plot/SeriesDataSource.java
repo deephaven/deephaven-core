@@ -1,8 +1,7 @@
 package io.deephaven.web.client.api.widget.plot;
 
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.shared.data.plot.SourceDescriptor;
-import io.deephaven.web.shared.data.plot.SourceType;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
@@ -35,7 +34,7 @@ public class SeriesDataSource {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public SourceType getType() {
+    public int getType() {
         return sourceDescriptor.getType();
     }
 

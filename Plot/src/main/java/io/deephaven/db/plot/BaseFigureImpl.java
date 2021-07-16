@@ -210,7 +210,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
      *
      * @return table handles associated with this figure.
      */
-    Set<TableMapHandle> getTableMapHandles(){
+    public Set<TableMapHandle> getTableMapHandles(){
         final Set<TableMapHandle> result = new HashSet<>();
 
         for (ChartImpl chart : getCharts().getCharts()) {

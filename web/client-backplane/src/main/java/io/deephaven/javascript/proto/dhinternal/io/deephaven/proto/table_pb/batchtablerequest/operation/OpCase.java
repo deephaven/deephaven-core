@@ -8,7 +8,8 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest.Operation.OpCase",
     namespace = JsPackage.GLOBAL)
 public class OpCase {
-  public static int COMBO_AGGREGATE,
+  public static int AS_OF_JOIN,
+  COMBO_AGGREGATE,
   DROP_COLUMNS,
   EMPTY_TABLE,
   FILTER,
@@ -19,6 +20,7 @@ public class OpCase {
   LAZY_UPDATE,
   MERGE,
   OP_NOT_SET,
+  RUN_CHART_DOWNSAMPLE,
   SELECT,
   SELECT_DISTINCT,
   SNAPSHOT,
