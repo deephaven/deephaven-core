@@ -1,7 +1,7 @@
 package io.deephaven.db.tables.select;
 
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.select.SelectFilter;
 
 import java.util.Objects;
@@ -34,7 +34,7 @@ public class WouldMatchPair {
      * @param filter the filter to populate the column
      */
     public WouldMatchPair(String columnName, SelectFilter filter) {
-        this.columnName = DBNameValidator.validateColumnName(columnName);
+        this.columnName = NameValidator.validateColumnName(columnName);
         this.filter = filter;
     }
 

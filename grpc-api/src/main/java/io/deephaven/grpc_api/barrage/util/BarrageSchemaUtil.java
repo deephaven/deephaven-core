@@ -14,7 +14,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.util.ColumnFormattingValues;
 import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
@@ -131,7 +131,7 @@ public class BarrageSchemaUtil {
         for (int i = 0; i < schema.fieldsLength(); ++i) {
             final io.deephaven.barrage.flatbuf.Field field = schema.fields(i);
 
-            final String name = DBNameValidator.legalizeColumnName(field.name());
+            final String name = NameValidator.legalizeColumnName(field.name());
 
             Class<?> type = null;
             Class<?> componentType = null;

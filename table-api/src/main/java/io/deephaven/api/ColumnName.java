@@ -3,7 +3,7 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -20,9 +20,9 @@ public abstract class ColumnName
 
     public static boolean isValidColumnName(String name) {
         try {
-            DBNameValidator.validateColumnName(name);
+            NameValidator.validateColumnName(name);
             return true;
-        } catch (DBNameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             return false;
         }
     }
@@ -81,7 +81,7 @@ public abstract class ColumnName
 
     @Check
     final void checkName() {
-        DBNameValidator.validateColumnName(name());
+        NameValidator.validateColumnName(name());
     }
 
     @Override

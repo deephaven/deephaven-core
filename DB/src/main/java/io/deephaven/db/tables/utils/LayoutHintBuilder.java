@@ -71,8 +71,8 @@ public class LayoutHintBuilder {
 
             final String column = parts[0];
             try {
-                DBNameValidator.validateColumnName(column);
-            } catch(DBNameValidator.InvalidNameException ex) {
+                NameValidator.validateColumnName(column);
+            } catch(NameValidator.InvalidNameException ex) {
                 throw new IllegalArgumentException("AutoFilterData invalid column name", ex);
             }
 

@@ -28,7 +28,7 @@ import org.apache.commons.csv.CSVParser;
 import java.io.*;
 import java.util.*;
 
-import static io.deephaven.db.tables.utils.DBNameValidator.legalizeColumnName;
+import static io.deephaven.db.tables.utils.NameValidator.legalizeColumnName;
 
 /**
  * Utilities for reading and writing CSV files to and from {@link Table}s

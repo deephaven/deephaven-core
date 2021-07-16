@@ -5,7 +5,7 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.util.text.Indenter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -389,7 +389,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
          * @return this builder
          */
         @NotNull public Builder offsetColumnName(@NotNull String offsetColumnName) {
-            this.offsetColumnName = DBNameValidator.validateColumnName(offsetColumnName);
+            this.offsetColumnName = NameValidator.validateColumnName(offsetColumnName);
             return this;
         }
 
@@ -401,7 +401,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
          * @return this builder
          */
         @NotNull public Builder timestampColumnName(@NotNull String timestampColumnName) {
-            this.timestampColumnName = DBNameValidator.validateColumnName(timestampColumnName);
+            this.timestampColumnName = NameValidator.validateColumnName(timestampColumnName);
             return this;
         }
 
@@ -413,7 +413,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
          * @return this builder
          */
         @NotNull public Builder kafkaPartitionColumnName(@NotNull String kafkaPartitionColumnName) {
-            this.kafkaPartitionColumnName = DBNameValidator.validateColumnName(kafkaPartitionColumnName);
+            this.kafkaPartitionColumnName = NameValidator.validateColumnName(kafkaPartitionColumnName);
             return this;
         }
 
@@ -476,7 +476,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(allowUnmapped)) {
                 throw new RuntimeException("Column " + allowUnmapped + " is already defined!");
             }
-            columnsUnmapped.add(DBNameValidator.validateColumnName(allowUnmapped));
+            columnsUnmapped.add(NameValidator.validateColumnName(allowUnmapped));
             return this;
         }
 
@@ -493,7 +493,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
-            columnToKeyFieldSetter.put(DBNameValidator.validateColumnName(column), field);
+            columnToKeyFieldSetter.put(NameValidator.validateColumnName(column), field);
             return this;
         }
 
@@ -509,7 +509,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
-            columnToKeyMethodSetter.put(DBNameValidator.validateColumnName(column), method);
+            columnToKeyMethodSetter.put(NameValidator.validateColumnName(column), method);
             return this;
         }
 
@@ -525,7 +525,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
-            columnToValueFieldSetter.put(DBNameValidator.validateColumnName(column), field);
+            columnToValueFieldSetter.put(NameValidator.validateColumnName(column), field);
             return this;
         }
 
@@ -541,7 +541,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
-            columnToValueMethodSetter.put(DBNameValidator.validateColumnName(column), method);
+            columnToValueMethodSetter.put(NameValidator.validateColumnName(column), method);
             return this;
         }
 
@@ -560,7 +560,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
-            columnToSetter.put(DBNameValidator.validateColumnName(column), setter);
+            columnToSetter.put(NameValidator.validateColumnName(column), setter);
             return this;
         }
 
