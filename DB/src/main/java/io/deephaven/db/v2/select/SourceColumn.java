@@ -58,7 +58,7 @@ public class SourceColumn implements SelectColumn {
     @Override
     public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
         sourceDefinition = columnDefinitionMap.get(sourceName);
-        if(sourceDefinition == null) {
+        if (sourceDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
         }
         return Collections.singletonList(sourceName);

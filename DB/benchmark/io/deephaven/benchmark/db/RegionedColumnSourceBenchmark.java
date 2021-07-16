@@ -3,7 +3,6 @@ package io.deephaven.benchmark.db;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.TableManagementTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -60,9 +59,6 @@ public class RegionedColumnSourceBenchmark {
     @Param({"100", "50"})
     private int sparsity;
 
-    @Param({"Parquet"})
-    private TableManagementTools.StorageFormat storageFormat;
-
     private Table inputTable;
     private WritableChunk<Values> destination;
     private Copier copier;
@@ -103,12 +99,10 @@ public class RegionedColumnSourceBenchmark {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("RegionedTable", actualSize)
                         .setPartitioningFormula("${autobalance_single}")
-                        .setPartitionCount(10)
-                        .setStorageFormat(storageFormat);
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
-                builder = BenchmarkTools.persistentTableBuilder("RegionedTable", actualSize)
-                        .setStorageFormat(storageFormat);
+                builder = BenchmarkTools.persistentTableBuilder("RegionedTable", actualSize);
                 break;
 
             default:

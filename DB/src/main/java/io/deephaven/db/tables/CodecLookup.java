@@ -4,6 +4,7 @@ import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
@@ -65,16 +66,6 @@ public class CodecLookup {
     /**
      * Test whether an explicit codec has been set.
      *
-     * @param columnDefinition The {@link ColumnDefinition}
-     * @return Whether an explicit codec has been set
-     */
-    public static boolean explicitCodecPresent(@NotNull final ColumnDefinition<?> columnDefinition) {
-        return explicitCodecPresent(columnDefinition.getObjectCodecClass());
-    }
-
-    /**
-     * Test whether an explicit codec has been set.
-     *
      * @param codecClassName The codec class name
      * @return Whether an explicit codec has been set
      */
@@ -89,13 +80,17 @@ public class CodecLookup {
      * @param columnDefinition The {@link ColumnDefinition}
      * @return The {@link ObjectCodec}
      */
-    public static <TYPE> ObjectCodec<TYPE> lookup(@NotNull final ColumnDefinition<TYPE> columnDefinition) {
-        final ObjectCodec<TYPE> codec = lookup(columnDefinition.getDataType(), columnDefinition.getObjectCodecClass(), columnDefinition.getObjectCodecArguments());
+    public static <TYPE> ObjectCodec<TYPE> lookup(
+            @NotNull final ColumnDefinition<TYPE> columnDefinition,
+            @NotNull final ColumnToCodecMappings codecMappings
+    ) {
+        final String colName = columnDefinition.getName();
+        final ObjectCodec<TYPE> codec = lookup(
+                columnDefinition.getDataType(),
+                codecMappings.getCodecName(colName),
+                codecMappings.getCodecArgs(colName));
         if (codec == null) {
             throw new UnsupportedOperationException("Failed to find a matching codec for " + columnDefinition);
-        }
-        if (columnDefinition.isFixedWidthObjectType() && codec.expectedObjectWidth() != columnDefinition.getObjectWidth()) {
-            throw new UnsupportedOperationException("Fixed-width codec mismatch for " + columnDefinition + ", expected width " + codec.expectedObjectWidth());
         }
         return codec;
     }

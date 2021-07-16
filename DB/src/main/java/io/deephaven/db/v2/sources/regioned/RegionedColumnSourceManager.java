@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;
@@ -77,11 +78,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
      */
     RegionedColumnSourceManager(final boolean isRefreshing,
                                 @NotNull final RegionedTableComponentFactory componentFactory,
+                                @NotNull final ColumnToCodecMappings codecMappings,
                                 @NotNull final ColumnDefinition... columnDefinitions) {
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-            columnSources.put(columnDefinition.getName(), componentFactory.createRegionedColumnSource(columnDefinition));
+            columnSources.put(
+                    columnDefinition.getName(),
+                    componentFactory.createRegionedColumnSource(columnDefinition, codecMappings));
         }
     }
 

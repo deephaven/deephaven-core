@@ -5,8 +5,9 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
 import org.junit.Test;
@@ -22,42 +23,34 @@ import java.util.Map;
  * Unit tests for ObjectCodec ColumnSource and AppendableColumn implementations.
  */
 public class TestMapCodecColumns {
-    private static final TableManagementTools.StorageFormat storageFormat = TableManagementTools.StorageFormat.Parquet;
-
     private static final ColumnDefinition<Map<String, String>> STRING_MAP_COLUMN_DEFINITION;
-    static {
-        // noinspection unchecked
-        STRING_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrStrMap", (Class)Map.class, StringStringMapCodec.class.getName());
-    }
-
     private static final ColumnDefinition<Map<String, Boolean>> BOOLEAN_MAP_COLUMN_DEFINITION;
-    static {
-        // noinspection unchecked
-        BOOLEAN_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrBoolMap", (Class)Map.class, StringBooleanMapCodec.class.getName());
-    }
-
     private static final ColumnDefinition<Map<String, Boolean>> INT_MAP_COLUMN_DEFINITION;
-    static {
-        // noinspection unchecked
-        INT_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrIntMap", (Class)Map.class, StringIntMapCodec.class.getName());
-    }
-
     private static final ColumnDefinition<Map<String, Boolean>> LONG_MAP_COLUMN_DEFINITION;
-    static {
-        // noinspection unchecked
-        LONG_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrLongMap", (Class)Map.class, StringLongMapCodec.class.getName());
-    }
-
     private static final ColumnDefinition<Map<String, Boolean>> FLOAT_MAP_COLUMN_DEFINITION;
-    static {
-        // noinspection unchecked
-        FLOAT_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrFloatMap", (Class)Map.class, StringFloatMapCodec.class.getName());
-    }
-
     private static final ColumnDefinition<Map<String, Boolean>> DOUBLE_MAP_COLUMN_DEFINITION;
+    private static final ParquetInstructions writeInstructions;
     static {
+        final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
         // noinspection unchecked
-        DOUBLE_MAP_COLUMN_DEFINITION = ColumnDefinition.ofVariableWidthCodec("StrDoubleMap", (Class)Map.class, StringDoubleMapCodec.class.getName());
+        STRING_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrStrMap", (Class)Map.class);
+        builder.addColumnCodec("StrStrMap", StringStringMapCodec.class.getName());
+        // noinspection unchecked
+        BOOLEAN_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrBoolMap", (Class)Map.class);
+        builder.addColumnCodec("StrBoolMap", StringBooleanMapCodec.class.getName());
+        // noinspection unchecked
+        INT_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrIntMap", (Class)Map.class);
+        builder.addColumnCodec("StrIntMap", StringIntMapCodec.class.getName());
+        // noinspection unchecked
+        LONG_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrLongMap", (Class)Map.class);
+        builder.addColumnCodec("StrLongMap", StringLongMapCodec.class.getName());
+        // noinspection unchecked
+        FLOAT_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrFloatMap", (Class)Map.class);
+        builder.addColumnCodec("StrFloatMap", StringFloatMapCodec.class.getName());
+        // noinspection unchecked
+        DOUBLE_MAP_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("StrDoubleMap", (Class)Map.class);
+        builder.addColumnCodec("StrDoubleMap", StringDoubleMapCodec.class.getName());
+        writeInstructions = builder.build();
     }
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
@@ -81,10 +74,10 @@ public class TestMapCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
+        final File dest = new File(dir, "Table.parquet");
         try {
-            TableManagementTools.writeTable(TABLE, dir, storageFormat);
-            // TODO (deephaven/deephaven-core/issues/322): Infer the definition
-            final Table result = TableManagementTools.readTable(dir);
+            ParquetTools.writeTable(TABLE, TABLE.getDefinition(), writeInstructions, dest);
+            final Table result = ParquetTools.readTable(dest);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(TABLE, result);

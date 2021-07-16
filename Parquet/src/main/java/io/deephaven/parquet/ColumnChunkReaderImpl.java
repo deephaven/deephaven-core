@@ -1,5 +1,6 @@
 package io.deephaven.parquet;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -7,10 +8,7 @@ import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.page.DictionaryPage;
 import org.apache.parquet.compression.CompressionCodecFactory;
-import org.apache.parquet.format.ColumnChunk;
-import org.apache.parquet.format.DictionaryPageHeader;
-import org.apache.parquet.format.PageHeader;
-import org.apache.parquet.format.Util;
+import org.apache.parquet.format.*;
 import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
@@ -175,7 +173,27 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 currentOffset = file.position() + pageHeader.getCompressed_page_size();
                 remainingValues -= pageHeader.isSetData_page_header() ? pageHeader.getData_page_header().num_values :
                         pageHeader.getData_page_header_v2().getNum_values();
-                return new ColumnPageReaderImpl(channelsProvider, file.position(), pageHeader, decompressor, path, dictionary, getPath(), -1, fieldTypes);
+                final org.apache.parquet.format.Encoding encoding;
+                switch (pageHeader.type) {
+                    case DATA_PAGE:
+                        encoding = pageHeader.getData_page_header().getEncoding();
+                        break;
+                    case DATA_PAGE_V2:
+                        encoding = pageHeader.getData_page_header_v2().getEncoding();
+                        break;
+                    default:
+                        throw new UncheckedDeephavenException("Unknown parquet data page header type " + pageHeader.type);
+                }
+                final Dictionary pageDictionary =
+                        (encoding == org.apache.parquet.format.Encoding.PLAIN_DICTIONARY
+                                || encoding == org.apache.parquet.format.Encoding.RLE_DICTIONARY)
+                        ? dictionary
+                        : null
+                        ;
+                return new ColumnPageReaderImpl(
+                        channelsProvider, file.position(), pageHeader,
+                        decompressor, path, pageDictionary, getPath(),
+                        -1, fieldTypes);
             } catch (IOException e) {
                 throw new RuntimeException("Error reading page header", e);
             }

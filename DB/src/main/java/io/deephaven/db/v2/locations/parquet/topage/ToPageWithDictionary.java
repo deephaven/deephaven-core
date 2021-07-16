@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.IntBuffer;
+import java.util.function.Function;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -18,10 +19,15 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
     private final Class<T> nativeType;
     private final Dictionary<T, ATTR> dictionary;
+    private final Function<Object, T[]> convertResultFallbackFun;
 
-    ToPageWithDictionary(Class<T> nativeType, Dictionary<T, ATTR> dictionary) {
+    ToPageWithDictionary(
+            final Class<T> nativeType,
+            final Dictionary<T, ATTR> dictionary,
+            final Function<Object, T[]> convertResultFallbackFun) {
         this.nativeType = nativeType;
         this.dictionary = dictionary;
+        this.convertResultFallbackFun = convertResultFallbackFun;
     }
 
     @Override
@@ -38,8 +44,11 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
     @Override
     @NotNull
-    public final Object getResult(ColumnPageReader columnPageReader) throws IOException {
-        int [] keys = new int [columnPageReader.numValues()];
+    public final Object getResult(final ColumnPageReader columnPageReader) throws IOException {
+        if (columnPageReader.getDictionary() == null) {
+            return ToPage.super.getResult(columnPageReader);
+        }
+        int[] keys = new int [columnPageReader.numValues()];
         IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT);
 
         return offsets == null ? keys : new DataWithOffsets(offsets, keys);
@@ -47,16 +56,19 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
 
     @Override
     @NotNull
-    public final T[] convertResult(Object result) {
-       int [] from = (int []) result;
-       //noinspection unchecked
-       T [] to = (T[])Array.newInstance(nativeType, from.length);
+    public final T[] convertResult(final Object result) {
+        if (!(result instanceof int[])) {
+            return convertResultFallbackFun.apply(result);
+        }
+        int[] from = (int []) result;
+        //noinspection unchecked
+        T[] to = (T[])Array.newInstance(nativeType, from.length);
 
-       for (int i = 0; i < from.length; ++i) {
-           to[i] = dictionary.get(from[i]);
-       }
+        for (int i = 0; i < from.length; ++i) {
+            to[i] = dictionary.get(from[i]);
+        }
 
-       return to;
+        return to;
     }
 
     @Override
@@ -93,7 +105,7 @@ public class ToPageWithDictionary<T, ATTR extends Attributes.Any> implements ToP
             }
 
             @Override
-            public Object getResult(ColumnPageReader columnPageReader) throws IOException {
+            public Object getResult(final ColumnPageReader columnPageReader) throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
             }
         };

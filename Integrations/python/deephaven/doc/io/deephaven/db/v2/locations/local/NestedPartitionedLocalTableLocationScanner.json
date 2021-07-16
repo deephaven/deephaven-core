@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.locations.local.NestedPartitionedLocalTableLocationScanner",
  "methods": {
-  "computeLocationDirectory": ":param tableKey: io.deephaven.db.v2.locations.TableKey\n:param locationKey: io.deephaven.db.v2.locations.TableLocationKey\n:return: java.io.File",
+  "computeLocationBasePath": ":param tableKey: io.deephaven.db.v2.locations.TableKey\n:param locationKey: io.deephaven.db.v2.locations.TableLocationKey\n:return: java.lang.String",
   "scanAll": ":param locationKeyObserver: java.util.function.Consumer<io.deephaven.db.v2.locations.TableLocationKey>",
   "toString": ":return: java.lang.String"
  },

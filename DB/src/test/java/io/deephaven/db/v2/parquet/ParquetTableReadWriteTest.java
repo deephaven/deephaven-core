@@ -7,7 +7,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TstUtils;
@@ -116,36 +116,34 @@ public class ParquetTableReadWriteTest {
 
     private void flatTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getTableFlat(size, includeSerializable);
-        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
-        TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest);
+        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
+        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getGroupedTable(size, includeSerializable);
-        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
-        TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
-        // TODO (https://github.com/deephaven/deephaven-core/issues/742): Stop passing the expected definition to read
-        final Table fromDisk = TableManagementTools.readTable(dest, tableToSave.getDefinition());
+        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
+        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void groupedOneColumnTable(String tableName, int size) {
         final Table tableToSave = getGroupedOneColumnTable(size);
         TableTools.show(tableToSave, 50);
-        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
-        TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
-        // TODO (https://github.com/deephaven/deephaven-core/issues/742): Stop passing the expected definition to read
-        final Table fromDisk = TableManagementTools.readTable(dest, tableToSave.getDefinition());
+        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
+        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
     private void testEmptyArrayStore(String tableName, int size) {
         final Table tableToSave = getEmptyArray(size);
-        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test");
-        TableManagementTools.writeTable(tableToSave, tableToSave.getDefinition(), dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest);
+        final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
+        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
 
@@ -174,9 +172,9 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.ofInt("someInt"),
             ColumnDefinition.ofLong("someLong").withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3").by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
-        final File dest = new File(rootFile, "ParquetTest_groupByLong_test");
-        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest);
+        final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
+        ParquetTools.writeTable(testTable, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someLong").getGroupToRange());
     }
@@ -187,9 +185,9 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.ofInt("someInt"),
             ColumnDefinition.ofString("someString").withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`").where("i % 2 == 0").by("someString").ungroup("someInt")).withDefinitionUnsafe(definition);
-        final File dest = new File(rootFile, "ParquetTest_groupByString_test");
-        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest);
+        final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
+        ParquetTools.writeTable(testTable, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someString").getGroupToRange());
     }
@@ -201,9 +199,9 @@ public class ParquetTableReadWriteTest {
             ColumnDefinition.ofInt("someInt"),
             ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
         final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0").by("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
-        final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test");
-        TableManagementTools.writeTable(testTable, dest, TableManagementTools.StorageFormat.Parquet);
-        final Table fromDisk = TableManagementTools.readTable(dest);
+        final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
+        ParquetTools.writeTable(testTable, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
     }

@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, ParquetColumnLocation<Attributes.Values>> implements ParquetFormatTableLocation<ParquetColumnLocation<Attributes.Values>> {
 
@@ -40,7 +41,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private final SeekableChannelsProvider cachedChannelProvider = new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()),
             Configuration.getInstance().getIntegerForClassWithDefault(ReadOnlyParquetTableLocation.class, "maxChannels", 100));
 
-    private final File parentDir;
+    private final File parquetFile;
 
     private static class GroupingFile {
         RowGroupReader reader;
@@ -59,8 +60,8 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, supportsSubscriptions);
         this.readInstructions = readInstructions;
+        this.parquetFile = parquetFile;
         try {
-            parentDir = parquetFile.getParentFile();
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
             rowGroupReader = parquetFileReader.getRowGroup(0);
 
@@ -122,8 +123,10 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
     private GroupingFile getGroupingFile(String name) {
         return groupingFiles.computeIfAbsent(name,(n)->{
             GroupingFile groupingFile = new GroupingFile();
+            final Function<String, String> defaultGroupingFilenameByColumnName =
+                    ParquetTableWriter.defaultGroupingFileName(parquetFile.getAbsolutePath());
             try {
-                ParquetFileReader parquetFileReader = new ParquetFileReader(parentDir.getAbsolutePath() + "/" + ParquetTableWriter.defaultGroupingFileName.apply(n), cachedChannelProvider, -1);
+                ParquetFileReader parquetFileReader = new ParquetFileReader(defaultGroupingFilenameByColumnName.apply(n), cachedChannelProvider, -1);
                 groupingFile.reader = parquetFileReader.getRowGroup(0);
                 groupingFile.keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
             } catch (IOException e) {
@@ -151,7 +154,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
 
             final PrimitiveType type = columnChunkReader.getType();
             final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
-            final String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name);
+            final String codecFromInstructions = readInstructions.getCodecName(columnDefinition.getName());
+            final String codecName = (codecFromInstructions != null)
+                    ? codecFromInstructions
+                    : keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + name)
+                    ;
             final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + name);
 
             final boolean isArray = columnChunkReader.getMaxRl() > 0;
@@ -199,16 +206,17 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
                             //noinspection rawtypes
                             final ObjectCodec codec;
                             if (isCodec) {
-                                final String codecParams = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name);
-                                codec = CodecCache.DEFAULT.getCodec(codecName, codecParams);
+                                final String codecArgs = (codecFromInstructions != null)
+                                        ? readInstructions.getCodecArgs(columnDefinition.getName())
+                                        : keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + name)
+                                        ;
+                                codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
                             } else {
-                                final String codecParams;
-                                if (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY) {
-                                    codecParams = Integer.toString(type.getTypeLength());
-                                } else {
-                                    codecParams = null;
-                                }
-                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecParams);
+                                final String codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                        ? Integer.toString(type.getTypeLength())
+                                        : null
+                                        ;
+                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecArgs);
                             }
                             //noinspection unchecked
                             toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());

@@ -3,8 +3,9 @@ package io.deephaven.benchmarking.runner;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.utils.TableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -39,10 +40,10 @@ public class TableBenchmarkState {
 
     public void logOutput() throws IOException {
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath())
-                                     .resolve(BenchmarkTools.getDetailLogPrefix(benchmarkName));
+                                     .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();
-        TableManagementTools.writeTable(output, RESULT_DEF, outputPath.toFile(), TableManagementTools.StorageFormat.Parquet);
+        ParquetTools.writeTable(output, RESULT_DEF, outputPath.toFile());
     }
 
     public void reset() {
@@ -68,7 +69,7 @@ public class TableBenchmarkState {
         return resultTable.size();
     }
 
-    static Table readBin(File directory) {
-        return TableManagementTools.readTable(directory, RESULT_DEF);
+    static Table readBin(File location) {
+        return ParquetTools.readTable(location);
     }
 }

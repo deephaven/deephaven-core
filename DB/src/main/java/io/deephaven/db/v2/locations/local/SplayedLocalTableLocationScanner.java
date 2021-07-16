@@ -11,7 +11,8 @@ import java.util.function.Consumer;
  */
 public class SplayedLocalTableLocationScanner implements LocalTableLocationProviderByScanner.Scanner {
 
-    private final File tableLocationDirectory; // final possible location of the table file
+    private final File tableRootDirectory; // final possible location of the table file
+    private final String tableName;
     private boolean locationExists; // true if the location has been known to exist
 
     /**
@@ -21,20 +22,21 @@ public class SplayedLocalTableLocationScanner implements LocalTableLocationProvi
      * @param tableName          The table's name
      */
     SplayedLocalTableLocationScanner(@NotNull final File tableRootDirectory, @NotNull final String tableName) {
-        this.tableLocationDirectory = new File(tableRootDirectory, tableName);
+        this.tableRootDirectory = tableRootDirectory;
+        this.tableName = tableName;
     }
 
     @Override
     public String toString() {
-        return "SplayedLocalTableLocationScanner[" + tableLocationDirectory + ']';
+        return "SplayedLocalTableLocationScanner[" + tableRootDirectory + File.separatorChar + tableName + ']';
     }
 
     @Override
     public void scanAll(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
         if (!locationExists) {
-            if (tableLocationDirectory.exists()) {
-                if (!tableLocationDirectory.isDirectory()) {
-                    throw new IllegalStateException("Table location '" + tableLocationDirectory + "' exists but is not a directory");
+            if (tableRootDirectory.exists()) {
+                if (!tableRootDirectory.isDirectory()) {
+                    throw new IllegalStateException("Table location '" + tableRootDirectory + "' exists but is not a directory");
                 }
                 locationExists = true;
             }
@@ -45,10 +47,10 @@ public class SplayedLocalTableLocationScanner implements LocalTableLocationProvi
     }
 
     @Override
-    public File computeLocationDirectory(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
+    public String computeLocationBasePath(@NotNull final TableKey tableKey, @NotNull final TableLocationKey locationKey) {
         if (TableLocationKey.COMPARATOR.compare(locationKey, SimpleTableLocationKey.getInstance()) != 0) {
             throw new UnsupportedOperationException(this + ": Unsupported location key: " + locationKey);
         }
-        return tableLocationDirectory;
+        return tableRootDirectory.getAbsolutePath() + File.separatorChar + tableKey.getTableName();
     }
 }

@@ -14,14 +14,20 @@ public class ToObjectPage<T, ATTR extends Attributes.Any> implements ToPage<ATTR
     private final ObjectCodec<T> codec;
 
     public static <T, ATTR extends Attributes.Any>
-    ToPage<ATTR, T[]> create(Class<T> nativeType, @NotNull ObjectCodec<T> codec,
+    ToPage<ATTR, T[]> create(final Class<T> nativeType, final @NotNull ObjectCodec<T> codec,
                         org.apache.parquet.column.Dictionary dictionary) {
         if (!nativeType.isPrimitive()) {
             return dictionary == null ? new ToObjectPage<>(nativeType, codec) :
-                    new ToPageWithDictionary<>(nativeType, new Dictionary<>(i -> {
-                        byte[] bytes = dictionary.decodeToBinary(i).getBytes();
-                        return codec.decode(bytes, 0, bytes.length);
-                    }, dictionary.getMaxId() + 1));
+                    new ToPageWithDictionary<>(
+                            nativeType,
+                            new Dictionary<>(
+                                i -> {
+                                    byte[] bytes = dictionary.decodeToBinary(i).getBytes();
+                                    return codec.decode(bytes, 0, bytes.length);
+                                },
+                                dictionary.getMaxId() + 1),
+                            (final Object result) -> convertResult(nativeType, codec, result)
+                    );
         }
 
         throw new IllegalArgumentException("The native type for a Object column is " + nativeType.getCanonicalName());
@@ -47,9 +53,13 @@ public class ToObjectPage<T, ATTR extends Attributes.Any> implements ToPage<ATTR
     @Override
     @NotNull
     public final T[] convertResult(Object result) {
+        return convertResult(nativeType, codec, result);
+    }
+
+    private static <T2> T2[] convertResult(final Class<T2> nativeType, final ObjectCodec<T2> codec, final Object result) {
         Binary [] from = (Binary[]) result;
         //noinspection unchecked
-        T[] to = (T[])Array.newInstance(nativeType, from.length);
+        T2[] to = (T2[])Array.newInstance(nativeType, from.length);
 
         for (int i = 0; i < to.length; ++i) {
             if (from[i] != null) {

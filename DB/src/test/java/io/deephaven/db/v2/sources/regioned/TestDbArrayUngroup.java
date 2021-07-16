@@ -3,7 +3,7 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.DbArray;
-import io.deephaven.db.tables.utils.TableManagementTools;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +31,7 @@ public class TestDbArrayUngroup {
     }
 
     @Test
-    public void testUngroup() throws IOException {
+    public void testUngroup() {
         final Table theTable = TableTools.emptyTable(20).update("A=`a`+i%10", "B=`b`+i%5", "C=`i`+i");
         assertEquals(String.class, theTable.getDefinition().getColumn("C").getDataType());
 
@@ -42,8 +42,9 @@ public class TestDbArrayUngroup {
         final Table ungroupedTable = groupedTable.ungroup();
         assertEquals(String.class, ungroupedTable.getDefinition().getColumn("C").getDataType());
 
-        TableManagementTools.writeTable(groupedTable, dataDirectory);
-        final Table actual = TableManagementTools.readTable(dataDirectory, groupedTable.getDefinition());
+        File dest = new File(dataDirectory, "testUngroup.parquet");
+        ParquetTools.writeTable(groupedTable, dest);
+        final Table actual = ParquetTools.readTable(dest);
 
         assertTrue(DbArray.class.isAssignableFrom(actual.getDefinition().getColumn("C").getDataType()));
         assertEquals(String.class, actual.getDefinition().getColumn("C").getComponentType());

@@ -243,8 +243,9 @@ public class BenchmarkTools {
         return Configuration.getInstance().getWorkspacePath();
     }
 
-    public static String getDetailLogPrefix(String benchmarkName) {
-        return "Details." + benchmarkName;
+    public static final String DETAIL_LOG_PREFIX = "Details.";
+    public static String getDetailOutputPath(String benchmarkName) {
+        return DETAIL_LOG_PREFIX + benchmarkName;
     }
 
     public static TableDefinition getLogDefinitionWithExtra(List<ColumnDefinition> columnsToAdd) {

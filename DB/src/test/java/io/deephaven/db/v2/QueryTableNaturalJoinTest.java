@@ -1294,7 +1294,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(asList(1, 2, 3), asList(pairMatch.getColumn("v").get(0, 3)));
     }
 
-
     public void testSymbolTableJoin() throws IOException {
         diskBackedTestHarness((left, right) -> {
             final Table result = left.naturalJoin(right, "Symbol");
@@ -1310,8 +1309,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
 
         try {
-            final Table leftTable = makeLeftDiskTable(leftDirectory);
-            final Table rightTable = makeRightDiskTable(rightDirectory);
+            final Table leftTable = makeLeftDiskTable(new File(leftDirectory, "Left.parquet"));
+            final Table rightTable = makeRightDiskTable(new File(rightDirectory, "Right.parquet"));
 
             testFunction.accept(leftTable, rightTable);
 
@@ -1324,25 +1323,25 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     @NotNull
-    private Table makeLeftDiskTable(File leftDirectory) throws IOException {
+    private Table makeLeftDiskTable(File leftLocation) throws IOException {
         final TableDefinition leftDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("LeftSentinel"));
         final String [] leftSyms = new String[]{"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        TableManagementTools.writeTable(leftTable, leftDefinition, leftDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(leftDirectory);
+        ParquetTools.writeTable(leftTable, leftDefinition, leftLocation);
+        return ParquetTools.readTable(leftLocation);
     }
 
     @NotNull
-    private Table makeRightDiskTable(File rightDirectory) throws IOException {
+    private Table makeRightDiskTable(File rightLocation) throws IOException {
         final TableDefinition rightDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("RightSentinel"));
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        TableManagementTools.writeTable(rightTable, rightDefinition, rightDirectory, TableManagementTools.StorageFormat.Parquet);
-        return TableManagementTools.readTable(rightDirectory);
+        ParquetTools.writeTable(rightTable, rightDefinition, rightLocation);
+        return ParquetTools.readTable(rightLocation);
     }
 }

@@ -91,7 +91,10 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         }});
 
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(false), with(equal(TABLE_DEFINITION.getColumns())));
+            oneOf(componentFactory).createColumnSourceManager(
+                    with(false),
+                    with(ColumnToCodecMappings.EMPTY),
+                    with(equal(TABLE_DEFINITION.getColumns())));
             will(returnValue(columnSourceManager));
         }});
 
@@ -184,7 +187,10 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         // Setup the table
         final int[] includedColumnIndices1 = new int[]{1, 2, 3};
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(false), with(equal(getIncludedColumnDefs(includedColumnIndices1))));
+            oneOf(componentFactory).createColumnSourceManager(
+                    with(false),
+                    with(ColumnToCodecMappings.EMPTY),
+                    with(equal(getIncludedColumnDefs(includedColumnIndices1))));
             will(returnValue(columnSourceManager));
         }});
         final Table dropColumnsResult1 = SUT.dropColumns(getExcludedColumnNames(SUT.getDefinition(), includedColumnIndices1));
@@ -209,7 +215,10 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         // Setup the table
         final int[] includedColumnIndices2 = new int[]{2, 3};
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(false), with(equal(getIncludedColumnDefs(includedColumnIndices2))));
+            oneOf(componentFactory).createColumnSourceManager(
+                    with(false),
+                    with(ColumnToCodecMappings.EMPTY),
+                    with(equal(getIncludedColumnDefs(includedColumnIndices2))));
             will(returnValue(columnSourceManager));
         }});
         final Table dropColumnsResult2 = dropColumnsResult1.dropColumns(getExcludedColumnNames(dropColumnsResult1.getDefinition(), includedColumnIndices2));
@@ -244,7 +253,10 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         // Setup the table
         final int[] includedColumnIndices3 = new int[]{2};
         checking(new Expectations() {{
-            oneOf(componentFactory).createColumnSourceManager(with(false), with(equal(getIncludedColumnDefs(includedColumnIndices3))));
+            oneOf(componentFactory).createColumnSourceManager(
+                    with(false),
+                    with(ColumnToCodecMappings.EMPTY),
+                    with(equal(getIncludedColumnDefs(includedColumnIndices3))));
             will(returnValue(columnSourceManager));
         }});
         final Table viewResult1 = dropColumnsResult2.view(getIncludedColumnNames(includedColumnIndices3));

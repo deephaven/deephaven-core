@@ -15,7 +15,7 @@ abstract class LocalTableLocationProviderByScanner extends LocalTableLocationPro
 
     public interface Scanner {
         void scanAll(@NotNull Consumer<TableLocationKey> locationKeyObserver);
-        File computeLocationDirectory(@NotNull TableKey tableKey, @NotNull TableLocationKey locationKey);
+        String computeLocationBasePath(@NotNull TableKey tableKey, @NotNull TableLocationKey locationKey);
         default TableLocationMetadataIndex getMetadataIndex() {
             return null;
         }

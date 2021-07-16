@@ -1,9 +1,12 @@
 {
  "className": "io.deephaven.db.v2.parquet.ParquetInstructions$Builder",
  "methods": {
+  "addColumnCodec": "*Overload 1*  \n  :param columnName: java.lang.String\n  :param codecName: java.lang.String\n  :return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder\n  \n*Overload 2*  \n  :param columnName: java.lang.String\n  :param codecName: java.lang.String\n  :param codecArgs: java.lang.String\n  :return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
   "addColumnNameMapping": ":param parquetColumnName: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
   "build": ":return: io.deephaven.db.v2.parquet.ParquetInstructions",
-  "getTakenNames": ":return: java.util.Set<java.lang.String>"
+  "getTakenNames": ":return: java.util.Set<java.lang.String>",
+  "setCompressionCodecName": ":param compressionCodecName: java.lang.String\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
+  "setIsLegacyParquet": ":param isLegacyParquet: boolean\n:return: io.deephaven.db.v2.parquet.ParquetInstructions.Builder"
  },
  "path": "io.deephaven.db.v2.parquet.ParquetInstructions.Builder",
  "typeName": "class"
