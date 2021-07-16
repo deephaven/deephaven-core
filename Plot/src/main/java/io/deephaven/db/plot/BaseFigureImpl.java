@@ -4,6 +4,7 @@
 
 package io.deephaven.db.plot;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.plot.errors.*;
@@ -518,7 +519,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
             final Set<String> cols = colMap.get(table);
             final Set<TableHandle> hs = thMap.get(table);
 
-            final Table t = table.view(cols);
+            final Table t = table.view(Selectable.from(cols));
 
             for (TableHandle h : hs) {
                 h.setTable(t);
