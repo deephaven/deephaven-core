@@ -107,6 +107,7 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
+        final HashSet<String> columnsWithDictionaryUsedOnEveryDataPage = pf.getColumnsWithDictionaryUsedOnEveryDataPage();
         for (ColumnDescriptor column : schema.getColumns()) {
             colDef.reset();
             currentColumn.setValue(column);
@@ -131,7 +132,7 @@ public class ParquetSchemaReader {
                 }
             }
             colDef.name = colName;
-            colDef.dictionaryUsedOnEveryDataPage = pf.dictionaryUsedOnEveryDataPage(parquetColumnName);
+            colDef.dictionaryUsedOnEveryDataPage = columnsWithDictionaryUsedOnEveryDataPage.contains(parquetColumnName);
             colDef.dhSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
             colDef.isGrouping = groupingCols.contains(colName);
             String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);

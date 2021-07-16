@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -76,16 +77,32 @@ public class ParquetFileReader {
         type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
     }
 
-    public boolean dictionaryUsedOnEveryDataPage(final String parquetColumnName) {
+    private HashSet<String> columnsWithDictionaryUsedOnEveryDataPage = null;
+    public HashSet<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
+        if (columnsWithDictionaryUsedOnEveryDataPage == null) {
+            columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();
+        }
+        return columnsWithDictionaryUsedOnEveryDataPage;
+    }
+
+    private HashSet<String> calculateColumnsWithDictionaryUsedOnEveryDataPage() {
+        final HashSet<String> result = new HashSet<>(fileMetaData.getSchemaSize());
         int rowGroupSeq = 0;
         for (RowGroup rowGroup : fileMetaData.getRow_groups()) {
-            boolean haveColumn = false;
+            // On the first pass, for row group zero, we are going to add all columns to the set
+            // that satisfy the restriction.
+            // On later passes after zero, we will remove any column that does not satisfy
+            // the restriction.
             for (ColumnChunk columnChunk : rowGroup.columns) {
                 final ColumnMetaData columnMeta = columnChunk.getMeta_data();
-                if (!columnMeta.path_in_schema.get(0).equals(parquetColumnName)) {
+                final String parquetColumnName = columnMeta.path_in_schema.get(0);
+                if (rowGroupSeq > 0 && !result.contains(parquetColumnName)) {
                     continue;
                 }
-                haveColumn = true;
+                if (columnMeta.encoding_stats == null) {
+                    continue;
+                }
+                boolean thisColumnInThisRowGroupDisproved = false;
                 for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
                     if (encodingStat.page_type != PageType.DATA_PAGE
                             && encodingStat.page_type != PageType.DATA_PAGE_V2) {
@@ -95,17 +112,19 @@ public class ParquetFileReader {
                     // this is a data page.
                     if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
                             && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
-                        return false;
+                        result.remove(parquetColumnName);
+                        thisColumnInThisRowGroupDisproved = true;
+                        break;
                     }
+                }
+                if (!thisColumnInThisRowGroupDisproved && rowGroupSeq == 0) {
+                    result.add(parquetColumnName);
                 }
                 break;
             }
-            if (!haveColumn) {
-                throw new UncheckedDeephavenException("Column " + parquetColumnName + " not found in row group " + rowGroupSeq);
-            }
             ++rowGroupSeq;
         }
-        return true;
+        return result;
     }
 
     private int readIntLittleEndian(SeekableByteChannel f) throws IOException {
