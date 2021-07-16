@@ -17,7 +17,7 @@ public class TestNameValidator {
     private final Function<String, String> customReplace = s -> s.replaceAll("\\*", "s");
     private final String nowOperable = "sssss";
 
-    //used in query and column testing
+    // used in query and column testing
     private final String invalidCol1 = "1Invalid";
     private final String invalidCol2 = "in.valid";
     private final String invalidCol3 = "in-vali3 d";
@@ -28,7 +28,7 @@ public class TestNameValidator {
     private final String validCol3 = "t2311sfad233safd12";
     private final String validCol4 = "Double";
 
-    //table and namespace testing
+    // table and namespace testing
     private final String invalidTable1 = "0";
     private final String invalidTable2 = "a0!";
     private final String invalidTable3 = "a0&";
@@ -38,52 +38,42 @@ public class TestNameValidator {
 
     @Test
     public void testColumnNameValidation() {
-        //all invalid, but log warnings instead
-        /*
-        try {
-            DBNameValidator.validateColumnName(invalidCol1);
-            fail("Expected an Exception");
-        } catch(DBNameValidator.InvalidNameException e) {
-            assertTrue(e.getMessage().contains("Invalid"));
-        }
+        // all invalid, but log warnings instead
 
-
-        try {
-            DBNameValidator.validateColumnName(invalidCol2);
-            fail("Expected an Exception");
-        } catch(DBNameValidator.InvalidNameException e) {
-            assertTrue(e.getMessage().contains("Invalid"));
-        }
-
-
-
-        try {
-            DBNameValidator.validateColumnName(invalidCol3);
-            fail("Expected an Exception");
-        } catch(DBNameValidator.InvalidNameException e) {
-            assertTrue(e.getMessage().contains("Invalid"));
-        }
-
-
-
-        try {
-            DBNameValidator.validateColumnName(reservedCol1);
-            fail("Expected an Exception");
-        } catch(DBNameValidator.InvalidNameException e) {
-            assertTrue(e.getMessage().contains("Invalid"));
-        }
-
-
-
-        try {
-            DBNameValidator.validateColumnName(reservedCol2);
-            fail("Expected an Exception");
-        } catch(DBNameValidator.InvalidNameException e) {
-            assertTrue(e.getMessage().contains("Invalid"));
-        }
-        */
-
-
+        // try {
+        // DBNameValidator.validateColumnName(invalidCol1);
+        // fail("Expected an Exception");
+        // } catch(DBNameValidator.InvalidNameException e) {
+        // assertTrue(e.getMessage().contains("Invalid"));
+        // }
+        //
+        // try {
+        // DBNameValidator.validateColumnName(invalidCol2);
+        // fail("Expected an Exception");
+        // } catch(DBNameValidator.InvalidNameException e) {
+        // assertTrue(e.getMessage().contains("Invalid"));
+        // }
+        //
+        // try {
+        // DBNameValidator.validateColumnName(invalidCol3);
+        // fail("Expected an Exception");
+        // } catch(DBNameValidator.InvalidNameException e) {
+        // assertTrue(e.getMessage().contains("Invalid"));
+        // }
+        //
+        // try {
+        // DBNameValidator.validateColumnName(reservedCol1);
+        // fail("Expected an Exception");
+        // } catch(DBNameValidator.InvalidNameException e) {
+        // assertTrue(e.getMessage().contains("Invalid"));
+        // }
+        //
+        // try {
+        // DBNameValidator.validateColumnName(reservedCol2);
+        // fail("Expected an Exception");
+        // } catch(DBNameValidator.InvalidNameException e) {
+        // assertTrue(e.getMessage().contains("Invalid"));
+        // }
 
         NameValidator.validateColumnName(validCol1);
         NameValidator.validateColumnName(validCol2);
@@ -93,52 +83,42 @@ public class TestNameValidator {
 
     @Test
     public void testQueryNameValidation() {
-        //all invalid
+        // all invalid
 
         try {
             NameValidator.validateQueryParameterName(invalidCol1);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateQueryParameterName(invalidCol2);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateQueryParameterName(invalidCol3);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateQueryParameterName(reservedCol1);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateQueryParameterName(reservedCol2);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         NameValidator.validateQueryParameterName(validCol1);
         NameValidator.validateQueryParameterName(validCol2);
@@ -151,29 +131,23 @@ public class TestNameValidator {
         try {
             NameValidator.validateTableName(invalidTable1);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateTableName(invalidTable2);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateTableName(invalidTable3);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         NameValidator.validateTableName(validTable1);
         NameValidator.validateTableName(validTable2);
@@ -186,38 +160,30 @@ public class TestNameValidator {
         final String invalidTable2 = "a0!";
         final String invalidTable3 = "a0&";
 
-
         final String validTable1 = "A";
         final String validTable2 = "a0";
         final String validTable3 = "a0243FDSFDSLKJADS_32-@@@@@++++++asdf321";
 
-
         try {
             NameValidator.validateNamespaceName(invalidTable1);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateNamespaceName(invalidTable2);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validateNamespaceName(invalidTable3);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         NameValidator.validateNamespaceName(validTable1);
         NameValidator.validateNamespaceName(validTable2);
@@ -230,39 +196,31 @@ public class TestNameValidator {
         final String invalidTable2 = "_";
         final String invalidTable3 = "a0&";
 
-
         final String validTable1 = "A";
         final String validTable2 = "0";
         final String validTable3 = "0A0";
         final String validTable4 = "a0243FDSFDSLKJADS_32-@@@@@++++++asdf321";
 
-
         try {
             NameValidator.validatePartitionName(invalidTable1);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validatePartitionName(invalidTable2);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         try {
             NameValidator.validatePartitionName(invalidTable3);
             fail("Expected an Exception");
-        } catch(NameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             assertTrue(e.getMessage().contains("Invalid"));
         }
-
-
 
         NameValidator.validatePartitionName(validTable1);
         NameValidator.validatePartitionName(validTable2);
@@ -304,7 +262,7 @@ public class TestNameValidator {
         try {
             NameValidator.legalizeColumnName(inoperable);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
@@ -346,7 +304,7 @@ public class TestNameValidator {
         try {
             NameValidator.legalizeQueryParameterName(inoperable);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
@@ -379,7 +337,7 @@ public class TestNameValidator {
         try {
             NameValidator.legalizeTableName(inoperable);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
@@ -392,7 +350,7 @@ public class TestNameValidator {
         try {
             NameValidator.legalizeNamespaceName(invalidTable1);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
@@ -416,7 +374,7 @@ public class TestNameValidator {
         try {
             NameValidator.legalizeNamespaceName(inoperable);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
@@ -426,83 +384,79 @@ public class TestNameValidator {
 
     @Test
     public void testLegalizeNames() {
-        final String[] canBeLegalized1 = {invalidCol1, invalidCol2, invalidCol3, reservedCol1, reservedCol2,
-                validCol1, validCol2, validCol3, validCol4};
+        final String[] canBeLegalized1 = {invalidCol1, invalidCol2, invalidCol3, reservedCol1,
+                reservedCol2, validCol1, validCol2, validCol3, validCol4};
 
-        final String[] canBeLegalized1Dupes = {invalidCol1, invalidCol2, invalidCol3, invalidCol3, reservedCol1, reservedCol2,
-                validCol1, validCol2, validCol3, validCol4};
+        final String[] canBeLegalized1Dupes = {invalidCol1, invalidCol2, invalidCol3, invalidCol3,
+                reservedCol1, reservedCol2, validCol1, validCol2, validCol3, validCol4};
 
-        final String[] cantBeLegalized1 = {invalidCol1, invalidCol2, invalidCol3, reservedCol1, reservedCol2,
-                validCol1, validCol2, validCol3, validCol4, inoperable};
+        final String[] cantBeLegalized1 = {invalidCol1, invalidCol2, invalidCol3, reservedCol1,
+                reservedCol2, validCol1, validCol2, validCol3, validCol4, inoperable};
 
-        //columnnames
+        // columnnames
         String[] ret = NameValidator.legalizeColumnNames(canBeLegalized1);
-        String[] correct = {"column_1Invalid", "invalid", "invali3d", "column_i",  "column_double",
+        String[] correct = {"column_1Invalid", "invalid", "invali3d", "column_i", "column_double",
                 validCol1, validCol2, validCol3, validCol4};
         assertArrayEquals(ret, correct);
 
         ret = NameValidator.legalizeColumnNames(canBeLegalized1Dupes, true);
-        correct = new String[]{"column_1Invalid", "invalid", "invali3d", "invali3d2", "column_i",  "column_double",
-                validCol1, validCol2, validCol3, validCol4};
+        correct = new String[] {"column_1Invalid", "invalid", "invali3d", "invali3d2", "column_i",
+                "column_double", validCol1, validCol2, validCol3, validCol4};
         assertArrayEquals(ret, correct);
 
         try {
             NameValidator.legalizeColumnNames(canBeLegalized1Dupes);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("Duplicate"));
         }
 
-
-        //query parameter names
+        // query parameter names
         ret = NameValidator.legalizeQueryParameterNames(canBeLegalized1);
-        correct = new String[]{"var_1Invalid", "invalid", "invali3d", "var_i",  "var_double",
+        correct = new String[] {"var_1Invalid", "invalid", "invali3d", "var_i", "var_double",
                 validCol1, validCol2, validCol3, validCol4};
         assertArrayEquals(ret, correct);
 
         ret = NameValidator.legalizeQueryParameterNames(canBeLegalized1Dupes, true);
-        correct = new String[]{"var_1Invalid", "invalid", "invali3d", "invali3d2", "var_i",  "var_double",
-                validCol1, validCol2, validCol3, validCol4};
+        correct = new String[] {"var_1Invalid", "invalid", "invali3d", "invali3d2", "var_i",
+                "var_double", validCol1, validCol2, validCol3, validCol4};
         assertArrayEquals(ret, correct);
 
         try {
             NameValidator.legalizeQueryParameterNames(canBeLegalized1Dupes);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("Duplicate"));
         }
 
+        final String[] canBeLegalized2 =
+            {invalidTable1, invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
 
-
-        final String[] canBeLegalized2 = {invalidTable1, invalidTable2, invalidTable3, validTable1, validTable2,
-                validTable3};
-
-        //table names
+        // table names
         try {
             NameValidator.legalizeTableNames(canBeLegalized2);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("Duplicate"));
         }
 
         ret = NameValidator.legalizeTableNames(canBeLegalized2, true);
-        correct = new String[]{"table_0", "a0", "a02", validTable1, "a03", validTable3};
+        correct = new String[] {"table_0", "a0", "a02", validTable1, "a03", validTable3};
         assertArrayEquals(ret, correct);
 
-
-        //namespace names
+        // namespace names
         try {
             NameValidator.legalizeNamespaceNames(canBeLegalized2);
             fail("Expected an Exception");
-        } catch(NameValidator.LegalizeNameException e) {
+        } catch (NameValidator.LegalizeNameException e) {
             assertTrue(e.getMessage().contains("legalize"));
         }
 
-        final String[] canBeLegalized3 = {invalidTable2, invalidTable3, validTable1, validTable2,
-                validTable3};
+        final String[] canBeLegalized3 =
+            {invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
 
         ret = NameValidator.legalizeNamespaceNames(canBeLegalized3, true);
-        correct = new String[]{"a0", "a02", validTable1, "a03", validTable3};
+        correct = new String[] {"a0", "a02", validTable1, "a03", validTable3};
         assertArrayEquals(ret, correct);
     }
 }
