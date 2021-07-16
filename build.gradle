@@ -338,27 +338,13 @@ tasks.register 'allJavadoc', Javadoc, {
         jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
         jdoc.options.addStringOption('Xdoclint:none', '-quiet')
 
-        //add to as javadoc gets completed
-        String [] exportedProjects = [
-                ':DataStructures',
-                ':DB',
-                ':Util',
-                ':ModelFarm',
-                ':Numerics',
-                ':Plot',
-                ':Kafka',
-                ':grpc-api',
-                ':qst',
-                ':table-api',
-                ':client-session',
-                ':client-session-dagger',
-                ':client-flight',
-                ':client-flight-dagger',
-                ':proto:proto-backplane-grpc',
-                ':proto:proto-backplane-grpc-flight'
+        // any projects we don't want to publish docs for go in the excludedProjects list:
+        String [] excludedProjects = [
+                ':test-configs'
         ]
-        jdoc.source = exportedProjects.collect { Java.sourceSet(project(it)).allJava }
-        jdoc.classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })
+        List<Project> included = allprojects.collect { path in excludedProjects ? null : it }
+        jdoc.source = included.collect { Java.sourceSet(it).allJava }
+        jdoc.classpath = files(included.collect { Java.sourceSet(it).compileClasspath })
         jdoc.destinationDir = file("${buildDir}/docs/javadoc")
         jdoc.dependsOn(':writeJavadocVersion')
 }
