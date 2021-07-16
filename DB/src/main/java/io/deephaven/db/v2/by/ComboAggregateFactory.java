@@ -642,7 +642,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         /**
          * Optimizes the aggregations, collapsing relevant aggregations into single {@link ComboBy comboBys} where
-         * application.
+         * applicable.
          *
          * <p>
          * Note: due to the optimization, the combo bys may not be in the same order as specified in {@code aggregations}.
@@ -1469,14 +1469,16 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         private final Map<ColumnName, List<Pair>> wAvgs = new HashMap<>();
         private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
 
-        // We'll do our best to maintain the original combo ordering.
-        // This will maintain the user-specified order as long as the user aggregation types were all next to each other.
-        //
-        // ie:
-        //
-        // by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] ) will not need to be re-ordered
-        //
-        // by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] ) will need to be re-ordered
+        /**
+         * We'll do our best to maintain the original combo ordering. This will maintain the user-specified order as
+         * long as the user aggregation types were all next to each other.
+         *
+         * ie:
+         *
+         * {@code by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] )} will not need to be re-ordered
+         *
+         * {@code by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] )} will need to be re-ordered
+         */
         private final LinkedHashSet<BuildLogic> buildOrder = new LinkedHashSet<>();
 
         @FunctionalInterface

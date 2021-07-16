@@ -35,7 +35,7 @@ public interface Filter {
 
         void visit(FilterIsNotNull isNotNull);
 
-        void visit(FilterCondition match);
+        void visit(FilterCondition condition);
 
         void visit(FilterNot not);
 

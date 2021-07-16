@@ -25,10 +25,10 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(FilterCondition match) {
-        String lhs = of(match.lhs());
-        String rhs = of(match.rhs());
-        switch (match.operator()) {
+    public static String of(FilterCondition condition) {
+        String lhs = of(condition.lhs());
+        String rhs = of(condition.rhs());
+        switch (condition.operator()) {
             case LESS_THAN:
                 return String.format("%s < %s", lhs, rhs);
             case LESS_THAN_OR_EQUAL:
@@ -42,7 +42,8 @@ public class Strings {
             case NOT_EQUALS:
                 return String.format("%s != %s", lhs, rhs);
             default:
-                throw new IllegalStateException("Unexpected match operator: " + match.operator());
+                throw new IllegalStateException(
+                    "Unexpected condition operator: " + condition.operator());
         }
     }
 
@@ -124,8 +125,8 @@ public class Strings {
         }
 
         @Override
-        public void visit(FilterCondition filterCondition) {
-            out = of(filterCondition);
+        public void visit(FilterCondition condition) {
+            out = of(condition);
         }
 
         @Override

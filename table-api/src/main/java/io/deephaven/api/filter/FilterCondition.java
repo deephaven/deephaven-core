@@ -178,7 +178,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
             return this;
         }
         if (rhs() instanceof ColumnName) {
-            return operator().transpose().of(rhs(), lhs());
+            return transpose();
         }
         return this;
     }

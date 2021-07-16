@@ -7,7 +7,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- *
+ * A visitor to get the ordered output {@link ColumnName column names} for {@link Aggregation
+ * aggregations}.
  */
 public class AggregationOutputs implements Aggregation.Visitor {
 

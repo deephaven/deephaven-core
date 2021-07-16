@@ -198,8 +198,8 @@ public interface SelectFilter {
         }
 
         @Override
-        public void visit(FilterCondition match) {
-            out = FilterConditionAdapter.of(inverted ? match.invert() : match);
+        public void visit(FilterCondition condition) {
+            out = FilterConditionAdapter.of(inverted ? condition.invert() : condition);
         }
 
         @Override
