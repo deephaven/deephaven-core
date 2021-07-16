@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.NoSuchColumnException;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ViewColumnSource;
@@ -69,9 +69,9 @@ public class FunctionalColumn<S,D> implements SelectColumn {
                             @NotNull Class<D> destDataType,
                             @NotNull Class componentType,
                             @NotNull BiFunction<Long, S, D> function) {
-        this.sourceName = DBNameValidator.validateColumnName(sourceName);
+        this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
-        this.destName = DBNameValidator.validateColumnName(destName);
+        this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
         this.componentType = Require.neqNull(componentType, "componentType");
         this.function = function;

@@ -9,7 +9,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.NoSuchColumnException;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.SparseArrayColumnSource;
@@ -33,8 +33,8 @@ public class SourceColumn implements SelectColumn {
     }
 
     public SourceColumn(String sourceName,String destName) {
-        this.sourceName = DBNameValidator.validateColumnName(sourceName);
-        this.destName = DBNameValidator.validateColumnName(destName);
+        this.sourceName = NameValidator.validateColumnName(sourceName);
+        this.destName = NameValidator.validateColumnName(destName);
     }
 
     @Override

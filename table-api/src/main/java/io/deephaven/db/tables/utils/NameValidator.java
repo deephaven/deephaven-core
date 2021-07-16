@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class DBNameValidator {
+public class NameValidator {
     private static final String COLUMN_PREFIX = "column_";
     private static final String QUERY_PREFIX = "var_";
     private static final String TABLE_PREFIX = "table_";
@@ -202,7 +202,7 @@ public class DBNameValidator {
         Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize column name " + name,
             COLUMN_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
-            DBNameValidator::validateColumnName);
+            NameValidator::validateColumnName);
     }
 
     public static String[] legalizeColumnNames(String[] names) {
@@ -221,7 +221,7 @@ public class DBNameValidator {
     public static String[] legalizeColumnNames(String[] names,
         Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            DBNameValidator::legalizeColumnName);
+            NameValidator::legalizeColumnName);
     }
 
     public static String legalizeQueryParameterName(String name) {
@@ -258,7 +258,7 @@ public class DBNameValidator {
         Function<String, String> customReplace, Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize table name " + name,
             QUERY_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
-            DBNameValidator::validateQueryParameterName);
+            NameValidator::validateQueryParameterName);
     }
 
     public static String[] legalizeQueryParameterNames(String[] names) {
@@ -277,7 +277,7 @@ public class DBNameValidator {
     public static String[] legalizeQueryParameterNames(String[] names,
         Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            DBNameValidator::legalizeQueryParameterName);
+            NameValidator::legalizeQueryParameterName);
     }
 
     public static String legalizeTableName(String name) {
@@ -313,7 +313,7 @@ public class DBNameValidator {
         Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize table name " + name,
             TABLE_PREFIX, STERILE_TABLE_AND_NAMESPACE_REGEX, false, true,
-            DBNameValidator::validateTableName);
+            NameValidator::validateTableName);
     }
 
     public static boolean isLegalTableName(String name) {
@@ -340,7 +340,7 @@ public class DBNameValidator {
     public static boolean isLegalTableName(String name, Function<String, String> customReplace,
         Set<String> takenNames) {
         return isLegal(name, customReplace, takenNames, STERILE_TABLE_AND_NAMESPACE_REGEX, false,
-            true, DBNameValidator::validateTableName);
+            true, NameValidator::validateTableName);
     }
 
     public static String[] legalizeTableNames(String[] names) {
@@ -359,7 +359,7 @@ public class DBNameValidator {
     public static String[] legalizeTableNames(String[] names,
         Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            DBNameValidator::legalizeTableName);
+            NameValidator::legalizeTableName);
     }
 
     public static String legalizeNamespaceName(String name) {
@@ -396,7 +396,7 @@ public class DBNameValidator {
         Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames,
             "Can not legalize namespace name " + name, null, STERILE_TABLE_AND_NAMESPACE_REGEX,
-            false, false, DBNameValidator::validateNamespaceName);
+            false, false, NameValidator::validateNamespaceName);
     }
 
     /**
@@ -410,7 +410,7 @@ public class DBNameValidator {
     public static boolean isLegalNamespaceName(String name, Function<String, String> customReplace,
         Set<String> takenNames) {
         return isLegal(name, customReplace, takenNames, STERILE_TABLE_AND_NAMESPACE_REGEX, false,
-            false, DBNameValidator::validateNamespaceName);
+            false, NameValidator::validateNamespaceName);
     }
 
     public static boolean isLegalNamespaceName(String name) {
@@ -442,7 +442,7 @@ public class DBNameValidator {
     public static String[] legalizeNamespaceNames(String[] names,
         Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            DBNameValidator::legalizeNamespaceName);
+            NameValidator::legalizeNamespaceName);
     }
 
     private static String legalizeName(String name, Function<String, String> customReplace,
@@ -483,7 +483,7 @@ public class DBNameValidator {
 
         try {
             validation.accept(sanitizedName);
-        } catch (DBNameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             throw new LegalizeNameException(error);
         }
 
@@ -525,7 +525,7 @@ public class DBNameValidator {
 
         try {
             validation.accept(sanitizedName);
-        } catch (DBNameValidator.InvalidNameException e) {
+        } catch (NameValidator.InvalidNameException e) {
             return false;
         }
 

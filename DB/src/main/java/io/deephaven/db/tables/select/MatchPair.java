@@ -8,7 +8,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -69,8 +69,8 @@ public class MatchPair implements Serializable {
      * @param rightColumn RHS of the pair
      */
     public MatchPair(String leftColumn,String rightColumn){
-        this.leftColumn = DBNameValidator.validateColumnName(leftColumn);
-        this.rightColumn = DBNameValidator.validateColumnName(rightColumn);
+        this.leftColumn = NameValidator.validateColumnName(leftColumn);
+        this.rightColumn = NameValidator.validateColumnName(rightColumn);
     }
 
     public String left() {

@@ -2,7 +2,7 @@ package io.deephaven.db.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,7 +11,7 @@ public class CountAggregationFactory implements AggregationContextFactory {
     private static final ChunkSource.WithPrev [] nullSourceArray = {null};
 
     public CountAggregationFactory(final String resultName) {
-        this.resultName = DBNameValidator.validateColumnName(resultName);
+        this.resultName = NameValidator.validateColumnName(resultName);
     }
 
     @Override
