@@ -40,7 +40,7 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
         if (other instanceof StandaloneTableLocationKey) {
             return 0;
         }
-        throw new ClassCastException();
+        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
     }
 
     @Override
@@ -51,5 +51,10 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
     @Override
     public boolean equals(@Nullable Object other) {
         return other instanceof StandaloneTableLocationKey;
+    }
+
+    @Override
+    public <PARTITION_VALUE_TYPE> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey) {
+        throw new UnknownPartitionKeyException(partitionKey, this);
     }
 }
