@@ -39,8 +39,15 @@ build/pipcache/
 .programfiles/
 workspaces/
 devopsLocal/
+pyclient/venv
+pyclient/dist
+pyclient/build
+pyclient/*.egg-info
 
 jenkins/failures
 
 node_modules
 .java-version
+.project
+.classpath
+.settings
