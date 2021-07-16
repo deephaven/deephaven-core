@@ -402,7 +402,7 @@ public class ParquetTools {
             } else {
                 baseType = parquetColDef.baseType;
             }
-            final ColumnDefinition<?> colDef;
+            ColumnDefinition<?> colDef;
             if (parquetColDef.codecType != null && !parquetColDef.codecType.isEmpty()) {
                 final Class<?> componentType =
                 (parquetColDef.codecComponentType != null && !parquetColDef.codecComponentType.isEmpty())
@@ -439,7 +439,13 @@ public class ParquetTools {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
                 }
             }
-            colsOut.add(parquetColDef.isGrouping ? colDef.withGrouping() : colDef);
+            if (colDef.getDataType() == String.class && parquetColDef.dictionaryUsedOnEveryDataPage) {
+                colDef = colDef.withSymbolTable();
+            }
+            if (parquetColDef.isGrouping) {
+                colDef = colDef.withGrouping();
+            }
+            colsOut.add(colDef);
         };
     }
 

@@ -1,6 +1,7 @@
 package io.deephaven.parquet;
 
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.format.*;
@@ -73,6 +74,38 @@ public class ParquetFileReader {
         f.close();
         fileMetaData = Util.readFileMetaData(new ByteArrayInputStream(footer));
         type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
+    }
+
+    public boolean dictionaryUsedOnEveryDataPage(final String parquetColumnName) {
+        int rowGroupSeq = 0;
+        for (RowGroup rowGroup : fileMetaData.getRow_groups()) {
+            boolean haveColumn = false;
+            for (ColumnChunk columnChunk : rowGroup.columns) {
+                final ColumnMetaData columnMeta = columnChunk.getMeta_data();
+                if (!columnMeta.path_in_schema.get(0).equals(parquetColumnName)) {
+                    continue;
+                }
+                haveColumn = true;
+                for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
+                    if (encodingStat.page_type != PageType.DATA_PAGE
+                            && encodingStat.page_type != PageType.DATA_PAGE_V2) {
+                        // skip non-data pages.
+                        continue;
+                    }
+                    // this is a data page.
+                    if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
+                            && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
+                        return false;
+                    }
+                }
+                break;
+            }
+            if (!haveColumn) {
+                throw new UncheckedDeephavenException("Column " + parquetColumnName + " not found in row group " + rowGroupSeq);
+            }
+            ++rowGroupSeq;
+        }
+        return true;
     }
 
     private int readIntLittleEndian(SeekableByteChannel f) throws IOException {

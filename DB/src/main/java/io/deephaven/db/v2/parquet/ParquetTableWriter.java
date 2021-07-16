@@ -394,7 +394,7 @@ public class ParquetTableWriter {
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
-        if (supportsDictionary(columnSource)) {
+        if (supportsDictionary(columnSource) && columnDefinition.hasSymbolTable()) {
             List<IntBuffer> buffersPerPage = new ArrayList<>();
             Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
             Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
