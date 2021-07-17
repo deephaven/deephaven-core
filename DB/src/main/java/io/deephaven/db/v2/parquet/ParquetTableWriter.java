@@ -235,7 +235,7 @@ public class ParquetTableWriter {
             ColumnSource<?> columnSource = nameToSource.getValue();
             try {
                 writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name), writeInstructions);
-            } catch (IllegalAccessException  e) {
+            } catch (IllegalAccessException e) {
                 throw new RuntimeException("Failed to write column " + name, e);
             }
         }
