@@ -132,7 +132,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     @Override
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
-        // TODO-RWC: Reference ticket for multiple row groups; this is insufficient once we fix that
+        // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus offset adjustments for multiple dictionaries)
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore = getDictionaryKeysPageStore(columnDefinition);
         return dictionaryKeysPageStore == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
     }
@@ -140,7 +140,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     @SuppressWarnings("unchecked")
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
-        // TODO-RWC: Reference ticket for multiple row groups; this is insufficient once we fix that
+        // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus multiple dictionary pages)
         final Chunk<Values> dictionaryValuesChunk = (Chunk<Values>) getDictionary(columnDefinition);
         return dictionaryValuesChunk == null ? null : ParquetColumnRegionSymbolTable.create(columnDefinition.getDataType(), dictionaryValuesChunk);
     }
