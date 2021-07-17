@@ -4,13 +4,19 @@
 
 package io.deephaven.db.tables.select;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Holds a pair of column names.
@@ -19,6 +25,34 @@ public class MatchPair implements Serializable {
     private static final long serialVersionUID = 20180822L;
 
     public static final MatchPair [] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
+
+    public static MatchPair of(Pair pair) {
+        return new MatchPair(pair.output().name(), pair.input().name());
+    }
+
+    public static MatchPair of(JoinMatch match) {
+        return new MatchPair(match.left().name(), match.right().name());
+    }
+
+    public static MatchPair of(JoinAddition addition) {
+        return new MatchPair(addition.newColumn().name(), addition.existingColumn().name());
+    }
+
+    public static MatchPair[] fromMatches(Collection<? extends JoinMatch> matches) {
+        return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static MatchPair[] fromAddition(Collection<? extends JoinAddition> matches) {
+        return matches.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static MatchPair[] fromPairs(Collection<? extends Pair> pairs) {
+        return pairs.stream().map(MatchPair::of).toArray(MatchPair[]::new);
+    }
+
+    public static Stream<ColumnName> outputs(Collection<MatchPair> pairs) {
+        return pairs.stream().map(MatchPair::left).map(ColumnName::of);
+    }
 
     public final String leftColumn;
     public final String rightColumn;
@@ -35,8 +69,8 @@ public class MatchPair implements Serializable {
      * @param rightColumn RHS of the pair
      */
     public MatchPair(String leftColumn,String rightColumn){
-        this.leftColumn = DBNameValidator.validateColumnName(leftColumn);
-        this.rightColumn = DBNameValidator.validateColumnName(rightColumn);
+        this.leftColumn = NameValidator.validateColumnName(leftColumn);
+        this.rightColumn = NameValidator.validateColumnName(rightColumn);
     }
 
     public String left() {

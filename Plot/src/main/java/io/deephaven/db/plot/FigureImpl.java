@@ -235,17 +235,13 @@ public class FigureImpl implements io.deephaven.db.plot.Figure {
 
 
     /**
-     * Creates a displayable figure that can be used to construct a {@link DisplayableFigureDescriptor}.
+     * Creates a displayable figure that can be sent to the client.
      *
      * @return a displayable version of the figure
      */
     @Override public FigureImpl show() {
         final BaseFigureImpl fc = onDisplay();
         return new FigureWidget(make(fc));
-    }
-
-    @Override public DisplayableFigureDescriptor makeDescriptor() {
-        throw new UnsupportedOperationException("Use show() in order to get a Figure that supports making descriptors");
     }
 
     @Override public  FigureImpl save( java.lang.String saveLocation ) {

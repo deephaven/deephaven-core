@@ -11,8 +11,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.util.ScriptSession;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -358,7 +356,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            DBNameValidator.validateQueryParameterName(name);
+            NameValidator.validateQueryParameterName(name);
             // TODO: Can I get rid of this applyValueConversions?  It's too inconsistent to feel safe.
             valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
         }
@@ -493,7 +491,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public synchronized <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(DBNameValidator.validateQueryParameterName(name), value);
+            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
         }
     }
 
@@ -531,7 +529,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(DBNameValidator.validateQueryParameterName(name), value);
+            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
         }
     }
 

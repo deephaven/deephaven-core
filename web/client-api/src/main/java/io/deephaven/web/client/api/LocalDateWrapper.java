@@ -13,10 +13,19 @@ public class LocalDateWrapper {
     private final static NumberFormat YEAR_FORMAT = NumberFormat.getFormat("0000");
     private final static NumberFormat MONTH_DAY_FORMAT = NumberFormat.getFormat("00");
 
-    private final LocalDate localDate;
+    private final int year;
+    private final int monthValue, dayOfMonth;
 
     public LocalDateWrapper(@Nonnull LocalDate localDate) {
-        this.localDate = localDate;
+        year = localDate.getYear();
+        monthValue = localDate.getMonthValue();
+        dayOfMonth = localDate.getDayOfMonth();
+    }
+
+    public LocalDateWrapper(int year, int monthValue, int dayOfMonth) {
+        this.year = year;
+        this.monthValue = monthValue;
+        this.dayOfMonth = dayOfMonth;
     }
 
     @JsMethod
@@ -26,28 +35,33 @@ public class LocalDateWrapper {
 
     @JsMethod
     public int getYear() {
-        return localDate.getYear();
+        return year;
     }
 
     @JsMethod
     public int getMonthValue() {
-        return localDate.getMonthValue();
+        return monthValue;
     }
 
     @JsMethod
     public int getDayOfMonth() {
-        return localDate.getDayOfMonth();
+        return dayOfMonth;
     }
 
+    @Deprecated
     public LocalDate getWrapped() {
+        LocalDate localDate = new LocalDate();
+        localDate.setYear(year);
+        localDate.setMonthValue((byte) monthValue);
+        localDate.setDayOfMonth((byte) dayOfMonth);
         return localDate;
     }
 
     @JsMethod
     @Override
     public String toString() {
-        return YEAR_FORMAT.format(localDate.getYear())
-                + "-" + MONTH_DAY_FORMAT.format(localDate.getMonthValue())
-                + "-" + MONTH_DAY_FORMAT.format(localDate.getDayOfMonth());
+        return YEAR_FORMAT.format(getYear())
+                + "-" + MONTH_DAY_FORMAT.format(getMonthValue())
+                + "-" + MONTH_DAY_FORMAT.format(getDayOfMonth());
     }
 }

@@ -14,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.mes
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.BarrageData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.SubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb_service.BarrageServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
@@ -21,10 +22,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_se
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
@@ -602,12 +600,10 @@ public class WorkerConnection {
     public Promise<JsFigure> getFigure(String figureName, Ticket script) {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
-//                    if (script != null) {
-//                        getServer().fetchScriptFigure(script, figureName, c);
-//                    } else {
-//                        getServer().fetchFigure(figureName, c);
-//                    }
-                    throw new UnsupportedOperationException("getFigure");
+                    FetchFigureRequest request = new FetchFigureRequest();
+                    request.setConsoleId(script);
+                    request.setFigureName(figureName);
+                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
                 }).refetch());
     }
 
@@ -733,6 +729,18 @@ public class WorkerConnection {
             return myBatcher;
         }
         return batcher;
+    }
+
+    public ClientTableState newStateFromUnsolicitedTable(ExportedTableCreationResponse unsolicitedTable, String fetchSummary) {
+        TableTicket tableTicket = new TableTicket(unsolicitedTable.getResultId().getTicket().getTicket_asU8());
+        JsTableFetch failFetch = (callback, newState, metadata1) -> {
+            throw new IllegalStateException("Cannot reconnect, must recreate the unsolicited table on the server: " + fetchSummary);
+        };
+        return cache.create(tableTicket, handle -> {
+            ClientTableState cts = new ClientTableState(this, handle, failFetch, fetchSummary);
+            cts.applyTableCreationResponse(unsolicitedTable);
+            return cts;
+        });
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {

@@ -468,7 +468,7 @@ public class ParquetTools {
                     readInstructions,
                     colConsumer,
                     (final String colName, final Set<String> takenNames) ->
-                            DBNameValidator.legalizeColumnName(
+                            NameValidator.legalizeColumnName(
                                     colName, s -> s.replace(" ", "_"), takenNames));
             if (instructionsOut != null) {
                 instructionsOut.setValue(readInstructions);

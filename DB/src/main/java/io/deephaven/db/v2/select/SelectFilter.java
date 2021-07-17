@@ -4,19 +4,42 @@
 
 package io.deephaven.db.v2.select;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Strings;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterIsNotNull;
+import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Value.Visitor;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.select.SelectFilterFactory;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
+import io.deephaven.db.v2.select.MatchFilter.MatchType;
 import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Interface for individual filters within a where clause.
  */
 public interface SelectFilter {
+
+    static SelectFilter of(Filter filter) {
+        return filter.walk(new Adapter(false)).getOut();
+    }
+
+    static SelectFilter[] from(Collection<? extends Filter> filters) {
+        return filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new);
+    }
+
     /**
      * Users of SelectFilter may implement this interface if they must react to the filter fundamentally changing.
      *
@@ -159,6 +182,130 @@ public interface SelectFilter {
 
         public PreviousFilteringNotSupported(String message) {
             super(message);
+        }
+    }
+
+    class Adapter implements Filter.Visitor {
+        private final boolean inverted;
+        private SelectFilter out;
+
+        private Adapter(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        public SelectFilter getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(FilterCondition condition) {
+            out = FilterConditionAdapter.of(inverted ? condition.invert() : condition);
+        }
+
+        @Override
+        public void visit(FilterNot not) {
+            out = not.filter().walk(new Adapter(!inverted)).getOut();
+        }
+
+        @Override
+        public void visit(FilterIsNull isNull) {
+            if (inverted) {
+                out = isNotNull(isNull.column());
+            } else {
+                out = isNull(isNull.column());
+            }
+        }
+
+        @Override
+        public void visit(FilterIsNotNull isNotNull) {
+            if (inverted) {
+                out = isNull(isNotNull.column());
+            } else {
+                out = isNotNull(isNotNull.column());
+            }
+        }
+
+        @Override
+        public void visit(RawString rawString) {
+            if (inverted) {
+                out = SelectFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
+            } else {
+                out = SelectFilterFactory.getExpression(rawString.value());
+            }
+        }
+
+        private static MatchFilter isNull(ColumnName columnName) {
+            return new MatchFilter(columnName.name(), new Object[] { null });
+        }
+
+        private static MatchFilter isNotNull(ColumnName columnName) {
+            return new MatchFilter(MatchType.Inverted, columnName.name(), new Object[] { null });
+        }
+
+        private static class FilterConditionAdapter implements Value.Visitor {
+
+            public static SelectFilter of(FilterCondition condition) {
+                FilterCondition preferred = condition.maybeTranspose();
+                return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred)).getOut();
+            }
+
+            private final FilterCondition original;
+            private final FilterCondition preferred;
+
+            private SelectFilter out;
+
+            private FilterConditionAdapter(FilterCondition original, FilterCondition preferred) {
+                this.original = Objects.requireNonNull(original);
+                this.preferred = Objects.requireNonNull(preferred);
+            }
+
+            public SelectFilter getOut() {
+                return Objects.requireNonNull(out);
+            }
+
+            @Override
+            public void visit(ColumnName lhs) {
+                preferred.rhs().walk(new Visitor() {
+                    @Override
+                    public void visit(ColumnName rhs) {
+                        out = SelectFilterFactory.getExpression(Strings.of(original));
+                    }
+
+                    @Override
+                    public void visit(long rhs) {
+                        switch (preferred.operator()) {
+                            case LESS_THAN:
+                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, false);
+                                break;
+                            case LESS_THAN_OR_EQUAL:
+                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, true);
+                                break;
+                            case GREATER_THAN:
+                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false, true);
+                                break;
+                            case GREATER_THAN_OR_EQUAL:
+                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true, true);
+                                break;
+                            case EQUALS:
+                                out = new MatchFilter(lhs.name(), rhs);
+                                break;
+                            case NOT_EQUALS:
+                                out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                                break;
+                            default:
+                                throw new IllegalStateException("Unexpected operator " + original.operator());
+                        }
+                    }
+                });
+            }
+
+            // Note for all remaining cases: since we are walking the preferred object, we know we don't have to handle
+            // the case where rhs is column name.
+
+            @Override
+            public void visit(long lhs) {
+                out = SelectFilterFactory.getExpression(Strings.of(original));
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.NoSuchColumnException;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.WritableSource;
@@ -46,9 +46,9 @@ public class ReinterpretedColumn<S,D> implements SelectColumn {
     private ColumnSource<S> sourceColumnSource;
 
     public ReinterpretedColumn(String sourceName, Class<S> sourceDataType, String destName, Class<D> destDataType) {
-        this.sourceName = DBNameValidator.validateColumnName(sourceName);
+        this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
-        this.destName = DBNameValidator.validateColumnName(destName);
+        this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
         //noinspection ResultOfMethodCallIgnored
         Require.gtZero(destName.length(), "destName.length()");

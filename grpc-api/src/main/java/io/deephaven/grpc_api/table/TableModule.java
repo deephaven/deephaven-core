@@ -16,6 +16,7 @@ import io.deephaven.grpc_api.table.ops.HeadOrTailByGrpcImpl;
 import io.deephaven.grpc_api.table.ops.HeadOrTailGrpcImpl;
 import io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.MergeTablesGrpcImpl;
+import io.deephaven.grpc_api.table.ops.RunChartDownsampleGrpcImpl;
 import io.deephaven.grpc_api.table.ops.SelectDistinctGrpcImpl;
 import io.deephaven.grpc_api.table.ops.SnapshotTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.SortTableGrpcImpl;
@@ -104,4 +105,7 @@ public interface TableModule {
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
     GrpcTableOperation<?> bindOperationAsOfJoin(AsOfJoinTablesGrpcImpl op);
+
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
+    GrpcTableOperation<?> bindOperationRunChartDownsample(RunChartDownsampleGrpcImpl op);
 }

@@ -85,7 +85,13 @@ public class FetchFigureRequest {
     FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
+    String getFigureName();
+
+    @JsProperty
     void setConsoleId(FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
+
+    @JsProperty
+    void setFigureName(String figureName);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -159,7 +165,13 @@ public class FetchFigureRequest {
     FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
 
     @JsProperty
+    String getFigureName();
+
+    @JsProperty
     void setConsoleId(FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
+
+    @JsProperty
+    void setFigureName(String figureName);
   }
 
   public static native FetchFigureRequest deserializeBinary(Uint8Array bytes);
@@ -176,6 +188,8 @@ public class FetchFigureRequest {
 
   public native Ticket getConsoleId();
 
+  public native String getFigureName();
+
   public native boolean hasConsoleId();
 
   public native Uint8Array serializeBinary();
@@ -183,6 +197,8 @@ public class FetchFigureRequest {
   public native void setConsoleId();
 
   public native void setConsoleId(Ticket value);
+
+  public native void setFigureName(String value);
 
   public native FetchFigureRequest.ToObjectReturnType0 toObject();
 

@@ -227,16 +227,18 @@ public class ParquetTableWriter {
         ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
-
-        RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(t.size());
-        // noinspection rawtypes
-        for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
-            String name = nameToSource.getKey();
-            ColumnSource<?> columnSource = nameToSource.getValue();
-            try {
-                writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name), writeInstructions);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Failed to write column " + name, e);
+        final long nrows = t.size();
+        if (nrows > 0) {
+            RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
+            // noinspection rawtypes
+            for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
+                String name = nameToSource.getKey();
+                ColumnSource<?> columnSource = nameToSource.getValue();
+                try {
+                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name), writeInstructions);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Failed to write column " + name, e);
+                }
             }
         }
 
@@ -441,10 +443,6 @@ public class ParquetTableWriter {
                         repeatCount.add(newBuffer);
                     }
                 }
-            }
-            if (keyCount.intValue() == 0) {
-                keys[0][0] = toParquetPrimitive.apply("");
-                keyCount.increment();
             }
             columnWriter.addDictionaryPage(keys[0], keyCount.intValue());
             Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();

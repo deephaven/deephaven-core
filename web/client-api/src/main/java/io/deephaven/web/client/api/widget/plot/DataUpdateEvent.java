@@ -1,9 +1,8 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.TableData;
-import io.deephaven.web.shared.data.plot.SourceDescriptor;
-import io.deephaven.web.shared.data.plot.SourceType;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
@@ -17,7 +16,7 @@ public class DataUpdateEvent {
     public static final DataUpdateEvent empty(JsSeries... series) {
         return new DataUpdateEvent(series, null, null) {
             @Override
-            public JsArray<Any> getArray(JsSeries series, SourceType sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
+            public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
                 return new JsArray<>();
             }
         };
@@ -38,20 +37,20 @@ public class DataUpdateEvent {
         return series;
     }
 
-    public JsArray<Any> getArray(JsSeries series, SourceType sourceName) {
+    public JsArray<Any> getArray(JsSeries series, int sourceName) {
         return getArray(series, sourceName, null);
     }
 
     @JsMethod
-    public JsArray<Any> getArray(JsSeries series, SourceType sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
+    public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
         String columnName = getColumnName(series, sourceType);
 
         return data.getColumn(columnName, mappingFunc, currentUpdate);
     }
 
-    private String getColumnName(JsSeries series, SourceType sourceType) {
-        return Arrays.stream(series.getDescriptor().getDataSources())
-                .filter(sd -> sd.getType().equals(sourceType))
+    private String getColumnName(JsSeries series, int sourceType) {
+        return series.getDescriptor().getDataSourcesList().asList().stream()
+                .filter(sd -> sd.getType() == sourceType)
                 .findFirst().map(SourceDescriptor::getColumnName)
                 .orElseThrow(() -> new IllegalArgumentException("No sourceType " + sourceType + " in provided series"));
     }

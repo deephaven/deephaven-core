@@ -1,5 +1,6 @@
 package io.deephaven.treetable;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -709,7 +710,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             Table modified = table;
 
             if (!absViews.isEmpty()) {
-                modified = modified.updateView(absViews);
+                modified = modified.updateView(Selectable.from(absViews));
             }
 
             for (int i = colDirectivePairs.size() - 1; i >= 0; i--) {

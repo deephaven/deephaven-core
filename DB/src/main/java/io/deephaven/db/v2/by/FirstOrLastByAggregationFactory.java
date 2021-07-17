@@ -3,7 +3,7 @@ package io.deephaven.db.v2.by;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
@@ -23,7 +23,7 @@ public class FirstOrLastByAggregationFactory implements AggregationContextFactor
 
     public FirstOrLastByAggregationFactory(boolean isFirst, String exposeRedirection) {
         this.isFirst = isFirst;
-        this.exposeRedirection = exposeRedirection == null ? null : DBNameValidator.validateColumnName(exposeRedirection);
+        this.exposeRedirection = exposeRedirection == null ? null : NameValidator.validateColumnName(exposeRedirection);
     }
 
     @Override

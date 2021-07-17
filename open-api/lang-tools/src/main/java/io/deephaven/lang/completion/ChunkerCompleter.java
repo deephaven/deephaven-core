@@ -218,7 +218,16 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
             if (LspTools.greaterThan(result.getStart(), requested)) {
                 // The result starts after the user's cursor.
                 // adjust the text edit back, stopping at the cursor.
-                throw new UnsupportedOperationException("No extendStart support yet");
+                if (log.isTraceEnabled()) {
+                    log.trace()
+                            .append("No extendStart support yet; result: ")
+                            .append(result.toString())
+                            .nl()
+                            .append("Requested: ")
+                            .append(requested.toString())
+                            .endl();
+                }
+                continue;
             } else if (LspTools.lessThan(result.getEnd(), requested)) {
                 // adjust the text edit forwards, appending tokens to result.
                 extendEnd(item, requested, node);
@@ -358,22 +367,22 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
         node.jjtAccept(new ChunkerVisitor() {
             @Override
             public Object visit(SimpleNode node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
             public Object visitChunkerDocument(ChunkerDocument node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
             public Object visitChunkerStatement(ChunkerStatement node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
             public Object visitChunkerJavaClassDecl(ChunkerJavaClassDecl node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
@@ -390,7 +399,7 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
 
             @Override
             public Object visitChunkerTypeDecl(ChunkerTypeDecl node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
@@ -462,20 +471,20 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
 
             @Override
             public Object visitChunkerParam(ChunkerParam node, Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
             public Object visitChunkerClosure(ChunkerClosure node, Object data) {
                 // not supporting completion for closures just yet; can likely offer parameter suggestions later though.
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
             public Object visitChunkerArray(ChunkerArray node, Object data) {
                 // when we're in an array, we should suggest "anything of the same type as other array elements",
                 // or otherwise look at where this array is being assigned to determine more type inference we can do for suggestion.
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override
@@ -520,8 +529,23 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
         // while python should suggest the names of decorator functions only.
     }
 
-    private RuntimeException unsupported(Node node) {
-        throw new UnsupportedOperationException("Node type " + node.getClass() + " not yet supported: " + node.toSource());
+    private Object unsupported(Node node) {
+        if (log.isTraceEnabled()) {
+            Node parent = node;
+            while(parent.jjtGetParent() != null && ! (parent.jjtGetParent() instanceof ChunkerDocument)) {
+                parent = parent.jjtGetParent();
+            }
+            log.trace()
+                    .append("Node type ")
+                    .append(node.getClass().getCanonicalName())
+                    .append(" not yet supported: ")
+                    .append(node.toSource())
+                    .nl()
+                    .append("Parent source: ")
+                    .append(parent.toSource())
+                    .endl();
+        }
+        return null;
     }
 
     private void numCompletion(Collection<CompletionItem.Builder> results, ChunkerNum node, CompletionRequest offset) {
@@ -1484,7 +1508,8 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
         return (String)ns.jjtAccept(new ChunkerDefaultVisitor() {
             @Override
             public Object defaultVisit(SimpleNode node, Object data) {
-                throw unsupported(node);
+                unsupported(node);
+                return "";
             }
 
             @Override
@@ -1503,7 +1528,8 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
         return (String)ns.jjtAccept(new ChunkerDefaultVisitor() {
             @Override
             public Object defaultVisit(SimpleNode node, Object data) {
-                throw unsupported(node);
+                unsupported(node);
+                return "";
             }
 
             @Override

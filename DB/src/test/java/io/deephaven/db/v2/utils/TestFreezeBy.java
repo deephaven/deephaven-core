@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
@@ -22,7 +23,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         QueryScope.addParam("freezeByTimeBase", timeBase);
         final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));
         final List<String> updates = Arrays.asList("SStr=Integer.toString(Sentinel)", "SByte=(byte)Sentinel", "SChar=(char)('A' + (char)Sentinel)", "SShort=(short)Sentinel", "SLong=(long)Sentinel", "SDouble=Sentinel/4", "SFloat=(float)(Sentinel/2)", "SDateTime=freezeByTimeBase + (Sentinel * 3600L*1000000000L)", "SBoolean=Sentinel%3==0?true:(Sentinel%3==1?false:null)");
-        final Table inputUpdated = input.updateView(updates);
+        final Table inputUpdated = input.updateView(Selectable.from(updates));
         final Table frozen = FreezeBy.freezeBy(inputUpdated, "Key");
         TableTools.showWithIndex(frozen);
 
@@ -49,7 +50,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3)).updateView(updates), frozen);
+        assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3)).updateView(Selectable.from(updates)), frozen);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3, 4), stringCol("Key", "D", "A"), intCol("Sentinel", 5, 6));
@@ -57,7 +58,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(updates), frozen);
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(Selectable.from(updates)), frozen);
 
         // swap two keys
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -66,7 +67,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(updates), frozen);
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(Selectable.from(updates)), frozen);
 
         QueryScope.addParam("freezeByTimeBase", null);
     }

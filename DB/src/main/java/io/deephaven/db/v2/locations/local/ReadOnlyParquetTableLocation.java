@@ -63,7 +63,11 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
         this.parquetFile = parquetFile;
         try {
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
-            rowGroupReader = parquetFileReader.getRowGroup(0);
+            if (parquetFileReader.fileMetaData.getRow_groups().isEmpty()) {
+                rowGroupReader = null;
+            } else {
+                rowGroupReader = parquetFileReader.getRowGroup(0);
+            }
 
             columns = new HashMap<>();
             for (ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
@@ -82,7 +86,7 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation<TableKey, Parqu
             throw new TableDataException("Can't read parquet file", except);
         }
 
-        handleUpdate(rowGroupReader.numRows(), parquetFile.lastModified());
+        handleUpdate(rowGroupReader == null ? 0 : rowGroupReader.numRows(), parquetFile.lastModified());
     }
 
     @Override

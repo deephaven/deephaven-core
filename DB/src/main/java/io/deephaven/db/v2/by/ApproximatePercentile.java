@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.dbarrays.DbArray;
 import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.select.SelectColumn;
 import com.tdunning.math.stats.TDigest;
@@ -152,7 +152,7 @@ public class ApproximatePercentile {
          */
         public PercentileDefinition add(double percentile, String resultName) {
             percentiles.add(percentile);
-            resultNames.add(DBNameValidator.validateColumnName(resultName));
+            resultNames.add(NameValidator.validateColumnName(resultName));
             return this;
         }
 
