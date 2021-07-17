@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.format.Util.writeFileMetaData;
+import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
     private static ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
@@ -73,12 +74,13 @@ public class ParquetFileWriter {
     }
 
     public void close() throws IOException {
-        final OutputStream os = Channels.newOutputStream(writeChannel);
-        os.write(ParquetFileReader.MAGIC);
-        serializeOffsetIndexes(offsetIndexes, blocks, writeChannel);
-        ParquetMetadata footer = new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
-        serializeFooter(footer, os);
-        writeChannel.close();
+        try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
+            os.write(ParquetFileReader.MAGIC);
+            serializeOffsetIndexes(offsetIndexes, blocks, os);
+            ParquetMetadata footer = new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
+            serializeFooter(footer, os);
+        }
+        // os (and thus writeChannel) are closed at this point.
     }
 
     private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {
@@ -89,26 +91,23 @@ public class ParquetFileWriter {
         os.write(ParquetFileReader.MAGIC);
     }
 
-    private static void serializeOffsetIndexes(
-            List<List<OffsetIndex>> offsetIndexes,
-            List<BlockMetaData> blocks,
-            SeekableByteChannel out) throws IOException {
+    private void serializeOffsetIndexes(
+            final List<List<OffsetIndex>> offsetIndexes,
+            final List<BlockMetaData> blocks,
+            final OutputStream os) throws IOException {
         for (int bIndex = 0, bSize = blocks.size(); bIndex < bSize; ++bIndex) {
-            List<ColumnChunkMetaData> columns = blocks.get(bIndex).getColumns();
-            List<OffsetIndex> blockOffsetIndexes = offsetIndexes.get(bIndex);
+            final List<ColumnChunkMetaData> columns = blocks.get(bIndex).getColumns();
+            final List<OffsetIndex> blockOffsetIndexes = offsetIndexes.get(bIndex);
             for (int cIndex = 0, cSize = columns.size(); cIndex < cSize; ++cIndex) {
                 OffsetIndex offsetIndex = blockOffsetIndexes.get(cIndex);
                 if (offsetIndex == null) {
                     continue;
                 }
                 ColumnChunkMetaData column = columns.get(cIndex);
-                long offset = out.position();
-                Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), Channels.newOutputStream(out));
-                column.setOffsetIndexReference(new IndexReference(offset, (int) (out.position() - offset)));
+                final long offset = writeChannel.position();
+                Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), os);
+                column.setOffsetIndexReference(new IndexReference(offset, (int) (writeChannel.position() - offset)));
             }
         }
     }
-
-
-
 }
