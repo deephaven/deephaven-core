@@ -84,7 +84,14 @@ public final class ParquetTableLocationKey implements ImmutableTableLocationKey 
 
     @Override
     public boolean equals(@Nullable final Object other) {
-        //TODO
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof ParquetTableLocationKey)) {
+            return false;
+        }
+        final ParquetTableLocationKey otherTyped = (ParquetTableLocationKey) other;
+        return file.equals(otherTyped.file) && partitions.equals(otherTyped.partitions);
     }
 
     /**
