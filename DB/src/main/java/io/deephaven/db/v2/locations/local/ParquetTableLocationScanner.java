@@ -50,4 +50,6 @@ public final class ParquetTableLocationScanner implements PollingTableLocationPr
                 new ParquetTableLocationScanner(() -> Stream.of(new ParquetTableLocationKey(file, null)), readInstructions),
                 null);
     }
+
+    // TODO-RWC: Scanner impls for multiple files.
 }

@@ -2,9 +2,7 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.FillContextMaker;
 import io.deephaven.db.v2.sources.regioned.ColumnRegionObjectCached.CreateCache;
@@ -43,12 +41,7 @@ class RegionedColumnSourceSymbol<T, OFFSET_CACHE extends OffsetLookupCache<T, Ch
                @NotNull ColumnLocation columnLocation,
                int regionIndex) {
         if (columnLocation.exists()) {
-            // TODO-RWC: I have no idea what to do here...
-            if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                Chunk<Attributes.Values> chunk = columnLocation.asParquetFormat().getDictionary(columnDefinition);
-                return chunk == null ? null : ParquetColumnRegionSymbolTable.create(type, chunk);
-            }
-            throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+            return columnLocation.makeDictionaryRegion(columnDefinition);
         }
 
         return null;

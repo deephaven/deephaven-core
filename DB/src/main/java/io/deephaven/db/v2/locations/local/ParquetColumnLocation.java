@@ -132,8 +132,17 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     @Override
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
+        // TODO-RWC: Reference ticket for multiple row groups; this is insufficient once we fix that
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore = getDictionaryKeysPageStore(columnDefinition);
         return dictionaryKeysPageStore == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
+        // TODO-RWC: Reference ticket for multiple row groups; this is insufficient once we fix that
+        final Chunk<Values> dictionaryValuesChunk = (Chunk<Values>) getDictionary(columnDefinition);
+        return dictionaryValuesChunk == null ? null : ParquetColumnRegionSymbolTable.create(columnDefinition.getDataType(), dictionaryValuesChunk);
     }
 
     /**

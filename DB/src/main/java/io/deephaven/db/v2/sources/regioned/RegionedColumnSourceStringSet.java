@@ -15,14 +15,8 @@ import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 
 class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet, Attributes.Values> {
 
-    private final RegionedColumnSourceLong<Attributes.StringSetBitmasks> stringSetBitmaskColumn;
-    private final RegionedColumnSourceObject<String, Attributes.Values> dictionaryColumn;
-
-    RegionedColumnSourceStringSet(ObjectDecoder<String> decoder) {
+    RegionedColumnSourceStringSet() {
         super(StringSet.class);
-
-        this.stringSetBitmaskColumn= new StringSetBitmaskColumnSource();
-        this.dictionaryColumn = new RegionedColumnSourceSymbol<>(decoder, String.class, ReversibleCache::new);
     }
 
     @Override
@@ -43,41 +37,9 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
     }
 
     @Override
-    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
-        stringSetBitmaskColumn.addRegion(columnDefinition, columnLocation);
-        dictionaryColumn.addRegion(columnDefinition, columnLocation);
-        return super.addRegion(columnDefinition, columnLocation);
-    }
-
-    @Override
     public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
+        // TODO-RWC: Should we delete this, too, and switch to RCSO.AsValues?
         return new ColumnRegionStringSet.FillContext(chunkCapacity);
-    }
-
-    @Override
-    public void releaseCachedResources() {
-        super.releaseCachedResources();
-        stringSetBitmaskColumn.releaseCachedResources();
-        dictionaryColumn.releaseCachedResources();
-    }
-
-    static class StringSetBitmaskColumnSource extends RegionedColumnSourceLong<Attributes.StringSetBitmasks> {
-
-        StringSetBitmaskColumnSource() {
-            super(ColumnRegionLong.createNull());
-        }
-
-        @Override
-        public ColumnRegionLong<Attributes.StringSetBitmasks> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                                         @NotNull ColumnLocation columnLocation,
-                                                                         int regionIndex) {
-            if (columnLocation.exists()) {
-                // TODO-RWC: This seems like it's no longer useful...
-                return null;
-            }
-
-            return null;
-        }
     }
 
     static class ReversibleCache extends ArrayBackedOffsetLookupCache<String, ChunkSource.FillContext>

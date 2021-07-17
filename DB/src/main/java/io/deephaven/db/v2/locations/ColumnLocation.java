@@ -121,6 +121,13 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
      */
     ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull ColumnDefinition<?> columnDefinition);
 
+    /**
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return A {@link ColumnRegionObject} for reading dictionary values from this ColumnLocation
+     * @throws UnsupportedOperationException If this ColumnLocation does not contain dictionary value data
+     */
+    <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull ColumnDefinition<?> columnDefinition);
+
     //------------------------------------------------------------------------------------------------------------------
     // StringKeyedObject implementation
     //------------------------------------------------------------------------------------------------------------------

@@ -93,7 +93,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                         ;
             } else if (StringSet.class.isAssignableFrom(dataType)) {
                 return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
-                        RegionedTableComponentFactory.getStringDecoder(String.class, columnDefinition));
+                );
             } else {
                 final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition, codecMappings);
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
