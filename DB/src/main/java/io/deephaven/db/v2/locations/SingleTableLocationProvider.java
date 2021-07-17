@@ -9,7 +9,7 @@ import java.util.Collections;
 /**
  * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}.
  */
-public class SingleTableLocationProvider implements TableLocationProvider {
+public final class SingleTableLocationProvider implements TableLocationProvider {
 
     private final TableLocation tableLocation;
 
@@ -21,17 +21,22 @@ public class SingleTableLocationProvider implements TableLocationProvider {
     }
 
     @Override
+    public ImmutableTableKey getKey() {
+        return tableLocation.getTableKey();
+    }
+
+    @Override
     public boolean supportsSubscriptions() {
         return false;
     }
 
     @Override
-    public void subscribe(@NotNull Listener listener) {
+    public void subscribe(@NotNull final Listener listener) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void unsubscribe(@NotNull Listener listener) {
+    public void unsubscribe(@NotNull final Listener listener) {
         throw new UnsupportedOperationException();
     }
 
@@ -46,31 +51,18 @@ public class SingleTableLocationProvider implements TableLocationProvider {
 
     @NotNull
     @Override
-    public Collection<TableLocation> getTableLocationKeys() {
-        return Collections.singleton(tableLocation);
+    public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+        return Collections.singleton(tableLocation.getKey());
+    }
+
+    @Override
+    public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
+        return tableLocation.getKey().equals(tableLocationKey);
     }
 
     @Nullable
     @Override
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-        return TableLocationKey.areEqual(tableLocationKey, tableLocation) ? tableLocation : null;
-    }
-
-    @NotNull
-    @Override
-    public CharSequence getNamespace() {
-        return tableLocation.getTableKey().getNamespace();
-    }
-
-    @NotNull
-    @Override
-    public CharSequence getTableName() {
-        return tableLocation.getTableKey().getTableName();
-    }
-
-    @NotNull
-    @Override
-    public TableType getTableType() {
-        return tableLocation.getTableKey().getTableType();
+        return hasTableLocationKey(tableLocationKey) ? tableLocation : null;
     }
 }

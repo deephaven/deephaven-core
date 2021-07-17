@@ -26,7 +26,7 @@ public abstract class AbstractTableLocation
 
     /**
      * @param tableKey              Table key for the table this location belongs to
-     * @param tableLocationKey      A key whose field values will be deep-copied to this location
+     * @param tableLocationKey      Table location key that identifies this location
      * @param supportsSubscriptions Whether subscriptions are to be supported
      */
     protected AbstractTableLocation(@NotNull final TableKey tableKey,

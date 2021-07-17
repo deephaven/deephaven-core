@@ -11,7 +11,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByParquetFile;
+import io.deephaven.db.v2.locations.local.ParquetTableLocationScanner;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -19,9 +19,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.SimpleSourceTable;
-import io.deephaven.db.v2.locations.StandaloneTableKey;
 import io.deephaven.db.v2.locations.TableLocationProvider;
-import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
@@ -370,12 +368,7 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
-                StandaloneTableKey.getInstance(),
-                sourceFile,
-                false,
-                TableDataRefreshService.getSharedRefreshService(),
-                readInstructions);
+        final TableLocationProvider locationProvider = ParquetTableLocationScanner.makeSingleFileProvider(readInstructions, sourceFile);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }

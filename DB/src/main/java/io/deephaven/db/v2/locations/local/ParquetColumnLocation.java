@@ -49,7 +49,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @param tableLocation The table location enclosing this column location
      * @param name          The name of the column
      */
-    ParquetColumnLocation(@NotNull final ReadOnlyParquetTableLocation tableLocation,
+    ParquetColumnLocation(@NotNull final ParquetTableLocation tableLocation,
                           @NotNull final String name,
                           final ColumnChunkPageStore.Creator<ATTR> pageStoreCreator) {
 

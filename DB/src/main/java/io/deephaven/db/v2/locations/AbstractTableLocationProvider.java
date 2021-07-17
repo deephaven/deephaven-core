@@ -24,6 +24,10 @@ public abstract class AbstractTableLocationProvider
 
     private final ImmutableTableKey tableKey;
 
+    /**
+     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation} if we've been asked to provide the
+     * location in question (or if the key is the location).
+     */
     private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
     @SuppressWarnings("unchecked")
     private final Collection<ImmutableTableLocationKey> unmodifiableTableLocationKeys =
@@ -55,7 +59,7 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     public final String toString() {
-        return getClass().getName() + '[' + tableKey + ']';
+        return getImplementationName() + '[' + tableKey + ']';
     }
 
     public final ImmutableTableKey getKey() {

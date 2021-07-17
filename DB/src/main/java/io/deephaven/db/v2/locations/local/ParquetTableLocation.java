@@ -32,16 +32,17 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-class ReadOnlyParquetTableLocation extends AbstractTableLocation {
+class ParquetTableLocation extends AbstractTableLocation {
+
+    private final File parquetFile;
+    private final ParquetInstructions readInstructions;
 
     private final Map<String, String> keyValueMetaData;
     private final RowGroupReader rowGroupReader;
     private final Map<String, String[]> columns;
 
     private final SeekableChannelsProvider cachedChannelProvider = new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()),
-            Configuration.getInstance().getIntegerForClassWithDefault(ReadOnlyParquetTableLocation.class, "maxChannels", 100));
-
-    private final File parquetFile;
+            Configuration.getInstance().getIntegerForClassWithDefault(ParquetTableLocation.class, "maxChannels", 100));
 
     private static class GroupingFile {
         RowGroupReader reader;
@@ -50,15 +51,12 @@ class ReadOnlyParquetTableLocation extends AbstractTableLocation {
 
     private final Map<String, GroupingFile> groupingFiles = new ConcurrentHashMap<>();
     private final Set<String> grouping = new HashSet<>();
-    private final ParquetInstructions readInstructions;
 
-    ReadOnlyParquetTableLocation(
-            @NotNull final TableKey tableKey,
-            @NotNull final TableLocationKey tableLocationKey,
-            final File parquetFile,
-            final boolean supportsSubscriptions,
-            final ParquetInstructions readInstructions) {
-        super(tableKey, tableLocationKey, supportsSubscriptions);
+    ParquetTableLocation(@NotNull final TableKey tableKey,
+                         @NotNull final TableLocationKey tableLocationKey,
+                         final File parquetFile,
+                         final ParquetInstructions readInstructions) {
+        super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         this.parquetFile = parquetFile;
         try {

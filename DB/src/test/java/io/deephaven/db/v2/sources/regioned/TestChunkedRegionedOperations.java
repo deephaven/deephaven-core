@@ -268,7 +268,7 @@ public class TestChunkedRegionedOperations {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 new PollingTableLocationProvider(
                         tableKey,
-                        new LegacyNestedParquetTableLocationScanner(dataDirectory, ParquetInstructions.EMPTY),
+                        new ParquetTableLocationScanner(dataDirectory, ParquetInstructions.EMPTY),
                         null
                 ),
                 null,

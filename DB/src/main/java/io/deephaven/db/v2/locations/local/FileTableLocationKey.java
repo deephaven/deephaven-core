@@ -37,6 +37,10 @@ public abstract class FileTableLocationKey extends PartitionedTableLocationKey {
         this.file = file.getAbsoluteFile();
     }
 
+    public final File getFile() {
+        return file;
+    }
+
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(getImplementationName())

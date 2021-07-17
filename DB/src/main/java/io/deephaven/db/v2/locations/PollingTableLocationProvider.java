@@ -27,10 +27,12 @@ public class PollingTableLocationProvider extends AbstractTableLocationProvider 
         /**
          * Manufacture a {@link TableLocation} from the supplied key, which must have come from this scanner
          *
-         * @param locationKey The key (or an immutable equivalent), previously discovered via {@link #scanAll(Consumer)}
-         * @return A new or cached {@link TableLocation} identified by the supplied key
+         * @param tableKey    The {@link TableKey} for the provider using this scanner instance
+         * @param locationKey The {@link TableLocationKey} (or an immutable equivalent), previously discovered via
+         *                    {@link #scanAll(Consumer)}
+         * @return A new or cached {@link TableLocation} identified by the supplied {@link TableLocationKey}
          */
-        TableLocation makeLocation(@NotNull TableLocationKey locationKey);
+        TableLocation makeLocation(@NotNull final TableKey tableKey, @NotNull TableLocationKey locationKey);
     }
 
     private final Scanner scanner;
@@ -64,7 +66,7 @@ public class PollingTableLocationProvider extends AbstractTableLocationProvider 
     @Override
     @NotNull
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
-        return scanner.makeLocation(locationKey);
+        return scanner.makeLocation(getKey(), locationKey);
     }
 
     //------------------------------------------------------------------------------------------------------------------
