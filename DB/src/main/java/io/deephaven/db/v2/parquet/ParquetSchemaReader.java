@@ -107,7 +107,7 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
-        final HashSet<String> columnsWithDictionaryUsedOnEveryDataPage = pf.getColumnsWithDictionaryUsedOnEveryDataPage();
+        final Set<String> columnsWithDictionaryUsedOnEveryDataPage = pf.getColumnsWithDictionaryUsedOnEveryDataPage();
         for (ColumnDescriptor column : schema.getColumns()) {
             colDef.reset();
             currentColumn.setValue(column);

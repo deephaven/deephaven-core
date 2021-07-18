@@ -1,7 +1,6 @@
 package io.deephaven.parquet;
 
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.format.*;
@@ -20,10 +19,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static io.deephaven.parquet.utils.Helpers.readFully;
 
@@ -77,52 +73,66 @@ public class ParquetFileReader {
         type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
     }
 
-    private HashSet<String> columnsWithDictionaryUsedOnEveryDataPage = null;
-    public HashSet<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
+    private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
+    public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
             columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();
         }
         return columnsWithDictionaryUsedOnEveryDataPage;
     }
 
-    private HashSet<String> calculateColumnsWithDictionaryUsedOnEveryDataPage() {
-        final HashSet<String> result = new HashSet<>(fileMetaData.getSchemaSize());
-        int rowGroupSeq = 0;
-        for (RowGroup rowGroup : fileMetaData.getRow_groups()) {
-            // On the first pass, for row group zero, we are going to add all columns to the set
-            // that satisfy the restriction.
-            // On later passes after zero, we will remove any column that does not satisfy
-            // the restriction.
-            for (ColumnChunk columnChunk : rowGroup.columns) {
-                final ColumnMetaData columnMeta = columnChunk.getMeta_data();
-                final String parquetColumnName = columnMeta.path_in_schema.get(0);
-                if (rowGroupSeq > 0 && !result.contains(parquetColumnName)) {
-                    continue;
-                }
-                if (columnMeta.encoding_stats == null) {
-                    continue;
-                }
-                boolean thisColumnInThisRowGroupDisproved = false;
-                for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
-                    if (encodingStat.page_type != PageType.DATA_PAGE
-                            && encodingStat.page_type != PageType.DATA_PAGE_V2) {
-                        // skip non-data pages.
-                        continue;
-                    }
-                    // this is a data page.
-                    if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
-                            && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
-                        result.remove(parquetColumnName);
-                        thisColumnInThisRowGroupDisproved = true;
-                        break;
-                    }
-                }
-                if (!thisColumnInThisRowGroupDisproved && rowGroupSeq == 0) {
-                    result.add(parquetColumnName);
-                }
-                break;
+    /** True only if we are certain every data page in this column chunk uses dictionary encoding;
+     *  note false also covers the "we can't tell" case. */
+    private boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
+        final ColumnMetaData columnMeta = columnChunk.getMeta_data();
+        if (columnMeta.encoding_stats == null) {
+            return false;  // this is false as "don't know".
+        }
+        for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
+            if (encodingStat.page_type != PageType.DATA_PAGE
+                    && encodingStat.page_type != PageType.DATA_PAGE_V2) {
+                // skip non-data pages.
+                continue;
             }
-            ++rowGroupSeq;
+            // this is a data page.
+            if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
+                    && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Set<String> calculateColumnsWithDictionaryUsedOnEveryDataPage() {
+        final HashSet<String> result = new HashSet<>(fileMetaData.getSchemaSize());
+        final List<RowGroup> rowGroups = fileMetaData.getRow_groups();
+        final Iterator<RowGroup> riter = rowGroups.iterator();
+        if (!riter.hasNext()) {
+            return result;
+        }
+        // On the first pass, for row group zero, we are going to add all columns to the set
+        // that satisfy the restriction.
+        // On later passes after zero, we will remove any column that does not satisfy
+        // the restriction.
+        final RowGroup rg0 = riter.next();
+        for (ColumnChunk columnChunk : rg0.columns) {
+            if (columnChunkUsesDictionaryOnEveryPage(columnChunk)) {
+                final String parquetColumnName = columnChunk.getMeta_data().path_in_schema.get(0);
+                result.add(parquetColumnName);
+            }
+        }
+
+        while (riter.hasNext()) {
+            final RowGroup rowGroup = riter.next();
+            for (ColumnChunk columnChunk : rowGroup.columns) {
+                final String parquetColumnName = columnChunk.getMeta_data().path_in_schema.get(0);
+                if (!result.contains(parquetColumnName)) {
+                    continue;
+                }
+                if (!columnChunkUsesDictionaryOnEveryPage(columnChunk)) {
+                    result.remove(parquetColumnName);
+                }
+            }
         }
         return result;
     }
