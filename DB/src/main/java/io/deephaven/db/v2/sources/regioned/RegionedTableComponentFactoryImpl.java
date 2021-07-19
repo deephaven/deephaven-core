@@ -102,4 +102,17 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
             throw new UnsupportedOperationException("Can't create column for " + dataType + " in column definition " + columnDefinition, except);
         }
     }
+
+
+    /* TODO-RWC:
+     1. Do I need more than a single delegating regioned CS? Can wrap a source parallel to a source of CLs.
+        Maybe eliminates component factory. More scalable design? Needs delegating contexts, instead of inclusive contexts.
+     2. Fragmented and hierarchical: what’s the difference?
+     3. Dictionary exposure via column source instead of definition? Defer check?
+     4. Partition table as building block. Ticking select distinct. Get rid of CSM?
+     5. How to integrate range indices? Maybe I can just stamp regions with ranges, and filter regions? CL-metadata?
+     6. PT pattern: PColumns, TLKs, parent is hard ref to TLP-listener
+        ; then filter by PColumns or even TLKs
+        ; then add columns of TLs, TL-listeners, CLs, CRs, TLSizes (later TLIndices)
+     */
 }

@@ -11,7 +11,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
+import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.locations.local.ParquetTableLocationScanner;
+import io.deephaven.db.v2.locations.parquet.ParquetTableLocationKey;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -19,18 +21,31 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.SimpleSourceTable;
-import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Tools for managing and manipulating tables on disk in parquet format.
@@ -368,9 +383,94 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final TableLocationProvider locationProvider = ParquetTableLocationScanner.makeSingleFileProvider(readInstructions, sourceFile);
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationScanner((locationKeyObserver) -> locationKeyObserver.accept(new ParquetTableLocationKey(sourceFile, null)), readInstructions),
+                null);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+    }
+
+    public static final class HiveStylePartitionLayout implements ParquetTableLocationScanner.LocationKeyFinder {
+
+        private final File tableRootDirectory;
+        // TODO-RWC: Support type inference under a new ticket
+        private boolean inferTypes;
+
+        public HiveStylePartitionLayout(@NotNull final File tableRootDirectory) {
+            this.tableRootDirectory = tableRootDirectory;
+        }
+
+        @Override
+        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
+
+        }
+    }
+
+    public static final class DeephavenStylePartitionLayout implements ParquetTableLocationScanner.LocationKeyFinder {
+
+        public static final String INTERNAL_PARTITION_KEY = "__INTERNAL_PARTITION__";
+
+        private final File tableRootDirectory;
+        private final String tableName;
+        private final String columnPartitionKey;
+
+        public DeephavenStylePartitionLayout(@NotNull final File tableRootDirectory,
+                                             @NotNull final String tableName,
+                                             @NotNull final String columnPartitionKey) {
+            this.tableRootDirectory = tableRootDirectory;
+            this.tableName = tableName;
+            this.columnPartitionKey = columnPartitionKey;
+        }
+
+        @Override
+        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
+            final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
+            try {
+                AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+                    try (final DirectoryStream<Path> internalPartitionStream = Files.newDirectoryStream(tableRootDirectory.toPath(), Files::isDirectory)) {
+                        for (final Path internalPartition : internalPartitionStream) {
+                            partitions.put(INTERNAL_PARTITION_KEY, internalPartition.getFileName().toString());
+                            try (final DirectoryStream<Path> columnPartitionStream = Files.newDirectoryStream(internalPartition, Files::isDirectory)) {
+                                for (final Path columnPartition : columnPartitionStream) {
+                                    partitions.put(columnPartitionKey, columnPartition.getFileName().toFile());
+                                    locationKeyObserver.accept(new ParquetTableLocationKey(columnPartition.resolve(tableName).resolve("table.parquet").toFile(), partitions));
+                                }
+                            }
+                        }
+                    } catch (final NoSuchFileException | FileNotFoundException ignored) {
+                        // If we found nothing at all, then there's nothing to be done at this level.
+                    } catch (final IOException e) {
+                        throw new TableDataException(this + ": Error finding " + tableName + " locations in " + tableRootDirectory, e);
+                    }
+                    return null;
+                });
+            } catch (final PrivilegedActionException pae) {
+                if (pae.getException() instanceof TableDataException) {
+                    throw (TableDataException) pae.getException();
+                } else {
+                    throw new UncheckedDeephavenException(pae.getException());
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads in a table from a file, using the provided table definition.
+     *
+     * @param sourceFile table location; the file should exist and end in ".parquet" extension
+     * @param definition table definition
+     * @param readInstructions instructions for customizations while reading
+     * @return table
+     */
+    public static Table readMultiFileTable(
+            @NotNull final File rootDirectory,
+            @Nullable final Predicate<File> filter,
+            @NotNull final Function<File[], TableDefinition> definitionProvider,
+            @NotNull final ParquetInstructions readInstructions) {
+
+        // Support "hive style" and "ordered" partitioning. Type inference?
+        return readTableFromSingleParquetFile(sourceFile, readInstructions, definition);
     }
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(

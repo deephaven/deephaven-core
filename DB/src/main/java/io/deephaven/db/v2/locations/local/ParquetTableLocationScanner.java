@@ -8,26 +8,32 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * Location scanner for parquet locations.
  */
 public final class ParquetTableLocationScanner implements PollingTableLocationProvider.Scanner {
 
-    private final Supplier<Stream<ParquetTableLocationKey>> keySupplier;
+    /**
+     * Interface for key-discovery callbacks.
+     */
+    @FunctionalInterface
+    public interface LocationKeyFinder {
+        void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver);
+    }
+
+    private final LocationKeyFinder locationKeyFinder;
     private final ParquetInstructions readInstructions;
 
-    public ParquetTableLocationScanner(@NotNull final Supplier<Stream<ParquetTableLocationKey>> keySupplier,
+    public ParquetTableLocationScanner(@NotNull final LocationKeyFinder locationKeyFinder,
                                        @NotNull final ParquetInstructions readInstructions) {
-        this.keySupplier = keySupplier;
+        this.locationKeyFinder = locationKeyFinder;
         this.readInstructions = readInstructions;
     }
 
     @Override
     public void scanAll(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
-        keySupplier.get().forEach(locationKeyObserver);
+        locationKeyFinder.findKeys(locationKeyObserver);
     }
 
     @Override
@@ -43,13 +49,4 @@ public final class ParquetTableLocationScanner implements PollingTableLocationPr
             return new NonexistentTableLocation(tableKey, locationKey);
         }
     }
-
-    public static TableLocationProvider makeSingleFileProvider(@NotNull final ParquetInstructions readInstructions, @NotNull final File file) {
-        return new PollingTableLocationProvider(
-                StandaloneTableKey.getInstance(),
-                new ParquetTableLocationScanner(() -> Stream.of(new ParquetTableLocationKey(file, null)), readInstructions),
-                null);
-    }
-
-    // TODO-RWC: Scanner impls for multiple files.
 }

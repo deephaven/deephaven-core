@@ -5,7 +5,6 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.StringSetImpl;
-import io.deephaven.util.codec.ObjectDecoder;
 import io.deephaven.util.datastructures.cache.ArrayBackedOffsetLookupCache;
 import io.deephaven.util.datastructures.cache.OffsetLookup;
 import io.deephaven.util.datastructures.cache.ReverseOffsetLookupCache;
