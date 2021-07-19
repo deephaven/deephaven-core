@@ -7,7 +7,7 @@ package io.deephaven.util.calendar;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.util.files.ResourceResolution;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
@@ -152,8 +152,8 @@ public class Calendars implements Map<String, BusinessCalendar> {
     private void addCalendar(final BusinessCalendar cal){
         final String name = cal.name().toUpperCase();
         try {
-            DBNameValidator.validateQueryParameterName(name);
-        } catch(DBNameValidator.InvalidNameException e){
+            NameValidator.validateQueryParameterName(name);
+        } catch(NameValidator.InvalidNameException e){
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'" );
         }
 

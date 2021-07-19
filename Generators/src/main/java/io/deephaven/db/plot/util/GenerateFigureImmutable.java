@@ -472,7 +472,7 @@ public class GenerateFigureImmutable {
     private String createFigureFuncs() {
         return
                 "    /**\n" +
-                        "     * Creates a displayable figure that can be used to construct a {@link DisplayableFigureDescriptor}.\n" +
+                        "     * Creates a displayable figure that can be sent to the client.\n" +
                         "     *\n" +
                         "     * @return a displayable version of the figure\n" +
                         "     */\n" +
@@ -480,10 +480,6 @@ public class GenerateFigureImmutable {
                         (isInterface ? ";\n" : " {\n"
                                 + indent(2) + "final BaseFigureImpl fc = onDisplay();\n"
                                 + indent(2) + "return new FigureWidget(make(fc));\n"
-                                + indent(1) + "}\n") +
-                        "\n" + indent(1) + (isInterface ? "" : "@Override public ") + "DisplayableFigureDescriptor makeDescriptor()" +
-                        (isInterface ? ";\n" : " {\n"
-                                + indent(2) + "throw new UnsupportedOperationException(\"Use show() in order to get a Figure that supports making descriptors\");\n"
                                 + indent(1) + "}\n") +
                         (isInterface ? "\n" +
                         "\n" +

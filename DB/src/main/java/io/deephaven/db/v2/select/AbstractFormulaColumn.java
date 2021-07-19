@@ -67,7 +67,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      */
     protected AbstractFormulaColumn(String columnName, String formulaString, boolean useKernelFormulas) {
         this.formulaString = Require.neqNull(formulaString, "formulaString");
-        this.columnName = DBNameValidator.validateColumnName(columnName);
+        this.columnName = NameValidator.validateColumnName(columnName);
         this.useKernelFormulas = useKernelFormulas;
     }
 

@@ -16,7 +16,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.db.exceptions.QueryCancellationException;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.db.util.scripts.StateOverrideScriptPathLoader;
@@ -596,7 +596,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public void setVariable(String name, Object value) {
-        groovyShell.getContext().setVariable(DBNameValidator.validateQueryParameterName(name), value);
+        groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), value);
     }
 
     public Binding getBinding() {

@@ -16,6 +16,7 @@ import io.deephaven.db.plot.util.tables.TableHandle;
 import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
@@ -754,7 +755,7 @@ public class PlotUtils {
     }
 
     public static ComboAggregateFactory createCategoryComboAgg(ComboBy agg) {
-        return AggCombo(Agg(new KeyOnlyFirstOrLastByStateFactory(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First)), agg);
+        return AggCombo(Agg(new KeyOnlyFirstOrLastByStateFactory(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY), agg);
     }
 
     public static List<Condition> getColumnConditions(final Table arg, final String column) {

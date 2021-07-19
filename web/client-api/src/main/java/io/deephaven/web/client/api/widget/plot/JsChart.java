@@ -2,14 +2,13 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.ChartDescriptor;
 import io.deephaven.web.client.api.HasEventHandling;
-import io.deephaven.web.shared.data.plot.ChartDescriptor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,14 +25,14 @@ public class JsChart extends HasEventHandling {
     public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
         //build axes first, key them in a map for easy reuse when constructing series instances
-        axes = Arrays.stream(descriptor.getAxes()).map(axis -> new JsAxis(axis, jsFigure)).toArray(JsAxis[]::new);
+        axes = descriptor.getAxesList().asList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure)).toArray(JsAxis[]::new);
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
-        series = Arrays.stream(descriptor.getSeries()).map(series -> new JsSeries(series, jsFigure, indexed)).toArray(JsSeries[]::new);
-        multiSeries = Arrays.stream(descriptor.getMultiSeries()).map(multiSeries -> new JsMultiSeries(multiSeries, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
+        series = descriptor.getSeriesList().asList().stream().map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
+        multiSeries = descriptor.getMultiSeriesList().asList().stream().map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this)).toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
     }
 
@@ -49,13 +48,16 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public ChartDescriptor.ChartType getChartType() {
+    public int getChartType() {
         return descriptor.getChartType();
     }
 
     @JsProperty
     public String getTitle() {
-        return descriptor.getTitle();
+        if (descriptor.hasTitle()) {
+            return descriptor.getTitle();
+        }
+        return null;
     }
 
     @JsProperty
@@ -70,7 +72,7 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty
     public boolean isShowLegend() {
-        return descriptor.isShowLegend();
+        return descriptor.getShowLegend();
     }
 
     @JsProperty
@@ -85,7 +87,7 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty(name = "is3d")
     public boolean isIs3d() {
-        return descriptor.isIs3d();
+        return descriptor.getIs3d();
     }
 
     //exposed for JS, do not use this from java methods

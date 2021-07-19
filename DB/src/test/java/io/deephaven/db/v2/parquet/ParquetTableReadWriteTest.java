@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.parquet;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.StringSetArrayWrapper;
@@ -22,6 +23,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.experimental.categories.Category;
+
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class ParquetTableReadWriteTest {
@@ -65,7 +68,7 @@ public class ParquetTableReadWriteTest {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
         return TableTools.emptyTable(size).select(
-                columns
+                Selectable.from(columns)
         );
     }
 
@@ -145,6 +148,17 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
+    }
+
+    @Test
+    public void emptyTrivialTable() {
+        final Table t = TableTools.emptyTable(0).select("A = i");
+        assertEquals(int.class, t.getDefinition().getColumn("A").getDataType());
+        final File dest = new File(rootFile, "ParquetTest_emptyTrivialTable.parquet");
+        ParquetTools.writeTable(t, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
+        TstUtils.assertTableEquals(t, fromDisk);
+        assertEquals(t.getDefinition(), fromDisk.getDefinition());
     }
 
     @Test

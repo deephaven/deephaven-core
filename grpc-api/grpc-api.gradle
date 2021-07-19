@@ -22,7 +22,9 @@ dependencies {
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
     testAnnotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
 
-    //runtimeOnly project(':Plot')
+    compile project(':Plot')
+
+    compile project(':ClientSupport')
 
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':classgraph-extension')

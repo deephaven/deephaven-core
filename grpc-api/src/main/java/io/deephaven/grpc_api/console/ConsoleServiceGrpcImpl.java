@@ -6,6 +6,7 @@ package io.deephaven.grpc_api.console;
 
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.plot.FigureWidget;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.remote.preview.ColumnPreviewManager;
@@ -13,6 +14,8 @@ import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
+import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
@@ -194,7 +197,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .require(exportedConsole, exportedTable)
                     .submit(() -> {
                         exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
-                        responseObserver.onNext(BindTableToVariableResponse.newBuilder().build());
+                        responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
                         responseObserver.onCompleted();
                     });
         });
@@ -337,6 +340,38 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         responseObserver.onCompleted();
                     });
                 });
+        });
+    }
+
+    @Override
+    public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+
+            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
+
+            session.nonExport()
+                    .require(exportedConsole)
+                    .onError(responseObserver::onError)
+                    .submit(() -> {
+                        ScriptSession scriptSession = exportedConsole.get();
+
+                        String figureName = request.getFigureName();
+                        if (!scriptSession.hasVariableName(figureName)) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No value exists with name " + figureName);
+                        }
+
+                        Object result = scriptSession.unwrapObject(scriptSession.getVariable(figureName));
+                        if (!(result instanceof FigureWidget)) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Value bound to name " + figureName + " is not a FigureWidget");
+                        }
+                        FigureWidget widget = (FigureWidget) result;
+
+                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session);
+
+                        responseObserver.onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
+                        responseObserver.onCompleted();
+                    });
         });
     }
 

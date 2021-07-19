@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.format.Util.writeFileMetaData;
+import static org.apache.parquet.format.Util.writePageHeader;
 
 public class ParquetFileWriter {
     private static ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
@@ -36,30 +37,35 @@ public class ParquetFileWriter {
     private final SeekableChannelsProvider channelsProvider;
     private final CodecFactory.BytesInputCompressor compressor;
     private final Map<String, String> extraMetaData;
-    private List<BlockMetaData> blocks = new ArrayList<>();
+    private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
 
-    public ParquetFileWriter(String filePath, SeekableChannelsProvider channelsProvider, int pageSize, ByteBufferAllocator allocator,
-                             MessageType type, CompressionCodecName codecName, Map<String, String> extraMetaData) throws IOException {
+    public ParquetFileWriter(
+            final String filePath,
+            final SeekableChannelsProvider channelsProvider,
+            final int pageSize,
+            final ByteBufferAllocator allocator,
+            final MessageType type,
+            final CompressionCodecName codecName,
+            final Map<String, String> extraMetaData
+    ) throws IOException {
         this.pageSize = pageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        writeChannel = channelsProvider.getWriteChannel(filePath, false);//TODO add support for appending
+        writeChannel = channelsProvider.getWriteChannel(filePath, false);  //TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
         CodecFactory codecFactory = new CodecFactory(new Configuration(), pageSize);
         this.compressor = codecFactory.getCompressor(codecName);
-
     }
 
-    RowGroupWriter addRowGroup(String path, boolean append) throws IOException {
+    RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
 
-
-    public RowGroupWriter addRowGroup(long size) {
+    public RowGroupWriter addRowGroup(final long size) {
         RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(writeChannel, type, pageSize, allocator, compressor);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
@@ -68,42 +74,40 @@ public class ParquetFileWriter {
     }
 
     public void close() throws IOException {
-        serializeOffsetIndexes(offsetIndexes, blocks, writeChannel);
-        ParquetMetadata footer = new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
-        serializeFooter(footer, writeChannel);
-        writeChannel.close();
-
+        try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
+            os.write(ParquetFileReader.MAGIC);
+            serializeOffsetIndexes(offsetIndexes, blocks, os);
+            ParquetMetadata footer = new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
+            serializeFooter(footer, os);
+        }
+        // os (and thus writeChannel) are closed at this point.
     }
 
-    private static void serializeFooter(ParquetMetadata footer, SeekableByteChannel out) throws IOException {
-        long footerIndex = out.position();
+    private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {
+        final long footerIndex = writeChannel.position();
         org.apache.parquet.format.FileMetaData parquetMetadata = metadataConverter.toParquetMetadata(VERSION, footer);
-        OutputStream os = Channels.newOutputStream(out);
         writeFileMetaData(parquetMetadata, os);
-        BytesUtils.writeIntLittleEndian(os, (int) (out.position() - footerIndex));
+        BytesUtils.writeIntLittleEndian(os, (int) (writeChannel.position() - footerIndex));
         os.write(ParquetFileReader.MAGIC);
     }
 
-    private static void serializeOffsetIndexes(
-            List<List<OffsetIndex>> offsetIndexes,
-            List<BlockMetaData> blocks,
-            SeekableByteChannel out) throws IOException {
+    private void serializeOffsetIndexes(
+            final List<List<OffsetIndex>> offsetIndexes,
+            final List<BlockMetaData> blocks,
+            final OutputStream os) throws IOException {
         for (int bIndex = 0, bSize = blocks.size(); bIndex < bSize; ++bIndex) {
-            List<ColumnChunkMetaData> columns = blocks.get(bIndex).getColumns();
-            List<OffsetIndex> blockOffsetIndexes = offsetIndexes.get(bIndex);
+            final List<ColumnChunkMetaData> columns = blocks.get(bIndex).getColumns();
+            final List<OffsetIndex> blockOffsetIndexes = offsetIndexes.get(bIndex);
             for (int cIndex = 0, cSize = columns.size(); cIndex < cSize; ++cIndex) {
                 OffsetIndex offsetIndex = blockOffsetIndexes.get(cIndex);
                 if (offsetIndex == null) {
                     continue;
                 }
                 ColumnChunkMetaData column = columns.get(cIndex);
-                long offset = out.position();
-                Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), Channels.newOutputStream(out));
-                column.setOffsetIndexReference(new IndexReference(offset, (int) (out.position() - offset)));
+                final long offset = writeChannel.position();
+                Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), os);
+                column.setOffsetIndexReference(new IndexReference(offset, (int) (writeChannel.position() - offset)));
             }
         }
     }
-
-
-
 }

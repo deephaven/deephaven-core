@@ -1,12 +1,10 @@
 package io.deephaven.web.client.api.widget.plot;
 
-import elemental2.core.JsArray;
-import elemental2.core.JsNumber;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.shared.data.BusinessCalendarDescriptor;
-import io.deephaven.web.shared.data.plot.AxisDescriptor;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
@@ -45,25 +43,25 @@ public class JsAxis {
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisFormatType getFormatType() {
+    public int getFormatType() {
         return axis.getFormatType();
     }
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisType getType() {
+    public int getType() {
         return axis.getType();
     }
 
     @JsProperty
     @SuppressWarnings("unusable-by-js")
-    public AxisDescriptor.AxisPosition getPosition() {
+    public int getPosition() {
         return axis.getPosition();
     }
 
     @JsProperty
     public boolean isLog() {
-        return axis.isLog();
+        return axis.getLog();
     }
 
     @JsProperty
@@ -81,7 +79,7 @@ public class JsAxis {
         return axis.getTicksFont();
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getFormat() {
 //        return axis.getFormat();
@@ -89,7 +87,10 @@ public class JsAxis {
 
     @JsProperty
     public String getFormatPattern() {
-        return axis.getFormatPattern();
+        if (axis.hasFormatPattern()) {
+            return axis.getFormatPattern();
+        }
+        return null;
     }
 
     @JsProperty
@@ -109,12 +110,12 @@ public class JsAxis {
 
     @JsProperty
     public boolean isMinorTicksVisible() {
-        return axis.isMinorTicksVisible();
+        return axis.getMinorTicksVisible();
     }
 
     @JsProperty
     public boolean isMajorTicksVisible() {
-        return axis.isMajorTicksVisible();
+        return axis.getMajorTicksVisible();
     }
 
     @JsProperty
@@ -129,10 +130,10 @@ public class JsAxis {
 
     @JsProperty
     public double[] getMajorTickLocations() {
-        return Js.uncheckedCast(Js.<JsArray<JsNumber>>uncheckedCast(axis.getMajorTickLocations()).slice());
+        return Js.uncheckedCast(axis.getMajorTickLocationsList().slice());
     }
 
-    //TODO IDS-4139
+    //TODO (deephaven-core#774) finish this field or remove it from the DSL
 //    @JsProperty
 //    public String getAxisTransform() {
 //        return axis.getAxisTransform();
@@ -145,12 +146,12 @@ public class JsAxis {
 
     @JsProperty
     public boolean isInvert() {
-        return axis.isInvert();
+        return axis.getInvert();
     }
 
     @JsProperty
     public boolean isTimeAxis() {
-        return axis.isTimeAxis();
+        return axis.getIsTimeAxis();
     }
 
     @JsMethod

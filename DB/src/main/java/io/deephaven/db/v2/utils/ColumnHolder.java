@@ -5,7 +5,7 @@
 package io.deephaven.db.v2.utils;
 
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBNameValidator;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 
@@ -128,7 +128,7 @@ public class ColumnHolder<T> {
                 && !(dataType == Boolean.class && data.getClass().getComponentType() == byte.class)) {
             throw new IllegalArgumentException("Incompatible data type: " + dataType + " can not be stored in array of type " + data.getClass());
         }
-        this.name = DBNameValidator.validateColumnName(name);
+        this.name = NameValidator.validateColumnName(name);
         //noinspection unchecked
         this.dataType = (Class<T>) dataType;
         this.componentType = componentType;

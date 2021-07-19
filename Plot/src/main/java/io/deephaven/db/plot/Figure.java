@@ -15,13 +15,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.db.plot.BaseF
 
 
     /**
-     * Creates a displayable figure that can be used to construct a {@link DisplayableFigureDescriptor}.
+     * Creates a displayable figure that can be sent to the client.
      *
      * @return a displayable version of the figure
      */
     Figure show();
-
-    DisplayableFigureDescriptor makeDescriptor();
 
 
     @Override  Figure save( java.lang.String saveLocation );
