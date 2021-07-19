@@ -110,11 +110,16 @@ public class ParquetFileReader {
     }
 
     private Set<String> calculateColumnsWithDictionaryUsedOnEveryDataPage() {
-        final HashSet<String> result = new HashSet<>(fileMetaData.getSchemaSize());
+        final Set<String> result = new HashSet<>(fileMetaData.getSchemaSize());
         final List<RowGroup> rowGroups = fileMetaData.getRow_groups();
         final Iterator<RowGroup> riter = rowGroups.iterator();
         if (!riter.hasNext()) {
-            // No rowgroups trivially means all columns.
+            // For an empty file we say all columns satisfy the property.
+            for (SchemaElement se : fileMetaData.getSchema()) {
+                if (!se.isSetNum_children()) {  // We want only the leaves.
+                    result.add(se.getName());
+                }
+            }
             return result;
         }
         // On the first pass, for row group zero, we are going to add all columns to the set
