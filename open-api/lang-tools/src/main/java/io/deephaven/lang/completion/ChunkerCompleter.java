@@ -398,7 +398,7 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
 
             @Override
             public Object visitChunkerPythonClassDecl(final ChunkerPythonClassDecl node, final Object data) {
-                throw unsupported(node);
+                return unsupported(node);
             }
 
             @Override

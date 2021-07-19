@@ -188,7 +188,7 @@ public class PendingParse {
      * Called when the document has been updated and we need to reparse the latest document text.
      * @param version The monaco-supplied version string.  Monatomically increasing (TODO: test editor undo operations)
      * @param text The full text of the document
-     * @param language
+     * @param language The language of the document. Should be a value from {@link io.deephaven.lang.parse.api.Languages}
      * @param force A boolean to signal if we should forcibly parse, ignoring current state.
      */
     void requestParse(@NotNull final String version, @NotNull final String text, final String language, final boolean force) {

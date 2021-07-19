@@ -141,24 +141,6 @@ public interface ChunkerMixin {
                 };
             }
 
-            default Checker maybe(boolean whitespace, char ... match) {
-                class MaybeCheck implements Checker {
-                    private boolean hasSucceeded;
-
-                    @Override
-                    public int check(char c) {
-                        for (char m : match) {
-                            if (c == m || (whitespace && Character.isWhitespace(m))) {
-                                hasSucceeded = true;
-                                return MORE;
-                            }
-                        }
-                        return hasSucceeded ? SUCCESS : NEXT;
-                    }
-
-                }
-                return new MaybeCheck();
-            }
         }
 
         interface EofChecker extends Checker {
@@ -177,7 +159,7 @@ public interface ChunkerMixin {
             }
         }
 
-        class CheckerWhitespace implements Checker {
+        protected static class CheckerWhitespace implements Checker {
 
             private final boolean required;
 
@@ -191,7 +173,7 @@ public interface ChunkerMixin {
             }
         }
 
-        class CheckerNewline implements Checker {
+        static class CheckerNewline implements Checker {
 
             private final boolean required;
             private boolean sawNl;
@@ -209,7 +191,7 @@ public interface ChunkerMixin {
             }
         }
 
-        class CheckerEmptyLine implements Checker {
+        static class CheckerEmptyLine implements Checker {
 
             @Override
             public int check(char c) {
@@ -330,44 +312,6 @@ public interface ChunkerMixin {
 
         private PeekStream withAny(Checker ... checkers) {
             matchers.add(any(checkers));
-            return this;
-        }
-
-        private PeekStream withTokens(String ... tokens) {
-            class TokenChecker implements Checker {
-                Checker[] tokenChecker;
-                int best = FAILURE;
-                boolean succeeded;
-                @Override
-                public int check(final char c) {
-                    if (Character.isWhitespace(c)) {
-                        tokenChecker = null;
-                        return MORE;
-                    }
-                    if (tokenChecker == null) {
-                        tokenChecker = new Checker[tokens.length];
-                        for (int i = 0; i < tokens.length; i++) {
-                            tokenChecker[i] = is(tokens[i]);
-                        }
-                    }
-                    for (int i = 0; i < tokenChecker.length; i++) {
-                        int result = tokenChecker[i].check(c);
-                        switch (result) {
-                            case FAILURE:
-                                tokenChecker[i] = Checker.FAILED;
-                                break;
-                            case NEXT:
-                                throw new IllegalStateException("NEXT is not a valid response for token checker");
-                            case SUCCESS:
-                                return result;
-                            case MORE:
-                                best = MORE;
-                        }
-                    }
-                    return best;
-                }
-            }
-            matchers.add(new TokenChecker());
             return this;
         }
 
@@ -520,9 +464,9 @@ public interface ChunkerMixin {
                 private int pntr;
                 @Override
                 public int check(char c) {
-//                    if (s.length() <= pntr){
-//                        return FAILURE;
-//                    }
+                    if (s.length() <= pntr){
+                        return FAILURE;
+                    }
                     if (c == s.charAt(pntr)) {
                         pntr ++;
                         return pntr >= s.length() ? SUCCESS : MORE;
@@ -742,27 +686,6 @@ public interface ChunkerMixin {
         if (ctor) {
             matcher.typeParams(true).whitespace();
         }
-        return matcher
-            .eofOr('(')
-            .matches(true);
-    }
-
-    default boolean isMethodDecl() {
-        final PeekStream matcher = peek();
-        matcher.whitespace()
-            .withTokens(
-                    // blech. this is ...ugly AF. We might need to delete this, and make actual productions for GroovyMethodDecl
-                "public",
-                "private",
-                "protected",
-                "static",
-                "final",
-                "strictfp",
-                "default"
-        );
-        matcher.typeParams(false).whitespace();
-        matcher.identifier(ALLOW_PAREN).whitespace();
-
         return matcher
             .eofOr('(')
             .matches(true);

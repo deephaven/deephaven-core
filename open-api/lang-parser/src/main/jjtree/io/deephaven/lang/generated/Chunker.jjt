@@ -526,12 +526,11 @@ Node EatStatements(boolean persistent) #void:
      try {
        (
          n = Newline() |
-         // TODO: pass leading whitespace into Statement.
-         // We do not let Statement() gather leading Whitespace(),
-         // as that could result in it being matched eagerly,
-         // and we don't want to pay for LL(2+).
-         // for now, we can easily search to the left of Statement()'s first token,
-         // so we'll avoid any leading whitespace in any production.
+         // We know that leading whitespace is not handled well by this production,
+         // but in properly formatted python scripts, we will only ever consider
+         // leading whitespace in the properly-formed EatPythonStatements() productions.
+         // We'll leave this not-whitespace-wise production here as a fallback;
+         // this production will only ever be entered as a fallback when properly formatted parsing fails.
          LOOKAHEAD( { isClassDecl() } )
          (
            LOOKAHEAD( { python } )
@@ -638,7 +637,7 @@ ChunkerGroovyMethodDef GroovyMethodDef():
 [ TypeParams() {
   // TODO record method type parameters
 } Whitespace() ]
-// TODO: a better production for returnType, like List< String>
+// TODO(deephaven-core#860): a better production for returnType, like List< String>
 [ Ident() [ TypeParams() ] Whitespace() ]
 Invoke()
 // This isn't great by any means, but it should work. We can break it up into something different for method bodies
@@ -667,7 +666,9 @@ Node EatPythonTopLevel() #void:
 }
 Node EatPythonStatements() #void:
 {
-        // TODO: this should actually form a block of python statements (same indent)
+        // we'll use the number of indent to detect when is the correct time to exit this production.
+        // once we hit a non-whitespace line that has a lower indent than us, we stop eating statements,
+        // and allow our caller to close their scope.
         int numIndent = Math.max(0, pythonDepth) * pythonIndent;
         Node n = null;
         eatEmptyLines();
@@ -681,14 +682,15 @@ Node EatPythonStatements() #void:
        <WHITESPACE> {
           int numWs = token.image.length();
           // put the whitespace all back, our children need to eat it.
-//            back(numWs, -1);
           if (numWs < numIndent) {
-              // incorrect whitespace. TODO: check for even multiples in case this is an error on amount of whitespace
+              // incorrect whitespace. We'll check for even multiples in case this is an error on amount of whitespace
               // for now, we'll bail. a `def function_def:` statement should be calling EatPythonStatements again,
               // so we shouldn't create any additional structure within this production.
               // put the whitespace back, in case anybody cares about it.
+              back(numWs, -1);
               if ((numWs % pythonIndent) != 0) {
                   // This is an error case. The indent should always be an even multiple of first detected pythonIndent
+                  // TODO(deephaven-core#859): send an error diagnostic back to client, telling them their whitespace is malformed
               }
               return n;
           }
@@ -735,7 +737,6 @@ ChunkerPythonMethod PythonMethod():
   <DEF>
   [ <WHITESPACE> ]
   [ PythonFunctionSig() {
-      // TODO: move the contents of this ChunkerInvoke into the python function definition.
       numIndent += pythonIndent;
       pythonDepth++;
   } ]
@@ -830,16 +831,8 @@ checkInterrupts();
      // unless the current item on the stack ends w/ a valid statement terminator
      if (expr != null) {
        Token tok = expr.jjtGetLastToken();
-//       switch(tok.kind) {
-//           case NEWLINE:
-//           case SEMI:
-//               back(tok.image.length(), -1);
-//               // TODO: handle removing the token too?
-//               break;
-//           default:
-               token = expr.addJunk(eatJunk());
-               fixState(token);
-//       }
+       token = expr.addJunk(eatJunk());
+       fixState(token);
      }
    }
 
@@ -898,7 +891,7 @@ boolean wellFormed = false;
   [
     (
       <CLOSURE_START>
-      // TODO something which actually eats member declarations... and arbitrary `{ statementBlocks() }`
+      // eats member declarations... and arbitrary `{ statementBlocks() }`
       EatGroovyStatements()
       [ <CLOSURE_END> {
         wellFormed = true;
@@ -927,13 +920,13 @@ int numSpace = pythonIndent;
   (
       // class ClsName(Super: Type[info]):
       invoke = PythonFunctionSig() {
-        // TODO: extract the class name
-        // TODO: extract the parameters as arguments w/ optional type annotations
+        // TODO(deephaven-core#860): extract the class name
+        // TODO(deephaven-core#860): extract the parameters as arguments w/ optional type annotations
       }
       |
       // class ClsName:
       (Ident() {
-        // TODO: extract the class name
+        // TODO(deephaven-core#860): extract the class name
       }
        [ <COLON> {
             wellFormed = true;
@@ -1456,7 +1449,6 @@ ChunkerClosure Closure():
 }
 {
   <CLOSURE_START>
-    // TODO: consider python dictionaries before getting here (i.e. make a method that peeks for dictionary syntax)
   ( Whitespace() | Newline() )*
   [
     LOOKAHEAD({ isParamList() })
@@ -1504,7 +1496,6 @@ ChunkerDict Dict():
 }
 {
   <CLOSURE_START>
-    // TODO: consider python dictionaries before getting here (i.e. make a method that peeks for dictionary syntax)
    (
         ( Whitespace() | Newline() )*
         // look for key-value pairs
