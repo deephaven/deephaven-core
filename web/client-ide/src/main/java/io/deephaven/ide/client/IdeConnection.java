@@ -4,6 +4,7 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.ConsoleAddress;
+import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
@@ -22,7 +23,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     /**
      * Direct connection to an already-running worker instance, without first authenticating to a client.
      */
-    @JsIgnore
+    @JsConstructor
     public IdeConnection(ConsoleAddress address) {
         super(AuthTokenPromiseSupplier.oneShot(address.getToken()));
         this.address = address;
