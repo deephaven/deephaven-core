@@ -11,7 +11,7 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.locations.local.ParquetTableLocationScanner;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationScanner;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import junit.framework.TestCase;

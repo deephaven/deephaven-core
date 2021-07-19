@@ -11,9 +11,10 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
+import io.deephaven.db.v2.PartitionAwareSourceTable;
 import io.deephaven.db.v2.locations.*;
-import io.deephaven.db.v2.locations.local.ParquetTableLocationScanner;
-import io.deephaven.db.v2.locations.parquet.ParquetTableLocationKey;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationScanner;
+import io.deephaven.db.v2.locations.parquet.local.SingleFileLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -27,24 +28,11 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * Tools for managing and manipulating tables on disk in parquet format.
@@ -384,193 +372,30 @@ public class ParquetTools {
             @NotNull final TableDefinition tableDefinition) {
         final TableLocationProvider locationProvider = new PollingTableLocationProvider(
                 StandaloneTableKey.getInstance(),
-                new ParquetTableLocationScanner(new SingleFile(sourceFile), readInstructions),
+                new ParquetTableLocationScanner(new SingleFileLayout(sourceFile), readInstructions),
                 null);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
     /**
-     * {@link ParquetTableLocationScanner.LocationKeyFinder Parquet location finder} that will discover a single file.
-     */
-    public static final class SingleFile implements ParquetTableLocationScanner.LocationKeyFinder {
-
-        private final File parquetFile;
-
-        /**
-         * @param parquetFile The single parquet file to find
-         */
-        public SingleFile(@NotNull final File parquetFile) {
-            this.parquetFile = parquetFile;
-        }
-
-        @Override
-        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
-            doFilesystemAction(() -> {
-                locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, null));
-            });
-        }
-    }
-
-    /**
-     * {@link ParquetTableLocationScanner.LocationKeyFinder Parquet location finder} that will discover multiple files
-     * in a single directory.
-     */
-    public static final class FlatLayout implements ParquetTableLocationScanner.LocationKeyFinder {
-
-        private final File tableRootDirectory;
-
-        /**
-         * @param tableRootDirectory The directory to search for .parquet files.
-         */
-        public FlatLayout(@NotNull final File tableRootDirectory) {
-            this.tableRootDirectory = tableRootDirectory;
-        }
-
-        @Override
-        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
-            doFilesystemAction(() -> {
-                try (final DirectoryStream<Path> parquetFileStream = Files.newDirectoryStream(tableRootDirectory.toPath(), "*" + PARQUET_FILE_EXTENSION)) {
-                    for (final Path parquetFilePath : parquetFileStream) {
-                        locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), null));
-                    }
-                } catch (final IOException e) {
-                    throw new TableDataException("FlatLayout: Error finding parquet locations under " + tableRootDirectory, e);
-                }
-            });
-        }
-    }
-
-    /**
-     * {@link ParquetTableLocationScanner.LocationKeyFinder Parquet location finder} that will traverse a directory
-     * hierarchy and infer partitions from key-value paris in the directory names, e.g.
-     * <pre>tableRootDirectory/Country=France/City=Paris/parisData.parquet</pre>.
-     * TODO (https://github.com/deephaven/deephaven-core/issues/858): Implement this
-     */
-    public static final class HiveStylePartitionLayout implements ParquetTableLocationScanner.LocationKeyFinder {
-
-        private final File tableRootDirectory;
-        private boolean inferPartitioningColumnTypes;
-
-        /**
-         * @param tableRootDirectory           The directory to traverse from
-         * @param inferPartitioningColumnTypes Whether to infer partitioning column types.
-         *                                     {@code false} means always use {@code String}.
-         */
-        public HiveStylePartitionLayout(@NotNull final File tableRootDirectory,
-                                        final boolean inferPartitioningColumnTypes) {
-            this.tableRootDirectory = tableRootDirectory;
-            this.inferPartitioningColumnTypes = inferPartitioningColumnTypes;
-        }
-
-        @Override
-        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
-            throw new UnsupportedOperationException("This is just a placeholder, see: https://github.com/deephaven/deephaven-core/issues/858");
-        }
-    }
-
-    /**
-     * {@link ParquetTableLocationScanner.LocationKeyFinder Parquet location finder} that will traverse a directory
-     * hierarchy laid out in Deephaven's "nested-partitioned" format, e.g.
-     * <pre>tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/table.parquet</pre>, producing
-     * {@link ParquetTableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the specified
-     * {@code columnPartitionKey}.
-     */
-    public static final class DeephavenStylePartitionLayout implements ParquetTableLocationScanner.LocationKeyFinder {
-
-        @VisibleForTesting
-        public static final String PARQUET_FILE_NAME = "table.parquet";
-        public static final String INTERNAL_PARTITION_KEY = "__INTERNAL_PARTITION__";
-
-        private final File tableRootDirectory;
-        private final String tableName;
-        private final String columnPartitionKey;
-        private final Predicate<String> internalPartitionValueFilter;
-
-        /**
-         * @param tableRootDirectory           The directory to traverse from
-         * @param tableName                    The table name
-         * @param columnPartitionKey           The partitioning column name
-         * @param internalPartitionValueFilter Filter to control which internal partitions are included, {@code null} for all
-         */
-        public DeephavenStylePartitionLayout(@NotNull final File tableRootDirectory,
-                                             @NotNull final String tableName,
-                                             @NotNull final String columnPartitionKey,
-                                             @Nullable final Predicate<String> internalPartitionValueFilter) {
-            this.tableRootDirectory = tableRootDirectory;
-            this.tableName = tableName;
-            this.columnPartitionKey = columnPartitionKey;
-            this.internalPartitionValueFilter = internalPartitionValueFilter;
-        }
-
-        @Override
-        public void findKeys(@NotNull final Consumer<TableLocationKey> locationKeyObserver) {
-            final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
-            doFilesystemAction(() -> {
-                try (final DirectoryStream<Path> internalPartitionStream = Files.newDirectoryStream(tableRootDirectory.toPath(), Files::isDirectory)) {
-                    for (final Path internalPartition : internalPartitionStream) {
-                        final String internalPartitionValue = internalPartition.getFileName().toString();
-                        if (internalPartitionValueFilter != null && !internalPartitionValueFilter.test(internalPartitionValue)) {
-                            continue;
-                        }
-                        boolean needToUpdateInternalPartitionValue = true;
-                        try (final DirectoryStream<Path> columnPartitionStream = Files.newDirectoryStream(internalPartition, Files::isDirectory)) {
-                            for (final Path columnPartition : columnPartitionStream) {
-                                partitions.put(columnPartitionKey, columnPartition.getFileName().toFile());
-                                if (needToUpdateInternalPartitionValue) {
-                                    // Partition order dictates comparison priority, so we need to insert the internal partition after the column partition.
-                                    partitions.put(INTERNAL_PARTITION_KEY, internalPartitionValue);
-                                    needToUpdateInternalPartitionValue = false;
-                                }
-                                locationKeyObserver.accept(new ParquetTableLocationKey(columnPartition.resolve(tableName).resolve(PARQUET_FILE_NAME).toFile(), partitions));
-                            }
-                        }
-                    }
-                } catch (final NoSuchFileException | FileNotFoundException ignored) {
-                    // If we found nothing at all, then there's nothing to be done at this level.
-                } catch (final IOException e) {
-                    throw new TableDataException("DeephavenStylePartitionLayout-" + tableName + ": Error finding locations under " + tableRootDirectory, e);
-                }
-            });
-        }
-    }
-
-    /**
-     * Wrap a filesystem operation (or series of them) as a privileged action.
+     * Reads in a table from files discovered with {@code locationKeyFinder} using the provided table definition.
      *
-     * @param operation The operation to wrap
-     */
-    private static void doFilesystemAction(@NotNull final Runnable operation) {
-        try {
-            AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-                operation.run();
-                return null;
-            });
-        } catch (final PrivilegedActionException pae) {
-            if (pae.getException() instanceof TableDataException) {
-                throw (TableDataException) pae.getException();
-            } else {
-                throw new UncheckedDeephavenException(pae.getException());
-            }
-        }
-    }
-
-    /**
-     * Reads in a table from a file, using the provided table definition.
-     *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension
-     * @param definition table definition
-     * @param readInstructions instructions for customizations while reading
-     * @return table
+     * @param locationKeyFinder The source of {@link TableLocationKey location keys} to include
+     * @param readInstructions  Instructions for customizations while reading
+     * @param tableDefinition    The table's {@link TableDefinition definition}
+     * @return The table
      */
     public static Table readMultiFileTable(
-            @NotNull final File rootDirectory,
-            @Nullable final Predicate<File> filter,
-            @NotNull final Function<File[], TableDefinition> definitionProvider,
-            @NotNull final ParquetInstructions readInstructions) {
-
-        // Support "hive style" and "ordered" partitioning. Type inference?
-        return readTableFromSingleParquetFile(sourceFile, readInstructions, definition);
+            @NotNull final ParquetTableLocationScanner.LocationKeyFinder locationKeyFinder,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationScanner(locationKeyFinder, readInstructions),
+                null);
+        return new PartitionAwareSourceTable(tableDefinition, "Read multiple parquet file with " + locationKeyFinder,
+                RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(

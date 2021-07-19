@@ -1,7 +1,6 @@
-package io.deephaven.db.v2.locations.local;
+package io.deephaven.db.v2.locations.parquet.local;
 
 import io.deephaven.db.v2.locations.*;
-import io.deephaven.db.v2.locations.parquet.ParquetTableLocationKey;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;

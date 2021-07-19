@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.locations.local;
+package io.deephaven.db.v2.locations.parquet.local;
 
 import io.deephaven.db.util.file.FileHandle;
 import io.deephaven.db.util.file.FileHandleFactory;

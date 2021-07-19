@@ -19,7 +19,7 @@ import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TableMap;
 import io.deephaven.db.v2.locations.*;
-import io.deephaven.db.v2.locations.local.*;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationScanner;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;

@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.locations.parquet;
+package io.deephaven.db.v2.locations.parquet.local;
 
 import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.local.FileTableLocationKey;

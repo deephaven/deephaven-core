@@ -44,11 +44,11 @@ public class PartitionAwareSourceTable extends SourceTable {
      * @param locationProvider   A TableLocationProvider, for use in discovering the locations that compose this table
      * @param liveTableRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
-    PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
-                              @NotNull final String description,
-                              @NotNull final SourceTableComponentFactory componentFactory,
-                              @NotNull final TableLocationProvider locationProvider,
-                              @Nullable final LiveTableRegistrar liveTableRegistrar) {
+    public PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
+                                     @NotNull final String description,
+                                     @NotNull final SourceTableComponentFactory componentFactory,
+                                     @NotNull final TableLocationProvider locationProvider,
+                                     @Nullable final LiveTableRegistrar liveTableRegistrar) {
         this(tableDefinition,
                 description,
                 componentFactory,

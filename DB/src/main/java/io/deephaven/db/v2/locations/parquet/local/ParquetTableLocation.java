@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.locations.local;
+package io.deephaven.db.v2.locations.parquet.local;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
