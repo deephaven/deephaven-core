@@ -21,7 +21,26 @@ dependencies {
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
 
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+String GRPC_HEALTH_PROBE_VERSION = 'v0.3.1'
+TaskProvider<Task> downloadHealthProbe = tasks.register('downloadGrpcHealthProbe') {
+  Task dl ->
+    String dlUrl = "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64"
+    Provider<RegularFile> outputFile = layout.buildDirectory.file('healthProbe/grpc_health_probe').forUseAtConfigurationTime()
+    File file = outputFile.get().asFile
+    dl.outputs.file(file)
+    dl.inputs.property("healthProbeVersion", GRPC_HEALTH_PROBE_VERSION)
+    dl.doFirst {
+      file.withOutputStream { OutputStream output ->
+        new URL(dlUrl).withInputStream { InputStream input ->
+          output << input
+        }
+      }
+      file.setExecutable(true)
+    }
+}
+
+Sync dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 
 docker {
 
@@ -33,15 +52,15 @@ docker {
     images = [ "${project.property('grpc-api-docker.imageName')}" ]
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
-    ports = [ 8080 ]
-    // ports = [ 8080, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
+//    ports = [ 8080 ]
+    ports = [ 8080, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
     jvmArgs = [
         '-server',
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
 	    // Add for debugging, select port to match what you expect from your debugger/IDE side.
-	    // '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
+	    '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
 
         // Settings based on the cgroup limits:
         // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
@@ -62,6 +81,9 @@ docker {
     from(dockerLicenses.outputs) {
       into 'licenses'
     }
+    from(downloadHealthProbe.get().outputs.files) {
+      into 'health_probe'
+    }
   }
 
   dockerCreateDockerfile {
@@ -74,6 +96,7 @@ docker {
                   ''')
 
     copyFile('licenses/', '/')
+    copyFile('health_probe/', '/health')
 
     volume("/data")
     volume("/cache")

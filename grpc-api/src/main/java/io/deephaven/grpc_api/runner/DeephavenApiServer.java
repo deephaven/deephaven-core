@@ -13,6 +13,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;
+import io.grpc.health.v1.HealthCheckResponse;
+import io.grpc.protobuf.services.HealthStatusManager;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -48,6 +50,7 @@ public class DeephavenApiServer {
 
         server.start();
         server.blockUntilShutdown();
+
     }
 
     private final Server server;
@@ -56,6 +59,7 @@ public class DeephavenApiServer {
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
     private final ApplicationServiceGrpcImpl applicationService;
+    private final HealthStatusManager healthStatusManager;
 
     @Inject
     public DeephavenApiServer(
@@ -64,13 +68,15 @@ public class DeephavenApiServer {
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
-            final ApplicationServiceGrpcImpl applicationService) {
+            final ApplicationServiceGrpcImpl applicationService,
+            final HealthStatusManager healthStatusManager) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
         this.consoleService = consoleService;
         this.applicationInjector = applicationInjector;
         this.applicationService = applicationService;
+        this.healthStatusManager = healthStatusManager;
     }
 
     public Server server() {
@@ -121,6 +127,7 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
+        healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
     }
 
     private void blockUntilShutdown() throws InterruptedException {

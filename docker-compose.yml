@@ -44,3 +44,4 @@ services:
         condition: service_started
       web:
         condition: service_started
+

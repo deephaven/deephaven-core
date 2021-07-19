@@ -8,12 +8,19 @@ spec:
   type: NodePort
   ports:
     - port: 10000
-      targetPort: 9000
+      targetPort: 10000
       protocol: TCP
+      nodePort: 30080
       name: http
-    - port: 10443
-      targetPort: 10400
+#    - port: 9001
+#      targetPort: 9090
+#      protocol: TCP
+#      nodePort: 30090
+#      name: http
+    - port: 9090
+      targetPort: 9090
       protocol: TCP
+      nodePort: 30443
       name: https
   selector:
     run: dh-local
@@ -44,13 +51,17 @@ spec:
             medium: Memory
 
       containers:
+
+        #
+        # grpc-api container.  Where all the stateful brains live
+        #
         - name: grpc-api
-          image: ghcr.io/deephaven/grpc-api:0.2.0
-          imagePullPolicy: IfNotPresent
+          image: deephaven/grpc-api:local-build
+          imagePullPolicy: Never
           securityContext:
             privileged: false
           # Change tty to true if you want to be able to shell into the box
-          tty: false
+          tty: true
           env:
           - name: CONTAINER_NAME
             value: grpc-api
@@ -83,9 +94,23 @@ spec:
           volumeMounts:
           - name: cred-cache
             mountPath: /root/.ssh
+          readinessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
+          livenessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+            initialDelaySeconds: 10
+            periodSeconds: 8
 
+        #
+        # grpc-proxy: turns http1 grpc web requests into http2 fit for grpc-api to consume
+        #
         - name: grpc-proxy
-          image: ghcr.io/deephaven/grpc-proxy:0.2.0
+          image: deephaven/grpc-proxy:local-build
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: false
@@ -98,10 +123,9 @@ spec:
       #        cpu: '4000m'
       #        # ~8G RAM
       #        memory: '8000Mi'
-      #    command: ['cat']
           env:
           - name: BACKEND_ADDR
-            value: "dh-local:8080"
+            value: "grpc-api:8080"
           - name: CONTAINER_NAME
             value: grpc-proxy
           - name: kubernetes.max.concurrent.requests
@@ -133,8 +157,13 @@ spec:
           volumeMounts:
           - name: cred-cache
             mountPath: /root/.ssh
+
+
+        #
+        # web: serves the web ide and all static resources
+        #
         - name: web
-          image: ghcr.io/deephaven/web:0.2.0
+          image: deephaven/web:local-build
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: false
@@ -172,16 +201,33 @@ spec:
           volumeMounts:
           - name: cred-cache
             mountPath: /root/.ssh
+
+
+        #
+        # envoy: this should really be a stateful set / deployment instead of a container-within-this-pod.
+        # As a stateful set, the container would be added automatically to all nodes, plus it would have stable addressing.
+        #
         - name: envoy
-          image: ghcr.io/deephaven/envoy:0.2.0
+          image: deephaven/envoy:local-build
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: false
           # Change tty to true if you want to be able to shell into the box
           tty: false
           ports:
-            - containerPort: 8888
+            - name: https
+              containerPort: 8443
+            - name: http
+              containerPort: 8181
               protocol: TCP
+#          readinessProbe:
+#            httpGet:
+#              port: https
+#              httpHeaders:
+#                - name: x-envoy-livenessprobe
+#                  value: healthz
+#              path: /healthz
+#              scheme: HTTPS
           env:
           - name: CONTAINER_NAME
             value: envoy

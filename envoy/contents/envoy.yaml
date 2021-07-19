@@ -58,6 +58,15 @@ static_resources:
                               grpc_timeout_header_max: 0s
                             timeout: 0s
                 http_filters:
+                  - name: envoy.filters.http.health_check
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
+                      pass_through_mode: false
+                      headers:
+                        - name: ":path"
+                          exact_match: "/healthz"
+                        - name: "x-envoy-livenessprobe"
+                          exact_match: "healthz"
                   - name: envoy.filters.http.grpc_web
                   - name: envoy.filters.http.router
   clusters:
@@ -72,8 +81,16 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc-proxy # assuming the name of the grpc-api server container
+#                      address: grpc-proxy # assuming the name of the grpc-api server container
+                      address: localhost
                       port_value: 8008
+       # Health check requires http2
+#      health_checks:
+#        timeout: 1s
+#        interval: 10s
+#        unhealthy_threshold: 2
+#        healthy_threshold: 2
+#        grpc_health_check: { }
     - name: grpc-api
       connect_timeout: 10s
       type: LOGICAL_DNS
@@ -86,8 +103,15 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc-api # here we assume the name of the websocket proxy
+#                      address: grpc-api # here we assume the name of the websocket proxy
+                      address: localhost
                       port_value: 8080
+#      health_checks:
+#        timeout: 1s
+#        interval: 10s
+#        unhealthy_threshold: 2
+#        healthy_threshold: 2
+#        grpc_health_check: { }
     - name: web
       connect_timeout: 10s
       type: LOGICAL_DNS
@@ -101,5 +125,6 @@ static_resources:
                   hostname: web
                   address:
                     socket_address:
-                      address: web
+#                      address: web
+                      address: localhost
                       port_value: 80

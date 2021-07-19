@@ -14,19 +14,19 @@ Notes:
 Getting locally built images into minikube:
 
 ./gradlew prepareCompose
-docker-compose build
-docker-compose up
+docker-compose push
 
-Then, tag and import images:
-docker tag deephaven/grpc-api:latest deephaven/grpc-api:local
-docker tag deephaven/grpc-proxy:latest deephaven/grpc-proxy:local
-docker tag deephaven/web:latest deephaven/web:local
-docker tag deephaven/envoy:latest deephaven/envoy:local
+Then, import images to minikube:
 
-minikube image load deephaven/grpc-api:local
-minikube image load deephaven/grpc-proxy:local
-minikube image load deephaven/web:local
-minikube image load deephaven/envoy:local
+minikube image load deephaven/grpc-api:local-build
+minikube image load deephaven/grpc-proxy:local-build
+minikube image load deephaven/web:local-build
+minikube image load deephaven/envoy:local-build
+
+minikube image load deephaven/grpc-api:local-build  deephaven/grpc-proxy:local-build  deephaven/web:local-build deephaven/envoy:local-build
 
 
 There! Now you can reference grpc-api:local images in kubernets/minikube
+
+# All in one Update Minikube:
+./gradlew preCo && docker-compose push && minikube image load deephaven/grpc-api:local-build  deephaven/grpc-proxy:local-build  deephaven/web:local-build deephaven/envoy:local-build
