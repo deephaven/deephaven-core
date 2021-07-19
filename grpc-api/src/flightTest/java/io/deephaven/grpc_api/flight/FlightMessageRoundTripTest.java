@@ -49,10 +49,6 @@ import static org.junit.Assert.*;
  * of this test is to verify that we can round trip
  */
 public class FlightMessageRoundTripTest {
-
-//    @Rule
-//    public GrpcServerRule grpcServerRule = new GrpcServerRule();
-
     @Singleton
     @Component(modules = {
             BarrageModule.class,
@@ -79,93 +75,8 @@ public class FlightMessageRoundTripTest {
 
     private Server server;
     private FlightClient client;
-    private SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient;
     private UUID sessionToken;
     private SessionState currentSession;
-
-    private class InterceptingManagedChannel extends ManagedChannel {
-
-        private final ClientInterceptor interceptor;
-        private final ManagedChannel wrappedManagedChannel;
-
-        private InterceptingManagedChannel(ManagedChannel wrappedManagedChannel, ClientInterceptor interceptor) {
-            this.interceptor = interceptor;
-            this.wrappedManagedChannel = wrappedManagedChannel;
-        }
-
-        @Override
-        public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(MethodDescriptor<RequestT, ResponseT> methodDescriptor, CallOptions callOptions) {
-            return interceptor.interceptCall(methodDescriptor, callOptions, wrappedManagedChannel);
-        }
-
-        @Override
-        public ConnectivityState getState(boolean requestConnection) {
-            return wrappedManagedChannel.getState(requestConnection);
-        }
-
-        @Override
-        public void notifyWhenStateChanged(ConnectivityState source, Runnable callback) {
-            wrappedManagedChannel.notifyWhenStateChanged(source, callback);
-        }
-
-        @Override
-        public void resetConnectBackoff() {
-            wrappedManagedChannel.resetConnectBackoff();
-        }
-
-        @Override
-        public void enterIdle() {
-            wrappedManagedChannel.enterIdle();
-        }
-
-        @Override
-        public ManagedChannel shutdown() {
-            return wrappedManagedChannel.shutdown();
-        }
-
-        @Override
-        public boolean isShutdown() {
-            return wrappedManagedChannel.isShutdown();
-        }
-
-        @Override
-        public boolean isTerminated() {
-            return wrappedManagedChannel.isTerminated();
-        }
-
-        @Override
-        public ManagedChannel shutdownNow() {
-            return wrappedManagedChannel.shutdownNow();
-        }
-
-        @Override
-        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-            return wrappedManagedChannel.awaitTermination(timeout, unit);
-        }
-
-        @Override
-        public String authority() {
-            return wrappedManagedChannel.authority();
-        }
-    }
-
-    private class AuthInterceptor implements ClientInterceptor {
-        @Override
-        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions, final Channel channel) {
-            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(channel.newCall(methodDescriptor, callOptions)) {
-                @Override
-                public void start(final Listener<RespT> responseListener, final Metadata headers) {
-                    final UUID currSession = sessionToken;
-                    if (currSession != null) {
-                        headers.put(SessionServiceGrpcImpl.SESSION_HEADER_KEY, currSession.toString());
-                    }
-                    super.start(responseListener, headers);
-                }
-            };
-        }
-    }
-
 
     @Before
     public void setup() throws IOException {
@@ -197,7 +108,7 @@ public class FlightMessageRoundTripTest {
             public void onCallCompleted(CallStatus status) {
             }
         }).build();
-        sessionServiceClient = SessionServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget("localhost:" + actualPort)
+        SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient = SessionServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget("localhost:" + actualPort)
                 .usePlaintext()
                 .build());
 
@@ -223,8 +134,6 @@ public class FlightMessageRoundTripTest {
         VectorSchemaRoot root = stream.getRoot();
         // row count should match what we expect
         assertEquals(10, root.getRowCount());
-
-//        root.getSchema().getCustomMetadata();
 
         // only one column was sent
         assertEquals(1, root.getFieldVectors().size());
