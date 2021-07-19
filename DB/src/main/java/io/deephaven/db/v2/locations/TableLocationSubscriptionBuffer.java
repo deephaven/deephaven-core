@@ -14,14 +14,14 @@ import java.util.*;
  */
 public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
 
-    private static final Set<TableLocation> EMPTY_TABLE_LOCATIONS = Collections.emptySet();
+    private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
 
     private final TableLocationProvider tableLocationProvider;
 
     private boolean subscribed = false;
 
     private final Object updateLock = new Object();
-    private Set<TableLocation> pendingLocations = EMPTY_TABLE_LOCATIONS;
+    private Set<ImmutableTableLocationKey> pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
@@ -29,16 +29,16 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     /**
-     * Subscribe if needed, and return any pending locations (or throw a pending exception) from the table location
+     * Subscribe if needed, and return any pending location keys (or throw a pending exception) from the table location
      * provider.
-     * A given location will only be returned by a single call to processPending() (unless state is reset).
+     * A given location key will only be returned by a single call to processPending() (unless state is reset).
      * No order is maintained internally.
      * If a pending exception is thrown, this signals that the subscription is no longer valid and no
-     * subsequent locations will be returned.
+     * subsequent location keys will be returned.
      *
-     * @return The collection of pending locations
+     * @return The collection of pending location keys
      */
-    public synchronized Collection<TableLocation> processPending() {
+    public synchronized Collection<ImmutableTableLocationKey> processPending() {
         // TODO: Should I change this to instead re-use the collection?
         if (!subscribed) {
             if (tableLocationProvider.supportsSubscriptions()) {
@@ -46,22 +46,22 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             } else {
                 // NB: Providers that don't support subscriptions don't tick - this single call to refresh is sufficient.
                 tableLocationProvider.refresh();
-                tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocation);
+                tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);
             }
             subscribed = true;
         }
-        final Collection<TableLocation> resultLocations;
+        final Collection<ImmutableTableLocationKey> resultLocationKeys;
         final TableDataException resultException;
         synchronized (updateLock) {
-            resultLocations = pendingLocations;
-            pendingLocations = EMPTY_TABLE_LOCATIONS;
+            resultLocationKeys = pendingLocationKeys;
+            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
             resultException = pendingException;
             pendingException = null;
         }
         if (resultException != null) {
             throw new TableDataException("Processed pending exception", resultException);
         }
-        return resultLocations;
+        return resultLocationKeys;
     }
 
     /**
@@ -75,7 +75,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             subscribed = false;
         }
         synchronized (updateLock) {
-            pendingLocations = EMPTY_TABLE_LOCATIONS;
+            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
             pendingException = null;
         }
     }
@@ -85,12 +85,12 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void handleTableLocation(@NotNull final TableLocation tableLocation) {
+    public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
-            if (pendingLocations == EMPTY_TABLE_LOCATIONS) {
-                pendingLocations = new HashSet<>();
+            if (pendingLocationKeys == EMPTY_TABLE_LOCATION_KEYS) {
+                pendingLocationKeys = new HashSet<>();
             }
-            pendingLocations.add(tableLocation);
+            pendingLocationKeys.add(tableLocationKey);
         }
     }
 

@@ -51,12 +51,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * State for table locations that have been added, but have never been found to exist with non-zero size.
      */
-    private final KeyedObjectHashMap<TableLocationKey, EmptyTableLocationEntry> emptyTableLocations = new KeyedObjectHashMap<>(EMPTY_TABLE_LOCATION_ENTRY_KEY);
+    private final KeyedObjectHashMap<ImmutableTableLocationKey, EmptyTableLocationEntry> emptyTableLocations = new KeyedObjectHashMap<>(EMPTY_TABLE_LOCATION_ENTRY_KEY);
 
     /**
      * State for table locations that provide the regions backing our column sources.
      */
-    private final KeyedObjectHashMap<TableLocationKey, IncludedTableLocationEntry> includedTableLocations = new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
+    private final KeyedObjectHashMap<ImmutableTableLocationKey, IncludedTableLocationEntry> includedTableLocations = new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
 
     /**
      * Table locations that provide the regions backing our column sources, in insertion order.
@@ -98,7 +98,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             if (log.isDebugEnabled()) {
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
-            emptyTableLocations.put(tableLocation, new EmptyTableLocationEntry(tableLocation));
+            emptyTableLocations.put(tableLocation.getKey(), new EmptyTableLocationEntry(tableLocation));
         } else {
             // Duplicate location - not allowed
             final TableLocation duplicateLocation = includedLocation != null ? includedLocation.location : emptyLocation.location;
@@ -217,15 +217,15 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             if (this == other) {
                 return 0;
             }
-            return TableLocationKey.COMPARATOR.compare(location, other.location);
+            return location.getKey().compareTo(other.location.getKey());
         }
     }
 
-    private static final KeyedObjectKey<TableLocationKey, EmptyTableLocationEntry> EMPTY_TABLE_LOCATION_ENTRY_KEY = new TableLocationKey.KeyedObjectKeyImpl<EmptyTableLocationEntry>() {
+    private static final KeyedObjectKey<ImmutableTableLocationKey, EmptyTableLocationEntry> EMPTY_TABLE_LOCATION_ENTRY_KEY = new KeyedObjectKey.Basic<ImmutableTableLocationKey, EmptyTableLocationEntry>() {
 
         @Override
-        public TableLocationKey getKey(@NotNull final EmptyTableLocationEntry emptyTableLocationEntry) {
-            return emptyTableLocationEntry.location;
+        public ImmutableTableLocationKey getKey(@NotNull final EmptyTableLocationEntry emptyTableLocationEntry) {
+            return emptyTableLocationEntry.location.getKey();
         }
     };
 
@@ -259,6 +259,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             final long lastKeyAdded = firstKeyAdded + size - 1;
             addedIndexBuilder.appendRange(firstKeyAdded, lastKeyAdded);
             for (final ColumnDefinition columnDefinition : columnDefinitions) {
+                //noinspection unchecked
                 final ColumnLocationState state = new ColumnLocationState(
                         columnDefinition,
                         columnSources.get(columnDefinition.getName()),
@@ -314,25 +315,25 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         }
     }
 
-    private static final KeyedObjectKey<TableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY = new TableLocationKey.KeyedObjectKeyImpl<IncludedTableLocationEntry>() {
+    private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY = new KeyedObjectKey.Basic<ImmutableTableLocationKey, IncludedTableLocationEntry>() {
 
         @Override
-        public TableLocationKey getKey(@NotNull final IncludedTableLocationEntry includedTableLocationEntry) {
-            return includedTableLocationEntry.location;
+        public ImmutableTableLocationKey getKey(@NotNull final IncludedTableLocationEntry includedTableLocationEntry) {
+            return includedTableLocationEntry.location.getKey();
         }
     };
 
     /**
      * Batches up a definition, source, and location for ease of use.  Implements grouping maintenance.
      */
-    private class ColumnLocationState {
+    private class ColumnLocationState<T> {
 
-        protected final ColumnDefinition<?> definition;
-        protected final RegionedColumnSource<?> source;
+        protected final ColumnDefinition<T> definition;
+        protected final RegionedColumnSource<T> source;
         protected final ColumnLocation location;
 
-        private ColumnLocationState(ColumnDefinition<?> definition,
-                                    RegionedColumnSource<?> source,
+        private ColumnLocationState(ColumnDefinition<T> definition,
+                                    RegionedColumnSource<T> source,
                                     ColumnLocation location) {
             this.definition = definition;
             this.source = source;
@@ -368,18 +369,17 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     ((KeyRangeGroupingProvider) groupingProvider).addSource(location, firstKeyAdded, lastKeyAdded);
                 }
             } else if (definition.isPartitioning()) {
-                //noinspection unchecked
-                final DeferredGroupingColumnSource<String> partitioningColumnSource = (DeferredGroupingColumnSource<String>) source;
-                Map<String, Index> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
+                final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
+                Map<T, Index> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
                 if (columnPartitionToIndex == null) {
                     columnPartitionToIndex = new LinkedHashMap<>();
                     partitioningColumnSource.setGroupToRange(columnPartitionToIndex);
                 }
                 final Index added = Index.FACTORY.getIndexByRange(firstKeyAdded, lastKeyAdded);
-                final String columnPartition = location.getTableLocation().getColumnPartition().toString();
-                final Index current = columnPartitionToIndex.get(columnPartition);
+                final T columnPartitionValue = location.getTableLocation().getKey().getPartitionValue(definition.getName());
+                final Index current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
-                    columnPartitionToIndex.put(columnPartition, added);
+                    columnPartitionToIndex.put(columnPartitionValue, added);
                 } else {
                     current.insert(added);
                 }

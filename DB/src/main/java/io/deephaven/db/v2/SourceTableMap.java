@@ -9,6 +9,8 @@ import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+
+import java.util.Comparator;
 import java.util.Objects;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -24,8 +26,9 @@ import java.util.stream.Stream;
 class SourceTableMap extends LocalTableMap {
 
     private final UnaryOperator<Table> applyTablePermissions;
+    private final TableLocationProvider tableLocationProvider;
     private final boolean refreshSizes;
-    private final Predicate<TableLocation> locationMatcher;
+    private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
 
     private final LiveTableRefreshCombiner refreshCombiner;
     private final TableLocationSubscriptionBuffer subscriptionBuffer;
@@ -46,18 +49,19 @@ class SourceTableMap extends LocalTableMap {
      * @param tableLocationProvider Source for table locations
      * @param refreshLocations      Whether the set of locations should be refreshed
      * @param refreshSizes          Whether the locations found should be refreshed
-     * @param locationMatcher       Function to filter desired locations
+     * @param locationKeyMatcher    Function to filter desired location keys
      */
     public SourceTableMap(@NotNull final TableDefinition tableDefinition,
                           @NotNull final UnaryOperator<Table> applyTablePermissions,
                           @NotNull final TableLocationProvider tableLocationProvider,
                           final boolean refreshLocations,
                           final boolean refreshSizes,
-                          @NotNull final Predicate<TableLocation> locationMatcher) {
+                          @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
         super(null, Objects.requireNonNull(tableDefinition));
         this.applyTablePermissions = applyTablePermissions;
+        this.tableLocationProvider = tableLocationProvider;
         this.refreshSizes = refreshSizes;
-        this.locationMatcher = locationMatcher;
+        this.locationKeyMatcher = locationKeyMatcher;
 
         final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
 
@@ -88,7 +92,7 @@ class SourceTableMap extends LocalTableMap {
             readyLocationStates = null;
             processNewLocationsLiveTable = null;
             tableLocationProvider.refresh();
-            sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream().filter(locationMatcher));
+            sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream().filter(locationKeyMatcher).map(tableLocationProvider::getTableLocation));
         }
 
         if (isRefreshing()) {
@@ -100,16 +104,16 @@ class SourceTableMap extends LocalTableMap {
     private void sortAndAddLocations(@NotNull final Stream<TableLocation> locations) {
         // final value we can use to detect not-created tables
         final MutableBoolean observeCreation = new MutableBoolean(false);
-        locations.sorted(TableLocationKey.COMPARATOR).forEach(tl -> {
+        locations.sorted(Comparator.comparing(TableLocation::getKey)).forEach(tl -> {
             observeCreation.setValue(false);
-            final Table previousTable = computeIfAbsent(TableLocationLookupKey.getImmutableKey(tl), o -> {
+            final Table previousTable = computeIfAbsent(tl.getKey(), o -> {
                 observeCreation.setValue(true);
                 return makeTable(tl);
             });
 
             if (!observeCreation.getValue()) {
                 // we have a duplicate location - not allowed
-                final TableLocation previousLocation = ((PartitionAwareSourceTable) previousTable).locationProvider.getTableLocation(tl);
+                final TableLocation previousLocation = ((PartitionAwareSourceTable) previousTable).locationProvider.getTableLocation(tl.getKey());
                 throw new TableDataException("Data Routing Configuration error: TableDataService elements overlap at location " +
                         tl.toGenericString() +
                         ". Duplicate locations are " + previousLocation.toStringDetailed() + " and " + tl.toStringDetailed());
@@ -119,12 +123,11 @@ class SourceTableMap extends LocalTableMap {
 
     private Table makeTable(@NotNull final TableLocation tableLocation) {
         return applyTablePermissions.apply(new PartitionAwareSourceTable(
-                getConstituentDefinition().orElse(null),
+                getConstituentDefinition().orElseThrow(IllegalStateException::new),
                 "SingleLocationSourceTable-" + tableLocation,
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 new SingleTableLocationProvider(tableLocation),
-                refreshSizes ? refreshCombiner : null,
-                PartitionAwareSourceTable.ALL_INTERNAL_PARTITIONS
+                refreshSizes ? refreshCombiner : null
         ));
     }
 
@@ -136,7 +139,7 @@ class SourceTableMap extends LocalTableMap {
         // RegionedColumnSources, in order to eliminate the unnecessary post-initialization array population in STM
         // ColumnSources.
         // TODO: Refactor accordingly.
-        subscriptionBuffer.processPending().stream().filter(locationMatcher).map(PendingLocationState::new).forEach(pendingLocationStates::offer);
+        subscriptionBuffer.processPending().stream().filter(locationKeyMatcher).map(tableLocationProvider::getTableLocation).map(PendingLocationState::new).forEach(pendingLocationStates::offer);
         for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext(); ) {
             final PendingLocationState pendingLocationState = iter.next();
             if (pendingLocationState.exists()) {
@@ -171,6 +174,7 @@ class SourceTableMap extends LocalTableMap {
         private boolean exists() {
             subscriptionBuffer.processPending();
             final long localSize = location.getSize();
+            //noinspection ConditionCoveredByFurtherCondition
             return localSize != TableLocationState.NULL_SIZE && localSize > 0;
         }
 

@@ -6,6 +6,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.locations.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;
@@ -14,11 +15,6 @@ import io.deephaven.db.tables.live.LiveTable;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.locations.TableDataException;
-import io.deephaven.db.v2.locations.TableLocation;
-import io.deephaven.db.v2.locations.TableLocationProvider;
-import io.deephaven.db.v2.locations.TableLocationSubscriptionBuffer;
 import io.deephaven.db.v2.sources.LogicalClock;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -151,11 +147,11 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private void maybeAddLocations(@NotNull final Collection<TableLocation> locations) {
-        if (locations.isEmpty()) {
+    private void maybeAddLocations(@NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
+        if (locationKeys.isEmpty()) {
             return;
         }
-        filterLocations(locations).forEach(columnSourceManager::addLocation);
+        filterLocationKeys(locationKeys).forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
     }
 
     private void initializeLocationSizes() {
@@ -229,14 +225,16 @@ public abstract class SourceTable extends RedefinableTable {
     }
 
     /**
-     * Hook to allow found locations to be filtered (e.g. according to a where-clause on the partitioning column of a
-     * PartitionAwareSourceTable).
+     * Hook to allow found location keys to be filtered (e.g. according to a where-clause on the partitioning columns of
+     * a {@link PartitionAwareSourceTable}.
      * The default implementation returns its input unmolested.
-     * @param foundLocations A Collection of TableLocations fetched from the table location provider, but not yet incorporated into the table
-     * @return A sub-Collection of the input
+     *
+     * @param foundLocationKeys A collection of {@link ImmutableTableLocationKey}s fetched from the
+     *                          {@link TableLocationProvider}, but not yet incorporated into the table
+     * @return A sub-collection of the input
      */
-    protected Collection<TableLocation> filterLocations(@NotNull final Collection<TableLocation> foundLocations) {
-        return foundLocations;
+    protected Collection<ImmutableTableLocationKey> filterLocationKeys(@NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
+        return foundLocationKeys;
     }
 
     @Override
