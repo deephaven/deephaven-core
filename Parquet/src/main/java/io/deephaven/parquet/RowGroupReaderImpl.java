@@ -38,7 +38,6 @@ public class RowGroupReaderImpl implements RowGroupReader {
         this.rowGroup = rowGroup;
         this.rootPath = rootPath;
         this.type = type;
-        int pos = 0;
         for (ColumnChunk column : rowGroup.columns) {
             List<String> path_in_schema = column.getMeta_data().path_in_schema;
             String key = path_in_schema.toString();

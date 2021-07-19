@@ -51,6 +51,9 @@ public class ParquetSchemaReader {
          * thus baseType in this structure can be ignored). */
         public String codecType;
         public String codecComponentType;
+        /** If a dictionary encoding is used on every data page (NOT only on some)
+         *  This is useful to make decisions like using a symbol table for the column */
+        public boolean dictionaryUsedOnEveryDataPage;
         /** We reuse the guts of this poor object between calls to avoid allocating.
          * Like prometheus nailed to a mountain, this poor object has to suffer his guts being eaten forever.
          * Or not forever but at least for one stack frame activation of readParquetSchema and as many columns
@@ -59,7 +62,7 @@ public class ParquetSchemaReader {
             name = null;
             baseType = null;
             dhSpecialType = null;
-            noLogicalType = isArray = isGrouping = false;
+            noLogicalType = isArray = isGrouping = dictionaryUsedOnEveryDataPage = false;
             codecType = codecComponentType = null;
         }
     }
@@ -104,6 +107,7 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
+        final Set<String> columnsWithDictionaryUsedOnEveryDataPage = pf.getColumnsWithDictionaryUsedOnEveryDataPage();
         for (ColumnDescriptor column : schema.getColumns()) {
             colDef.reset();
             currentColumn.setValue(column);
@@ -128,6 +132,7 @@ public class ParquetSchemaReader {
                 }
             }
             colDef.name = colName;
+            colDef.dictionaryUsedOnEveryDataPage = columnsWithDictionaryUsedOnEveryDataPage.contains(parquetColumnName);
             colDef.dhSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
             colDef.isGrouping = groupingCols.contains(colName);
             String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);

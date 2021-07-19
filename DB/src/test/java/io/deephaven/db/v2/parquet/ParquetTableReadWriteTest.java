@@ -120,7 +120,7 @@ public class ParquetTableReadWriteTest {
     private void flatTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getTableFlat(size, includeSerializable);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        ParquetTools.writeTable(tableToSave, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
