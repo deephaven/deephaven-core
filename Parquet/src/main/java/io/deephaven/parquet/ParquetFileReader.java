@@ -74,6 +74,12 @@ public class ParquetFileReader {
     }
 
     private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
+    /**
+     * Get the name of all columns that we can know for certain
+     * (a) have a dictionary, and (b) use the dictionary on all data pages.
+     *
+     * @return A set of parquet column names that satisfies the required condition.
+     */
     public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
             columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();
@@ -108,6 +114,7 @@ public class ParquetFileReader {
         final List<RowGroup> rowGroups = fileMetaData.getRow_groups();
         final Iterator<RowGroup> riter = rowGroups.iterator();
         if (!riter.hasNext()) {
+            // No rowgroups trivially means all columns.
             return result;
         }
         // On the first pass, for row group zero, we are going to add all columns to the set
