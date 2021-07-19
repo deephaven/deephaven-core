@@ -517,7 +517,29 @@ public class SessionState {
         }
 
         /**
-         * WARNING! This method call is only valid inside of the exportMain callable / runnable.
+         * WARNING! This method call is only safe to use in the following patterns:
+         * <p/>
+         * 1) If an export (or non-export) {@link ExportBuilder#require}'d this export then the method is valid from
+         *    within the Callable/Runnable passed to {@link ExportBuilder#submit}.
+         *    <p/>
+         * 2) By first obtaining a reference to the {@link ExportObject}, and then observing its state as
+         *    {@link ExportNotification.State#EXPORTED}. The caller must abide by the Liveness API and dropReference.
+         *    <p/>
+         *    Example:
+         *    <pre>{@code
+         *  <T> T getFromExport(ExportObject<T> export) {
+         *      if (export.tryRetainReference()) {
+         *          try {
+         *              if (export.getState() == ExportNotification.State.EXPORTED) {
+         *                  return export.get();
+         *              }
+         *          } finally {
+         *              export.dropReference();
+         *          }
+         *      }
+         *      return null;
+         *  }
+         *  }</pre>
          *
          * @return the result of the computed export
          */

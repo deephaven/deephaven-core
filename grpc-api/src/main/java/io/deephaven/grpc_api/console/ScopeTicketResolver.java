@@ -4,16 +4,14 @@
 
 package io.deephaven.grpc_api.console;
 
-import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.ScriptSession;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
+import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import org.apache.arrow.flight.impl.Flight;
@@ -47,7 +45,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         final String varName = nameForDescriptor(descriptor);
         final Object varObj = globalSessionProvider.getGlobalSession().getVariable(varName);
         if (varObj instanceof Table) {
-            return getFlightInfo((Table) varObj, descriptor, ticketForName(varName));
+            return TicketRouter.getFlightInfo((Table) varObj, descriptor, ticketForName(varName));
         } else {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not compute flight info: variable '" + varName + "' is not a flight");
         }
@@ -57,7 +55,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
     public void forAllFlightInfo(final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         globalSessionProvider.getGlobalSession().getVariables().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
-                visitor.accept(getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
+                visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
             }
         });
     }
@@ -205,25 +203,5 @@ public class ScopeTicketResolver extends TicketResolverBase {
      */
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
         return ticketForName(nameForDescriptor(descriptor));
-    }
-
-    private static Flight.FlightInfo getFlightInfo(final Table table,
-                                                   final Flight.FlightDescriptor descriptor,
-                                                   final Flight.Ticket ticket) {
-        return Flight.FlightInfo.newBuilder()
-                .setSchema(schemaBytesFromTable(table))
-                .setFlightDescriptor(descriptor)
-                .addEndpoint(Flight.FlightEndpoint.newBuilder()
-                        .setTicket(ticket)
-                        .build())
-                .setTotalRecords(table.isLive() ? -1 : table.size())
-                .setTotalBytes(-1)
-                .build();
-    }
-
-    private static ByteString schemaBytesFromTable(final Table table) {
-        final FlatBufferBuilder builder = new FlatBufferBuilder();
-        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes()));
-        return ByteStringAccess.wrap(builder.dataBuffer());
     }
 }

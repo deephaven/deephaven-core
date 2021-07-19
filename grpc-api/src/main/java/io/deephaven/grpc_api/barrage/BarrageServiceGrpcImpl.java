@@ -97,13 +97,6 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
      */
     public void doSubscribeCustom(final SubscriptionRequest request, final StreamObserver<InputStream> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            if (!request.hasExportId()) {
-                responseObserver.onError(StatusProto.toStatusRuntimeException(Status.newBuilder()
-                        .setCode(Code.INVALID_ARGUMENT.getNumber())
-                        .setMessage("Protocol Version Not Allowed")
-                        .build()));
-            }
-
             final SubscriptionObserver observer = new SubscriptionObserver(sessionService.getCurrentSession(), responseObserver);
             observer.onNext(request);
         });
@@ -123,8 +116,6 @@ public class BarrageServiceGrpcImpl<Options, View> extends BarrageServiceGrpc.Ba
         private boolean isViewport;
         private BarrageMessageProducer<Options, View> bmp;
         private Queue<SubscriptionRequest> preExportSubscriptions;
-
-        private SessionState.ExportObject<?> myExportWork;
 
         private final StreamObserver<View> listener;
 

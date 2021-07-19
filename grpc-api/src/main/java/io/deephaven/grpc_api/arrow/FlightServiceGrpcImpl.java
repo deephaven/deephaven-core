@@ -11,6 +11,8 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
 import com.google.rpc.Code;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarragePutMetadata;
 import io.deephaven.barrage.flatbuf.Message;
@@ -21,6 +23,7 @@ import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
 import io.deephaven.db.v2.BaseTable;
 import io.deephaven.db.v2.remote.ConstructSnapshot;
@@ -29,7 +32,6 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
-import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.session.SessionService;
@@ -59,9 +61,7 @@ import java.util.Iterator;
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     // TODO (core#412): use app_metadata to communicate serialization options
-    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder()
-            .setUseDeephavenNulls(true)
-            .build();
+    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -126,6 +126,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
+                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for DoGet
 
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
                             responseObserver.onNext(bsg.getDoGetInputStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false, null, null, null)));
@@ -159,6 +160,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 @Override
                 public void onError(final Throwable t) {
                     // ok; we're done then
+                    if (marshaller.resultTable != null) {
+                        marshaller.resultTable.dropReference();
+                        marshaller.resultTable = null;
+                    }
                     marshaller.resultExportBuilder.submit(() -> { throw new UncheckedDeephavenException(t); });
                     marshaller.onRequestDone();
                 }
@@ -232,14 +237,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         });
     }
 
-    private static final int BODY_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int DATA_HEADER_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int APP_METADATA_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.APP_METADATA_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-    private static final int FLIGHT_DESCRIPTOR_TAG =
-            BarrageStreamReader.makeTag(Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
+    private static final int TAG_TYPE_BITS = 3;
+    private static final int BODY_TAG = (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int DATA_HEADER_TAG = (Flight.FlightData.DATA_HEADER_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int APP_METADATA_TAG = (Flight.FlightData.APP_METADATA_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    private static final int FLIGHT_DESCRIPTOR_TAG = (Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
     private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
     private static MessageInfo parseProtoMessage(final InputStream stream) throws IOException {
@@ -247,36 +249,37 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
+        // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
+        // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
+        decodeLoop:
         for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
-            if (tag == DATA_HEADER_TAG) {
-                final int size = decoder.readRawVarint32();
-                mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                continue;
-            } else if (tag == APP_METADATA_TAG) {
-                final int size = decoder.readRawVarint32();
-                mi.app_metadata = BarragePutMetadata.getRootAsBarragePutMetadata(ByteBuffer.wrap(decoder.readRawBytes(size)));
-                continue;
-            } else if (tag == FLIGHT_DESCRIPTOR_TAG) {
-                final int size = decoder.readRawVarint32();
-                final byte[] bytes = decoder.readRawBytes(size);
-                mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
-                continue;
-            } else if (tag != BODY_TAG) {
-                log.info().append("Skipping tag: ").append(tag).endl();
-                decoder.skipField(tag);
-                continue;
+            final int size;
+            switch (tag) {
+                case DATA_HEADER_TAG:
+                    size = decoder.readRawVarint32();
+                    mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    break;
+                case APP_METADATA_TAG:
+                    size = decoder.readRawVarint32();
+                    mi.app_metadata = BarragePutMetadata.getRootAsBarragePutMetadata(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    break;
+                case FLIGHT_DESCRIPTOR_TAG:
+                    size = decoder.readRawVarint32();
+                    final byte[] bytes = decoder.readRawBytes(size);
+                    mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
+                    break;
+                case BODY_TAG:
+                    // at this point, we're in the body, we will read it and then break, the rest of the payload should be the body
+                    size = decoder.readRawVarint32();
+                    //noinspection UnstableApiUsage
+                    mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
+                    // we do not actually remove the content from our stream; prevent reading the next tag via a labeled break
+                    break decodeLoop;
+
+                default:
+                    log.info().append("Skipping tag: ").append(tag).endl();
+                    decoder.skipField(tag);
             }
-
-            if (mi.inputStream != null) {
-                // latest input stream wins
-                mi.inputStream.close();
-                mi.inputStream = null;
-            }
-
-            final int size = decoder.readRawVarint32();
-
-            //noinspection UnstableApiUsage
-            mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
         }
 
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
@@ -356,10 +359,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 MessageInfo nmi = mi;
                 do {
                     process(nmi);
-
                     synchronized (this) {
                         ++nextSeq;
-                        nmi = pendingSeq.top();
+                        nmi = pendingSeq == null ? null : pendingSeq.top();
                         if (nmi == null || nmi.app_metadata.sequence() != nextSeq) {
                             break;
                         }
@@ -394,16 +396,29 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final int numColumns = resultTable.getColumnSources().size();
             final BarrageMessage msg = new BarrageMessage();
             final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
+
             final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                     new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
-            final Iterator<ChunkInputStreamGenerator.BufferInfo> bufferInfoIter =
-                    new FlatBufferIteratorAdapter<>(batch.buffersLength(), i -> new ChunkInputStreamGenerator.BufferInfo(batch.buffers(i)));
+
+            final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+            for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+                if (bi < batch.buffersLength() - 1) {
+                    final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                    // our parsers handle overhanging buffers
+                    length += Math.max(0, nextOffset - offset - length);
+                }
+                bufferInfo.add(length);
+            }
+            final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
             msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
             msg.shifted = IndexShiftData.EMPTY;
 
             // include all columns as add-columns
-            int numRowsAdded = -1;
+            int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
             msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
             for (int ci = 0; ci < numColumns; ++ci) {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
@@ -415,9 +430,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     throw new UncheckedDeephavenException(unexpected);
                 }
 
-                if (numRowsAdded == -1) {
-                    numRowsAdded = acd.data.size();
-                } else if (acd.data.size() != numRowsAdded) {
+                if (acd.data.size() != numRowsAdded) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                 }
                 acd.type = columnTypes[ci];
@@ -446,8 +459,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "pending sequences to apply but received final app_metadata");
                 }
 
-                resultTable.sealTable(); // no more changes allowed; this is officially static content
-                resultExportBuilder.submit(() -> resultTable);
+                // no more changes allowed; this is officially static content
+                resultTable.sealTable();
+                resultExportBuilder.submit(() -> {
+                    // transfer ownership to submit's liveness scope, drop our extra reference
+                    resultTable.manageWithCurrentScope();
+                    resultTable.dropReference();
+                    return resultTable;
+                });
 
                 observer.onCompleted();
                 onRequestDone();
@@ -475,6 +494,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
+
+            // retain reference until we can pass this result to be owned by the export object
+            resultTable.retainReference();
         }
     }
 

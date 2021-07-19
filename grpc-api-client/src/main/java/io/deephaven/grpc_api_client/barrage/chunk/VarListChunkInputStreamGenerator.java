@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
+import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -130,7 +131,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         public void visitBuffers(final BufferListener listener) {
             // validity
             final int numElements = subset.intSize(DEBUG_NAME);
-            listener.noteLogicalBuffer(0, nullCount() == 0 ? 0 : getValidityMapSerializationSizeFor(numElements));
+            listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
             long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
@@ -138,7 +139,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             if (bytesExtended > 0) {
                 numOffsetBytes += 8 - bytesExtended;
             }
-            listener.noteLogicalBuffer(0, numOffsetBytes);
+            listener.noteLogicalBuffer(numOffsetBytes);
 
             // payload
             innerStream.visitBuffers(listener);
@@ -157,7 +158,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         protected int getRawSize() throws IOException {
             if (cachedSize == -1) {
                 // there are n+1 offsets; it is not assumed first offset is zero
-                cachedSize = nullCount() == 0 ? 0 : getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
+                cachedSize = sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)) : 0;
                 cachedSize += subset.size() * Integer.BYTES + (subset.isEmpty() ? 0 : Integer.BYTES);
 
                 if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
@@ -179,7 +180,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             long bytesWritten = 0;
             try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
                 // write the validity array with LSB indexing
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     final SerContext context = new SerContext();
                     final Runnable flush = () -> {
                         try {
@@ -228,12 +229,12 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             final Options options,
             final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final Iterator<BufferInfo> bufferInfoIter,
+            final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final BufferInfo validityBuffer = bufferInfoIter.next();
-        final BufferInfo offsetsBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.next();
+        final long offsetsBuffer = bufferInfoIter.next();
 
         final Class<?> componentType = type.getComponentType();
 
@@ -250,15 +251,12 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
              final WritableIntChunk<Attributes.ChunkPositions> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
-            if (validityBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.offset));
-            }
-            for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
+            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
-            final long valBufRead = jj * 8L + validityBuffer.offset;
-            if (valBufRead < validityBuffer.length) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
+            final long valBufRead = jj * 8L;
+            if (valBufRead < validityBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
             }
             // we support short validity buffers
             for (; jj < numValidityLongs; ++jj) {
@@ -267,18 +265,15 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             // consumed entire validity buffer by here
 
             // Read offsets:
-            if (offsetsBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.offset));
-            }
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES + offsetsBuffer.offset;
-            if (offsetsBuffer.length < offBufRead) {
+            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
+            if (offsetsBuffer < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }
             for (int i = 0; i < nodeInfo.numElements + 1; ++i) {
                 offsets.set(i, is.readInt());
             }
-            if (offBufRead < offsetsBuffer.length) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.length - offBufRead));
+            if (offBufRead < offsetsBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
             }
 
             final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(ChunkType.fromElementType(componentType));

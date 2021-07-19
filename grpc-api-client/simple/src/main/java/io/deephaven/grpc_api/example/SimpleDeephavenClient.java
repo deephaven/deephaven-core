@@ -176,7 +176,7 @@ public class SimpleDeephavenClient {
                 .build());
 
         flightService.getSchema(
-                ExportTicketHelper.exportIdToDescriptor(ExportTicketHelper.ticketToExportId(exportTable)),
+                ExportTicketHelper.ticketToDescriptor(exportTable),
                 new ResponseBuilder<Flight.SchemaResult>()
                         .onError(this::onError)
                         .onNext(this::onSchemaResult)

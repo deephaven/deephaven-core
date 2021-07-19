@@ -6,6 +6,7 @@ package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.LittleEndianDataOutputStream;
+import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -156,7 +157,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         public void visitBuffers(final BufferListener listener) {
             // validity
             final int numElements = subset.intSize(DEBUG_NAME);
-            listener.noteLogicalBuffer(0, nullCount() == 0 ? 0 : getValidityMapSerializationSizeFor(numElements));
+            listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0);
 
             // offsets
             long numOffsetBytes = Integer.BYTES * (((long)numElements) + (numElements > 0 ? 1 : 0));
@@ -164,7 +165,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (bytesExtended > 0) {
                 numOffsetBytes += 8 - bytesExtended;
             }
-            listener.noteLogicalBuffer(0, numOffsetBytes);
+            listener.noteLogicalBuffer(numOffsetBytes);
 
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
@@ -177,14 +178,14 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (payloadExtended > 0) {
                 numPayloadBytes.add(8 - payloadExtended);
             }
-            listener.noteLogicalBuffer(0, numPayloadBytes.longValue());
+            listener.noteLogicalBuffer(numPayloadBytes.longValue());
         }
 
         @Override
         protected int getRawSize() {
             if (cachedSize == -1) {
                 cachedSize = 0;
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     cachedSize += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
                 }
 
@@ -221,7 +222,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             long bytesWritten = 0;
             try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
                 // write the validity array with LSB indexing
-                if (nullCount() > 0) {
+                if (sendValidityBuffer()) {
                     final SerContext context = new SerContext();
                     final Runnable flush = () -> {
                         try {
@@ -297,12 +298,12 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     static <T> ObjectChunk<T, Attributes.Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final Iterator<BufferInfo> bufferInfoIter,
+            final TLongIterator bufferInfoIter,
             final Mapper<T> mapper) throws IOException {
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final BufferInfo validityBuffer = bufferInfoIter.next();
-        final BufferInfo offsetsBuffer = bufferInfoIter.next();
-        final BufferInfo payloadBuffer = bufferInfoIter.next();
+        final long validityBuffer = bufferInfoIter.next();
+        final long offsetsBuffer = bufferInfoIter.next();
+        final long payloadBuffer = bufferInfoIter.next();
 
         final WritableObjectChunk<T, Attributes.Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
 
@@ -315,15 +316,12 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
              final WritableIntChunk<Attributes.Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
-            if (validityBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.offset));
-            }
-            for (; jj < Math.min(numValidityLongs, validityBuffer.length / 8); ++jj) {
+            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
-            final long valBufRead = jj * 8L + validityBuffer.offset;
-            if (valBufRead < validityBuffer.length) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer.length - valBufRead));
+            final long valBufRead = jj * 8L;
+            if (valBufRead < validityBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
             }
             // we support short validity buffers
             for (; jj < numValidityLongs; ++jj) {
@@ -331,22 +329,19 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             }
 
             // Read offsets:
-            if (offsetsBuffer.offset > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.offset));
-            }
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES + offsetsBuffer.offset;
-            if (offsetsBuffer.length < offBufRead) {
+            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
+            if (offsetsBuffer < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }
             for (int i = 0; i < nodeInfo.numElements + 1; ++i) {
                 offsets.set(i, is.readInt());
             }
-            if (offBufRead < offsetsBuffer.length) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer.length - offBufRead));
+            if (offBufRead < offsetsBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
             }
 
             // Read data:
-            final int bytesRead = LongSizedDataStructure.intSize(DEBUG_NAME, payloadBuffer.length);
+            final int bytesRead = LongSizedDataStructure.intSize(DEBUG_NAME, payloadBuffer);
             final byte[] serializedData = new byte[bytesRead];
             is.readFully(serializedData);
 

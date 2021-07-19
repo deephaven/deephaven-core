@@ -80,7 +80,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
 
         protected int getRawSize() throws IOException {
             long size = 0;
-            if (nullCount() != 0) {
+            if (sendValidityBuffer()) {
                 size += getValidityMapSerializationSizeFor(subset.intSize());
             }
             size += elementSize * subset.size();
@@ -92,6 +92,18 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
             final int rawSize = getRawSize();
             final int rawMod8 = rawSize & REMAINDER_MOD_8_MASK;
             return (read ? 0 : rawSize + (rawMod8 > 0 ? 8 - rawMod8 : 0));
+        }
+
+        /**
+         * There are two cases we don't send a validity buffer:
+         * - the simplest case is following the arrow flight spec, which says that if there are no nulls present,
+         *   the buffer is optional.
+         * - Our implementation of nullCount() for primitive types will return zero if the useDeephavenNulls flag is
+         *   set, so the buffer will also be omitted in that case. The client's marshaller does not need to be aware of
+         *   deephaven nulls but in this mode we assume the consumer understands which value is the assigned NULL.
+         */
+        protected boolean sendValidityBuffer() {
+            return nullCount() != 0;
         }
     }
 

@@ -5,8 +5,8 @@
 package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.base.Charsets;
+import gnu.trove.iterator.TLongIterator;
 import io.deephaven.barrage.flatbuf.BarrageFieldNode;
-import io.deephaven.barrage.flatbuf.Buffer;
 import io.deephaven.barrage.flatbuf.FieldNode;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -20,7 +20,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -93,7 +92,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final Options options,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
-            final Iterator<BufferInfo> bufferInfoIter,
+            final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
         switch (chunkType) {
             case Boolean:
@@ -154,17 +153,10 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     final class BufferInfo {
-        public final long offset;
         public final long length;
 
-        public BufferInfo(final long offset, final long length) {
-            this.offset = offset;
+        public BufferInfo(final long length) {
             this.length = length;
-        }
-
-        public BufferInfo(final Buffer node) {
-            this(LongSizedDataStructure.intSize("BufferInfo", node.offset()),
-                    LongSizedDataStructure.intSize("BufferInfo", node.length()));
         }
     }
 
@@ -175,7 +167,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
 
     @FunctionalInterface
     interface BufferListener {
-        void noteLogicalBuffer(final long offset, final long length);
+        void noteLogicalBuffer(final long length);
     }
 
     abstract class DrainableColumn extends InputStream implements Drainable {
