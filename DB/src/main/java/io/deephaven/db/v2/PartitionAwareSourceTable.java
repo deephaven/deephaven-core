@@ -205,6 +205,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         if (partitioningColumnFilters.length == 0) {
             return foundLocationKeys;
         }
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
                 Stream.of(LOCATION_KEY_COLUMN_NAME)
@@ -298,8 +299,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         return TableTools
                 .newTable(existingLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .selectDistinct(columns);
-
-        // TODO: Refactor the above to listen for new locations, and for size changes to non-existent or 0-size locations.
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         // TODO: Maybe just get rid of this implementation and coalesce? Partitioning columns are automatically grouped.  Needs lazy region allocation.
     }
 

@@ -81,7 +81,13 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         if (simpleImplementationSupplier != null) {
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
-
+        // TODO (https://github.com/deephaven/deephaven-core/issues/866): Clean this mess up:
+        //   1. Dictionary-ness should not be a top-level, definition-driven concept.
+        //   2. Encodings should not be the business of the column source.
+        //      That applies to fixed/variable width objects, StringSet, etc.
+        //   3. Maybe we can eliminate the component factory entirely if we play our cards right.
+        //   4. Contexts are meant to support any possible region type; that's too brittle for future expansion, we
+        //      should delegate to the regions.
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
                 return columnDefinition.hasSymbolTable()
@@ -92,8 +98,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                                 RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
                         ;
             } else if (StringSet.class.isAssignableFrom(dataType)) {
-                return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
-                );
+                return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet();
             } else {
                 final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition, codecMappings);
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
@@ -102,17 +107,4 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
             throw new UnsupportedOperationException("Can't create column for " + dataType + " in column definition " + columnDefinition, except);
         }
     }
-
-
-    /* TODO-RWC:
-     1. Do I need more than a single delegating regioned CS? Can wrap a source parallel to a source of CLs.
-        Maybe eliminates component factory. More scalable design? Needs delegating contexts, instead of inclusive contexts.
-     2. Fragmented and hierarchical: what’s the difference?
-     3. Dictionary exposure via column source instead of definition? Defer check?
-     4. Partition table as building block. Ticking select distinct. Get rid of CSM?
-     5. How to integrate range indices? Maybe I can just stamp regions with ranges, and filter regions? CL-metadata?
-     6. PT pattern: PColumns, TLKs, parent is hard ref to TLP-listener
-        ; then filter by PColumns or even TLKs
-        ; then add columns of TLs, TL-listeners, CLs, CRs, TLSizes (later TLIndices)
-     */
 }

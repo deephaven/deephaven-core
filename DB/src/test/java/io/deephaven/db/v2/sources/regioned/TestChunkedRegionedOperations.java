@@ -15,11 +15,9 @@ import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
-import io.deephaven.db.v2.NestedPartitionedDiskBackedTable;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.locations.*;
-import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationScanner;
+import io.deephaven.db.v2.locations.parquet.local.DeephavenStylePartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
@@ -47,6 +45,7 @@ import java.util.stream.IntStream;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
+import static io.deephaven.db.v2.locations.parquet.local.DeephavenStylePartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -228,9 +227,7 @@ public class TestChunkedRegionedOperations {
 
         final TableDefinition partitionedMissingDataDefinition = new TableDefinition(inputData.view("PC", "II").getDefinition());
 
-        final String namespace = "TestNamespace";
-        final String name = "TestTable";
-        final TableKey tableKey = new TableLookupKey.Immutable(namespace, name, TableType.STANDALONE_SPLAYED);
+        final String tableName = "TestTable";
 
         final TableMap partitionedInputData = inputData.byExternal("PC");
         ParquetTools.writeParquetTables(
@@ -238,7 +235,7 @@ public class TestChunkedRegionedOperations {
                 partitionedDataDefinition,
                 parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
-                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet"))
+                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
         );
@@ -249,7 +246,7 @@ public class TestChunkedRegionedOperations {
                 partitionedMissingDataDefinition,
                 parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
-                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableKey.getTableName() + ".parquet"))
+                        .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
                         .toArray(File[]::new),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY
         );
@@ -263,16 +260,10 @@ public class TestChunkedRegionedOperations {
                         "DT_R = nanos(DT)"
                 );
 
-        actual = new NestedPartitionedDiskBackedTable(
-                partitionedDataDefinition,
-                RegionedTableComponentFactoryImpl.INSTANCE,
-                new PollingTableLocationProvider(
-                        tableKey,
-                        new ParquetTableLocationScanner(dataDirectory, ParquetInstructions.EMPTY),
-                        null
-                ),
-                null,
-                Collections.emptySet()
+        actual = ParquetTools.readMultiFileTable(
+                new DeephavenStylePartitionLayout(dataDirectory, tableName, "PC", null),
+                ParquetInstructions.EMPTY,
+                partitionedDataDefinition
         ).updateView(
                 new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
                 new ReinterpretedColumn<>("DT", DBDateTime.class, "DT_R", long.class)

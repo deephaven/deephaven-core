@@ -136,8 +136,6 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         final String cp = Character.toString((li / 2) == 0 ? 'A' : 'B');
         tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
         checking(new Expectations() {{
-            allowing(tl).getInternalPartition();
-            will(returnValue(ip));
             allowing(tl).getColumnPartition();
             will(returnValue(cp));
             allowing(tl).toStringDetailed();

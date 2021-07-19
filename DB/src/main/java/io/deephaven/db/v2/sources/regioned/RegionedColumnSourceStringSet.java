@@ -37,7 +37,6 @@ class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet
 
     @Override
     public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        // TODO-RWC: Should we delete this, too, and switch to RCSO.AsValues?
         return new ColumnRegionStringSet.FillContext(chunkCapacity);
     }
 

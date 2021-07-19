@@ -138,7 +138,7 @@ class SourceTableMap extends LocalTableMap {
         // The RCSM could then populate STM nodes or ST regions. We could also add a "RegionManager" to
         // RegionedColumnSources, in order to eliminate the unnecessary post-initialization array population in STM
         // ColumnSources.
-        // TODO: Refactor accordingly.
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         subscriptionBuffer.processPending().stream().filter(locationKeyMatcher).map(tableLocationProvider::getTableLocation).map(PendingLocationState::new).forEach(pendingLocationStates::offer);
         for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext(); ) {
             final PendingLocationState pendingLocationState = iter.next();

@@ -56,7 +56,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
 
         @Override
         public FillContext makeFillContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-            // TODO-RWC: Maybe we should do this per-region?
+            // TODO (https://github.com/deephaven/deephaven-core/issues/866): Maybe we should do this per-region?
 
             final int width = decoder.expectedObjectWidth();
 
