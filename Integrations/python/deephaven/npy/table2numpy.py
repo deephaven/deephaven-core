@@ -204,6 +204,62 @@ def _numpyRandImage(t, rows, dtype, imageWidth, imageHeight, imageResize, imageC
     _Java2NumpyCopy_.copyImageRand(t, a, nRow, imageWidth, imageHeight, imageResize, imageColor, rows)
     return a
 
+# signature must be (idx, cols, dt)
+def _numpyExtractNumber(t, idx, dtype):
+    """
+    Creates a numpy array and populates it with sequential data from a NUMBER table.
+
+    :param t: input table
+    :param idx: indices of rows to copy
+    :param dtype: numpy datatype for the resulting array
+    :return: numpy array
+    """
+
+    _check_supported_dtype_(dtype, _supportedNpTypesNumber_)
+
+    nCol = len(t.getColumns())
+    a = np.empty([nRow, nCol], dtype=dtype, order="C")
+    # signature must be (idx, cols, a)
+    _Java2NumpyCopy_.copySlice(t, rowStart, a, nRow, nCol)
+    return a
+
+# signature must be (idx, cols, dt, iw, ih, ir, ic)
+def _numpyExtractImage(t, idx, dtype, imageWidth, imageHeight, imageResize, imageColor):
+    """
+    Creates a numpy array and populates it with sequential data from an IMAGE table.
+
+    :param t: input table
+    :param idx: indices of rows to copy
+    :param dtype: numpy datatype for the resulting array
+    :param imageWidth: width of the output image in pixels
+    :param imageHeight: height of the output image in pixels
+    :param imageResize: true to resize the image to the desired size; false to raise an error if the image is
+      not the desired size
+    :param imageColor: true to output a color image; false to output a grayscale image
+    :return: numpy array
+    """
+
+    _check_supported_dtype_(dtype, __supportedNpTypesImage_)
+
+    if imageWidth is None:
+        raise ValueError("imageWidth must be set for image tables.")
+
+    if imageHeight is None:
+        raise ValueError("imageHeight must be set for image tables.")
+
+    if imageColor is None:
+        raise ValueError("imageColor must be set for image tables.")
+
+    if imageColor:
+        shape = [nRow, imageHeight, imageWidth, 3]
+    else:
+        shape = [nRow, imageHeight, imageWidth]
+
+    a = np.empty(shape, dtype=dtype, order="C")
+    # signature must be (idx, cols, a, iw, ih, ir, ic)
+    _Java2NumpyCopy_.copyImageSlice(t, rowStart, a, nRow, imageWidth, imageHeight, imageResize, imageColor)
+    return a
+
 
 def _validateSize(t, item, name):
     """
@@ -329,5 +385,54 @@ def numpy_sample(t, nRow=None, rows=None, replace=False, dtype=np.float64, image
         return _numpyRandNumber(t, rows, dt)
     elif stt == "IMAGE":
         return _numpyRandImage(t, rows, dt, iw, ih, ir, ic)
+    else:
+        raise ValueError("Unsupported table type: {}".format(stt))
+
+
+# the non-optional arguments here need to be ONLY idx and cols
+@_passThrough
+def numpy_extract(t, idx, cols, dtype=np.float64, imageWidth=None, imageHeight=None, imageResize=True, imageColor=None):
+    """
+    Creates a numpy array from the table with only the allowed indices included
+
+    :param t: table or list of tables
+    :param idx: indices of the table to extract
+    :param dtype: numpy datatype or array of numpy datatypes to generate from the table(s)
+    :param imageWidth: width of the output image in pixels.
+    :param imageHeight: height of the output image in pixels.
+    :param imageResize: True to resize images; False otherwise.
+    :param imageColor: True to return color images; False to return gray-scale images.
+    :return: numpy data sampled from the input tables.  Scalar if one input table or tuple if input table list.
+    """
+
+    dt = _validateSize(t, dtype, 'dtype')
+    iw = _validateSize(t, imageWidth, 'imageWidth')
+    ih = _validateSize(t, imageHeight, 'imageHeight')
+    ir = _validateSize(t, imageResize, 'imageResize')
+    ic = _validateSize(t, imageColor, 'imageColor')
+
+    if _isSequence(t):
+        rst = []
+        s = None
+
+        for tt, dti, iwi, ihi, iri, ici in zip(t, dt, iw, ih, ir, ic):
+            if s is None:
+                s = tt.size()
+            elif s != tt.size():
+                raise ValueError("Tables are different sizes ({} != {})".format(s, tt.size()))
+
+            rst.append(numpy_slice(tt, rowStart, nRow, dtype=dti, imageWidth=iwi,
+                                   imageHeight=ihi, imageResize=iri, imageColor=ici))
+        return tuple(rst)
+
+    tt = _Java2NumpyCopy_.tableType(t)
+    stt = str(tt)
+
+    if stt == "NUMBER":
+        # need signature to be (idx, cols, dt)
+        return _numpyExtractNumber(t, idx, dt)
+    elif stt == "IMAGE":
+        # need signature to be (idx, cols, dt, iw, ih, ir, ic)
+        return _numpyExtractImage(t, idx, dt, iw, ih, ir, ic)
     else:
         raise ValueError("Unsupported table type: {}".format(stt))

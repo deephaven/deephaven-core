@@ -86,7 +86,7 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
     public void testRandRows() {
         final int nRow = 123;
         final long tSize = 56789;
-        final long[] idx = Java2NumpyCopy.randRows(nRow, tSize);
+        final long[] idx = Java2NumpyCopy.randRows(nRow, tSize, false);
         assertEquals(nRow, idx.length);
         for (long l : idx) {
             assertTrue(l >= 0 && l < tSize);
@@ -100,7 +100,47 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
         final int[] counts = new int[tSize];
 
         for (int i = 0; i < n; i++) {
-            final long[] idx = Java2NumpyCopy.randRows(nRow, tSize);
+            final long[] idx = Java2NumpyCopy.randRows(nRow, tSize, false);
+
+            for (long l : idx) {
+                counts[(int) l]++;
+            }
+        }
+
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+
+        for (int count : counts) {
+            min = count < min ? count : min;
+            max = count > max ? count : max;
+        }
+
+        final double expected = (double) (nRow) / (double) (tSize) * n;
+
+        System.out.println(expected + "," + min + "," + max);
+
+        final double tol = 0.1;
+        assertTrue((1 - tol) * expected < min && (1 + tol) * expected > max);
+    }
+
+    public void testRandRowsReplace() {
+        final int nRow = 123;
+        final long tSize = 56789;
+        final long[] idx = Java2NumpyCopy.randRows(nRow, tSize, true);
+        assertEquals(nRow, idx.length);
+        for (long l : idx) {
+            assertTrue(l >= 0 && l < tSize);
+        }
+    }
+
+    public void testRandRowsDistributionReplace() {
+        final int nRow = 210;
+        final int tSize = 100;
+        final int n = 100000;
+        final int[] counts = new int[tSize];
+
+        for (int i = 0; i < n; i++) {
+            final long[] idx = Java2NumpyCopy.randRows(nRow, tSize, true);
 
             for (long l : idx) {
                 counts[(int) l]++;
