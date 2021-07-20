@@ -148,84 +148,6 @@ data:
                   private_key:
                     filename: /etc/ssl/envoy/tls.key
 ---
-kind: DaemonSet
-apiVersion: apps/v1
-metadata:
-  labels:
-    app: envoy
-  name: envoy
-spec:
-  selector:
-    matchLabels:
-      app: envoy
-  template:
-    metadata:
-      labels:
-        app: envoy
-      name: envoy
-    spec:
-      hostIPC: true
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
-      containers:
-        - name: envoy
-          image: envoyproxy/envoy-dev:a1c5a5076e97e6cd3d4b725b6eeb645513c72092
-          command: ["/usr/local/bin/envoy"]
-          args:
-            - "--concurrency 4"
-            - "--config-path /etc/envoy/envoy.json"
-            - "--mode serve"
-          ports:
-            - containerPort: 10000
-              protocol: TCP
-            - containerPort: 9090
-              protocol: TCP
-          resources:
-            limits:
-              cpu: "1000m"
-              memory: "512Mi"
-            requests:
-              cpu: "100m"
-              memory: "64Mi"
-          volumeMounts:
-            - name: envoy-conf
-              mountPath: /etc/envoy
-      volumes:
-        - name: envoy-conf
-          configMap:
-            name: envoy
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  labels:
-    app: kubernetes-envoy-sds
-  name: kubernetes-envoy-sds
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kubernetes-envoy-sds
-  template:
-    metadata:
-      labels:
-        app: kubernetes-envoy-sds
-      name: kubernetes-envoy-sds
-    spec:
-      containers:
-        - name: kubernetes-envoy-sds
-          image: gcr.io/hightowerlabs/kubernetes-envoy-sds:0.0.1
-          imagePullPolicy: Always
-          args:
-            - "-http=0.0.0.0:10000"
-        - name: kubectl
-          image: gcr.io/google_containers/hyperkube:v1.7.2
-          command:
-            - "/hyperkube"
-          args:
-            - "kubectl"
-            - "proxy"
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -438,55 +360,55 @@ spec:
         # envoy: this should really be a stateful set / deployment instead of a container-within-this-pod.
         # As a stateful set, the container would be added automatically to all nodes, plus it would have stable addressing.
         #
-#        - name: envoy
-#          image: deephaven/envoy:local-build
-#          imagePullPolicy: IfNotPresent
-#          securityContext:
-#            privileged: false
-#          # Change tty to true if you want to be able to attach directly to the envoy process
-#          tty: false
-#          ports:
-#            - name: https
-#              containerPort: 8443
-#            - name: http
-#              containerPort: 8181
-#              protocol: TCP
-#              # haven't figured out readiness probe yet
-##          readinessProbe:
-##            httpGet:
-##              port: https
-##              httpHeaders:
-##                - name: x-envoy-livenessprobe
-##                  value: healthz
-##              path: /healthz
-##              scheme: HTTPS
-#          env:
-#          - name: CONTAINER_NAME
-#            value: envoy
-#          - name: HOST_IP
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: status.hostIP
-#          - name: MY_NODE_NAME
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: spec.nodeName
-#          - name: MY_POD_NAME
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: metadata.name
-#          - name: MY_POD_NAMESPACE
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: metadata.namespace
-#          - name: MY_POD_IP
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: status.podIP
-#          - name: MY_POD_SERVICE_ACCOUNT
-#            valueFrom:
-#              fieldRef:
-#                fieldPath: spec.serviceAccountName
-#          volumeMounts:
-#          - name: cred-cache
-#            mountPath: /root/.ssh
+        - name: envoy
+          image: deephaven/envoy:local-build
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to attach directly to the envoy process
+          tty: false
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: http
+              containerPort: 8181
+              protocol: TCP
+              # haven't figured out readiness probe yet
+#          readinessProbe:
+#            httpGet:
+#              port: https
+#              httpHeaders:
+#                - name: x-envoy-livenessprobe
+#                  value: healthz
+#              path: /healthz
+#              scheme: HTTPS
+          env:
+          - name: CONTAINER_NAME
+            value: envoy
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
