@@ -1,0 +1,264 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dh-local
+  labels:
+    run: dh-local
+spec:
+  # NodePort allows you to expose a port on, say, localhost minikube ip: `minikube service --url dh-local`
+  type: NodePort
+  # If you want to run localhost with tls, you may use one of two ways,
+  # assuming tls_port=8443
+  # 1) create a self signed certificate using any DNS name you would like, and accept security warnings in browser:
+  #    TODO: finish these instructions
+  # 2) use an existing cert for your domain.name
+  #    If you do not want to hack /etc/hosts or resolv.conf, pick a domain name and create a DNS A record pointing to 127.0.0.1
+  #    If using DNS to 127.0.0.1, port-forward from minikube to localhost:
+  #    kubectl port-forward pods/dh-local-6674d78b6-cc64l ${tls_port:-8443}:10000
+  #    Next, supply your certificates (directory is .gitignore'd)
+  #    cp tls.crt tls.key $deephaven_core_directory/demo/certs/
+  #    Then, forcibly restart your local cluster
+  #    { k delete deployment dh-local || true ; } && k apply -f ./pod-dh.yaml
+  #    Now, visit https://domain.name:8433 and rejoice.
+  ports:
+    -
+      name: envoy-client
+      port: 10000
+      targetPort: 10000
+      protocol: TCP
+      nodePort: 30080
+    -
+      name: envoy-admin
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+      nodePort: 30443
+  selector:
+    # This service runs a deployment. That deployment is dh-local, below:
+    run: dh-local
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dh-local
+spec:
+  selector:
+    matchLabels:
+      run: dh-local
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: dh-local
+    spec:
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: nginxsecret
+        - name: configmap-volume
+          configMap:
+            name: nginxconfigmap
+        - name: cred-cache
+          emptyDir:
+            medium: Memory
+
+      containers:
+
+        #
+        # grpc-api container.  Where all the stateful brains live
+        #
+        - name: grpc-api
+          image: deephaven/grpc-api:local-build
+          imagePullPolicy: Never
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: true
+          env:
+          - name: CONTAINER_NAME
+            value: grpc-api
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+          readinessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
+          livenessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+            initialDelaySeconds: 10
+            periodSeconds: 8
+
+        #
+        # grpc-proxy: turns http1 grpc web requests into http2 fit for grpc-api to consume
+        #
+        - name: grpc-proxy
+          image: deephaven/grpc-proxy:local-build
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to attach to the image entry point.
+          # you can still launch a tty shell with `kubectl -c grpc-proxy -it MY_POD_NAME_HERE -- bash`
+          # You can find MY_POD_NAME_HERE from `minikube dashboard` or, to find the newest pod containing name dh-local:
+          # fmt="jsonpath={range .items[*]}{.status.startTime}{'\t'}{.metadata.name}{'\n'}{end}"
+          # my_pod="$(kubectl get pods --sort-by=.metadata.creationTimestamp --no-headers -o="$fmt" | grep dh-local | tail -n 1)"
+          # kubectl -c grpc-proxy -it $my_pod -- bash
+          tty: false
+      #    resources:
+      #      # See: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node/resource-qos.md
+      #      limits:
+      #        # 4 cpus
+      #        cpu: '4000m'
+      #        # ~8G RAM
+      #        memory: '8000Mi'
+          env:
+          - name: BACKEND_ADDR
+            value: "localhost:8080"
+          - name: CONTAINER_NAME
+            value: grpc-proxy
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+
+
+        #
+        # web: serves the web ide and all static resources
+        #
+        - name: web
+          image: deephaven/web:local-build
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to shell into the box
+          tty: false
+          env:
+          - name: CONTAINER_NAME
+            value: web
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
+
+
+        #
+        # envoy: this should really be a stateful set / deployment instead of a container-within-this-pod.
+        # As a stateful set, the container would be added automatically to all nodes, plus it would have stable addressing.
+        #
+        - name: envoy
+          image: deephaven/envoy:local-build
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # Change tty to true if you want to be able to attach directly to the envoy process
+          tty: false
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: http
+              containerPort: 8181
+              protocol: TCP
+              # haven't figured out readiness probe yet
+#          readinessProbe:
+#            httpGet:
+#              port: https
+#              httpHeaders:
+#                - name: x-envoy-livenessprobe
+#                  value: healthz
+#              path: /healthz
+#              scheme: HTTPS
+          env:
+          - name: CONTAINER_NAME
+            value: envoy
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          volumeMounts:
+          - name: cred-cache
+            mountPath: /root/.ssh
