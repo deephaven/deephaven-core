@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
 import static io.deephaven.db.v2.locations.parquet.local.DeephavenStylePartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@link DeferredLegacyMetadataGroupingProvider} and {@link ParallelDeferredGroupingProvider}.
+ * Unit tests for {@link ParallelDeferredGroupingProvider}.
  */
 public class TestGroupingProviders {
 
@@ -62,47 +62,13 @@ public class TestGroupingProviders {
     }
 
     @Test
-    public void testSerialOrdering() {
-        final boolean oldSetting = GroupingProvider.getParallelizeRetrieval();
-        try {
-            GroupingProvider.setParallelizeRetrieval(false);
-            doTest(false);
-        } finally {
-            GroupingProvider.setParallelizeRetrieval(oldSetting);
-        }
-    }
-
-    @Test
     public void testParallelOrdering() {
-        final boolean oldSetting = GroupingProvider.getParallelizeRetrieval();
-        try {
-            GroupingProvider.setParallelizeRetrieval(true);
-            doTest(false);
-        } finally {
-            GroupingProvider.setParallelizeRetrieval(oldSetting);
-        }
-    }
-
-    @Test
-    public void testSerialMissingGroups() {
-        final boolean oldSetting = GroupingProvider.getParallelizeRetrieval();
-        try {
-            GroupingProvider.setParallelizeRetrieval(false);
-            doTest(true);
-        } finally {
-            GroupingProvider.setParallelizeRetrieval(oldSetting);
-        }
+        doTest(false);
     }
 
     @Test
     public void testParallelMissingGroups() {
-        final boolean oldSetting = GroupingProvider.getParallelizeRetrieval();
-        try {
-            GroupingProvider.setParallelizeRetrieval(true);
-            doTest(true);
-        } finally {
-            GroupingProvider.setParallelizeRetrieval(oldSetting);
-        }
+        doTest(true);
     }
 
     private void doTest(final boolean missingGroups) {
