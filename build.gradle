@@ -355,7 +355,7 @@ tasks.register 'allJavadoc', Javadoc, {
 
         //add to as javadoc gets completed
         String [] exportedProjects = [
-                ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api'
+                ':DataStructures', ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api'
         ]
         jdoc.source = exportedProjects.collect { Java.sourceSet(project(it)).allJava }
         jdoc.classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })
