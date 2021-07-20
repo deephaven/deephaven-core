@@ -77,7 +77,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
                 } else if (partitionValue instanceof Double || partitionValue instanceof Float) {
                     logOutput.appendDouble(((Number) partitionValue).doubleValue());
                 } else if (partitionValue instanceof Character) {
-                    logOutput.appendDouble((char) partitionValue);
+                    logOutput.append(((Character) partitionValue).charValue());
                 } else if (partitionValue instanceof LogOutputAppendable) {
                     logOutput.append((LogOutputAppendable) partitionValue);
                 } else {

@@ -26,7 +26,7 @@ class RegionedColumnSourcePartitioning
 
     @Override
     public ColumnRegionObject<String, Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation, int regionIndex) {
-        return new Constant(columnLocation.getTableLocation().getColumnPartition().toString());
+        return new Constant(columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName()).toString());
     }
 
     static final class Constant implements ColumnRegionObject<String, Attributes.Values>, Page.WithDefaultsForRepeatingValues<Attributes.Values> {

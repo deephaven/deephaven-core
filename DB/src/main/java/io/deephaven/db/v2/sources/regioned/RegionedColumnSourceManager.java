@@ -91,14 +91,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
     @Override
     public synchronized void addLocation(@NotNull final TableLocation tableLocation) {
-        final IncludedTableLocationEntry includedLocation = includedTableLocations.get(tableLocation);
-        final EmptyTableLocationEntry emptyLocation = emptyTableLocations.get(tableLocation);
+        final IncludedTableLocationEntry includedLocation = includedTableLocations.get(tableLocation.getKey());
+        final EmptyTableLocationEntry emptyLocation = emptyTableLocations.get(tableLocation.getKey());
 
         if (includedLocation == null && emptyLocation == null) {
             if (log.isDebugEnabled()) {
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
-            emptyTableLocations.put(tableLocation.getKey(), new EmptyTableLocationEntry(tableLocation));
+            emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
         } else {
             // Duplicate location - not allowed
             final TableLocation duplicateLocation = includedLocation != null ? includedLocation.location : emptyLocation.location;

@@ -12,10 +12,7 @@ import io.deephaven.db.tables.DataColumn;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.locations.TableDataException;
-import io.deephaven.db.v2.locations.TableLocation;
-import io.deephaven.db.v2.locations.TableLocationProvider;
-import io.deephaven.db.v2.locations.TableLocationSubscriptionBuffer;
+import io.deephaven.db.v2.locations.*;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
@@ -62,7 +59,6 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private static final String[] INTERNAL_PARTITIONS = {"0", "1", "2", "1", "0", "1"};
     private static final String[] COLUMN_PARTITIONS = {"D0", "D1", "D0", "D3", "D2", "D0"};
-    private static final Set<String> INCLUDED_INTERNAL_PARTITIONS = Collections.singleton("1");
 
     private static final long INDEX_INCREMENT = 1000;
 
@@ -72,6 +68,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     private DeferredGroupingColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
+    private ImmutableTableLocationKey[] tableLocationKeys;
     private TableLocation[] tableLocations;
 
     private TableLocationSubscriptionBuffer subscriptionBuffer;
@@ -101,6 +98,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             return mocked;
         }).toArray(DeferredGroupingColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
+        tableLocationKeys = IntStream.range(0, 6).mapToObj(tlki -> {
+            final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
+            partitions.put(PARTITIONING_COLUMN_DEFINITION.getName(), COLUMN_PARTITIONS[tlki]);
+            partitions.put("__IP__", INTERNAL_PARTITIONS[tlki]);
+            return new SimpleTableLocationKey(partitions);
+        }).toArray(ImmutableTableLocationKey[]::new);
         tableLocations = new TableLocation[]{
                 mock(TableLocation.class, "TL0"),
                 mock(TableLocation.class, "TL1"),
@@ -114,12 +117,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             will(returnValue(true));
             for (int li = 0; li < tableLocations.length; ++li) {
                 final TableLocation tableLocation = tableLocations[li];
+                allowing(locationProvider).getTableLocation(tableLocationKeys[li]);
+                will(returnValue(tableLocation));
+                allowing(tableLocation).getKey();
+                will(returnValue(tableLocationKeys[li]));
                 allowing(tableLocation).supportsSubscriptions();
                 will(returnValue(true));
-                allowing(tableLocation).getInternalPartition();
-                will(returnValue(INTERNAL_PARTITIONS[li]));
-                allowing(tableLocation).getColumnPartition();
-                will(returnValue(COLUMN_PARTITIONS[li]));
             }
         }});
         listener = mock(ShiftAwareListener.class);
@@ -132,7 +135,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         expectedIndex = Index.FACTORY.getEmptyIndex();
 
-        SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider, LiveTableMonitor.DEFAULT, INCLUDED_INTERNAL_PARTITIONS);
+        SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider, LiveTableMonitor.DEFAULT);
         assertIsSatisfied();
     }
 
@@ -149,27 +152,14 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         }
     }
 
-    private static ColumnDefinition<?>[] getIncludedColumnDefs(final int... indices) {
-        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci]).toArray(ColumnDefinition[]::new);
-    }
-
-    private static String[] getIncludedColumnNames(final int... indices) {
-        return IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).toArray(String[]::new);
-    }
-
-    private static String[] getExcludedColumnNames(final TableDefinition currentDef, final int... indices) {
-        final Set<String> includedNames = IntStream.of(indices).mapToObj(ci -> TABLE_DEFINITION.getColumns()[ci].getName()).collect(Collectors.toSet());
-        return currentDef.getColumnStream().map(ColumnDefinition::getName).filter(n -> !includedNames.contains(n)).toArray(String[]::new);
-    }
-
     private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices).mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci])).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
     }
 
-    private TableLocation[] locationsSlice(final int... indexes) {
-        TableLocation[] slice = new TableLocation[indexes.length];
+    private ImmutableTableLocationKey[] locationKeysSlice(final int... indexes) {
+        final ImmutableTableLocationKey[] slice = new ImmutableTableLocationKey[indexes.length];
         for (int ii = 0; ii < indexes.length; ++ii) {
-            slice[ii] = tableLocations[indexes[ii]];
+            slice[ii] = tableLocationKeys[indexes[ii]];
         }
         return slice;
     }
@@ -180,31 +170,31 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testInitialize() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
     }
 
     @Test
     public void testInitializeException() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), true, true);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), true, true);
     }
 
     @Test
     public void testRefreshUnchanged() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
         doRefreshUnchangedCheck();
     }
 
     @Test
     public void testRefreshChanged() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
         doRefreshChangedCheck();
-        doAddLocationsRefreshCheck(locationsSlice(5), makePassingLocations(5));
+        doAddLocationsRefreshCheck(locationKeysSlice(5), makePassingLocations(5));
     }
 
     @Test
     public void testRefreshException() {
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
-            doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
+            doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
             doRefreshExceptionCheck();
         }
     }
@@ -215,11 +205,11 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         UpdatingOpen
     }
 
-    private void doInitializeCheck(final TableLocation[] tableLocations, final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen) {
-        doInitializeCheck(tableLocations, expectPassFilters, throwException, coalesceAndListen, ConcurrentInstantiationType.Idle);
+    private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys, final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen) {
+        doInitializeCheck(tableLocationKeys, expectPassFilters, throwException, coalesceAndListen, ConcurrentInstantiationType.Idle);
     }
 
-    private void doInitializeCheck(final TableLocation[] tableLocations, final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen,
+    private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys, final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen,
                                    @NotNull final ConcurrentInstantiationType ciType) {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
@@ -231,7 +221,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 @Override
                 public Object invoke(Invocation invocation) {
                     subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
-                    Arrays.stream(tableLocations).forEach(subscriptionBuffer::handleTableLocation);
+                    Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
                     return null;
                 }
             });
@@ -278,13 +268,13 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testConcurrentInstantiationUpdating() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true, ConcurrentInstantiationType.UpdatingClosed);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true, ConcurrentInstantiationType.UpdatingClosed);
         doRefreshChangedCheck();
     }
 
     @Test
     public void testConcurrentInstantiationUpdatingWithInitialCycleRefresh() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true, ConcurrentInstantiationType.UpdatingOpen);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true, ConcurrentInstantiationType.UpdatingOpen);
         doRefreshChangedCheck();
     }
 
@@ -361,9 +351,9 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         assertIndexEquals(expectedIndex, SUT.getIndex());
     }
 
-    private void doAddLocationsRefreshCheck(final TableLocation[] tableLocations,
+    private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
                                             final Set<TableLocation> expectPassFilters) {
-        Arrays.stream(tableLocations).forEach(subscriptionBuffer::handleTableLocation);
+        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
 
         expectPassFilters.forEach(tl ->
                 checking(new Expectations() {{
@@ -536,7 +526,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     public void testSelectDistinctDate() {
         final Set<TableLocation> passedLocations = makePassingLocations(1, 3, 5);
         final String[] expectedDistinctDates = IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
-        doInitializeCheck(tableLocations, passedLocations, false, true);
+        doInitializeCheck(locationKeysSlice(1, 3, 5), passedLocations, false, true);
         passedLocations.forEach(tl ->
                 checking(new Expectations() {{
                     oneOf(tl).refresh();
@@ -560,7 +550,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testWhereDate() {
-        doInitializeCheck(tableLocations, makePassingLocations(5), false, false);
+        doInitializeCheck(locationKeysSlice(0, 2, 5), makePassingLocations(0, 2, 5), false, false);
         checking(new Expectations() {{
             oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY, TABLE_DEFINITION.getColumns());
             will(returnValue(columnSourceManager));
@@ -581,7 +571,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testWhereSize() {
-        doInitializeCheck(locationsSlice(0, 1, 2, 3, 4), makePassingLocations(1, 3), false, true);
+        doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
         checking(new Expectations() {{
             allowing(columnSources[3]).getInt(with(any(long.class)));
             will(returnValue(1));
@@ -610,7 +600,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testWhereDateSize() {
-        doInitializeCheck(tableLocations, makePassingLocations(5), false, false);
+        doInitializeCheck(tableLocationKeys, makePassingLocations(0, 2, 5), false, false);
         checking(new Expectations() {{
             oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY, TABLE_DEFINITION.getColumns());
             will(returnValue(columnSourceManager));

@@ -32,8 +32,6 @@ import java.util.stream.StreamSupport;
  */
 public class PartitionAwareSourceTable extends SourceTable {
 
-    public static final Set<String> ALL_INTERNAL_PARTITIONS = Collections.emptySet();
-
     private final Map<String, ColumnDefinition> partitioningColumnDefinitions;
     private final SelectFilter[] partitioningColumnFilters;
 
@@ -192,7 +190,7 @@ public class PartitionAwareSourceTable extends SourceTable {
     private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
 
     @SuppressWarnings("unchecked")
-    private static <T> ColumnSource<T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
+    private static <T> ColumnSource makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
         final Class<T> dataType = columnDefinition.getDataType();
         final T[] partitionValues = locationKeys.stream()
                 .map(lk -> (T) lk.getPartitionValue(columnDefinition.getName()))
@@ -210,11 +208,12 @@ public class PartitionAwareSourceTable extends SourceTable {
                 partitioningColumnDefinitions.keySet().stream(),
                 Stream.of(LOCATION_KEY_COLUMN_NAME)
         ).collect(Collectors.toList());
-        //noinspection unchecked
-        final List<ColumnSource> partitionTableColumnSources = Stream.concat(
-                partitioningColumnDefinitions.values().stream().map(pcd -> makePartitionSource(pcd, foundLocationKeys)),
-                Stream.of(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys, ImmutableTableLocationKey.class, null))
-        ).collect(Collectors.toList());
+        final List<ColumnSource> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size() + 1);
+        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
+            //noinspection unchecked
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, foundLocationKeys));
+        }
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys, ImmutableTableLocationKey.class, null));
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .where(partitioningColumnFilters);
@@ -292,10 +291,11 @@ public class PartitionAwareSourceTable extends SourceTable {
             return size != TableLocation.NULL_SIZE && size > 0;
         }).map(TableLocation::getKey).collect(Collectors.toList());
         final List<String> partitionTableColumnNames = new ArrayList<>(partitioningColumnDefinitions.keySet());
-        //noinspection unchecked
-        final List<ColumnSource> partitionTableColumnSources = partitioningColumnDefinitions.values().stream()
-                .map(pcd -> makePartitionSource(pcd, existingLocationKeys))
-                .collect(Collectors.toList());
+        final List<ColumnSource> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size());
+        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
+            //noinspection unchecked
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, existingLocationKeys));
+        }
         return TableTools
                 .newTable(existingLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .selectDistinct(columns);
