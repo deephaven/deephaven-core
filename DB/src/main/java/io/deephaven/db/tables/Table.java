@@ -44,6 +44,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
+    static QueryTable of(io.deephaven.qst.table.Table table) {
+        return TableCreationImpl.create(table);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
     // -----------------------------------------------------------------------------------------------------------------
@@ -2440,9 +2444,4 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
-
-    @Override
-    default Table toTable() {
-        return this;
-    }
 }

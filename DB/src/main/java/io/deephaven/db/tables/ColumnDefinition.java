@@ -5,12 +5,36 @@
 package io.deephaven.db.tables;
 
 import io.deephaven.base.Copyable;
+import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.datastructures.util.HashCodeUtil;
-import io.deephaven.db.tables.dbarrays.*;
+import io.deephaven.db.tables.dbarrays.DbArray;
+import io.deephaven.db.tables.dbarrays.DbArrayBase;
+import io.deephaven.db.tables.dbarrays.DbBooleanArray;
+import io.deephaven.db.tables.dbarrays.DbByteArray;
+import io.deephaven.db.tables.dbarrays.DbCharArray;
+import io.deephaven.db.tables.dbarrays.DbDoubleArray;
+import io.deephaven.db.tables.dbarrays.DbFloatArray;
+import io.deephaven.db.tables.dbarrays.DbIntArray;
+import io.deephaven.db.tables.dbarrays.DbLongArray;
+import io.deephaven.db.tables.dbarrays.DbShortArray;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.ByteType;
+import io.deephaven.qst.type.CharType;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LongType;
+import io.deephaven.qst.type.PrimitiveType;
+import io.deephaven.qst.type.ShortType;
+import io.deephaven.qst.type.StringType;
+import io.deephaven.qst.type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +42,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Column definition for all Deephaven columns.
@@ -187,6 +212,89 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         }
         cd.setComponentType(componentType);
         return cd;
+    }
+
+    public static ColumnDefinition<?> from(ColumnHeader<?> header) {
+        return header.type().walk(new ColumnHeaderTranslation(header)).getOut();
+    }
+
+    private static class ColumnHeaderTranslation implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
+
+        private final ColumnHeader<?> in;
+        private ColumnDefinition<?> out;
+
+        public ColumnHeaderTranslation(ColumnHeader<?> in) {
+            this.in = Objects.requireNonNull(in);
+        }
+
+        public ColumnDefinition<?> getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(PrimitiveType<?> primitiveType) {
+            primitiveType.walk((PrimitiveType.Visitor) this);
+        }
+
+        @Override
+        public void visit(GenericType<?> genericType) {
+            genericType.walk((GenericType.Visitor) this);
+        }
+
+        @Override
+        public void visit(BooleanType booleanType) {
+            out = ofBoolean(in.name());
+        }
+
+        @Override
+        public void visit(ByteType byteType) {
+            out = ofByte(in.name());
+        }
+
+        @Override
+        public void visit(CharType charType) {
+            out = ofChar(in.name());
+        }
+
+        @Override
+        public void visit(ShortType shortType) {
+            out = ofShort(in.name());
+        }
+
+        @Override
+        public void visit(IntType intType) {
+            out = ofInt(in.name());
+        }
+
+        @Override
+        public void visit(LongType longType) {
+            out = ofLong(in.name());
+        }
+
+        @Override
+        public void visit(FloatType floatType) {
+            out = ofFloat(in.name());
+        }
+
+        @Override
+        public void visit(DoubleType doubleType) {
+            out = ofDouble(in.name());
+        }
+
+        @Override
+        public void visit(StringType stringType) {
+            out = ofString(in.name());
+        }
+
+        @Override
+        public void visit(InstantType instantType) {
+            out = ofTime(in.name());
+        }
+
+        @Override
+        public void visit(CustomType<?> customType) {
+            out = fromGenericType(in.name(), customType.clazz()); // todo, array types
+        }
     }
 
     // needed for deserialization

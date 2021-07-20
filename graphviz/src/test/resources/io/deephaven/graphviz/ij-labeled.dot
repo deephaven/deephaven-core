@@ -1,0 +1,21 @@
+digraph {
+op_0 [label="time(PT1.234S)"]
+op_1 [label="view(I=i)"]
+op_2 [label="tail(1)"]
+op_3 [label="time(PT4.321S)"]
+op_4 [label="view(J=i)"]
+op_5 [label="tail(1)"]
+op_6 [label="naturalJoin([],[])"]
+op_1 -> op_0
+op_2 -> op_1
+op_4 -> op_3
+op_5 -> op_4
+op_6 -> op_2 [label="left"]
+op_6 -> op_5 [label="right"]
+arg_0 [shape=note label="i"]
+arg_0 -> op_2 [label="0"]
+arg_1 [shape=note label="j"]
+arg_1 -> op_5 [label="1"]
+arg_2 [shape=note label="ij"]
+arg_2 -> op_6 [label="2"]
+}

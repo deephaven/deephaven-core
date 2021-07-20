@@ -1,0 +1,29 @@
+package io.deephaven.qst.table;
+
+import io.deephaven.qst.SimpleStyle;
+import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
+
+@Immutable
+@SimpleStyle
+public abstract class LabeledTable {
+
+    public static LabeledTable of(String label, Table table) {
+        return ImmutableLabeledTable.of(label, table);
+    }
+
+    @Parameter
+    public abstract String label();
+
+    @Parameter
+    public abstract Table table();
+
+    @Check
+    final void checkNotEmpty() {
+        if (label().isEmpty()) {
+            throw new IllegalArgumentException(
+                "label is empty, must provide non-empty label for LabeledTable");
+        }
+    }
+}

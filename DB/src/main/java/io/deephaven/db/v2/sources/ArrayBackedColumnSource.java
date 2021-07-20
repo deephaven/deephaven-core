@@ -10,18 +10,55 @@ import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
-import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.sources.immutable.*;
+import io.deephaven.db.v2.sources.chunk.ByteChunk;
+import io.deephaven.db.v2.sources.chunk.CharChunk;
+import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.DefaultGetContext;
+import io.deephaven.db.v2.sources.chunk.DoubleChunk;
+import io.deephaven.db.v2.sources.chunk.FloatChunk;
+import io.deephaven.db.v2.sources.chunk.IntChunk;
+import io.deephaven.db.v2.sources.chunk.LongChunk;
+import io.deephaven.db.v2.sources.chunk.ObjectChunk;
+import io.deephaven.db.v2.sources.chunk.ResettableWritableChunk;
+import io.deephaven.db.v2.sources.chunk.ShortChunk;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.db.v2.sources.immutable.ImmutableBooleanArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableByteArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableCharArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableDoubleArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableFloatArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableLongArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableObjectArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ShiftData;
+import io.deephaven.qst.array.Array;
+import io.deephaven.qst.array.BooleanArray;
+import io.deephaven.qst.array.ByteArray;
+import io.deephaven.qst.array.CharArray;
+import io.deephaven.qst.array.DoubleArray;
+import io.deephaven.qst.array.FloatArray;
+import io.deephaven.qst.array.GenericArray;
+import io.deephaven.qst.array.IntArray;
+import io.deephaven.qst.array.LongArray;
+import io.deephaven.qst.array.PrimitiveArray;
+import io.deephaven.qst.array.ShortArray;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.GenericType.Visitor;
+import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.StringType;
 import io.deephaven.util.SoftRecycler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.
@@ -85,6 +122,18 @@ public abstract class ArrayBackedColumnSource<T>
     static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[IN_USE_BLOCK_SIZE],
             block -> Arrays.fill(block, 0));
+
+    public static ArrayBackedColumnSource<?> from(Array<?> array) {
+        return array.walk(new ArrayAdapter<>()).getOut();
+    }
+
+    public static <T> ArrayBackedColumnSource<T> from(PrimitiveArray<T> array) {
+        ArrayAdapter<T> adapter = new ArrayAdapter<>();
+        array.walk((PrimitiveArray.Visitor) adapter);
+        //noinspection unchecked
+        return (ArrayBackedColumnSource<T>) adapter.getOut();
+    }
+
 
     /**
      * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
@@ -614,5 +663,149 @@ public abstract class ArrayBackedColumnSource<T>
         }
 
         return getChunkByFilling(context, orderedKeys);
+    }
+
+    private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {
+        private ArrayBackedColumnSource<?> out;
+
+        public ArrayBackedColumnSource<?> getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(PrimitiveArray<?> primitive) {
+            primitive.walk((PrimitiveArray.Visitor) this);
+        }
+
+        @Override
+        public void visit(ByteArray byteArray) {
+            ByteArraySource source = new ByteArraySource();
+            source.ensureCapacity(byteArray.size(), false);
+            int ix = 0;
+            for (byte value : byteArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(BooleanArray booleanArray) {
+            BooleanArraySource source = new BooleanArraySource();
+            source.ensureCapacity(booleanArray.size(), false);
+            int ix = 0;
+            for (byte value : booleanArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(CharArray charArray) {
+            CharacterArraySource source = new CharacterArraySource();
+            source.ensureCapacity(charArray.size(), false);
+            int ix = 0;
+            for (char value : charArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(ShortArray shortArray) {
+            ShortArraySource source = new ShortArraySource();
+            source.ensureCapacity(shortArray.size(), false);
+            int ix = 0;
+            for (short value : shortArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(IntArray intArray) {
+            IntegerArraySource source = new IntegerArraySource();
+            source.ensureCapacity(intArray.size(), false);
+            int ix = 0;
+            for (int value : intArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(LongArray longArray) {
+            LongArraySource source = new LongArraySource();
+            source.ensureCapacity(longArray.size(), false);
+            int ix = 0;
+            for (long value : longArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(FloatArray floatArray) {
+            FloatArraySource source = new FloatArraySource();
+            source.ensureCapacity(floatArray.size(), false);
+            int ix = 0;
+            for (float value : floatArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(DoubleArray doubleArray) {
+            DoubleArraySource source = new DoubleArraySource();
+            source.ensureCapacity(doubleArray.size(), false);
+            int ix = 0;
+            for (double value : doubleArray.values()) {
+                source.set(ix++, value);
+            }
+            out = source;
+        }
+
+        @Override
+        public void visit(GenericArray<?> generic) {
+            generic.type().walk(new Visitor() {
+                @Override
+                public void visit(StringType stringType) {
+                    out = objectArraySource(String.class, generic.cast(stringType));
+                }
+
+                @Override
+                public void visit(InstantType instantType) {
+                    DateTimeArraySource source = new DateTimeArraySource();
+                    source.ensureCapacity(generic.size());
+                    int ix = 0;
+                    for (Instant value : generic.cast(instantType).values()) {
+                        if (value == null) {
+                            source.set(ix++, null);
+                        } else {
+                            long nanos = Math.addExact(Math.multiplyExact(value.getEpochSecond(), 1_000_000_000L), value.getNano());
+                            source.set(ix++, nanos);
+                        }
+                    }
+                    out = source;
+                }
+
+                @Override
+                public void visit(CustomType<?> customType) {
+                    //noinspection unchecked
+                    CustomType<T> tType = (CustomType<T>)customType;
+                    out = objectArraySource(tType.clazz(), generic.cast(tType));
+                }
+            });
+        }
+
+        private static <O> ObjectArraySource<O> objectArraySource(Class<O> clazz, GenericArray<O> generic) {
+            ObjectArraySource<O> source = new ObjectArraySource<>(clazz);
+            source.ensureCapacity(generic.size());
+            int ix = 0;
+            for (O value : generic.values()) {
+                source.set(ix++, value);
+            }
+            return source;
+        }
     }
 }
