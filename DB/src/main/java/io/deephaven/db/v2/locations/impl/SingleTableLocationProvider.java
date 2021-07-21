@@ -1,5 +1,6 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
+import io.deephaven.db.v2.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

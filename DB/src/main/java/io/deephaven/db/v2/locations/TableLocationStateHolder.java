@@ -19,7 +19,7 @@ public class TableLocationStateHolder implements TableLocationState {
         this.lastModifiedTimeMillis = lastModifiedTimeMillis;
     }
 
-    protected TableLocationStateHolder() {
+    public TableLocationStateHolder() {
         this(NULL_SIZE, NULL_TIME);
     }
 

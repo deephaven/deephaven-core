@@ -1,4 +1,4 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.util.SafeCloseable;

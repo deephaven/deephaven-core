@@ -7,6 +7,7 @@ package io.deephaven.db.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.db.tables.Table;

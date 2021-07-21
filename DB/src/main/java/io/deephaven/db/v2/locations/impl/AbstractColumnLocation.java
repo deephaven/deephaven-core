@@ -1,6 +1,8 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.TableLocation;
 import org.jetbrains.annotations.NotNull;
 
 /**

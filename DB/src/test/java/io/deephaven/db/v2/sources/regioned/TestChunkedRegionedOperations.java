@@ -17,7 +17,7 @@ import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.locations.parquet.local.DeephavenStylePartitionLayout;
+import io.deephaven.db.v2.locations.local.DeephavenStylePartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
-import static io.deephaven.db.v2.locations.parquet.local.DeephavenStylePartitionLayout.PARQUET_FILE_NAME;
+import static io.deephaven.db.v2.locations.local.DeephavenStylePartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -261,7 +261,7 @@ public class TestChunkedRegionedOperations {
                 );
 
         actual = ParquetTools.readMultiFileTable(
-                new DeephavenStylePartitionLayout(dataDirectory, tableName, "PC", null),
+                DeephavenStylePartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition
         ).updateView(

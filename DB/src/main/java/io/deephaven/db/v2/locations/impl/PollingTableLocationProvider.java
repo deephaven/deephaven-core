@@ -1,50 +1,33 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
+import io.deephaven.db.v2.locations.TableKey;
+import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableLocationKey;
+import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
-import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Polling-driven {@link TableLocationProvider} implementation that delegates location discovery and creation to a
- * {@link Scanner} instance.
+ * Polling-driven {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
+ * discovery to a {@link TableLocationKeyFinder} and {@link TableLocation location} creation to a
+ * {@link TableLocationFactory}.
  */
-public class PollingTableLocationProvider extends AbstractTableLocationProvider {
+public class PollingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey> extends AbstractTableLocationProvider {
 
-    /**
-     * Scanner to handle location discover and creation.
-     */
-    public interface Scanner {
-
-        /**
-         * Scan for available {@link TableLocationKey}s and deliver them to the observer.
-         *
-         * @param locationKeyObserver Callback for key delivery
-         */
-        void scanAll(@NotNull Consumer<TableLocationKey> locationKeyObserver);
-
-        /**
-         * Manufacture a {@link TableLocation} from the supplied key, which must have come from this scanner
-         *
-         * @param tableKey    The {@link TableKey} for the provider using this scanner instance
-         * @param locationKey The {@link TableLocationKey} (or an immutable equivalent), previously discovered via
-         *                    {@link #scanAll(Consumer)}
-         * @return A new or cached {@link TableLocation} identified by the supplied {@link TableLocationKey}
-         */
-        TableLocation makeLocation(@NotNull final TableKey tableKey, @NotNull TableLocationKey locationKey);
-    }
-
-    private final Scanner scanner;
+    private final TableLocationKeyFinder<TLK> locationKeyFinder;
+    private final TableLocationFactory<TK, TLK> locationFactory;
     private final TableDataRefreshService refreshService;
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
 
-    public PollingTableLocationProvider(@NotNull final TableKey tableKey,
-                                        @NotNull final Scanner scanner,
+    public PollingTableLocationProvider(@NotNull final TK tableKey,
+                                        @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
+                                        @NotNull final TableLocationFactory<TK, TLK> locationFactory,
                                         @Nullable final TableDataRefreshService refreshService) {
         super(tableKey, refreshService != null);
-        this.scanner = scanner;
+        this.locationKeyFinder = locationKeyFinder;
+        this.locationFactory = locationFactory;
         this.refreshService = refreshService;
     }
 
@@ -59,14 +42,15 @@ public class PollingTableLocationProvider extends AbstractTableLocationProvider 
 
     @Override
     public void refresh() {
-        scanner.scanAll(this::handleTableLocationKey);
+        locationKeyFinder.findKeys(this::handleTableLocationKey);
         setInitialized();
     }
 
     @Override
     @NotNull
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
-        return scanner.makeLocation(getKey(), locationKey);
+        //noinspection unchecked
+        return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, refreshService);
     }
 
     //------------------------------------------------------------------------------------------------------------------

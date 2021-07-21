@@ -7,6 +7,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
 import io.deephaven.db.v2.locations.parquet.*;
 import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetInstructions;

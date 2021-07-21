@@ -1,5 +1,7 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
+import io.deephaven.db.v2.locations.BasicTableDataListener;
+import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.util.datastructures.SubscriptionSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

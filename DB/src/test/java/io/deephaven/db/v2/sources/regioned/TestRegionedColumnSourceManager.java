@@ -4,6 +4,8 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.SimpleTableLocationKey;
+import io.deephaven.db.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import gnu.trove.map.TIntIntMap;

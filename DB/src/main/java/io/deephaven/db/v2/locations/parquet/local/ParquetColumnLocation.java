@@ -7,7 +7,7 @@ package io.deephaven.db.v2.locations.parquet.local;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.v2.locations.AbstractColumnLocation;
+import io.deephaven.db.v2.locations.impl.AbstractColumnLocation;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
 import io.deephaven.db.v2.sources.chunk.*;

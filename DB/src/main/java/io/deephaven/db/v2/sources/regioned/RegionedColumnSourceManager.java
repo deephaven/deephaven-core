@@ -5,6 +5,7 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.ColumnToCodecMappings;
+import io.deephaven.db.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;

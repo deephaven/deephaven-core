@@ -13,8 +13,12 @@ import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.v2.PartitionAwareSourceTable;
 import io.deephaven.db.v2.locations.*;
-import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationScanner;
-import io.deephaven.db.v2.locations.parquet.local.SingleFileLayout;
+import io.deephaven.db.v2.locations.impl.TableLocationKeyFinder;
+import io.deephaven.db.v2.locations.impl.PollingTableLocationProvider;
+import io.deephaven.db.v2.locations.impl.StandaloneTableKey;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationFactory;
+import io.deephaven.db.v2.locations.local.SingleParquetFileLayout;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -370,9 +374,10 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final TableLocationProvider locationProvider = new PollingTableLocationProvider(
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
-                new ParquetTableLocationScanner(new SingleFileLayout(sourceFile), readInstructions),
+                new SingleParquetFileLayout(sourceFile),
+                new ParquetTableLocationFactory(readInstructions),
                 null);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -381,20 +386,21 @@ public class ParquetTools {
     /**
      * Reads in a table from files discovered with {@code locationKeyFinder} using the provided table definition.
      *
-     * @param locationKeyFinder The source of {@link TableLocationKey location keys} to include
+     * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions  Instructions for customizations while reading
      * @param tableDefinition    The table's {@link TableDefinition definition}
      * @return The table
      */
     public static Table readMultiFileTable(
-            @NotNull final ParquetTableLocationScanner.LocationKeyFinder locationKeyFinder,
+            @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final TableLocationProvider locationProvider = new PollingTableLocationProvider(
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
-                new ParquetTableLocationScanner(locationKeyFinder, readInstructions),
+                locationKeyFinder,
+                new ParquetTableLocationFactory(readInstructions),
                 null);
-        return new PartitionAwareSourceTable(tableDefinition, "Read multiple parquet file with " + locationKeyFinder,
+        return new PartitionAwareSourceTable(tableDefinition, "Read multiple parquet files with " + locationKeyFinder,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 

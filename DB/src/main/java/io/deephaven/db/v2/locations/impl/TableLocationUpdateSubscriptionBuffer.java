@@ -2,9 +2,12 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableLocationState;
 import org.jetbrains.annotations.NotNull;
 
 /**

@@ -2,13 +2,15 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.KeyRangeGroupingProvider;
 import io.deephaven.db.v2.utils.CurrentOnlyIndex;
 import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
@@ -20,13 +22,13 @@ import java.util.stream.Collectors;
 /**
  * Grouping provider that loads column location metadata and assembles grouping indexes lazily on demand.
  */
-class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGroupingProvider<DATA_TYPE> {
+public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGroupingProvider<DATA_TYPE> {
 
     private static final boolean SORT_RANGES = false;
 
     private final ColumnDefinition<DATA_TYPE> columnDefinition;
 
-    ParallelDeferredGroupingProvider(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
+    public ParallelDeferredGroupingProvider(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
         this.columnDefinition = columnDefinition;
     }
 

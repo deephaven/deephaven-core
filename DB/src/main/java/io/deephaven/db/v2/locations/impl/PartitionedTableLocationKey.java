@@ -1,8 +1,10 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.db.util.DhObjectComparisons;
+import io.deephaven.db.v2.locations.ImmutableTableLocationKey;
+import io.deephaven.db.v2.locations.UnknownPartitionKeyException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

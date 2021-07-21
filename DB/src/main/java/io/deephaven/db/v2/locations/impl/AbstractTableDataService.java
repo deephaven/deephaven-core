@@ -1,5 +1,8 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
+import io.deephaven.db.v2.locations.TableDataService;
+import io.deephaven.db.v2.locations.TableKey;
+import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.type.NamedImplementation;

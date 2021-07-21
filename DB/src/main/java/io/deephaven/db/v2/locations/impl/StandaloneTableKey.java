@@ -1,6 +1,9 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.db.v2.locations.ImmutableTableKey;
+import io.deephaven.db.v2.locations.TableDataService;
+import io.deephaven.db.v2.locations.TableKey;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.concurrent.Immutable;

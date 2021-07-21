@@ -1,5 +1,9 @@
-package io.deephaven.db.v2.locations;
+package io.deephaven.db.v2.locations.impl;
 
+import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.TableKey;
+import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
 /**

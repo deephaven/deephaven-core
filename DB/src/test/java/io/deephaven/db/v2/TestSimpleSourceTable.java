@@ -11,6 +11,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import org.junit.After;

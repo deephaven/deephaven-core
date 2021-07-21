@@ -13,6 +13,8 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.SimpleTableLocationKey;
+import io.deephaven.db.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.sources.LogicalClock;
