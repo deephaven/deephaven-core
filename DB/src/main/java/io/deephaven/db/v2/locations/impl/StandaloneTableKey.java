@@ -14,7 +14,7 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public final class StandaloneTableKey implements ImmutableTableKey {
 
-    private static final String NAME = StandaloneTableKey.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = StandaloneTableKey.class.getSimpleName();
 
     private static final TableKey INSTANCE = new StandaloneTableKey();
 
@@ -27,17 +27,17 @@ public final class StandaloneTableKey implements ImmutableTableKey {
 
     @Override
     public String getImplementationName() {
-        return NAME;
+        return IMPLEMENTATION_NAME;
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append(NAME);
+        return logOutput.append(IMPLEMENTATION_NAME);
     }
 
     @Override
     public String toString() {
-        return NAME;
+        return IMPLEMENTATION_NAME;
     }
 
     @Override

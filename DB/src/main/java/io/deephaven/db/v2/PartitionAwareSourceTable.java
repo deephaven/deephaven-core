@@ -13,6 +13,7 @@ import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
@@ -29,6 +30,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * A source table that can filter partitions before coalescing.
+ * Refer to {@link TableLocationKey} for an explanation of partitioning.
  */
 public class PartitionAwareSourceTable extends SourceTable {
 

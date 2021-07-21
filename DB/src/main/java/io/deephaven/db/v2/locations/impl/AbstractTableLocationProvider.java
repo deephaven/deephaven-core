@@ -10,13 +10,12 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Partial {@link TableLocationProvider} implementation for use standalone or as part of {@link TableDataService}
- * implementations.
+ * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
  * <p>
- * It implements an interface similar to {@link TableLocationProvider.Listener} for implementation classes to use when
- * communicating with the parent.
+ * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when
+ * communicating with the parent; see {@link #handleTableLocationKey(TableLocationKey)}.
  * <p>
- * Note that implementations are responsible for determining when it's appropriate to call {@link #setInitialized()}
+ * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()}
  * and/or override {@link #doInitialization()}.
  */
 public abstract class AbstractTableLocationProvider
@@ -26,8 +25,13 @@ public abstract class AbstractTableLocationProvider
     private final ImmutableTableKey tableKey;
 
     /**
-     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation} if we've been asked to provide the
-     * location in question (or if the key is the location).
+     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are {@link TableLocation}s
+     * if:
+     * <ol>
+     *     <li>The location has been requested via {@link #getTableLocation(TableLocationKey)} or
+     *     {@link #getTableLocationIfPresent(TableLocationKey)}</li>
+     *     <li>The {@link TableLocationKey} <em>is</em> a {@link TableLocation}</li>
+     * </ol>
      */
     private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
     @SuppressWarnings("unchecked")
@@ -80,23 +84,23 @@ public abstract class AbstractTableLocationProvider
      * Deliver a possibly-new key.
      *
      * @param locationKey The new key
-     * @apiNote This method is intended to be used by implementation classes or by tightly-coupled discovery tools.
+     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
      */
     protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
-        if (supportsSubscriptions()) {
-            synchronized (subscriptions) {
-                // Since we're holding the lock on subscriptions, the following code is overly complicated - we could
-                // certainly just deliver the notification in observeInsert. That said, I'm happier with this approach,
-                // as it minimizes lock duration for tableLocations, exemplifies correct use of putIfAbsent, and keeps
-                // observeInsert out of the business of subscription processing.
-                locationCreatedRecorder = false;
-                final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
-                if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
-                    onEmpty();
-                }
-            }
-        } else {
+        if (!supportsSubscriptions()) {
             tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
+            return;
+        }
+        synchronized (subscriptions) {
+            // Since we're holding the lock on subscriptions, the following code is overly complicated - we could
+            // certainly just deliver the notification in observeInsert. That said, I'm happier with this approach,
+            // as it minimizes lock duration for tableLocations, exemplifies correct use of putIfAbsent, and keeps
+            // observeInsert out of the business of subscription processing.
+            locationCreatedRecorder = false;
+            final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
+            if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
+                onEmpty();
+            }
         }
     }
 
@@ -166,6 +170,12 @@ public abstract class AbstractTableLocationProvider
     @Nullable
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
         Object current = tableLocations.get(tableLocationKey);
+        if (current == null) {
+            return null;
+        }
+        // See JavaDoc on tableLocations for background.
+        // The intent is to create a TableLocation exactly once to replace the TableLocationKey placeholder that was
+        // added in handleTableLocationKey.
         if (current instanceof TableLocation) {
             return (TableLocation) current;
         }
@@ -180,10 +190,9 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    // Key definition implementation
-    //------------------------------------------------------------------------------------------------------------------
-
+    /**
+     * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.
+     */
     private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, Object> {
 
         private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE = new LocationKeyDefinition();

@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
  */
 public class FilteredTableDataService extends AbstractTableDataService {
 
+    private static final String IMPLEMENTATION_NAME = FilteredTableDataService.class.getSimpleName();
+
     private final TableDataService serviceToFilter;
     private final LocationKeyFilter locationKeyFilter;
 
@@ -180,7 +182,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
     @Override
     public String getImplementationName() {
-        return "FilteredTableDataService";
+        return IMPLEMENTATION_NAME;
     }
 
     @Override

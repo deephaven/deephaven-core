@@ -14,6 +14,8 @@ import java.util.Map;
  */
 public final class ParquetTableLocationKey extends FileTableLocationKey {
 
+    private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
+
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
@@ -36,6 +38,6 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
 
     @Override
     public String getImplementationName() {
-        return "ParquetTableLocationKey";
+        return IMPLEMENTATION_NAME;
     }
 }

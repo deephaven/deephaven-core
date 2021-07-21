@@ -32,8 +32,8 @@ public abstract class AbstractTableDataService implements TableDataService, Name
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull
-    final TableLocationProvider getTableLocationProvider(@NotNull final TableKey tableKey) {
+    @NotNull
+    public final TableLocationProvider getTableLocationProvider(@NotNull final TableKey tableKey) {
         return tableLocationProviders.putIfAbsent(tableKey, this::makeTableLocationProvider);
     }
 
@@ -55,10 +55,9 @@ public abstract class AbstractTableDataService implements TableDataService, Name
         return name;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
-    // Default key definition implementation
-    //------------------------------------------------------------------------------------------------------------------
-
+    /**
+     * Key definition for {@link TableLocationProvider} lookup by {@link TableKey}.
+     */
     private static final class ProviderKeyDefinition extends KeyedObjectKey.Basic<TableKey, TableLocationProvider> {
 
         private static final KeyedObjectKey<TableKey, TableLocationProvider> INSTANCE = new ProviderKeyDefinition();

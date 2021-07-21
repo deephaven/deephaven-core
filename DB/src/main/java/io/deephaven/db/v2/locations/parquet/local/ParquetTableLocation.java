@@ -35,6 +35,8 @@ import java.util.function.Function;
 
 class ParquetTableLocation extends AbstractTableLocation {
 
+    private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
     private final File parquetFile;
     private final ParquetInstructions readInstructions;
 
@@ -86,6 +88,11 @@ class ParquetTableLocation extends AbstractTableLocation {
         }
 
         handleUpdate(rowGroupReader == null ? 0 : rowGroupReader.numRows(), parquetFile.lastModified());
+    }
+
+    @Override
+    public String getImplementationName() {
+        return IMPLEMENTATION_NAME;
     }
 
     @Override

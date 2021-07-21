@@ -4,7 +4,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.db.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey;
 import io.deephaven.db.v2.locations.TableLocationKey;
-import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +18,8 @@ import java.util.Map;
  * prevent equality with other {@link FileTableLocationKey} implementations.
  */
 public class FileTableLocationKey extends PartitionedTableLocationKey {
+
+    private static final String IMPLEMENTATION_NAME = FileTableLocationKey.class.getSimpleName();
 
     protected final File file;
 
@@ -94,6 +95,6 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
 
     @Override
     public String getImplementationName() {
-        return "FileTableLocationKey";
+        return IMPLEMENTATION_NAME;
     }
 }

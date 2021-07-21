@@ -30,6 +30,8 @@ import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_I
 
 final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation {
 
+    private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
     private static final int CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
 
     /**
@@ -60,6 +62,11 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     //------------------------------------------------------------------------------------------------------------------
     // AbstractColumnLocation implementation
     //------------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public String getImplementationName() {
+        return IMPLEMENTATION_NAME;
+    }
 
     @Override
     public final boolean exists() {
@@ -183,21 +190,23 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     }
 
     private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
-        try {
-            if (pageStoreCreator != null) {
-                synchronized (this) {
-                    if (pageStoreCreator != null) {
-                        final ColumnChunkPageStore.Values<ATTR> values = pageStoreCreator.get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
-                        pageStore = values.pageStore;
-                        dictionary = values.dictionary;
-                        dictionaryKeysPageStore = values.dictionaryKeysPageStore;
-                        getMetadata = values.getMetadata;
-                        pageStoreCreator = null;
-                    }
-                }
+        if (pageStoreCreator == null) {
+            return;
+        }
+        synchronized (this) {
+            if (pageStoreCreator == null) {
+                return;
             }
-        } catch (IOException except) {
-            throw new TableDataException("IO error reading parquet file in " + this, except);
+            try {
+                final ColumnChunkPageStore.Values<ATTR> values = pageStoreCreator.get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+                pageStore = values.pageStore;
+                dictionary = values.dictionary;
+                dictionaryKeysPageStore = values.dictionaryKeysPageStore;
+                getMetadata = values.getMetadata;
+                pageStoreCreator = null;
+            } catch (IOException except) {
+                throw new TableDataException("IO error reading parquet file in " + this, except);
+            }
         }
     }
 
@@ -218,31 +227,32 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         }
 
         public Object get() {
-            if (metaData == null) {
-                synchronized (this) {
-                    if (metaData == null) {
+            if (metaData != null) {
+                return metaData;
+            }
+            synchronized (this) {
+                if (metaData != null) {
+                    return metaData;
+                }
+                final int numRows = (int) keyColumn.length();
 
-                        final int numRows = (int) keyColumn.length();
+                try (final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
+                     final BuildGrouping buildGrouping = BuildGrouping.builder(firstColumn.getChunkType(), numRows);
+                     final ChunkSource.GetContext keyContext = keyColumn.makeGetContext(CHUNK_SIZE);
+                     final ChunkSource.GetContext firstContext = firstColumn.makeGetContext(CHUNK_SIZE);
+                     final ChunkSource.GetContext lastContext = lastColumn.makeGetContext(CHUNK_SIZE);
+                     final OrderedKeys rows = OrderedKeys.forRange(0, numRows - 1);
+                     final OrderedKeys.Iterator rowsIterator = rows.getOrderedKeysIterator()) {
 
-                        try (final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
-                             final BuildGrouping buildGrouping = BuildGrouping.builder(firstColumn.getChunkType(), numRows);
-                             final ChunkSource.GetContext keyContext = keyColumn.makeGetContext(CHUNK_SIZE);
-                             final ChunkSource.GetContext firstContext = firstColumn.makeGetContext(CHUNK_SIZE);
-                             final ChunkSource.GetContext lastContext = lastColumn.makeGetContext(CHUNK_SIZE);
-                             final OrderedKeys rows = OrderedKeys.forRange(0, numRows - 1);
-                             final OrderedKeys.Iterator rowsIterator = rows.getOrderedKeysIterator()) {
+                    while (rowsIterator.hasMore()) {
+                        final OrderedKeys chunkRows = rowsIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
 
-                            while (rowsIterator.hasMore()) {
-                                final OrderedKeys chunkRows = rowsIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
-
-                                buildGrouping.build(boxerKernel.box(keyColumn.getChunk(keyContext, chunkRows)),
-                                        firstColumn.getChunk(firstContext, chunkRows),
-                                        lastColumn.getChunk(lastContext, chunkRows));
-                            }
-
-                            metaData = buildGrouping.getGrouping();
-                        }
+                        buildGrouping.build(boxerKernel.box(keyColumn.getChunk(keyContext, chunkRows)),
+                                firstColumn.getChunk(firstContext, chunkRows),
+                                lastColumn.getChunk(lastContext, chunkRows));
                     }
+
+                    metaData = buildGrouping.getGrouping();
                 }
             }
             return metaData;

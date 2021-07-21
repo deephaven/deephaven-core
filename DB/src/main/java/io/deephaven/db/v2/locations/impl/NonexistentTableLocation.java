@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class NonexistentTableLocation extends AbstractTableLocation {
 
-    private static final String NAME = NonexistentTableLocation.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = NonexistentTableLocation.class.getSimpleName();
 
     public NonexistentTableLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
         super(tableKey, tableLocationKey, false);
@@ -19,7 +19,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
 
     @Override
     public String getImplementationName() {
-        return NAME;
+        return IMPLEMENTATION_NAME;
     }
 
     @Override

@@ -10,7 +10,7 @@ import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.locations.local.DeephavenStylePartitionLayout;
+import io.deephaven.db.v2.locations.local.DeephavenNestedPartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -25,7 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.db.v2.locations.local.DeephavenStylePartitionLayout.PARQUET_FILE_NAME;
+import static io.deephaven.db.v2.locations.local.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
  * Unit tests for {@link ParallelDeferredGroupingProvider}.
@@ -123,7 +123,7 @@ public class TestGroupingProviders {
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed by by()/ungroup() above, restore it here.
 
         final Table actual = ParquetTools.readMultiFileTable(
-                DeephavenStylePartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition
         ).coalesce();

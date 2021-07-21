@@ -25,8 +25,9 @@ import java.util.stream.Stream;
 
 /**
  * {@link LocalTableMap} of single-location {@link SourceTable}s keyed by {@link TableLocationKey}.
+ * Refer to {@link TableLocationKey} for an explanation of partitioning.
  */
-class SourceTableMap extends LocalTableMap {
+public class SourceTableMap extends LocalTableMap {
 
     private final UnaryOperator<Table> applyTablePermissions;
     private final TableLocationProvider tableLocationProvider;

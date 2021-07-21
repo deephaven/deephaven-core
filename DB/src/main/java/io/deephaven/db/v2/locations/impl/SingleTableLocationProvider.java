@@ -12,6 +12,8 @@ import java.util.Collections;
  */
 public final class SingleTableLocationProvider implements TableLocationProvider {
 
+    private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();
+
     private final TableLocation tableLocation;
 
     /**
@@ -19,6 +21,11 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
      */
     public SingleTableLocationProvider(@NotNull final TableLocation tableLocation) {
         this.tableLocation = tableLocation;
+    }
+
+    @Override
+    public String getImplementationName() {
+        return IMPLEMENTATION_NAME;
     }
 
     @Override

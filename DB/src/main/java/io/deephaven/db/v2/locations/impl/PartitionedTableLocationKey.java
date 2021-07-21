@@ -36,7 +36,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
     }
 
     @Override
-    public final <PARTITION_VALUE_TYPE> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey) {
+    public final <PARTITION_VALUE_TYPE extends Comparable<PARTITION_VALUE_TYPE>> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey) {
         final Object partitionValue = partitions.getOrDefault(partitionKey, MISSING_PARTITION_VALUE);
         if (partitionValue == MISSING_PARTITION_VALUE) {
             throw new UnknownPartitionKeyException(partitionKey, this);
@@ -110,18 +110,22 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
         private PartitionsComparator() {
         }
 
-        @Override
-        public int compare(final Map<String, Comparable<?>> p1, final Map<String, Comparable<?>> p2) {
-            final int p1Size = Objects.requireNonNull(p1).size();
-            final int p2Size = Objects.requireNonNull(p2).size();
+        private static void checkSizeMismatch(@NotNull final Map<String, Comparable<?>> p1,
+                                              final int p1Size,
+                                              @NotNull final Map<String, Comparable<?>> p2,
+                                              final int p2Size) {
             if (p1Size > p2Size) {
                 //noinspection OptionalGetWithoutIsPresent
                 throw new UnknownPartitionKeyException(p1.keySet().stream().filter(pk -> !p2.containsKey(pk)).findFirst().get());
             }
-            if (p2Size > p1Size) {
-                //noinspection OptionalGetWithoutIsPresent
-                throw new UnknownPartitionKeyException(p2.keySet().stream().filter(pk -> !p1.containsKey(pk)).findFirst().get());
-            }
+        }
+
+        @Override
+        public int compare(final Map<String, Comparable<?>> p1, final Map<String, Comparable<?>> p2) {
+            final int p1Size = Objects.requireNonNull(p1).size();
+            final int p2Size = Objects.requireNonNull(p2).size();
+            checkSizeMismatch(p1, p1Size, p2, p2Size);
+            checkSizeMismatch(p2, p2Size, p1, p1Size);
 
             for (final Map.Entry<String, Comparable<?>> p1Entry : p1.entrySet()) {
                 final String partitionKey = p1Entry.getKey();

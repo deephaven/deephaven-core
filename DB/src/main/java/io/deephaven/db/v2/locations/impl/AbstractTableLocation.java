@@ -17,10 +17,8 @@ public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
         implements TableLocation {
 
-    private @NotNull
-    final ImmutableTableKey tableKey;
-    private @NotNull
-    final ImmutableTableLocationKey tableLocationKey;
+    private final ImmutableTableKey tableKey;
+    private final ImmutableTableLocationKey tableLocationKey;
 
     private final TableLocationStateHolder state = new TableLocationStateHolder();
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations = new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
@@ -49,8 +47,8 @@ public abstract class AbstractTableLocation
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull
-    final Object getStateLock() {
+    @NotNull
+    public final Object getStateLock() {
         return state.getStateLock();
     }
 
