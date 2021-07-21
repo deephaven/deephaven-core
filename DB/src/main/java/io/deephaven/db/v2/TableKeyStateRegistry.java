@@ -1,9 +1,9 @@
 package io.deephaven.db.v2;
 
+import io.deephaven.db.v2.locations.ImmutableTableKey;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.db.v2.locations.TableKey;
-import io.deephaven.db.v2.locations.TableLookupKey;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -37,18 +37,19 @@ public class TableKeyStateRegistry<VALUE_TYPE> {
 
     private static class State<VALUE_TYPE> {
 
-        private final TableKey key;
+        private final ImmutableTableKey key;
 
         private final VALUE_TYPE value;
 
         private State(@NotNull final TableKey key, @NotNull final Function<TableKey, VALUE_TYPE> valueFactory) {
-            this.key = TableLookupKey.getImmutableKey(key);
+            this.key = key.makeImmutable();
             value = valueFactory.apply(key);
         }
     }
 
-    private static class StateKey<VALUE_TYPE> extends TableKey.KeyedObjectKeyImpl<State<VALUE_TYPE>> {
+    private static class StateKey<VALUE_TYPE> extends KeyedObjectKey.Basic<TableKey, State<VALUE_TYPE>> {
 
+        @SuppressWarnings("rawtypes")
         private static final StateKey INSTANCE = new StateKey();
 
         private static <VALUE_TYPE> KeyedObjectKey<TableKey, State<VALUE_TYPE>> getInstance() {

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.util.BarrageProtoUtil$ExposedByteArrayOutputStream",
- "methods": {
-  "peekBuffer": ":return: byte[]"
- },
- "path": "io.deephaven.db.backplane.util.BarrageProtoUtil.ExposedByteArrayOutputStream",
- "typeName": "class"
-}

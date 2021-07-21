@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.TableLocationKey$SelfKeyedObjectKeyImpl",
- "methods": {
-  "getKey": ":param value: TableLocationKey.SelfKeyedObjectKeyImpl.VALUE_TYPE\n:return: io.deephaven.db.v2.locations.TableLocationKey"
- },
- "path": "io.deephaven.db.v2.locations.TableLocationKey.SelfKeyedObjectKeyImpl",
- "typeName": "class"
-}

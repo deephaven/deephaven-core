@@ -16,6 +16,7 @@
   "getTableFunctionMap": ":return: java.util.Map<io.deephaven.db.tables.Table,java.util.Set<java.util.function.Function<io.deephaven.db.tables.Table,io.deephaven.db.tables.Table>>>",
   "getTableHandles": "Gets the table handles associated with this figure.\n\n:return: (java.util.Set<io.deephaven.db.plot.util.tables.TableHandle>) table handles associated with this figure.",
   "getTableMapFunctionMap": ":return: java.util.Map<io.deephaven.db.v2.TableMap,java.util.Set<java.util.function.Function<io.deephaven.db.v2.TableMap,io.deephaven.db.v2.TableMap>>>",
+  "getTableMapHandles": "Gets the table maps associated with this figure.\n\n:return: (java.util.Set<io.deephaven.db.plot.util.tables.TableMapHandle>) table handles associated with this figure.",
   "getTitle": "Gets the title of this Figure.\n\n:return: (java.lang.String) this Figure's title",
   "getTitleColor": "Gets the Paint of this Figure's title.\n\n:return: (io.deephaven.gui.color.Paint) this Figure's title's Paint",
   "getTitleFont": "Gets the Font of this Figure's title.\n\n:return: (io.deephaven.db.plot.Font) this Figure's title's Font",

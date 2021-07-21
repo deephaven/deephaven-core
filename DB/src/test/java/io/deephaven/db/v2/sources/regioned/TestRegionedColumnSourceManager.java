@@ -4,6 +4,8 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.SimpleTableLocationKey;
+import io.deephaven.db.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import gnu.trove.map.TIntIntMap;
@@ -130,16 +132,21 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
     }
 
+    private ImmutableTableLocationKey makeTableKey(@NotNull final String internalPartitionValue, @NotNull final String columnPartitionValue) {
+        final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
+        partitions.put(partitioningColumnDefinition.getName(), columnPartitionValue);
+        partitions.put("__IP__", internalPartitionValue);
+        return new SimpleTableLocationKey(partitions);
+    }
+
     private TableLocation setUpTableLocation(final int li, @NotNull final String mockSuffix) {
-        final TableLocation tl;
         final String ip = Integer.toString(li % 2);
         final String cp = Character.toString((li / 2) == 0 ? 'A' : 'B');
-        tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
+        final TableLocation tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
+        final ImmutableTableLocationKey tlk = makeTableKey(ip, cp);
         checking(new Expectations() {{
-            allowing(tl).getInternalPartition();
-            will(returnValue(ip));
-            allowing(tl).getColumnPartition();
-            will(returnValue(cp));
+            allowing(tl).getKey();
+            will(returnValue(tlk));
             allowing(tl).toStringDetailed();
             will(returnValue("mocked TL_" + ip + '_' + cp + mockSuffix));
             allowing(tl).getSize();

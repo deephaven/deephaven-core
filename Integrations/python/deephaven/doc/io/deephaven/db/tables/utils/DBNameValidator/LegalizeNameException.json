@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.DBNameValidator$LegalizeNameException",
- "methods": {},
- "path": "io.deephaven.db.tables.utils.DBNameValidator.LegalizeNameException",
- "typeName": "class"
-}

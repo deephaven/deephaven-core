@@ -2,9 +2,8 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.util.codec.ObjectDecoder;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +12,7 @@ import javax.annotation.Nullable;
 
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 
-abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Attributes.Values> extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
+abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
     private RegionedColumnSourceObject(@NotNull final ColumnRegionObject<DATA_TYPE, ATTR> nullRegion,
@@ -26,7 +25,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Attributes.Val
         this(ColumnRegionObject.createNull(), type, null);
     }
 
-    public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Attributes.Values> {
+    public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
 
         private final ObjectDecoder<DATA_TYPE> decoder;
 
@@ -39,24 +38,17 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Attributes.Val
             this.decoder = decoder;
         }
 
-
         @Override
         public DATA_TYPE get(final long elementIndex) {
             return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
         }
 
-        ObjectDecoder<DATA_TYPE> getDecoder() {
-            return decoder;
-        }
-
-        public ColumnRegionObject<DATA_TYPE, Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                                           @NotNull final ColumnLocation<?> columnLocation,
-                                                                           final int regionIndex) {
+        public ColumnRegionObject<DATA_TYPE, Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                                @NotNull final ColumnLocation columnLocation,
+                                                                final int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionObject<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                //noinspection unchecked
+                return (ColumnRegionObject<DATA_TYPE, Values>) columnLocation.makeColumnRegionObject(columnDefinition);
             }
 
             return null;
@@ -64,7 +56,9 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Attributes.Val
 
         @Override
         public FillContext makeFillContext(final int chunkCapacity, @Nullable final SharedContext sharedContext) {
-            int width = decoder.expectedObjectWidth();
+            // TODO (https://github.com/deephaven/deephaven-core/issues/866): Maybe we should do this per-region?
+
+            final int width = decoder.expectedObjectWidth();
 
             if (width == ObjectDecoder.VARIABLE_WIDTH_SENTINEL) {
                 return new ColumnRegionObjectCodecVariable.FillContext(RegionUtilities.INITIAL_DECODER_BUFFER_SIZE, chunkCapacity);

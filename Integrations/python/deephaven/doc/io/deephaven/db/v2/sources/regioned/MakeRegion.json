@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.MakeRegion",
  "methods": {
-  "makeRegion": "Get a new or re-usable column region appropriate for this source.\n\n:param columnDefinition: (io.deephaven.db.tables.ColumnDefinition<?>) - The ColumnDefinition\n:param columnLocation: (io.deephaven.db.v2.locations.ColumnLocation<?>) - The ColumnLocation\n:param regionIndex: (int) - The index of the region to add.\n:return: (MakeRegion.REGION_TYPE) A new or re-usable column region appropriate for this source and the supplied parameters.  A null value\n         may be returned, which should be interpreted to mean use a special null column, which has size() 0\n         and is full of the appropriate \"null\" value for the column's type."
+  "makeRegion": "Get a new or re-usable column region appropriate for this source.\n\n:param columnDefinition: (io.deephaven.db.tables.ColumnDefinition<?>) - The ColumnDefinition\n:param columnLocation: (io.deephaven.db.v2.locations.ColumnLocation) - The ColumnLocation\n:param regionIndex: (int) - The index of the region to add.\n:return: (MakeRegion.REGION_TYPE) A new or re-usable column region appropriate for this source and the supplied parameters.  A null value\n         may be returned, which should be interpreted to mean use a special null column, which has size() 0\n         and is full of the appropriate \"null\" value for the column's type."
  },
  "path": "io.deephaven.db.v2.sources.regioned.MakeRegion",
  "typeName": "interface"

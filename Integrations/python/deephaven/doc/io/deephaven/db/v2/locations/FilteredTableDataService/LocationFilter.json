@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.FilteredTableDataService$LocationFilter",
- "methods": {
-  "accept": "Determine whether location should be visible via this service.\n\n:param location: (io.deephaven.db.v2.locations.TableLocation) - The location\n:return: (boolean) True if the location should be visible, false otherwise"
- },
- "path": "io.deephaven.db.v2.locations.FilteredTableDataService.LocationFilter",
- "typeName": "interface"
-}

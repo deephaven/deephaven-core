@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.CompositeTableDataServiceConsistencyMonitor",
+ "methods": {
+  "consistentDateNy": "The same thing as currentDateNy(), but with a different name so you can import it more easily and be\n sure you are getting the right value.\n\n:return: java.lang.String",
+  "currentDateNy": "Get the consistent value of currentDateNy() as defined by DBTimeUtils.currentDateNy().\n\n:return: (java.lang.String) the current date in the New York time zone."
+ },
+ "path": "io.deephaven.db.v2.locations.impl.CompositeTableDataServiceConsistencyMonitor",
+ "text": "A consistency monitor for use in the CompositeTableDataService.",
+ "typeName": "class"
+}

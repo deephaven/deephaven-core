@@ -1,17 +1,9 @@
 {
  "className": "io.deephaven.db.v2.locations.TableKey",
  "methods": {
-  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
-  "areEqual": ":param key1: io.deephaven.db.v2.locations.TableKey\n:param key2: io.deephaven.db.v2.locations.TableKey\n:return: boolean",
-  "getKeyedObjectKey": "Re-usable key object for TableKeys that disregards the implementation class.\n\nNote: Java generics information - <VALUE_TYPE extends io.deephaven.db.v2.locations.TableKey>\n\n:return: io.deephaven.hash.KeyedObjectKey<io.deephaven.db.v2.locations.TableKey,VALUE_TYPE>",
-  "getNamespace": ":return: (java.lang.CharSequence) The namespace enclosing this table",
-  "getTableName": ":return: (java.lang.CharSequence) The name of this table",
-  "getTableType": ":return: (io.deephaven.db.v2.locations.TableType) The type of this table (which generally dictates storage, metadata-availability, etc)",
-  "hash": ":param key: io.deephaven.db.v2.locations.TableKey\n:return: int",
-  "toStringDetailed": "Optional toString path with more implementation detail.\n\n:return: (java.lang.String) detailed conversion to string",
-  "toStringHelper": ":return: java.lang.String"
+  "makeImmutable": "Get an ImmutableTableKey that is equal to this.\n\n:return: (io.deephaven.db.v2.locations.ImmutableTableKey) An immutable version of this key"
  },
  "path": "io.deephaven.db.v2.locations.TableKey",
- "text": "Interface that specifies key fields for any table-keyed object (i.e. TableLocationProvider).",
+ "text": "Interface for opaque table keys for use in TableDataService implementations.",
  "typeName": "interface"
 }

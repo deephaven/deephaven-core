@@ -72,6 +72,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
+            // TODO (https://github.com/deephaven/deephaven-core/issues/878): Support non-String partitioning columns
             Require.eq(dataType, "dataType", String.class);
             Require.eqFalse(columnDefinition.hasSymbolTable(), "columnDefinition.hasSymbolTable()");
             return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourcePartitioning();
@@ -81,7 +82,13 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         if (simpleImplementationSupplier != null) {
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
-
+        // TODO (https://github.com/deephaven/deephaven-core/issues/866): Clean this mess up:
+        //   1. Dictionary-ness should not be a top-level, definition-driven concept.
+        //   2. Encodings should not be the business of the column source.
+        //      That applies to fixed/variable width objects, StringSet, etc.
+        //   3. Maybe we can eliminate the component factory entirely if we play our cards right.
+        //   4. Contexts are meant to support any possible region type; that's too brittle for future expansion, we
+        //      should delegate to the regions.
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
                 return columnDefinition.hasSymbolTable()
@@ -92,8 +99,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                                 RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
                         ;
             } else if (StringSet.class.isAssignableFrom(dataType)) {
-                return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet(
-                        RegionedTableComponentFactory.getStringDecoder(String.class, columnDefinition));
+                return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet();
             } else {
                 final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition, codecMappings);
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);

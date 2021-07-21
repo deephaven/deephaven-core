@@ -6,9 +6,11 @@
   "descending": "Create an descending SortPair for name.\n\n:param name: (java.lang.String) - the column name to sort by\n:return: (io.deephaven.db.tables.SortPair) an descending SortPair for name",
   "descendingPairs": "Create an array of descending SortPair for names.\n\n:param names: (java.lang.String...) - the column names to sort by\n:return: (io.deephaven.db.tables.SortPair[]) an descending SortPair array for names",
   "equals": ":param o: java.lang.Object\n:return: boolean",
+  "from": ":param sortColumns: java.util.Collection<io.deephaven.api.SortColumn>\n:return: io.deephaven.db.tables.SortPair[]",
   "getColumn": ":return: (java.lang.String) the column name for this SortPair.",
   "getOrder": ":return: (io.deephaven.db.tables.SortingOrder) the SortingOrder for this pair.",
   "hashCode": ":return: int",
+  "of": ":param sortColumn: io.deephaven.api.SortColumn\n:return: io.deephaven.db.tables.SortPair",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.tables.SortPair",

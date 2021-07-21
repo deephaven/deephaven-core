@@ -19,7 +19,7 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
     private final ObjectChunk<String, ATTR> dictionary;
     private final StringCache<STRING_LIKE_TYPE> stringCache;
 
-    static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> nativeType, final Chunk<ATTR> dictionary) {
+    public static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> nativeType, final Chunk<ATTR> dictionary) {
         Require.eqTrue(CharSequence.class.isAssignableFrom(nativeType), "Dictionary result is not a string like type.");
         Require.neqNull(dictionary, "dictionary");
         //noinspection unchecked,rawtypes

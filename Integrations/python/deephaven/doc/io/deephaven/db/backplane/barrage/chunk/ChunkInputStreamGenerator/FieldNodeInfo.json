@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator$FieldNodeInfo",
- "methods": {},
- "path": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.FieldNodeInfo",
- "typeName": "class"
-}

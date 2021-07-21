@@ -2,7 +2,7 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.WritableByteChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
@@ -13,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnRegionByte} implementation for regions that support fetching primitive bytes from a
  * {@link ColumnChunkPageStore}.
  */
-final class ParquetColumnRegionByte<ATTR extends Attributes.Any> extends ParquetColumnRegionBase<ATTR>
+public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionByte<ATTR> {
 
-    ParquetColumnRegionByte(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionByte(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 

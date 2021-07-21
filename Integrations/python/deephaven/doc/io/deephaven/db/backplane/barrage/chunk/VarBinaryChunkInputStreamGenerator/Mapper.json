@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.VarBinaryChunkInputStreamGenerator$Mapper",
- "methods": {
-  "constructFrom": ":param buf: byte[]\n:param offset: int\n:param length: int\n:return: VarBinaryChunkInputStreamGenerator.Mapper.T"
- },
- "path": "io.deephaven.db.backplane.barrage.chunk.VarBinaryChunkInputStreamGenerator.Mapper",
- "typeName": "interface"
-}

@@ -4,89 +4,94 @@
 
 package io.deephaven.db.v2;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.db.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * A source table that can filter partitions before coalescing.
+ * Refer to {@link TableLocationKey} for an explanation of partitioning.
  */
 public class PartitionAwareSourceTable extends SourceTable {
 
-    public static final Set<String> ALL_INTERNAL_PARTITIONS = Collections.emptySet();
-
-    private final Set<String> internalPartitions;
-    private final ColumnDefinition<String> partitioningColumnDefinition;
+    private final Map<String, ColumnDefinition> partitioningColumnDefinitions;
     private final SelectFilter[] partitioningColumnFilters;
 
     /**
-     * @param tableDefinition    A TableDefinition
+     * @param tableDefinition     A TableDefinition
      * @param description        A human-readable description for this table
      * @param componentFactory   A component factory for creating column source managers
      * @param locationProvider   A TableLocationProvider, for use in discovering the locations that compose this table
      * @param liveTableRegistrar Callback for registering live tables for refreshes, null if this table is not live
-     * @param internalPartitions Allowed internal partitions - use ALL_INTERNAL_PARTITIONS (or an empty set) for no restrictions
      */
-    PartitionAwareSourceTable(TableDefinition tableDefinition,
-                              String description,
-                              SourceTableComponentFactory componentFactory,
-                              TableLocationProvider locationProvider,
-                              LiveTableRegistrar liveTableRegistrar,
-                              Set<String> internalPartitions) {
-        //noinspection unchecked
+    public PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
+                                     @NotNull final String description,
+                                     @NotNull final SourceTableComponentFactory componentFactory,
+                                     @NotNull final TableLocationProvider locationProvider,
+                                     @Nullable final LiveTableRegistrar liveTableRegistrar) {
         this(tableDefinition,
                 description,
                 componentFactory,
                 locationProvider,
                 liveTableRegistrar,
-                internalPartitions,
-                tableDefinition.getPartitioningColumns().get(0));
+                extractPartitioningColumnDefinitions(tableDefinition));
     }
 
-    PartitionAwareSourceTable(TableDefinition tableDefinition,
-                              String description,
-                              SourceTableComponentFactory componentFactory,
-                              TableLocationProvider locationProvider,
-                              LiveTableRegistrar liveTableRegistrar,
-                              Set<String> internalPartitions,
-                              ColumnDefinition<String> partitioningColumnDefinition,
-                              SelectFilter... partitioningColumnFilters) {
+    PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
+                              @NotNull final String description,
+                              @NotNull final SourceTableComponentFactory componentFactory,
+                              @NotNull final TableLocationProvider locationProvider,
+                              @Nullable final LiveTableRegistrar liveTableRegistrar,
+                              @NotNull final Map<String, ColumnDefinition> partitioningColumnDefinitions,
+                              @Nullable final SelectFilter... partitioningColumnFilters) {
         super(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar);
-        this.internalPartitions = internalPartitions;
-        this.partitioningColumnDefinition = partitioningColumnDefinition;
+        this.partitioningColumnDefinitions = partitioningColumnDefinitions;
         this.partitioningColumnFilters = partitioningColumnFilters;
     }
 
-    protected PartitionAwareSourceTable newInstance(TableDefinition tableDefinition,
-                                                    String description,
-                                                    SourceTableComponentFactory componentFactory,
-                                                    TableLocationProvider locationProvider,
-                                                    LiveTableRegistrar liveTableRegistrar,
-                                                    Set<String> internalPartitions,
-                                                    ColumnDefinition<String> partitioningColumnDefinition,
-                                                    SelectFilter... partitioningColumnFilters) {
-        return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar, internalPartitions, partitioningColumnDefinition, partitioningColumnFilters);
+    protected PartitionAwareSourceTable newInstance(@NotNull final TableDefinition tableDefinition,
+                                                    @NotNull final String description,
+                                                    @NotNull final SourceTableComponentFactory componentFactory,
+                                                    @NotNull final TableLocationProvider locationProvider,
+                                                    @Nullable final LiveTableRegistrar liveTableRegistrar,
+                                                    @NotNull final Map<String, ColumnDefinition> partitioningColumnDefinitions,
+                                                    @Nullable final SelectFilter... partitioningColumnFilters) {
+        return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
     }
 
-    private PartitionAwareSourceTable getFilteredTable(SelectFilter... additionalPartitioningColumnFilters) {
+    private PartitionAwareSourceTable getFilteredTable(@NotNull final SelectFilter... additionalPartitioningColumnFilters) {
         SelectFilter[] resultPartitioningColumnFilters = new SelectFilter[partitioningColumnFilters.length + additionalPartitioningColumnFilters.length];
         System.arraycopy(partitioningColumnFilters, 0, resultPartitioningColumnFilters, 0, partitioningColumnFilters.length);
         System.arraycopy(additionalPartitioningColumnFilters, 0, resultPartitioningColumnFilters, partitioningColumnFilters.length, additionalPartitioningColumnFilters.length);
         return newInstance(definition,
                 description + ".where(" + Arrays.deepToString(additionalPartitioningColumnFilters) + ')',
-                componentFactory, locationProvider, liveTableRegistrar, internalPartitions, partitioningColumnDefinition, resultPartitioningColumnFilters);
+                componentFactory, locationProvider, liveTableRegistrar, partitioningColumnDefinitions, resultPartitioningColumnFilters);
+    }
+
+    private static Map<String, ColumnDefinition> extractPartitioningColumnDefinitions(@NotNull final TableDefinition tableDefinition) {
+        return tableDefinition.getColumnStream()
+                .filter(ColumnDefinition::isPartitioning)
+                .collect(Collectors.toMap(ColumnDefinition::getName, Function.identity(), Assert::neverInvoked, LinkedHashMap::new));
     }
 
     private static class PartitionAwareQueryTableReference extends QueryTableReference {
@@ -148,24 +153,27 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    protected final BaseTable redefine(TableDefinition newDefinition) {
+    protected final BaseTable redefine(@NotNull final TableDefinition newDefinition) {
         if(newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        if(newDefinition.getColumns().length == definition.getColumns().length || newDefinition.getPartitioningColumns().size() == 1) {
+        if(newDefinition.getColumns().length == definition.getColumns().length || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
                     description + "-retainColumns",
-                    componentFactory, locationProvider, liveTableRegistrar, internalPartitions, partitioningColumnDefinition, partitioningColumnFilters);
+                    componentFactory, locationProvider, liveTableRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
         }
-        // The partitioning column is gone - defer dropping it.
-        List<ColumnDefinition> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
-        newColumnDefinitions.add(partitioningColumnDefinition);
-        PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
+        // Some partitioning columns are gone - defer dropping them.
+        final List<ColumnDefinition> newColumnDefinitions = new ArrayList<>(newDefinition.getColumnList());
+        final Map<String, ColumnDefinition> retainedPartitioningColumnDefinitions = extractPartitioningColumnDefinitions(newDefinition);
+        final Collection<ColumnDefinition> droppedPartitioningColumnDefinitions = partitioningColumnDefinitions.values().stream().filter(cd -> !retainedPartitioningColumnDefinitions.containsKey(cd.getName())).collect(Collectors.toList());
+        newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
+        final PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
                 description + "-retainColumns",
-                componentFactory, locationProvider, liveTableRegistrar, internalPartitions, partitioningColumnDefinition, partitioningColumnFilters);
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-retainColumns", new PartitionAwareQueryTableReference(redefined), new String[]{partitioningColumnDefinition.getName()}, null, null);
+                componentFactory, locationProvider, liveTableRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
+        final DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-retainColumns", new PartitionAwareQueryTableReference(redefined),
+                droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new), null, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
     }
@@ -181,37 +189,40 @@ public class PartitionAwareSourceTable extends SourceTable {
         return deferredViewTable;
     }
 
+    private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
+
+    @SuppressWarnings("unchecked")
+    private static <T> ColumnSource makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
+        final Class<T> dataType = columnDefinition.getDataType();
+        final T[] partitionValues = locationKeys.stream()
+                .map(lk -> (T) lk.getPartitionValue(columnDefinition.getName()))
+                .toArray(sz -> (T[]) Array.newInstance(dataType, sz));
+        return ArrayBackedColumnSource.getMemoryColumnSource(partitionValues, dataType, columnDefinition.getComponentType());
+    }
+
     @Override
-    protected final Collection<TableLocation> filterLocations(@NotNull final Collection<TableLocation> foundLocations) {
-        return filterLocationsByColumnPartition(filterLocationsByInternalPartition(foundLocations));
-    }
-
-    private Collection<TableLocation> filterLocationsByInternalPartition(@NotNull final Collection<TableLocation> foundLocations) {
-        if(internalPartitions.isEmpty()) {
-            return foundLocations;
+    protected final Collection<ImmutableTableLocationKey> filterLocationKeys(@NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
+        if (partitioningColumnFilters.length == 0) {
+            return foundLocationKeys;
         }
-        return foundLocations.stream().filter(l -> internalPartitions.contains(l.getInternalPartition().toString())).collect(Collectors.toList());
-    }
-
-    private static final String LOCATION_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocation";
-
-    private Collection<TableLocation> filterLocationsByColumnPartition(@NotNull final Collection<TableLocation> foundLocations) {
-        if(partitioningColumnFilters.length == 0) {
-            return foundLocations;
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
+        final List<String> partitionTableColumnNames = Stream.concat(
+                partitioningColumnDefinitions.keySet().stream(),
+                Stream.of(LOCATION_KEY_COLUMN_NAME)
+        ).collect(Collectors.toList());
+        final List<ColumnSource> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size() + 1);
+        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
+            //noinspection unchecked
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, foundLocationKeys));
         }
-        final String[] columnPartitions = foundLocations.stream().map(l -> l.getColumnPartition().toString()).toArray(String[]::new);
-        //noinspection unchecked
-        Table filteredColumnPartitionTable = TableTools.newTable(
-                columnPartitions.length,
-                Arrays.asList(partitioningColumnDefinition.getName(), LOCATION_COLUMN_NAME),
-                Arrays.asList(
-                        ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnPartitions),
-                        ArrayBackedColumnSource.getMemoryColumnSource(foundLocations, TableLocation.class, null)))
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys, ImmutableTableLocationKey.class, null));
+        final Table filteredColumnPartitionTable = TableTools
+                .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .where(partitioningColumnFilters);
-        if(filteredColumnPartitionTable.size() == columnPartitions.length) {
-            return foundLocations;
+        if (filteredColumnPartitionTable.size() == foundLocationKeys.size()) {
+            return foundLocationKeys;
         }
-        final Iterable<TableLocation> iterable = () -> filteredColumnPartitionTable.columnIterator(LOCATION_COLUMN_NAME);
+        final Iterable<ImmutableTableLocationKey> iterable = () -> filteredColumnPartitionTable.columnIterator(LOCATION_KEY_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
     }
 
@@ -267,7 +278,7 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(SelectColumn... columns) {
+    public final Table selectDistinct(@NotNull final SelectColumn... columns) {
         for (SelectColumn selectColumn : columns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
@@ -275,17 +286,30 @@ public class PartitionAwareSourceTable extends SourceTable {
             }
         }
         initializeAvailableLocations();
-        final String[] columnPartitions = columnSourceManager.allLocations().stream().filter(l -> {
-            l.refresh();
-            final long size = l.getSize();
+        final List<ImmutableTableLocationKey> existingLocationKeys = columnSourceManager.allLocations().stream().filter(tl -> {
+            tl.refresh();
+            final long size = tl.getSize();
+            //noinspection ConditionCoveredByFurtherCondition
             return size != TableLocation.NULL_SIZE && size > 0;
-        }).map(TableLocation::getColumnPartition).toArray(String[]::new);
-        return TableTools.newTable(TableTools.col(partitioningColumnDefinition.getName(), columnPartitions)).selectDistinct(columns);
-        // TODO: Refactor the above to listen for new locations, and for size changes to non-existent or 0-size locations.
+        }).map(TableLocation::getKey).collect(Collectors.toList());
+        final List<String> partitionTableColumnNames = new ArrayList<>(partitioningColumnDefinitions.keySet());
+        final List<ColumnSource> partitionTableColumnSources = new ArrayList<>(partitioningColumnDefinitions.size());
+        for (final ColumnDefinition columnDefinition : partitioningColumnDefinitions.values()) {
+            //noinspection unchecked
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, existingLocationKeys));
+        }
+        return TableTools
+                .newTable(existingLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
+                .selectDistinct(columns);
+        // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         // TODO: Maybe just get rid of this implementation and coalesce? Partitioning columns are automatically grouped.  Needs lazy region allocation.
     }
 
-    private boolean isValidAgainstColumnPartitionTable(List<String> columnNames, List<String> columnArrayNames) {
-        return columnNames.size() == 1 && columnNames.get(0).equals(partitioningColumnDefinition.getName()) && columnArrayNames.size() <= 0;
+    private boolean isValidAgainstColumnPartitionTable(@NotNull final List<String> columnNames,
+                                                       @NotNull final List<String> columnArrayNames) {
+        if (columnArrayNames.size() > 0) {
+            return false;
+        }
+        return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
     }
 }
