@@ -30,3 +30,9 @@ There! Now you can reference grpc-api:local images in kubernets/minikube
 
 # All in one Update Minikube:
 ./gradlew preCo && docker-compose push && minikube image load deephaven/grpc-api:local-build  deephaven/grpc-proxy:local-build  deephaven/web:local-build deephaven/envoy:local-build
+
+# To change envoy log levels:
+`<insert instructions how to shell into container through k8 pod>`
+curl -X POST localhost:9090/logging?level=trace
+
+minikube service --url dh-local
