@@ -195,6 +195,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
             session.nonExport()
                     .require(exportedConsole, exportedTable)
+                    .onError(responseObserver::onError)
                     .submit(() -> {
                         exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
                         responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
