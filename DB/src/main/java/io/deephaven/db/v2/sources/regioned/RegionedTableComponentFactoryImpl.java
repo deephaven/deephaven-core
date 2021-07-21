@@ -72,6 +72,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
+            // TODO (https://github.com/deephaven/deephaven-core/issues/878): Support non-String partitioning columns
             Require.eq(dataType, "dataType", String.class);
             Require.eqFalse(columnDefinition.hasSymbolTable(), "columnDefinition.hasSymbolTable()");
             return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourcePartitioning();

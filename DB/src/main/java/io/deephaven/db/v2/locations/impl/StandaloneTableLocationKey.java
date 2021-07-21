@@ -7,6 +7,9 @@ import io.deephaven.db.v2.locations.UnknownPartitionKeyException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * {@link TableLocationKey} implementation for unpartitioned standalone tables.
  */
@@ -59,5 +62,10 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
     @Override
     public <PARTITION_VALUE_TYPE> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey) {
         throw new UnknownPartitionKeyException(partitionKey, this);
+    }
+
+    @Override
+    public Set<String> getPartitionKeys() {
+        return Collections.emptySet();
     }
 }

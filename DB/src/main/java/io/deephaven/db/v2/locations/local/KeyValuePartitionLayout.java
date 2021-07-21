@@ -2,6 +2,7 @@ package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableLocationKey;
@@ -26,45 +27,46 @@ import java.util.stream.Collectors;
 
 /**
  * {@link TableLocationKeyFinder Location finder} that will traverse a directory hierarchy and infer partitions from
- * key-value paris in the directory names, e.g.
- * <pre>tableRootDirectory/Country=France/City=Paris/parisData.parquet</pre>.
+ * key-value pairs in the directory names, for example:
+ * <pre>tableRootDirectory/Country=France/City=Paris/parisData.parquet</pre>
  * Traversal is depth-first, and assumes that target files will only be found at a single depth.
  *
  * @implNote Type inference uses {@link TableTools#readCsv(java.io.InputStream)} as a conversion tool, and hence
  * follows the same rules.
+ * @implNote Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)}.
  */
-public final class HiveStylePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
+public final class KeyValuePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
 
-    public TableLocationKeyFinder<ParquetTableLocationKey> forParquet(@NotNull final File tableRootDirectory,
-                                                                      final int maxDepth) {
-        return new HiveStylePartitionLayout<>(
+    public static TableLocationKeyFinder<ParquetTableLocationKey> forParquet(@NotNull final File tableRootDirectory,
+                                                                             final int maxPartitioningLevels) {
+        return new KeyValuePartitionLayout<>(
                 tableRootDirectory,
-                path -> path.getFileName().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
+                path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), partitions),
-                maxDepth
+                maxPartitioningLevels
         );
     }
 
     private final File tableRootDirectory;
     private final Predicate<Path> pathFilter;
     private final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory;
-    private final int maxDepth;
+    private final int maxPartitioningLevels;
 
     /**
-     * @param tableRootDirectory The directory to traverse from
-     * @param pathFilter         Filter to determine whether a regular file should be used to create a key
-     * @param keyFactory         Key factory function
-     * @param maxDepth           Maximum depth to traverse. Must be &ge; 0.
-     *                           0 means only look at {@code tableRootDirectory}.
+     * @param tableRootDirectory    The directory to traverse from
+     * @param pathFilter            Filter to determine whether a regular file should be used to create a key
+     * @param keyFactory            Key factory function
+     * @param maxPartitioningLevels Maximum partitioning levels to traverse. Must be {@code >= 0}. {@code 0} means only
+     *                              look at files in {@code tableRootDirectory} and find no partitions.
      */
-    private HiveStylePartitionLayout(@NotNull final File tableRootDirectory,
-                                     @NotNull final Predicate<Path> pathFilter,
-                                     @NotNull final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory,
-                                     final int maxDepth) {
+    public KeyValuePartitionLayout(@NotNull final File tableRootDirectory,
+                                   @NotNull final Predicate<Path> pathFilter,
+                                   @NotNull final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory,
+                                   final int maxPartitioningLevels) {
         this.tableRootDirectory = tableRootDirectory;
         this.pathFilter = pathFilter;
         this.keyFactory = keyFactory;
-        this.maxDepth = Require.gtZero(maxDepth, "maxDepth");
+        this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
     }
 
     @Override
@@ -73,23 +75,25 @@ public final class HiveStylePartitionLayout<TLK extends TableLocationKey> implem
         final Deque<Path> targetFiles = new ArrayDeque<>();
 
         try {
-            Files.walkFileTree(tableRootDirectory.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), maxDepth, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(tableRootDirectory.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), maxPartitioningLevels + 1, new SimpleFileVisitor<Path>() {
                 final String ls = System.lineSeparator();
+                final Set<String> takenNames = new HashSet<>();
                 final List<String> columnKeys = new ArrayList<>();
                 final List<String> rowValues = new ArrayList<>();
                 String row;
-                int columnIndex = -1;
+                int columnCount = -1;
 
                 @Override
                 public FileVisitResult preVisitDirectory(@NotNull final Path dir, @NotNull final BasicFileAttributes attrs) {
-                    if (columnIndex >= 0) {
+                    if (++columnCount > 0) {
                         // We're descending and past the root
                         final String[] components = dir.getFileName().toString().split("=");
                         if (components.length != 2) {
                             throw new TableDataException("Unexpected directory name format (not key=value) at " + dir);
                         }
-                        final String columnKey = components[0];
-                        if (columnIndex >= columnKeys.size()) {
+                        final String columnKey = NameValidator.legalizeColumnName(components[0], takenNames);
+                        final int columnIndex = columnCount - 1;
+                        if (columnCount > columnKeys.size()) {
                             columnKeys.add(columnKey);
                         } else if (!columnKeys.get(columnIndex).equals(columnKey)) {
                             throw new TableDataException("Column name mismatch at index " + columnIndex
@@ -98,20 +102,21 @@ public final class HiveStylePartitionLayout<TLK extends TableLocationKey> implem
                         final String columnValue = components[1];
                         rowValues.add(columnValue);
                     }
-                    ++columnIndex;
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFile(@NotNull final Path file, @NotNull final BasicFileAttributes attrs) {
-                    if (pathFilter.test(file)) {
-                        if (csvBuilder.length() == 0) {
-                            csvBuilder.append(listToCsvRow(columnKeys)).append(ls);
+                    if (attrs.isRegularFile() && pathFilter.test(file)) {
+                        if (!columnKeys.isEmpty()) {
+                            if (csvBuilder.length() == 0) {
+                                csvBuilder.append(listToCsvRow(columnKeys)).append(ls);
+                            }
+                            if (row == null) {
+                                row = listToCsvRow(rowValues);
+                            }
+                            csvBuilder.append(row).append(ls);
                         }
-                        if (row == null) {
-                            row = listToCsvRow(rowValues);
-                        }
-                        csvBuilder.append(row).append(ls);
                         targetFiles.add(file);
                     }
                     return FileVisitResult.CONTINUE;
@@ -119,11 +124,10 @@ public final class HiveStylePartitionLayout<TLK extends TableLocationKey> implem
 
                 @Override
                 public FileVisitResult postVisitDirectory(@NotNull final Path dir, @Nullable final IOException exc) throws IOException {
-                    if (columnIndex >= 0) {
+                    if (--columnCount >= 0) {
                         row = null;
-                        rowValues.remove(columnIndex);
+                        rowValues.remove(columnCount);
                     }
-                    --columnIndex;
                     return super.postVisitDirectory(dir, exc);
                 }
             });
@@ -133,7 +137,7 @@ public final class HiveStylePartitionLayout<TLK extends TableLocationKey> implem
 
         final Table partitioningColumnTable;
         try {
-            partitioningColumnTable = TableTools.readCsv(new ByteArrayInputStream(csvBuilder.toString().getBytes()));
+            partitioningColumnTable = csvBuilder.length() == 0 ? TableTools.emptyTable(targetFiles.size()) : TableTools.readCsv(new ByteArrayInputStream(csvBuilder.toString().getBytes()));
         } catch (IOException e) {
             throw new TableDataException("Failed converting partition CSV to table for " + tableRootDirectory, e);
         }

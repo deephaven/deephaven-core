@@ -4,6 +4,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Set;
+
 /**
  * Interface for opaque table location keys for use in {@link TableLocationProvider} implementations.
  * Note that implementations are generally only comparable to other implementations intended for use in the same
@@ -20,6 +22,13 @@ public interface TableLocationKey extends Comparable<TableLocationKey>, NamedImp
      * @throws UnknownPartitionKeyException If the partition cannot be found
      */
     <PARTITION_VALUE_TYPE> PARTITION_VALUE_TYPE getPartitionValue(@NotNull final String partitionKey);
+
+    /**
+     * Get the set of available partition keys.
+     *
+     * @return The set of available partition keys
+     */
+    Set<String> getPartitionKeys();
 
     /**
      * Get an {@link ImmutableTableLocationKey} that is equal to this.

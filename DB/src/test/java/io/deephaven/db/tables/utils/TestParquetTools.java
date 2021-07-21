@@ -16,6 +16,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.locations.local.KeyValuePartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -28,8 +29,10 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
@@ -319,5 +322,27 @@ public class TestParquetTools {
     @Test
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
+    }
+
+    @Test
+    public void testPartitionedRead() {
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "ABC=B" + File.separator + "file1.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "ABC=A" + File.separator + "file2.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-21" + File.separator + "ABC=C" + File.separator + "file3.parquet"));
+
+        final List<ColumnDefinition> allColumns = new ArrayList<>();
+        allColumns.add(ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.add(ColumnDefinition.fromGenericType("ABC", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.addAll(table1.getDefinition().getColumnList());
+        final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
+
+        final Table result = ParquetTools.readMultiFileTable(KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
+        TestCase.assertEquals(partitionedDefinition, result.getDefinition());
+        final Table expected = TableTools.merge(
+                table1.updateView("Date=`2021-07-20`", "ABC=`A`"),
+                table1.updateView("Date=`2021-07-20`", "ABC=`B`"),
+                table1.updateView("Date=`2021-07-21`", "ABC=`C`")
+        ).moveUpColumns("Date", "ABC");
+        TstUtils.assertTableEquals(expected, result);
     }
 }

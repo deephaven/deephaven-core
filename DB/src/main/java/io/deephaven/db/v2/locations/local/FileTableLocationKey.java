@@ -4,6 +4,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.db.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey;
 import io.deephaven.db.v2.locations.TableLocationKey;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +18,7 @@ import java.util.Map;
  * Sub-classes should override {@link #compareTo(TableLocationKey)} and {@link #equals(Object)} only if they need to
  * prevent equality with other {@link FileTableLocationKey} implementations.
  */
-public abstract class FileTableLocationKey extends PartitionedTableLocationKey {
+public class FileTableLocationKey extends PartitionedTableLocationKey {
 
     protected final File file;
 
@@ -89,5 +90,10 @@ public abstract class FileTableLocationKey extends PartitionedTableLocationKey {
         }
         final FileTableLocationKey otherTyped = (FileTableLocationKey) other;
         return file.equals(otherTyped.file) && partitions.equals(otherTyped.partitions);
+    }
+
+    @Override
+    public String getImplementationName() {
+        return "FileTableLocationKey";
     }
 }

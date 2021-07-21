@@ -45,6 +45,11 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
         return (PARTITION_VALUE_TYPE) partitionValue;
     }
 
+    @Override
+    public final Set<String> getPartitionKeys() {
+        return partitions.keySet();
+    }
+
     /**
      * Formats a map of partitions as key-value pairs.
      */
