@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.CompositeTableDataServiceConsistencyMonitor$ConsistentSupplier",
+ "methods": {},
+ "path": "io.deephaven.db.v2.locations.impl.CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier",
+ "typeName": "class"
+}

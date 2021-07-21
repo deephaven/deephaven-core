@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.BarrageMessage$Listener",
- "methods": {
-  "handleBarrageMessage": ":param message: io.deephaven.db.backplane.barrage.BarrageMessage"
- },
- "path": "io.deephaven.db.backplane.barrage.BarrageMessage.Listener",
- "typeName": "interface"
-}

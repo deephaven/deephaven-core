@@ -15,6 +15,7 @@
   "joinTables": ":param request: io.deephaven.proto.backplane.grpc.JoinTablesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "lazyUpdate": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "mergeTables": ":param request: io.deephaven.proto.backplane.grpc.MergeTablesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "runChartDownsample": ":param request: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "select": ":param request: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "selectDistinct": ":param request: io.deephaven.proto.backplane.grpc.SelectDistinctRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "snapshot": ":param request: io.deephaven.proto.backplane.grpc.SnapshotTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",

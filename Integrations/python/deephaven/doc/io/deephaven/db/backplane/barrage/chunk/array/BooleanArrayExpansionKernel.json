@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.array.BooleanArrayExpansionKernel",
- "methods": {
-  "contract": "This contracts the source from a pair of `LongChunk` and `Chunk` and produces a `Chunk`. The returned\n chunk is owned by the caller.\n\nNote: Java generics information - <T,\nA extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param source: (io.deephaven.db.v2.sources.chunk.Chunk<A>) - the source chunk of T to contract\n:param perElementLengthDest: (io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>) - the source IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to `source.get(i).length`\n:return: (io.deephaven.db.v2.sources.chunk.WritableObjectChunk<T,A>) a result chunk of T[]",
-  "expand": "This expands the source from a `T[]` per element to a flat `T` per element. The kernel records the number of\n consecutive elements that belong to a row in `perElementLengthDest`. The returned chunk is owned by the caller.\n\nNote: Java generics information - <T,\nA extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param source: (io.deephaven.db.v2.sources.chunk.WritableObjectChunk<T,A>) - the source chunk of T[] to expand\n:param perElementLengthDest: (io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>) - the destination IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to `source.get(i).length`\n:return: (io.deephaven.db.v2.sources.chunk.WritableChunk<A>) an unrolled/flattened chunk of T"
- },
- "path": "io.deephaven.db.backplane.barrage.chunk.array.BooleanArrayExpansionKernel",
- "typeName": "class"
-}

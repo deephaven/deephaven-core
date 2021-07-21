@@ -139,15 +139,38 @@ def deleteTable(path):
 
 
 @_passThrough
-def readParquetSchemaAndTable(source, readInstructions, instructionsOut):
+def readMultiFileTable(*args):
+    """
+    **Incompatible overloads text - text from the first overload:**
+    
+    Reads in a table from files discovered with locationKeyFinder using a definition built from the
+     first location found, which must have non-null partition values for all partition keys.
+    
+    *Overload 1*  
+      :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+      :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The table's definition
+      :return: (io.deephaven.db.tables.Table) The table
+      
+    *Overload 2*  
+      :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+      :return: (io.deephaven.db.tables.Table) The table
+    """
+    
+    return _java_type_.readMultiFileTable(*args)
+
+
+@_passThrough
+def readParquetSchemaAndTable(source, readInstructionsIn, instructionsOut):
     """
     :param source: java.io.File
-    :param readInstructions: io.deephaven.db.v2.parquet.ParquetInstructions
+    :param readInstructionsIn: io.deephaven.db.v2.parquet.ParquetInstructions
     :param instructionsOut: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.db.v2.parquet.ParquetInstructions>
     :return: io.deephaven.db.tables.Table
     """
     
-    return _java_type_.readParquetSchemaAndTable(source, readInstructions, instructionsOut)
+    return _java_type_.readParquetSchemaAndTable(source, readInstructionsIn, instructionsOut)
 
 
 @_passThrough
