@@ -3,16 +3,32 @@ package io.deephaven.ide.client;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.ConsoleAddress;
+import io.deephaven.web.shared.data.ConnectToken;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
+import java.nio.charset.StandardCharsets;
 
 /**
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
-    private final ConsoleAddress address;
+    @JsMethod(namespace = JsPackage.GLOBAL)
+    private static native String atob(String encodedData);
+
+    private static AuthTokenPromiseSupplier getAuthTokenPromiseSupplier(IdeConnectionOptions options) {
+        ConnectToken token = null;
+        if (options != null && options.getAuthToken() != null) {
+            token = new ConnectToken();
+            token.setBytes(atob(options.getAuthToken()).getBytes(StandardCharsets.ISO_8859_1));
+        }
+        return AuthTokenPromiseSupplier.oneShot(token);
+    }
+
+    private final String serverUrl;
+
     private final JsRunnable deathListenerCleanup;
 
     @Override
@@ -24,9 +40,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * Direct connection to an already-running worker instance, without first authenticating to a client.
      */
     @JsConstructor
-    public IdeConnection(ConsoleAddress address) {
-        super(AuthTokenPromiseSupplier.oneShot(address.getToken()));
-        this.address = address;
+    public IdeConnection(String serverUrl, IdeConnectionOptions options) {
+        super(getAuthTokenPromiseSupplier(options));
+        this.serverUrl = serverUrl;
         this.deathListenerCleanup = JsRunnable.doNothing();
     }
 
@@ -39,7 +55,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     @Override
     @JsIgnore
     public String getServerUrl() {
-        return address.getWebsocketUrl();
+        return serverUrl;
     }
 
     @Override
