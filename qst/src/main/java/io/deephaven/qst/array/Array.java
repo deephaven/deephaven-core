@@ -2,6 +2,7 @@ package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.Type;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -12,7 +13,7 @@ import java.util.stream.Stream;
  * @see PrimitiveArray
  * @see GenericArray
  */
-public interface Array<T> extends Iterable<T> {
+public interface Array<T> extends Iterable<T>, Serializable {
 
     static <T> ArrayBuilder<T, ?, ?> builder(Type<T> type) {
         return TypeToArrayBuilder.of(type, 16);
