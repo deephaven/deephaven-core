@@ -595,7 +595,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public void setVariable(String name, Object value) {
+    protected void setVariableImpl(String name, Object value) {
         groovyShell.getContext().setVariable(NameValidator.validateQueryParameterName(name), value);
     }
 

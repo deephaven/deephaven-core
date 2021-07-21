@@ -186,7 +186,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     }
 
     @Override
-    public void setVariable(String name, Object value) {
+    protected void setVariableImpl(String name, Object value) {
         if (value == null) {
             interpreter.beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, Object.class.getCanonicalName(), null)));
         } else {

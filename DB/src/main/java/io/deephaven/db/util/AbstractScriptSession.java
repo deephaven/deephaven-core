@@ -10,6 +10,7 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.lang.parse.api.CompletionParseService;
@@ -204,4 +205,15 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     public VariableProvider getVariableProvider() {
         return this;
     }
+
+
+    @Override
+    public final void setVariable(String name, Object value) {
+        if (value instanceof LivenessReferent) {
+            livenessScope.manage((LivenessReferent) value);
+        }
+        setVariableImpl(name, value);
+    }
+
+    protected abstract void setVariableImpl(String name, Object value);
 }

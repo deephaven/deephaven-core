@@ -189,7 +189,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public void setVariable(String name, Object value) {
+    protected void setVariableImpl(String name, Object value) {
         PyDictWrapper globals = scope.globals();
         if (value == null) {
             try {

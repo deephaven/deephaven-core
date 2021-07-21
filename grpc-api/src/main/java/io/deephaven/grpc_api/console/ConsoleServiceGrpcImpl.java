@@ -14,7 +14,6 @@ import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -190,16 +189,29 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void bindTableToVariable(BindTableToVariableRequest request, StreamObserver<BindTableToVariableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-
-            SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
-            SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
-            session.nonExport()
-                    .require(exportedConsole, exportedTable)
-                    .submit(() -> {
-                        exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
-                        responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                        responseObserver.onCompleted();
-                    });
+            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
+            if (request.hasConsoleId()) {
+                SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
+                session.nonExport()
+                        .requiresSerialQueue()
+                        .require(exportedConsole, exportedTable)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
+                            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+                            responseObserver.onCompleted();
+                        });
+            } else {
+                session.nonExport()
+                        .requiresSerialQueue()
+                        .require(exportedTable)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            globalSessionProvider.getGlobalSession().setVariable(request.getVariableName(), exportedTable.get());
+                            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+                            responseObserver.onCompleted();
+                        });
+            }
         });
     }
 

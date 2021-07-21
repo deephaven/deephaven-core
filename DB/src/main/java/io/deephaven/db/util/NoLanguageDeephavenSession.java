@@ -79,7 +79,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     @Override
-    public void setVariable(String name, Object value) {
+    protected void setVariableImpl(String name, Object value) {
         variables.put(name, value);
     }
 
