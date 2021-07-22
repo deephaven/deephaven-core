@@ -2,6 +2,8 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
@@ -9,10 +11,10 @@ import io.deephaven.util.codec.ObjectDecoder;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-
 import java.util.function.Supplier;
 
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {
@@ -73,15 +75,21 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
     static final class Partitioning<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
 
         Partitioning(@NotNull final Class<DATA_TYPE> dataType) {
-            super(ColumnRegionObject.createNull(), dataType, null, Supplier::get);
+            super(ColumnRegionObject.createNull(), dataType, null, Supplier::get /* No need to interpose a deferred region in this case. */);
         }
 
         @Override
         public ColumnRegionObject<DATA_TYPE, Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
-            //noinspection Convert2Diamond
-            return new ColumnRegionObject.Constant<DATA_TYPE, Values>(columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName()));
+                                                                @NotNull final ColumnLocation columnLocation,
+                                                                final int regionIndex) {
+            final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
+            final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
+            if (partitioningColumnValue != null && !getType().isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
+                        + ": " + partitioningColumnValue + " is not a " + getType() + " at location " + locationKey);
+            }
+            //noinspection unchecked
+            return new ColumnRegionObject.Constant<>((DATA_TYPE) partitioningColumnValue);
         }
     }
 }

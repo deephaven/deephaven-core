@@ -78,7 +78,7 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
                     boolean needToUpdateInternalPartitionValue = true;
                     try (final DirectoryStream<Path> columnPartitionStream = Files.newDirectoryStream(internalPartition, Files::isDirectory)) {
                         for (final Path columnPartition : columnPartitionStream) {
-                            partitions.put(columnPartitionKey, columnPartition.getFileName().toFile());
+                            partitions.put(columnPartitionKey, columnPartition.getFileName().toString());
                             if (needToUpdateInternalPartitionValue) {
                                 // Partition order dictates comparison priority, so we need to insert the internal partition after the column partition.
                                 partitions.put(INTERNAL_PARTITION_KEY, internalPartitionValue);

@@ -5,6 +5,8 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
@@ -78,14 +80,20 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
 
         Partitioning() {
-            super(ColumnRegionFloat.createNull(), Supplier::get);
+            super(ColumnRegionFloat.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
         }
 
         @Override
         public ColumnRegionFloat<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
                                                    @NotNull final ColumnLocation columnLocation,
                                                    final int regionIndex) {
-            return new ColumnRegionFloat.Constant<>(unbox((Float) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
+            final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
+            final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
+            if (partitioningColumnValue != null && !Float.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
+                        + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
+            }
+            return new ColumnRegionFloat.Constant<>(unbox((Float) partitioningColumnValue));
         }
     }
 }
