@@ -1,5 +1,8 @@
 package io.deephaven.graphviz;
 
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.MutableGraph;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.Table;
 import io.deephaven.qst.table.TimeTable;
@@ -40,14 +43,14 @@ public class GraphVizBuilderTest {
 
     private static void check(Table t, String resource) throws IOException {
         String expected = getResource(resource);
-        String actual = GraphVizBuilder.of(Collections.singleton(t));
-        assertThat(actual).isEqualTo(expected);
+        MutableGraph graph = GraphVizBuilder.of(Collections.singleton(t));
+        assertThat(Graphviz.fromGraph(graph).render(Format.DOT).toString()).isEqualTo(expected);
     }
 
     private static void check(LabeledTables tables, String resource) throws IOException {
         String expected = getResource(resource);
-        String actual = GraphVizBuilder.of(tables);
-        assertThat(actual).isEqualTo(expected);
+        MutableGraph graph = GraphVizBuilder.of(tables);
+        assertThat(Graphviz.fromGraph(graph).render(Format.DOT).toString()).isEqualTo(expected);
     }
 
     private static String getResource(String resourceName) throws IOException {

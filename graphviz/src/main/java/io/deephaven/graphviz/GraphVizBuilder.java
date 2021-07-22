@@ -1,68 +1,72 @@
 package io.deephaven.graphviz;
 
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 import io.deephaven.qst.table.LabeledTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.Table;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
+import static guru.nidi.graphviz.model.Factory.to;
+
 class GraphVizBuilder {
 
-    static String of(Iterable<Table> tables) {
-        IdentifiersBuilder consumer = new IdentifiersBuilder();
+    static MutableGraph of(Iterable<Table> tables) {
+        NodesBuilder consumer = new NodesBuilder();
         ParentsVisitor.depthFirstWalk(tables, consumer);
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("digraph {").append(System.lineSeparator());
-        AppendNode.ofAll(consumer.identifiers, sb);
-        AppendLinks.ofAll(consumer.identifiers, sb);
-        sb.append("}");
-
-        return sb.toString();
+        MutableGraph graph = mutGraph().setDirected(true);
+        for (MutableNode node : consumer.identifiers.values()) {
+            graph.add(node);
+        }
+        AppendLinks.ofAll(consumer.identifiers);
+        return graph;
     }
 
-    static String of(LabeledTables tables) {
-        IdentifiersBuilder consumer = new IdentifiersBuilder();
+    static MutableGraph of(LabeledTables tables) {
+        NodesBuilder consumer = new NodesBuilder();
         ParentsVisitor.depthFirstWalk(tables.tables(), consumer);
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("digraph {").append(System.lineSeparator());
-        AppendNode.ofAll(consumer.identifiers, sb);
-        AppendLinks.ofAll(consumer.identifiers, sb);
+        MutableGraph graph = mutGraph().setDirected(true);
+        for (MutableNode node : consumer.identifiers.values()) {
+            graph.add(node);
+        }
+        AppendLinks.ofAll(consumer.identifiers);
 
         int argIndex = 0;
-
         for (LabeledTable e : tables) {
             String label = e.label();
             Table table = e.table();
-            String id = Objects.requireNonNull(consumer.identifiers.get(table));
 
-            sb.append("arg_").append(argIndex).append(" [shape=note label=\"").append(label)
-                .append("\"]").append(System.lineSeparator());
-            sb.append("arg_").append(argIndex).append(" -> ").append(id).append(" [label=\"")
-                .append(argIndex).append("\"]").append(System.lineSeparator());
+            MutableNode argNode = mutNode(Label.of(label)).add(Shape.NOTE);
+            graph.add(argNode);
+
+            MutableNode other = Objects.requireNonNull(consumer.identifiers.get(table));
+            argNode.addLink(to(other).with(Label.of(Integer.toString(argIndex))));
+
             ++argIndex;
         }
 
-        sb.append("}");
-
-        return sb.toString();
+        return graph;
     }
 
 
-    private static class IdentifiersBuilder implements Consumer<Table> {
+    private static class NodesBuilder implements Consumer<Table> {
 
-        private final LinkedHashMap<Table, String> identifiers = new LinkedHashMap<>();
+        private final LinkedHashMap<Table, MutableNode> identifiers = new LinkedHashMap<>();
         private int current;
 
         @Override
         public final void accept(Table table) {
-            if (identifiers.put(table, String.format("op_%d", current++)) != null) {
+            MutableNode node =
+                mutNode(String.format("op_%d", current++)).add(Label.of(LabelBuilder.of(table)));
+            if (identifiers.put(table, node) != null) {
                 throw new IllegalStateException();
             }
         }

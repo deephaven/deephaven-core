@@ -30,6 +30,10 @@ import java.util.function.Function;
 
 class LabelBuilder extends TableVisitorGeneric {
 
+    public static String of(Table table) {
+        return table.walk(new LabelBuilder(new StringBuilder())).sb.toString();
+    }
+
     private final StringBuilder sb;
 
     public LabelBuilder(StringBuilder sb) {

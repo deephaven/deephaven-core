@@ -1,14 +1,17 @@
 package io.deephaven.graphviz;
 
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizJdkEngine;
+import guru.nidi.graphviz.engine.Renderer;
 import io.deephaven.qst.table.LabeledTable;
 import io.deephaven.qst.table.LabeledTables;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
@@ -23,27 +26,33 @@ class GraphVizMain implements Callable<Void> {
         description = "The output file. If none specified, outputs to stdout.")
     Path output;
 
+    @Option(names = {"-f", "--format"}, paramLabel = "FORMAT", description = "The output format, one of: [ ${COMPLETION-CANDIDATES} ]. Defaults to DOT.",
+        defaultValue = "DOT")
+    Format format;
+
     @Parameters(arity = "1..*", paramLabel = "QST",
         description = "QST file(s) to process. May be in the form <PATH> or <KEY>=<PATH>.",
         converter = LabeledTableConverter.class)
     LabeledTable[] inputTables;
 
-    private String toDotFormat() {
-        return GraphVizBuilder.of(LabeledTables.of(inputTables));
+    private Renderer render() {
+        return Graphviz.fromGraph(GraphVizBuilder.of(LabeledTables.of(inputTables)))
+            .render(format);
     }
 
     @Override
     public Void call() throws Exception {
-        String dotFormat = toDotFormat();
+        Renderer render = render();
         if (output != null) {
-            Files.write(output, dotFormat.getBytes(StandardCharsets.UTF_8));
+            render.toFile(output.toFile());
         } else {
-            System.out.println(dotFormat);
+            System.out.println(render);
         }
         return null;
     }
 
     public static void main(String[] args) {
+        Graphviz.useEngine(new GraphvizJdkEngine());
         int execute = new CommandLine(new GraphVizMain()).execute(args);
         System.exit(execute);
     }

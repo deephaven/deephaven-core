@@ -1,5 +1,7 @@
 package io.deephaven.graphviz;
 
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.model.MutableNode;
 import io.deephaven.qst.table.LinkDescriber;
 import io.deephaven.qst.table.LinkDescriber.LinkConsumer;
 import io.deephaven.qst.table.Table;
@@ -7,25 +9,25 @@ import io.deephaven.qst.table.Table;
 import java.util.Map;
 import java.util.Objects;
 
+import static guru.nidi.graphviz.model.Factory.to;
+
 class AppendLinks implements LinkConsumer {
 
-    static void ofAll(Map<Table, String> identifiers, StringBuilder sb) {
+    static void ofAll(Map<Table, MutableNode> identifiers) {
         for (Table table : identifiers.keySet()) {
-            of(identifiers, sb, table);
+            of(identifiers, table);
         }
     }
 
-    static void of(Map<Table, String> identifiers, StringBuilder sb, Table table) {
-        new AppendLinks(identifiers, sb, table).appendLinks();
+    static void of(Map<Table, MutableNode> identifiers, Table table) {
+        new AppendLinks(identifiers, table).appendLinks();
     }
 
-    private final Map<Table, String> identifiers;
-    private final StringBuilder sb;
+    private final Map<Table, MutableNode> identifiers;
     private final Table dependent;
 
-    private AppendLinks(Map<Table, String> identifiers, StringBuilder sb, Table dependent) {
+    private AppendLinks(Map<Table, MutableNode> identifiers, Table dependent) {
         this.identifiers = Objects.requireNonNull(identifiers);
-        this.sb = Objects.requireNonNull(sb);
         this.dependent = Objects.requireNonNull(dependent);
     }
 
@@ -33,24 +35,22 @@ class AppendLinks implements LinkConsumer {
         dependent.walk(new LinkDescriber(this));
     }
 
-    private String id(Table t) {
+    private MutableNode node(Table t) {
         return Objects.requireNonNull(identifiers.get(t));
     }
 
     @Override
     public void link(Table table) {
-        sb.append(id(dependent)).append(" -> ").append(id(table)).append(System.lineSeparator());
+        node(dependent).addLink(node(table));
     }
 
     @Override
     public void link(Table table, int linkIndex) {
-        sb.append(id(dependent)).append(" -> ").append(id(table)).append(" [label=\"")
-            .append(linkIndex).append("\"]").append(System.lineSeparator());
+        node(dependent).addLink(to(node(table)).with(Label.of(Integer.toString(linkIndex))));
     }
 
     @Override
     public void link(Table table, String linkLabel) {
-        sb.append(id(dependent)).append(" -> ").append(id(table)).append(" [label=\"")
-            .append(linkLabel).append("\"]").append(System.lineSeparator());
+        node(dependent).addLink(to(node(table)).with(Label.of(linkLabel)));
     }
 }
