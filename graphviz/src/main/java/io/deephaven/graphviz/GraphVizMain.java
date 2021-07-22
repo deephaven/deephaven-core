@@ -26,7 +26,8 @@ class GraphVizMain implements Callable<Void> {
         description = "The output file. If none specified, outputs to stdout.")
     Path output;
 
-    @Option(names = {"-f", "--format"}, paramLabel = "FORMAT", description = "The output format, one of: [ ${COMPLETION-CANDIDATES} ]. Defaults to DOT.",
+    @Option(names = {"-f", "--format"}, paramLabel = "FORMAT",
+        description = "The output format, one of: [ ${COMPLETION-CANDIDATES} ]. Defaults to DOT.",
         defaultValue = "DOT")
     Format format;
 
@@ -36,8 +37,7 @@ class GraphVizMain implements Callable<Void> {
     LabeledTable[] inputTables;
 
     private Renderer render() {
-        return Graphviz.fromGraph(GraphVizBuilder.of(LabeledTables.of(inputTables)))
-            .render(format);
+        return Graphviz.fromGraph(GraphVizBuilder.of(LabeledTables.of(inputTables))).render(format);
     }
 
     @Override
