@@ -17,6 +17,7 @@ import io.deephaven.db.util.VariableProvider;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -33,7 +34,35 @@ import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.parse.api.CompletionParseService;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.script.grpc.*;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
+import io.deephaven.proto.backplane.script.grpc.CancelCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.CancelCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.ChangeDocumentResponse;
+import io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.CloseDocumentResponse;
+import io.deephaven.proto.backplane.script.grpc.CompletionItem;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
+import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
+import io.deephaven.proto.backplane.script.grpc.FetchTableRequest;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
+import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
+import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse;
+import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
+import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
+import io.deephaven.proto.backplane.script.grpc.OpenDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.OpenDocumentResponse;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
+import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
+import io.deephaven.proto.backplane.script.grpc.VariableDefinition;
+import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -190,28 +219,33 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
             final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
+            final SessionState.ExportObject<ScriptSession> exportedConsole;
+
+            ExportBuilder<?> exportBuilder = session.nonExport()
+                    .requiresSerialQueue()
+                    .onError(responseObserver::onError);
+
             if (request.hasConsoleId()) {
-                SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
-                session.nonExport()
-                        .requiresSerialQueue()
-                        .require(exportedConsole, exportedTable)
-                        .onError(responseObserver::onError)
-                        .submit(() -> applyBindTableToVariable(responseObserver, exportedConsole.get(), request.getVariableName(), exportedTable.get()));
+                exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
+                exportBuilder.require(exportedTable, exportedConsole);
             } else {
-                session.nonExport()
-                        .requiresSerialQueue()
-                        .require(exportedTable)
-                        .onError(responseObserver::onError)
-                        .submit(() -> applyBindTableToVariable(responseObserver, globalSessionProvider.getGlobalSession(), request.getVariableName(), exportedTable.get()));
+                exportedConsole = null;
+                exportBuilder.require(exportedTable);
             }
+
+            exportBuilder.submit(() -> {
+                ScriptSession scriptSession = exportedConsole != null ? exportedConsole.get() : globalSessionProvider.getGlobalSession();
+                Table table = exportedTable.get();
+                scriptSession.setVariable(request.getVariableName(), table);
+                scriptSession.manage(table);
+                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            });
         });
     }
 
     private void applyBindTableToVariable(StreamObserver<BindTableToVariableResponse> observer, ScriptSession scriptSession, String variableName, Table table) {
-        scriptSession.setVariable(variableName, table);
-        scriptSession.manage(table);
-        observer.onNext(BindTableToVariableResponse.getDefaultInstance());
-        observer.onCompleted();
+
     }
 
     // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this will be deprecated
