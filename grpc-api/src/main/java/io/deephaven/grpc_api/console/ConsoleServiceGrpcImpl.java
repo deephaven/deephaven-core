@@ -14,10 +14,10 @@ import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.VariableProvider;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -190,16 +190,29 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void bindTableToVariable(BindTableToVariableRequest request, StreamObserver<BindTableToVariableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
+            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
+            final SessionState.ExportObject<ScriptSession> exportedConsole;
 
-            SessionState.ExportObject<ScriptSession> exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
-            SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
-            session.nonExport()
-                    .require(exportedConsole, exportedTable)
-                    .submit(() -> {
-                        exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
-                        responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                        responseObserver.onCompleted();
-                    });
+            ExportBuilder<?> exportBuilder = session.nonExport()
+                    .requiresSerialQueue()
+                    .onError(responseObserver::onError);
+
+            if (request.hasConsoleId()) {
+                exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
+                exportBuilder.require(exportedTable, exportedConsole);
+            } else {
+                exportedConsole = null;
+                exportBuilder.require(exportedTable);
+            }
+
+            exportBuilder.submit(() -> {
+                ScriptSession scriptSession = exportedConsole != null ? exportedConsole.get() : globalSessionProvider.getGlobalSession();
+                Table table = exportedTable.get();
+                scriptSession.setVariable(request.getVariableName(), table);
+                scriptSession.manage(table);
+                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            });
         });
     }
 
