@@ -55,6 +55,11 @@ public class BarrageSchemaUtil {
     ));
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,
+                                        final Table table) {
+        return makeSchemaPayload(builder, table.getDefinition(), table.getAttributes());
+    }
+
+    public static int makeSchemaPayload(final FlatBufferBuilder builder,
                                         final TableDefinition table,
                                         final Map<String, Object> attributes) {
         final Map<String, Map<String, String>> fieldExtraMetadata = new HashMap<>();
