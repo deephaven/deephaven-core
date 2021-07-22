@@ -104,7 +104,7 @@ class KnownColumnTypes {
 
         @Override
         public void visit(CustomType<?> customType) {
-            // ignore
+            throw new IllegalStateException("Should not be adding custom type as static mapping");
         }
     }
 }
