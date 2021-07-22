@@ -14,8 +14,8 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionChar<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
+        super(columnChunkPageStores);
     }
 
     @Override

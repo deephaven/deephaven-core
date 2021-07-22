@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionByte<ATTR> {
 
-    public ParquetColumnRegionByte(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+    public ParquetColumnRegionByte(@NotNull ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
+        super(columnChunkPageStores);
     }
 
     public byte[] getBytes(

@@ -41,13 +41,14 @@ class ParquetTableLocation extends AbstractTableLocation {
     private final ParquetInstructions readInstructions;
 
     private final Map<String, String> keyValueMetaData;
-    private final RowGroupReader rowGroupReader;
+    private final RowGroupReader[] rowGroupReaders;
     private final Map<String, String[]> columns;
 
     private final SeekableChannelsProvider cachedChannelProvider = new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()),
             Configuration.getInstance().getIntegerForClassWithDefault(ParquetTableLocation.class, "maxChannels", 100));
 
     private static class GroupingFile {
+        // Grouping files are always created with a single reader.
         RowGroupReader reader;
         Map<String, String> keyValueMetaData;
     }
@@ -62,12 +63,16 @@ class ParquetTableLocation extends AbstractTableLocation {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         this.parquetFile = parquetFile;
+        int totalRows = 0;
         try {
             ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
-            if (parquetFileReader.fileMetaData.getRow_groups().isEmpty()) {
-                rowGroupReader = null;
-            } else {
-                rowGroupReader = parquetFileReader.getRowGroup(0);
+
+            final int nRowGroups = parquetFileReader.fileMetaData.getRow_groups().size();
+            rowGroupReaders = new RowGroupReader[nRowGroups];
+            for (int i = 0; i < nRowGroups; ++i) {
+                final RowGroupReader reader = parquetFileReader.getRowGroup(i);
+                rowGroupReaders[i] = reader;
+                totalRows += reader.numRows();
             }
 
             columns = new HashMap<>();
@@ -87,7 +92,7 @@ class ParquetTableLocation extends AbstractTableLocation {
             throw new TableDataException("Can't read parquet file", except);
         }
 
-        handleUpdate(rowGroupReader == null ? 0 : rowGroupReader.numRows(), parquetFile.lastModified());
+        handleUpdate(totalRows, parquetFile.lastModified());
     }
 
     @Override
@@ -124,10 +129,16 @@ class ParquetTableLocation extends AbstractTableLocation {
             };
         }
 
-        ColumnChunkPageStore.Creator<Attributes.Values> creator = makeColumnCreator(name, rowGroupReader, keyValueMetaData,
-                getMetaData);
+        final ColumnChunkPageStore.Creator<Attributes.Values>[] creators =
+                new ColumnChunkPageStore.Creator[rowGroupReaders.length];
 
-        return new ParquetColumnLocation<>(this, name, creator);
+        for (int i = 0; i < rowGroupReaders.length; ++i) {
+            creators[i] = makeColumnCreator(name, rowGroupReaders[i], keyValueMetaData,
+                    // TODO MISSING: This is pretty ugly; we only need one instance of metadata, not one per row group, so we use row group 0.
+                    (i == 0) ? getMetaData : null);
+        }
+
+        return new ParquetColumnLocation<Attributes.Values>(this, name, creators);
     }
 
     private GroupingFile getGroupingFile(String name) {

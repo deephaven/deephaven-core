@@ -16,30 +16,42 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
         implements ColumnRegionObject<STRING_LIKE_TYPE, ATTR>, Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     private final Class<STRING_LIKE_TYPE> nativeType;
-    private final ObjectChunk<String, ATTR> dictionary;
+    private final ObjectChunk<String, ATTR>[] dictionaries;
     private final StringCache<STRING_LIKE_TYPE> stringCache;
+    private final long[] accumLengths;
+    private final int nDicts;
 
-    public static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> nativeType, final Chunk<ATTR> dictionary) {
+    public static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> nativeType, final Chunk<ATTR>[] dictionaries) {
         Require.eqTrue(CharSequence.class.isAssignableFrom(nativeType), "Dictionary result is not a string like type.");
-        Require.neqNull(dictionary, "dictionary");
+        Require.neqNull(dictionaries, "dictionaries");
         //noinspection unchecked,rawtypes
-        return (ColumnRegionObject<T, ATTR>) new ParquetColumnRegionSymbolTable(nativeType, dictionary.asObjectChunk());
+        return (ColumnRegionObject<T, ATTR>) new ParquetColumnRegionSymbolTable(nativeType, (ObjectChunk[]) dictionaries);
     }
 
-    private ParquetColumnRegionSymbolTable(@NotNull Class<STRING_LIKE_TYPE> nativeType, @NotNull final ObjectChunk<String, ATTR> dictionary) {
+    private ParquetColumnRegionSymbolTable(@NotNull Class<STRING_LIKE_TYPE> nativeType, @NotNull final ObjectChunk<String, ATTR>[] dictionaries) {
         this.nativeType = nativeType;
-        this.dictionary = dictionary;
+        this.dictionaries = dictionaries;
         this.stringCache = StringUtils.getStringCache(nativeType);
+        nDicts = dictionaries.length;
+        accumLengths = new long[nDicts];
+        long len = 0;
+        for (int i = 0; i < nDicts; ++i) {
+            len += dictionaries[i].size();
+            accumLengths[i] = len;
+        }
     }
 
     @Override
     public STRING_LIKE_TYPE getObject(long elementIndex) {
-        return stringCache.getCachedString(dictionary.get((int)getRowOffset(elementIndex)));
+        if (nDicts == 1) {
+            return stringCache.getCachedString(dictionaries[0].get((int) getRowOffset(elementIndex)));
+        }
+        return null;  // TODO MISSING
     }
 
     @Override
     public long length() {
-        return dictionary.size();
+        return accumLengths[nDicts - 1];
     }
 
     @Override
@@ -49,13 +61,15 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
 
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        return dictionary.slice(Math.toIntExact(getRowOffset(firstKey)), Math.toIntExact(lastKey - firstKey + 1));
+        if (nDicts == 1) {
+            return dictionaries[0].slice(Math.toIntExact(getRowOffset(firstKey)), Math.toIntExact(lastKey - firstKey + 1));
+        }
+        return null;  // TODO MISSING
     }
 
     @Override
     public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableObjectChunk<STRING_LIKE_TYPE, ? super ATTR> objectDestination = destination.asWritableObjectChunk();
-
         orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
     }
 }

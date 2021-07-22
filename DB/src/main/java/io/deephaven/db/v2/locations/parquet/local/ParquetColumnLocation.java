@@ -38,11 +38,11 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to ensure
      * visibility of the derived fields.
      */
-    private volatile ColumnChunkPageStore.Creator<ATTR> pageStoreCreator;
+    private volatile ColumnChunkPageStore.Creator<ATTR>[] pageStoreCreators;
 
-    private ColumnChunkPageStore<ATTR> pageStore;
-    private Chunk<ATTR> dictionary;
-    private ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
+    private ColumnChunkPageStore<ATTR>[] pageStores;
+    private Chunk<ATTR>[] dictionaries;
+    private ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores;
     private Supplier<?> getMetadata;
 
     /**
@@ -53,10 +53,10 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      */
     ParquetColumnLocation(@NotNull final ParquetTableLocation tableLocation,
                           @NotNull final String name,
-                          final ColumnChunkPageStore.Creator<ATTR> pageStoreCreator) {
+                          final ColumnChunkPageStore.Creator<ATTR>[] pageStoreCreators) {
 
         super(tableLocation, name);
-        this.pageStoreCreator = pageStoreCreator;
+        this.pageStoreCreators = pageStoreCreators;
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -70,15 +70,15 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     @Override
     public final boolean exists() {
-        if (pageStoreCreator != null) {
+        if (pageStoreCreators != null) {
             synchronized (this) {
-                if (pageStoreCreator != null) {
-                    return pageStoreCreator.exists();
+                if (pageStoreCreators != null) {
+                    return pageStoreCreators.length > 0;
                 }
             }
         }
 
-        return pageStore != null;
+        return true;
     }
 
     @Override
@@ -92,64 +92,64 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     @Override
     public ColumnRegionChar<Values> makeColumnRegionChar(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionChar<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionChar<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionByte<Values> makeColumnRegionByte(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionByte<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionByte<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionShort<Values> makeColumnRegionShort(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionShort<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionShort<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionInt<Values> makeColumnRegionInt(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionInt<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionInt<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionLong<Values> makeColumnRegionLong(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionLong<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionLong<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionFloat<Values> makeColumnRegionFloat(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionFloat<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionFloat<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionDouble<Values> makeColumnRegionDouble(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionDouble<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionDouble<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull final ColumnDefinition<TYPE> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionObject<>((ColumnChunkPageStore<Values>) getPageStore(columnDefinition));
+        return new ParquetColumnRegionObject<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
     }
 
     @Override
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus offset adjustments for multiple dictionaries)
-        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore = getDictionaryKeysPageStore(columnDefinition);
-        return dictionaryKeysPageStore == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStore);
+        final ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores = getDictionaryKeysPageStores(columnDefinition);
+        return dictionaryKeysPageStores == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStores);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus multiple dictionary pages)
-        final Chunk<Values> dictionaryValuesChunk = (Chunk<Values>) getDictionary(columnDefinition);
-        return dictionaryValuesChunk == null ? null : ParquetColumnRegionSymbolTable.create(columnDefinition.getDataType(), dictionaryValuesChunk);
+        final Chunk<Values>[] dictionaryValuesChunks = (Chunk<Values>[]) getDictionaries(columnDefinition);
+        return dictionaryValuesChunks == null ? null : ParquetColumnRegionSymbolTable.create(columnDefinition.getDataType(), dictionaryValuesChunks);
     }
 
     /**
@@ -159,9 +159,9 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @return The page store
      */
     @NotNull
-    public final ColumnChunkPageStore<ATTR> getPageStore(@NotNull final ColumnDefinition<?> columnDefinition) {
+    public final ColumnChunkPageStore<ATTR>[] getPageStores(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
-        return pageStore;
+        return pageStores;
     }
 
     /**
@@ -171,9 +171,9 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @return The dictionary, or null if it doesn't exist
      */
     @Nullable
-    public Chunk<ATTR> getDictionary(@NotNull final ColumnDefinition<?> columnDefinition) {
+    private Chunk<ATTR>[] getDictionaries(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
-        return dictionary;
+        return dictionaries;
     }
 
     /**
@@ -184,29 +184,38 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @return The page store
      */
     @Nullable
-    private ColumnChunkPageStore<DictionaryKeys> getDictionaryKeysPageStore(@NotNull final ColumnDefinition<?> columnDefinition) {
+    private ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
-        return dictionaryKeysPageStore;
+        return dictionaryKeysPageStores;
     }
 
     private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
-        if (pageStoreCreator == null) {
+        if (pageStoreCreators == null) {
             return;
         }
         synchronized (this) {
-            if (pageStoreCreator == null) {
+            if (pageStoreCreators == null) {
                 return;
             }
-            try {
-                final ColumnChunkPageStore.Values<ATTR> values = pageStoreCreator.get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
-                pageStore = values.pageStore;
-                dictionary = values.dictionary;
-                dictionaryKeysPageStore = values.dictionaryKeysPageStore;
-                getMetadata = values.getMetadata;
-                pageStoreCreator = null;
-            } catch (IOException except) {
-                throw new TableDataException("IO error reading parquet file in " + this, except);
+            final int n = pageStoreCreators.length;
+            pageStores = new ColumnChunkPageStore[n];
+            dictionaries = new Chunk[n];
+            dictionaryKeysPageStores = new ColumnChunkPageStore[n];
+            for (int i = 0; i < n; ++i) {
+                try {
+                    final ColumnChunkPageStore.Values<ATTR> values = pageStoreCreators[i].get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+                    pageStores[i] = values.pageStore;
+                    dictionaries[i] = values.dictionary;
+                    dictionaryKeysPageStores[i] = values.dictionaryKeysPageStore;
+                    if (i == 0) {  // TODO MISSING: This is pretty ugly; we only need one instance of metadata, not one per row group, so we use row group 0.
+                        getMetadata = values.getMetadata;
+                    }
+                    pageStoreCreators[i] = null;
+                } catch (IOException except) {
+                    throw new TableDataException("IO error reading parquet file in " + this + " row group " + i, except);
+                }
             }
+            pageStoreCreators = null;
         }
     }
 
