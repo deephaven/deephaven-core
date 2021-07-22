@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionByte$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superColumnRegionByte.Constant.ATTR>\n:param length: int",
+  "getByte": "Get a single byte from this region.\n\n:param elementIndex: (long) - Element (byte) index in the table's address space\n:return: (byte) The byte value at the specified element (byte) index",
+  "getBytes": "Get a range of bytes from this region. Implementations are not required to verify that the range specified is\n meaningful.\n\n:param firstElementIndex: (long) - First element (byte) index in the table's address space\n:param destination: (byte[]) - Array to store results\n:param destinationOffset: (int) - Offset into destination to begin storing at\n:param length: (int) - Number of bytes to get\n:return: (byte[]) destination, to enable method chaining"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionByte.Constant",
+ "typeName": "class"
+}

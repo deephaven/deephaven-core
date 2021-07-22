@@ -1,0 +1,25 @@
+{
+ "className": "io.deephaven.datastructures.util.CollectionUtil",
+ "methods": {
+  "containsNull": "Determines if an array contains a null.\n\nNote: Java generics information - <E>\n\n:param elems: E[]\n:return: boolean",
+  "convertDoublesToPrimitiveArray": "Converts a List of Doubles to an array of doubles.\n\n:param collection: java.util.Collection<java.lang.Double>\n:return: double[]",
+  "convertIntegersToPrimitiveArray": "Converts a Collection of Integers to an array of ints.\n\n:param collection: java.util.Collection<java.lang.Integer>\n:return: int[]",
+  "convertLongsToPrimitiveArray": "Converts a Collection of Integers to an array of ints.\n\n:param collection: java.util.Collection<java.lang.Long>\n:return: long[]",
+  "invertMap": "Note: Java generics information - <K,\nV>\n\n:param sourceMap: java.util.Map<V,K>\n:return: java.util.Map<K,V>",
+  "listFromArray": "Note: Java generics information - <E>\n\n:param data: E...\n:return: java.util.List<E>",
+  "mapFromArray": "*Overload 1*  \n  Note: Java generics information - <K,\n  V>\n  \n  :param typeK: java.lang.Class<K>\n  :param typeV: java.lang.Class<V>\n  :param data: java.lang.Object...\n  :return: java.util.Map<K,V>\n  \n*Overload 2*  \n  Note: Java generics information - <K,\n  V>\n  \n  :param typeK: java.lang.Class<K>\n  :param typeV: java.lang.Class<V>\n  :param allowDuplicateKeys: boolean\n  :param data: java.lang.Object...\n  :return: java.util.Map<K,V>",
+  "newSizedHashMap": "Returns an empty HashMap with a big enough capacity\n such that the given number of entries can be added without\n resizing.\n\nNote: Java generics information - <K,\nV>\n\n:param nEntries: int\n:return: java.util.Map<K,V>",
+  "newSizedHashSet": "Returns an empty HashSet with a big enough capacity\n such that the given number of entries can be added without\n resizing.\n\nNote: Java generics information - <E>\n\n:param nEntries: int\n:return: java.util.Set<E>",
+  "newSizedLinkedHashMap": "Returns an empty LinkedHashMap with a big enough\n capacity such that the given number of entries can be added\n without resizing.\n\nNote: Java generics information - <K,\nV>\n\n:param nEntries: int\n:return: java.util.Map<K,V>",
+  "newSizedLinkedHashSet": "Returns an empty LinkedHashSet with a big enough capacity\n such that the given number of entries can be added without\n resizing.\n\nNote: Java generics information - <E>\n\n:param nEntries: int\n:return: java.util.Set<E>",
+  "setFromArray": "*Overload 1*  \n  Note: Java generics information - <E>\n  \n  :param data: E...\n  :return: java.util.Set<E>\n  \n*Overload 2*  \n  Note: Java generics information - <TYPE>\n  \n  :param type: java.lang.Class<TYPE>\n  :param data: java.lang.Object...\n  :return: java.util.Set<TYPE>",
+  "shuffle": "Shuffles the elements in an array.\n\nNote: Java generics information - <E>\n\n:param elems: E[]\n:param random: java.util.Random",
+  "universalSet": "Returns the universal set (immutable).  This set is serializable.\n\nNote: Java generics information - <T>\n\n:return: java.util.Set<T>",
+  "unmodifiableInvertMap": "Note: Java generics information - <K,\nV>\n\n:param sourceMap: java.util.Map<V,K>\n:return: java.util.Map<K,V>",
+  "unmodifiableMapFromArray": "Note: Java generics information - <K,\nV>\n\n:param typeK: java.lang.Class<K>\n:param typeV: java.lang.Class<V>\n:param data: java.lang.Object...\n:return: java.util.Map<K,V>",
+  "unmodifiableSetFromArray": "Note: Java generics information - <E>\n\n:param data: E...\n:return: java.util.Set<E>"
+ },
+ "path": "io.deephaven.datastructures.util.CollectionUtil",
+ "text": "Utility methods for creating collections.",
+ "typeName": "class"
+}

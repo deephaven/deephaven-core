@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.datastructures.util.HashCodeUtil",
+ "methods": {
+  "combineHashCodes": ":param values: java.lang.Object...\n:return: int",
+  "createHashCode": ":param values: java.lang.Object[]\n:return: int",
+  "toHashCode": "*Overload 1*  \n  :param val: double\n  :return: int\n  \n*Overload 2*  \n  :param val: long\n  :return: int\n  \n*Overload 3*  \n  :param obj: java.lang.Object\n  :return: int"
+ },
+ "path": "io.deephaven.datastructures.util.HashCodeUtil",
+ "typeName": "class"
+}
