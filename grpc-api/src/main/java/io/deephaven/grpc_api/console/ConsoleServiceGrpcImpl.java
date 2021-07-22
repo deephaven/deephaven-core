@@ -196,23 +196,22 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         .requiresSerialQueue()
                         .require(exportedConsole, exportedTable)
                         .onError(responseObserver::onError)
-                        .submit(() -> {
-                            exportedConsole.get().setVariable(request.getVariableName(), exportedTable.get());
-                            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        .submit(() -> applyBindTableToVariable(responseObserver, exportedConsole.get(), request.getVariableName(), exportedTable.get()));
             } else {
                 session.nonExport()
                         .requiresSerialQueue()
                         .require(exportedTable)
                         .onError(responseObserver::onError)
-                        .submit(() -> {
-                            globalSessionProvider.getGlobalSession().setVariable(request.getVariableName(), exportedTable.get());
-                            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        .submit(() -> applyBindTableToVariable(responseObserver, globalSessionProvider.getGlobalSession(), request.getVariableName(), exportedTable.get()));
             }
         });
+    }
+
+    private void applyBindTableToVariable(StreamObserver<BindTableToVariableResponse> observer, ScriptSession scriptSession, String variableName, Table table) {
+        scriptSession.setVariable(variableName, table);
+        scriptSession.manage(table);
+        observer.onNext(BindTableToVariableResponse.getDefaultInstance());
+        observer.onCompleted();
     }
 
     // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this will be deprecated

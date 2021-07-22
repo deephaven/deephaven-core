@@ -16,6 +16,7 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.lang.parse.api.CompletionParseService;
 import io.deephaven.lang.parse.api.CompletionParseServiceNoOp;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -205,15 +206,4 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     public VariableProvider getVariableProvider() {
         return this;
     }
-
-
-    @Override
-    public final void setVariable(String name, Object value) {
-        if (value instanceof LivenessReferent) {
-            livenessScope.manage((LivenessReferent) value);
-        }
-        setVariableImpl(name, value);
-    }
-
-    protected abstract void setVariableImpl(String name, Object value);
 }
