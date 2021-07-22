@@ -80,7 +80,9 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceByte<Values> {
 
         Partitioning() {
-            super(ColumnRegionByte.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionByte.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override

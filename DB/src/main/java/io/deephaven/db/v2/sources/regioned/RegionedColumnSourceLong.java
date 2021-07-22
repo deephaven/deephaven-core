@@ -80,7 +80,9 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
 
         Partitioning() {
-            super(ColumnRegionLong.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionLong.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override

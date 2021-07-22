@@ -77,7 +77,9 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceChar<Values> {
 
         Partitioning() {
-            super(ColumnRegionChar.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionChar.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override

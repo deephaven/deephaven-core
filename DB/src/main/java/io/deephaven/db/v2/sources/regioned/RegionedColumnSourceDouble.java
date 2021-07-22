@@ -80,7 +80,9 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceDouble<Values> {
 
         Partitioning() {
-            super(ColumnRegionDouble.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionDouble.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override

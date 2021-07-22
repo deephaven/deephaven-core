@@ -80,7 +80,9 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
 
         Partitioning() {
-            super(ColumnRegionFloat.createNull(), Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionFloat.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override

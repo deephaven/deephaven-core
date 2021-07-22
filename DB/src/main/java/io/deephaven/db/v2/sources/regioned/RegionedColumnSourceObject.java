@@ -74,7 +74,9 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
     static final class Partitioning<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
 
         Partitioning(@NotNull final Class<DATA_TYPE> dataType) {
-            super(ColumnRegionObject.createNull(), dataType, null, Supplier::get /* No need to interpose a deferred region in this case. */);
+            super(ColumnRegionObject.createNull(), dataType, null,
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
         }
 
         @Override
