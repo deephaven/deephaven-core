@@ -10,17 +10,10 @@ import io.deephaven.util.datastructures.cache.OffsetLookup;
 import io.deephaven.util.datastructures.cache.ReverseOffsetLookupCache;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
-
 class RegionedColumnSourceStringSet extends RegionedColumnSourceObject<StringSet, Attributes.Values> {
 
     RegionedColumnSourceStringSet() {
         super(StringSet.class);
-    }
-
-    @Override
-    public StringSet get(long elementIndex) {
-        return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
     }
 
     @Override

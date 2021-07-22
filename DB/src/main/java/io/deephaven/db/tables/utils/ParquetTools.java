@@ -32,10 +32,12 @@ import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
+import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
 import java.io.File;
 import java.io.IOException;
@@ -433,7 +435,8 @@ public class ParquetTools {
             if (partitionValue == null) {
                 throw new IllegalArgumentException("First location key " + firstKey + " has null partition value at partition key " + partitionKey);
             }
-            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, partitionValue.getClass(), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+            //noinspection unchecked
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         }
         allColumns.addAll(schemaInfo.getFirst());
         return readMultiFileTable(recordingLocationKeyFinder, schemaInfo.getSecond(), new TableDefinition(allColumns));

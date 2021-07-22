@@ -3,7 +3,7 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.db.v2.sources.chunk.page.Page;
 import io.deephaven.db.v2.sources.chunk.page.PageStore;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
 
-public interface RegionedPageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
+public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE>, LongSizedDataStructure {
 
     long REGION_MASK = ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
@@ -20,11 +20,9 @@ public interface RegionedPageStore<ATTR extends Attributes.Any, INNER_ATTR exten
 
     /**
      * @return The total number of rows across all regions.
-     *
      * @implNote We intentionally do not derive from Page and implement Page.length() because our index is not
      * contiguous.
      */
-
     default long size() {
         long size = 0;
         int regionCount = getRegionCount();
@@ -39,38 +37,43 @@ public interface RegionedPageStore<ATTR extends Attributes.Any, INNER_ATTR exten
 
     /**
      * Get the region index.
+     *
      * @return The region index for an element index.
      */
-    static int getRegionIndex(long elementIndex) {
+    static int getRegionIndex(final long elementIndex) {
         return (int) (elementIndex >> REGION_MASK_NUM_BITS);
     }
 
     /**
      * Get the first element index.
+     *
      * @return the first element index for a region index.
      */
-    static long getFirstElementIndex(int regionIndex) {
+    static long getFirstElementIndex(final int regionIndex) {
         return (long) regionIndex << REGION_MASK_NUM_BITS;
     }
 
     /**
      * Get the last element index.
+     *
      * @return the last element index for a region index.
      */
-    static long getLastElementIndex(int regionIndex) {
+    static long getLastElementIndex(final int regionIndex) {
         return (long) regionIndex << REGION_MASK_NUM_BITS | REGION_MASK;
     }
 
     /**
      * Get the element index.
+     *
      * @return the element index for a particular region offset of a region index.
      */
-    static long getElementIndex(int regionIndex, long regionOffset) {
+    static long getElementIndex(final int regionIndex, final long regionOffset) {
         return (long) regionIndex << REGION_MASK_NUM_BITS | regionOffset;
     }
 
     /**
      * Get the number of regions.
+     *
      * @return The number of regions that have been added
      */
     int getRegionCount();
@@ -94,9 +97,10 @@ public interface RegionedPageStore<ATTR extends Attributes.Any, INNER_ATTR exten
         return getRegion(getRegionIndex(elementIndex));
     }
 
-    @Override @NotNull
+    @Override
+    @NotNull
     @FinalDefault
-    default REGION_TYPE getPageContaining(FillContext fillContext, long row) {
+    default REGION_TYPE getPageContaining(final FillContext fillContext, final long row) {
         return lookupRegion(row);
     }
 
@@ -113,7 +117,7 @@ public interface RegionedPageStore<ATTR extends Attributes.Any, INNER_ATTR exten
 
     class Helper {
         static long getNumBitsOfMask() {
-            long numBits = MathUtil.ceilLog2(REGION_MASK);
+            final long numBits = MathUtil.ceilLog2(REGION_MASK);
             Require.eq(REGION_MASK + 1, "MAX_REGION_SIZE", 1L << numBits, "1 << RIGHT_SHIFT");
             return numBits;
         }

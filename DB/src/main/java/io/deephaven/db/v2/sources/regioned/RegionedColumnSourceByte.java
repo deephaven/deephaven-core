@@ -5,44 +5,49 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of bytes.
  */
-abstract class RegionedColumnSourceByte<ATTR extends Attributes.Values>
+abstract class RegionedColumnSourceByte<ATTR extends Values>
         extends RegionedColumnSourceArray<Byte, ATTR, ColumnRegionByte<ATTR>>
         implements ColumnSourceGetDefaults.ForByte {
 
-    RegionedColumnSourceByte(ColumnRegionByte<ATTR> nullRegion) {
-        super(nullRegion, byte.class, DeferredColumnRegionByte::new);
+    RegionedColumnSourceByte(@NotNull final ColumnRegionByte<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
+        super(nullRegion, byte.class, makeDeferred);
     }
 
     @Override
-    public byte getByte(long elementIndex) {
+    public byte getByte(final long elementIndex) {
         return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getByte(elementIndex);
     }
 
-    interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionByte<Attributes.Values>> {
+    interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionByte<Values>> {
         @Override
-        default ColumnRegionByte<Attributes.Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                               @NotNull final ColumnLocation columnLocation,
-                                                               final int regionIndex) {
+        default ColumnRegionByte<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                    @NotNull final ColumnLocation columnLocation,
+                                                    final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionByte(columnDefinition);
             }
-
             return null;
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceByte<Attributes.Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionByte.createNull());
+    static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionByte.createNull(), DeferredColumnRegionByte::new);
         }
     }
 
@@ -51,26 +56,46 @@ abstract class RegionedColumnSourceByte<ATTR extends Attributes.Values>
      * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
      * regions by looking into the delegate instance's region array.
      */
-
     @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Attributes.Values>
+    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
             extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Byte, ColumnRegionByte<ATTR>>
             implements ColumnSourceGetDefaults.ForByte {
 
-        NativeType(RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionByte<ATTR>>> outerColumnSource) {
+        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionByte<ATTR>>> outerColumnSource) {
             super(Byte.class, outerColumnSource);
         }
 
         @Override
-        public byte getByte(long elementIndex) {
+        public byte getByte(final long elementIndex) {
             return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getByte(elementIndex);
         }
 
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Attributes.Values> implements MakeRegionDefault {
-            AsValues(RegionedColumnSourceBase<DATA_TYPE, Attributes.Values, ColumnRegionReferencing<Attributes.Values, ColumnRegionByte<Attributes.Values>>> outerColumnSource) {
+        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
+            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionByte<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
         }
     }
 
+    static final class Partitioning extends RegionedColumnSourceByte<Values> {
+
+        Partitioning() {
+            super(ColumnRegionByte.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
+        }
+
+        @Override
+        public ColumnRegionByte<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
+            final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
+            if (partitioningColumnValue != null && !Byte.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
+                        + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
+            }
+            return new ColumnRegionByte.Constant<>(unbox((Byte) partitioningColumnValue));
+        }
+    }
 }

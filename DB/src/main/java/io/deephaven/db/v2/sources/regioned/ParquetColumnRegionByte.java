@@ -14,17 +14,17 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnChunkPageStore}.
  */
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-    implements ColumnRegionByte<ATTR> {
+        implements ColumnRegionByte<ATTR> {
 
-    public ParquetColumnRegionByte(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 
     public byte[] getBytes(
-            long firstElementIndex,
-            @NotNull byte[] destination,
-            int destinationOffset,
-            int length
+            final long firstElementIndex,
+            @NotNull final byte[] destination,
+            final int destinationOffset,
+            final int length
     ) {
         final WritableChunk<ATTR> byteChunk = WritableByteChunk.writableChunkWrap(destination, destinationOffset, length);
         try (OrderedKeys orderedKeys = OrderedKeys.forRange(firstElementIndex, firstElementIndex + length - 1)) {
@@ -42,7 +42,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             return page.asByteChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving byte at table byte index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 
@@ -54,7 +54,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             return page.asByteChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving byte at table byte index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 }
