@@ -244,10 +244,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private void applyBindTableToVariable(StreamObserver<BindTableToVariableResponse> observer, ScriptSession scriptSession, String variableName, Table table) {
-
-    }
-
     // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this will be deprecated
     @Override
     public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
