@@ -18,10 +18,11 @@ import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.WritableSource;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -194,10 +195,13 @@ public class PartitionAwareSourceTable extends SourceTable {
     @SuppressWarnings("unchecked")
     private static <T> ColumnSource makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
         final Class<T> dataType = columnDefinition.getDataType();
-        final T[] partitionValues = locationKeys.stream()
-                .map(lk -> (T) lk.getPartitionValue(columnDefinition.getName()))
-                .toArray(sz -> (T[]) Array.newInstance(dataType, sz));
-        return ArrayBackedColumnSource.getMemoryColumnSource(partitionValues, dataType, columnDefinition.getComponentType());
+        final String partitionKey = columnDefinition.getName();
+        final WritableSource<T> result = ArrayBackedColumnSource.getMemoryColumnSource(locationKeys.size(), dataType, null);
+        final MutableLong nextIndex = new MutableLong(0L);
+        locationKeys.stream()
+                .map(lk -> (T) lk.getPartitionValue(partitionKey))
+                .forEach((final T partitionValue) -> result.set(nextIndex.getAndIncrement(), partitionValue));
+        return result;
     }
 
     @Override
@@ -261,7 +265,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             return deferredViewTable;
         }
 
-        SelectFilter[] partitionFilterArray = partitionFilters.toArray(new SelectFilter[partitionFilters.size()]);
+        SelectFilter[] partitionFilterArray = partitionFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
         final String filteredTableDescription = "getFilteredTable(" + Arrays.toString(partitionFilterArray) + ")";
         SourceTable filteredTable = QueryPerformanceRecorder.withNugget(filteredTableDescription, () -> getFilteredTable(partitionFilterArray));
 

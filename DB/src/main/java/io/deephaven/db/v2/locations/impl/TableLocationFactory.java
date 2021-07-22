@@ -23,5 +23,5 @@ public interface TableLocationFactory<TK extends TableKey, TLK extends TableLoca
      *                       {@link TableLocationProvider#supportsSubscriptions() supports subscriptions}
      * @return A new or cached {@link TableLocation} identified by the supplied {@link TableKey} and {@link TableLocationKey}
      */
-    TableLocation makeLocation(@NotNull final TK tableKey, @NotNull TLK locationKey, @Nullable TableDataRefreshService refreshService);
+    TableLocation makeLocation(@NotNull TK tableKey, @NotNull TLK locationKey, @Nullable TableDataRefreshService refreshService);
 }
