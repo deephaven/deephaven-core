@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -472,7 +473,7 @@ public class SessionState {
 
             this.parents = parents;
             dependentCount = parents.size();
-            parents.forEach(this::manage);
+            parents.stream().filter(Objects::nonNull).forEach(this::manage);
         }
 
 
@@ -624,7 +625,7 @@ public class SessionState {
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
                 children.forEach(child -> child.onResolveOne(this));
                 children = Collections.emptyList();
-                parents.forEach(this::unmanage);
+                parents.stream().filter(Objects::nonNull).forEach(this::unmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
