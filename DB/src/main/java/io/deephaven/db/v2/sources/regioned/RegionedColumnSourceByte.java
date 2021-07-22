@@ -9,7 +9,10 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of bytes.
@@ -18,8 +21,9 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         extends RegionedColumnSourceArray<Byte, ATTR, ColumnRegionByte<ATTR>>
         implements ColumnSourceGetDefaults.ForByte {
 
-    RegionedColumnSourceByte(ColumnRegionByte<ATTR> nullRegion) {
-        super(nullRegion, byte.class, DeferredColumnRegionByte::new);
+    RegionedColumnSourceByte(@NotNull final ColumnRegionByte<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
+        super(nullRegion, byte.class, makeDeferred);
     }
 
     @Override
@@ -39,9 +43,9 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionByte.createNull());
+    static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionByte.createNull(), DeferredColumnRegionByte::new);
         }
     }
 
@@ -68,6 +72,20 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
             AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionByte<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
+        }
+    }
+
+    static final class Partitioning extends RegionedColumnSourceByte<Values> {
+
+        Partitioning() {
+            super(ColumnRegionByte.createNull(), Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionByte<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            return new ColumnRegionByte.Constant<>(unbox((Byte) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
         }
     }
 }

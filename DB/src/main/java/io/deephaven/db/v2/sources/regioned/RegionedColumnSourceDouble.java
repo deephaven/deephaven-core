@@ -9,7 +9,10 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of doubles.
@@ -18,8 +21,9 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         extends RegionedColumnSourceArray<Double, ATTR, ColumnRegionDouble<ATTR>>
         implements ColumnSourceGetDefaults.ForDouble {
 
-    RegionedColumnSourceDouble(ColumnRegionDouble<ATTR> nullRegion) {
-        super(nullRegion, double.class, DeferredColumnRegionDouble::new);
+    RegionedColumnSourceDouble(@NotNull final ColumnRegionDouble<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionDouble<ATTR>> makeDeferred) {
+        super(nullRegion, double.class, makeDeferred);
     }
 
     @Override
@@ -39,9 +43,9 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceDouble<Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionDouble.createNull());
+    static final class AsValues extends RegionedColumnSourceDouble<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionDouble.createNull(), DeferredColumnRegionDouble::new);
         }
     }
 
@@ -68,6 +72,20 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
             AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionDouble<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
+        }
+    }
+
+    static final class Partitioning extends RegionedColumnSourceDouble<Values> {
+
+        Partitioning() {
+            super(ColumnRegionDouble.createNull(), Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionDouble<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            return new ColumnRegionDouble.Constant<>(unbox((Double) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
         }
     }
 }

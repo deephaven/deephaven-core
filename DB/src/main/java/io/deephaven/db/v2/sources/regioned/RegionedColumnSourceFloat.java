@@ -9,7 +9,10 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of floats.
@@ -18,8 +21,9 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         extends RegionedColumnSourceArray<Float, ATTR, ColumnRegionFloat<ATTR>>
         implements ColumnSourceGetDefaults.ForFloat {
 
-    RegionedColumnSourceFloat(ColumnRegionFloat<ATTR> nullRegion) {
-        super(nullRegion, float.class, DeferredColumnRegionFloat::new);
+    RegionedColumnSourceFloat(@NotNull final ColumnRegionFloat<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionFloat<ATTR>> makeDeferred) {
+        super(nullRegion, float.class, makeDeferred);
     }
 
     @Override
@@ -39,9 +43,9 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionFloat.createNull());
+    static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionFloat.createNull(), DeferredColumnRegionFloat::new);
         }
     }
 
@@ -68,6 +72,20 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
             AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionFloat<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
+        }
+    }
+
+    static final class Partitioning extends RegionedColumnSourceFloat<Values> {
+
+        Partitioning() {
+            super(ColumnRegionFloat.createNull(), Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionFloat<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            return new ColumnRegionFloat.Constant<>(unbox((Float) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
         }
     }
 }

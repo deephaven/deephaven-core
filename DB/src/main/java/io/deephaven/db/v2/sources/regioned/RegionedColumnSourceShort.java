@@ -9,7 +9,10 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of shorts.
@@ -18,8 +21,9 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         extends RegionedColumnSourceArray<Short, ATTR, ColumnRegionShort<ATTR>>
         implements ColumnSourceGetDefaults.ForShort {
 
-    RegionedColumnSourceShort(ColumnRegionShort<ATTR> nullRegion) {
-        super(nullRegion, short.class, DeferredColumnRegionShort::new);
+    RegionedColumnSourceShort(@NotNull final ColumnRegionShort<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionShort<ATTR>> makeDeferred) {
+        super(nullRegion, short.class, makeDeferred);
     }
 
     @Override
@@ -39,9 +43,9 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionShort.createNull());
+    static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionShort.createNull(), DeferredColumnRegionShort::new);
         }
     }
 
@@ -68,6 +72,20 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
             AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionShort<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
+        }
+    }
+
+    static final class Partitioning extends RegionedColumnSourceShort<Values> {
+
+        Partitioning() {
+            super(ColumnRegionShort.createNull(), Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionShort<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            return new ColumnRegionShort.Constant<>(unbox((Short) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
         }
     }
 }

@@ -4,7 +4,6 @@
 
 package io.deephaven.db.v2.sources.regioned;
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.libs.StringSet;
@@ -72,10 +71,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
-            // TODO (https://github.com/deephaven/deephaven-core/issues/878): Support non-String partitioning columns
-            Require.eq(dataType, "dataType", String.class);
-            Require.eqFalse(columnDefinition.hasSymbolTable(), "columnDefinition.hasSymbolTable()");
-            return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourcePartitioning();
+            return PartitioningSourceFactory.makePartitioningSource(dataType);
         }
 
         final Supplier<RegionedColumnSource<?>> simpleImplementationSupplier = SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER.get(dataType);

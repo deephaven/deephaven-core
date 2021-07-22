@@ -9,7 +9,10 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of longs.
@@ -18,8 +21,9 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         extends RegionedColumnSourceArray<Long, ATTR, ColumnRegionLong<ATTR>>
         implements ColumnSourceGetDefaults.ForLong {
 
-    RegionedColumnSourceLong(ColumnRegionLong<ATTR> nullRegion) {
-        super(nullRegion, long.class, DeferredColumnRegionLong::new);
+    RegionedColumnSourceLong(@NotNull final ColumnRegionLong<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
+        super(nullRegion, long.class, makeDeferred);
     }
 
     @Override
@@ -39,9 +43,9 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionLong.createNull());
+    static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionLong.createNull(), DeferredColumnRegionLong::new);
         }
     }
 
@@ -68,6 +72,20 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
             AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionLong<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
+        }
+    }
+
+    static final class Partitioning extends RegionedColumnSourceLong<Values> {
+
+        Partitioning() {
+            super(ColumnRegionLong.createNull(), Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionLong<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            return new ColumnRegionLong.Constant<>(unbox((Long) columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName())));
         }
     }
 }

@@ -10,37 +10,40 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
         implements ColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
     private RegionedColumnSourceObject(@NotNull final ColumnRegionObject<DATA_TYPE, ATTR> nullRegion,
-                                       @NotNull final Class<DATA_TYPE> type,
-                                       @Nullable final Class<?> componentType) {
-        super(nullRegion, type, componentType, DeferredColumnRegionObject::new);
+                                       @NotNull final Class<DATA_TYPE> dataType,
+                                       @Nullable final Class<?> componentType,
+                                       @NotNull final MakeDeferred<ATTR, ColumnRegionObject<DATA_TYPE, ATTR>> makeDeferred) {
+        super(nullRegion, dataType, componentType, makeDeferred);
     }
 
     RegionedColumnSourceObject(@NotNull final Class<DATA_TYPE> type) {
-        this(ColumnRegionObject.createNull(), type, null);
+        this(ColumnRegionObject.createNull(), type, null, DeferredColumnRegionObject::new);
+    }
+
+    @Override
+    public final DATA_TYPE get(final long elementIndex) {
+        return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
     }
 
     public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
 
         private final ObjectDecoder<DATA_TYPE> decoder;
 
-        public AsValues(@NotNull final Class<DATA_TYPE> type, @NotNull final ObjectDecoder<DATA_TYPE> decoder) {
-            this(type, null, decoder);
+        public AsValues(@NotNull final Class<DATA_TYPE> dataType, @NotNull final ObjectDecoder<DATA_TYPE> decoder) {
+            this(dataType, null, decoder);
         }
 
-        public AsValues(@NotNull final Class<DATA_TYPE> type, @Nullable final Class<?> componentType, @NotNull final ObjectDecoder<DATA_TYPE> decoder) {
-            super(ColumnRegionObject.createNull(), type, componentType);
+        public AsValues(@NotNull final Class<DATA_TYPE> dataType, @Nullable final Class<?> componentType, @NotNull final ObjectDecoder<DATA_TYPE> decoder) {
+            super(ColumnRegionObject.createNull(), dataType, componentType, DeferredColumnRegionObject::new);
             this.decoder = decoder;
-        }
-
-        @Override
-        public DATA_TYPE get(final long elementIndex) {
-            return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
         }
 
         public ColumnRegionObject<DATA_TYPE, Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
@@ -50,7 +53,6 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
                 //noinspection unchecked
                 return (ColumnRegionObject<DATA_TYPE, Values>) columnLocation.makeColumnRegionObject(columnDefinition);
             }
-
             return null;
         }
 
@@ -65,6 +67,21 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values> extend
             } else {
                 return new ColumnRegionObjectCodecFixed.FillContext(chunkCapacity * width);
             }
+        }
+    }
+
+    static final class Partitioning<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
+
+        Partitioning(@NotNull final Class<DATA_TYPE> dataType) {
+            super(ColumnRegionObject.createNull(), dataType, null, Supplier::get);
+        }
+
+        @Override
+        public ColumnRegionObject<DATA_TYPE, Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            //noinspection Convert2Diamond
+            return new ColumnRegionObject.Constant<DATA_TYPE, Values>(columnLocation.getTableLocation().getKey().getPartitionValue(columnDefinition.getName()));
         }
     }
 }
