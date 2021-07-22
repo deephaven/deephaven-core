@@ -6,6 +6,7 @@ package io.deephaven.db.util;
 
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessNode;
+import io.deephaven.db.util.liveness.ReleasableLivenessManager;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
 import io.deephaven.lang.parse.api.CompletionParseService;
@@ -19,7 +20,7 @@ import java.util.function.Supplier;
 /**
  * Interface for interactive console script sessions.
  */
-public interface ScriptSession extends LivenessNode {
+public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Retrieve a variable from the script session's bindings.
      *
