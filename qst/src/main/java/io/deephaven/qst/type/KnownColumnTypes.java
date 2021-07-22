@@ -1,9 +1,10 @@
 package io.deephaven.qst.type;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -12,11 +13,16 @@ class KnownColumnTypes {
 
     static {
         final AddMappings addMappings = new AddMappings();
-        final Iterator<Type<?>> it = Type.knownTypes().iterator();
-        while (it.hasNext()) {
-            it.next().walk(addMappings);
+        for (Type<?> type : knownTypes()) {
+            type.walk(addMappings);
         }
         MAPPINGS = Collections.unmodifiableMap(addMappings.mappings);
+    }
+
+    static List<Type<?>> knownTypes() {
+        return Arrays.asList(BooleanType.instance(), ByteType.instance(), CharType.instance(),
+            ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
+            DoubleType.instance(), StringType.instance(), InstantType.instance());
     }
 
     static <T> Optional<Type<T>> findStatic(Class<T> clazz) {
@@ -101,6 +107,9 @@ class KnownColumnTypes {
         public void visit(InstantType instantType) {
             add(Instant.class, instantType);
         }
+
+        // NOTE: when adding new visitor methods, be sure to add the appropriate type to
+        // knownTypes()
 
         @Override
         public void visit(CustomType<?> customType) {
