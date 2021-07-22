@@ -10,13 +10,11 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.lang.parse.api.CompletionParseService;
 import io.deephaven.lang.parse.api.CompletionParseServiceNoOp;
 import io.deephaven.util.SafeCloseable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
