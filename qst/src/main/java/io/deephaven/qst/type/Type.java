@@ -57,11 +57,6 @@ public interface Type<T> {
             floatType(), doubleType(), stringType(), instantType());
     }
 
-    static <T> T castValue(@SuppressWarnings("unused") Type<T> columnType, Object value) {
-        // noinspection unchecked
-        return (T) value;
-    }
-
     <V extends Visitor> V walk(V visitor);
 
     T castValue(Object value);
