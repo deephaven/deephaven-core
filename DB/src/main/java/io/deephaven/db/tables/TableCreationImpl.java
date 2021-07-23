@@ -5,7 +5,6 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.QueryTable;
 import io.deephaven.qst.TableCreation;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
@@ -19,9 +18,8 @@ import java.util.Objects;
 enum TableCreationImpl implements TableCreation<Table> {
     INSTANCE;
 
-    public static QueryTable create(io.deephaven.qst.table.Table table) {
-        Table queryTable = TableCreation.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
-        return (QueryTable) queryTable;
+    public static Table create(io.deephaven.qst.table.Table table) {
+        return TableCreation.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
     }
 
     @Override
