@@ -87,14 +87,11 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Double, DoubleArray, Builder> {
-
-        private double[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<double[]>
+        implements ArrayBuilder<Double, DoubleArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new double[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, double.class);
         }
 
         public final Builder add(double item) {
@@ -104,10 +101,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         }
 
         public final Builder add(double... items) {
-            // todo: systemcopy
-            for (double item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -135,23 +129,6 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         @Override
         public final DoubleArray build() {
             return new DoubleArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                double[] next = new double[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private double[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            double[] atSize = new double[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

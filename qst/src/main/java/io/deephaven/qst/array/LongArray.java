@@ -87,14 +87,11 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Long, LongArray, Builder> {
-
-        private long[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<long[]>
+        implements ArrayBuilder<Long, LongArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new long[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, long.class);
         }
 
         public final Builder add(long item) {
@@ -104,10 +101,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         }
 
         public final Builder add(long... items) {
-            // todo: systemcopy
-            for (long item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -135,23 +129,6 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         @Override
         public final LongArray build() {
             return new LongArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                long[] next = new long[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private long[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            long[] atSize = new long[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

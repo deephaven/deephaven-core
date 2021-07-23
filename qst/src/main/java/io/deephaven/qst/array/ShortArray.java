@@ -87,14 +87,10 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Short, ShortArray, Builder> {
-
-        private short[] array;
-        private int size;
-
+    public static class Builder extends PrimitiveArrayHelper<short[]>
+        implements ArrayBuilder<Short, ShortArray, Builder> {
         private Builder(int initialCapacity) {
-            this.array = new short[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, short.class);
         }
 
         public final Builder add(short item) {
@@ -104,10 +100,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         }
 
         public final Builder add(short... items) {
-            // todo: systemcopy
-            for (short item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -135,23 +128,6 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         @Override
         public final ShortArray build() {
             return new ShortArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                short[] next = new short[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private short[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            short[] atSize = new short[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

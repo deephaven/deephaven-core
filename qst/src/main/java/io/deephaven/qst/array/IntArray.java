@@ -87,14 +87,11 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Integer, IntArray, Builder> {
-
-        private int[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<int[]>
+        implements ArrayBuilder<Integer, IntArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new int[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, int.class);
         }
 
         public final Builder add(int item) {
@@ -104,10 +101,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         }
 
         public final Builder add(int... items) {
-            // todo: systemcopy
-            for (int item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -135,23 +129,6 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         @Override
         public final IntArray build() {
             return new IntArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                int[] next = new int[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private int[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            int[] atSize = new int[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

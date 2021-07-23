@@ -88,14 +88,11 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Character, CharArray, Builder> {
-
-        private char[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<char[]>
+        implements ArrayBuilder<Character, CharArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new char[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, char.class);
         }
 
         public final Builder add(char item) {
@@ -105,10 +102,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         }
 
         public final Builder add(char... items) {
-            // todo: systemcopy
-            for (char item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -136,23 +130,6 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         @Override
         public final CharArray build() {
             return new CharArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                char[] next = new char[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private char[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            char[] atSize = new char[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

@@ -7,8 +7,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CharArrayTest {
 
     @Test
-    void raw() {
+    void boxInRawOut() {
         assertThat(CharArray.of('1', null, '3').values()).containsExactly('1', CharArray.NULL_REPR,
             '3');
+    }
+
+    @Test
+    void rawInRawOut() {
+        assertThat(CharArray.ofUnsafe('1', CharArray.NULL_REPR, '3').values()).containsExactly('1',
+            CharArray.NULL_REPR, '3');
     }
 }

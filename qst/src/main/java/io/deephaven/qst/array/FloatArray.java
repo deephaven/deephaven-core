@@ -88,14 +88,11 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Float, FloatArray, Builder> {
-
-        private float[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<float[]>
+        implements ArrayBuilder<Float, FloatArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new float[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, float.class);
         }
 
         public final Builder add(float item) {
@@ -105,10 +102,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         }
 
         public final Builder add(float... items) {
-            // todo: systemcopy
-            for (float item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -136,23 +130,6 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         @Override
         public final FloatArray build() {
             return new FloatArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                float[] next = new float[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private float[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            float[] atSize = new float[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

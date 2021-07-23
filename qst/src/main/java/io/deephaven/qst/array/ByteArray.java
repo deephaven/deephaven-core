@@ -87,14 +87,11 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Byte, ByteArray, Builder> {
-
-        private byte[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<byte[]>
+        implements ArrayBuilder<Byte, ByteArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new byte[initialCapacity];
-            this.size = 0;
+            super(initialCapacity, byte.class);
         }
 
         public final Builder add(byte item) {
@@ -104,10 +101,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         }
 
         public final Builder add(byte... items) {
-            // todo: systemcopy
-            for (byte item : items) {
-                add(item);
-            }
+            addImpl(items);
             return this;
         }
 
@@ -135,23 +129,6 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         @Override
         public final ByteArray build() {
             return new ByteArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                byte[] next = new byte[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private byte[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            byte[] atSize = new byte[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

@@ -7,8 +7,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DoubleArrayTest {
 
     @Test
-    void raw() {
+    void boxInRawOut() {
         assertThat(DoubleArray.of(1d, null, 3d).values()).containsExactly(1d, DoubleArray.NULL_REPR,
             3d);
     }
+
+    @Test
+    void rawInRawOut() {
+        assertThat(DoubleArray.ofUnsafe(1d, DoubleArray.NULL_REPR, 3d).values()).containsExactly(1d,
+            DoubleArray.NULL_REPR, 3d);
+    }
+
 }

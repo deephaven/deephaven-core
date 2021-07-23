@@ -7,8 +7,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LongArrayTest {
 
     @Test
-    void raw() {
+    void boxInRawOut() {
         assertThat(LongArray.of(1L, null, 3L).values()).containsExactly(1L, LongArray.NULL_REPR,
             3L);
+    }
+
+    @Test
+    void rawInRawOut() {
+        assertThat(LongArray.ofUnsafe(1L, LongArray.NULL_REPR, 3L).values()).containsExactly(1L,
+            LongArray.NULL_REPR, 3L);
     }
 }
