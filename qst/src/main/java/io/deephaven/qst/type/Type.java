@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 public interface Type<T> {
 
     static <T> Type<T> find(Class<T> clazz) {
-        return KnownColumnTypes.findStatic(clazz).orElseGet(() -> CustomType.of(clazz));
+        return TypeHelper.findStatic(clazz).orElseGet(() -> CustomType.of(clazz));
     }
 
     static BooleanType booleanType() {

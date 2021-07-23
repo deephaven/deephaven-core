@@ -26,7 +26,7 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
 
     @Check
     final void checkClazz() {
-        final Optional<Type<T>> staticType = KnownColumnTypes.findStatic(clazz());
+        final Optional<Type<T>> staticType = TypeHelper.findStatic(clazz());
         if (staticType.isPresent()) {
             throw new IllegalArgumentException(
                 String.format("Use static type %s instead", staticType.get()));

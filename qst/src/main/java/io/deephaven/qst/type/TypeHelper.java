@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-class KnownColumnTypes {
+class TypeHelper {
     private static final Map<Class<?>, Type<?>> MAPPINGS;
 
     static {

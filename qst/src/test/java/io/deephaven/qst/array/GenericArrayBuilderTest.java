@@ -27,8 +27,21 @@ public class GenericArrayBuilderTest {
         check(Type.ofCustom(Custom.class), Custom.A, null, Custom.B);
     }
 
-    enum Custom {
+    @Test
+    void customTestWSubtype() {
+        check(Type.ofCustom(CustomI.class), Custom.A, null, Another.D);
+    }
+
+    interface CustomI {
+
+    }
+
+    enum Custom implements CustomI {
         A, B
+    }
+
+    enum Another implements CustomI {
+        C, D
     }
 
     private static <T> void check(GenericType<T> type, T... expected) {
