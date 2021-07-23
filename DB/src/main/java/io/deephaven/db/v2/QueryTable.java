@@ -1860,7 +1860,7 @@ public class QueryTable extends BaseTable {
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
                 result, resultLeftColumns, resultRightColumns, resultIndex);
 
-        if (doInitialSnapshot) {
+        if (!isRefreshing() || doInitialSnapshot) {
             if (!isRefreshing() && tableToSnapshot.isLive() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
