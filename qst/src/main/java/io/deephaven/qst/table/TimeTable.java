@@ -33,7 +33,7 @@ public abstract class TimeTable extends TableBase {
      */
     public static TimeTable of(Duration timeout) {
         return builder().timeProvider(TimeProviderSystem.INSTANCE).timeout(timeout)
-            .memoizationBuster(UUID.randomUUID()).build();
+            .id(UUID.randomUUID()).build();
     }
 
     /**
@@ -45,7 +45,7 @@ public abstract class TimeTable extends TableBase {
      */
     public static TimeTable of(Duration timeout, Instant startTime) {
         return builder().timeProvider(TimeProviderSystem.INSTANCE).timeout(timeout)
-            .startTime(startTime).memoizationBuster(ZERO_UUID).build();
+            .startTime(startTime).id(ZERO_UUID).build();
     }
 
     public abstract TimeProvider timeProvider();
@@ -54,7 +54,7 @@ public abstract class TimeTable extends TableBase {
 
     public abstract Optional<Instant> startTime();
 
-    abstract UUID memoizationBuster();
+    abstract UUID id();
 
     @Override
     public final <V extends Table.Visitor> V walk(V visitor) {
@@ -76,7 +76,7 @@ public abstract class TimeTable extends TableBase {
 
         Builder startTime(Instant startTime);
 
-        Builder memoizationBuster(UUID memoizationBuster);
+        Builder id(UUID id);
 
         TimeTable build();
     }
