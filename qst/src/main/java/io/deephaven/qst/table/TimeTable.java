@@ -32,7 +32,7 @@ public abstract class TimeTable extends TableBase {
      * @return the time table
      */
     public static TimeTable of(Duration timeout) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).timeout(timeout)
+        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(timeout)
             .id(UUID.randomUUID()).build();
     }
 
@@ -44,13 +44,13 @@ public abstract class TimeTable extends TableBase {
      * @return the time table
      */
     public static TimeTable of(Duration timeout, Instant startTime) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).timeout(timeout)
+        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(timeout)
             .startTime(startTime).id(ZERO_UUID).build();
     }
 
     public abstract TimeProvider timeProvider();
 
-    public abstract Duration timeout();
+    public abstract Duration interval();
 
     public abstract Optional<Instant> startTime();
 
@@ -64,15 +64,15 @@ public abstract class TimeTable extends TableBase {
 
     @Check
     final void checkTimeout() {
-        if (timeout().isNegative() || timeout().isZero()) {
-            throw new IllegalArgumentException("Must have positive timeout");
+        if (interval().isNegative() || interval().isZero()) {
+            throw new IllegalArgumentException("Must have positive interval");
         }
     }
 
     interface Builder {
         Builder timeProvider(TimeProvider timeProvider);
 
-        Builder timeout(Duration timeout);
+        Builder interval(Duration interval);
 
         Builder startTime(Instant startTime);
 

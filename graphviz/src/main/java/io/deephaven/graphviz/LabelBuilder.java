@@ -54,7 +54,7 @@ class LabelBuilder extends TableVisitorGeneric {
 
     @Override
     public void visit(TimeTable timeTable) {
-        sb.append("time(").append(timeTable.timeout()).append(')');
+        sb.append("time(").append(timeTable.interval()).append(')');
     }
 
     @Override

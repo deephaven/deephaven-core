@@ -36,7 +36,7 @@ enum TableCreationImpl implements TableCreation<Table> {
         final io.deephaven.db.v2.utils.TimeProvider provider = TimeProviderAdapter
             .of(timeTable.timeProvider());
         final DBDateTime firstTime = timeTable.startTime().map(DBDateTime::of).orElse(null);
-        return TableTools.timeTable(provider, firstTime, timeTable.timeout().toNanos());
+        return TableTools.timeTable(provider, firstTime, timeTable.interval().toNanos());
     }
 
     @Override
