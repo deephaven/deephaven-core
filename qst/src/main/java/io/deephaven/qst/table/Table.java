@@ -18,6 +18,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 
 public interface Table extends TableOperations<Table, Table>, Serializable {
@@ -26,11 +27,17 @@ public interface Table extends TableOperations<Table, Table>, Serializable {
         return EmptyTable.of(size);
     }
 
-    static MergeTable merge(Table... tables) {
-        return MergeTable.of(tables);
+    static Table merge(Table... tables) {
+        return merge(Arrays.asList(tables));
     }
 
-    static MergeTable merge(Collection<? extends Table> tables) {
+    static Table merge(Collection<? extends Table> tables) {
+        if (tables.isEmpty()) {
+            throw new IllegalArgumentException("Can't merge an empty collection");
+        }
+        if (tables.size() == 1) {
+            return tables.iterator().next();
+        }
         return MergeTable.of(tables);
     }
 
