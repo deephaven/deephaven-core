@@ -20,7 +20,7 @@ import java.util.Collection;
 public interface PrimitiveArray<T> extends Array<T> {
 
     static <T> ArrayBuilder<T, ? extends PrimitiveArray<T>, ?> builder(PrimitiveType<T> type) {
-        return TypeToArrayBuilder.of(type, 16);
+        return TypeToArrayBuilder.of(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY);
     }
 
     static <T> ArrayBuilder<T, ? extends PrimitiveArray<T>, ?> builder(PrimitiveType<T> type,
@@ -40,7 +40,7 @@ public interface PrimitiveArray<T> extends Array<T> {
         if (data instanceof Collection) {
             return of(type, (Collection<T>) data);
         }
-        return builder(type, 16).add(data).build();
+        return builder(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(data).build();
     }
 
     static <T> PrimitiveArray<T> of(PrimitiveType<T> type, Collection<T> data) {

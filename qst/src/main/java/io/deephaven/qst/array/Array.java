@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 public interface Array<T> extends Iterable<T>, Serializable {
 
     static <T> ArrayBuilder<T, ?, ?> builder(Type<T> type) {
-        return TypeToArrayBuilder.of(type, 16);
+        return TypeToArrayBuilder.of(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY);
     }
 
     static <T> ArrayBuilder<T, ?, ?> builder(Type<T> type, int initialCapacity) {
@@ -35,7 +35,7 @@ public interface Array<T> extends Iterable<T>, Serializable {
         if (data instanceof Collection) {
             return of(type, (Collection<T>) data);
         }
-        return builder(type, 16).add(data).build();
+        return builder(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(data).build();
     }
 
     static <T> Array<T> of(Type<T> type, Collection<T> data) {

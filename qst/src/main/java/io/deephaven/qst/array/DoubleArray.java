@@ -25,7 +25,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         if (values instanceof Collection) {
             return of((Collection<Double>) values);
         }
-        return builder(16).add(values).build();
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
     }
 
     public static DoubleArray of(Collection<Double> values) {

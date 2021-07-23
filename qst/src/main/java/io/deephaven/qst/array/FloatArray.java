@@ -26,7 +26,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         if (values instanceof Collection) {
             return of((Collection<Float>) values);
         }
-        return builder(16).add(values).build();
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
     }
 
     public static FloatArray of(Collection<Float> values) {

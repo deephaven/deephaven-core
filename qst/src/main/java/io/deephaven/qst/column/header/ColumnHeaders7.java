@@ -13,7 +13,7 @@ import org.immutables.value.Value.Parameter;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static io.deephaven.qst.column.header.ColumnHeader.BUILDER_INITIAL_CAPACITY;
+import static io.deephaven.qst.column.header.ColumnHeader.DEFAULT_BUILDER_INITIAL_CAPACITY;
 
 @Immutable
 @SimpleStyle
@@ -45,7 +45,7 @@ public abstract class ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> implements Tabl
     }
 
     public final Rows row(T1 a, T2 b, T3 c, T4 d, T5 e, T6 f, T7 g) {
-        return start(BUILDER_INITIAL_CAPACITY).row(a, b, c, d, e, f, g);
+        return start(DEFAULT_BUILDER_INITIAL_CAPACITY).row(a, b, c, d, e, f, g);
     }
 
     public class Rows implements NewTable.Buildable {

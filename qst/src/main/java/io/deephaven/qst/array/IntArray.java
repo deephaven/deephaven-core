@@ -25,7 +25,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         if (values instanceof Collection) {
             return of((Collection<Integer>) values);
         }
-        return builder(16).add(values).build();
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
     }
 
     public static IntArray of(Collection<Integer> values) {

@@ -25,7 +25,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         if (values instanceof Collection) {
             return of((Collection<Long>) values);
         }
-        return builder(16).add(values).build();
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
     }
 
     public static LongArray of(Collection<Long> values) {

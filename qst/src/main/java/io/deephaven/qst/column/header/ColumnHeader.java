@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @SimpleStyle
 public abstract class ColumnHeader<T> implements TableHeader.Buildable {
 
-    static final int BUILDER_INITIAL_CAPACITY = 16;
+    static final int DEFAULT_BUILDER_INITIAL_CAPACITY = 16;
 
     public static <T> ColumnHeader<T> of(String name, Class<T> clazz) {
         return of(name, Type.find(clazz));
@@ -149,7 +149,7 @@ public abstract class ColumnHeader<T> implements TableHeader.Buildable {
     }
 
     public final Rows row(T a) {
-        return start(BUILDER_INITIAL_CAPACITY).row(a);
+        return start(DEFAULT_BUILDER_INITIAL_CAPACITY).row(a);
     }
 
     public class Rows implements NewTable.Buildable {
