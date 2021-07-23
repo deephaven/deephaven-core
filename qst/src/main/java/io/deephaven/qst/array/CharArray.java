@@ -22,13 +22,6 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         return builder(values.length).add(values).build();
     }
 
-    public static CharArray of(Iterable<Character> values) {
-        if (values instanceof Collection) {
-            return of((Collection<Character>) values);
-        }
-        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
-    }
-
     public static CharArray of(Collection<Character> values) {
         return builder(values.size()).add(values).build();
     }

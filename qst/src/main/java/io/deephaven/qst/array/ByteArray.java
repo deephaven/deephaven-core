@@ -21,13 +21,6 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         return builder(values.length).add(values).build();
     }
 
-    public static ByteArray of(Iterable<Byte> values) {
-        if (values instanceof Collection) {
-            return of((Collection<Byte>) values);
-        }
-        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
-    }
-
     public static ByteArray of(Collection<Byte> values) {
         return builder(values.size()).add(values).build();
     }
