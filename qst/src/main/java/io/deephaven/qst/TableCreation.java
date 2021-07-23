@@ -27,5 +27,5 @@ public interface TableCreation<TABLE> {
 
     TABLE of(TimeTable timeTable);
 
-    TABLE of(Collection<TABLE> tables);
+    TABLE merge(Collection<TABLE> tables);
 }

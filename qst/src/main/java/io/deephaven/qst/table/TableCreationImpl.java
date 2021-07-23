@@ -34,7 +34,7 @@ public enum TableCreationImpl implements TableCreation<Table> {
     }
 
     @Override
-    public final MergeTable of(Collection<Table> tables) {
+    public final MergeTable merge(Collection<Table> tables) {
         return ImmutableMergeTable.builder().addAllTables(tables).build();
     }
 }

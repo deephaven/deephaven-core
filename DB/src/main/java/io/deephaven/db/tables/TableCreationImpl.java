@@ -43,7 +43,7 @@ enum TableCreationImpl implements TableCreation<Table> {
     }
 
     @Override
-    public final Table of(Collection<Table> tables) {
+    public final Table merge(Collection<Table> tables) {
         return TableTools.merge(tables);
     }
 

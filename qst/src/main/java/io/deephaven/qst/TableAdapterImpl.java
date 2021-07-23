@@ -112,7 +112,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(MergeTable mergeTable) {
         List<TABLE> tables =
             mergeTable.tables().stream().map(this::table).collect(Collectors.toList());
-        tableOut = tableCreation.of(tables);
+        tableOut = tableCreation.merge(tables);
     }
 
     @Override
