@@ -142,8 +142,6 @@ include(':envoy')
 
 include(':grpc-proxy')
 
-include (':graphviz')
-
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
