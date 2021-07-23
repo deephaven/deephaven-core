@@ -21,7 +21,7 @@ class GraphVizBuilder {
 
     static MutableGraph of(Iterable<Table> tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.depthFirstWalk(tables, consumer);
+        ParentsVisitor.postOrderWalk(tables, consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);
@@ -32,7 +32,7 @@ class GraphVizBuilder {
 
     static MutableGraph of(LabeledTables tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.depthFirstWalk(tables.tables(), consumer);
+        ParentsVisitor.postOrderWalk(tables.tables(), consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);

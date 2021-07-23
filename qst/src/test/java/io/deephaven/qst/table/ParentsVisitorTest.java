@@ -23,13 +23,13 @@ public class ParentsVisitorTest {
     private static final Table S4 = S3.view("I=i");
 
     private void checkDepth(Table table, List<Table> depthFirst) {
-        assertThat(new ArrayList<>(ParentsVisitor.depthFirst(Collections.singleton(table))))
+        assertThat(new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table))))
             .isEqualTo(depthFirst);
     }
 
     private void checkDepth(Table table, List<Table> depthFirst, int maxDepth) {
         assertThat(
-            new ArrayList<>(ParentsVisitor.depthFirst(Collections.singleton(table), maxDepth)))
+            new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table), maxDepth)))
                 .isEqualTo(depthFirst);
     }
 
@@ -99,7 +99,7 @@ public class ParentsVisitorTest {
     void heavilyBranchedTableDepthFirstWalk() {
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             int[] count = {0};
-            ParentsVisitor.depthFirstWalk(Collections.singleton(heavilyBranchedTable()),
+            ParentsVisitor.postOrderWalk(Collections.singleton(heavilyBranchedTable()),
                 table -> count[0]++);
             assertThat(count[0]).isEqualTo(65);
         });

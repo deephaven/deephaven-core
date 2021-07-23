@@ -24,62 +24,62 @@ public class ParentsVisitor implements Table.Visitor {
     }
 
     /**
-     * Create a depth-first ordered set.
+     * Create a post-order ordered set.
      *
      * @param tables the tables
-     * @return a depth-first ordered set
+     * @return a post-order set
      *
-     * @see #depthFirstWalk(Iterable, Consumer)
+     * @see #postOrderWalk(Iterable, Consumer)
      */
-    public static Set<Table> depthFirst(Iterable<Table> tables) {
+    public static Set<Table> postOrder(Iterable<Table> tables) {
         Set<Table> set = new LinkedHashSet<>();
-        depthFirstWalk(tables, set::add);
+        postOrderWalk(tables, set::add);
         return set;
     }
 
 
     /**
-     * Create a depth-first ordered set, up to a depth of {@code maxDepth}.
+     * Create a post-order ordered set, up to a depth of {@code maxDepth}.
      *
      * @param tables the tables
      * @param maxDepth the maximum depth
-     * @return a depth-first ordered set
+     * @return a post-order ordered set
      *
-     * @see #depthFirstWalk(Iterable, Consumer, int)
+     * @see #postOrderWalk(Iterable, Consumer, int)
      */
-    public static Set<Table> depthFirst(Iterable<Table> tables, int maxDepth) {
+    public static Set<Table> postOrder(Iterable<Table> tables, int maxDepth) {
         Set<Table> set = new LinkedHashSet<>();
-        depthFirstWalk(tables, set::add, maxDepth);
+        postOrderWalk(tables, set::add, maxDepth);
         return set;
     }
 
     /**
-     * Walk the {@link Table tables} depth first with de-duplication.
+     * Walk the {@link Table tables} in post-order with de-duplication.
      *
      * @param tables the tables
      * @param consumer the consumer
      */
-    public static void depthFirstWalk(Iterable<Table> tables, Consumer<Table> consumer) {
-        depthFirstWalk(tables, consumer, Integer.MAX_VALUE);
+    public static void postOrderWalk(Iterable<Table> tables, Consumer<Table> consumer) {
+        postOrderWalk(tables, consumer, Integer.MAX_VALUE);
     }
 
     /**
-     * Walk the {@link Table tables} depth-first with de-duplication, up to a depth of
+     * Walk the {@link Table tables} post-order with de-duplication, up to a depth of
      * {@code maxDepth}.
      *
      * @param tables the tables
      * @param consumer the consumer
      * @param maxDepth the maximum depth
      */
-    public static void depthFirstWalk(Iterable<Table> tables, Consumer<Table> consumer,
+    public static void postOrderWalk(Iterable<Table> tables, Consumer<Table> consumer,
         int maxDepth) {
         Set<Table> visited = new HashSet<>();
         for (Table table : tables) {
-            depthFirstTraversal(visited, table, consumer, maxDepth);
+            postOrderTraversal(visited, table, consumer, maxDepth);
         }
     }
 
-    private static void depthFirstTraversal(Set<Table> visited, Table table,
+    private static void postOrderTraversal(Set<Table> visited, Table table,
         Consumer<Table> consumer, int maxDepth) {
         // This method is much more efficient than trying to accomplish the same with
         // Stream#distinct, since we
@@ -91,7 +91,7 @@ public class ParentsVisitor implements Table.Visitor {
             try (Stream<Table> stream = getParents(table)) {
                 Iterator<Table> it = stream.iterator();
                 while (it.hasNext()) {
-                    depthFirstTraversal(visited, it.next(), consumer, maxDepth - 1);
+                    postOrderTraversal(visited, it.next(), consumer, maxDepth - 1);
                 }
             }
         }
