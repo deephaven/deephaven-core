@@ -425,7 +425,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 if (resultExportBuilder != null) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "only one descriptor definition allowed");
                 }
-                resultExportBuilder = service.ticketRouter.publish(session, mi.descriptor);
+                resultExportBuilder = service.ticketRouter
+                        .<Table>publish(session, mi.descriptor)
+                        .onError(observer::onError);
                 manage(resultExportBuilder.getExport());
             }
 
@@ -513,10 +515,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     // transfer ownership to submit's liveness scope, drop our extra reference
                     resultTable.manageWithCurrentScope();
                     resultTable.dropReference();
+                    observer.onCompleted();
                     return resultTable;
                 }));
 
-                observer.onCompleted();
                 onRequestDone();
             });
         }
