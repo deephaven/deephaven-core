@@ -1,6 +1,5 @@
 package io.deephaven.db.tables;
 
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
@@ -37,9 +36,7 @@ enum TableCreationImpl implements TableCreation<Table> {
         final io.deephaven.db.v2.utils.TimeProvider provider = TimeProviderAdapter
             .of(timeTable.timeProvider());
         final DBDateTime firstTime = timeTable.startTime().map(DBDateTime::of).orElse(null);
-        final io.deephaven.db.v2.TimeTable tt = new io.deephaven.db.v2.TimeTable(provider, firstTime, timeTable.timeout().toNanos());
-        LiveTableMonitor.DEFAULT.addTable(tt);
-        return tt;
+        return TableTools.timeTable(provider, firstTime, timeTable.timeout().toNanos());
     }
 
     @Override
