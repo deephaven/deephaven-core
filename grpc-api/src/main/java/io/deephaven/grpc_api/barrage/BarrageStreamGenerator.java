@@ -383,7 +383,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         BarrageRecordBatch.addBuffers(builder, buffersOffset);
         final int headerOffset = BarrageRecordBatch.endBarrageRecordBatch(builder);
 
-        builder.finish(wrapInMessage(builder, headerOffset, BARRAGE_RECORD_BATCH_TYPE_ID));
+        builder.finish(wrapInMessage(builder, headerOffset, BARRAGE_RECORD_BATCH_TYPE_ID, size.intValue()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
@@ -404,11 +404,15 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     }
 
     public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType) {
+        return wrapInMessage(builder, headerOffset, headerType, 0);
+    }
+
+    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType, final int bodyLength) {
         Message.startMessage(builder);
         Message.addHeaderType(builder, headerType);
         Message.addHeader(builder, headerOffset);
         Message.addVersion(builder, MetadataVersion.V5);
-        Message.addBodyLength(builder, 0);
+        Message.addBodyLength(builder, bodyLength);
         return Message.endMessage(builder);
     }
 
@@ -512,7 +516,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         RecordBatch.addLength(builder, rowsAdded.original.size());
         final int headerOffset = RecordBatch.endRecordBatch(builder);
 
-        builder.finish(wrapInMessage(builder, headerOffset, MessageHeader.RecordBatch));
+        builder.finish(wrapInMessage(builder, headerOffset, MessageHeader.RecordBatch, size.intValue()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {

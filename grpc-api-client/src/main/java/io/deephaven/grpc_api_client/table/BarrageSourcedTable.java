@@ -74,6 +74,8 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
     private volatile boolean unsubscribed = false;
     /** sealed must never be reset to false once it has been set to true */
     private volatile boolean sealed = false;
+    /** the callback to run once sealing is complete */
+    private Runnable onSealRunnable = null;
     private final boolean isViewPort;
 
     /**
@@ -169,11 +171,14 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
 
     /**
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
+     *
+     * @param onSealRunnable pass a callback that gets invoked once the table has finished applying updates
      */
-    public synchronized void sealTable() {
+    public synchronized void sealTable(final Runnable onSealRunnable) {
         // TODO (core#803): sealing of static table data acquired over flight/barrage
         setRefreshing(false);
         sealed = true;
+        this.onSealRunnable = onSealRunnable;
         doWakeup();
     }
 
@@ -436,6 +441,10 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
         }
 
         if (sealed) {
+            if (onSealRunnable != null) {
+                onSealRunnable.run();
+                onSealRunnable = null;
+            }
             cleanup();
         }
     }

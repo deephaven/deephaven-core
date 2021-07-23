@@ -509,13 +509,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 }
 
                 // no more changes allowed; this is officially static content
-                resultTable.sealTable();
-                resultExportBuilder.submit(() -> {
+                resultTable.sealTable(() -> resultExportBuilder.submit(() -> {
                     // transfer ownership to submit's liveness scope, drop our extra reference
                     resultTable.manageWithCurrentScope();
                     resultTable.dropReference();
                     return resultTable;
-                });
+                }));
 
                 observer.onCompleted();
                 onRequestDone();
