@@ -8,13 +8,12 @@ public class CharArrayTest {
 
     @Test
     void boxInRawOut() {
-        assertThat(CharArray.of('1', null, '3').values()).containsExactly('1', CharArray.NULL_REPR,
-            '3');
+        assertThat(CharArray.of('1', null, '3').values()).containsExactly('1', Util.NULL_CHAR, '3');
     }
 
     @Test
     void rawInRawOut() {
-        assertThat(CharArray.ofUnsafe('1', CharArray.NULL_REPR, '3').values()).containsExactly('1',
-            CharArray.NULL_REPR, '3');
+        assertThat(CharArray.ofUnsafe('1', Util.NULL_CHAR, '3').values()).containsExactly('1',
+            Util.NULL_CHAR, '3');
     }
 }

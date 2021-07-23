@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class ByteArray extends PrimitiveArrayBase<Byte> {
-    static final byte NULL_REPR = Byte.MIN_VALUE;
 
     public static ByteArray empty() {
         return new ByteArray(new byte[0]);
@@ -34,11 +33,11 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     private static byte adapt(Byte x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_BYTE : x;
     }
 
     private static Byte adapt(byte x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_BYTE ? null : x;
     }
 
     private final byte[] values;

@@ -8,8 +8,6 @@ import java.util.Objects;
 
 public final class FloatArray extends PrimitiveArrayBase<Float> {
 
-    static final float NULL_REPR = -Float.MAX_VALUE;
-
     public static FloatArray empty() {
         return new FloatArray(new float[0]);
     }
@@ -35,11 +33,11 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
     }
 
     private static float adapt(Float x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_FLOAT : x;
     }
 
     private static Float adapt(float x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_FLOAT ? null : x;
     }
 
     private final float[] values;

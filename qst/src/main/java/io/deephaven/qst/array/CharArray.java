@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class CharArray extends PrimitiveArrayBase<Character> {
-    static final char NULL_REPR = Character.MAX_VALUE - 1;
 
     public static CharArray empty() {
         return new CharArray(new char[0]);
@@ -35,11 +34,11 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     private static char adapt(Character x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_CHAR : x;
     }
 
     private static Character adapt(char x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_CHAR ? null : x;
     }
 
     private final char[] values;

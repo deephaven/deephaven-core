@@ -8,10 +8,6 @@ import java.util.Objects;
 
 public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
 
-    static final byte NULL_REPR = (byte) -1;
-    static final byte TRUE_REPR = (byte) 1;
-    static final byte FALSE_REPR = (byte) 0;
-
     public static BooleanArray empty() {
         return new BooleanArray(new byte[0]);
     }
@@ -37,15 +33,15 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
     }
 
     private static byte adapt(Boolean x) {
-        return x == null ? NULL_REPR : (x ? TRUE_REPR : FALSE_REPR);
+        return x == null ? Util.NULL_BOOL : (x ? Util.TRUE_BOOL : Util.FALSE_BOOL);
     }
 
     private static byte adapt(boolean x) {
-        return x ? TRUE_REPR : FALSE_REPR;
+        return x ? Util.TRUE_BOOL : Util.FALSE_BOOL;
     }
 
     private static Boolean adapt(byte x) {
-        return x == NULL_REPR ? null : x != FALSE_REPR;
+        return x == Util.NULL_BOOL ? null : x != Util.FALSE_BOOL;
     }
 
     // todo: use bitset?

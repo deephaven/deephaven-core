@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class ShortArray extends PrimitiveArrayBase<Short> {
-    static final short NULL_REPR = Short.MIN_VALUE;
 
     public static ShortArray empty() {
         return new ShortArray(new short[0]);
@@ -34,11 +33,11 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
     }
 
     private static short adapt(Short x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_SHORT : x;
     }
 
     private static Short adapt(short x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_SHORT ? null : x;
     }
 
     private final short[] values;

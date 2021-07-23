@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class DoubleArray extends PrimitiveArrayBase<Double> {
-    static final double NULL_REPR = -Double.MAX_VALUE;
 
     public static DoubleArray empty() {
         return new DoubleArray(new double[0]);
@@ -34,11 +33,11 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
     }
 
     private static double unbox(Double x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_DOUBLE : x;
     }
 
     private static Double box(double x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_DOUBLE ? null : x;
     }
 
     private final double[] values;

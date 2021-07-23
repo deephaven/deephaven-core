@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class IntArray extends PrimitiveArrayBase<Integer> {
-    static final int NULL_REPR = Integer.MIN_VALUE;
 
     public static IntArray empty() {
         return new IntArray(new int[0]);
@@ -34,11 +33,11 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     private static int adapt(Integer x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_INT : x;
     }
 
     private static Integer adapt(int x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_INT ? null : x;
     }
 
     private final int[] values;

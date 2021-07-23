@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Objects;
 
 public final class LongArray extends PrimitiveArrayBase<Long> {
-    static final long NULL_REPR = Long.MIN_VALUE;
 
     public static LongArray empty() {
         return new LongArray(new long[0]);
@@ -34,11 +33,11 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
     }
 
     private static long adapt(Long x) {
-        return x == null ? NULL_REPR : x;
+        return x == null ? Util.NULL_LONG : x;
     }
 
     private static Long adapt(long x) {
-        return x == NULL_REPR ? null : x;
+        return x == Util.NULL_LONG ? null : x;
     }
 
     private final long[] values;
