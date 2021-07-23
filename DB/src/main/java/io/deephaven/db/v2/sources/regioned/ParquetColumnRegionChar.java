@@ -7,20 +7,19 @@ import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionChar} implementation for regions that support fetching primitive chars from a
- * {@link ColumnChunkPageStore}.
+ * {@link ColumnRegionChar} implementation for regions that support fetching primitive chars from
+ * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-    implements ColumnRegionChar<ATTR>, ParquetColumnRegion<ATTR> {
+        implements ColumnRegionChar<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
+        super(columnChunkPageStores);
     }
 
     @Override
     public char getChar(final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
@@ -32,7 +31,6 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
     @Override
     public char getChar(@NotNull final FillContext context, final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {

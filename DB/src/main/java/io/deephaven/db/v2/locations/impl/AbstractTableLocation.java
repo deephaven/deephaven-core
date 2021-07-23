@@ -121,8 +121,8 @@ public abstract class AbstractTableLocation
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 
-    protected abstract @NotNull
-    ColumnLocation makeColumnLocation(@NotNull final String name);
+    @NotNull
+    protected abstract ColumnLocation makeColumnLocation(@NotNull final String name);
 
     /**
      * Clear all column locations (usually because a truncated location was observed).

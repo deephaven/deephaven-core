@@ -3,6 +3,7 @@ package io.deephaven.parquet.util;
 
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -152,22 +153,22 @@ public class CachedChannelProviderTest {
         AtomicInteger count = new AtomicInteger(0);
 
         @Override
-        public SeekableByteChannel getReadChannel(String path) throws IOException {
+        public SeekableByteChannel getReadChannel(@NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
 
         @Override
-        public SeekableByteChannel getReadChannel(Path path) throws IOException {
+        public SeekableByteChannel getReadChannel(@NotNull Path path) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
         }
 
         @Override
-        public SeekableByteChannel getWriteChannel(String path, boolean append) throws IOException {
+        public SeekableByteChannel getWriteChannel(@NotNull String path, boolean append) {
             return new TestMockChannel(count.getAndIncrement(), path);
         }
 
         @Override
-        public SeekableByteChannel getWriteChannel(Path path, boolean append) throws IOException {
+        public SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) {
             return new TestMockChannel(count.getAndIncrement(), path.toString());
         }
     }

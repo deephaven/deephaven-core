@@ -16,22 +16,21 @@ import org.jetbrains.annotations.NotNull;
  * Non overlapping pages can be collected together in a {@link PageStore}, which provides the {@link ChunkSource}
  * interface to the collection of all of its Pages.
  * <p>
- * There are two distinct use cases/types of pages.  The first use case are {@code Page}s which always have a
+ * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a
  * length() > 0.  These store length() values, which can be assessed via the {@link ChunkSource} methods.
  * Valid {@link OrderedKeys} passed to those methods will have their offset in the range
- * [firstRowOffset(), firstRowOffset() + length()).  Passing OrderKeys with offsets outside of this range will have
+ * [firstRowOffset(), firstRowOffset() + length()). Passing OrderKeys with offsets outside of this range will have
  * undefined results.
  * <p>
- * The second use case will always have length() == 0 and firstRowOffset() == 0.  These represent "Null" regions
+ * The second use case will always have length() == 0 and firstRowOffset() == 0. These represent "Null" regions
  * which return a fixed value, typically a null value, for every {@link OrderedKeys} passed into the
- * {@link ChunkSource} methods.   In order to have this use case, override {@code length} and override {@code lastRow}
+ * {@link ChunkSource} methods. In order to have this use case, override {@code length} and override {@code lastRow}
  * as {@code maxRow}.
  * <p>
  * Though the {@link ChunkSource} methods ignore the non-offset portion of the rows in the {@link OrderedKeys},
- * then can assume they are identical for all the passed in elements of the {@link OrderedKeys}.  For instance,
+ * they can assume they are identical for all the passed in elements of the {@link OrderedKeys}.  For instance,
  * they can use the simple difference between the complete row value to determine a length.
  */
-
 public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
 
     /**

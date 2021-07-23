@@ -10,20 +10,19 @@ import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionShort} implementation for regions that support fetching primitive shorts from a
- * {@link ColumnChunkPageStore}.
+ * {@link ColumnRegionShort} implementation for regions that support fetching primitive shorts from
+ * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionShort<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionShort<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionShort(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+    public ParquetColumnRegionShort(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
+        super(columnChunkPageStores);
     }
 
     @Override
     public short getShort(final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asShortChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
@@ -35,7 +34,6 @@ public final class ParquetColumnRegionShort<ATTR extends Any> extends ParquetCol
     @Override
     public short getShort(@NotNull final FillContext context, final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asShortChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {

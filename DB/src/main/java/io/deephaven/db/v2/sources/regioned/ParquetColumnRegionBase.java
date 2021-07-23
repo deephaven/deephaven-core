@@ -3,22 +3,21 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
-import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.sources.chunk.page.PageStore;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnRegion<ATTR> {
+public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnRegion<ATTR>, PageStore<ATTR, ATTR, ColumnChunkPageStore<ATTR>> {
 
-    private final ColumnChunkPageStore<ATTR> columnChunkPageStore;
+    private final ColumnChunkPageStore<ATTR>[] columnChunkPageStores;
 
-    ParquetColumnRegionBase(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        this.columnChunkPageStore = Require.neqNull(columnChunkPageStore, "columnChunkPageStore");
+    ParquetColumnRegionBase(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
+        this.columnChunkPageStores = Require.neqNull(columnChunkPageStores, "columnChunkPageStores");
 
+        // TODO-RWC: Finish porting page store change, and update dictionary stuff
         // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
         Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
         Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstrRowOffset()");
@@ -35,24 +34,10 @@ public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnR
         return columnChunkPageStore.getNativeType();
     }
 
+    @NotNull
     @Override
-    public Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
-        return columnChunkPageStore.getChunk(context, orderedKeys);
-    }
-
-    @Override
-    public Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey, final long lastKey) {
-        return columnChunkPageStore.getChunk(context, firstKey, lastKey);
-    }
-
-    @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
-        columnChunkPageStore.fillChunk(context, destination, orderedKeys);
-    }
-
-    @Override
-    public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
-        columnChunkPageStore.fillChunkAppend(context, destination, orderedKeysIterator);
+    public final ColumnChunkPageStore<ATTR> getPageContaining(@NotNull final FillContext fillContext, final long row) {
+        return columnChunkPageStore;
     }
 
     @Override
@@ -69,6 +54,7 @@ public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnR
 
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        // TODO-RWC: Check these
         return columnChunkPageStore.makeFillContext(chunkCapacity, sharedContext);
     }
 

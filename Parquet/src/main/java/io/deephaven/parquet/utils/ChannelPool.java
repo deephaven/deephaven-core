@@ -7,17 +7,16 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 
-
 public class ChannelPool {
 
     private final Function<String, CachedChannelProvider.CachedChannel> channelCreator;
 
     private final Map<String, Deque<CachedChannelProvider.CachedChannel>> pool = new HashMap<>();
-
     private final PriorityQueue<TimeToPath> thingsToRelease = new PriorityQueue<>();
+
     private int pooledCount = 0;
 
-    ChannelPool(Function<String, CachedChannelProvider.CachedChannel> channelCreator) {
+    ChannelPool(@NotNull final Function<String, CachedChannelProvider.CachedChannel> channelCreator) {
         this.channelCreator = channelCreator;
     }
 
@@ -26,8 +25,8 @@ public class ChannelPool {
     }
 
     static class TimeToPath implements Comparable<TimeToPath> {
-        final String path;
-        final long logicalTime;
+        private final String path;
+        private final long logicalTime;
 
         TimeToPath(String path, long logicalTime) {
             this.path = path;
@@ -35,15 +34,13 @@ public class ChannelPool {
         }
 
         @Override
-        public int compareTo(@NotNull TimeToPath o) {
-            return (int) Math.signum(logicalTime - o.logicalTime);
+        public int compareTo(@NotNull final TimeToPath other) {
+            return (int) Math.signum(logicalTime - other.logicalTime);
         }
-
     }
 
-
-    void pool(CachedChannelProvider.CachedChannel cachedChannel) {
-        Deque<CachedChannelProvider.CachedChannel> dest = pool.computeIfAbsent(cachedChannel.getPath(), (path) -> {
+    void pool(@NotNull final CachedChannelProvider.CachedChannel cachedChannel) {
+        final Deque<CachedChannelProvider.CachedChannel> dest = pool.computeIfAbsent(cachedChannel.getPath(), (path) -> {
             thingsToRelease.add(new TimeToPath(cachedChannel.getPath(), cachedChannel.closeTime()));
             return new ArrayDeque<>();
         });
@@ -51,8 +48,8 @@ public class ChannelPool {
         pooledCount++;
     }
 
-    CachedChannelProvider.CachedChannel getChannel(String path, boolean needsRelease) throws IOException {
-        Deque<CachedChannelProvider.CachedChannel> queue = pool.get(path);
+    CachedChannelProvider.CachedChannel getChannel(@NotNull final String path, final boolean needsRelease) throws IOException {
+        final Deque<CachedChannelProvider.CachedChannel> queue = pool.get(path);
         if (queue == null || queue.isEmpty()) {
             CachedChannelProvider.CachedChannel result = channelCreator.apply(path);
             if (needsRelease) {
@@ -61,20 +58,23 @@ public class ChannelPool {
             return result;
         }
         pooledCount--;
-        CachedChannelProvider.CachedChannel cachedChannel = queue.removeFirst();
-        Assert.neqTrue(cachedChannel.isOpen,"cachedChannel.isOpen");
+        final CachedChannelProvider.CachedChannel cachedChannel = queue.removeFirst();
+        Assert.neqTrue(cachedChannel.isOpen, "cachedChannel.isOpen");
         cachedChannel.isOpen = true;
         return cachedChannel;
     }
 
     void releaseNext() throws IOException {
-        Deque<CachedChannelProvider.CachedChannel> cachedChannels = pool.get(thingsToRelease.poll().path);
+        final ChannelPool.TimeToPath toRelease = thingsToRelease.poll();
+        if (toRelease == null) {
+            return;
+        }
+        final Deque<CachedChannelProvider.CachedChannel> cachedChannels = pool.get(toRelease.path);
         cachedChannels.removeLast().dispose();
         if (!cachedChannels.isEmpty()) {
-            CachedChannelProvider.CachedChannel nextInLine = cachedChannels.peekLast();
-            thingsToRelease.add(new TimeToPath(nextInLine.getPath(),nextInLine.closeTime()));
+            final CachedChannelProvider.CachedChannel nextInLine = cachedChannels.peekLast();
+            thingsToRelease.add(new TimeToPath(nextInLine.getPath(), nextInLine.closeTime()));
         }
         pooledCount--;
     }
-
 }

@@ -2,9 +2,9 @@ package io.deephaven.db.v2.locations.parquet;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.db.v2.locations.parquet.topage.ToPage;
-import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;
@@ -14,14 +14,14 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-class FixedPageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends ColumnChunkPageStore<ATTR> {
+class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
     private final int pageFixedSize;
     private volatile int numPages = 0;
     private final ColumnPageReader[] columnPageReaders;
     private final WeakReference<IntrusivePage<ATTR>> [] pages;
 
-    FixedPageSizeColumnChunkPageStore(@NotNull ColumnChunkReader columnChunkReader, ToPage<ATTR, ?> toPage, long mask)  throws IOException {
+    FixedPageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, @NotNull final ToPage<ATTR, ?> toPage, final long mask) throws IOException {
         super(columnChunkReader, toPage, mask);
 
         this.pageFixedSize = columnChunkReader.getPageFixedSize();
@@ -74,8 +74,8 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends Col
 
     @Override
     public @NotNull
-    ChunkPage<ATTR> getPageContaining(FillContext fillContext, long elementIndex) {
-        long row = elementIndex & mask();
+    ChunkPage<ATTR> getPageContaining(FillContext fillContext, final long elementIndex) {
+        final long row = elementIndex & mask();
         Require.inRange(row, "row", length(), "numRows" );
 
         // This is safe because of our check in the constructor, and we know the row is in range.

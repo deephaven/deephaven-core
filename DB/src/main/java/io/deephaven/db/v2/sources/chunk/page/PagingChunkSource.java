@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
  * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} is
  * added, which supports doing a fillChunk incrementally across a series of pages.
  */
-
 public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
 
     /**
@@ -34,7 +33,7 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
     long mask();
 
     /**
-     * <p>The {@code maxRow} is the greatest possible row which may reference this ChunkSource.  This method is
+     * <p>The {@code maxRow} is the greatest possible row which may reference this ChunkSource. This method is
      * used by {@link #fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} to determine which of its
      * {@code OrderedKeys} are referencing this {@code PagingChunkSource}.</p>
      *
@@ -49,7 +48,7 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
      * @param row Any row contained on this page.
      * @return the maximum last row of this page, located in the same way as row.
      */
-    default long maxRow(long row) {
+    default long maxRow(final long row) {
         return row | mask();
     }
 

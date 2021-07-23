@@ -25,10 +25,10 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      */
     default long size() {
         long size = 0;
-        int regionCount = getRegionCount();
+        final int regionCount = getRegionCount();
 
-        for (int i = 0; i < regionCount; i++) {
-            REGION_TYPE region = getRegion(i);
+        for (int ri = 0; ri < regionCount; ri++) {
+            REGION_TYPE region = getRegion(ri);
             size += region.length();
         }
 
@@ -84,7 +84,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      * @param regionIndex The region index
      * @return The region for the supplied region index
      */
-    REGION_TYPE getRegion(final int regionIndex);
+    REGION_TYPE getRegion(int regionIndex);
 
     /**
      * Perform region lookup for an element index.
