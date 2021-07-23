@@ -57,11 +57,6 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
     }
 
     @Override
-    public final Long get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -102,13 +97,13 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(long item) {
+        public final Builder add(long item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(long... items) {
+        public final Builder add(long... items) {
             // todo: systemcopy
             for (long item : items) {
                 add(item);
@@ -117,12 +112,12 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         }
 
         @Override
-        public synchronized final Builder add(Long item) {
+        public final Builder add(Long item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Long... items) {
+        public final Builder add(Long... items) {
             for (Long item : items) {
                 add(item);
             }
@@ -130,7 +125,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Long> items) {
+        public final Builder add(Iterable<Long> items) {
             for (Long item : items) {
                 add(item);
             }
@@ -138,7 +133,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         }
 
         @Override
-        public synchronized final LongArray build() {
+        public final LongArray build() {
             return new LongArray(takeAtSize());
         }
 

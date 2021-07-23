@@ -57,11 +57,6 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     @Override
-    public final Integer get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -102,13 +97,13 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(int item) {
+        public final Builder add(int item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(int... items) {
+        public final Builder add(int... items) {
             // todo: systemcopy
             for (int item : items) {
                 add(item);
@@ -117,12 +112,12 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         }
 
         @Override
-        public synchronized final Builder add(Integer item) {
+        public final Builder add(Integer item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Integer... items) {
+        public final Builder add(Integer... items) {
             for (Integer item : items) {
                 add(item);
             }
@@ -130,7 +125,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Integer> items) {
+        public final Builder add(Iterable<Integer> items) {
             for (Integer item : items) {
                 add(item);
             }
@@ -138,7 +133,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         }
 
         @Override
-        public synchronized final IntArray build() {
+        public final IntArray build() {
             return new IntArray(takeAtSize());
         }
 

@@ -1,6 +1,6 @@
 package io.deephaven.qst.array;
 
-public abstract class PrimitiveArrayBase<T> extends ArrayBase<T> implements PrimitiveArray<T> {
+public abstract class PrimitiveArrayBase<T> implements PrimitiveArray<T> {
 
     @Override
     public final <V extends Array.Visitor> V walk(V visitor) {

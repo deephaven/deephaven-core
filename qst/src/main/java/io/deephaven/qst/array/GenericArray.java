@@ -4,7 +4,10 @@ import io.deephaven.annotations.AllowNulls;
 import io.deephaven.qst.type.GenericType;
 import org.immutables.value.Value;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 /**
  * An array-like object for non-primitive types.
@@ -12,7 +15,7 @@ import java.util.List;
  * @param <T> the non-primitive type
  */
 @Value.Immutable
-public abstract class GenericArray<T> extends ArrayBase<T> {
+public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
 
     public static <T> Builder<T> builder() {
         return ImmutableGenericArray.builder();
@@ -50,7 +53,6 @@ public abstract class GenericArray<T> extends ArrayBase<T> {
         return visitor;
     }
 
-    @Override
     public final T get(int index) {
         return values().get(index);
     }
@@ -92,5 +94,20 @@ public abstract class GenericArray<T> extends ArrayBase<T> {
         public final Builder<T> add(Iterable<T> items) {
             return addAllValues(items);
         }
+    }
+
+    @Override
+    public final Iterator<T> iterator() {
+        return values().iterator();
+    }
+
+    @Override
+    public final void forEach(Consumer<? super T> action) {
+        values().forEach(action);
+    }
+
+    @Override
+    public final Spliterator<T> spliterator() {
+        return values().spliterator();
     }
 }

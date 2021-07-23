@@ -58,11 +58,6 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
     }
 
     @Override
-    public final Float get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -103,13 +98,13 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(float item) {
+        public final Builder add(float item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(float... items) {
+        public final Builder add(float... items) {
             // todo: systemcopy
             for (float item : items) {
                 add(item);
@@ -118,12 +113,12 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         }
 
         @Override
-        public synchronized final Builder add(Float item) {
+        public final Builder add(Float item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Float... items) {
+        public final Builder add(Float... items) {
             for (Float item : items) {
                 add(item);
             }
@@ -131,7 +126,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Float> items) {
+        public final Builder add(Iterable<Float> items) {
             for (Float item : items) {
                 add(item);
             }
@@ -139,7 +134,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         }
 
         @Override
-        public synchronized final FloatArray build() {
+        public final FloatArray build() {
             return new FloatArray(takeAtSize());
         }
 

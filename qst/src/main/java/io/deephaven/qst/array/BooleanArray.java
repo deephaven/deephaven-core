@@ -65,11 +65,6 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
     }
 
     @Override
-    public final Boolean get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -110,13 +105,13 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(boolean item) {
+        public final Builder add(boolean item) {
             ensureCapacity();
             array[size++] = adapt(item);
             return this;
         }
 
-        public synchronized final Builder add(boolean... items) {
+        public final Builder add(boolean... items) {
             for (boolean item : items) {
                 add(item);
             }
@@ -124,14 +119,14 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         }
 
         @Override
-        public synchronized final Builder add(Boolean item) {
+        public final Builder add(Boolean item) {
             ensureCapacity();
             array[size++] = adapt(item);
             return this;
         }
 
         @Override
-        public synchronized final Builder add(Boolean... items) {
+        public final Builder add(Boolean... items) {
             for (Boolean item : items) {
                 add(item);
             }
@@ -139,7 +134,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Boolean> items) {
+        public final Builder add(Iterable<Boolean> items) {
             for (Boolean item : items) {
                 add(item);
             }
@@ -147,7 +142,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         }
 
         @Override
-        public synchronized final BooleanArray build() {
+        public final BooleanArray build() {
             return new BooleanArray(takeAtSize());
         }
 

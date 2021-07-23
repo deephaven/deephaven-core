@@ -57,11 +57,6 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
     }
 
     @Override
-    public final Short get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -102,13 +97,13 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(short item) {
+        public final Builder add(short item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(short... items) {
+        public final Builder add(short... items) {
             // todo: systemcopy
             for (short item : items) {
                 add(item);
@@ -117,12 +112,12 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         }
 
         @Override
-        public synchronized final Builder add(Short item) {
+        public final Builder add(Short item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Short... items) {
+        public final Builder add(Short... items) {
             for (Short item : items) {
                 add(item);
             }
@@ -130,7 +125,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Short> items) {
+        public final Builder add(Iterable<Short> items) {
             for (Short item : items) {
                 add(item);
             }
@@ -138,7 +133,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         }
 
         @Override
-        public synchronized final ShortArray build() {
+        public final ShortArray build() {
             return new ShortArray(takeAtSize());
         }
 

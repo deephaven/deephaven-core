@@ -57,11 +57,6 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     @Override
-    public final Byte get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -102,13 +97,13 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(byte item) {
+        public final Builder add(byte item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(byte... items) {
+        public final Builder add(byte... items) {
             // todo: systemcopy
             for (byte item : items) {
                 add(item);
@@ -117,12 +112,12 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         }
 
         @Override
-        public synchronized final Builder add(Byte item) {
+        public final Builder add(Byte item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Byte... items) {
+        public final Builder add(Byte... items) {
             for (Byte item : items) {
                 add(item);
             }
@@ -130,7 +125,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Byte> items) {
+        public final Builder add(Iterable<Byte> items) {
             for (Byte item : items) {
                 add(item);
             }
@@ -138,7 +133,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         }
 
         @Override
-        public synchronized final ByteArray build() {
+        public final ByteArray build() {
             return new ByteArray(takeAtSize());
         }
 

@@ -33,11 +33,11 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         return new Builder(initialSize);
     }
 
-    private static double adapt(Double x) {
+    private static double unbox(Double x) {
         return x == null ? NULL_REPR : x;
     }
 
-    private static Double adapt(double x) {
+    private static Double box(double x) {
         return x == NULL_REPR ? null : x;
     }
 
@@ -54,11 +54,6 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
      */
     public final double[] values() {
         return values;
-    }
-
-    @Override
-    public final Double get(int index) {
-        return adapt(values[index]);
     }
 
     @Override
@@ -102,13 +97,13 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(double item) {
+        public final Builder add(double item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(double... items) {
+        public final Builder add(double... items) {
             // todo: systemcopy
             for (double item : items) {
                 add(item);
@@ -117,12 +112,12 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         }
 
         @Override
-        public synchronized final Builder add(Double item) {
-            return add(adapt(item));
+        public final Builder add(Double item) {
+            return add(unbox(item));
         }
 
         @Override
-        public synchronized final Builder add(Double... items) {
+        public final Builder add(Double... items) {
             for (Double item : items) {
                 add(item);
             }
@@ -130,7 +125,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Double> items) {
+        public final Builder add(Iterable<Double> items) {
             for (Double item : items) {
                 add(item);
             }
@@ -138,7 +133,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         }
 
         @Override
-        public synchronized final DoubleArray build() {
+        public final DoubleArray build() {
             return new DoubleArray(takeAtSize());
         }
 

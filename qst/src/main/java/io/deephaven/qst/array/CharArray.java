@@ -58,11 +58,6 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     @Override
-    public final Character get(int index) {
-        return adapt(values[index]);
-    }
-
-    @Override
     public final int size() {
         return values().length;
     }
@@ -103,13 +98,13 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
             this.size = 0;
         }
 
-        public synchronized final Builder add(char item) {
+        public final Builder add(char item) {
             ensureCapacity();
             array[size++] = item;
             return this;
         }
 
-        public synchronized final Builder add(char... items) {
+        public final Builder add(char... items) {
             // todo: systemcopy
             for (char item : items) {
                 add(item);
@@ -118,12 +113,12 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         }
 
         @Override
-        public synchronized final Builder add(Character item) {
+        public final Builder add(Character item) {
             return add(adapt(item));
         }
 
         @Override
-        public synchronized final Builder add(Character... items) {
+        public final Builder add(Character... items) {
             for (Character item : items) {
                 add(item);
             }
@@ -131,7 +126,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         }
 
         @Override
-        public synchronized final Builder add(Iterable<Character> items) {
+        public final Builder add(Iterable<Character> items) {
             for (Character item : items) {
                 add(item);
             }
@@ -139,7 +134,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         }
 
         @Override
-        public synchronized final CharArray build() {
+        public final CharArray build() {
             return new CharArray(takeAtSize());
         }
 

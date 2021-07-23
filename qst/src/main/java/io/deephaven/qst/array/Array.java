@@ -4,7 +4,6 @@ import io.deephaven.qst.type.Type;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.stream.Stream;
 
 /**
  * Provides strong typing around an array-like object.
@@ -13,7 +12,7 @@ import java.util.stream.Stream;
  * @see PrimitiveArray
  * @see GenericArray
  */
-public interface Array<T> extends Iterable<T>, Serializable {
+public interface Array<T> extends Serializable {
 
     static <T> ArrayBuilder<T, ?, ?> builder(Type<T> type) {
         return TypeToArrayBuilder.of(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY);
@@ -38,10 +37,6 @@ public interface Array<T> extends Iterable<T>, Serializable {
     Type<T> type();
 
     int size();
-
-    T get(int index);
-
-    Stream<T> stream();
 
     <V extends Visitor> V walk(V visitor);
 

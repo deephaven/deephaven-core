@@ -18,8 +18,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
 
 @Immutable
 @SimpleStyle
@@ -34,14 +33,14 @@ public abstract class Column<T> {
     }
 
     public static <T> Column<T> of(ColumnHeader<T> header, T... data) {
-        return of(header, Array.of(header.type(), data));
-    }
-
-    public static <T> Column<T> of(ColumnHeader<T> header, Iterable<T> data) {
         return of(header.name(), Array.of(header.type(), data));
     }
 
-    public static <T> Column<T> of(String name, Class<T> clazz, Iterable<T> values) {
+    public static <T> Column<T> of(ColumnHeader<T> header, Collection<T> data) {
+        return of(header.name(), Array.of(header.type(), data));
+    }
+
+    public static <T> Column<T> of(String name, Class<T> clazz, Collection<T> values) {
         return of(name, Array.of(Type.find(clazz), values));
     }
 
@@ -99,10 +98,6 @@ public abstract class Column<T> {
 
     @Parameter
     public abstract Array<T> array();
-
-    public final List<T> values() {
-        return array().stream().collect(Collectors.toList());
-    }
 
     public final ColumnHeader<T> header() {
         return ColumnHeader.of(name(), type());
