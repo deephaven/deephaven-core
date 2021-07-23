@@ -30,11 +30,15 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public class BarrageSchemaUtil {
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);// year is 4 bytes, month is 1 byte, day is 1 byte
@@ -131,36 +135,50 @@ public class BarrageSchemaUtil {
     }
 
     public static TableDefinition schemaToTableDefinition(final io.deephaven.barrage.flatbuf.Schema schema) {
-        final ColumnDefinition<?>[] columns = new ColumnDefinition[schema.fieldsLength()];
-
-        for (int i = 0; i < schema.fieldsLength(); ++i) {
+        return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
             final io.deephaven.barrage.flatbuf.Field field = schema.fields(i);
-
-            final String name = NameValidator.legalizeColumnName(field.name());
-
-            Class<?> type = null;
-            Class<?> componentType = null;
             for (int j = 0; j < field.customMetadataLength(); j++) {
                 final KeyValue keyValue = field.customMetadata(j);
-                if (keyValue.key().equals("deephaven:type")) {
+                visitor.accept(keyValue.key(), keyValue.value());
+            }
+        });
+    }
+
+    public static TableDefinition schemaToTableDefinition(final Schema schema) {
+        return schemaToTableDefinition(schema.getFields().size(), i -> schema.getFields().get(i).getName(), i -> visitor -> {
+            schema.getFields().get(i).getMetadata().forEach(visitor);
+        });
+    }
+
+    private static TableDefinition schemaToTableDefinition(final int numColumns, final IntFunction<String> getName,
+                                                           final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+        final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
+
+        for (int i = 0; i < numColumns; ++i) {
+            final String name = NameValidator.legalizeColumnName(getName.apply(i));
+            final MutableObject<Class<?>> type = new MutableObject<>();
+            final MutableObject<Class<?>> componentType = new MutableObject<>();
+
+            visitMetadata.apply(i).accept((key, value) -> {
+                if (key.equals("deephaven:type")) {
                     try {
-                        type = ClassUtil.lookupClass(keyValue.value());
+                        type.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
                         throw new UncheckedDeephavenException("Could not load class from schema", e);
                     }
-                } else if (keyValue.key().equals("deephaven:componentType")) {
+                } else if (key.equals("deephaven:componentType")) {
                     try {
-                        componentType = ClassUtil.lookupClass(keyValue.value());
+                        componentType.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
                         throw new UncheckedDeephavenException("Could not load class from schema", e);
                     }
                 }
-            }
+            });
 
-            if (type == null) {
+            if (type.getValue() == null) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema did not include `deephaven:type` metadata");
             }
-            columns[i] = ColumnDefinition.fromGenericType(name, type, componentType);
+            columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
         return new TableDefinition(columns);
