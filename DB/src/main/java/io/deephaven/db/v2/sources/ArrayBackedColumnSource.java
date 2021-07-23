@@ -59,6 +59,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.
@@ -679,90 +680,42 @@ public abstract class ArrayBackedColumnSource<T>
 
         @Override
         public void visit(ByteArray byteArray) {
-            ByteArraySource source = new ByteArraySource();
-            source.ensureCapacity(byteArray.size(), false);
-            int ix = 0;
-            for (byte value : byteArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
         }
 
         @Override
         public void visit(BooleanArray booleanArray) {
-            BooleanArraySource source = new BooleanArraySource();
-            source.ensureCapacity(booleanArray.size(), false);
-            int ix = 0;
-            for (byte value : booleanArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(booleanArray.values());
         }
 
         @Override
         public void visit(CharArray charArray) {
-            CharacterArraySource source = new CharacterArraySource();
-            source.ensureCapacity(charArray.size(), false);
-            int ix = 0;
-            for (char value : charArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
         }
 
         @Override
         public void visit(ShortArray shortArray) {
-            ShortArraySource source = new ShortArraySource();
-            source.ensureCapacity(shortArray.size(), false);
-            int ix = 0;
-            for (short value : shortArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
         }
 
         @Override
         public void visit(IntArray intArray) {
-            IntegerArraySource source = new IntegerArraySource();
-            source.ensureCapacity(intArray.size(), false);
-            int ix = 0;
-            for (int value : intArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
         }
 
         @Override
         public void visit(LongArray longArray) {
-            LongArraySource source = new LongArraySource();
-            source.ensureCapacity(longArray.size(), false);
-            int ix = 0;
-            for (long value : longArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
         }
 
         @Override
         public void visit(FloatArray floatArray) {
-            FloatArraySource source = new FloatArraySource();
-            source.ensureCapacity(floatArray.size(), false);
-            int ix = 0;
-            for (float value : floatArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
         }
 
         @Override
         public void visit(DoubleArray doubleArray) {
-            DoubleArraySource source = new DoubleArraySource();
-            source.ensureCapacity(doubleArray.size(), false);
-            int ix = 0;
-            for (double value : doubleArray.values()) {
-                source.set(ix++, value);
-            }
-            out = source;
+            out = ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
         }
 
         @Override
@@ -770,7 +723,7 @@ public abstract class ArrayBackedColumnSource<T>
             generic.type().walk(new Visitor() {
                 @Override
                 public void visit(StringType stringType) {
-                    out = objectArraySource(String.class, generic.cast(stringType));
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(stringType).values(), String.class, null);
                 }
 
                 @Override
@@ -780,9 +733,9 @@ public abstract class ArrayBackedColumnSource<T>
                     int ix = 0;
                     for (Instant value : generic.cast(instantType).values()) {
                         if (value == null) {
-                            source.set(ix++, null);
+                            source.set(ix++, Long.MIN_VALUE);
                         } else {
-                            long nanos = Math.addExact(Math.multiplyExact(value.getEpochSecond(), 1_000_000_000L), value.getNano());
+                            long nanos = Math.addExact(TimeUnit.SECONDS.toNanos(value.getEpochSecond()), value.getNano());
                             source.set(ix++, nanos);
                         }
                     }
@@ -793,19 +746,9 @@ public abstract class ArrayBackedColumnSource<T>
                 public void visit(CustomType<?> customType) {
                     //noinspection unchecked
                     CustomType<T> tType = (CustomType<T>)customType;
-                    out = objectArraySource(tType.clazz(), generic.cast(tType));
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(), null);
                 }
             });
-        }
-
-        private static <O> ObjectArraySource<O> objectArraySource(Class<O> clazz, GenericArray<O> generic) {
-            ObjectArraySource<O> source = new ObjectArraySource<>(clazz);
-            source.ensureCapacity(generic.size());
-            int ix = 0;
-            for (O value : generic.values()) {
-                source.set(ix++, value);
-            }
-            return source;
         }
     }
 }
