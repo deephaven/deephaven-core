@@ -41,6 +41,17 @@ public interface Table extends TableOperations<Table, Table>, Serializable {
         return MergeTable.of(tables);
     }
 
+    /**
+     * Create a table via java deserialization.
+     *
+     * <p>
+     * Note: stability of the format is not guaranteed.
+     *
+     * @param path the path to the file
+     * @return the table
+     * @throws IOException if an I/O error occurs
+     * @throws ClassNotFoundException Class of a serialized object cannot be found.
+     */
     static Table file(Path path) throws IOException, ClassNotFoundException {
         try (InputStream in = Files.newInputStream(path);
             BufferedInputStream buf = new BufferedInputStream(in);
