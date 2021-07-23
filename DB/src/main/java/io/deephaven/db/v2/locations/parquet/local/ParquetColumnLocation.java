@@ -40,6 +40,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     private static final int CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(ParquetColumnLocation.class, "chunkSize", 4096);
 
+    private final String parquetColumnName;
     /**
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to ensure
      * visibility of the derived fields.
@@ -60,12 +61,13 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @param hasGroupingTable  Whether this column has an associated grouping table file
      */
     ParquetColumnLocation(@NotNull final ParquetTableLocation tableLocation,
+                          @NotNull final String columnName,
                           @NotNull final String parquetColumnName,
                           final ColumnChunkPageStore.Creator<ATTR>[] pageStoreCreators,
                           final boolean hasGroupingTable) {
-
-        super(tableLocation, parquetColumnName);
-        this.pageStoreCreators = pageStoreCreators;
+        super(tableLocation, columnName);
+        this.parquetColumnName = parquetColumnName;
+        this.pageStoreCreators = pageStoreCreators == null ? null : Require.elementsNeqNull(pageStoreCreators, "pageStoreCreators");
         this.hasGroupingTable = hasGroupingTable;
     }
 
@@ -105,7 +107,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
                 ParquetTableWriter.defaultGroupingFileName(parquetTableLocation.getParquetFile().getAbsolutePath());
         try {
             final ParquetFileReader parquetFileReader = new ParquetFileReader(
-                    defaultGroupingFilenameByColumnName.apply(getName()), parquetTableLocation.getChannelProvider(), -1);
+                    defaultGroupingFilenameByColumnName.apply(parquetColumnName), parquetTableLocation.getChannelProvider(), -1);
             final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
             final Map<String, String> keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
             //noinspection unchecked
@@ -171,6 +173,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus offset adjustments for multiple dictionaries)
         final ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores = getDictionaryKeysPageStores(columnDefinition);
+        // TODO-RWC: This is insufficient. We need to add the length of prior dictionaries to keys.
         return dictionaryKeysPageStores == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStores);
     }
 

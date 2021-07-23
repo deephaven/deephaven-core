@@ -116,8 +116,8 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public @NotNull
-    ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
+    @NotNull
+    public final ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 

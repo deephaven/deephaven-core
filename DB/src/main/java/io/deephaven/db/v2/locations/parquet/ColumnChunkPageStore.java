@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
-import java.util.function.Supplier;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable {
@@ -113,8 +112,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         };
     }
 
-    public ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final ToPage<ATTR, ?> toPage,final long mask) throws IOException {
-        Require.eqTrue(((mask + 1) & mask) == 0, "Mask is one less than a  power of two.");
+    public ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final ToPage<ATTR, ?> toPage, final long mask) throws IOException {
+        Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
         this.toPage = toPage;
         this.mask = mask;
@@ -162,13 +161,4 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public ChunkType getChunkType() {
         return toPage.getChunkType();
     }
-
-    /**
-     * These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.
-     */
-    @NotNull
-    public ChunkPage<ATTR> getPageContaining(final long row) {
-        return getPageContaining(DEFAULT_FILL_INSTANCE, row);
-    }
 }
-

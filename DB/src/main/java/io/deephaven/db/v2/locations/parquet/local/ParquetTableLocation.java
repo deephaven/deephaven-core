@@ -6,7 +6,6 @@ import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
-import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableKey;
 import io.deephaven.db.v2.locations.TableLocationKey;
@@ -34,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class ParquetTableLocation extends AbstractTableLocation {
 
@@ -60,7 +61,7 @@ class ParquetTableLocation extends AbstractTableLocation {
         this.parquetFile = parquetFile;
         int totalRows = 0;
         try {
-            ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
+            final ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
 
             final int rowGroupCount = parquetFileReader.fileMetaData.getRow_groups().size();
             rowGroupReaders = new RowGroupReader[rowGroupCount];
@@ -79,7 +80,7 @@ class ParquetTableLocation extends AbstractTableLocation {
             }
 
             keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
-            String grouping = keyValueMetaData.get(ParquetTableWriter.GROUPING);
+            final String grouping = keyValueMetaData.get(ParquetTableWriter.GROUPING);
             if (grouping != null) {
                 groupingParquetColumnNames.addAll(Arrays.asList(grouping.split(",")));
             }
@@ -107,30 +108,34 @@ class ParquetTableLocation extends AbstractTableLocation {
         return cachedChannelProvider;
     }
 
-    @Override
-    public @NotNull
-    final ColumnLocation getColumnLocation(@NotNull final CharSequence columnName) {
-        final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName.toString());
-        return super.getColumnLocation(parquetColumnName);
-    }
-
     @NotNull
     @Override
-    protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String parquetColumnName) {
-        // NB: We have the *parquet* column name here, because we overload getColumnLocation to remap its input
+    protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
+        final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         //noinspection unchecked
         final ColumnChunkPageStore.Creator<Values>[] creators = new ColumnChunkPageStore.Creator[rowGroupReaders.length];
         int nullCreatorCount = 0;
         for (int rgi = 0; rgi < rowGroupReaders.length; ++rgi) {
             nullCreatorCount += (creators[rgi] = makeColumnCreator(parquetColumnName, rowGroupReaders[rgi], keyValueMetaData)) == null ? 1 : 0;
         }
-        // NB: We cannot have column chunks in only *some* row groups within a file. At least, StackOverflow and Wes seem
-        //     to think we can't, and that's good enough for me. See:
-        //     https://stackoverflow.com/questions/57564621/can-we-have-different-schema-per-row-group-in-the-same-parquet-file
+
+        // NB: We do not support column chunks that exist in only *some* row groups within a file.
+        //     As far as we can tell, this is the Parquet standard enforced by pyarrow and other projects.
+        //     If this changes, or becomes wrong some day in the future, we'll need to implement some kind of null
+        //     ChunkPage. For evidence, see:
+        // https://stackoverflow.com/questions/57564621/can-we-have-different-schema-per-row-group-in-the-same-parquet-file
+        // https://github.com/dask/dask/issues/6243
         if (nullCreatorCount != 0 && nullCreatorCount != creators.length) {
-            throw new TableDataException("Inconsistent existence in " + parquetFile + " for column " + parquetColumnName);
+            throw new TableDataException("Column " + columnName + " (parquet column " + parquetColumnName + ") is inconsistent in " + parquetFile
+                    + ": Present in row groups ["
+                    + IntStream.range(0, creators.length).filter(ci -> creators[ci] != null).mapToObj(Integer::toString).collect(Collectors.joining(","))
+                    + "] out of " + creators.length);
         }
-        return new ParquetColumnLocation<>(this, parquetColumnName, nullCreatorCount > 0 ? null : creators, groupingParquetColumnNames.contains(parquetColumnName));
+
+        final boolean exists = nullCreatorCount > 0;
+        return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
+                exists ? creators : null,
+                exists && groupingParquetColumnNames.contains(parquetColumnName));
     }
 
     <ATTR extends Any> ColumnChunkPageStore.Creator<ATTR> makeColumnCreator(
@@ -258,7 +263,7 @@ class ParquetTableLocation extends AbstractTableLocation {
             try {
                 return Optional.of(ToStringPage.create(componentType, columnChunkReader.getDictionary()));
             } catch (IOException except) {
-                throw new TableDataException("IO exception accessing string column " + name, except);
+                throw new TableDataException("Failure accessing string column " + name, except);
             }
         }
 
