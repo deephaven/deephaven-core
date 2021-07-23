@@ -40,11 +40,11 @@ public abstract class Column<T> {
         return of(header.name(), Array.of(header.type(), data));
     }
 
-    public static <T> Column<T> of(String name, Class<T> clazz, Collection<T> values) {
+    public static <T> Column<T> of(String name, Class<T> clazz, T... values) {
         return of(name, Array.of(Type.find(clazz), values));
     }
 
-    public static <T> Column<T> of(String name, Class<T> clazz, T... values) {
+    public static <T> Column<T> of(String name, Class<T> clazz, Collection<T> values) {
         return of(name, Array.of(Type.find(clazz), values));
     }
 
