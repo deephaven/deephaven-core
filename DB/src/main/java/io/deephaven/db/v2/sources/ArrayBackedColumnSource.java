@@ -61,6 +61,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * A ColumnSource backed by in-memory arrays of data.
  * <p>
@@ -733,7 +735,7 @@ public abstract class ArrayBackedColumnSource<T>
                     int ix = 0;
                     for (Instant value : generic.cast(instantType).values()) {
                         if (value == null) {
-                            source.set(ix++, Long.MIN_VALUE);
+                            source.set(ix++, NULL_LONG);
                         } else {
                             long nanos = Math.addExact(TimeUnit.SECONDS.toNanos(value.getEpochSecond()), value.getNano());
                             source.set(ix++, nanos);
