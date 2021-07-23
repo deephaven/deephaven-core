@@ -98,8 +98,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Attributes.Any>
         ToPage<ATTR, ?> get(@NotNull ColumnDefinition columnDefinition);
     }
 
-    private static Values NULL_VALUES = new Values<>(null, null, null, null);
-    private static Creator NULL_CREATOR = new Creator() {
+    private static final Values NULL_VALUES = new Values<>(null, null, null, null);
+    private static final Creator NULL_CREATOR = new Creator() {
         @Override
         public boolean exists() {
             return false;

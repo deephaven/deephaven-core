@@ -17,8 +17,8 @@ import java.util.Arrays;
 class VariablePageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends ColumnChunkPageStore<ATTR> {
 
     // We will set numPages after changing all of these arrays in place and/or setting additional elements to the
-    // end of the array.  Thus, for i < numPages, array[i] will always have the same value, and be valid to use, as
-    // long as we fetch numPages before accessing the arrays.   This is the multithreaded pattern used throughout.
+    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be valid to use, as
+    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used throughout.
 
     private volatile int numPages = 0;
     private volatile long [] pageRowOffsets;

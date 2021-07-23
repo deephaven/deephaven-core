@@ -58,7 +58,7 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends Col
 
                 if (page == null) {
                     try {
-                        page = new IntrusivePage<>(toPage(pageNum * pageFixedSize, columnPageReaders[pageNum]));
+                        page = new IntrusivePage<>(toPage((long) pageNum * pageFixedSize, columnPageReaders[pageNum]));
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }
