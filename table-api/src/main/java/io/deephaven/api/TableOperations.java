@@ -26,54 +26,54 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Snapshot {@code rightTable}, triggered by {@code this} table, and return a new table as a
+     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a
      * result.
      *
      * <p>
      * Delegates to {@link #snapshot(Object, boolean, Collection)}.
      *
-     * @param rightTable The table to be snapshotted
+     * @param baseTable The table to be snapshotted
      * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's
      *        columns to be included in the result at snapshot time. As a special case, an empty
      *        stampColumns is taken to mean "include all columns".
      * @return The result table
      */
-    TOPS snapshot(TABLE rightTable, String... stampColumns);
+    TOPS snapshot(TABLE baseTable, String... stampColumns);
 
     /**
-     * Snapshot {@code rightTable}, triggered by {@code this} table, and return a new table as a
+     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a
      * result.
      *
      * <p>
      * Delegates to {@link #snapshot(Object, boolean, Collection)}.
      *
-     * @param rightTable The table to be snapshotted
+     * @param baseTable The table to be snapshotted
      * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
      * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's
      *        columns to be included in the result at snapshot time. As a special case, an empty
      *        stampColumns is taken to mean "include all columns".
      * @return The result table
      */
-    TOPS snapshot(TABLE rightTable, boolean doInitialSnapshot, String... stampColumns);
+    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, String... stampColumns);
 
     /**
-     * Snapshot {@code rightTable}, triggered by {@code this} table, and return a new table as a
+     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a
      * result.
      *
      * <p>
      * {@code this} table is the triggering table, i.e. the table whose change events cause a new
      * snapshot to be taken. The result table includes a "snapshot key" which is a subset (possibly
      * all) of {@code this} table's columns. The remaining columns in the result table come from
-     * {@code rightTable}, the table being snapshotted.
+     * {@code baseTable}, the table being snapshotted.
      *
-     * @param rightTable The table to be snapshotted
+     * @param baseTable The table to be snapshotted
      * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
      * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's
      *        columns to be included in the result at snapshot time. As a special case, an empty
      *        stampColumns is taken to mean "include all columns".
      * @return The result table
      */
-    TOPS snapshot(TABLE rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
+    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
 
     // -------------------------------------------------------------------------------------------
 

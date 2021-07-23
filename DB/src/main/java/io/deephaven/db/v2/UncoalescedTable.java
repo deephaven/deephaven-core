@@ -393,8 +393,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshot(rightTable, doInitialSnapshot, stampColumns);
+    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+        return coalesce().snapshot(baseTable, doInitialSnapshot, stampColumns);
     }
 
     @Override

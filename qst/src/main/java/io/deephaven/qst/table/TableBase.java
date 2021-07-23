@@ -34,14 +34,14 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final SnapshotTable snapshot(Table rightTable, String... stampColumns) {
-        return snapshot(rightTable, false, stampColumns);
+    public final SnapshotTable snapshot(Table baseTable, String... stampColumns) {
+        return snapshot(baseTable, false, stampColumns);
     }
 
     @Override
-    public final SnapshotTable snapshot(Table rightTable, boolean doInitialSnapshot,
+    public final SnapshotTable snapshot(Table baseTable, boolean doInitialSnapshot,
         String... stampColumns) {
-        SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(rightTable)
+        SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(baseTable)
             .doInitialSnapshot(doInitialSnapshot);
         for (String stampColumn : stampColumns) {
             builder.addStampColumns(ColumnName.of(stampColumn));
@@ -50,9 +50,9 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final SnapshotTable snapshot(Table rightTable, boolean doInitialSnapshot,
+    public final SnapshotTable snapshot(Table baseTable, boolean doInitialSnapshot,
         Collection<ColumnName> stampColumns) {
-        return SnapshotTable.builder().trigger(this).base(rightTable)
+        return SnapshotTable.builder().trigger(this).base(baseTable)
             .doInitialSnapshot(doInitialSnapshot).addAllStampColumns(stampColumns).build();
     }
 

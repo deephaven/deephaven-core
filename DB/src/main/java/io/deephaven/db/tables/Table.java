@@ -2288,10 +2288,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
+    Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns);
 
-    default Table snapshot(Table rightTable, String... stampColumns) {
-        return snapshot(rightTable, false, stampColumns);
+    default Table snapshot(Table baseTable, String... stampColumns) {
+        return snapshot(baseTable, false, stampColumns);
     }
 
     Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
@@ -2303,8 +2303,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table snapshotHistory(final Table rightTable);
 
     @Override
-    default Table snapshot(Table rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(rightTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
+    default Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
+        return snapshot(baseTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
