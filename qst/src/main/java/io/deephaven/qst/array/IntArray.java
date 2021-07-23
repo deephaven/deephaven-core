@@ -32,14 +32,6 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         return new Builder(initialSize);
     }
 
-    private static int adapt(Integer x) {
-        return x == null ? Util.NULL_INT : x;
-    }
-
-    private static Integer adapt(int x) {
-        return x == Util.NULL_INT ? null : x;
-    }
-
     private final int[] values;
 
     private IntArray(int[] values) {
@@ -106,7 +98,7 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
 
         @Override
         public final Builder add(Integer item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override

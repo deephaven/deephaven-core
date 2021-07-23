@@ -32,18 +32,6 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         return new Builder(initialSize);
     }
 
-    private static byte adapt(Boolean x) {
-        return x == null ? Util.NULL_BOOL : (x ? Util.TRUE_BOOL : Util.FALSE_BOOL);
-    }
-
-    private static byte adapt(boolean x) {
-        return x ? Util.TRUE_BOOL : Util.FALSE_BOOL;
-    }
-
-    private static Boolean adapt(byte x) {
-        return x == Util.NULL_BOOL ? null : x != Util.FALSE_BOOL;
-    }
-
     // todo: use bitset?
     private final byte[] values;
 
@@ -103,7 +91,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
 
         public final Builder add(boolean item) {
             ensureCapacity();
-            array[size++] = adapt(item);
+            array[size++] = Util.adapt(item);
             return this;
         }
 
@@ -117,7 +105,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         @Override
         public final Builder add(Boolean item) {
             ensureCapacity();
-            array[size++] = adapt(item);
+            array[size++] = Util.adapt(item);
             return this;
         }
 

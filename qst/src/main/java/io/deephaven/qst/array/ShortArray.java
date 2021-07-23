@@ -32,14 +32,6 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         return new Builder(initialSize);
     }
 
-    private static short adapt(Short x) {
-        return x == null ? Util.NULL_SHORT : x;
-    }
-
-    private static Short adapt(short x) {
-        return x == Util.NULL_SHORT ? null : x;
-    }
-
     private final short[] values;
 
     private ShortArray(short[] values) {
@@ -105,7 +97,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
 
         @Override
         public final Builder add(Short item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override

@@ -32,14 +32,6 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         return new Builder(initialSize);
     }
 
-    private static double unbox(Double x) {
-        return x == null ? Util.NULL_DOUBLE : x;
-    }
-
-    private static Double box(double x) {
-        return x == Util.NULL_DOUBLE ? null : x;
-    }
-
     private final double[] values;
 
     private DoubleArray(double[] values) {
@@ -106,7 +98,7 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
 
         @Override
         public final Builder add(Double item) {
-            return add(unbox(item));
+            return add(Util.adapt(item));
         }
 
         @Override

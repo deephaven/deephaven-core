@@ -32,14 +32,6 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         return new Builder(initialSize);
     }
 
-    private static long adapt(Long x) {
-        return x == null ? Util.NULL_LONG : x;
-    }
-
-    private static Long adapt(long x) {
-        return x == Util.NULL_LONG ? null : x;
-    }
-
     private final long[] values;
 
     private LongArray(long[] values) {
@@ -106,7 +98,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
 
         @Override
         public final Builder add(Long item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override

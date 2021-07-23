@@ -33,14 +33,6 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         return new Builder(initialSize);
     }
 
-    private static char adapt(Character x) {
-        return x == null ? Util.NULL_CHAR : x;
-    }
-
-    private static Character adapt(char x) {
-        return x == Util.NULL_CHAR ? null : x;
-    }
-
     private final char[] values;
 
     private CharArray(char[] values) {
@@ -107,7 +99,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
 
         @Override
         public final Builder add(Character item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override

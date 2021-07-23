@@ -32,14 +32,6 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         return new Builder(initialSize);
     }
 
-    private static byte adapt(Byte x) {
-        return x == null ? Util.NULL_BYTE : x;
-    }
-
-    private static Byte adapt(byte x) {
-        return x == Util.NULL_BYTE ? null : x;
-    }
-
     private final byte[] values;
 
     private ByteArray(byte[] values) {
@@ -106,7 +98,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
 
         @Override
         public final Builder add(Byte item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override

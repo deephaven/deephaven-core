@@ -32,14 +32,6 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         return new Builder(initialSize);
     }
 
-    private static float adapt(Float x) {
-        return x == null ? Util.NULL_FLOAT : x;
-    }
-
-    private static Float adapt(float x) {
-        return x == Util.NULL_FLOAT ? null : x;
-    }
-
     private final float[] values;
 
     private FloatArray(float[] values) {
@@ -106,7 +98,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
 
         @Override
         public final Builder add(Float item) {
-            return add(adapt(item));
+            return add(Util.adapt(item));
         }
 
         @Override
