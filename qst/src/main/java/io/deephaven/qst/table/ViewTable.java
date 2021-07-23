@@ -5,7 +5,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @NodeStyle
-public abstract class ViewTable extends SelectableTableBase {
+public abstract class ViewTable extends TableBase implements SelectableTable {
 
     public static Builder builder() {
         return ImmutableViewTable.builder();
