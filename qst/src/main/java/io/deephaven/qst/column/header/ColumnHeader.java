@@ -67,25 +67,6 @@ public abstract class ColumnHeader<T> {
         return of(name, Type.instantType());
     }
 
-    public static <A, B> ColumnHeaders2<A, B> of(ColumnHeader<A> a, ColumnHeader<B> b) {
-        return a.header(b);
-    }
-
-    public static <A, B, C> ColumnHeaders3<A, B, C> of(ColumnHeader<A> a, ColumnHeader<B> b,
-        ColumnHeader<C> c) {
-        return a.header(b).header(c);
-    }
-
-    public static <A, B, C, D> ColumnHeaders4<A, B, C, D> of(ColumnHeader<A> a, ColumnHeader<B> b,
-        ColumnHeader<C> c, ColumnHeader<D> d) {
-        return a.header(b).header(c).header(d);
-    }
-
-    public static <A, B, C, D, E> ColumnHeaders5<A, B, C, D, E> of(ColumnHeader<A> a,
-        ColumnHeader<B> b, ColumnHeader<C> c, ColumnHeader<D> d, ColumnHeader<E> e) {
-        return a.header(b).header(c).header(d).header(e);
-    }
-
     @Parameter
     public abstract String name();
 
