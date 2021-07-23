@@ -210,6 +210,11 @@ public class ParentsVisitor implements Table.Visitor {
     }
 
     @Override
+    public void visit(SelectTable selectTable) {
+        out = single(selectTable);
+    }
+
+    @Override
     public void visit(UpdateViewTable updateViewTable) {
         out = single(updateViewTable);
     }
@@ -217,11 +222,6 @@ public class ParentsVisitor implements Table.Visitor {
     @Override
     public void visit(UpdateTable updateTable) {
         out = single(updateTable);
-    }
-
-    @Override
-    public void visit(SelectTable selectTable) {
-        out = single(selectTable);
     }
 
     @Override

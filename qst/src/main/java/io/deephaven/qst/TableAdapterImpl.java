@@ -168,6 +168,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
+    public void visit(SelectTable selectTable) {
+        topsOut = parentOps(selectTable).select(selectTable.columns());
+    }
+
+    @Override
     public void visit(UpdateViewTable updateViewTable) {
         topsOut = parentOps(updateViewTable).updateView(updateViewTable.columns());
     }
@@ -175,11 +180,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(UpdateTable updateTable) {
         topsOut = parentOps(updateTable).update(updateTable.columns());
-    }
-
-    @Override
-    public void visit(SelectTable selectTable) {
-        topsOut = parentOps(selectTable).select(selectTable.columns());
     }
 
     @Override

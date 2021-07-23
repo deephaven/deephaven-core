@@ -103,6 +103,11 @@ class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(SelectTable selectTable) {
+        selectable("select", selectTable);
+    }
+
+    @Override
     public void visit(UpdateViewTable updateViewTable) {
         selectable("updateView", updateViewTable);
     }
@@ -110,11 +115,6 @@ class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(UpdateTable updateTable) {
         selectable("update", updateTable);
-    }
-
-    @Override
-    public void visit(SelectTable selectTable) {
-        selectable("select", selectTable);
     }
 
     @Override

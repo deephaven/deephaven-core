@@ -245,11 +245,11 @@ public interface Table extends TableOperations<Table, Table>, Serializable {
 
         void visit(ViewTable viewTable);
 
+        void visit(SelectTable selectTable);
+
         void visit(UpdateViewTable updateViewTable);
 
         void visit(UpdateTable updateTable);
-
-        void visit(SelectTable selectTable);
 
         void visit(ByTable byTable);
 

@@ -100,6 +100,11 @@ public abstract class TableVisitorGeneric implements Table.Visitor {
     }
 
     @Override
+    public void visit(SelectTable selectTable) {
+        accept(selectTable);
+    }
+
+    @Override
     public void visit(UpdateViewTable updateViewTable) {
         accept(updateViewTable);
     }
@@ -107,11 +112,6 @@ public abstract class TableVisitorGeneric implements Table.Visitor {
     @Override
     public void visit(UpdateTable updateTable) {
         accept(updateTable);
-    }
-
-    @Override
-    public void visit(SelectTable selectTable) {
-        accept(selectTable);
     }
 
     @Override
