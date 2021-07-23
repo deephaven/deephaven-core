@@ -20,6 +20,7 @@ import static io.deephaven.qst.type.Type.ofCustom;
 import static io.deephaven.qst.type.Type.shortType;
 import static io.deephaven.qst.type.Type.stringType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class TypeTest {
 
@@ -102,6 +103,16 @@ public class TypeTest {
                 assertThat(staticTypes.get(i)).isNotEqualTo(staticTypes.get(j));
                 assertThat(staticTypes.get(j)).isNotEqualTo(staticTypes.get(i));
             }
+        }
+    }
+
+    @Test
+    void castThrowsExceptionOnInvalidAssignment() {
+        try {
+            String s = StringType.instance().castValue(1L);
+            failBecauseExceptionWasNotThrown(ClassCastException.class);
+        } catch (ClassCastException e) {
+            // expected
         }
     }
 
