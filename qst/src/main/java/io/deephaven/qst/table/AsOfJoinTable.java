@@ -1,7 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.AsOfJoinRule;
-import io.deephaven.qst.NodeStyle;
+import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 

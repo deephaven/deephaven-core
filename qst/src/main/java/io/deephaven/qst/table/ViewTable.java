@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.NodeStyle;
+import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Immutable;
 
 @Immutable

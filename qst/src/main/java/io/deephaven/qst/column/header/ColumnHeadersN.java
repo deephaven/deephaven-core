@@ -1,6 +1,6 @@
 package io.deephaven.qst.column.header;
 
-import io.deephaven.api.BuildableStyle;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.column.Column;

@@ -1,6 +1,6 @@
 package io.deephaven.qst.type;
 
-import io.deephaven.qst.SimpleStyle;
+import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;

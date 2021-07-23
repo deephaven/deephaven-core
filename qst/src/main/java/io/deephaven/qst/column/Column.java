@@ -1,6 +1,6 @@
 package io.deephaven.qst.column;
 
-import io.deephaven.qst.SimpleStyle;
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
 import io.deephaven.qst.array.ByteArray;

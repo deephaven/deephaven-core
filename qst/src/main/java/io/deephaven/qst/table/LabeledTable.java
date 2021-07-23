@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.SimpleStyle;
+import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

@@ -1,4 +1,4 @@
-package io.deephaven.qst;
+package io.deephaven.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.api.BuildableStyle;
+import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;

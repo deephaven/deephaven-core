@@ -1,7 +1,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.SimpleStyle;
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.SortColumn;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

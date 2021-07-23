@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.qst.LeafStyle;
+import io.deephaven.annotations.LeafStyle;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.column.header.ColumnHeader;

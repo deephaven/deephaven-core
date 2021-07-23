@@ -1,7 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinMatch;
-import io.deephaven.qst.NodeStyle;
+import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 

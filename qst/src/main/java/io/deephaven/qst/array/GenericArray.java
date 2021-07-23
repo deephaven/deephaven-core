@@ -1,6 +1,6 @@
 package io.deephaven.qst.array;
 
-import io.deephaven.qst.AllowNulls;
+import io.deephaven.annotations.AllowNulls;
 import io.deephaven.qst.type.GenericType;
 import org.immutables.value.Value;
 
