@@ -88,6 +88,38 @@ public abstract class Column<T> {
         return of(name, GenericArray.of(Type.instantType(), values));
     }
 
+    public static Column<Boolean> ofBoolean(String name, Boolean... values) {
+        return of(name, BooleanArray.of(values));
+    }
+
+    public static Column<Byte> ofByte(String name, byte... values) {
+        return of(name, ByteArray.of(values));
+    }
+
+    public static Column<Character> ofChar(String name, char... values) {
+        return of(name, CharArray.of(values));
+    }
+
+    public static Column<Short> ofShort(String name, short... values) {
+        return of(name, ShortArray.of(values));
+    }
+
+    public static Column<Integer> ofInt(String name, int... values) {
+        return of(name, IntArray.of(values));
+    }
+
+    public static Column<Long> ofLong(String name, long... values) {
+        return of(name, LongArray.of(values));
+    }
+
+    public static Column<Float> ofFloat(String name, float... values) {
+        return of(name, FloatArray.of(values));
+    }
+
+    public static Column<Double> ofDouble(String name, double... values) {
+        return of(name, DoubleArray.of(values));
+    }
+
     public static <T> Column<T> cast(@SuppressWarnings("unused") Type<T> type, Column<?> column) {
         // noinspection unchecked
         return (Column<T>) column;
