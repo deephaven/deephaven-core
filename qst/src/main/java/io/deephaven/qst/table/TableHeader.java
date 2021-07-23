@@ -41,6 +41,13 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
         TableHeader build();
     }
 
+    public interface Buildable extends Iterable<ColumnHeader<?>> {
+
+        default TableHeader tableHeader() {
+            return builder().addAllHeaders(this).build();
+        }
+    }
+
     public static Builder builder() {
         return ImmutableTableHeader.builder();
     }

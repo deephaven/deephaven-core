@@ -46,6 +46,23 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
         NewTable build();
     }
 
+    public interface Buildable extends Iterable<Column<?>> {
+
+        default NewTable newTable() {
+            Iterator<Column<?>> it = iterator();
+            if (!it.hasNext()) {
+                throw new IllegalArgumentException(
+                    String.format("Unable to use %s without any columns", Buildable.class));
+            }
+            Column<?> first = it.next();
+            Builder builder = builder().size(first.size()).addColumns(first);
+            while (it.hasNext()) {
+                builder.addColumns(it.next());
+            }
+            return builder.build();
+        }
+    }
+
     public static Builder builder() {
         return ImmutableNewTable.builder();
     }
