@@ -50,7 +50,6 @@ public class TestParquetTools {
     private static Table emptyTable;
     private static Table brokenTable;
 
-
     @BeforeClass
     public static void setUpFirst() {
         table1 = new InMemoryTable(
@@ -290,38 +289,6 @@ public class TestParquetTools {
         final long sz = table.size();
         TestTableTools.tableRangesAreEqual(table, readBackTable,0, 0, sz);
         readBackTable.close();
-    }
-
-    public void compressionCodecTestHelper(final String codec) {
-        ParquetInstructions.setDefaultCompressionCodecName(codec);
-        String path = testRoot + File.separator + "Table1.parquet";
-        ParquetTools.writeTable(table1, path);
-        assertTrue(new File(path).length() > 0);
-    }
-
-    @Test
-    public void testParquetLzoCompressionCodec() {
-        compressionCodecTestHelper("LZO");
-    }
-
-    @Test
-    public void testParquetLz4CompressionCodec() {
-        compressionCodecTestHelper("LZ4");
-    }
-
-    @Test
-    public void testParquetBrotliCompressionCodec() {
-        compressionCodecTestHelper("BROTLI");
-    }
-
-    @Test
-    public void testParquetZstdCompressionCodec() {
-        compressionCodecTestHelper("ZSTD");
-    }
-
-    @Test
-    public void testParquetGzipCompressionCodec() {
-        compressionCodecTestHelper("GZIP");
     }
 
     @Test

@@ -162,7 +162,6 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
@@ -170,7 +169,6 @@ public class ParquetTableReadWriteTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void vectorParquetFormat() {
         testEmptyArrayStore("smallEmpty", 20);
         groupedOneColumnTable("smallAggOneColumn", 20);
@@ -219,4 +217,38 @@ public class ParquetTableReadWriteTest {
         TstUtils.assertTableEquals(fromDisk, testTable);
         TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
     }
+
+    private void compressionCodecTestHelper(final String codec) {
+        ParquetInstructions.setDefaultCompressionCodecName(codec);
+        String path = rootFile + File.separator + "Table1.parquet";
+        final Table table1 = getTableFlat(10000, false);
+        ParquetTools.writeTable(table1, path);
+        assertTrue(new File(path).length() > 0);
+    }
+
+    @Test
+    public void testParquetLzoCompressionCodec() {
+        compressionCodecTestHelper("LZO");
+    }
+
+    @Test
+    public void testParquetLz4CompressionCodec() {
+        compressionCodecTestHelper("LZ4");
+    }
+
+    @Test
+    public void testParquetBrotliCompressionCodec() {
+        compressionCodecTestHelper("BROTLI");
+    }
+
+    @Test
+    public void testParquetZstdCompressionCodec() {
+        compressionCodecTestHelper("ZSTD");
+    }
+
+    @Test
+    public void testParquetGzipCompressionCodec() {
+        compressionCodecTestHelper("GZIP");
+    }
+
 }
