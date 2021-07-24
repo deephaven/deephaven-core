@@ -1471,20 +1471,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
-        final Table snap1 = pool.submit(() -> emptyTable.snapshot(table, true)).get();
+        final Table snap1 = pool.submit(() -> emptyTable.snapshot(table)).get();
 
         TestCase.assertEquals(TableTools.diff(snap1, tableStart, 10), "");
 
         TstUtils.addToTable(table, i(3), c("x", 4), c("y", "d"), c("z", true));
 
-        final Table snap2 = pool.submit(() -> emptyTable.snapshot(table, true)).get();
+        final Table snap2 = pool.submit(() -> emptyTable.snapshot(table)).get();
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
 
         table.notifyListeners(i(3), i(), i());
 
-        final Table snap3 = pool.submit(() -> emptyTable.snapshot(table, true)).get();
+        final Table snap3 = pool.submit(() -> emptyTable.snapshot(table)).get();
 
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
@@ -1501,7 +1501,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             right = TstUtils.testRefreshingTable(i(0), c("x", 1));
             left = TstUtils.testRefreshingTable(i());
-            snap = (QueryTable) left.snapshot(right, true);
+            snap = (QueryTable) left.snapshot(right);
             snap.retainReference();
         }
 
