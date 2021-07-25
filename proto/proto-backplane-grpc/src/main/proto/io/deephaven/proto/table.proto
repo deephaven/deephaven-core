@@ -105,10 +105,28 @@ service TableService {
   rpc MergeTables(MergeTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Returns the result of a table join operation.
+   * Returns the result of a cross join operation. Also known as the cartesian product.
    */
-  rpc JoinTables(JoinTablesRequest) returns (ExportedTableCreationResponse) {}
+  rpc CrossJoinTables(CrossJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
+  /*
+   * Returns the result of a natural join operation.
+   */
+  rpc NaturalJoinTables(NaturalJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a exact join operation.
+   */
+  rpc ExactJoinTables(ExactJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a left join operation.
+   */
+  rpc LeftJoinTables(LeftJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an as of join operation.
+   */
   rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
@@ -267,20 +285,39 @@ message SnapshotTableRequest {
   repeated string stamp_columns = 5;
 }
 
-message JoinTablesRequest {
+message CrossJoinTablesRequest {
   arrow.flight.protocol.Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
   repeated string columns_to_add = 5;
-  Type join_type = 6;
 
-  enum Type {
-    CROSS_JOIN = 0;
-    NATURAL_JOIN = 1;
-    EXACT_JOIN = 2;
-    LEFT_JOIN = 3;
-  }
+  // the number of bits of key-space to initially reserve per group; default is 10
+  int32 reserve_bits = 6;
+}
+
+message NaturalJoinTablesRequest {
+  arrow.flight.protocol.Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message ExactJoinTablesRequest {
+  arrow.flight.protocol.Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message LeftJoinTablesRequest {
+  arrow.flight.protocol.Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
 }
 
 message AsOfJoinTablesRequest {
@@ -517,12 +554,15 @@ message BatchTableRequest {
       HeadOrTailByRequest tail_by = 16;
       UngroupRequest ungroup = 17;
       MergeTablesRequest merge = 18;
-      JoinTablesRequest join = 19;
-      ComboAggregateRequest combo_aggregate = 20;
-      SnapshotTableRequest snapshot = 21;
-      FlattenRequest flatten = 22;
-      AsOfJoinTablesRequest as_of_join = 23;
-      RunChartDownsampleRequest run_chart_downsample = 24;
+      ComboAggregateRequest combo_aggregate = 19;
+      SnapshotTableRequest snapshot = 20;
+      FlattenRequest flatten = 21;
+      RunChartDownsampleRequest run_chart_downsample = 22;
+      CrossJoinTablesRequest cross_join = 23;
+      NaturalJoinTablesRequest natural_join = 24;
+      ExactJoinTablesRequest exact_join = 25;
+      LeftJoinTablesRequest left_join = 26;
+      AsOfJoinTablesRequest as_of_join = 27;
     }
   }
 }

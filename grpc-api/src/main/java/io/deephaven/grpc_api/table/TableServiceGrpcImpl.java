@@ -4,6 +4,8 @@
 
 package io.deephaven.grpc_api.table;
 
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
@@ -18,8 +20,10 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
+import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
+import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
@@ -27,8 +31,9 @@ import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.JoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
@@ -155,11 +160,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void joinTables(final JoinTablesRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.JOIN, request, responseObserver);
-    }
-
-    @Override
     public void snapshot(final SnapshotTableRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
     }
@@ -187,6 +187,26 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     @Override
     public void flatten(final FlattenRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FLATTEN, request, responseObserver);
+    }
+
+    @Override
+    public void crossJoinTables(final CrossJoinTablesRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CROSS_JOIN, request, responseObserver);
+    }
+
+    @Override
+    public void naturalJoinTables(final NaturalJoinTablesRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.NATURAL_JOIN, request, responseObserver);
+    }
+
+    @Override
+    public void exactJoinTables(final ExactJoinTablesRequest request, final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EXACT_JOIN, request, responseObserver);
+    }
+
+    @Override
+    public void leftJoinTables(LeftJoinTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LEFT_JOIN, request, responseObserver);
     }
 
     @Override

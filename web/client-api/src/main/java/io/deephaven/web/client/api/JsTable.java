@@ -9,7 +9,10 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
@@ -787,7 +790,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<JsTable> join(String joinType, JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+    public Promise<JsTable> join(String joinType, JsTable rightTable, JsArray<String> columnsToMatch,
+                                 @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule,
+                                 @JsOptional Double reserve_bits) {
         if (rightTable.workerConnection != workerConnection) {
             throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
         }
@@ -805,16 +810,48 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 }
                 workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
             };
-
-        } else if (Js.asPropertyMap(JoinTablesRequest.Type).has(joinType)){
+        } else if (joinType.equals("CROSS_JOIN")) {
             joinFetch = (c, state, metadata) -> {
-                JoinTablesRequest request = new JoinTablesRequest();
-                request.setJoinType(Js.asPropertyMap(JoinTablesRequest.Type).getAny(joinType).asDouble());
+                CrossJoinTablesRequest request = new CrossJoinTablesRequest();
                 request.setLeftId(state().getHandle().makeTableReference());
                 request.setRightId(rightTable.state().getHandle().makeTableReference());
                 request.setResultId(state.getHandle().makeTicket());
                 request.setColumnsToMatchList(columnsToMatch);
                 request.setColumnsToAddList(columnsToAdd);
+                if (reserve_bits != null) {
+                    request.setReserveBits(reserve_bits);
+                }
+                workerConnection.tableServiceClient().crossJoinTables(request, metadata, c::apply);
+            };
+        } else if (joinType.equals("EXACT_JOIN")) {
+            joinFetch = (c, state, metadata) -> {
+                ExactJoinTablesRequest request = new ExactJoinTablesRequest();
+                request.setLeftId(state().getHandle().makeTableReference());
+                request.setRightId(rightTable.state().getHandle().makeTableReference());
+                request.setResultId(state.getHandle().makeTicket());
+                request.setColumnsToMatchList(columnsToMatch);
+                request.setColumnsToAddList(columnsToAdd);
+                workerConnection.tableServiceClient().exactJoinTables(request, metadata, c::apply);
+            };
+        } else if (joinType.equals("LEFT_JOIN")) {
+            joinFetch = (c, state, metadata) -> {
+                LeftJoinTablesRequest request = new LeftJoinTablesRequest();
+                request.setLeftId(state().getHandle().makeTableReference());
+                request.setRightId(rightTable.state().getHandle().makeTableReference());
+                request.setResultId(state.getHandle().makeTicket());
+                request.setColumnsToMatchList(columnsToMatch);
+                request.setColumnsToAddList(columnsToAdd);
+                workerConnection.tableServiceClient().leftJoinTables(request, metadata, c::apply);
+            };
+        } else if (joinType.equals("NATURAL_JOIN")) {
+            joinFetch = (c, state, metadata) -> {
+                NaturalJoinTablesRequest request = new NaturalJoinTablesRequest();
+                request.setLeftId(state().getHandle().makeTableReference());
+                request.setRightId(rightTable.state().getHandle().makeTableReference());
+                request.setResultId(state.getHandle().makeTicket());
+                request.setColumnsToMatchList(columnsToMatch);
+                request.setColumnsToAddList(columnsToAdd);
+                workerConnection.tableServiceClient().naturalJoinTables(request, metadata, c::apply);
             };
         } else {
             throw new IllegalArgumentException("Unsupported join type " + joinType);
