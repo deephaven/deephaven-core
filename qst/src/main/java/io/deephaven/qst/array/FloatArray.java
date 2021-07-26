@@ -20,6 +20,13 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         return builder(values.length).add(values).build();
     }
 
+    public static FloatArray of(Iterable<Float> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Float>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static FloatArray of(Collection<Float> values) {
         return builder(values.size()).add(values).build();
     }

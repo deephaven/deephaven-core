@@ -20,6 +20,13 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         return builder(values.length).add(values).build();
     }
 
+    public static DoubleArray of(Iterable<Double> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Double>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static DoubleArray of(Collection<Double> values) {
         return builder(values.size()).add(values).build();
     }

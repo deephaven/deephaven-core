@@ -20,6 +20,13 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         return builder(values.length).add(values).build();
     }
 
+    public static BooleanArray of(Iterable<Boolean> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Boolean>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static BooleanArray of(Collection<Boolean> values) {
         return builder(values.size()).add(values).build();
     }

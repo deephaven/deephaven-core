@@ -30,6 +30,13 @@ public interface Array<T> extends Serializable {
         return builder(type, data.length).add(data).build();
     }
 
+    static <T> Array<T> of(Type<T> type, Iterable<T> data) {
+        if (data instanceof Collection) {
+            return of(type, (Collection<T>) data);
+        }
+        return builder(type, Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(data).build();
+    }
+
     static <T> Array<T> of(Type<T> type, Collection<T> data) {
         return builder(type, data.size()).add(data).build();
     }

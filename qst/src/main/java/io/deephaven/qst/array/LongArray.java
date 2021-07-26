@@ -20,6 +20,13 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         return builder(values.length).add(values).build();
     }
 
+    public static LongArray of(Iterable<Long> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Long>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static LongArray of(Collection<Long> values) {
         return builder(values.size()).add(values).build();
     }

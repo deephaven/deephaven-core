@@ -20,6 +20,13 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         return builder(values.length).add(values).build();
     }
 
+    public static IntArray of(Iterable<Integer> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Integer>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static IntArray of(Collection<Integer> values) {
         return builder(values.size()).add(values).build();
     }

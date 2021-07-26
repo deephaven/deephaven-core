@@ -20,6 +20,13 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
         return builder(values.length).add(values).build();
     }
 
+    public static ShortArray of(Iterable<Short> values) {
+        if (values instanceof Collection) {
+            return of((Collection<Short>) values);
+        }
+        return builder(Util.DEFAULT_BUILDER_INITIAL_CAPACITY).add(values).build();
+    }
+
     public static ShortArray of(Collection<Short> values) {
         return builder(values.size()).add(values).build();
     }
