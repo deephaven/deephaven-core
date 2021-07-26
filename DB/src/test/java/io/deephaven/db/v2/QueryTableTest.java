@@ -1075,6 +1075,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table actual = left1.snapshot(right);
         assertTableEquals(expected, actual);
 
+        assertTableEquals(right.head(0).updateView("T=1"), left1.snapshot(right, false));
+
         final QueryTable left2 = testRefreshingTable(c("T",1,2));
         final Table snapshot = left2.snapshot(right);
 
