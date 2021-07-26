@@ -1,7 +1,9 @@
 package io.deephaven.ide.client;
 
 import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsType;
 
+@JsType
 public class IdeConnectionOptions {
     private String authToken;
     private String serviceId;

@@ -22,7 +22,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         ConnectToken token = null;
         if (options != null && options.getAuthToken() != null) {
             token = new ConnectToken();
-            token.setBytes(atob(options.getAuthToken()).getBytes(StandardCharsets.ISO_8859_1));
+            token.setBytes(atob(options.getAuthToken()).getBytes(StandardCharsets.UTF_8));
         }
         return AuthTokenPromiseSupplier.oneShot(token);
     }
