@@ -18,7 +18,6 @@ import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.grpc.*;
-import io.grpc.CallOptions;
 import io.grpc.netty.NettyServerBuilder;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
@@ -40,7 +39,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
