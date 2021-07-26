@@ -81,13 +81,28 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
     public static class Builder extends PrimitiveArrayHelper<short[]>
         implements ArrayBuilder<Short, ShortArray, Builder> {
         private Builder(int initialCapacity) {
-            super(initialCapacity, short.class);
+            super(new short[initialCapacity]);
         }
 
         public final Builder add(short item) {
             ensureCapacity();
             array[size++] = item;
             return this;
+        }
+
+        @Override
+        int length(short[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(short[] src, int srcPos, short[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        short[] construct(int size) {
+            return new short[size];
         }
 
         public final Builder add(short... items) {

@@ -83,7 +83,22 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
         implements ArrayBuilder<Character, CharArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, char.class);
+            super(new char[initialCapacity]);
+        }
+
+        @Override
+        int length(char[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(char[] src, int srcPos, char[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        char[] construct(int size) {
+            return new char[size];
         }
 
         public final Builder add(char item) {

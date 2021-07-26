@@ -82,7 +82,22 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
         implements ArrayBuilder<Long, LongArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, long.class);
+            super(new long[initialCapacity]);
+        }
+
+        @Override
+        int length(long[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(long[] src, int srcPos, long[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        long[] construct(int size) {
+            return new long[size];
         }
 
         public final Builder add(long item) {

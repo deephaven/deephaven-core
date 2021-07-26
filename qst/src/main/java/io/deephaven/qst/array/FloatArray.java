@@ -82,7 +82,22 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
         implements ArrayBuilder<Float, FloatArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, float.class);
+            super(new float[initialCapacity]);
+        }
+
+        @Override
+        int length(float[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(float[] src, int srcPos, float[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        float[] construct(int size) {
+            return new float[size];
         }
 
         public final Builder add(float item) {

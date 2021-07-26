@@ -82,7 +82,22 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
         implements ArrayBuilder<Integer, IntArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, int.class);
+            super(new int[initialCapacity]);
+        }
+
+        @Override
+        int length(int[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(int[] src, int srcPos, int[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        int[] construct(int size) {
+            return new int[size];
         }
 
         public final Builder add(int item) {

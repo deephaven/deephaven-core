@@ -82,7 +82,22 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
         implements ArrayBuilder<Byte, ByteArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, byte.class);
+            super(new byte[initialCapacity]);
+        }
+
+        @Override
+        int length(byte[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(byte[] src, int srcPos, byte[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        byte[] construct(int size) {
+            return new byte[size];
         }
 
         public final Builder add(byte item) {

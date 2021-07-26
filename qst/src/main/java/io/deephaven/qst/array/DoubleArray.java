@@ -82,7 +82,22 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
         implements ArrayBuilder<Double, DoubleArray, Builder> {
 
         private Builder(int initialCapacity) {
-            super(initialCapacity, double.class);
+            super(new double[initialCapacity]);
+        }
+
+        @Override
+        int length(double[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(double[] src, int srcPos, double[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        double[] construct(int size) {
+            return new double[size];
         }
 
         public final Builder add(double item) {

@@ -1,20 +1,22 @@
 package io.deephaven.qst.array;
 
-import java.lang.reflect.Array;
 import java.util.Objects;
 
 abstract class PrimitiveArrayHelper<T> {
 
-    private final Class<?> primitiveType;
-
     protected int size;
     protected T array;
 
-    PrimitiveArrayHelper(int initialCapacity, Class<?> primitiveType) {
-        this.primitiveType = Objects.requireNonNull(primitiveType);
-        // noinspection unchecked
-        array = (T) Array.newInstance(primitiveType, initialCapacity);
+    PrimitiveArrayHelper(T initialArray) {
+        array = Objects.requireNonNull(initialArray);
+        size = 0;
     }
+
+    abstract int length(T array);
+
+    abstract void arraycopy(T src, int srcPos, T dest, int destPos, int length);
+
+    abstract T construct(int size);
 
     void ensureCapacity() {
         ensureCapacity(1);
@@ -22,36 +24,28 @@ abstract class PrimitiveArrayHelper<T> {
 
     void ensureCapacity(int additional) {
         int desired = Math.addExact(size, additional);
-        int L = Array.getLength(array);
+        int L = length(array);
         if (desired > L) {
             int nextSize = Math.max(Math.multiplyExact(L, 2), desired);
             T next = construct(nextSize);
-            // noinspection SuspiciousSystemArraycopy
-            System.arraycopy(array, 0, next, 0, L);
+            arraycopy(array, 0, next, 0, L);
             array = next;
         }
     }
 
     void addImpl(T addition) {
-        int L = Array.getLength(addition);
+        int L = length(addition);
         ensureCapacity(L);
-        // noinspection SuspiciousSystemArraycopy
-        System.arraycopy(addition, 0, array, size, L);
+        arraycopy(addition, 0, array, size, L);
         size += L;
     }
 
     T takeAtSize() {
-        if (size == Array.getLength(array)) {
+        if (size == length(array)) {
             return array; // great case, no copying necessary :)
         }
         T atSize = construct(size);
-        // noinspection SuspiciousSystemArraycopy
-        System.arraycopy(array, 0, atSize, 0, size);
+        arraycopy(array, 0, atSize, 0, size);
         return atSize;
-    }
-
-    private T construct(int size) {
-        // noinspection unchecked
-        return (T) Array.newInstance(primitiveType, size);
     }
 }
