@@ -1070,27 +1070,31 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testSnapshot() {
         final QueryTable right = testRefreshingTable(i(10, 25, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable left1 = testRefreshingTable(c("T", 1));
-        show(left1.snapshot(right));
-        assertEquals("", diff(left1.snapshot(right), testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+        final Table expected = right.naturalJoin(left1, "", "T");
+        TableTools.showWithIndex(expected);
+        final Table actual = left1.snapshot(right);
+        assertTableEquals(expected, actual);
 
         final QueryTable left2 = testRefreshingTable(c("T",1,2));
         final Table snapshot = left2.snapshot(right);
-        show(snapshot);
-        assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+
+        final Table expect1 = newTable(c("A", 3, 1, 2), c("B", "c", "a", "b"), c("T", 2, 2, 2));
+        assertTableEquals(expect1, snapshot);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
             right.notifyListeners(i(20, 40), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
+        assertTableEquals(expect1, snapshot);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left2, i(3), c("T", 5));
             left2.notifyListeners(i(3), i(), i());
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5)), 10));
+        final Table expect2 = newTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 5, 5, 5, 5, 5));
+        assertTableEquals(expect2, snapshot);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(right, i(10, 20, 30));
@@ -1098,10 +1102,7 @@ public class QueryTableTest extends QueryTableTestBase {
             right.notifyListeners(i(), i(10, 20, 30), i(25));
         });
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(
-                c("A", 3, 30, 1, 2, 50),
-                c("B", "c", "aa", "a", "b", "bc"),
-                c("T", 5, 5, 5, 5, 5)), 10));
+        assertTableEquals(expect2, snapshot);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left2, i(4, 5), c("T", 7, 8));
@@ -1109,7 +1110,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         show(right, 50);
         show(snapshot, 50);
-        assertEquals("", diff(snapshot, testRefreshingTable(c("A", 11, 50), c("B", "A", "bc"), c("T", 8, 8)), 10));
+        final Table expect3 = newTable(c("A", 11, 50), c("B", "A", "bc"), c("T", 8, 8));
+        assertTableEquals(expect3, snapshot);
     }
 
     public void testSnapshotHistorical() {
