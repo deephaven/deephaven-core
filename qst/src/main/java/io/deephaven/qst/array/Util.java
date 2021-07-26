@@ -23,10 +23,6 @@ class Util {
 
     static final short NULL_SHORT = Short.MIN_VALUE;
 
-    static byte adapt(boolean x) {
-        return x ? TRUE_BOOL : FALSE_BOOL;
-    }
-
     static byte adapt(Boolean x) {
         return x == null ? NULL_BOOL : (x ? TRUE_BOOL : FALSE_BOOL);
     }
