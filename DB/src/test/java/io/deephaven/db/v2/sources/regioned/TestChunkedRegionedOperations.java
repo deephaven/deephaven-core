@@ -301,7 +301,6 @@ public class TestChunkedRegionedOperations {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testEqual() {
         assertTableEquals(expected, actual);
     }
@@ -399,55 +398,46 @@ public class TestChunkedRegionedOperations {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testFullTableFullChunks() {
         assertChunkWiseEquals(expected, actual, expected.intSize());
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testFullTableNormalChunks() {
         assertChunkWiseEquals(expected, actual, 4096);
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testFullTableSmallChunks() {
         assertChunkWiseEquals(expected, actual, 8);
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testHalfDenseTableFullChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), expected.intSize());
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testHalfDenseTableNormalChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 4096);
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testHalfDenseTableSmallChunks() {
         assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 8);
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSparseTableFullChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), expected.intSize());
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSparseTableNormalChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), 4096);
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSparseTableSmallChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), 8);
     }

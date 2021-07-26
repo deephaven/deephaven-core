@@ -132,7 +132,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testNaturalJoinIncremental() {
         setExpectError(false);
 

@@ -59,7 +59,6 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
         for (final int size : sizes) {

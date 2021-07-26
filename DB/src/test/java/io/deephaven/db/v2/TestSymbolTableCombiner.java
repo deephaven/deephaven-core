@@ -18,7 +18,6 @@ import static io.deephaven.db.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestSymbolTableCombiner extends LiveTableTestCase {
-    @Category(OutOfBandTest.class)
     public void testSymbolTableCombiner() {
         for (int seed = 0; seed < 3; ++seed) {
             testSymbolTableCombiner(seed);

@@ -25,7 +25,6 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableJoinTest extends QueryTableTestBase {
-    @Category(OutOfBandTest.class)
     public void testAjIncremental() throws ParseException {
         final int maxSteps = 10;
         final int[] leftSizes = new int[]{10, 20};

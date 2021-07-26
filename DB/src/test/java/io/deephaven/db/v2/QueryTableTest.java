@@ -692,7 +692,6 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testStringContainsFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -772,7 +771,6 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(TableTools.newTable(intCol("IV", 1, 2, 4, 6)), geq1.dropColumns("LV"));
     }
 
-    @Category(OutOfBandTest.class)
     public void testDoubleRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -806,7 +804,6 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testDateTimeRangeFilter() {
         Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -2305,7 +2302,6 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testUngroupIncremental() throws ParseException {
         testUngroupIncremental(100, false);
         testUngroupIncremental(100, true);
