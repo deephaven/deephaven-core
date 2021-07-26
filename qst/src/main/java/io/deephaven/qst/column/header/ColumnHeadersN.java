@@ -64,7 +64,8 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
             if (remaining.length != headers().size()) {
                 final int expected = 9 + headers().size();
                 final int actual = 9 + remaining.length;
-                throw new IllegalArgumentException(String.format("Expected %d columns, found %d", expected, actual));
+                throw new IllegalArgumentException(
+                    String.format("Expected %d columns, found %d", expected, actual));
             }
             others.row(c1, c2, c3, c4, c5, c6, c7, c8, c9);
             int ix = 0;

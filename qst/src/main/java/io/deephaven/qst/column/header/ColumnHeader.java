@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 @Immutable
 @SimpleStyle
-public abstract class ColumnHeader<T> implements TableHeader.Buildable {
+public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
 
     static final int DEFAULT_BUILDER_INITIAL_CAPACITY = 16;
 
@@ -130,17 +130,17 @@ public abstract class ColumnHeader<T> implements TableHeader.Buildable {
     public abstract String name();
 
     @Parameter
-    public abstract Type<T> type();
+    public abstract Type<T1> type();
 
-    public final <B> ColumnHeaders2<T, B> header(String name, Class<B> clazz) {
+    public final <T2> ColumnHeaders2<T1, T2> header(String name, Class<T2> clazz) {
         return header(ColumnHeader.of(name, clazz));
     }
 
-    public final <B> ColumnHeaders2<T, B> header(String name, Type<B> type) {
+    public final <T2> ColumnHeaders2<T1, T2> header(String name, Type<T2> type) {
         return header(ColumnHeader.of(name, type));
     }
 
-    public final <B> ColumnHeaders2<T, B> header(ColumnHeader<B> header) {
+    public final <T2> ColumnHeaders2<T1, T2> header(ColumnHeader<T2> header) {
         return ImmutableColumnHeaders2.of(this, header);
     }
 
@@ -148,25 +148,25 @@ public abstract class ColumnHeader<T> implements TableHeader.Buildable {
         return new Rows(initialCapacity);
     }
 
-    public final Rows row(T a) {
+    public final Rows row(T1 a) {
         return start(DEFAULT_BUILDER_INITIAL_CAPACITY).row(a);
     }
 
     public class Rows implements NewTable.Buildable {
 
-        private final ArrayBuilder<T, ?, ?> arrayBuilder;
+        private final ArrayBuilder<T1, ?, ?> arrayBuilder;
 
         Rows(int initialCapacity) {
             arrayBuilder = Array.builder(type(), initialCapacity);
         }
 
-        public final Rows row(T a) {
+        public final Rows row(T1 a) {
             arrayBuilder.add(a);
             return this;
         }
 
         final Stream<Column<?>> stream() {
-            Column<T> thisColumn = Column.of(name(), arrayBuilder.build());
+            Column<T1> thisColumn = Column.of(name(), arrayBuilder.build());
             return Stream.of(thisColumn);
         }
 
