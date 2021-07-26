@@ -6,7 +6,6 @@ package io.deephaven.grpc_api.arrow;
 
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
@@ -44,6 +43,7 @@ import io.deephaven.grpc_api_client.util.FlatBufferIteratorAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageData;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -86,19 +86,68 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Override
     public void getFlightInfo(final Flight.FlightDescriptor request, final StreamObserver<Flight.FlightInfo> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            responseObserver.onNext(ticketRouter.flightInfoFor(request));
-            responseObserver.onCompleted();
+            final SessionState session = sessionService.getOptionalSession();
+
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+
+            if (session != null) {
+                session.nonExport()
+                        .require(export)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            responseObserver.onNext(export.get());
+                            responseObserver.onCompleted();
+                        });
+            } else {
+                if (export.tryRetainReference()) {
+                    try {
+                        if (export.getState() == ExportNotification.State.EXPORTED) {
+                            responseObserver.onNext(export.get());
+                            responseObserver.onCompleted();
+                        }
+                    } finally {
+                        export.dropReference();
+                    }
+                } else {
+                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                }
+            }
         });
     }
 
     @Override
     public void getSchema(final Flight.FlightDescriptor request, final StreamObserver<Flight.SchemaResult> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final ByteString schema = ticketRouter.flightInfoFor(request).getSchema();
-            responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                    .setSchema(schema)
-                    .build());
-            responseObserver.onCompleted();
+            final SessionState session = sessionService.getOptionalSession();
+
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+
+            if (session != null) {
+                session.nonExport()
+                        .require(export)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                    .setSchema(export.get().getSchema())
+                                    .build());
+                            responseObserver.onCompleted();
+                        });
+            } else {
+                if (export.tryRetainReference()) {
+                    try {
+                        if (export.getState() == ExportNotification.State.EXPORTED) {
+                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                    .setSchema(export.get().getSchema())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    } finally {
+                        export.dropReference();
+                    }
+                } else {
+                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                }
+            }
         });
     }
 

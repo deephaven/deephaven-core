@@ -47,7 +47,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final ByteBuffer ticket) {
         return getResolver(ticket.get(0)).resolve(session, ticket);
     }
@@ -61,7 +61,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final Flight.Ticket ticket) {
         return resolve(session, ticket.getTicket().asReadOnlyByteBuffer());
     }
@@ -75,7 +75,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor) {
         return getResolver(descriptor).resolve(session, descriptor);
     }
@@ -131,11 +131,14 @@ public class TicketRouter {
     /**
      * Resolve a flight descriptor and retrieve flight info for the flight.
      *
+     * @param session the user session context; ticket resolvers may expose flights that do not require a session (such as via DoGet)
      * @param descriptor the flight descriptor
-     * @return flight info for the particular descriptor
+     * @return an export object that will resolve to the flight descriptor; see {@link SessionState} for lifecycle propagation details
      */
-    public Flight.FlightInfo flightInfoFor(final Flight.FlightDescriptor descriptor) {
-        return getResolver(descriptor).flightInfoFor(descriptor);
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
+            @Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
+        return getResolver(descriptor).flightInfoFor(session, descriptor);
     }
 
     /**
@@ -164,7 +167,7 @@ public class TicketRouter {
      * @param session optional session that the resolver can use to filter which flights a visitor sees
      * @param visitor the callback to invoke per descriptor path
      */
-    public void visitFlightInfo(@Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+    public void visitFlightInfo(final @Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         byteResolverMap.iterator().forEachRemaining(resolver ->
                 resolver.forAllFlightInfo(session, visitor)
         );

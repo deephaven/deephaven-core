@@ -32,7 +32,7 @@ public interface TicketResolver {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(SessionState session, ByteBuffer ticket);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, ByteBuffer ticket);
 
     /**
      * Resolve a flight descriptor to an export object future.
@@ -42,7 +42,7 @@ public interface TicketResolver {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(SessionState session, Flight.FlightDescriptor descriptor);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
 
     /**
      * Publish a new result as a flight ticket to an export object future.
@@ -74,7 +74,7 @@ public interface TicketResolver {
      * @param descriptor the flight descriptor to retrieve a ticket for
      * @return a FlightInfo describing this flight
      */
-    Flight.FlightInfo flightInfoFor(Flight.FlightDescriptor descriptor);
+    SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
 
     /**
      * Create a human readable string to identify this ticket.
