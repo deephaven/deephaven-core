@@ -248,6 +248,23 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
+     * Produces an BooleanArraySource with the given data.
+     *
+     * @param data an array containing the data to insert into the ColumnSource.
+     * @return an in-memory column source with the requested data
+     */
+    public static ArrayBackedColumnSource<Boolean> getMemoryColumnSourceForBoolean(@NotNull final byte[] data) {
+        final ArrayBackedColumnSource<Boolean> result = new BooleanArraySource();
+        final WritableSource<Byte> dest = (WritableSource<Byte>)result.reinterpret(byte.class);
+        result.ensureCapacity(data.length);
+        try (final FillFromContext context = dest.makeFillFromContext(data.length);
+             final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+            dest.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
+        }
+        return result;
+    }
+
+    /**
      * Produces an CharacterArraySource with the given data.
      *
      * @param data an array containing the data to insert into the ColumnSource.
@@ -687,7 +704,7 @@ public abstract class ArrayBackedColumnSource<T>
 
         @Override
         public void visit(BooleanArray booleanArray) {
-            out = ArrayBackedColumnSource.getMemoryColumnSource(booleanArray.values());
+            out = ArrayBackedColumnSource.getMemoryColumnSourceForBoolean(booleanArray.values());
         }
 
         @Override
