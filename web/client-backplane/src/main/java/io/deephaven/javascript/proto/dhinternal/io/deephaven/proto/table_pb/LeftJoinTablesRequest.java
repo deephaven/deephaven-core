@@ -3,7 +3,6 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.jointablesrequest.TypeMap;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -13,15 +12,15 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest",
+    name = "dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest",
     namespace = JsPackage.GLOBAL)
-public class JoinTablesRequest {
+public class LeftJoinTablesRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface LeftIdFieldType {
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType.LeftIdFieldType create() {
+      static LeftJoinTablesRequest.ToObjectReturnType.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -43,7 +42,7 @@ public class JoinTablesRequest {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetTicketUnionType {
         @JsOverlay
-        static JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+        static LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -70,22 +69,22 @@ public class JoinTablesRequest {
       }
 
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType.ResultIdFieldType create() {
+      static LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+      LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
       void setTicket(
-          JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+          LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
       default void setTicket(String ticket) {
         setTicket(
             Js
-                .<JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                .<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
                     uncheckedCast(ticket));
       }
 
@@ -93,13 +92,13 @@ public class JoinTablesRequest {
       default void setTicket(Uint8Array ticket) {
         setTicket(
             Js
-                .<JoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
+                .<LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
                     uncheckedCast(ticket));
       }
     }
 
     @JsOverlay
-    static JoinTablesRequest.ToObjectReturnType create() {
+    static LeftJoinTablesRequest.ToObjectReturnType create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
@@ -110,13 +109,10 @@ public class JoinTablesRequest {
     JsArray<String> getColumnsToMatchList();
 
     @JsProperty
-    double getJoinType();
+    LeftJoinTablesRequest.ToObjectReturnType.LeftIdFieldType getLeftId();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType.LeftIdFieldType getLeftId();
-
-    @JsProperty
-    JoinTablesRequest.ToObjectReturnType.ResultIdFieldType getResultId();
+    LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
     @JsProperty
     Object getRightId();
@@ -138,13 +134,10 @@ public class JoinTablesRequest {
     }
 
     @JsProperty
-    void setJoinType(double joinType);
+    void setLeftId(LeftJoinTablesRequest.ToObjectReturnType.LeftIdFieldType leftId);
 
     @JsProperty
-    void setLeftId(JoinTablesRequest.ToObjectReturnType.LeftIdFieldType leftId);
-
-    @JsProperty
-    void setResultId(JoinTablesRequest.ToObjectReturnType.ResultIdFieldType resultId);
+    void setResultId(LeftJoinTablesRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
     @JsProperty
     void setRightId(Object rightId);
@@ -155,7 +148,7 @@ public class JoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface LeftIdFieldType {
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType create() {
+      static LeftJoinTablesRequest.ToObjectReturnType0.LeftIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -177,7 +170,7 @@ public class JoinTablesRequest {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface GetTicketUnionType {
         @JsOverlay
-        static JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+        static LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
             Object o) {
           return Js.cast(o);
         }
@@ -204,22 +197,22 @@ public class JoinTablesRequest {
       }
 
       @JsOverlay
-      static JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType create() {
+      static LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
       @JsProperty
-      JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+      LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
 
       @JsProperty
       void setTicket(
-          JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+          LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
       @JsOverlay
       default void setTicket(String ticket) {
         setTicket(
             Js
-                .<JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                .<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
                     uncheckedCast(ticket));
       }
 
@@ -227,13 +220,13 @@ public class JoinTablesRequest {
       default void setTicket(Uint8Array ticket) {
         setTicket(
             Js
-                .<JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
+                .<LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
                     uncheckedCast(ticket));
       }
     }
 
     @JsOverlay
-    static JoinTablesRequest.ToObjectReturnType0 create() {
+    static LeftJoinTablesRequest.ToObjectReturnType0 create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
@@ -244,13 +237,10 @@ public class JoinTablesRequest {
     JsArray<String> getColumnsToMatchList();
 
     @JsProperty
-    double getJoinType();
+    LeftJoinTablesRequest.ToObjectReturnType0.LeftIdFieldType getLeftId();
 
     @JsProperty
-    JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType getLeftId();
-
-    @JsProperty
-    JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+    LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
     @JsProperty
     Object getRightId();
@@ -272,29 +262,24 @@ public class JoinTablesRequest {
     }
 
     @JsProperty
-    void setJoinType(double joinType);
+    void setLeftId(LeftJoinTablesRequest.ToObjectReturnType0.LeftIdFieldType leftId);
 
     @JsProperty
-    void setLeftId(JoinTablesRequest.ToObjectReturnType0.LeftIdFieldType leftId);
-
-    @JsProperty
-    void setResultId(JoinTablesRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+    void setResultId(LeftJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
     @JsProperty
     void setRightId(Object rightId);
   }
 
-  public static TypeMap Type;
+  public static native LeftJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
-  public static native JoinTablesRequest deserializeBinary(Uint8Array bytes);
+  public static native LeftJoinTablesRequest deserializeBinaryFromReader(
+      LeftJoinTablesRequest message, Object reader);
 
-  public static native JoinTablesRequest deserializeBinaryFromReader(
-      JoinTablesRequest message, Object reader);
+  public static native void serializeBinaryToWriter(LeftJoinTablesRequest message, Object writer);
 
-  public static native void serializeBinaryToWriter(JoinTablesRequest message, Object writer);
-
-  public static native JoinTablesRequest.ToObjectReturnType toObject(
-      boolean includeInstance, JoinTablesRequest msg);
+  public static native LeftJoinTablesRequest.ToObjectReturnType toObject(
+      boolean includeInstance, LeftJoinTablesRequest msg);
 
   public native String addColumnsToAdd(String value, double index);
 
@@ -317,8 +302,6 @@ public class JoinTablesRequest {
   public native JsArray<String> getColumnsToAddList();
 
   public native JsArray<String> getColumnsToMatchList();
-
-  public native double getJoinType();
 
   public native TableReference getLeftId();
 
@@ -348,8 +331,6 @@ public class JoinTablesRequest {
     setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(value));
   }
 
-  public native void setJoinType(double value);
-
   public native void setLeftId();
 
   public native void setLeftId(TableReference value);
@@ -362,7 +343,7 @@ public class JoinTablesRequest {
 
   public native void setRightId(TableReference value);
 
-  public native JoinTablesRequest.ToObjectReturnType0 toObject();
+  public native LeftJoinTablesRequest.ToObjectReturnType0 toObject();
 
-  public native JoinTablesRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+  public native LeftJoinTablesRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }
