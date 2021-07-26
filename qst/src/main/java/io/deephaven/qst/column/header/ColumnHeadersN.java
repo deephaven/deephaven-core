@@ -59,12 +59,14 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
             }
         }
 
-        public final Rows row(T1 a, T2 b, T3 c, T4 d, T5 e, T6 f, T7 g, T8 h, T9 i,
+        public final Rows row(T1 c1, T2 c2, T3 c3, T4 c4, T5 c5, T6 c6, T7 c7, T8 c8, T9 c9,
             Object... remaining) {
             if (remaining.length != headers().size()) {
-                throw new IllegalArgumentException();
+                final int expected = 9 + headers().size();
+                final int actual = 9 + remaining.length;
+                throw new IllegalArgumentException(String.format("Expected %d columns, found %d", expected, actual));
             }
-            others.row(a, b, c, d, e, f, g, h, i);
+            others.row(c1, c2, c3, c4, c5, c6, c7, c8, c9);
             int ix = 0;
             for (Object item : remaining) {
                 // noinspection rawtypes
