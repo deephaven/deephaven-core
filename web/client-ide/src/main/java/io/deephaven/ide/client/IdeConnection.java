@@ -4,11 +4,8 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.data.ConnectToken;
-import jsinterop.annotations.JsConstructor;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
+import jsinterop.annotations.*;
+
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -40,7 +37,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * Direct connection to an already-running worker instance, without first authenticating to a client.
      */
     @JsConstructor
-    public IdeConnection(String serverUrl, IdeConnectionOptions options) {
+    public IdeConnection(String serverUrl, @JsOptional IdeConnectionOptions options) {
         super(getAuthTokenPromiseSupplier(options));
         this.serverUrl = serverUrl;
         this.deathListenerCleanup = JsRunnable.doNothing();
