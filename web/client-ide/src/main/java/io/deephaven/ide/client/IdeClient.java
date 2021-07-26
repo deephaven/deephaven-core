@@ -18,8 +18,8 @@ public class IdeClient {
 
     public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken, String serviceId, String language) {
         IdeConnectionOptions options = new IdeConnectionOptions();
-        options.setAuthToken(authToken);
-        options.setServiceId(serviceId);
+        options.authToken = authToken;
+        options.serviceId = serviceId;
 
         IdeConnection ideConnection = new IdeConnection(websocketUrl, options);
         return ideConnection.startSession(language);

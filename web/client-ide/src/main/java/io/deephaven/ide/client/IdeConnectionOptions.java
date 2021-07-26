@@ -6,30 +6,10 @@ import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh")
 public class IdeConnectionOptions {
-    private String authToken;
-    private String serviceId;
+    public String authToken;
+    public String serviceId;
 
     @JsConstructor
     public IdeConnectionOptions() {
-    }
-
-    @JsProperty
-    public void setServiceId(String serviceId) {
-        this.serviceId = serviceId;
-    }
-
-    @JsProperty
-    public String getServiceId() {
-        return serviceId;
-    }
-
-    @JsProperty
-    public String getAuthToken() {
-        return authToken;
-    }
-
-    @JsProperty
-    public void setAuthToken(String authToken) {
-        this.authToken = authToken;
     }
 }

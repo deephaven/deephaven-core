@@ -17,9 +17,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     private static AuthTokenPromiseSupplier getAuthTokenPromiseSupplier(IdeConnectionOptions options) {
         ConnectToken token = null;
-        if (options != null && options.getAuthToken() != null) {
+        if (options != null && options.authToken != null) {
             token = new ConnectToken();
-            token.setBytes(atob(options.getAuthToken()).getBytes(StandardCharsets.UTF_8));
+            token.setBytes(atob(options.authToken).getBytes(StandardCharsets.UTF_8));
         }
         return AuthTokenPromiseSupplier.oneShot(token);
     }
