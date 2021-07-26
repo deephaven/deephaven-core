@@ -116,10 +116,15 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Double item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Double... items) {
+            ensureCapacity(items.length);
             for (Double item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

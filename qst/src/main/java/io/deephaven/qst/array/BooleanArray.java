@@ -12,7 +12,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         return new BooleanArray(new byte[0]);
     }
 
-    public static BooleanArray of(boolean... values) {
+    public static BooleanArray of(byte... values) {
         return builder(values.length).add(values).build();
     }
 
@@ -79,40 +79,53 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         return Arrays.hashCode(values);
     }
 
-    public static class Builder implements ArrayBuilder<Boolean, BooleanArray, Builder> {
-
-        private byte[] array;
-        private int size;
+    public static class Builder extends PrimitiveArrayHelper<byte[]>
+        implements ArrayBuilder<Boolean, BooleanArray, Builder> {
 
         private Builder(int initialCapacity) {
-            this.array = new byte[initialCapacity];
-            this.size = 0;
+            super(new byte[initialCapacity]);
         }
 
-        public final Builder add(boolean item) {
+        @Override
+        int length(byte[] array) {
+            return array.length;
+        }
+
+        @Override
+        void arraycopy(byte[] src, int srcPos, byte[] dest, int destPos, int length) {
+            System.arraycopy(src, srcPos, dest, destPos, length);
+        }
+
+        @Override
+        byte[] construct(int size) {
+            return new byte[size];
+        }
+
+        public final Builder add(byte item) {
             ensureCapacity();
-            array[size++] = Util.adapt(item);
+            array[size++] = item;
             return this;
         }
 
-        public final Builder add(boolean... items) {
-            for (boolean item : items) {
-                add(item);
-            }
+        public final Builder add(byte... items) {
+            addImpl(items);
             return this;
         }
 
         @Override
         public final Builder add(Boolean item) {
-            ensureCapacity();
+            return add(Util.adapt(item));
+        }
+
+        private void addInternal(Boolean item) {
             array[size++] = Util.adapt(item);
-            return this;
         }
 
         @Override
         public final Builder add(Boolean... items) {
+            ensureCapacity(items.length);
             for (Boolean item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }
@@ -128,23 +141,6 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
         @Override
         public final BooleanArray build() {
             return new BooleanArray(takeAtSize());
-        }
-
-        private void ensureCapacity() {
-            if (size == array.length) {
-                byte[] next = new byte[array.length == 0 ? 1 : array.length * 2];
-                System.arraycopy(array, 0, next, 0, array.length);
-                array = next;
-            }
-        }
-
-        private byte[] takeAtSize() {
-            if (size == array.length) {
-                return array; // great case, no copying necessary :)
-            }
-            byte[] atSize = new byte[size];
-            System.arraycopy(array, 0, atSize, 0, size);
-            return atSize;
         }
     }
 }

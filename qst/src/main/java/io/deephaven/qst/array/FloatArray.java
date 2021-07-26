@@ -116,10 +116,15 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Float item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Float... items) {
+            ensureCapacity(items.length);
             for (Float item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

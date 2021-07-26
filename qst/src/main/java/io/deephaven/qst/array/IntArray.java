@@ -116,10 +116,15 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Integer item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Integer... items) {
+            ensureCapacity(items.length);
             for (Integer item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

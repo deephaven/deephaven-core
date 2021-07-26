@@ -117,10 +117,15 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Character item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Character... items) {
+            ensureCapacity(items.length);
             for (Character item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

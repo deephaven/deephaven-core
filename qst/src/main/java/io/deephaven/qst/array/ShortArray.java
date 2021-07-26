@@ -115,10 +115,15 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Short item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Short... items) {
+            ensureCapacity(items.length);
             for (Short item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

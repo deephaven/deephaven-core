@@ -116,10 +116,15 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
             return add(Util.adapt(item));
         }
 
+        private void addInternal(Long item) {
+            array[size++] = Util.adapt(item);
+        }
+
         @Override
         public final Builder add(Long... items) {
+            ensureCapacity(items.length);
             for (Long item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }

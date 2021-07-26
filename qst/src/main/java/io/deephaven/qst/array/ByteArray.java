@@ -106,6 +106,10 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
             return this;
         }
 
+        private void addInternal(Byte item) {
+            array[size++] = Util.adapt(item);
+        }
+
         public final Builder add(byte... items) {
             addImpl(items);
             return this;
@@ -118,8 +122,9 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
 
         @Override
         public final Builder add(Byte... items) {
+            ensureCapacity(items.length);
             for (Byte item : items) {
-                add(item);
+                addInternal(item);
             }
             return this;
         }
