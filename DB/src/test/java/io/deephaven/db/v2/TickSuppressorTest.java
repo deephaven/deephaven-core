@@ -42,14 +42,12 @@ public class TickSuppressorTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testRemoveSpuriousModificationsIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 100, 100);
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testRemoveSpuriousModificationsLargeIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 32000, 5);

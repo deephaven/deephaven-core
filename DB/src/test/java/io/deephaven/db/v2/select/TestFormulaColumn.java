@@ -395,7 +395,6 @@ public class TestFormulaColumn {
      * Test casts among all primitive types.
      */
     @Test
-    @Category(OutOfBandTest.class)
     public void testPrimitiveCasts() {
         final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);
 
@@ -444,7 +443,6 @@ public class TestFormulaColumn {
      * Test unboxing conversions, including null pointers and boxed nulls
      */
     @Test
-    @Category(OutOfBandTest.class)
     public void testUnboxingCasts() {
         final List<Class> boxedTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.BOXED_TYPES);
         final List<Class> primitiveTypes = new ArrayList<>(io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES);

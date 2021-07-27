@@ -81,7 +81,6 @@ public class TestIntrusiveSoftLRU {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testRobustness() {
         ArrayList<Obj> objects = new ArrayList<>(1000);
         ArrayList<WeakReference<Obj>> objRefs = new ArrayList<>(1000);

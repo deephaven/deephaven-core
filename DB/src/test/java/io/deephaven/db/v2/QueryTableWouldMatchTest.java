@@ -188,7 +188,6 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testMatchDynamicIterative() {
         final ColumnInfo[] symSetInfo;
         final ColumnInfo[] numSetInfo;

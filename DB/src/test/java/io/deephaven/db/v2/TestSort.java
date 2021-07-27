@@ -65,7 +65,6 @@ public class TestSort extends BaseArrayTestCase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testSortMulti() {
         for (int ncols = 1; ncols <= 4; ++ncols)
         {

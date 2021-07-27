@@ -2273,7 +2273,6 @@ public class SortedRangesTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testRemoveSinglesTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
@@ -2521,7 +2520,6 @@ public class SortedRangesTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testGetOrderedKeysByKeyRange() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;

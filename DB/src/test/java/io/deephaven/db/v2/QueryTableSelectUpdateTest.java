@@ -485,7 +485,6 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testUpdateIncremental() {
         for (int seed = 0; seed < 5; ++seed) {
             testUpdateIncremental(seed, false);
@@ -802,7 +801,6 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSparseSelect() {
         int size = 1000;
         for (int seed = 0; seed < 10; ++seed) {
