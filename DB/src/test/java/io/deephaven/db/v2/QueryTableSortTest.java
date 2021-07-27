@@ -701,7 +701,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, definition, dest);
+            ParquetTools.writeTable(source, dest, definition);
             final Table table = ParquetTools.readTable(dest);
             testFunction.accept(table);
             table.close();

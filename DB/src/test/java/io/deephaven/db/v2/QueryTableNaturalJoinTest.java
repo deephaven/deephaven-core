@@ -1330,7 +1330,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String [] leftSyms = new String[]{"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        ParquetTools.writeTable(leftTable, leftDefinition, leftLocation);
+        ParquetTools.writeTable(leftTable, leftLocation, leftDefinition);
         return ParquetTools.readTable(leftLocation);
     }
 
@@ -1341,7 +1341,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ColumnDefinition.ofInt("RightSentinel"));
         final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        ParquetTools.writeTable(rightTable, rightDefinition, rightLocation);
+        ParquetTools.writeTable(rightTable, rightLocation, rightDefinition);
         return ParquetTools.readTable(rightLocation);
     }
 }

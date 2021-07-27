@@ -32,7 +32,6 @@ import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -169,7 +168,7 @@ public class ParquetTools {
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final String destPath) {
-        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, new File(destPath));
+        writeTable(sourceTable, new File(destPath), sourceTable.getDefinition(), ParquetInstructions.EMPTY);
     }
 
     /**
@@ -182,53 +181,53 @@ public class ParquetTools {
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile) {
-        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, destFile);
+        writeTable(sourceTable, destFile, sourceTable.getDefinition(), ParquetInstructions.EMPTY);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
      *                 If there is an error any intermediate directories previously created are removed;
      *                 note this makes this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final File destFile) {
-        writeTable(sourceTable, definition, ParquetInstructions.EMPTY, destFile);
+            @NotNull final File destFile,
+            @NotNull final TableDefinition definition) {
+        writeTable(sourceTable, destFile, definition, ParquetInstructions.EMPTY);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param writeInstructions instructions for customizations while writing
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
      *                 If there is an error any intermediate directories previously created are removed;
      *                 note this makes this method unsafe for concurrent use
+     * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File destFile) {
-        writeTable(sourceTable, sourceTable.getDefinition(), writeInstructions, destFile);
+            @NotNull final File destFile,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeTable(sourceTable, destFile, sourceTable.getDefinition(), writeInstructions);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param writeInstructions instructions for customizations while writing
      * @param destPath destination path; it must end in ".parquet".  Any non existing directories in the path are created
      *                     If there is an error any intermediate directories previously created are removed;
      *                     note this makes this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final String destPath,
                                   @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions,
-                                  @NotNull final String destPath) {
-        writeTable(sourceTable, definition, writeInstructions, new File(destPath));
+                                  @NotNull final ParquetInstructions writeInstructions) {
+        writeTable(sourceTable, new File(destPath), definition, writeInstructions);
     }
 
     /**
@@ -241,9 +240,9 @@ public class ParquetTools {
      *                 note this makes this method unsafe for concurrent use
      */
     public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final File destFile,
                                   @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions,
-                                  @NotNull final File destFile) {
+                                  @NotNull final ParquetInstructions writeInstructions) {
         final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(
