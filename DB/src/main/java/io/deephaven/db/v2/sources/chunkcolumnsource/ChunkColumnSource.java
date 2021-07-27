@@ -5,7 +5,23 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 
+/**
+ * An immutable ColumnSource that is backed by chunks.
+ *
+ * The owner of the column source may append chunks to with the addChunk call.
+ *
+ *
+ * @param <T> the data type of the column source
+ */
 public interface ChunkColumnSource<T> extends ColumnSource<T> {
+    /**
+     * Create a new ChunkColumnSource for the given chunk type and data type.
+     *
+     * @param chunkType the type of chunk
+     * @param dataType the datatype for the newly created column source
+     *
+     * @return an empty ChunkColumnSource
+     */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType) {
         switch (chunkType) {
             case Char:
@@ -29,6 +45,18 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
         }
     }
 
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * @param chunk the chunk of data to add
+     */
     void addChunk(Chunk<? extends Attributes.Values> chunk);
+
+    /**
+     *  Reset the column source to be ready for reuse.
+     *
+     *  Cear will discard the currently held chunks.  This should not be  called if a table will continue to reference
+     *  the column source; as it violates the immutability contract.
+     */
     void clear();
 }
