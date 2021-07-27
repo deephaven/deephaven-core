@@ -17,8 +17,9 @@
 var ide;
 var table;
 (async () => {
-
-    ide = await dh.Ide.getExistingSession(window.location.protocol + "//" + window.location.host, "", null, "groovy");
+    var connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+    var consoleTypes = await connection.getConsoleTypes();
+    ide = await connection.startSession(consoleTypes[0]);
     document.body.append("session created", document.createElement("br"));
     table = await ide.timeTable(1_000_000_000);
     document.body.append("timetable created", document.createElement("br"));
