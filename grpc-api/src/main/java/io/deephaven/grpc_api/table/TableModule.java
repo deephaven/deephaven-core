@@ -5,20 +5,16 @@ import dagger.MapKey;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
-import io.deephaven.grpc_api.table.ops.AsOfJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl;
-import io.deephaven.grpc_api.table.ops.CrossJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl;
-import io.deephaven.grpc_api.table.ops.ExactJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.FilterTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.FlattenTableGrpcImpl;
 import io.deephaven.grpc_api.table.ops.GrpcTableOperation;
 import io.deephaven.grpc_api.table.ops.HeadOrTailByGrpcImpl;
 import io.deephaven.grpc_api.table.ops.HeadOrTailGrpcImpl;
-import io.deephaven.grpc_api.table.ops.LeftJoinTablesGrpcImpl;
+import io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.MergeTablesGrpcImpl;
-import io.deephaven.grpc_api.table.ops.NaturalJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.RunChartDownsampleGrpcImpl;
 import io.deephaven.grpc_api.table.ops.SelectDistinctGrpcImpl;
 import io.deephaven.grpc_api.table.ops.SnapshotTableGrpcImpl;
@@ -86,16 +82,16 @@ public interface TableModule {
     GrpcTableOperation<?> bindOperationComboAgg(ComboAggregateGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.CROSS_JOIN)
-    GrpcTableOperation<?> bindOperationCrossJoin(CrossJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationCrossJoin(JoinTablesGrpcImpl.CrossJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.EXACT_JOIN)
-    GrpcTableOperation<?> bindOperationExactJoin(ExactJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationExactJoin(JoinTablesGrpcImpl.ExactJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.LEFT_JOIN)
-    GrpcTableOperation<?> bindOperationLeftJoin(LeftJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationLeftJoin(JoinTablesGrpcImpl.LeftJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.NATURAL_JOIN)
-    GrpcTableOperation<?> bindOperationNaturalJoin(NaturalJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationNaturalJoin(JoinTablesGrpcImpl.NaturalJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.FILTER)
     GrpcTableOperation<?> bindOperationFilterTable(FilterTableGrpcImpl op);
@@ -116,7 +112,7 @@ public interface TableModule {
     GrpcTableOperation<?> bindOperationFlatten(FlattenTableGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
-    GrpcTableOperation<?> bindOperationAsOfJoin(AsOfJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationAsOfJoin(JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
     GrpcTableOperation<?> bindOperationRunChartDownsample(RunChartDownsampleGrpcImpl op);
