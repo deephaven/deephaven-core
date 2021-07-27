@@ -812,7 +812,26 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<JsTable> join(JsTable rightTable, JsArray<String> columnsToMatch,
+    @Deprecated
+    public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
+                                 @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+        if (joinType.equals("AJ") || joinType.equals("RAJ")) {
+            return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String)asOfMatchRule);
+        } else if (joinType.equals("CROSS_JOIN")) {
+            return crossJoin(rightTable, columnsToMatch, columnsToAdd, 0.0);
+        } else if (joinType.equals("EXACT_JOIN")) {
+            return exactJoin(rightTable, columnsToMatch, columnsToAdd);
+        } else if (joinType.equals("LEFT_JOIN")) {
+            return leftJoin(rightTable, columnsToMatch, columnsToAdd);
+        } else if (joinType.equals("NATURAL_JOIN")) {
+            return naturalJoin(rightTable, columnsToMatch, columnsToAdd);
+        } else {
+            throw new IllegalArgumentException("Unsupported join type " + joinType);
+        }
+    }
+
+    @JsMethod
+    public Promise<JsTable> crossJoin(JsTable rightTable, JsArray<String> columnsToMatch,
                                  @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
         if (rightTable.workerConnection != workerConnection) {
             throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
