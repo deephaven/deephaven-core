@@ -15,6 +15,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
+/**
+ *  A column source backed by FloatChunks.
+ *
+ *  The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The getChunk
+ *  call will return the backing chunk, or a slice of the backing chunk if possible.
+ *
+ */
 public class FloatChunkColumnSource extends AbstractColumnSource<Float> implements ImmutableColumnSourceGetDefaults.ForFloat, ChunkColumnSource<Float> {
     private final ArrayList<FloatChunk<? extends Attributes.Values>> data = new ArrayList<>();
     private final TLongArrayList offsets = new TLongArrayList();
@@ -104,19 +111,35 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
         fillChunk(context, destination, orderedKeys);
     }
 
+    /**
+     * Given an index within this column's address space; return the chunk that contains the index.
+     *
+     * @param start the data index to find the corresponding chunk for
+     *
+     * @return the chunk index within data and offsets
+     */
     private int getChunkIndex(final long start) {
         return getChunkIndex(start, 0);
     }
 
-    private int getChunkIndex(final long start, final int startIndex) {
-        int index = offsets.binarySearch(start, startIndex, offsets.size());
+    /**
+     * Given an index within this column's address space; return the chunk that contains the index.
+     *
+     * @param start the data index to find the corresponding chunk for
+     * @param startChunk the first chunk that may possibly contain start
+     *
+     * @return the chunk index within data and offsets
+     */
+
+    private int getChunkIndex(final long start, final int startChunk) {
+        int index = offsets.binarySearch(start, startChunk, offsets.size());
         if (index < 0) {
             index = -index - 2;
         }
         return index;
     }
 
-    public void addChunk(final FloatChunk<? extends Attributes.Values> chunk) {
+    private void addChunk(final FloatChunk<? extends Attributes.Values> chunk) {
         data.add(chunk);
         offsets.add(totalSize);
         totalSize += chunk.size();
