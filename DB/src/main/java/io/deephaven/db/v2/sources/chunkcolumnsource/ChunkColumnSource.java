@@ -2,8 +2,8 @@ package io.deephaven.db.v2.sources.chunkcolumnsource;
 
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
 
 /**
  * An immutable ColumnSource that is backed by chunks.
@@ -50,12 +50,12 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunk the chunk of data to add
      */
-    void addChunk(Chunk<? extends Attributes.Values> chunk);
+    void addChunk(WritableChunk<? extends Attributes.Values> chunk);
 
     /**
      *  Reset the column source to be ready for reuse.
      *
-     *  Cear will discard the currently held chunks.  This should not be  called if a table will continue to reference
+     *  Clear will discard the currently held chunks.  This should not be called if a table will continue to reference
      *  the column source; as it violates the immutability contract.
      */
     void clear();

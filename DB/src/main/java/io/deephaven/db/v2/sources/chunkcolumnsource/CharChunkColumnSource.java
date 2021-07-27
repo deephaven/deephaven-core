@@ -7,20 +7,21 @@ import io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
 /**
- *  A column source backed by CharChunks.
- *
- *  The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The getChunk
- *  call will return the backing chunk, or a slice of the backing chunk if possible.
- *
+ * A column source backed by {@link CharChunk CharChunks}.
+ * <p>
+ * The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The
+ * {@link #getChunk(GetContext, OrderedKeys)}
+ * call will return the backing chunk or a slice of the backing chunk if possible.
  */
 public class CharChunkColumnSource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, ChunkColumnSource<Character> {
-    private final ArrayList<CharChunk<? extends Attributes.Values>> data = new ArrayList<>();
+    private final ArrayList<WritableCharChunk<? extends Attributes.Values>> data = new ArrayList<>();
     private final TLongArrayList offsets = new TLongArrayList();
     private long totalSize = 0;
 
@@ -38,7 +39,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
 
         final int chunkIndex = getChunkIndex(index);
         final long offset = offsets.getQuick(chunkIndex);
-        return data.get(chunkIndex).get((int)(index - offset));
+        return data.get(chunkIndex).get((int) (index - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Attributes.Any> extends DefaultGetContext<ATTR> {
@@ -51,6 +52,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
         @Override
         public void close() {
             resettableCharChunk.close();
+            super.close();
         }
     }
 
@@ -67,13 +69,13 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
             final int firstChunk = getChunkIndex(firstKey);
             final int lastChunk = getChunkIndex(orderedKeys.lastKey(), firstChunk);
             if (firstChunk == lastChunk) {
-                final int offset = (int)(firstKey - offsets.get(firstChunk));
+                final int offset = (int) (firstKey - offsets.get(firstChunk));
                 final int length = orderedKeys.intSize();
                 final CharChunk<? extends Attributes.Values> charChunk = data.get(firstChunk);
                 if (offset == 0 && length == charChunk.size()) {
                     return charChunk;
                 }
-                return ((ChunkGetContext)context).resettableCharChunk.resetFromChunk(charChunk, offset, length);
+                return ((ChunkGetContext) context).resettableCharChunk.resetFromChunk(charChunk, offset, length);
             }
         }
         return getChunkByFilling(context, orderedKeys);
@@ -81,12 +83,12 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
-        final MutableInt startChunkIndex = new MutableInt(0);
+        final MutableInt searchStartChunkIndex = new MutableInt(0);
         final MutableInt destinationOffset = new MutableInt(0);
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, startChunkIndex.intValue());
-                final int offsetWithinChunk = (int)(s - offsets.get(chunkIndex));
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int offsetWithinChunk = (int) (s - offsets.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final CharChunk<? extends Attributes.Values> charChunk = data.get(chunkIndex);
                 final int chunkSize = charChunk.size();
@@ -96,10 +98,11 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
                 Assert.gtZero(length, "length");
                 destination.copyFromChunk(charChunk, offsetWithinChunk, destinationOffset.intValue(), length);
                 destinationOffset.add(length);
-                startChunkIndex.setValue(chunkIndex + 1);
+                searchStartChunkIndex.setValue(chunkIndex + 1);
                 s += length;
             }
         });
+        destination.setSize(destinationOffset.intValue());
     }
 
     @Override
@@ -112,7 +115,6 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
      * Given an index within this column's address space; return the chunk that contains the index.
      *
      * @param start the data index to find the corresponding chunk for
-     *
      * @return the chunk index within data and offsets
      */
     private int getChunkIndex(final long start) {
@@ -122,9 +124,8 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     /**
      * Given an index within this column's address space; return the chunk that contains the index.
      *
-     * @param start the data index to find the corresponding chunk for
+     * @param start      the data index to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start
-     *
      * @return the chunk index within data and offsets
      */
 
@@ -136,21 +137,22 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
         return index;
     }
 
-    private void addChunk(final CharChunk<? extends Attributes.Values> chunk) {
+    private void addChunk(final WritableCharChunk<? extends Attributes.Values> chunk) {
         data.add(chunk);
         offsets.add(totalSize);
         totalSize += chunk.size();
     }
 
     @Override
-    public void addChunk(final Chunk<? extends Attributes.Values> chunk) {
-        addChunk(chunk.asCharChunk());
+    public void addChunk(final WritableChunk<? extends Attributes.Values> chunk) {
+        addChunk(chunk.asWritableCharChunk());
     }
 
     @Override
     public void clear() {
         totalSize = 0;
+        data.forEach(SafeCloseable::close);
         data.clear();
-        offsets.clear();
+        offsets.resetQuick();
     }
 }
