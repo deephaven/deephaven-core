@@ -4,6 +4,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An immutable ColumnSource that is backed by chunks.
@@ -48,7 +49,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunk the chunk of data to add
      */
-    void addChunk(WritableChunk<? extends Attributes.Values> chunk);
+    void addChunk(@NotNull WritableChunk<? extends Attributes.Values> chunk);
 
     /**
      * Reset the column source to be ready for reuse.

@@ -25,7 +25,7 @@ import java.util.ArrayList;
  */
 public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, ChunkColumnSource<Double> {
     private final ArrayList<WritableDoubleChunk<? extends Attributes.Values>> data = new ArrayList<>();
-    private final TLongArrayList offsets = new TLongArrayList();
+    private final TLongArrayList firstOffsetForData = new TLongArrayList();
     private long totalSize = 0;
 
     // region constructor
@@ -35,20 +35,20 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     // endregion constructor
 
     @Override
-    public double getDouble(long index) {
+    public double getDouble(final long index) {
         if (index < 0 || index >= totalSize) {
             return QueryConstants.NULL_DOUBLE;
         }
 
         final int chunkIndex = getChunkIndex(index);
-        final long offset = offsets.getQuick(chunkIndex);
+        final long offset = firstOffsetForData.getQuick(chunkIndex);
         return data.get(chunkIndex).get((int) (index - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Attributes.Any> extends DefaultGetContext<ATTR> {
         private final ResettableDoubleChunk resettableDoubleChunk = ResettableDoubleChunk.makeResettableChunk();
 
-        public ChunkGetContext(ChunkSource<ATTR> chunkSource, int chunkCapacity, SharedContext sharedContext) {
+        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity, final SharedContext sharedContext) {
             super(chunkSource, chunkCapacity, sharedContext);
         }
 
@@ -60,19 +60,19 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     }
 
     @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
+    public GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new ChunkGetContext(this, chunkCapacity, sharedContext);
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
         // if we can slice part of one of our backing chunks, then we will return that instead
         if (orderedKeys.isContiguous()) {
             final long firstKey = orderedKeys.firstKey();
             final int firstChunk = getChunkIndex(firstKey);
             final int lastChunk = getChunkIndex(orderedKeys.lastKey(), firstChunk);
             if (firstChunk == lastChunk) {
-                final int offset = (int) (firstKey - offsets.get(firstChunk));
+                final int offset = (int) (firstKey - firstOffsetForData.get(firstChunk));
                 final int length = orderedKeys.intSize();
                 final DoubleChunk<? extends Attributes.Values> doubleChunk = data.get(firstChunk);
                 if (offset == 0 && length == doubleChunk.size()) {
@@ -85,13 +85,13 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         final MutableInt destinationOffset = new MutableInt(0);
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
-                final int offsetWithinChunk = (int) (s - offsets.get(chunkIndex));
+                final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final DoubleChunk<? extends Attributes.Values> doubleChunk = data.get(chunkIndex);
                 final int chunkSize = doubleChunk.size();
@@ -109,7 +109,7 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         // immutable, so we can delegate to fill
         fillChunk(context, destination, orderedKeys);
     }
@@ -133,21 +133,21 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
      */
 
     private int getChunkIndex(final long start, final int startChunk) {
-        int index = offsets.binarySearch(start, startChunk, offsets.size());
+        int index = firstOffsetForData.binarySearch(start, startChunk, firstOffsetForData.size());
         if (index < 0) {
             index = -index - 2;
         }
         return index;
     }
 
-    private void addChunk(final WritableDoubleChunk<? extends Attributes.Values> chunk) {
+    private void addChunk(@NotNull final WritableDoubleChunk<? extends Attributes.Values> chunk) {
         data.add(chunk);
-        offsets.add(totalSize);
+        firstOffsetForData.add(totalSize);
         totalSize += chunk.size();
     }
 
     @Override
-    public void addChunk(final WritableChunk<? extends Attributes.Values> chunk) {
+    public void addChunk(@NotNull final WritableChunk<? extends Attributes.Values> chunk) {
         addChunk(chunk.asWritableDoubleChunk());
     }
 
@@ -156,6 +156,6 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
         totalSize = 0;
         data.forEach(SafeCloseable::close);
         data.clear();
-        offsets.resetQuick();
+        firstOffsetForData.resetQuick();
     }
 }
