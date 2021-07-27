@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.sources.chunkcolumnsource;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
@@ -39,6 +40,37 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
                 return new DoubleChunkColumnSource();
             case Object:
                 return new ObjectChunkColumnSource<>(dataType);
+            default:
+                throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
+        }
+    }
+
+    /**
+     * Create a new ChunkColumnSource for the given chunk type and data type.
+     *
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several ChunkColumnSources
+     * @param chunkType           the type of chunk
+     * @param dataType            the datatype for the newly created column source
+     * @return an empty ChunkColumnSource
+     */
+    static ChunkColumnSource<?> make(TLongArrayList sharedOffsetForData, ChunkType chunkType, Class<?> dataType) {
+        switch (chunkType) {
+            case Char:
+                return new CharChunkColumnSource(sharedOffsetForData);
+            case Byte:
+                return new ByteChunkColumnSource(sharedOffsetForData);
+            case Short:
+                return new ShortChunkColumnSource(sharedOffsetForData);
+            case Int:
+                return new IntChunkColumnSource(sharedOffsetForData);
+            case Long:
+                return new LongChunkColumnSource(sharedOffsetForData);
+            case Float:
+                return new FloatChunkColumnSource(sharedOffsetForData);
+            case Double:
+                return new DoubleChunkColumnSource(sharedOffsetForData);
+            case Object:
+                return new ObjectChunkColumnSource<>(dataType, sharedOffsetForData);
             default:
                 throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }

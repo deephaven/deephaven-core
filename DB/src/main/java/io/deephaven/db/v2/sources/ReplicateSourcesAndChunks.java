@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.sources;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
@@ -121,9 +122,16 @@ public class ReplicateSourcesAndChunks {
         );
 
         lines = ReplicateUtilities.replaceRegion(lines, "constructor", Arrays.asList(
-                "    protected ObjectChunkColumnSource(Class<T> type) {",
+        "    protected ObjectChunkColumnSource(Class<T> type) {",
+                "        this(type, new TLongArrayList());",
+                "    }",
+                "",
+        "    protected ObjectChunkColumnSource(Class<T> type, final TLongArrayList firstOffsetForData) {",
                 "        super(type);",
-                "    }"));
+                "        this.firstOffsetForData = firstOffsetForData;",
+                "    }"
+
+        ));
 
         FileUtils.writeLines(classFile, lines);
     }

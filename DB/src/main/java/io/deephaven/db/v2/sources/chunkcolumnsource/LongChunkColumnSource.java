@@ -25,12 +25,17 @@ import java.util.ArrayList;
  */
 public class LongChunkColumnSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, ChunkColumnSource<Long> {
     private final ArrayList<WritableLongChunk<? extends Attributes.Values>> data = new ArrayList<>();
-    private final TLongArrayList firstOffsetForData = new TLongArrayList();
+    private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
 
     // region constructor
     protected LongChunkColumnSource() {
+        this(new TLongArrayList());
+    }
+
+    protected LongChunkColumnSource(final TLongArrayList firstOffsetForData) {
         super(Long.class);
+        this.firstOffsetForData = firstOffsetForData;
     }
     // endregion constructor
 
@@ -87,7 +92,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
-        final MutableInt destinationOffset = new MutableInt(0);
+        destination.setSize(0);
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
@@ -99,13 +104,13 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
                 final int chunkRemaining = chunkSize - offsetWithinChunk;
                 final int length = rangeLength > chunkRemaining ? chunkRemaining : (int) rangeLength;
                 Assert.gtZero(length, "length");
-                destination.copyFromChunk(longChunk, offsetWithinChunk, destinationOffset.intValue(), length);
-                destinationOffset.add(length);
+                final int currentDestinationSize = destination.size();
+                destination.copyFromChunk(longChunk, offsetWithinChunk, currentDestinationSize, length);
+                destination.setSize(currentDestinationSize + length);
                 searchStartChunkIndex.setValue(chunkIndex + 1);
                 s += length;
             }
         });
-        destination.setSize(destinationOffset.intValue());
     }
 
     @Override
@@ -142,7 +147,9 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
 
     private void addChunk(@NotNull final WritableLongChunk<? extends Attributes.Values> chunk) {
         data.add(chunk);
-        firstOffsetForData.add(totalSize);
+        if (data.size() > firstOffsetForData.size()) {
+            firstOffsetForData.add(totalSize);
+        }
         totalSize += chunk.size();
     }
 

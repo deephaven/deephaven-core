@@ -22,12 +22,17 @@ import java.util.ArrayList;
  */
 public class CharChunkColumnSource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, ChunkColumnSource<Character> {
     private final ArrayList<WritableCharChunk<? extends Attributes.Values>> data = new ArrayList<>();
-    private final TLongArrayList firstOffsetForData = new TLongArrayList();
+    private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
 
     // region constructor
     protected CharChunkColumnSource() {
+        this(new TLongArrayList());
+    }
+
+    protected CharChunkColumnSource(final TLongArrayList firstOffsetForData) {
         super(Character.class);
+        this.firstOffsetForData = firstOffsetForData;
     }
     // endregion constructor
 
@@ -84,7 +89,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
-        final MutableInt destinationOffset = new MutableInt(0);
+        destination.setSize(0);
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
@@ -96,13 +101,13 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
                 final int chunkRemaining = chunkSize - offsetWithinChunk;
                 final int length = rangeLength > chunkRemaining ? chunkRemaining : (int) rangeLength;
                 Assert.gtZero(length, "length");
-                destination.copyFromChunk(charChunk, offsetWithinChunk, destinationOffset.intValue(), length);
-                destinationOffset.add(length);
+                final int currentDestinationSize = destination.size();
+                destination.copyFromChunk(charChunk, offsetWithinChunk, currentDestinationSize, length);
+                destination.setSize(currentDestinationSize + length);
                 searchStartChunkIndex.setValue(chunkIndex + 1);
                 s += length;
             }
         });
-        destination.setSize(destinationOffset.intValue());
     }
 
     @Override
@@ -139,7 +144,9 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
 
     private void addChunk(@NotNull final WritableCharChunk<? extends Attributes.Values> chunk) {
         data.add(chunk);
-        firstOffsetForData.add(totalSize);
+        if (data.size() > firstOffsetForData.size()) {
+            firstOffsetForData.add(totalSize);
+        }
         totalSize += chunk.size();
     }
 
