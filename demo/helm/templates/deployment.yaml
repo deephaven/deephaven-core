@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dhdemo.fullname" . }}
+  labels:
+    {{- include "dhdemo.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "dhdemo.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dhdemo.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dhdemo.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        #
+        # grpc-api container.  Where all the stateful brains live
+        #
+        - name: grpc-api
+          image: "{{ .Values.dh.repo}}/grpc-api:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+          # TODO: copy the readinessProbe / livenessProbe from dh-prod.yaml
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- toYaml .Values.envVars | nindent 12 }}
+        #
+        # grpc-proxy container.  Converts http 1.1 to http2 for grpc
+        #
+        - name: grpc-proxy
+          image: "{{ .Values.dh.repo}}/grpc-proxy:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8008
+              protocol: TCP
+          # TODO: copy the readinessProbe / livenessProbe from dh-prod.yaml
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: BACKEND_ADDR
+              value: localhost:8888
+            {{- toYaml .Values.envVars | nindent 12 }}
+
+        #
+        # web container.  Serves our js static web resources
+        #
+        - name: web
+          image: "{{ .Values.dh.repo}}/web:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- toYaml .Values.envVars | nindent 12 }}
+        #
+        # The envoy container. All ingress to the pod flows through envoy,
+        # who then routes it to grpc-api or web as appropriate
+        #
+        - name: envoy
+          image: envoyproxy/envoy:v1.18.3
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: http
+              containerPort: 8181
+              protocol: TCP
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          {{- toYaml .Values.envVars | nindent 12 }}
+          volumeMounts:
+            - name: envoy-conf
+              mountPath: /etc/envoy
+            - name: envoy-secrets
+              mountPath: /etc/ssl
+              readOnly: true
+
+      volumes:
+        - name: envoy-conf
+          configMap:
+            # Provide the name of the ConfigMap containing the files you want
+            # to add to the container
+            name: envoy-conf
+        - name: envoy-secrets
+          secret:
+            secretName: secret-envoy
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

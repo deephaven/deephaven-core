@@ -17,5 +17,5 @@ RUN set -eux; \
     mv "/app/dist/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64" /app/dist/grpcwebproxy
 
 EXPOSE 8008 8443
-
+USER 1000
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]

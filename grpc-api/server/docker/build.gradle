@@ -95,6 +95,10 @@ docker {
                   chmod +x /bin/grpc_health_probe
                   ''')
 
+    runCommand("chmod 777 /tmp")
+
+    user("1000")
+
     copyFile('licenses/', '/')
     copyFile('health_probe/', '/health')
 

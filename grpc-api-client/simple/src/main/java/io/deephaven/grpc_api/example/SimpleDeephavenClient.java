@@ -68,7 +68,7 @@ public class SimpleDeephavenClient {
         System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
                 "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
-        final String target = args.length == 0 ? "localhost:8080" : args[0];
+        final String target = args.length == 0 ? "localhost:8888" : args[0];
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
                 .usePlaintext()
                 .build();

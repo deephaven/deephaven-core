@@ -44,6 +44,6 @@ public class Main {
                 ProcessEnvironment.basicInteractiveProcessInitialization(config, Main.class.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
 
-        DeephavenApiServerComponent.startMain(PrintStreamGlobals.getOut(), PrintStreamGlobals.getErr());
+        DeephavenApiServerComponent.startMain(PrintStreamGlobals.getOut(), PrintStreamGlobals.getErr(), config);
     }
 }

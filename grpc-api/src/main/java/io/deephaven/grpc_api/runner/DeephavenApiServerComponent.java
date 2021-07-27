@@ -2,6 +2,7 @@ package io.deephaven.grpc_api.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.healthcheck.HealthCheckModule;
 import io.deephaven.grpc_api.session.SessionService;
@@ -53,12 +54,12 @@ public interface DeephavenApiServerComponent {
         DeephavenApiServerComponent build();
     }
 
-    static void startMain(PrintStream out, PrintStream err)
+    static void startMain(PrintStream out, PrintStream err, final Configuration config)
             throws IOException, InterruptedException, ClassNotFoundException {
         final DeephavenApiServerComponent injector = DaggerDeephavenApiServerComponent
                 .builder()
-                .withPort(8080)
                 .withSchedulerPoolSize(4)
+                .withPort(config.getIntegerWithDefault("grpc-api.port", 8888))
                 .withSessionTokenExpireTmMs(300000) // defaults to 5 min
                 .withOut(out)
                 .withErr(err)

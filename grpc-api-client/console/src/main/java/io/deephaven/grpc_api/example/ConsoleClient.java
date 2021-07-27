@@ -53,7 +53,8 @@ public class ConsoleClient {
         final String sessionType = System.getProperty("console.sessionType", "groovy");
         log.info().append("Session type ").append(sessionType).endl();
 
-        final String target = args.length == 0 ? "localhost:8080" : args[0];
+//        final String target = args.length == 0 ? "localhost:8080" : args[0];
+        final String target = args.length == 0 ? "localhost:8888" : args[0];
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
                 .usePlaintext()
                 .build();
