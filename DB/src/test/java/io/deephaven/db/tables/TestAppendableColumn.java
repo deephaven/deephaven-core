@@ -30,7 +30,7 @@ public class TestAppendableColumn extends TestCase {
             final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
             Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
             File dest = new File(directory, "testOverflow.parquet");
-            ParquetTools.writeTable(table, tableDefinition, dest);
+            ParquetTools.writeTable(table, dest, tableDefinition);
 
             Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());

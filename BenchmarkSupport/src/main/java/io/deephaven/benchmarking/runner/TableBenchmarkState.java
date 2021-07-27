@@ -43,7 +43,7 @@ public class TableBenchmarkState {
                                      .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();
-        ParquetTools.writeTable(output, RESULT_DEF, outputPath.toFile());
+        ParquetTools.writeTable(output, outputPath.toFile(), RESULT_DEF);
     }
 
     public void reset() {

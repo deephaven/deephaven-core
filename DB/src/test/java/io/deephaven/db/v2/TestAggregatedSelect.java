@@ -67,7 +67,10 @@ public class TestAggregatedSelect extends TestCase {
 
         tableDirectory.mkdirs();
         final File dest = new File(tableDirectory, "Table.parquet");
-        ParquetTools.writeTable(newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)), tableDefinition, dest);
+        ParquetTools.writeTable(
+                newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)),
+                dest,
+                tableDefinition);
         return ParquetTools.readTable(dest);
     }
 

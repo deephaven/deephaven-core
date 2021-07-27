@@ -282,7 +282,7 @@ public class TestParquetTools {
         String path = testRoot + File.separator + "testWriteAggregatedTable.parquet";
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
-        ParquetTools.writeTable(table, def, new File(path));
+        ParquetTools.writeTable(table, new File(path), def);
         Table readBackTable = ParquetTools.readTable(new File(path));
         TableTools.show(readBackTable);
         TableTools.show(table);
