@@ -5,9 +5,9 @@ import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.v2.locations.AbstractTableLocation;
-import io.deephaven.db.v2.locations.AbstractTableLocationProvider;
-import io.deephaven.db.v2.locations.SubscriptionAggregator;
+import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
+import io.deephaven.db.v2.locations.impl.AbstractTableLocationProvider;
+import io.deephaven.db.v2.locations.impl.SubscriptionAggregator;
 import io.deephaven.db.v2.locations.TableDataException;
 import org.jetbrains.annotations.NotNull;
 

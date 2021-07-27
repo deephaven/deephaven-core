@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.DeferredTableLocation$TableLocationCreator",
- "methods": {
-  "makeTableLocation": ":param tableKey: io.deephaven.db.v2.locations.TableKey\n:param tableLocationKey: io.deephaven.db.v2.locations.TableLocationKey\n:return: io.deephaven.db.v2.locations.TableLocation<DeferredTableLocation.TableLocationCreator.CLT>"
- },
- "path": "io.deephaven.db.v2.locations.DeferredTableLocation.TableLocationCreator",
- "typeName": "interface"
-}

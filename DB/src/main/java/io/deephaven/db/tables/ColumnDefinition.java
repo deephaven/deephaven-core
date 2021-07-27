@@ -366,7 +366,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     private boolean hasSymbolTable = false;
     public boolean hasSymbolTable() { return hasSymbolTable; }
-    public void hasSymbolTable(final boolean v) {
+    void hasSymbolTable(final boolean v) {
         hasSymbolTable = v;
     }
 

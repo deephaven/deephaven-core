@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.VarBinaryChunkInputStreamGenerator$Appender",
- "methods": {
-  "append": ":param out: java.io.OutputStream\n:param item: VarBinaryChunkInputStreamGenerator.Appender.T"
- },
- "path": "io.deephaven.db.backplane.barrage.chunk.VarBinaryChunkInputStreamGenerator.Appender",
- "typeName": "interface"
-}

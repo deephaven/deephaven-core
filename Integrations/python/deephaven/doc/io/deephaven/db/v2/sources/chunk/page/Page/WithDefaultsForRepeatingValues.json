@@ -7,6 +7,6 @@
   "length": ":return: (long) the length of this page."
  },
  "path": "io.deephaven.db.v2.sources.chunk.page.Page.WithDefaultsForRepeatingValues",
- "text": "This has helper defaults for columns that just represent a repeating value (such as null or partition columns).",
+ "text": "Helper defaults for pages that represent a repeating value, e.g. null or partitioning column regions.",
  "typeName": "interface"
 }

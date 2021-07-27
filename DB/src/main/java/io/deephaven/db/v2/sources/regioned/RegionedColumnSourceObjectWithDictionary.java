@@ -46,7 +46,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
     }
 
     @Override
-    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation<?> columnLocation) {
+    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
         dictionaryColumn.addRegion(columnDefinition, columnLocation);
         return super.addRegion(columnDefinition, columnLocation);
     }
@@ -114,7 +114,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
         }
 
         @Override
-        public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation<?> columnLocation) {
+        public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
             return RegionedColumnSourceObjectWithDictionary.this.addRegion(columnDefinition, columnLocation);
         }
 

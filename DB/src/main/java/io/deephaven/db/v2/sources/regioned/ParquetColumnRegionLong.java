@@ -5,7 +5,7 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnRegionLong} implementation for regions that support fetching primitive longs from a
  * {@link ColumnChunkPageStore}.
  */
-public final class ParquetColumnRegionLong<ATTR extends Attributes.Any> extends ParquetColumnRegionBase<ATTR>
+public final class ParquetColumnRegionLong<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionLong<ATTR>, ParquetColumnRegion<ATTR> {
 
-    ParquetColumnRegionLong(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionLong(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 
@@ -28,7 +28,7 @@ public final class ParquetColumnRegionLong<ATTR extends Attributes.Any> extends 
             return page.asLongChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving long at table long index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 
@@ -40,7 +40,7 @@ public final class ParquetColumnRegionLong<ATTR extends Attributes.Any> extends 
             return page.asLongChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving long at table long index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 }

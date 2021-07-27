@@ -8,7 +8,6 @@
   "getTable": ":return: io.deephaven.db.tables.Table",
   "hasColumns": ":param cols: java.lang.String...\n:return: boolean",
   "hashCode": ":return: int",
-  "id": ":return: int",
   "setTable": ":param table: io.deephaven.db.tables.Table"
  },
  "path": "io.deephaven.db.plot.util.tables.TableHandle",

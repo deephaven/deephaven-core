@@ -5,48 +5,49 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
-import io.deephaven.db.v2.locations.TableLocation;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Regioned column source implementation for columns of floats.
  */
-abstract class RegionedColumnSourceFloat<ATTR extends Attributes.Values>
+abstract class RegionedColumnSourceFloat<ATTR extends Values>
         extends RegionedColumnSourceArray<Float, ATTR, ColumnRegionFloat<ATTR>>
         implements ColumnSourceGetDefaults.ForFloat {
 
-    RegionedColumnSourceFloat(ColumnRegionFloat<ATTR> nullRegion) {
-        super(nullRegion, float.class, DeferredColumnRegionFloat::new);
+    RegionedColumnSourceFloat(@NotNull final ColumnRegionFloat<ATTR> nullRegion,
+                             @NotNull final MakeDeferred<ATTR, ColumnRegionFloat<ATTR>> makeDeferred) {
+        super(nullRegion, float.class, makeDeferred);
     }
 
     @Override
-    public float getFloat(long elementIndex) {
+    public float getFloat(final long elementIndex) {
         return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getFloat(elementIndex);
     }
 
-    interface MakeRegionDefault extends MakeRegion<Attributes.Values, ColumnRegionFloat<Attributes.Values>> {
+    interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionFloat<Values>> {
         @Override
-        default ColumnRegionFloat<Attributes.Values> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-                                                               @NotNull ColumnLocation<?> columnLocation,
-                                                               int regionIndex) {
+        default ColumnRegionFloat<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                    @NotNull final ColumnLocation columnLocation,
+                                                    final int regionIndex) {
             if (columnLocation.exists()) {
-                if (columnLocation.getFormat() == TableLocation.Format.PARQUET) {
-                    return new ParquetColumnRegionFloat<>(columnLocation.asParquetFormat().getPageStore(columnDefinition));
-                }
-                throw new IllegalArgumentException("Unsupported column location format " + columnLocation.getFormat() + " in " + columnLocation);
+                return columnLocation.makeColumnRegionFloat(columnDefinition);
             }
-
             return null;
         }
     }
 
-    public static final class AsValues extends RegionedColumnSourceFloat<Attributes.Values> implements MakeRegionDefault {
-        public AsValues() {
-            super(ColumnRegionFloat.createNull());
+    static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
+        AsValues() {
+            super(ColumnRegionFloat.createNull(), DeferredColumnRegionFloat::new);
         }
     }
 
@@ -55,26 +56,46 @@ abstract class RegionedColumnSourceFloat<ATTR extends Attributes.Values>
      * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
      * regions by looking into the delegate instance's region array.
      */
-
     @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Attributes.Values>
+    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
             extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Float, ColumnRegionFloat<ATTR>>
             implements ColumnSourceGetDefaults.ForFloat {
 
-        NativeType(RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionFloat<ATTR>>> outerColumnSource) {
+        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionFloat<ATTR>>> outerColumnSource) {
             super(Float.class, outerColumnSource);
         }
 
         @Override
-        public float getFloat(long elementIndex) {
+        public float getFloat(final long elementIndex) {
             return (elementIndex == NULL_KEY ? getNullRegion() : lookupRegion(elementIndex)).getFloat(elementIndex);
         }
 
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Attributes.Values> implements MakeRegionDefault {
-            AsValues(RegionedColumnSourceBase<DATA_TYPE, Attributes.Values, ColumnRegionReferencing<Attributes.Values, ColumnRegionFloat<Attributes.Values>>> outerColumnSource) {
+        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
+            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionFloat<Values>>> outerColumnSource) {
                 super(outerColumnSource);
             }
         }
     }
 
+    static final class Partitioning extends RegionedColumnSourceFloat<Values> {
+
+        Partitioning() {
+            super(ColumnRegionFloat.createNull(),
+                    Supplier::get // No need to interpose a deferred region in this case
+            );
+        }
+
+        @Override
+        public ColumnRegionFloat<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
+                                                   @NotNull final ColumnLocation columnLocation,
+                                                   final int regionIndex) {
+            final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
+            final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
+            if (partitioningColumnValue != null && !Float.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
+                        + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
+            }
+            return new ColumnRegionFloat.Constant<>(unbox((Float) partitioningColumnValue));
+        }
+    }
 }

@@ -5,11 +5,10 @@
 package io.deephaven.db.v2.locations;
 
 import io.deephaven.base.Pair;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.v2.locations.impl.ParallelDeferredGroupingProvider;
 import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -27,25 +26,7 @@ public interface GroupingProvider<DATA_TYPE> {
      */
     @NotNull
     static <DATA_TYPE> GroupingProvider<DATA_TYPE> makeGroupingProvider(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
-        return getParallelizeRetrieval() ? new ParallelDeferredGroupingProvider<>(columnDefinition) : new DeferredLegacyMetadataGroupingProvider<>(columnDefinition);
-    }
-
-    @VisibleForTesting
-    static boolean getParallelizeRetrieval() {
-        return ConfigurationHelper.parallelizeRetrieval;
-    }
-
-    @VisibleForTesting
-    static void setParallelizeRetrieval(final boolean parallelizeRetrieval) {
-        ConfigurationHelper.parallelizeRetrieval = parallelizeRetrieval;
-    }
-
-    final class ConfigurationHelper {
-
-        private static boolean parallelizeRetrieval = Configuration.getInstance().getBooleanForClassWithDefault(GroupingProvider.class, "parallelizeRetrieval", true);
-
-        private ConfigurationHelper() {
-        }
+        return new ParallelDeferredGroupingProvider<>(columnDefinition);
     }
 
     /**

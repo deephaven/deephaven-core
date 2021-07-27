@@ -227,7 +227,6 @@ public class ParquetTableWriter {
         ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
-
         final long nrows = t.size();
         if (nrows > 0) {
             RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
@@ -397,7 +396,7 @@ public class ParquetTableWriter {
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
-        if (supportsDictionary(columnSource)) {
+        if (supportsDictionary(columnSource) && columnDefinition.hasSymbolTable()) {
             List<IntBuffer> buffersPerPage = new ArrayList<>();
             Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
             Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());

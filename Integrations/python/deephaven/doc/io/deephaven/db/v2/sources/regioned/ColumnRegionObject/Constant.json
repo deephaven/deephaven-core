@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superColumnRegionObject.Constant.ATTR>\n:param length: int",
+  "getNativeType": ":return: java.lang.Class<?>",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: (long) - Element (object) index in the table's address space\n:return: (ColumnRegionObject.Constant.DATA_TYPE) The object value at the specified element (object) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject.Constant",
+ "typeName": "class"
+}

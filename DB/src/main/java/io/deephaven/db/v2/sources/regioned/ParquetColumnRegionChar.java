@@ -2,7 +2,7 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,10 +10,10 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnRegionChar} implementation for regions that support fetching primitive chars from a
  * {@link ColumnChunkPageStore}.
  */
-public final class ParquetColumnRegionChar<ATTR extends Attributes.Any> extends ParquetColumnRegionBase<ATTR>
+public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionChar<ATTR>, ParquetColumnRegion<ATTR> {
 
-    ParquetColumnRegionChar(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 
@@ -25,7 +25,7 @@ public final class ParquetColumnRegionChar<ATTR extends Attributes.Any> extends 
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving char at table char index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 
@@ -37,7 +37,7 @@ public final class ParquetColumnRegionChar<ATTR extends Attributes.Any> extends 
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving char at table char index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 }

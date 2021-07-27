@@ -9,7 +9,6 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.lang.parse.api.CompletionParseService;
@@ -24,7 +23,7 @@ import java.util.*;
  * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation
  * for evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession extends LivenessArtifact implements ScriptSession, VariableProvider {
+public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
     public static final String CLASS_CACHE_LOCATION = Configuration.getInstance().getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
 
     public static void createScriptCache() {
@@ -42,7 +41,6 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     }
 
     private final File classCacheDirectory;
-    private final LivenessScope livenessScope = new LivenessScope();
 
     protected final QueryScope queryScope;
     protected final QueryLibrary queryLibrary;
@@ -50,7 +48,6 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
     private final CompletionParseService<?, ?, ?> parser;
 
     protected AbstractScriptSession(boolean isDefaultScriptSession) {
-        manage(livenessScope);
         final UUID scriptCacheId = UuidCreator.getRandomBased();
         classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
         createOrClearDirectory(classCacheDirectory);
@@ -99,7 +96,7 @@ public abstract class AbstractScriptSession extends LivenessArtifact implements 
         final QueryScope prevQueryScope = QueryScope.getScope();
 
         // retain any objects which are created in the executed code, we'll release them when the script session closes
-        try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
             // point query scope static state to our session's state
             QueryScope.setScope(queryScope);
             CompilerTools.setContext(compilerContext);

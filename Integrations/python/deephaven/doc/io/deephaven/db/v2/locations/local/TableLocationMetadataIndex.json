@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.local.TableLocationMetadataIndex",
- "methods": {},
- "path": "io.deephaven.db.v2.locations.local.TableLocationMetadataIndex",
- "text": "Table location metadata index support, in order to avoid depending on filesystem metadata caching for performance\n where possible.",
- "typeName": "class"
-}

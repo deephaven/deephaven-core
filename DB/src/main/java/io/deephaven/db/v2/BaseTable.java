@@ -374,7 +374,6 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.View,
-                CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.Coalesce
         ));

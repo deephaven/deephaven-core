@@ -12,14 +12,14 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.barrage.flatbuf.BarrageRecordBatch;
 import io.deephaven.barrage.flatbuf.Buffer;
-import io.deephaven.barrage.flatbuf.Message;
 import io.deephaven.barrage.flatbuf.FieldNode;
+import io.deephaven.barrage.flatbuf.Message;
 import io.deephaven.barrage.flatbuf.MessageHeader;
+import io.deephaven.barrage.flatbuf.MetadataVersion;
 import io.deephaven.barrage.flatbuf.RecordBatch;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -35,6 +35,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageData;
 import io.grpc.Drainable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -109,6 +110,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     public final ChunkInputStreamGenerator[] addColumnData;
     public final ModColumnData[] modColumnData;
 
+    /**
+     * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
+     *
+     * @param message the generator takes ownership of the message and its internal objects
+     */
     public BarrageStreamGenerator(final BarrageMessage message) {
         this.message = message;
         try {
@@ -133,6 +139,10 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
+        } finally {
+            if (message.snapshotIndex != null) {
+                message.snapshotIndex.close();
+            }
         }
     }
 
@@ -304,10 +314,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);
 
+            final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, 0, 0));
-            final ChunkInputStreamGenerator.BufferListener bufferListener =
-                    (offset, length) -> bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(offset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                totalBufferLength.add(length);
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
+            };
 
             // add the add-column streams
             for (final ChunkInputStreamGenerator col : addColumnData) {
@@ -350,7 +363,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
             BarrageRecordBatch.startBuffersVector(builder, bufferInfos.size());
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, bufferInfos.get(i).offset, bufferInfos.get(i).length);
+                totalBufferLength.subtract(bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
             }
             buffersOffset = builder.endVector();
         }
@@ -393,7 +407,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         Message.startMessage(builder);
         Message.addHeaderType(builder, headerType);
         Message.addHeader(builder, headerOffset);
-        Message.addVersion(builder, (short)0);
+        Message.addVersion(builder, MetadataVersion.V5);
         Message.addBodyLength(builder, 0);
         return Message.endMessage(builder);
     }
@@ -463,10 +477,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             nodeInfos.setSize(0);
             bufferInfos.setSize(0);
 
+            final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
-            final ChunkInputStreamGenerator.BufferListener bufferListener =
-                    (offset, length) -> bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(offset, length));
+            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+                totalBufferLength.add(length);
+                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
+            };
 
             for (final ChunkInputStreamGenerator column : addColumnData) {
                 final ChunkInputStreamGenerator.DrainableColumn drainableColumn = column.getInputStream(view.options, myAddedOffsets);
@@ -483,7 +500,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
             RecordBatch.startBuffersVector(builder, bufferInfos.size());
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                Buffer.createBuffer(builder, bufferInfos.get(i).offset, bufferInfos.get(i).length);
+                totalBufferLength.subtract(bufferInfos.get(i).length);
+                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
             }
             buffersOffset = builder.endVector();
         }
@@ -491,6 +509,7 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         RecordBatch.startRecordBatch(builder);
         RecordBatch.addNodes(builder, nodesOffset);
         RecordBatch.addBuffers(builder, buffersOffset);
+        RecordBatch.addLength(builder, rowsAdded.original.size());
         final int headerOffset = RecordBatch.endRecordBatch(builder);
 
         builder.finish(wrapInMessage(builder, headerOffset, MessageHeader.RecordBatch));

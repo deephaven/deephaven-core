@@ -5,6 +5,21 @@ plugins {
 configurations {
     compile.extendsFrom dhDb
     testCompile.extendsFrom dhDbTest
+
+    // custom configuration, sourceset, test task to keep flight-core off the main/test classpath
+    flightTestCompile.extendsFrom(testCompile)
+}
+
+sourceSets {
+
+    flightTest {
+        java {
+            srcDir 'src/flightTest/java'
+        }
+        annotationProcessorPath = sourceSets.test.annotationProcessorPath
+        compileClasspath = sourceSets.main.output + sourceSets.test.output + configurations.flightTestCompile
+        runtimeClasspath = sourceSets.main.output + sourceSets.test.output + configurations.testRuntimeClasspath + configurations.flightTestCompile + sourceSets.flightTest.output
+    }
 }
 
 dependencies {
@@ -40,7 +55,16 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+
+    // it is essential that this is only added to the classpath for flightTestCompile
+    flightTestCompile 'org.apache.arrow:flight-grpc:4.0.0'
 }
 
 // testOutOfBand: non-parallel, not a db test, not isolated
 TestTools.addDbTest(project, 'OutOfBand', false, false, false)
+
+check.dependsOn(tasks.register('flightTest', Test) {
+    classpath = sourceSets.flightTest.runtimeClasspath
+    testClassesDirs = sourceSets.flightTest.output.classesDirs
+    systemProperty "LiveTableMonitor.allowUnitTestMode", false
+})

@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.datastructures.util.SmartKey",
+ "methods": {
+  "compareTo": ":param o: java.lang.Object\n:return: int",
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "get": ":param position: int\n:return: java.lang.Object",
+  "hashCode": ":return: int",
+  "size": ":return: int",
+  "subKey": ":param positions: int...\n:return: io.deephaven.datastructures.util.SmartKey",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.datastructures.util.SmartKey",
+ "typeName": "class"
+}

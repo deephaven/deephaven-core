@@ -2516,14 +2516,6 @@ class FigureWrapper(object):
         return FigureWrapper(figure=self.figure.log())
 
     @_convertArguments
-    def makeDescriptor(self):
-        """
-        :return: io.deephaven.db.plot.DisplayableFigureDescriptor
-        """
-        
-        return FigureWrapper(figure=self.figure.makeDescriptor())
-
-    @_convertArguments
     def max(self, *args):
         """
         Sets the maximum range of this Axis.

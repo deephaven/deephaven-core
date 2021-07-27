@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey$PartitionsComparator",
+ "methods": {
+  "compare": ":param p1: java.util.Map<java.lang.String,java.lang.Comparable<?>>\n:param p2: java.util.Map<java.lang.String,java.lang.Comparable<?>>\n:return: int"
+ },
+ "path": "io.deephaven.db.v2.locations.impl.PartitionedTableLocationKey.PartitionsComparator",
+ "text": "Compares two maps of partitions by key-value pairs. p1's entry order determines the priority of each\n partition in the comparison, and it's assumed that p2 will have the same entry order.\n compare(Map, Map) will throw an UnknownPartitionKeyException if one of the maps is missing keys\n found in the other.",
+ "typeName": "class"
+}

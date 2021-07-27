@@ -1,12 +1,12 @@
 {
  "className": "io.deephaven.db.v2.locations.TableDataService",
  "methods": {
-  "describe": "Like toString, but with more detail.\n\n:return: (java.lang.String) a description string",
-  "getName": "Allow TableDataService instances to have names.\n\n:return: java.lang.String",
-  "getTableLocationProvider": "Request a table location provider from this service.\n\n*Overload 1*  \n  :param namespace: (java.lang.String) - The namespace\n  :param tableName: (java.lang.String) - The table name\n  :param tableType: (io.deephaven.db.v2.locations.TableType) - The table type\n  :return: (io.deephaven.db.v2.locations.TableLocationProvider) A table location provider for the specified table key fields\n  \n*Overload 2*  \n  :param tableKey: (io.deephaven.db.v2.locations.TableKey) - The table key\n  :return: (io.deephaven.db.v2.locations.TableLocationProvider) A table location provider for the specified key",
-  "reset": "**Incompatible overloads text - text from the first overload:**\n\nForget all state for a single table.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param key: (io.deephaven.db.v2.locations.TableKey) -"
+  "describe": "Get a detailed description string.\n\n:return: (java.lang.String) A description string",
+  "getName": "Get an optional name for this service, or null if no name is defined.\n\n:return: (java.lang.String) The service name, or null",
+  "getTableLocationProvider": "Request a TableLocationProvider from this service.\n\n:param tableKey: (io.deephaven.db.v2.locations.TableKey) - The TableKey to lookup\n:return: (io.deephaven.db.v2.locations.TableLocationProvider) A TableLocationProvider for the specified TableKey",
+  "reset": "**Incompatible overloads text - text from the first overload:**\n\nForget all state for subsequent requests for a single table.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param tableKey: (io.deephaven.db.v2.locations.TableKey) - TableKey to forget state for"
  },
  "path": "io.deephaven.db.v2.locations.TableDataService",
- "text": "Service responsible for table location discovery.",
+ "text": "Service responsible for TableLocation discovery.",
  "typeName": "interface"
 }
