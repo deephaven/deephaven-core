@@ -41,7 +41,9 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -53,6 +55,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -166,6 +169,24 @@ public class FlightMessageRoundTripTest {
         server.shutdownNow();
     }
 
+    @Rule
+    public final ExternalResource livenessRule = new ExternalResource() {
+        SafeCloseable scope;
+
+        @Override
+        protected void before() {
+            scope = LivenessScopeStack.open();
+        }
+
+        @Override
+        protected void after() {
+            if (scope != null) {
+                scope.close();
+                scope = null;
+            }
+        }
+    };
+
     @Test
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToTicket(1);
@@ -229,28 +250,26 @@ public class FlightMessageRoundTripTest {
         final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
-            // stuff table into the scope
-            scriptSession.setVariable(staticTableName, table);
-            scriptSession.setVariable(tickingTableName, tickingTable);
+        // stuff table into the scope
+        scriptSession.setVariable(staticTableName, table);
+        scriptSession.setVariable(tickingTableName, tickingTable);
 
-            // test fetch info from scoped ticket
-            assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
-            assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
+        // test fetch info from scoped ticket
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
 
-            // test list flights which runs through scoped tickets
-            final MutableInt seenTables = new MutableInt();
-            client.listFlights(Criteria.ALL).forEach(fi -> {
-                seenTables.increment();
-                if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
-                    assertInfoMatchesTable(fi, table);
-                } else {
-                    assertInfoMatchesTable(fi, tickingTable);
-                }
-            });
+        // test list flights which runs through scoped tickets
+        final MutableInt seenTables = new MutableInt();
+        client.listFlights(Criteria.ALL).forEach(fi -> {
+            seenTables.increment();
+            if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
+                assertInfoMatchesTable(fi, table);
+            } else {
+                assertInfoMatchesTable(fi, tickingTable);
+            }
+        });
 
-            Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
-        }
+        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
     }
 
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {

@@ -76,6 +76,7 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
     private volatile boolean sealed = false;
     /** the callback to run once sealing is complete */
     private Runnable onSealRunnable = null;
+    private Runnable onSealFailure = null;
     private final boolean isViewPort;
 
     /**
@@ -173,12 +174,14 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
      *
      * @param onSealRunnable pass a callback that gets invoked once the table has finished applying updates
+     * @param onSealFailure pass a callback that gets invoked if the table fails to finish applying updates
      */
-    public synchronized void sealTable(final Runnable onSealRunnable) {
+    public synchronized void sealTable(final Runnable onSealRunnable, final Runnable onSealFailure) {
         // TODO (core#803): sealing of static table data acquired over flight/barrage
         setRefreshing(false);
         sealed = true;
         this.onSealRunnable = onSealRunnable;
+        this.onSealFailure = onSealFailure;
         doWakeup();
     }
 
@@ -443,8 +446,9 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
         if (sealed) {
             if (onSealRunnable != null) {
                 onSealRunnable.run();
-                onSealRunnable = null;
             }
+            onSealRunnable = null;
+            onSealFailure = null;
             cleanup();
         }
     }
@@ -457,6 +461,12 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
         }
         // we are quite certain the shadow copies should have been drained on the last refresh
         Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
+
+        if (onSealRunnable != null) {
+            onSealFailure.run();
+        }
+        onSealRunnable = null;
+        onSealFailure = null;
     }
 
     @Override
