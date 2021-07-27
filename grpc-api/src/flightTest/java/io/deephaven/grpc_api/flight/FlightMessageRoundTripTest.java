@@ -158,15 +158,27 @@ public class FlightMessageRoundTripTest {
 
         currentSession = component.sessionService().getSessionForToken(sessionToken);
     }
+
     @After
     public void teardown() {
-        channel.shutdownNow();
-        try {
-            channel.awaitTermination(1, TimeUnit.SECONDS);
-        } catch (final InterruptedException ignored) {
-        }
         scriptSession.release();
-        server.shutdownNow();
+
+        channel.shutdown();
+        server.shutdown();
+
+        try {
+            channel.awaitTermination(1, TimeUnit.MINUTES);
+            server.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } finally {
+            channel.shutdownNow();
+            channel = null;
+
+            server.shutdownNow();
+            server = null;
+        }
     }
 
     @Rule
