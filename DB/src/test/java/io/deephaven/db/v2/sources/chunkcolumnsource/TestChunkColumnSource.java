@@ -2,8 +2,13 @@
 
  import gnu.trove.list.array.TLongArrayList;
  import io.deephaven.db.tables.live.LiveTableMonitor;
+ import io.deephaven.db.tables.utils.DBDateTime;
+ import io.deephaven.db.tables.utils.DBTimeUtils;
+ import io.deephaven.db.v2.sources.ByteAsBooleanColumnSource;
+ import io.deephaven.db.v2.sources.LongAsDateTimeColumnSource;
  import io.deephaven.db.v2.sources.chunk.*;
  import io.deephaven.db.v2.utils.OrderedKeys;
+ import io.deephaven.util.BooleanUtils;
  import io.deephaven.util.QueryConstants;
  import junit.framework.TestCase;
  import org.junit.After;
@@ -128,7 +133,6 @@
              }
          }
      }
-
 
      @Test
      public void testShared() {
@@ -341,6 +345,96 @@
              }
              for (int ii = 4; ii <= 10; ++ii) {
                  TestCase.assertEquals(longChunk2.get(ii - 4), values.get(ii));
+             }
+         }
+     }
+
+     private static Boolean makeExpectBoolean(int idx) {
+         switch (idx % 3) {
+             case 0:
+                 return true;
+             case 1:
+                 return false;
+             case 2:
+                 return null;
+         }
+         throw new IllegalStateException();
+     }
+
+     @Test
+     public void testBooleanWrapper() {
+         final WritableByteChunk<Attributes.Values> byteChunk = WritableByteChunk.makeWritableChunk(32);
+         for (int ii = 0; ii < byteChunk.size(); ++ii) {
+             byteChunk.set(ii, BooleanUtils.booleanAsByte(makeExpectBoolean(ii)));
+         }
+
+         final ByteChunkColumnSource columnSource = new ByteChunkColumnSource();
+         columnSource.addChunk(byteChunk);
+
+         final ByteAsBooleanColumnSource wrapped = new ByteAsBooleanColumnSource(columnSource);
+
+         TestCase.assertNull(wrapped.get(-1));
+         TestCase.assertNull(wrapped.get(2048));
+
+         for (int ii = 0; ii < 32; ++ii) {
+             TestCase.assertEquals(makeExpectBoolean(ii), wrapped.get(ii));
+         }
+
+         final WritableObjectChunk<Boolean, Attributes.Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
+         try (final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+             wrapped.fillChunk(fillContext, destChunk, OrderedKeys.forRange(0, 31));
+             TestCase.assertEquals(32, destChunk.size());
+             for (int ii = 0; ii < 32; ++ii) {
+                 TestCase.assertEquals(makeExpectBoolean(ii), destChunk.get(ii));
+             }
+         }
+
+         try (final ChunkSource.GetContext getContext = wrapped.makeGetContext(32)) {
+             final ObjectChunk<Boolean, ? extends Attributes.Values> values = wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
+             TestCase.assertEquals(10, values.size());
+             for (int ii = 1; ii <= 10; ++ii) {
+                 TestCase.assertEquals(makeExpectBoolean(ii), values.get(ii - 1));
+             }
+         }
+     }
+
+     private static DBDateTime makeExpectDateTime(int idx) {
+         return DBTimeUtils.plus(DBTimeUtils.convertDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
+     }
+
+     @Test
+     public void testDateTimeWrapper() {
+         final WritableLongChunk<Attributes.Values> longChunk = WritableLongChunk.makeWritableChunk(32);
+         for (int ii = 0; ii < longChunk.size(); ++ii) {
+             longChunk.set(ii, makeExpectDateTime(ii).getNanos());
+         }
+
+         final LongChunkColumnSource columnSource = new LongChunkColumnSource();
+         columnSource.addChunk(longChunk);
+
+         final LongAsDateTimeColumnSource wrapped = new LongAsDateTimeColumnSource(columnSource);
+
+         TestCase.assertNull(wrapped.get(-1));
+         TestCase.assertNull(wrapped.get(2048));
+
+         for (int ii = 0; ii < 32; ++ii) {
+             TestCase.assertEquals(makeExpectDateTime(ii), wrapped.get(ii));
+         }
+
+         final WritableObjectChunk<Boolean, Attributes.Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
+         try (final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+             wrapped.fillChunk(fillContext, destChunk, OrderedKeys.forRange(0, 31));
+             TestCase.assertEquals(32, destChunk.size());
+             for (int ii = 0; ii < 32; ++ii) {
+                 TestCase.assertEquals(makeExpectDateTime(ii), destChunk.get(ii));
+             }
+         }
+
+         try (final ChunkSource.GetContext getContext = wrapped.makeGetContext(32)) {
+             final ObjectChunk<Boolean, ? extends Attributes.Values> values = wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
+             TestCase.assertEquals(10, values.size());
+             for (int ii = 1; ii <= 10; ++ii) {
+                 TestCase.assertEquals(makeExpectDateTime(ii), values.get(ii - 1));
              }
          }
      }
