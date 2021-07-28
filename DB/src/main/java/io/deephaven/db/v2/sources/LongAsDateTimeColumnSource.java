@@ -59,18 +59,15 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime>
     }
 
     private class ToDateTimeFillContext implements FillContext {
-        final FillContext alternateFillContext;
-        final WritableLongChunk<Values> longChunk;
+        final GetContext alternateGetContext;
 
         private ToDateTimeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-            alternateFillContext = alternateColumnSource.makeFillContext(chunkCapacity, sharedContext);
-            longChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            alternateGetContext = alternateColumnSource.makeGetContext(chunkCapacity, sharedContext);
         }
 
         @Override
         public void close() {
-            alternateFillContext.close();
-            longChunk.close();
+            alternateGetContext.close();
         }
     }
 
@@ -82,20 +79,18 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime>
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
-        final WritableLongChunk<Values> longChunk = toDateTimeFillContext.longChunk;
-        alternateColumnSource.fillChunk(toDateTimeFillContext.alternateFillContext, longChunk, orderedKeys);
+        final LongChunk<? extends Values> longChunk = alternateColumnSource.getChunk(toDateTimeFillContext.alternateGetContext, orderedKeys).asLongChunk();
         convertToDBDateTime(destination, longChunk);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
-        final WritableLongChunk<Values> longChunk = toDateTimeFillContext.longChunk;
-        alternateColumnSource.fillPrevChunk(toDateTimeFillContext.alternateFillContext, longChunk, orderedKeys);
+        final LongChunk<? extends Values> longChunk = alternateColumnSource.getPrevChunk(toDateTimeFillContext.alternateGetContext, orderedKeys).asLongChunk();
         convertToDBDateTime(destination, longChunk);
     }
 
-    private static void convertToDBDateTime(@NotNull WritableChunk<? super Values> destination, @NotNull LongChunk<? super Values> longChunk) {
+    private static void convertToDBDateTime(@NotNull WritableChunk<? super Values> destination, @NotNull LongChunk<? extends Values> longChunk) {
         final WritableObjectChunk<DBDateTime, ? super Values> dBDateTimeObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < longChunk.size(); ++ii) {
             final long longValue = longChunk.get(ii);

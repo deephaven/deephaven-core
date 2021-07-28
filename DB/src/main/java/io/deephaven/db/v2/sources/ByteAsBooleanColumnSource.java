@@ -59,18 +59,15 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     private class ToBooleanFillContext implements FillContext {
-        final FillContext alternateFillContext;
-        final WritableByteChunk<Values> byteChunk;
+        final GetContext alternateGetContext;
 
         private ToBooleanFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-            alternateFillContext = alternateColumnSource.makeFillContext(chunkCapacity, sharedContext);
-            byteChunk = WritableByteChunk.makeWritableChunk(chunkCapacity);
+            alternateGetContext = alternateColumnSource.makeGetContext(chunkCapacity, sharedContext);
         }
 
         @Override
         public void close() {
-            alternateFillContext.close();
-            byteChunk.close();
+            alternateGetContext.close();
         }
     }
 
@@ -82,20 +79,18 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
-        final WritableByteChunk<Values> byteChunk = toBooleanFillContext.byteChunk;
-        alternateColumnSource.fillChunk(toBooleanFillContext.alternateFillContext, byteChunk, orderedKeys);
+        final ByteChunk<? extends Values> byteChunk = alternateColumnSource.getChunk(toBooleanFillContext.alternateGetContext, orderedKeys).asByteChunk();
         convertToBoolean(destination, byteChunk);
     }
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
         final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
-        final WritableByteChunk<Values> byteChunk = toBooleanFillContext.byteChunk;
-        alternateColumnSource.fillPrevChunk(toBooleanFillContext.alternateFillContext, byteChunk, orderedKeys);
+        final ByteChunk<? extends Values> byteChunk = alternateColumnSource.getPrevChunk(toBooleanFillContext.alternateGetContext, orderedKeys).asByteChunk();
         convertToBoolean(destination, byteChunk);
     }
 
-    private static void convertToBoolean(@NotNull WritableChunk<? super Values> destination, @NotNull ByteChunk<? super Values> byteChunk) {
+    private static void convertToBoolean(@NotNull WritableChunk<? super Values> destination, @NotNull ByteChunk<? extends Values> byteChunk) {
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < byteChunk.size(); ++ii) {
             final byte byteValue = byteChunk.get(ii);
