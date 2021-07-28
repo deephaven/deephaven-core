@@ -138,6 +138,9 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
      */
 
     private int getChunkIndex(final long start, final int startChunk) {
+        if (start == firstOffsetForData.get(startChunk)) {
+            return startChunk;
+        }
         int index = firstOffsetForData.binarySearch(start, startChunk, firstOffsetForData.size());
         if (index < 0) {
             index = -index - 2;
