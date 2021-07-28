@@ -9,6 +9,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -190,12 +192,17 @@ public class TicketRouter {
                 .build();
     }
 
-    private static ByteString schemaBytesFromTable(final Table table) {
+    public static ByteString schemaBytesFromTable(final Table table) {
+        return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
+    }
+
+    public static ByteString schemaBytesFromTable(final TableDefinition table,
+                                                  final Map<String, Object> attributes) {
         // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte identifier
         // (to detect end-of-stream in some cases) followed by the size of the flatbuffer message
 
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table);
+        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
         builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
 
         final ByteBuffer msg = builder.dataBuffer();
