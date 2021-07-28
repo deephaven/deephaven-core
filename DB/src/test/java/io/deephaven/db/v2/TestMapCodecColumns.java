@@ -76,7 +76,7 @@ public class TestMapCodecColumns {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         final File dest = new File(dir, "Table.parquet");
         try {
-            ParquetTools.writeTable(TABLE, TABLE.getDefinition(), writeInstructions, dest);
+            ParquetTools.writeTable(TABLE, dest, TABLE.getDefinition(), writeInstructions);
             final Table result = ParquetTools.readTable(dest);
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());

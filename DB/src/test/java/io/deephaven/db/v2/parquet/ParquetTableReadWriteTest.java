@@ -128,7 +128,7 @@ public class ParquetTableReadWriteTest {
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getGroupedTable(size, includeSerializable);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        ParquetTools.writeTable(tableToSave, dest, tableToSave.getDefinition());
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
@@ -137,7 +137,7 @@ public class ParquetTableReadWriteTest {
         final Table tableToSave = getGroupedOneColumnTable(size);
         TableTools.show(tableToSave, 50);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        ParquetTools.writeTable(tableToSave, dest, tableToSave.getDefinition());
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }
@@ -145,7 +145,7 @@ public class ParquetTableReadWriteTest {
     private void testEmptyArrayStore(String tableName, int size) {
         final Table tableToSave = getEmptyArray(size);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        ParquetTools.writeTable(tableToSave, tableToSave.getDefinition(), dest);
+        ParquetTools.writeTable(tableToSave, dest, tableToSave.getDefinition());
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(tableToSave, fromDisk);
     }

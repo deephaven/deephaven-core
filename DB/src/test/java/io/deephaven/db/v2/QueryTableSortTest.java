@@ -227,7 +227,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals("",diff(descending, testRefreshingTable(c("boolCol", true, true, false, false, null)),10));
     }
 
-    @Category(OutOfBandTest.class)
     public void testSortIncremental2() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -235,7 +234,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testMultiColumnRuns() {
         final Random random = new Random(0);
         final ColumnInfo columnInfo[];
@@ -344,7 +342,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
     /**
      * Test sort performance on a variety of scenarios.
      */
-    @Category(OutOfBandTest.class)
     public void testSortPerformance() {
         final long large = 100000000;
         // sequence: 0, 10, 20, 30, ...
@@ -535,7 +532,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testGrowingMergeReinterpret() {
         final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final Table viewed = table.update("Timestamp='2019-04-11T09:30 NY' + (ii * 60L * 1000000000L)");
@@ -649,7 +645,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
-    @Category(OutOfBandTest.class)
     public void testSymbolTableSortIncremental() throws IOException {
         diskBackedTestHarness(this::doSymbolTableIncrementalTest);
     }
@@ -701,7 +696,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, definition, dest);
+            ParquetTools.writeTable(source, dest, definition);
             final Table table = ParquetTools.readTable(dest);
             testFunction.accept(table);
             table.close();

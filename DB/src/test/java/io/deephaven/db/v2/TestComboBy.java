@@ -199,7 +199,6 @@ public class TestComboBy extends LiveTableTestCase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testComboByIncremental() {
         for (int size = 10; size <= 1000; size *= 10) {
             testComboByIncremental("size-" + size, size);

@@ -1587,7 +1587,6 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         return new io.deephaven.datastructures.util.SmartKey(id, pos.substring(0, liof));
     }
 
-    @Category(OutOfBandTest.class)
     public void testOrderTreeTable() {
         final Random random = new Random(0);
 

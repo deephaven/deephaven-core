@@ -96,7 +96,7 @@ public class BenchmarkRunner {
 
         final Path outputPath = Paths.get(BenchmarkTools.getLogPath()).resolve("Benchmark" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
 
-        ParquetTools.writeTable(result, result.getDefinition(), outputPath.toFile());
+        ParquetTools.writeTable(result, outputPath.toFile(), result.getDefinition());
     }
 
     private static Table getMergedDetails() {

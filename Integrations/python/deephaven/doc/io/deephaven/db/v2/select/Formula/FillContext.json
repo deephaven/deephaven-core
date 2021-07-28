@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.select.Formula$FillContext",
+ "methods": {},
+ "path": "io.deephaven.db.v2.select.Formula.FillContext",
+ "typeName": "interface"
+}

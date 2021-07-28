@@ -569,7 +569,6 @@ public abstract class SortedIndexTestBase extends TestCase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testMinusRandom() {
         final int maxSize = 128 * 1024;
         final boolean [] fullSet = new boolean[maxSize];
@@ -856,7 +855,6 @@ public abstract class SortedIndexTestBase extends TestCase {
         });
     }
 
-    @Category(OutOfBandTest.class)
     public void testRandomInsertMinus() {
         final int printInterval = 100;
         final int maxRange = 20;

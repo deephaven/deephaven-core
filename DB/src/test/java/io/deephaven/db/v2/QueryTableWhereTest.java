@@ -401,7 +401,6 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testWhereDynamicInIncremental() {
         final ColumnInfo[] setInfo;
         final ColumnInfo[] filteredInfo;
@@ -565,7 +564,6 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testWhereOneOfIncremental() {
 
         final ColumnInfo[] filteredInfo;
@@ -890,7 +888,6 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         return table;
     }
 
-    @Category(OutOfBandTest.class)
     public void testComparableBinarySearch() {
         final Random random = new Random(0);
 
