@@ -160,7 +160,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
 
         @Override
         public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            return alternateDataType == RegionedColumnSourceObjectWithDictionary.this.getNativeType();
+            return alternateDataType == RegionedColumnSourceObjectWithDictionary.this.getType();
         }
 
         @Override
