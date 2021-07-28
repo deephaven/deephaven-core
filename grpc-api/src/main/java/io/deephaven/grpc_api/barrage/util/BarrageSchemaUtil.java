@@ -5,6 +5,8 @@
 package io.deephaven.grpc_api.barrage.util;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.KeyValue;
@@ -21,6 +23,7 @@ import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
 
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.web.shared.data.LocalDate;
 import io.deephaven.web.shared.data.LocalTime;
@@ -34,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -41,6 +45,9 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class BarrageSchemaUtil {
+    // per flight specification: 0xFFFFFFFF value is the first 4 bytes of a valid IPC message
+    private static final int IPC_CONTINUATION_TOKEN = -1;
+
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);// year is 4 bytes, month is 1 byte, day is 1 byte
     public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);// hour, minute, second are each one byte, nano is 4 bytes
 
@@ -57,6 +64,42 @@ public class BarrageSchemaUtil {
             DBDateTime.class,
             Boolean.class
     ));
+
+    public static ByteString schemaBytesFromTable(final Table table) {
+        return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
+    }
+
+    public static ByteString schemaBytesFromTable(final TableDefinition table,
+                                                  final Map<String, Object> attributes) {
+        // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte identifier
+        // (to detect end-of-stream in some cases) followed by the size of the flatbuffer message
+
+        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
+        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
+
+        final ByteBuffer msg = builder.dataBuffer();
+
+        int padding = msg.remaining() % 8;
+        if (padding != 0) {
+            padding = 8 - padding;
+        }
+
+        // 4 * 2 is for two ints; IPC_CONTINUATION_TOKEN followed by size of schema payload
+        final byte[] byteMsg = new byte[msg.remaining() + 4 * 2 + padding];
+        intToBytes(IPC_CONTINUATION_TOKEN, byteMsg, 0);
+        intToBytes(msg.remaining(), byteMsg, 4);
+        msg.get(byteMsg, 8, msg.remaining());
+
+        return ByteStringAccess.wrap(byteMsg);
+    }
+
+    private static void intToBytes(int value, byte[] bytes, int offset) {
+        bytes[offset + 3] = (byte) (value >>> 24);
+        bytes[offset + 2] = (byte) (value >>> 16);
+        bytes[offset + 1] = (byte) (value >>> 8);
+        bytes[offset] = (byte) (value);
+    }
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,
                                         final TableDefinition table,

@@ -5,6 +5,7 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
+import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.io.logger.Logger;
@@ -289,7 +290,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 .setResultId(tableRef)
                 .setIsStatic(!table.isLive())
                 .setSize(table.size())
-                .setSchemaHeader(TicketRouter.schemaBytesFromTable(table))
+                .setSchemaHeader(BarrageSchemaUtil.schemaBytesFromTable(table))
                 .build();
     }
 

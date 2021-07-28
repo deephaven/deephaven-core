@@ -4,6 +4,7 @@ import elemental2.core.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageFieldNode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageRecordBatch;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Buffer;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
@@ -204,6 +205,9 @@ public class BarrageUtils {
             // longs are a special case despite being java primitives
             case "long":
             case "io.deephaven.db.tables.utils.DBDateTime":
+                if (positions.length().toFloat64() < size * 8) {
+                    JsLog.error("positions: " + positions.length().toFloat64() + " < " + size * 8 + " !!");
+                }
                 assert positions.length().toFloat64() >= size * 8;
                 long[] longArray = new long[size];
 

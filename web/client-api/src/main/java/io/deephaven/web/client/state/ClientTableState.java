@@ -5,6 +5,9 @@ import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Field;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.KeyValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Schema;
@@ -985,7 +988,13 @@ public final class ClientTableState extends TableConfig {
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);
 
-        Schema schema = Schema.getRootAsSchema(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(def.getSchemaHeader_asU8()));
+        ByteBuffer bb = new ByteBuffer(def.getSchemaHeader_asU8());
+        bb.setPosition(bb.position() + 8);
+        Message headerMessage = Message.getRootAsMessage(bb);
+
+        assert headerMessage.headerType() == MessageHeader.Schema;
+        Schema schema = headerMessage.header(new Schema());
+
         ColumnDefinition[] cols = new ColumnDefinition[(int)schema.fieldsLength()];
         for (int i = 0; i < schema.fieldsLength(); i++) {
             cols[i] = new ColumnDefinition();
