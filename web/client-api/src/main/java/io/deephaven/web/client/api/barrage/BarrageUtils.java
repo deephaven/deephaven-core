@@ -171,7 +171,9 @@ public class BarrageUtils {
     private static ColumnData readArrowBuffer(ByteBuffer data, Iter<BarrageFieldNode> nodes, Iter<Buffer> buffers, int size, String columnType) {
         //explicit cast to be clear that we're rounding down
         BitSet valid = readValidityBufferAsBitset(data, size, buffers.next());
-        boolean hasNulls = nodes.next().nullCount().toFloat64() != 0;
+        BarrageFieldNode thisNode = nodes.next();
+        boolean hasNulls = thisNode.nullCount().toFloat64() != 0;
+        size = Math.min(size, (int) thisNode.length().toFloat64());
 
         Buffer positions = buffers.next();
         switch (columnType) {
