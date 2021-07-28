@@ -4,6 +4,8 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.stream.StreamConsumer;
+import io.deephaven.stream.StreamPublisher;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,14 +16,11 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
 
 /**
  * An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.
@@ -41,11 +40,12 @@ public class KafkaIngester {
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
             KafkaIngester.class, "maxErrs", 500);
     private final KafkaConsumer<?, ?> consumer;
-    private final ConsumerRecordToTableWriterAdapter tableWriterAdapter;
+    private StreamConsumer streamConsumer;
     @NotNull
     private final Logger log;
     private final String topic;
     private final String partitionDescription;
+    private final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer;
     private final String logPrefix;
     private long messagesProcessed = 0;
     private long messagesWithErr = 0;
@@ -151,63 +151,46 @@ public class KafkaIngester {
     }
 
     /**
-     * Creates a Kafka ingester for all partitions of a given topic and a Deephaven column partition of {@link DBTimeUtils#currentDateNy()}.
+     * Creates a Kafka ingester for all partitions of a given topic.
      *
-     * @param log              a log for output
-     * @param props            the properties used to create the {@link KafkaConsumer}
-     * @param tableWriter      the table writer to replicate to
-     * @param topic            the topic to replicate
-     * @param adapterFactory   a function from the {@link TableWriter} for an internal partition to a suitable
-     *                         {@link ConsumerRecordToTableWriterAdapter} class that handles records produced by the
-     *                         Kafka topic and transforms them into Deephaven rows.
+     * @param log                           a log for output
+     * @param props                         the properties used to create the {@link KafkaConsumer}
+     * @param topic                         the topic to replicate
+     * @param partitionToConsumer           a function implementing a mapping from partition to its consumer of records.
+     * @param partitionToInitialSeekOffset  a function implementing a mapping from partition to its intial seek offset, or -1
+     *                                      if seek to beginning is intended.
      */
-    public KafkaIngester(final Logger log, final Properties props,
-                         final TableWriter tableWriter, final String topic,
-                         final Function<TableWriter, ConsumerRecordToTableWriterAdapter> adapterFactory) {
-        this(log, props, tableWriter, topic, ALL_PARTITIONS, adapterFactory);
+    public KafkaIngester(final Logger log,
+                         final Properties props,
+                         final String topic,
+                         final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer,
+                         final IntToLongFunction partitionToInitialSeekOffset) {
+        this(log, props, topic, ALL_PARTITIONS, partitionToConsumer, partitionToInitialSeekOffset);
     }
 
     /**
      * Creates a Kafka ingester for the given topic.
-     *
-     * @param log              a log for output
-     * @param props            the properties used to create the {@link KafkaConsumer}
-     * @param tableWriter      the table writer to replicate to
-     * @param topic            the topic to replicate
-     * @param partitionFilter  a predicate indicating which partitions we should replicate
-     * @param adapterFactory   a function from the {@link TableWriter} for an internal partition to a suitable
-     *                         {@link ConsumerRecordToTableWriterAdapter} class that handles records produced by the
-     *                         Kafka topic and transforms them into Deephaven rows.
-     */
-    public KafkaIngester(final Logger log, final Properties props,
-                         final TableWriter tableWriter, final String topic, IntPredicate partitionFilter,
-                         Function<TableWriter, ConsumerRecordToTableWriterAdapter> adapterFactory) {
-        this(log, props, tableWriter, topic, partitionFilter, adapterFactory, null);
-    }
-
-    /**
-     * Creates a Kafka ingester for the given topic.
-     * @param log              a log for output
-     * @param props            the properties used to create the {@link KafkaConsumer}
-     * @param tableWriter      the table writer to replicate to
-     * @param topic            the topic to replicate
-     * @param partitionFilter  a predicate indicating which partitions we should replicate
-     * @param adapterFactory   a function from the {@link TableWriter} for an internal partition to a suitable
-*                         {@link ConsumerRecordToTableWriterAdapter} class that handles records produced by the
-*                         Kafka topic and transforms them into Deephaven rows.
-     * @param resumeFrom       Given a column partition value, determine the prior column partition that we should read
+     * @param log                           a log for output
+     * @param props                         the properties used to create the {@link KafkaConsumer}
+     * @param topic                         the topic to replicate
+     * @param partitionFilter               a predicate indicating which partitions we should replicate
+     * @param partitionToConsumer           a function implementing a mapping from partition to its consumer of records.
+     * @param partitionToInitialSeekOffset  a function implementing a mapping from partition to its intial seek offset, or -1
+     *                                      if seek to beginning is intended.
      */
     @SuppressWarnings("rawtypes")
-    public KafkaIngester(final Logger log, final Properties props,
-                         final TableWriter tableWriter, final String topic, IntPredicate partitionFilter,
-                         Function<TableWriter, ConsumerRecordToTableWriterAdapter> adapterFactory,
-                         UnaryOperator<String> resumeFrom) {
+    public KafkaIngester(final Logger log,
+                         final Properties props,
+                         final String topic,
+                         final IntPredicate partitionFilter,
+                         final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer,
+                         final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
         this.partitionDescription = partitionFilter.toString();
-        this.logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + ":" + "." + tableWriter + "): ";
+        this.partitionToConsumer = partitionToConsumer;
+        this.logPrefix = KafkaIngester.class.getSimpleName() + "(" + topic + ", " + partitionDescription + "): ";
         consumer = new KafkaConsumer(props);
-        this.tableWriterAdapter = adapterFactory.apply(tableWriter);
 
         final List<PartitionInfo> partitions = consumer.partitionsFor(topic);
         partitions.stream().filter(pi -> partitionFilter.test(pi.partition())).map(pi -> new TopicPartition(topic, pi.partition())).forEach(openPartitions::add);
@@ -218,11 +201,18 @@ public class KafkaIngester {
         log.info().append(logPrefix).append("Partition Assignments: ").append(assignments.toString()).endl();
 
         if (assignments.size() != openPartitions.size()) {
-            throw new RuntimeException(logPrefix +  "Partition assignments do not match request: assignments=" + assignments + ", request=" + openPartitions);
+            throw new UncheckedDeephavenException(logPrefix +  "Partition assignments do not match request: assignments=" + assignments + ", request=" + openPartitions);
         }
 
         for (final TopicPartition topicPartition : assignments) {
-            consumer.seekToBeginning(Collections.singletonList(topicPartition));
+            final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
+            if (seekOffset == -1) {
+                log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.").append(seekOffset).endl();
+                consumer.seekToBeginning(Collections.singletonList(topicPartition));
+            } else {
+                log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to offset ").append(seekOffset).append(".").endl();
+                consumer.seek(topicPartition, seekOffset);
+            }
         }
     }
 
@@ -291,9 +281,10 @@ public class KafkaIngester {
         }
         for (final ConsumerRecord<?, ?> record : records) {
             final int partition = record.partition();
+            final Consumer<ConsumerRecord<?, ?>> consumer = partitionToConsumer.apply(partition);
             try {
-                tableWriterAdapter.consumeRecord(record);
-            } catch (IOException ex) {
+                consumer.accept(record);
+            } catch (Exception ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex);
                 if (messagesWithErr > MAX_ERRS) {
