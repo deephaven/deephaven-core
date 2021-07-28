@@ -6,6 +6,7 @@ package io.deephaven.grpc_api.arrow;
 
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
+import io.deephaven.grpc_api.util.UnaryInputStreamMarshaller;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api_client.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
@@ -46,15 +47,15 @@ public class BrowserFlightServiceGrpcBinding implements BindableService {
                 .onNextOverride(delegate::nextHandshakeCustom, NEXT_HANDSHAKE, BrowserFlightServiceGrpc.getNextHandshakeMethod(),
                         ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()))
                 .onOpenOverride(delegate::openDoPutCustom, OPEN_DO_PUT, BrowserFlightServiceGrpc.getOpenDoPutMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE,
+                        UnaryInputStreamMarshaller.INSTANCE,
                         ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
                 .onNextOverride(delegate::nextDoPutCustom, NEXT_DO_PUT, BrowserFlightServiceGrpc.getNextDoPutMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE)
+                        UnaryInputStreamMarshaller.INSTANCE)
                 .onOpenOverride(delegate::openDoExchangeCustom, OPEN_DO_EXCHANGE, BrowserFlightServiceGrpc.getOpenDoExchangeMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE,
+                        UnaryInputStreamMarshaller.INSTANCE,
                         PassthroughInputStreamMarshaller.INSTANCE)
                 .onNextOverride(delegate::nextDoExchangeCustom, NEXT_DO_EXCHANGE, BrowserFlightServiceGrpc.getNextDoExchangeMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE)
+                        UnaryInputStreamMarshaller.INSTANCE)
                 .build();
     }
 }
