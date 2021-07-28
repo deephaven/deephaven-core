@@ -39,6 +39,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
 
         for (int ri = 0; ri < regionCount; ri++) {
             REGION_TYPE region = getRegion(ri);
+            // TODO-RWC: This is inaccurate. What do we need it for?
             size += region.length();
         }
 
@@ -96,7 +97,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     /**
      * A regioned page store for nested use when the full set of regions and their sizes are known.
      */
-    abstract class StaticNested<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>
+    abstract class StaticNested<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
             implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
         private final long mask;

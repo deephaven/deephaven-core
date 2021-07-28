@@ -30,7 +30,8 @@ public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnR
             // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
             Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
             Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstRowOffset()");
-            Require.requirement(cci == 0 || columnChunkPageStore.getNativeType() == columnChunkPageStores[cci - 1].getNativeType(), "all column chunk page stores have same native type");
+            // TODO-RWC: Clean this up
+//            Require.requirement(cci == 0 || columnChunkPageStore.getNativeType() == columnChunkPageStores[cci - 1].getNativeType(), "all column chunk page stores have same native type");
 
             columnChunkLastIndices[cci] = lastIndex += columnChunkPageStore.length();
         }

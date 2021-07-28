@@ -57,12 +57,13 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
             dictionaryIndex = rawDictionaryIndex < 0 ? ~rawDictionaryIndex : rawDictionaryIndex;
             rowIndexInDictionary = (int) (dictionaryIndex == 0 ? rowIndex : rowIndex - dictionaryLastIndices[dictionaryIndex - 1] - 1);
         }
-        return stringCache.getCachedString(dictionaries[dictionaryIndex].get(rowIndexInDictionary);
+        return stringCache.getCachedString(dictionaries[dictionaryIndex].get(rowIndexInDictionary));
     }
 
     @Override
     public long length() {
-        return dictionary.size();
+        // TODO-RWC: This code is clearly wrong.
+        return dictionaries[0].size();
     }
 
     @Override
@@ -72,7 +73,7 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
 
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        return dictionary.slice(Math.toIntExact(getRowOffset(firstKey)), Math.toIntExact(lastKey - firstKey + 1));
+        return dictionaries[0].slice(Math.toIntExact(getRowOffset(firstKey)), Math.toIntExact(lastKey - firstKey + 1));
     }
 
     @Override

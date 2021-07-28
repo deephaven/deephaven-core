@@ -4,5 +4,5 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 
 public class RegionContextHolder implements ChunkSource.FillContext {
 
-    private final
+    // TODO-RWC: Re-add switchable contexts to be future proof
 }
