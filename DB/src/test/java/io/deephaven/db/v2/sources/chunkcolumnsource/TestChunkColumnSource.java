@@ -4,6 +4,8 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.db.v2.hashing.ChunkEquals;
+import io.deephaven.db.v2.hashing.IntChunkEquals;
 import io.deephaven.db.v2.sources.ByteAsBooleanColumnSource;
 import io.deephaven.db.v2.sources.LongAsDateTimeColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -436,6 +438,45 @@ public class TestChunkColumnSource {
             for (int ii = 1; ii <= 10; ++ii) {
                 TestCase.assertEquals(makeExpectDateTime(ii), values.get(ii - 1));
             }
+        }
+    }
+
+    @Test
+    public void testClear() {
+        final WritableIntChunk<Attributes.Values> intChunk1 = WritableIntChunk.makeWritableChunk(64);
+        final WritableIntChunk<Attributes.Values> intChunk2 = WritableIntChunk.makeWritableChunk(64);
+
+        for (int ii = 0; ii < 64; ++ii) {
+            intChunk1.set(ii, 1024 + ii);
+            intChunk2.set(ii, 2048 + ii);
+        }
+
+        final ChunkColumnSource<?> intColumnSource = ChunkColumnSource.make(ChunkType.Int, int.class);
+
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(-1));
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(0));
+
+        intColumnSource.addChunk(intChunk1);
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(-1));
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(64));
+
+        try (final ChunkSource.GetContext context = intColumnSource.makeGetContext(64)) {
+            final IntChunk<? extends Attributes.Values> actual = intColumnSource.getChunk(context, 0, 63).asIntChunk();
+            TestCase.assertTrue(IntChunkEquals.equalReduce(actual, intChunk1));
+        }
+
+        intColumnSource.clear();
+
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(-1));
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(0));
+
+        intColumnSource.addChunk(intChunk2);
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(-1));
+        TestCase.assertEquals(QueryConstants.NULL_INT, intColumnSource.getInt(64));
+
+        try (final ChunkSource.GetContext context = intColumnSource.makeGetContext(64)) {
+            final IntChunk<? extends Attributes.Values> actual = intColumnSource.getChunk(context, 0, 63).asIntChunk();
+            TestCase.assertTrue(IntChunkEquals.equalReduce(actual, intChunk2));
         }
     }
 }

@@ -5,6 +5,7 @@
 package io.deephaven.db.v2.sources;
 
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
@@ -25,21 +26,15 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime>
     }
 
     @Override
-    public DBDateTime get(long index) {
+    public DBDateTime get(final long index) {
         final long longValue = alternateColumnSource.getLong(index);
-        if (longValue == QueryConstants.NULL_LONG) {
-            return null;
-        }
-        return new DBDateTime(longValue);
+        return DBTimeUtils.nanosToTime(longValue);
     }
 
     @Override
-    public DBDateTime getPrev(long index) {
+    public DBDateTime getPrev(final long index) {
         final long longValue = alternateColumnSource.getPrevLong(index);
-        if (longValue == QueryConstants.NULL_LONG) {
-            return null;
-        }
-        return new DBDateTime(longValue);
+        return DBTimeUtils.nanosToTime(longValue);
     }
 
     @Override
@@ -77,28 +72,24 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime>
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
         final LongChunk<? extends Values> longChunk = alternateColumnSource.getChunk(toDateTimeFillContext.alternateGetContext, orderedKeys).asLongChunk();
         convertToDBDateTime(destination, longChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
         final LongChunk<? extends Values> longChunk = alternateColumnSource.getPrevChunk(toDateTimeFillContext.alternateGetContext, orderedKeys).asLongChunk();
         convertToDBDateTime(destination, longChunk);
     }
 
-    private static void convertToDBDateTime(@NotNull WritableChunk<? super Values> destination, @NotNull LongChunk<? extends Values> longChunk) {
+    private static void convertToDBDateTime(@NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Values> longChunk) {
         final WritableObjectChunk<DBDateTime, ? super Values> dBDateTimeObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < longChunk.size(); ++ii) {
             final long longValue = longChunk.get(ii);
-            if (longValue == QueryConstants.NULL_LONG) {
-                dBDateTimeObjectDestination.set(ii, null);
-            } else {
-                dBDateTimeObjectDestination.set(ii, new DBDateTime(longValue));
-            }
+            dBDateTimeObjectDestination.set(ii, DBTimeUtils.nanosToTime(longValue));
         }
         dBDateTimeObjectDestination.setSize(longChunk.size());
     }

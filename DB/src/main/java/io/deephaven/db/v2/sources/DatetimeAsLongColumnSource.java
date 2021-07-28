@@ -19,18 +19,18 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
 
     private final ColumnSource<DBDateTime> alternateColumnSource;
 
-    public DatetimeAsLongColumnSource(ColumnSource<DBDateTime> alternateColumnSource) {
+    public DatetimeAsLongColumnSource(@NotNull final ColumnSource<DBDateTime> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }
 
     @Override
-    public long getLong(long index) {
+    public long getLong(final long index) {
         return DBTimeUtils.nanos(alternateColumnSource.get(index));
     }
 
     @Override
-    public long getPrevLong(long index) {
+    public long getPrevLong(final long index) {
         return DBTimeUtils.nanos(alternateColumnSource.getPrev(index));
     }
 
@@ -69,20 +69,20 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
         final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getChunk(unboxingFillContext.alternateGetContext, orderedKeys).asObjectChunk();
         convertToLong(destination, dbdatetimeChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
         final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getPrevChunk(unboxingFillContext.alternateGetContext, orderedKeys).asObjectChunk();
         convertToLong(destination, dbdatetimeChunk);
     }
 
-    private static void convertToLong(@NotNull WritableChunk<? super Values> destination, ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk) {
+    private static void convertToLong(@NotNull final WritableChunk<? super Values> destination, @NotNull final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk) {
         final WritableLongChunk<? super Values> longDestination = destination.asWritableLongChunk();
         for (int ii = 0; ii < dbdatetimeChunk.size(); ++ii) {
             final DBDateTime dbDateTime = dbdatetimeChunk.get(ii);
