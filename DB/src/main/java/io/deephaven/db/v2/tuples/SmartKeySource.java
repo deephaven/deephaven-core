@@ -104,11 +104,6 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey> impleme
     }
 
     @Override
-    public final Class<SmartKey> getNativeType() {
-        return SmartKey.class;
-    }
-
-    @Override
     public final Chunk<Values> getChunk(@NotNull final ChunkSource.GetContext context, @NotNull final OrderedKeys orderedKeys) {
         return getChunk(context, orderedKeys, false);
     }

@@ -15,8 +15,6 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
     FillContext DEFAULT_FILL_INSTANCE = new FillContext() {
     };
 
-    default Class<?> getNativeType() { return null; }
-
     /**
      * Get the most suitable {@link ChunkType} for use with this ChunkSource.
      *

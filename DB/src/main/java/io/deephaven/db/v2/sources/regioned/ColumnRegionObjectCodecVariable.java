@@ -13,15 +13,13 @@ import static io.deephaven.db.v2.sources.regioned.RegionUtilities.getDecoderBuff
 public final class ColumnRegionObjectCodecVariable<T, ATTR extends Attributes.Any>
         implements ColumnRegionObject<T, ATTR>, Page.WithDefaults<ATTR> {
 
-    private final Class<T> nativeType;
     private final ObjectDecoder<T> decoder;
     private final ColumnRegionLong<Attributes.OrderedKeyIndices> offsetData;
     private final ColumnRegionByte<Attributes.EncodedObjects> binaryData;
 
-    ColumnRegionObjectCodecVariable(@NotNull Class<T> nativeType, @NotNull ObjectDecoder<T> decoder,
+    ColumnRegionObjectCodecVariable(@NotNull ObjectDecoder<T> decoder,
                                     @NotNull ColumnRegionLong<Attributes.OrderedKeyIndices> offsetData,
                                     @NotNull ColumnRegionByte<Attributes.EncodedObjects> binaryData) {
-        this.nativeType = nativeType;
         this.decoder = decoder;
         this.offsetData = offsetData;
         this.binaryData = binaryData;
@@ -112,11 +110,6 @@ public final class ColumnRegionObjectCodecVariable<T, ATTR extends Attributes.An
                 }
             });
         }
-    }
-
-    @Override @NotNull
-    public Class<T> getNativeType() {
-        return nativeType;
     }
 
     @Override

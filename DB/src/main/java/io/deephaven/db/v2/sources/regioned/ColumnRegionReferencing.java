@@ -34,10 +34,5 @@ public interface ColumnRegionReferencing<ATTR extends Attributes.Any, REFERENCED
         public REFERENCED_COLUMN_REGION getReferencedRegion() {
             return nullReferencedColumnRegion;
         }
-
-        @Override
-        public Class<?> getNativeType() {
-            return null;
-        }
     }
 }

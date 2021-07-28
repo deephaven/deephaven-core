@@ -171,8 +171,8 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return resultColumn.getNativeType();
+    public ChunkType getChunkType() {
+        return resultColumn.getChunkType();
     }
 
     @Override

@@ -17,23 +17,21 @@ import java.util.Arrays;
 public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_LIKE_TYPE extends CharSequence>
         implements ColumnRegionObject<STRING_LIKE_TYPE, ATTR>, Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
-    private final Class<STRING_LIKE_TYPE> nativeType;
     private final ObjectChunk<String, ATTR>[] dictionaries;
 
     private final int dictionaryCount;
     private final long[] dictionaryLastIndices;
     private final StringCache<STRING_LIKE_TYPE> stringCache;
 
-    public static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> nativeType, final Chunk<ATTR>[] dictionaries) {
-        Require.eqTrue(CharSequence.class.isAssignableFrom(nativeType), "Dictionary result is not a string like type.");
+    public static <T, ATTR extends Attributes.Any> ColumnRegionObject<T, ATTR> create(Class<T> dataType, final Chunk<ATTR>[] dictionaries) {
+        Require.eqTrue(CharSequence.class.isAssignableFrom(dataType), "Dictionary result is not a string like type.");
         Require.elementsNeqNull(dictionaries, "dictionaries");
         Require.gtZero(dictionaries.length, "dictionaries.length");
         //noinspection unchecked,rawtypes
-        return (ColumnRegionObject<T, ATTR>) new ParquetColumnRegionSymbolTable(nativeType, (ObjectChunk[]) dictionaries);
+        return (ColumnRegionObject<T, ATTR>) new ParquetColumnRegionSymbolTable(dataType, (ObjectChunk[]) dictionaries);
     }
 
-    private ParquetColumnRegionSymbolTable(@NotNull Class<STRING_LIKE_TYPE> nativeType, @NotNull final ObjectChunk<String, ATTR>[] dictionaries) {
-        this.nativeType = nativeType;
+    private ParquetColumnRegionSymbolTable(@NotNull Class<STRING_LIKE_TYPE> dataType, @NotNull final ObjectChunk<String, ATTR>[] dictionaries) {
         this.dictionaries = dictionaries;
         dictionaryCount = dictionaries.length;
         dictionaryLastIndices = new long[dictionaryCount];
@@ -41,7 +39,7 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
         for (int di = 0; di < dictionaryCount; ++di) {
             dictionaryLastIndices[di] = lastIndex += dictionaries[di].size();
         }
-        stringCache = StringUtils.getStringCache(nativeType);
+        stringCache = StringUtils.getStringCache(dataType);
     }
 
     @Override
@@ -64,11 +62,6 @@ public class ParquetColumnRegionSymbolTable<ATTR extends Attributes.Any, STRING_
     public long length() {
         // TODO-RWC: This code is clearly wrong.
         return dictionaries[0].size();
-    }
-
-    @Override
-    public Class<?> getNativeType() {
-        return nativeType;
     }
 
     @Override

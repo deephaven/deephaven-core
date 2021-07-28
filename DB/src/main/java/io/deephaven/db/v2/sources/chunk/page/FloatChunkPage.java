@@ -28,11 +28,6 @@ public class FloatChunkPage<ATTR extends Attributes.Any> extends FloatChunk<ATTR
     }
 
     @Override
-    public Class<Float> getNativeType() {
-        return float.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableFloatChunk<? super ATTR> to = destination.asWritableFloatChunk();
 

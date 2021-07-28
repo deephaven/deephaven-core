@@ -2,10 +2,8 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.SharedContext;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
+
+import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,8 +55,8 @@ public class DeferredColumnRegionBase<ATTR extends Attributes.Any,
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return getResultRegion().getNativeType();
+    public ChunkType getChunkType() {
+        return getResultRegion().getChunkType();
     }
 
     @Override

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionShort<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-    implements ColumnRegionShort<ATTR>, ParquetColumnRegion<ATTR> {
+        implements ColumnRegionShort<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionShort(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
         super(columnChunkPageStores);

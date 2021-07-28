@@ -46,11 +46,6 @@ public final class ColumnRegionObjectCached<T, ATTR extends Attributes.Any, OFFS
         return columnRegionObject.length();
     }
 
-    @Override
-    public Class<?> getNativeType() {
-        return columnRegionObject.getNativeType();
-    }
-
     public ColumnRegionObject<T, ATTR> skipCache() {
         return columnRegionObject;
     }

@@ -52,7 +52,7 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attribute
     @Override
     public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> makeRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation, int regionIndex) {
         NATIVE_REGION_TYPE nativeRegionType = nativeSource.makeRegion(columnDefinition, columnLocation, regionIndex);
-        return nativeRegionType == null ? null : new ColumnRegionReferencingImpl<>(getNativeType(), nativeRegionType);
+        return nativeRegionType == null ? null : new ColumnRegionReferencingImpl<>(nativeRegionType);
     }
 
     final ChunkSource.FillContext makeFillContext(ColumnRegionReferencing.Converter<ATTR> converter, int chunkCapacity, SharedContext sharedContext) {

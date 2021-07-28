@@ -43,12 +43,6 @@ public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnR
         return length;
     }
 
-    @Override
-    @NotNull
-    final public Class<?> getNativeType() {
-        return columnChunkPageStores[0].getNativeType();
-    }
-
     @NotNull
     @Override
     public final ColumnChunkPageStore<ATTR> getPageContaining(@NotNull final FillContext fillContext, final long elementIndex) {

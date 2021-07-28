@@ -1,7 +1,9 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -34,7 +36,10 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
     }
 
     @Override
-    Class<?> getNativeType();
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Object;
+    }
 
     static <T, ATTR extends Any> ColumnRegionObject.Null<T, ATTR> createNull() {
         //noinspection unchecked
@@ -53,15 +58,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public DATA_TYPE getObject(final long elementIndex) {
             return null;
         }
-
-        /**
-         * @return null
-         * @implNote This is never called, so we just return null so this class can remain a singleton.
-         */
-        @Override
-        public Class<DATA_TYPE> getNativeType() {
-            return null;
-        }
     }
 
     final class Constant<DATA_TYPE, ATTR extends Any> implements ColumnRegionObject<DATA_TYPE, ATTR>, WithDefaultsForRepeatingValues<ATTR> {
@@ -70,11 +66,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         public Constant(final DATA_TYPE value) {
             this.value = value;
-        }
-
-        @Override
-        public Class<?> getNativeType() {
-            return value.getClass();
         }
 
         @Override

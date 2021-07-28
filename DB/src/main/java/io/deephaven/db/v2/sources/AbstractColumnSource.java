@@ -349,11 +349,6 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public Class<T> getNativeType() {
-        return getType();
-    }
-
-    @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         defaultFillChunk(context, destination, orderedKeys);
     }

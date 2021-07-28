@@ -170,8 +170,8 @@ public class BigIntegerChunkedSumOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return resultColumn.getNativeType();
+    public ChunkType getChunkType() {
+        return resultColumn.getChunkType();
     }
 
     @Override

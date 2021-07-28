@@ -1,8 +1,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -49,8 +51,9 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
     );
 
     @Override
-    default Class<?> getNativeType() {
-        return byte.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Byte;
     }
 
     static <ATTR extends Any> ColumnRegionByte.Null<ATTR> createNull() {

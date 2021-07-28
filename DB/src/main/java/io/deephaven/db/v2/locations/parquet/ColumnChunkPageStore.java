@@ -152,12 +152,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     @Override
     @NotNull
-    public Class<?> getNativeType() {
-        return toPage.getNativeType();
-    }
-
-    @Override
-    @NotNull
     public ChunkType getChunkType() {
         return toPage.getChunkType();
     }

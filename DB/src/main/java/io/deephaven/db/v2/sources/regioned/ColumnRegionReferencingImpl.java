@@ -10,13 +10,9 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 public class ColumnRegionReferencingImpl<ATTR extends Attributes.Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
         implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>, Page.WithDefaults<ATTR> {
 
-    private final Class<?> nativeType;
     private final REFERENCED_COLUMN_REGION referencedColumnRegion;
 
-
-    public ColumnRegionReferencingImpl(@NotNull Class<?> nativeType,
-                                       @NotNull REFERENCED_COLUMN_REGION referencedColumnRegion) {
-        this.nativeType = nativeType;
+    public ColumnRegionReferencingImpl(@NotNull REFERENCED_COLUMN_REGION referencedColumnRegion) {
         this.referencedColumnRegion = referencedColumnRegion;
     }
 
@@ -24,11 +20,6 @@ public class ColumnRegionReferencingImpl<ATTR extends Attributes.Any, REFERENCED
     @Override
     public REFERENCED_COLUMN_REGION getReferencedRegion() {
         return referencedColumnRegion;
-    }
-
-    @Override
-    public Class<?> getNativeType() {
-        return nativeType;
     }
 
     @Override

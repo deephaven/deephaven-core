@@ -10,7 +10,7 @@ import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionFloat} implementation for regions that support fetching primitive floats  from
+ * {@link ColumnRegionFloat} implementation for regions that support fetching primitive floats from
  * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>

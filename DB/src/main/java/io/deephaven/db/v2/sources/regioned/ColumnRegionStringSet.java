@@ -47,11 +47,6 @@ public final class ColumnRegionStringSet<ATTR extends Attributes.Any>
         }
     }
 
-    @Override @NotNull
-    public Class<StringSet> getNativeType() {
-        return StringSet.class;
-    }
-
     @Override
     public long length() {
         return bitmaskColumnRegion.length();
