@@ -48,12 +48,12 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
     /**
      * Create a new ChunkColumnSource for the given chunk type and data type.
      *
-     * @param sharedOffsetForData an array list representing the shared offsets for data across several ChunkColumnSources
      * @param chunkType           the type of chunk
      * @param dataType            the datatype for the newly created column source
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(TLongArrayList sharedOffsetForData, ChunkType chunkType, Class<?> dataType) {
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, TLongArrayList sharedOffsetForData) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource(sharedOffsetForData);
