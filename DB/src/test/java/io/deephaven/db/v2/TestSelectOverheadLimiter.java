@@ -92,7 +92,6 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         });
     }
 
-    @Category(OutOfBandTest.class)
     public void testByExternal() {
         SelectOverheadLimiter.conversions.set(0);
         int seed;

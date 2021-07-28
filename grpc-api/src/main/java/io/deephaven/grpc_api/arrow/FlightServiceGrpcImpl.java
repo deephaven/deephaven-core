@@ -6,7 +6,6 @@ package io.deephaven.grpc_api.arrow;
 
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
@@ -44,6 +43,7 @@ import io.deephaven.grpc_api_client.util.FlatBufferIteratorAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.BarrageData;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -86,19 +86,68 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Override
     public void getFlightInfo(final Flight.FlightDescriptor request, final StreamObserver<Flight.FlightInfo> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            responseObserver.onNext(ticketRouter.flightInfoFor(request));
-            responseObserver.onCompleted();
+            final SessionState session = sessionService.getOptionalSession();
+
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+
+            if (session != null) {
+                session.nonExport()
+                        .require(export)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            responseObserver.onNext(export.get());
+                            responseObserver.onCompleted();
+                        });
+            } else {
+                if (export.tryRetainReference()) {
+                    try {
+                        if (export.getState() == ExportNotification.State.EXPORTED) {
+                            responseObserver.onNext(export.get());
+                            responseObserver.onCompleted();
+                        }
+                    } finally {
+                        export.dropReference();
+                    }
+                } else {
+                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                }
+            }
         });
     }
 
     @Override
     public void getSchema(final Flight.FlightDescriptor request, final StreamObserver<Flight.SchemaResult> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final ByteString schema = ticketRouter.flightInfoFor(request).getSchema();
-            responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                    .setSchema(schema)
-                    .build());
-            responseObserver.onCompleted();
+            final SessionState session = sessionService.getOptionalSession();
+
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
+
+            if (session != null) {
+                session.nonExport()
+                        .require(export)
+                        .onError(responseObserver::onError)
+                        .submit(() -> {
+                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                    .setSchema(export.get().getSchema())
+                                    .build());
+                            responseObserver.onCompleted();
+                        });
+            } else {
+                if (export.tryRetainReference()) {
+                    try {
+                        if (export.getState() == ExportNotification.State.EXPORTED) {
+                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                    .setSchema(export.get().getSchema())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    } finally {
+                        export.dropReference();
+                    }
+                } else {
+                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                }
+            }
         });
     }
 
@@ -189,11 +238,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             }
             final BarragePutMetadata app_metadata = mi.app_metadata;
             if (app_metadata == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no app_metadata provided");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No app_metadata provided");
             }
             final ByteBuffer ticketBuf = app_metadata.rpcTicketAsByteBuffer();
             if (ticketBuf == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no rpc ticket provided");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No rpc ticket provided");
             }
 
             ticketRouter.publish(session, ticketBuf).submit(() -> {
@@ -217,11 +266,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             final BarragePutMetadata app_metadata = mi.app_metadata;
             if (app_metadata == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no app_metadata provided");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No app_metadata provided");
             }
             final ByteBuffer ticketBuf = app_metadata.rpcTicketAsByteBuffer();
             if (ticketBuf == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no rpc ticket provided");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No rpc ticket provided");
             }
 
             final SessionState.ExportObject<PutMarshaller> putExport = ticketRouter.resolve(session, ticketBuf);
@@ -342,7 +391,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 synchronized (this) {
                     if (nextSeq == -1) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "already received final app_metadata; cannot apply update");
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already received final app_metadata; cannot apply update");
                     }
                     if (mi.app_metadata != null) {
                         final long sequence = mi.app_metadata.sequence();
@@ -374,9 +423,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         private void process(final MessageInfo mi) {
             if (mi.descriptor != null) {
                 if (resultExportBuilder != null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "only one descriptor definition allowed");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only one descriptor definition allowed");
                 }
-                resultExportBuilder = service.ticketRouter.publish(session, mi.descriptor);
+                resultExportBuilder = service.ticketRouter
+                        .<Table>publish(session, mi.descriptor)
+                        .onError(observer::onError);
                 manage(resultExportBuilder.getExport());
             }
 
@@ -390,7 +441,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             }
 
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "only schema/record-batch messages supported");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only schema/record-batch messages supported");
             }
 
             final int numColumns = resultTable.getColumnSources().size();
@@ -431,7 +482,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 }
 
                 if (acd.data.size() != numRowsAdded) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                 }
                 acd.type = columnTypes[ci];
                 acd.componentType = componentTypes[ci];
@@ -450,25 +501,26 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         private void sealAndExport() {
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 if (resultExportBuilder == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "result flight descriptor never provided");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight descriptor never provided");
                 }
                 if (resultTable == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "result flight schema never provided");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight schema never provided");
                 }
                 if (pendingSeq != null && !pendingSeq.isEmpty()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "pending sequences to apply but received final app_metadata");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Pending sequences to apply but received final app_metadata");
                 }
 
                 // no more changes allowed; this is officially static content
-                resultTable.sealTable();
-                resultExportBuilder.submit(() -> {
+                resultTable.sealTable(() -> resultExportBuilder.submit(() -> {
                     // transfer ownership to submit's liveness scope, drop our extra reference
                     resultTable.manageWithCurrentScope();
                     resultTable.dropReference();
+                    GrpcUtil.safelyExecute(observer::onCompleted);
                     return resultTable;
-                });
+                }), () -> GrpcUtil.safelyExecute(() -> {
+                    observer.onError(GrpcUtil.statusRuntimeException(Code.INTERNAL, "Do put could not be sealed"));
+                }));
 
-                observer.onCompleted();
                 onRequestDone();
             });
         }
@@ -476,7 +528,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         @Override
         public void close() {
             release();
-            GrpcUtil.safelyExecute(() -> observer.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session expired")));
+            GrpcUtil.safelyExecute(() -> observer.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session expired")));
         }
 
         private void onRequestDone() {

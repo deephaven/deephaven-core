@@ -290,10 +290,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     public static ExportedTableCreationResponse buildTableCreationResponse(final TableReference tableRef, final Table table) {
-        final String[] columnNames = table.getDefinition().getColumnNamesArray();
-        final ColumnSource<?>[] columnSources = table.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes()));
+        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table));
 
         return ExportedTableCreationResponse.newBuilder()
                 .setSuccess(true)

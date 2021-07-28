@@ -423,7 +423,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAjRandomStatic() {
         for (int seed = 0; seed < 10; ++seed) {
             for (int leftSize = 10; leftSize <= 10000; leftSize *= 10) {
@@ -514,7 +513,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAjRandomLeftIncrementalRightStatic() {
         for (int seed = 0; seed < 2; ++seed) {
             for (int leftSize = 10; leftSize <= 10000; leftSize *= 10) {
@@ -532,7 +530,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAjRandomLeftStaticRightIncremental() {
         final int tableMultiplier = 10;
         final int initialTableSize = 10;
@@ -561,7 +558,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAjBothIncremental() {
         final int tableMultiplier = 10;
         final int initialTableSize = 10;
@@ -604,7 +600,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAjCharIncremental() {
         final int tableMultiplier = 10;
         final int initialTableSize = 10;
@@ -1186,7 +1181,6 @@ public class QueryTableAjTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testIds6898() {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Logger log = new StreamLoggerImpl();

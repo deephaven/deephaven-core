@@ -9,6 +9,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
+import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -26,6 +27,8 @@ import java.util.function.Consumer;
 
 @Singleton
 public class TicketRouter {
+    // per flight specification: 0xFFFFFFFF value is the first 4 bytes of a valid IPC message
+    private static final int IPC_CONTINUATION_TOKEN = -1;
 
     private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap = new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
     private final KeyedObjectHashMap<String, TicketResolver> descriptorResolverMap = new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
@@ -47,7 +50,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final ByteBuffer ticket) {
         return getResolver(ticket.get(0)).resolve(session, ticket);
     }
@@ -61,7 +64,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final Flight.Ticket ticket) {
         return resolve(session, ticket.getTicket().asReadOnlyByteBuffer());
     }
@@ -75,7 +78,7 @@ public class TicketRouter {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     public <T> SessionState.ExportObject<T> resolve(
-            final SessionState session,
+            @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor) {
         return getResolver(descriptor).resolve(session, descriptor);
     }
@@ -131,11 +134,14 @@ public class TicketRouter {
     /**
      * Resolve a flight descriptor and retrieve flight info for the flight.
      *
+     * @param session the user session context; ticket resolvers may expose flights that do not require a session (such as via DoGet)
      * @param descriptor the flight descriptor
-     * @return flight info for the particular descriptor
+     * @return an export object that will resolve to the flight descriptor; see {@link SessionState} for lifecycle propagation details
      */
-    public Flight.FlightInfo flightInfoFor(final Flight.FlightDescriptor descriptor) {
-        return getResolver(descriptor).flightInfoFor(descriptor);
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
+            @Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
+        return getResolver(descriptor).flightInfoFor(session, descriptor);
     }
 
     /**
@@ -164,7 +170,7 @@ public class TicketRouter {
      * @param session optional session that the resolver can use to filter which flights a visitor sees
      * @param visitor the callback to invoke per descriptor path
      */
-    public void visitFlightInfo(@Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+    public void visitFlightInfo(final @Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         byteResolverMap.iterator().forEachRemaining(resolver ->
                 resolver.forAllFlightInfo(session, visitor)
         );
@@ -185,9 +191,34 @@ public class TicketRouter {
     }
 
     private static ByteString schemaBytesFromTable(final Table table) {
+        // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte identifier
+        // (to detect end-of-stream in some cases) followed by the size of the flatbuffer message
+
         final FlatBufferBuilder builder = new FlatBufferBuilder();
-        builder.finish(BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes()));
-        return ByteStringAccess.wrap(builder.dataBuffer());
+        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table);
+        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
+
+        final ByteBuffer msg = builder.dataBuffer();
+
+        int padding = msg.remaining() % 8;
+        if (padding != 0) {
+            padding = 8 - padding;
+        }
+
+        // 4 * 2 is for two ints; IPC_CONTINUATION_TOKEN followed by size of schema payload
+        final byte[] byteMsg = new byte[msg.remaining() + 4 * 2 + padding];
+        intToBytes(IPC_CONTINUATION_TOKEN, byteMsg, 0);
+        intToBytes(msg.remaining(), byteMsg, 4);
+        msg.get(byteMsg, 8, msg.remaining());
+
+        return ByteStringAccess.wrap(byteMsg);
+    }
+
+    private static void intToBytes(int value, byte[] bytes, int offset) {
+        bytes[offset + 3] = (byte) (value >>> 24);
+        bytes[offset + 2] = (byte) (value >>> 16);
+        bytes[offset + 1] = (byte) (value >>> 8);
+        bytes[offset] = (byte) (value);
     }
 
     private TicketResolver getResolver(final byte route) {

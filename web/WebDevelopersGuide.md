@@ -1100,6 +1100,9 @@ This enum describes the name of each supported operation/aggregation type when c
 
 ##### Class `IdeConnection`
 
+###### Constructor
+ * `new dh.IdeConnection(String websocketUrl, IdeConnectionOptions options)` - creates a new instance, from which console sessions can be made. `options` are optional.
+
 ###### Methods
 
  * `addEventListener(String eventType, Function eventListener)`
@@ -1112,6 +1115,11 @@ This enum describes the name of each supported operation/aggregation type when c
 
  * `String websocketUrl` - the url used when connecting to the server. Read-only.
  * `String serviceId` - The name of the service that should be authenticated to on the server. Read-only.
+
+##### Class `IdeConnectionOptions`
+###### Properties
+ * `String authToken` - base 64 encoded auth token
+ * `String serviceId` - The service ID to use for the connection
 
 ##### Class `IdeSession`
 

@@ -184,7 +184,6 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
-    @Category(OutOfBandTest.class)
     public void testIncrementalZeroKeyJoin() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -246,7 +245,6 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testLargeStaticJoin() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -494,7 +492,6 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testIncrementalWithKeyColumns() {
         final int[] sizes = {10, 100, 1000};
 
@@ -570,7 +567,6 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testShiftingDuringRehash() {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();

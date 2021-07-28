@@ -809,7 +809,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testIteratorAdvanceBlockBoundaries() {
         final long[] b0s = new long[] { BLOCK_LAST - 4, BLOCK_LAST - 3, BLOCK_LAST - 2, BLOCK_LAST - 1, BLOCK_LAST };
         final long[] b1s = new long[] { BLOCK_SIZE, BLOCK_SIZE + 1, BLOCK_SIZE + 2, BLOCK_SIZE + 3, BLOCK_SIZE + 4 };
@@ -1235,7 +1234,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testRemoveRange5() {
         randomizedTest(RspBitmapTest::doTestRemoveRange5);
     }
@@ -1279,7 +1277,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSubrangeByKey() {
         randomizedTest(RspBitmapTest::doTestSubrangeByKey);
     }
@@ -2398,7 +2395,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testInvert() {
         randomizedTest(RspBitmapTest::doTestInvert);
     }
@@ -3232,7 +3228,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAddRanges() {
         randomizedTest(RspBitmapTest::doTestAddRanges);
     }
@@ -3335,7 +3330,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAndEquals() {
         randomizedTest(RspBitmapTest::doTestAndEquals);
     }
@@ -3654,7 +3648,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testRemoveRangeManyBlocks() {
         final Random rand = new Random(seed0 + 2);
         final int blockCount = 1024;
@@ -4099,7 +4092,6 @@ public class RspBitmapTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testOrderedKeysByValue() {
         randomizedTest(RspBitmapTest::doTestOrderedKeysByValue);
     }

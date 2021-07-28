@@ -120,8 +120,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             scriptSession = globalSessionProvider.getGlobalSession();
                         } else {
                             scriptSession = new NoLanguageDeephavenSession(sessionType);
-                            log.error().append("Session type '" + sessionType + "' is disabled. " +
-                                    "Use the More Actions icon to swap to session type '" + WORKER_CONSOLE_TYPE + "'.").endl();
+                            log.error().append("Session type '" + sessionType + "' is disabled." +
+                                    "Use the session type '" + WORKER_CONSOLE_TYPE + "' instead.").endl();
                         }
 
                         safelyExecute(() -> {
