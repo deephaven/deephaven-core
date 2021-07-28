@@ -988,6 +988,10 @@ public final class ClientTableState extends TableConfig {
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);
 
+        // we conform to flight's schema representation of:
+        //  - IPC_CONTINUATION_TOKEN (4-byte int of -1)
+        //  - message size (4-byte int)
+        //  - a Message wrapping the schema
         ByteBuffer bb = new ByteBuffer(def.getSchemaHeader_asU8());
         bb.setPosition(bb.position() + 8);
         Message headerMessage = Message.getRootAsMessage(bb);
