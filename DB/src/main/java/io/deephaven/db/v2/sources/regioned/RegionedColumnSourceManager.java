@@ -256,7 +256,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                         + ", larger than maximum supported location size " + RegionedColumnSource.REGION_CAPACITY_IN_ELEMENTS);
             }
 
-            final long firstKeyAdded = RegionedPageStore.getFirstElementIndex(regionIndex);
+            final long firstKeyAdded = RegionedColumnSource.getFirstElementIndex(regionIndex);
             final long lastKeyAdded = firstKeyAdded + size - 1;
             addedIndexBuilder.appendRange(firstKeyAdded, lastKeyAdded);
             for (final ColumnDefinition columnDefinition : columnDefinitions) {
@@ -297,7 +297,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             if (log.isDebugEnabled()) {
                 log.debug().append("LOCATION_SIZE_CHANGE:").append(location.toString()).append(",FROM:").append(sizeAtLastUpdate).append(",TO:").append(size).endl();
             }
-            final long firstKeyAdded = RegionedPageStore.getFirstElementIndex(regionIndex) + sizeAtLastUpdate;
+            final long firstKeyAdded = RegionedColumnSource.getFirstElementIndex(regionIndex) + sizeAtLastUpdate;
             final long lastKeyAdded = firstKeyAdded + size - sizeAtLastUpdate - 1;
             addedIndexBuilder.appendRange(firstKeyAdded, lastKeyAdded);
             for (final ColumnLocationState state : columnLocationStates) {

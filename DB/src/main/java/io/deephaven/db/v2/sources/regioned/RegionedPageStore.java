@@ -10,13 +10,23 @@ import io.deephaven.db.v2.sources.chunk.page.PageStore;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
+import java.util.Arrays;
 
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE>, LongSizedDataStructure {
 
-    long REGION_MASK = ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
-    long REGION_MASK_NUM_BITS = Helper.getNumBitsOfMask();
+    long mask();
+
+    /**
+     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when
+     * calculating their address within a page
+     */
+    long regionMask();
+
+    /**
+     * @return The number of bits masked by {@link #regionMask()}
+     */
+    int regionMaskNumBits();
 
     /**
      * @return The total number of rows across all regions.
@@ -40,35 +50,9 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      *
      * @return The region index for an element index.
      */
-    static int getRegionIndex(final long elementIndex) {
-        return (int) (elementIndex >> REGION_MASK_NUM_BITS);
-    }
-
-    /**
-     * Get the first element index.
-     *
-     * @return the first element index for a region index.
-     */
-    static long getFirstElementIndex(final int regionIndex) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS;
-    }
-
-    /**
-     * Get the last element index.
-     *
-     * @return the last element index for a region index.
-     */
-    static long getLastElementIndex(final int regionIndex) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS | REGION_MASK;
-    }
-
-    /**
-     * Get the element index.
-     *
-     * @return the element index for a particular region offset of a region index.
-     */
-    static long getElementIndex(final int regionIndex, final long regionOffset) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS | regionOffset;
+    @FinalDefault
+    default int getRegionIndex(final long elementIndex) {
+        return (int) ((mask() & elementIndex) >> regionMaskNumBits());
     }
 
     /**
@@ -104,22 +88,66 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
         return lookupRegion(row);
     }
 
-    @FinalDefault
-    default long mask() {
-        // This PageStore is a concatenation of regions which cover the entire positive address space of {@OrderKeys}.
-        return Long.MAX_VALUE;
-    }
-
     @Override
     default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new ColumnRegionFillContext();
+        return new RegionContextHolder();
     }
 
-    class Helper {
-        static long getNumBitsOfMask() {
-            final long numBits = MathUtil.ceilLog2(REGION_MASK);
-            Require.eq(REGION_MASK + 1, "MAX_REGION_SIZE", 1L << numBits, "1 << RIGHT_SHIFT");
-            return numBits;
+    /**
+     * A regioned page store for nested use when the full set of regions and their sizes are known.
+     */
+    abstract class StaticNested<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>
+            implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
+
+        private final long mask;
+        private final REGION_TYPE[] regions;
+        private final long regionMask;
+        private final int regionMaskNumBits;
+
+        /**
+         * @param mask    The {@link Page#mask} for this page
+         * @param regions Array of all regions in this page store. Array becomes property of the page store.
+         */
+        public StaticNested(final long mask, @NotNull final REGION_TYPE[] regions) {
+            this.mask = mask;
+            Require.elementsNeqNull(regions, "regions");
+            Require.gtZero(regions.length, "regions.length");
+            this.regions = regions;
+            final int regionNumBits = MathUtil.ceilLog2(regions.length);
+            regionMask = mask >>> regionNumBits;
+            regionMaskNumBits = MathUtil.ceilLog2(regionMask);
+            final long maxRegionSize = Arrays.stream(regions).mapToLong(Page::length).max().orElseThrow(IllegalStateException::new);
+            final long maxRegionSizeNumBits = MathUtil.ceilLog2(maxRegionSize);
+            if (maxRegionSizeNumBits > regionMaskNumBits) {
+                throw new IllegalArgumentException("Maximum region size " + maxRegionSize
+                        + " is too large to access with page mask " + Long.toHexString(mask)
+                        + " and region count " + regions.length);
+            }
+        }
+
+        @Override
+        public final long mask() {
+            return mask;
+        }
+
+        @Override
+        public final long regionMask() {
+            return regionMask;
+        }
+
+        @Override
+        public final int regionMaskNumBits() {
+            return regionMaskNumBits;
+        }
+
+        @Override
+        public final int getRegionCount() {
+            return regions.length;
+        }
+
+        @Override
+        public final REGION_TYPE getRegion(final int regionIndex) {
+            return regions[regionIndex];
         }
     }
 }

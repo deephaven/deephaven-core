@@ -23,6 +23,23 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
         this(type, null);
     }
 
+    @Override
+    public final long mask() {
+        // This RegionedPageStore is a concatenation of regions which cover the entire positive address space of
+        // index keys.
+        return Long.MAX_VALUE;
+    }
+
+    @Override
+    public final long regionMask() {
+        return ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
+    }
+
+    @Override
+    public final int regionMaskNumBits() {
+        return SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS;
+    }
+
     /**
      * Use the more efficient fill chunk implementation, rather than the default which uses get().
      */

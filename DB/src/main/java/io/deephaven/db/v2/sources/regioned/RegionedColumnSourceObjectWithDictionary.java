@@ -131,10 +131,10 @@ class RegionedColumnSourceObjectWithDictionary<T>
         @Override
         public long getLong(long elementIndex) {
             if (elementIndex != NULL_KEY) {
-                int regionIndex = RegionedPageStore.getRegionIndex(elementIndex);
+                int regionIndex = getRegionIndex(elementIndex);
                 int key = RegionedColumnSourceObjectWithDictionary.this.getRegion(regionIndex).getReferencedRegion().getInt(elementIndex);
                 if (key != NULL_INT) {
-                    return RegionedPageStore.getElementIndex(regionIndex, key);
+                    return RegionedColumnSource.getElementIndex(regionIndex, key);
                 }
             }
 
@@ -146,14 +146,14 @@ class RegionedColumnSourceObjectWithDictionary<T>
             WritableLongChunk<? super Attributes.DictionaryKeys> longChunk = destination.asWritableLongChunk();
             IntChunk<? extends Attributes.DictionaryKeys> intChunk = source.asIntChunk();
 
-            final int regionIndex = RegionedPageStore.getRegionIndex(orderedKeys.firstKey());
+            final int regionIndex = getRegionIndex(orderedKeys.firstKey());
 
             final int size = longChunk.size();
             final int length = intChunk.size();
 
             for (int i = 0; i < length; ++i) {
                 int key = intChunk.get(i);
-                longChunk.set(size + i, key == NULL_INT ? NULL_LONG : RegionedPageStore.getElementIndex(regionIndex, key));
+                longChunk.set(size + i, key == NULL_INT ? NULL_LONG : RegionedColumnSource.getElementIndex(regionIndex, key));
             }
             longChunk.setSize(size + length);
         }
@@ -188,9 +188,9 @@ class RegionedColumnSourceObjectWithDictionary<T>
         final Index.SequentialBuilder symbolTableIndexBuilder = Index.FACTORY.getSequentialBuilder();
 
         try (Index.SearchIterator sourceIndexIterator = sourceIndex.searchIterator()) {
-            for (int regionIndex = 0; sourceIndexIterator.advance(RegionedPageStore.getFirstElementIndex(regionIndex)); ++regionIndex) {
+            for (int regionIndex = 0; sourceIndexIterator.advance(RegionedColumnSource.getFirstElementIndex(regionIndex)); ++regionIndex) {
                 long sourceElementIndex = sourceIndexIterator.currentValue();
-                regionIndex = RegionedPageStore.getRegionIndex(sourceElementIndex);
+                regionIndex = getRegionIndex(sourceElementIndex);
                 ColumnRegionObject<T, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
 
                 if (region.length() > 0) {
@@ -244,7 +244,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
 
         @Override
         public void onUpdate(@NotNull final Update upstream) {
-            // TODO: Update and use io.deephaven.db.tables.verify.TableAssertions.assertAppendOnly(java.lang.String, io.deephaven.db.tables.Table) ?
+            // TODO-RWC: Update and use io.deephaven.db.tables.verify.TableAssertions.assertAppendOnly(java.lang.String, io.deephaven.db.tables.Table) ?
             if (upstream.removed.nonempty() || upstream.modified.nonempty() || upstream.shifted.nonempty()) {
                 throw new IllegalStateException("Source table for a regioned symbol table should be add-only, instead "
                         + "removed=" + upstream.removed + ", modified=" + upstream.modified + ", shifted=" + upstream.shifted);
@@ -257,9 +257,9 @@ class RegionedColumnSourceObjectWithDictionary<T>
             try (Index.SearchIterator sourceAddedIterator = upstream.added.searchIterator();
                  OrderedKeys.Iterator symbolTableOKI = symbolTable.getIndex().getOrderedKeysIterator()) {
                 sourceAddedIterator.nextLong();
-                for (int regionIndex = 0; sourceAddedIterator.advance(RegionedPageStore.getFirstElementIndex(regionIndex)); ++regionIndex) {
+                for (int regionIndex = 0; sourceAddedIterator.advance(RegionedColumnSource.getFirstElementIndex(regionIndex)); ++regionIndex) {
                     final long sourceElementIndex = sourceAddedIterator.currentValue();
-                    regionIndex = RegionedPageStore.getRegionIndex(sourceElementIndex);
+                    regionIndex = getRegionIndex(sourceElementIndex);
                     ColumnRegionObject<T, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
 
                     if (region.length() > 0) {

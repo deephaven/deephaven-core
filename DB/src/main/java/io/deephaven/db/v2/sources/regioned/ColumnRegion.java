@@ -9,12 +9,13 @@ import org.jetbrains.annotations.NotNull;
 
 public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
 
-    long REGION_MASK = RegionedPageStore.REGION_MASK;
-
+    /**
+     * {@inheritDoc}
+     * The default implementation is suitable for regions that are members of a {@link RegionedColumnSource}.
+     */
     @Override
-    @FinalDefault
     default long mask() {
-        return REGION_MASK;
+        return RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
     }
 
     @Override

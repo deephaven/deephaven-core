@@ -24,7 +24,7 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     /**
      * Get a single double from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (double) index in the table's address space
      * @return The double value at the specified element (double) index

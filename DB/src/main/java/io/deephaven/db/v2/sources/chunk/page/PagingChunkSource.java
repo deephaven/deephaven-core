@@ -24,12 +24,12 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
      * This mask is applied to {@link OrderedKeys} which are passed into
      * {@link #getChunk(ChunkSource.GetContext, OrderedKeys)} and
      * {@link #fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys)}. This allows the
-     * {@link PagingChunkSource}s to be cached, and reused even if they are properly relocated in key space.
+     * {@link PagingChunkSource PagingChunkSources} to be cached, and reused even if they are properly relocated in key
+     * space.
      *
      * @return the mask for this page, which must be a bitmask representing the some number of lower order bits of a
      * long.
      */
-
     long mask();
 
     /**

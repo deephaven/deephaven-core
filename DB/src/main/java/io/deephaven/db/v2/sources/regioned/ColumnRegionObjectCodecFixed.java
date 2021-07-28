@@ -91,7 +91,7 @@ public final class ColumnRegionObjectCodecFixed<T, ATTR extends Attributes.Any>
 
     static class FillContext extends DefaultGetContext<Attributes.EncodedObjects> implements ChunkSource.FillContext {
         public FillContext(int byteChunkCapacity) {
-            super(new ColumnRegionFillContext(), ChunkType.Byte, byteChunkCapacity);
+            super(new RegionContextHolder(), ChunkType.Byte, byteChunkCapacity);
         }
 
         static DefaultGetContext<Attributes.EncodedObjects> getBytesGetContext(ChunkSource.FillContext context) {

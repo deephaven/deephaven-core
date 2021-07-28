@@ -24,7 +24,7 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single int from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (int) index in the table's address space
      * @return The int value at the specified element (int) index

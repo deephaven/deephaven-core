@@ -137,7 +137,7 @@ public final class ColumnRegionObjectCodecVariable<T, ATTR extends Attributes.An
 
         public FillContext(int byteChunkCapacity, int offsetChunkCapacity) {
             super(byteChunkCapacity);
-            offsetsGetContext = new DefaultGetContext<>(new ColumnRegionFillContext(), ChunkType.Long, offsetChunkCapacity);
+            offsetsGetContext = new DefaultGetContext<>(new RegionContextHolder(), ChunkType.Long, offsetChunkCapacity);
         }
 
         static DefaultGetContext<Attributes.OrderedKeyIndices> getOffsetsGetContext(ChunkSource.FillContext context) {

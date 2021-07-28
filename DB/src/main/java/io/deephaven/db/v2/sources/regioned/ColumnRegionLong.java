@@ -24,7 +24,7 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single long from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (long) index in the table's address space
      * @return The long value at the specified element (long) index

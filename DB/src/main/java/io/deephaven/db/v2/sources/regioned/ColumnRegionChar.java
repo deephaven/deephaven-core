@@ -21,7 +21,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single char from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (char) index in the table's address space
      * @return The char value at the specified element (char) index

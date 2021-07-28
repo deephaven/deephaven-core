@@ -283,12 +283,12 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                             }}));
                 }
                 newExpectedIndex.insertRange(
-                        RegionedPageStore.getFirstElementIndex(regionIndex),
-                        RegionedPageStore.getFirstElementIndex(regionIndex) + size - 1
+                        RegionedColumnSource.getFirstElementIndex(regionIndex),
+                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
                 );
                 expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> Index.FACTORY.getEmptyIndex()).insertRange(
-                        RegionedPageStore.getFirstElementIndex(regionIndex),
-                        RegionedPageStore.getFirstElementIndex(regionIndex) + size - 1
+                        RegionedColumnSource.getFirstElementIndex(regionIndex),
+                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
                 );
             }
         });

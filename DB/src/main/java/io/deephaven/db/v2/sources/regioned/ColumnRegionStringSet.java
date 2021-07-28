@@ -69,7 +69,7 @@ public final class ColumnRegionStringSet<ATTR extends Attributes.Any>
         DefaultGetContext<Attributes.StringSetBitmasks> bitmaskGetContext;
 
         public FillContext(int keysChunkCapacity) {
-            bitmaskGetContext = new DefaultGetContext<>(new ColumnRegionFillContext(), ChunkType.Long, keysChunkCapacity);
+            bitmaskGetContext = new DefaultGetContext<>(new RegionContextHolder(), ChunkType.Long, keysChunkCapacity);
         }
 
         static DefaultGetContext<Attributes.StringSetBitmasks> getBitmaskGetContext(ChunkSource.FillContext context) {

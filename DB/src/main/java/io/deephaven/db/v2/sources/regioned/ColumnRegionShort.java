@@ -24,7 +24,7 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
     /**
      * Get a single short from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (short) index in the table's address space
      * @return The short value at the specified element (short) index
