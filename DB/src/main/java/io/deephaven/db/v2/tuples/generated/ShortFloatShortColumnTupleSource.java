@@ -135,11 +135,6 @@ public class ShortFloatShortColumnTupleSource extends AbstractTupleSource<ShortF
     }
 
     @Override
-    public Class<ShortFloatShortTuple> getNativeType() {
-        return ShortFloatShortTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortFloatShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();

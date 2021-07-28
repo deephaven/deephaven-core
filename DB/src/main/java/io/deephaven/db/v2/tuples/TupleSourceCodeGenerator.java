@@ -386,10 +386,6 @@ public class TupleSourceCodeGenerator {
         code.append(indenter).append('}').append(NEW_LINE);
         code.append(NEW_LINE);
 
-        code.append(indenter).append("@Override").append((NEW_LINE));
-        code.append(indenter).append("public Class<").append(tupleClassName).append("> getNativeType() { return ").append(tupleClassName).append(".class; }").append(NEW_LINE);
-        code.append(NEW_LINE);
-
         code.append(indenter).append("protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {").append(NEW_LINE);
         code.append(indenter.increaseLevel()).append("WritableObjectChunk<").append(tupleClassName).append(", ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();").append(NEW_LINE);
         code.append(indenter).append(type1.getValuesChunkTypeString()).append(" chunk1 = chunks[0].as").append(type1.chunkType).append("Chunk();").append(NEW_LINE);
@@ -639,12 +635,6 @@ public class TupleSourceCodeGenerator {
         indenter.decreaseLevel();
         code.append(indenter).append('}').append(NEW_LINE);
 
-        code.append(NEW_LINE);
-
-        code.append(indenter).append("@Override").append((NEW_LINE));
-        code.append(indenter).append("public Class<").append(tupleClassName).append("> getNativeType() {").append(NEW_LINE);
-        code.append(indenter.increaseLevel()).append("return ").append(tupleClassName).append(".class;").append(NEW_LINE);
-        code.append(indenter.decreaseLevel()).append("}").append(NEW_LINE);
         code.append(NEW_LINE);
 
         code.append(indenter).append("@Override").append((NEW_LINE));
