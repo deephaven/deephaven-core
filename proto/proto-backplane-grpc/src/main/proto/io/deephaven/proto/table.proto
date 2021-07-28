@@ -115,7 +115,7 @@ service TableService {
   rpc NaturalJoinTables(NaturalJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Returns the result of a exact join operation.
+   * Returns the result of an exact join operation.
    */
   rpc ExactJoinTables(ExactJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 

@@ -108,7 +108,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             }
         }
 
-        static public Table doJoin(final Table lhs, final Table rhs,
+        public static Table doJoin(final Table lhs, final Table rhs,
                      final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                      final AsOfJoinTablesRequest request) {
             Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
@@ -138,7 +138,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     CrossJoinTablesGrpcImpl::doJoin);
         }
 
-        static public Table doJoin(final Table lhs, final Table rhs,
+        public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final CrossJoinTablesRequest request) {
             return lhs.join(rhs, columnsToMatch, columnsToAdd, request.getReserveBits());
@@ -158,7 +158,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     ExactJoinTablesGrpcImpl::doJoin);
         }
 
-        static public Table doJoin(final Table lhs, final Table rhs,
+        public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final ExactJoinTablesRequest request) {
             return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
@@ -178,7 +178,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     LeftJoinTablesGrpcImpl::doJoin);
         }
 
-        static public Table doJoin(final Table lhs, final Table rhs,
+        public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final LeftJoinTablesRequest request) {
             return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
@@ -198,7 +198,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     NaturalJoinTablesGrpcImpl::doJoin);
         }
 
-        static public Table doJoin(final Table lhs, final Table rhs,
+        public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final NaturalJoinTablesRequest request) {
             return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
