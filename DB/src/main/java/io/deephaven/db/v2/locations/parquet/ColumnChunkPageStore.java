@@ -155,4 +155,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public ChunkType getChunkType() {
         return toPage.getChunkType();
     }
+
+    /**
+     * These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.
+     */
+    @NotNull
+    public ChunkPage<ATTR> getPageContaining(final long row) {
+        return getPageContaining(DEFAULT_FILL_INSTANCE, row);
+    }
 }

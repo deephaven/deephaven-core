@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionFloat<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionFloat(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
-        super(columnChunkPageStores);
+    public ParquetColumnRegionFloat(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+        super(columnChunkPageStore);
     }
 
     @Override

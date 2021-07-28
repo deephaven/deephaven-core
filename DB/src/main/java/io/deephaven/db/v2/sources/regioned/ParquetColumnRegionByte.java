@@ -16,8 +16,9 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionByte<ATTR> {
 
-    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
-        super(columnChunkPageStores);
+    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+        // TODO-RWC: We need to refactor things so that we derive the region bits and mask from the columnChunkReaders statically before constructing stuff.
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     public byte[] getBytes(

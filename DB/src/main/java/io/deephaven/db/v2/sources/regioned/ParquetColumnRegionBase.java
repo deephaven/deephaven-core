@@ -3,82 +3,79 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
-import io.deephaven.db.v2.sources.chunk.page.PageStore;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
-public class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnRegion<ATTR>, PageStore<ATTR, ATTR, ColumnChunkPageStore<ATTR>> {
+public abstract class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnRegion<ATTR> {
 
-    private final ColumnChunkPageStore<ATTR>[] columnChunkPageStores;
-    private final long[] columnChunkLastIndices;
-    private final long length;
+    private final long mask;
+    private final ColumnChunkPageStore<ATTR> columnChunkPageStore;
 
-    ParquetColumnRegionBase(@NotNull final ColumnChunkPageStore<ATTR>[] columnChunkPageStores) {
-        this.columnChunkPageStores = Require.neqNull(columnChunkPageStores, "columnChunkPageStores");
+    ParquetColumnRegionBase(final long mask, @NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+        this.mask = mask;
+        this.columnChunkPageStore = Require.neqNull(columnChunkPageStore, "columnChunkPageStore");
 
-        final int columnChunkCount = Require.gtZero(columnChunkPageStores.length, "columnChunkPageStores.length");
-        columnChunkLastIndices = new long[columnChunkCount];
-        long lastIndex = -1L;
-        for (int cci = 0; cci < columnChunkCount; ++cci) {
-            final ColumnChunkPageStore<ATTR> columnChunkPageStore = columnChunkPageStores[cci];
-
-            // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
-            Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
-            Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstRowOffset()");
-            // TODO-RWC: Clean this up
-//            Require.requirement(cci == 0 || columnChunkPageStore.getNativeType() == columnChunkPageStores[cci - 1].getNativeType(), "all column chunk page stores have same native type");
-
-            columnChunkLastIndices[cci] = lastIndex += columnChunkPageStore.length();
-        }
-        length = lastIndex + 1;
+        // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
+        Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
+        Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstrRowOffset()");
     }
 
     @Override
-    final public long length() {
-        return length;
+    public final long mask() {
+        return mask;
     }
 
-    @NotNull
     @Override
-    public final ColumnChunkPageStore<ATTR> getPageContaining(@NotNull final FillContext fillContext, final long elementIndex) {
-        final long rowIndex = elementIndex & mask();
-        if (rowIndex < 0 || rowIndex >= length()) {
-            throw new IllegalArgumentException("Unknown row index " + rowIndex + " (from element index " + elementIndex
-                    + "), expected in range [0," + length() + ")");
-        }
-        final int rawPageIndex = Arrays.binarySearch(columnChunkLastIndices, rowIndex);
-        final int pageIndex = rawPageIndex < 0 ? ~rawPageIndex : rawPageIndex;
-        return columnChunkPageStores[pageIndex];
+    public final long length() {
+        return columnChunkPageStore.length();
+    }
+
+    @Override
+    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+        return columnChunkPageStore.getChunk(context, orderedKeys);
+    }
+
+    @Override
+    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey, final long lastKey) {
+        return columnChunkPageStore.getChunk(context, firstKey, lastKey);
+    }
+
+    @Override
+    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
+        columnChunkPageStore.fillChunk(context, destination, orderedKeys);
+    }
+
+    @Override
+    public final void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+        columnChunkPageStore.fillChunkAppend(context, destination, orderedKeysIterator);
     }
 
     @Override
     public final ChunkPage<ATTR> getChunkPageContaining(final long elementIndex) {
-        // NB: No ColumnChunkPageStore implementations use fill contexts for anything, so we can safely use the default
-        //     context in this helper.
-        return getPageContaining(DEFAULT_FILL_INSTANCE, elementIndex).getPageContaining(DEFAULT_FILL_INSTANCE, elementIndex);
+        return columnChunkPageStore.getPageContaining(elementIndex);
     }
 
     @Override
     @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
         ParquetColumnRegion.super.releaseCachedResources();
-        Stream.of(columnChunkPageStores).forEach(ColumnChunkPageStore::close);
+        // TODO-RWC: This seems wrong.
+        columnChunkPageStore.close();
     }
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        // See note in getChunkPageContaining; we can safely use one page store's context for all
-        return columnChunkPageStores[0].makeFillContext(chunkCapacity, sharedContext);
+    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return columnChunkPageStore.makeFillContext(chunkCapacity, sharedContext);
     }
 
     @Override
-    public GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
-        // See note in getChunkPageContaining; we can safely use one page store's context for all
-        return columnChunkPageStores[0].makeGetContext(chunkCapacity, sharedContext);
+    public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return columnChunkPageStore.makeGetContext(chunkCapacity, sharedContext);
     }
 }

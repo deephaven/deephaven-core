@@ -2,8 +2,10 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 public interface ColumnRegionReferencing<ATTR extends Attributes.Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
@@ -11,6 +13,12 @@ public interface ColumnRegionReferencing<ATTR extends Attributes.Any, REFERENCED
 
     @NotNull
     REFERENCED_COLUMN_REGION getReferencedRegion();
+
+    @Override
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return getReferencedRegion().getChunkType();
+    }
 
     interface Converter<ATTR extends Attributes.Any> {
 
@@ -30,7 +38,8 @@ public interface ColumnRegionReferencing<ATTR extends Attributes.Any, REFERENCED
             this.nullReferencedColumnRegion = nullReferencedColumnRegion;
         }
 
-        @NotNull @Override
+        @Override
+        @NotNull
         public REFERENCED_COLUMN_REGION getReferencedRegion() {
             return nullReferencedColumnRegion;
         }
