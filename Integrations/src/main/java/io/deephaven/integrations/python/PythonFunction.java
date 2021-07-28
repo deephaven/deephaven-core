@@ -65,6 +65,12 @@ public class PythonFunction<T> implements Function<T, Object> {
         }
     }
 
+    // this method returns the PyObject result of pyCallable.call without attempting to wrap it in a java type
+    public PyObject passThrough(T[] t) {
+        PyObject out = pyCallable.call("__call__", t);
+        return out;
+    }
+
     @Override
     public Object apply(T t) {
         PyObject out = pyCallable.call("__call__", t);
