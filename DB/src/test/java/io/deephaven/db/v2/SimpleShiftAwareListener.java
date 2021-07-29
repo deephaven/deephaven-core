@@ -4,7 +4,7 @@ package io.deephaven.db.v2;
  * A listener for use in unit tests that writes down the update it receives and counts how many it received.
  */
 public class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdapter {
-    protected SimpleShiftAwareListener(DynamicTable source) {
+    public SimpleShiftAwareListener(DynamicTable source) {
         super(source, false);
         reset();
     }
@@ -13,10 +13,14 @@ public class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdap
         return count;
     }
 
+    public Update getUpdate() {
+        return update;
+    }
+
     int count;
     Update update;
 
-    void reset() {
+    public void reset() {
         close();
         count = 0;
         update = null;

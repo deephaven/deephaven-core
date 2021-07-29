@@ -108,6 +108,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     String COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
     /**
+     * A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle after
+     * the stream table is refreshed the rows are removed.
+     */
+    String STREAM_TABLE_ATTRIBUTE = "StreamTable";
+    /**
      * The query engine may set or read this attribute to determine if a table is sorted by a particular column.
      */
     String SORTED_COLUMNS_ATTRIBUTE = "SortedColumns";

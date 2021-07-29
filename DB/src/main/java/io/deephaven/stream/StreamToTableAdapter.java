@@ -6,14 +6,13 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTable;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.ShiftAwareListener;
-import io.deephaven.db.v2.sources.ByteAsBooleanColumnSource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.LongAsDateTimeColumnSource;
-import io.deephaven.db.v2.sources.SwitchColumnSource;
+import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunkcolumnsource.CharChunkColumnSource;
@@ -41,6 +40,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private ChunkColumnSource<?> [] bufferChunkSources;
     private ChunkColumnSource<?> [] currentChunkSources;
     private ChunkColumnSource<?> [] prevChunkSources;
+    private NullValueColumnSource<?> [] nullColumnSources;
     private final SwitchColumnSource<?> [] switchSources;
     private final ChunkType [] chunkTypes;
     private final Class<?>[] columnTypesArray;
@@ -60,6 +60,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
         chunkTypes = tableDefinitionToChunkTypes(columnTypesArray);
         currentChunkSources = makeChunkSources(columnTypesArray, columnNamesArray);
+        nullColumnSources = makeNullColumnSources(currentChunkSources);
+
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
         switchSources = makeSwitchSources(currentChunkSources, visibleSources);
 
@@ -68,6 +70,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         index = Index.FACTORY.getEmptyIndex();
 
         table = new QueryTable(index, visibleSources);
+        table.setRefreshing(true);
+        table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
     @NotNull
@@ -76,6 +80,16 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final TLongArrayList offsets = new TLongArrayList();
         for (int ii = 0; ii < columnTypesArray.length; ++ii) {
             sources[ii]  = ChunkColumnSource.make(chunkTypes[ii], columnTypesArray[ii], offsets);
+        }
+        return sources;
+    }
+
+    @NotNull
+    private NullValueColumnSource<?> [] makeNullColumnSources(ChunkColumnSource<?> [] chunkSources) {
+        final NullValueColumnSource<?> [] sources = new NullValueColumnSource[chunkSources.length];
+        final TLongArrayList offsets = new TLongArrayList();
+        for (int ii = 0; ii < columnTypesArray.length; ++ii) {
+            sources[ii]  = NullValueColumnSource.getInstance(chunkSources[ii].getType(), chunkSources[ii].getComponentType());
         }
         return sources;
     }
@@ -116,7 +130,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         return result;
     }
 
-    public Table table() {
+    public DynamicTable table() {
         return table;
     }
 
@@ -134,14 +148,30 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final long newSize;
 
         synchronized (this) {
-            newSize = bufferChunkSources[0].getSize();
+            newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
+
+            if (oldSize == 0 && newSize == 0) {
+                return;
+            }
 
             ChunkColumnSource<?> [] oldPrev = prevChunkSources;
 
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                prevChunkSources[ii].clear();
-                //noinspection unchecked
-                switchSources[ii].setNewCurrent((ColumnSource)bufferChunkSources[ii]);
+                if (prevChunkSources != null) {
+                    prevChunkSources[ii].clear();
+                }
+            }
+
+            if (bufferChunkSources == null) {
+                // null out our current values
+                for (int ii = 0; ii < switchSources.length; ++ii) {
+                    //noinspection unchecked
+                    switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
+                }
+            } else {
+                for (int ii = 0; ii < switchSources.length; ++ii) {
+                    switchSources[ii].setNewCurrent((ColumnSource) bufferChunkSources[ii]);
+                }
             }
             // current becomes prev, buffer becomes current, buffer is set to cleared prev for the next pass
             prevChunkSources = currentChunkSources;
@@ -155,7 +185,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             }
         }
 
-        table.notifyListeners(new ShiftAwareListener.Update(Index.FACTORY.getFlatIndex(oldSize), Index.FACTORY.getFlatIndex(newSize), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        table.notifyListeners(new ShiftAwareListener.Update(Index.FACTORY.getFlatIndex(newSize), Index.FACTORY.getFlatIndex(oldSize), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 
     @SafeVarargs
