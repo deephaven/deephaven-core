@@ -141,7 +141,12 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final CrossJoinTablesRequest request) {
-            return lhs.join(rhs, columnsToMatch, columnsToAdd, request.getReserveBits());
+            int reserveBits = request.getReserveBits();
+            if (reserveBits <= 0) {
+                return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of reserve_bits
+            } else {
+                return lhs.join(rhs, columnsToMatch, columnsToAdd, reserveBits);
+            }
         }
     }
 
