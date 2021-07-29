@@ -239,12 +239,22 @@ public class KafkaIngester {
         long lastReportNanos = System.nanoTime();
         final int expectedPartitionCount = openPartitions.size();
         final DecimalFormat rateFormat = new DecimalFormat("#.0000");
-        while (openPartitions.size() == expectedPartitionCount) {
+        while (true) {
+            final int currentPartitionSize = openPartitions.size();
+            if (currentPartitionSize != expectedPartitionCount) {
+                log.error().append(logPrefix)
+                        .append("Stopping due to partition size change to ").append(currentPartitionSize)
+                        .append(".").endl();
+                break;
+            }
             final long beforePoll = System.nanoTime();
             final long nextReport = lastReportNanos + reportIntervalNanos;
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
             boolean noMore = pollOnce(Duration.ofNanos(remainingNanos));
             if (noMore) {
+                log.error().append(logPrefix)
+                        .append("Stopping due to too many errors.")
+                        .endl();
                 break;
             }
             final long afterPoll = System.nanoTime();
