@@ -41,17 +41,17 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return ChunkType.Object;
     }
 
-    static <T, ATTR extends Any> ColumnRegionObject.Null<T, ATTR> createNull() {
+    static <T, ATTR extends Any> ColumnRegionObject<T, ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<T, ATTR>(pageMask);
     }
 
-    class Null<DATA_TYPE, ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionObject<DATA_TYPE, ATTR> {
-
+    final class Null<DATA_TYPE, ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionObject<DATA_TYPE, ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionObject.Null INSTANCE = new ColumnRegionObject.Null();
+        private static final ColumnRegionObject DEFAULT_INSTANCE = new ColumnRegionObject.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
-        Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -60,11 +60,14 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
     }
 
-    final class Constant<DATA_TYPE, ATTR extends Any> implements ColumnRegionObject<DATA_TYPE, ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<DATA_TYPE, ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionObject<DATA_TYPE, ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final DATA_TYPE value;
 
-        public Constant(final DATA_TYPE value) {
+        public Constant(final long pageMask, final DATA_TYPE value) {
+            super(pageMask);
             this.value = value;
         }
 

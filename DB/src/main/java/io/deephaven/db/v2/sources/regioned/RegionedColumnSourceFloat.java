@@ -47,7 +47,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionFloat.createNull(), DeferredColumnRegionFloat::new);
+            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
         }
     }
 
@@ -80,7 +80,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
 
         Partitioning() {
-            super(ColumnRegionFloat.createNull(),
+            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask),
                     Supplier::get // No need to interpose a deferred region in this case
             );
         }
@@ -95,7 +95,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
             }
-            return new ColumnRegionFloat.Constant<>(unbox((Float) partitioningColumnValue));
+            return new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
         }
     }
 }

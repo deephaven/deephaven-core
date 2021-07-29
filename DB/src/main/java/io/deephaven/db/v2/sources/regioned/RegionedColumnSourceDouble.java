@@ -47,7 +47,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceDouble<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionDouble.createNull(), DeferredColumnRegionDouble::new);
+            super(ColumnRegionDouble.createNull(PARAMETERS.regionMask), DeferredColumnRegionDouble::new);
         }
     }
 
@@ -80,7 +80,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceDouble<Values> {
 
         Partitioning() {
-            super(ColumnRegionDouble.createNull(),
+            super(ColumnRegionDouble.createNull(PARAMETERS.regionMask),
                     Supplier::get // No need to interpose a deferred region in this case
             );
         }
@@ -95,7 +95,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
-            return new ColumnRegionDouble.Constant<>(unbox((Double) partitioningColumnValue));
+            return new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
         }
     }
 }

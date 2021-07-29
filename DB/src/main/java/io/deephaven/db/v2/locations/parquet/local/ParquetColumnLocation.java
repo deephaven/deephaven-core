@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.locations.parquet.local;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -16,6 +17,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.Attributes.UnorderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.chunk.page.Page;
 import io.deephaven.db.v2.sources.regioned.*;
 import io.deephaven.db.v2.utils.ChunkBoxer;
 import io.deephaven.db.v2.utils.OrderedKeys;
@@ -28,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -51,6 +54,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Chunk<ATTR>[] dictionaries;
     private ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores;
+    private RegionedPageStore.Parameters regionParameters;
 
     /**
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
@@ -245,6 +249,10 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
                     throw new TableDataException("Failed to read parquet file for " + this + " row group " + psi, e);
                 }
             }
+            regionParameters = new RegionedPageStore.Parameters(
+                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                    pageStoreCount,
+                    Arrays.stream(pageStores).mapToLong(Page::length).max().orElseThrow(IllegalStateException::new));
             pageStoreCreators = null;
         }
     }

@@ -47,7 +47,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionLong.createNull(), DeferredColumnRegionLong::new);
+            super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
         }
     }
 
@@ -80,7 +80,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
 
         Partitioning() {
-            super(ColumnRegionLong.createNull(),
+            super(ColumnRegionLong.createNull(PARAMETERS.regionMask),
                     Supplier::get // No need to interpose a deferred region in this case
             );
         }
@@ -95,7 +95,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
             }
-            return new ColumnRegionLong.Constant<>(unbox((Long) partitioningColumnValue));
+            return new ColumnRegionLong.Constant<>(regionMask(), unbox((Long) partitioningColumnValue));
         }
     }
 }

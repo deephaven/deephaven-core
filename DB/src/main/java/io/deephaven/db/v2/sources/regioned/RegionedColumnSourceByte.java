@@ -47,7 +47,7 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionByte.createNull(), DeferredColumnRegionByte::new);
+            super(ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
         }
     }
 
@@ -80,7 +80,7 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceByte<Values> {
 
         Partitioning() {
-            super(ColumnRegionByte.createNull(),
+            super(ColumnRegionByte.createNull(PARAMETERS.regionMask),
                     Supplier::get // No need to interpose a deferred region in this case
             );
         }
@@ -95,7 +95,7 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
-            return new ColumnRegionByte.Constant<>(unbox((Byte) partitioningColumnValue));
+            return new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
         }
     }
 }

@@ -39,7 +39,7 @@ public interface RegionedColumnSource<DATA_TYPE> extends DeferredGroupingColumnS
     /**
      * Address bits allocated to the region index.
      **/
-    int REGION_INDEX_ADDRESS_BITS = 23;
+    int REGION_INDEX_ADDRESS_BITS = 20;
 
     /**
      * Address bits allocated to the sub-region element index.

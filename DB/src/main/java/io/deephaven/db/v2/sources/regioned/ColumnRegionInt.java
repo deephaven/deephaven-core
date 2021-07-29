@@ -41,16 +41,17 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
         return ChunkType.Int;
     }
 
-    static <ATTR extends Any> ColumnRegionInt.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionInt.Null<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == ColumnRegionInt.Null.DEFAULT_INSTANCE.mask() ? ColumnRegionInt.Null.DEFAULT_INSTANCE : new ColumnRegionInt.Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionInt<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionInt.Null INSTANCE = new ColumnRegionInt.Null();
+        private static final ColumnRegionInt.Null DEFAULT_INSTANCE = new ColumnRegionInt.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -59,11 +60,14 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionInt<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionInt<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final int value;
 
-        public Constant(final int value) {
+        public Constant(final long pageMask, final int value) {
+            super(pageMask);
             this.value = value;
         }
 

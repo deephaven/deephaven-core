@@ -10,23 +10,39 @@ import io.deephaven.db.v2.sources.chunk.page.PageStore;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
         extends PageStore<ATTR, INNER_ATTR, REGION_TYPE>, LongSizedDataStructure {
 
-    long mask();
+    /**
+     * @return The parameters object that describes this regioned page store
+     */
+    Parameters parameters();
+
+    /**
+     * @inheritDoc Note that this represent this regioned page store's mask as a {@link Page}.
+     */
+    @Override
+    @FinalDefault
+    default long mask() {
+        return parameters().pageMask;
+    }
 
     /**
      * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when
-     * calculating their address within a page
+     * calculating their address within a region
      */
-    long regionMask();
+    @FinalDefault
+    default long regionMask() {
+        return parameters().regionMask;
+    }
 
     /**
      * @return The number of bits masked by {@link #regionMask()}
      */
-    int regionMaskNumBits();
+    @FinalDefault
+    default int regionMaskNumBits() {
+        return parameters().regionMaskNumBits;
+    }
 
     /**
      * @return The total number of rows across all regions.
@@ -95,50 +111,68 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     /**
-     * A regioned page store for nested use when the full set of regions and their sizes are known.
+     * Class to calculate and encapsulate the parameters of a RegionedPageStore.
      */
-    abstract class StaticNested<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
+    final class Parameters {
+
+        public final long pageMask;
+        public final int maximumRegionCount;
+        public final long maximumRegionSize;
+        public final long regionMask;
+        public final int regionMaskNumBits;
+
+        public Parameters(final long pageMask, final int maximumRegionCount, final long maximumRegionSize) {
+            this.pageMask = validateMask(pageMask, "page");
+            this.maximumRegionCount = Require.gtZero(maximumRegionCount, "maximum region count");
+            this.maximumRegionSize = Require.gtZero(maximumRegionSize, "maximum region size");
+
+            final int regionNumBits = MathUtil.ceilLog2(maximumRegionCount);
+            regionMask = validateMask(pageMask >>> regionNumBits, "region");
+            regionMaskNumBits = MathUtil.ceilLog2(regionMask);
+            final long maxRegionSizeNumBits = MathUtil.ceilLog2(maximumRegionSize);
+            if (maxRegionSizeNumBits > regionMaskNumBits) {
+                throw new IllegalArgumentException(String.format(
+                        "Maximum region size %,d is too large to access with page mask %#016X and maximum region count %,d",
+                        maximumRegionSize, pageMask, maximumRegionCount));
+            }
+        }
+
+        private static long validateMask(final long mask, final String name) {
+            if (mask < 0 || (Long.SIZE - Long.numberOfLeadingZeros(mask)) != Long.bitCount(mask)) {
+                throw new IllegalArgumentException(String.format("Invalid %s mask %#016X", name, mask));
+            }
+            return mask;
+        }
+    }
+
+    /**
+     * A regioned page store for use when the full set of regions and their sizes are known.
+     */
+    abstract class Static<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
             implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
-        private final long mask;
+        private final Parameters parameters;
         private final REGION_TYPE[] regions;
-        private final long regionMask;
-        private final int regionMaskNumBits;
 
         /**
-         * @param mask    The {@link Page#mask} for this page
-         * @param regions Array of all regions in this page store. Array becomes property of the page store.
+         * @param parameters Mask and shift parameters
+         * @param regions    Array of all regions in this page store. Array becomes property of the page store.
          */
-        public StaticNested(final long mask, @NotNull final REGION_TYPE[] regions) {
-            this.mask = mask;
-            Require.elementsNeqNull(regions, "regions");
-            Require.gtZero(regions.length, "regions.length");
-            this.regions = regions;
-            final int regionNumBits = MathUtil.ceilLog2(regions.length);
-            regionMask = mask >>> regionNumBits;
-            regionMaskNumBits = MathUtil.ceilLog2(regionMask);
-            final long maxRegionSize = Arrays.stream(regions).mapToLong(Page::length).max().orElseThrow(IllegalStateException::new);
-            final long maxRegionSizeNumBits = MathUtil.ceilLog2(maxRegionSize);
-            if (maxRegionSizeNumBits > regionMaskNumBits) {
-                throw new IllegalArgumentException("Maximum region size " + maxRegionSize
-                        + " is too large to access with page mask " + Long.toHexString(mask)
-                        + " and region count " + regions.length);
+        public Static(@NotNull final Parameters parameters,
+                      @NotNull final REGION_TYPE[] regions) {
+            this.parameters = parameters;
+            this.regions = Require.elementsNeqNull(regions, "regions");
+            Require.leq(regions.length, "regions.length", parameters.maximumRegionCount, "parameters.maximumRegionCount");
+            for (int ri = 0; ri < regions.length; ++ri) {
+                REGION_TYPE region = regions[ri];
+                Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
+                Require.leq(region.length(), "region.length()", parameters.maximumRegionSize, "parameters.maximumRegionSize");
             }
         }
 
         @Override
-        public final long mask() {
-            return mask;
-        }
-
-        @Override
-        public final long regionMask() {
-            return regionMask;
-        }
-
-        @Override
-        public final int regionMaskNumBits() {
-            return regionMaskNumBits;
+        public final Parameters parameters() {
+            return parameters;
         }
 
         @Override

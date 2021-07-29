@@ -9,15 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
 
-    /**
-     * {@inheritDoc}
-     * The default implementation is suitable for regions that are members of a {@link RegionedColumnSource}.
-     */
-    @Override
-    default long mask() {
-        return RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
-    }
-
     @Override
     @FinalDefault
     default long firstRowOffset() {
@@ -25,9 +16,11 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
     }
 
     abstract class Null<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        Null() {
+        Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override

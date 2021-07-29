@@ -47,7 +47,7 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionShort.createNull(), DeferredColumnRegionShort::new);
+            super(ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
         }
     }
 
@@ -80,7 +80,7 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceShort<Values> {
 
         Partitioning() {
-            super(ColumnRegionShort.createNull(),
+            super(ColumnRegionShort.createNull(PARAMETERS.regionMask),
                     Supplier::get // No need to interpose a deferred region in this case
             );
         }
@@ -95,7 +95,7 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
-            return new ColumnRegionShort.Constant<>(unbox((Short) partitioningColumnValue));
+            return new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
         }
     }
 }
