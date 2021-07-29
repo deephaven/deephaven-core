@@ -796,7 +796,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String)asOfMatchRule);
         } else if (joinType.equals("CROSS_JOIN")) {
-            return crossJoin(rightTable, columnsToMatch, columnsToAdd, 0.0);
+            return crossJoin(rightTable, columnsToMatch, columnsToAdd, null);
         } else if (joinType.equals("EXACT_JOIN")) {
             return exactJoin(rightTable, columnsToMatch, columnsToAdd);
         } else if (joinType.equals("LEFT_JOIN")) {
