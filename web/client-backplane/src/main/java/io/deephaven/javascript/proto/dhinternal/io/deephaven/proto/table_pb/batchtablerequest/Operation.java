@@ -4,14 +4,17 @@ import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FilterTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
@@ -191,6 +194,60 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface CrossJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType.CrossJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      double getReserveBits();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setReserveBits(double reserveBits);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface DropColumnsFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SourceIdFieldType {
@@ -325,6 +382,54 @@ public class Operation {
 
       @JsProperty
       void setSize(String size);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ExactJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType.ExactJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -895,9 +1000,9 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface JoinFieldType {
+    public interface LeftJoinFieldType {
       @JsOverlay
-      static Operation.ToObjectReturnType.JoinFieldType create() {
+      static Operation.ToObjectReturnType.LeftJoinFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -906,9 +1011,6 @@ public class Operation {
 
       @JsProperty
       JsArray<String> getColumnsToMatchList();
-
-      @JsProperty
-      double getJoinType();
 
       @JsProperty
       Object getLeftId();
@@ -934,9 +1036,6 @@ public class Operation {
       default void setColumnsToMatchList(String[] columnsToMatchList) {
         setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
       }
-
-      @JsProperty
-      void setJoinType(double joinType);
 
       @JsProperty
       void setLeftId(Object leftId);
@@ -977,6 +1076,54 @@ public class Operation {
       default void setSourceIdsList(Object[] sourceIdsList) {
         setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
       }
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface NaturalJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType.NaturalJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1323,10 +1470,16 @@ public class Operation {
     Operation.ToObjectReturnType.ComboAggregateFieldType getComboAggregate();
 
     @JsProperty
+    Operation.ToObjectReturnType.CrossJoinFieldType getCrossJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType.DropColumnsFieldType getDropColumns();
 
     @JsProperty
     Operation.ToObjectReturnType.EmptyTableFieldType getEmptyTable();
+
+    @JsProperty
+    Operation.ToObjectReturnType.ExactJoinFieldType getExactJoin();
 
     @JsProperty
     Operation.ToObjectReturnType.FilterFieldType getFilter();
@@ -1341,13 +1494,16 @@ public class Operation {
     Operation.ToObjectReturnType.HeadByFieldType getHeadBy();
 
     @JsProperty
-    Operation.ToObjectReturnType.JoinFieldType getJoin();
-
-    @JsProperty
     Object getLazyUpdate();
 
     @JsProperty
+    Operation.ToObjectReturnType.LeftJoinFieldType getLeftJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType.MergeFieldType getMerge();
+
+    @JsProperty
+    Operation.ToObjectReturnType.NaturalJoinFieldType getNaturalJoin();
 
     @JsProperty
     Operation.ToObjectReturnType.RunChartDownsampleFieldType getRunChartDownsample();
@@ -1395,10 +1551,16 @@ public class Operation {
     void setComboAggregate(Operation.ToObjectReturnType.ComboAggregateFieldType comboAggregate);
 
     @JsProperty
+    void setCrossJoin(Operation.ToObjectReturnType.CrossJoinFieldType crossJoin);
+
+    @JsProperty
     void setDropColumns(Operation.ToObjectReturnType.DropColumnsFieldType dropColumns);
 
     @JsProperty
     void setEmptyTable(Operation.ToObjectReturnType.EmptyTableFieldType emptyTable);
+
+    @JsProperty
+    void setExactJoin(Operation.ToObjectReturnType.ExactJoinFieldType exactJoin);
 
     @JsProperty
     void setFilter(Operation.ToObjectReturnType.FilterFieldType filter);
@@ -1413,13 +1575,16 @@ public class Operation {
     void setHeadBy(Operation.ToObjectReturnType.HeadByFieldType headBy);
 
     @JsProperty
-    void setJoin(Operation.ToObjectReturnType.JoinFieldType join);
-
-    @JsProperty
     void setLazyUpdate(Object lazyUpdate);
 
     @JsProperty
+    void setLeftJoin(Operation.ToObjectReturnType.LeftJoinFieldType leftJoin);
+
+    @JsProperty
     void setMerge(Operation.ToObjectReturnType.MergeFieldType merge);
+
+    @JsProperty
+    void setNaturalJoin(Operation.ToObjectReturnType.NaturalJoinFieldType naturalJoin);
 
     @JsProperty
     void setRunChartDownsample(
@@ -1622,6 +1787,60 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface CrossJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType0.CrossJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      double getReserveBits();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setReserveBits(double reserveBits);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface DropColumnsFieldType {
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface SourceIdFieldType {
@@ -1757,6 +1976,54 @@ public class Operation {
 
       @JsProperty
       void setSize(String size);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ExactJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType0.ExactJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2330,9 +2597,9 @@ public class Operation {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface JoinFieldType {
+    public interface LeftJoinFieldType {
       @JsOverlay
-      static Operation.ToObjectReturnType0.JoinFieldType create() {
+      static Operation.ToObjectReturnType0.LeftJoinFieldType create() {
         return Js.uncheckedCast(JsPropertyMap.of());
       }
 
@@ -2341,9 +2608,6 @@ public class Operation {
 
       @JsProperty
       JsArray<String> getColumnsToMatchList();
-
-      @JsProperty
-      double getJoinType();
 
       @JsProperty
       Object getLeftId();
@@ -2369,9 +2633,6 @@ public class Operation {
       default void setColumnsToMatchList(String[] columnsToMatchList) {
         setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
       }
-
-      @JsProperty
-      void setJoinType(double joinType);
 
       @JsProperty
       void setLeftId(Object leftId);
@@ -2412,6 +2673,54 @@ public class Operation {
       default void setSourceIdsList(Object[] sourceIdsList) {
         setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
       }
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface NaturalJoinFieldType {
+      @JsOverlay
+      static Operation.ToObjectReturnType0.NaturalJoinFieldType create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      JsArray<String> getColumnsToAddList();
+
+      @JsProperty
+      JsArray<String> getColumnsToMatchList();
+
+      @JsProperty
+      Object getLeftId();
+
+      @JsProperty
+      Object getResultId();
+
+      @JsProperty
+      Object getRightId();
+
+      @JsProperty
+      void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+      @JsOverlay
+      default void setColumnsToAddList(String[] columnsToAddList) {
+        setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+      }
+
+      @JsProperty
+      void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+      @JsOverlay
+      default void setColumnsToMatchList(String[] columnsToMatchList) {
+        setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+      }
+
+      @JsProperty
+      void setLeftId(Object leftId);
+
+      @JsProperty
+      void setResultId(Object resultId);
+
+      @JsProperty
+      void setRightId(Object rightId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2758,10 +3067,16 @@ public class Operation {
     Operation.ToObjectReturnType0.ComboAggregateFieldType getComboAggregate();
 
     @JsProperty
+    Operation.ToObjectReturnType0.CrossJoinFieldType getCrossJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType0.DropColumnsFieldType getDropColumns();
 
     @JsProperty
     Operation.ToObjectReturnType0.EmptyTableFieldType getEmptyTable();
+
+    @JsProperty
+    Operation.ToObjectReturnType0.ExactJoinFieldType getExactJoin();
 
     @JsProperty
     Operation.ToObjectReturnType0.FilterFieldType getFilter();
@@ -2776,13 +3091,16 @@ public class Operation {
     Operation.ToObjectReturnType0.HeadByFieldType getHeadBy();
 
     @JsProperty
-    Operation.ToObjectReturnType0.JoinFieldType getJoin();
-
-    @JsProperty
     Object getLazyUpdate();
 
     @JsProperty
+    Operation.ToObjectReturnType0.LeftJoinFieldType getLeftJoin();
+
+    @JsProperty
     Operation.ToObjectReturnType0.MergeFieldType getMerge();
+
+    @JsProperty
+    Operation.ToObjectReturnType0.NaturalJoinFieldType getNaturalJoin();
 
     @JsProperty
     Operation.ToObjectReturnType0.RunChartDownsampleFieldType getRunChartDownsample();
@@ -2830,10 +3148,16 @@ public class Operation {
     void setComboAggregate(Operation.ToObjectReturnType0.ComboAggregateFieldType comboAggregate);
 
     @JsProperty
+    void setCrossJoin(Operation.ToObjectReturnType0.CrossJoinFieldType crossJoin);
+
+    @JsProperty
     void setDropColumns(Operation.ToObjectReturnType0.DropColumnsFieldType dropColumns);
 
     @JsProperty
     void setEmptyTable(Operation.ToObjectReturnType0.EmptyTableFieldType emptyTable);
+
+    @JsProperty
+    void setExactJoin(Operation.ToObjectReturnType0.ExactJoinFieldType exactJoin);
 
     @JsProperty
     void setFilter(Operation.ToObjectReturnType0.FilterFieldType filter);
@@ -2848,13 +3172,16 @@ public class Operation {
     void setHeadBy(Operation.ToObjectReturnType0.HeadByFieldType headBy);
 
     @JsProperty
-    void setJoin(Operation.ToObjectReturnType0.JoinFieldType join);
-
-    @JsProperty
     void setLazyUpdate(Object lazyUpdate);
 
     @JsProperty
+    void setLeftJoin(Operation.ToObjectReturnType0.LeftJoinFieldType leftJoin);
+
+    @JsProperty
     void setMerge(Operation.ToObjectReturnType0.MergeFieldType merge);
+
+    @JsProperty
+    void setNaturalJoin(Operation.ToObjectReturnType0.NaturalJoinFieldType naturalJoin);
 
     @JsProperty
     void setRunChartDownsample(
@@ -2911,9 +3238,13 @@ public class Operation {
 
   public native void clearComboAggregate();
 
+  public native void clearCrossJoin();
+
   public native void clearDropColumns();
 
   public native void clearEmptyTable();
+
+  public native void clearExactJoin();
 
   public native void clearFilter();
 
@@ -2923,11 +3254,13 @@ public class Operation {
 
   public native void clearHeadBy();
 
-  public native void clearJoin();
-
   public native void clearLazyUpdate();
 
+  public native void clearLeftJoin();
+
   public native void clearMerge();
+
+  public native void clearNaturalJoin();
 
   public native void clearRunChartDownsample();
 
@@ -2959,9 +3292,13 @@ public class Operation {
 
   public native ComboAggregateRequest getComboAggregate();
 
+  public native CrossJoinTablesRequest getCrossJoin();
+
   public native DropColumnsRequest getDropColumns();
 
   public native EmptyTableRequest getEmptyTable();
+
+  public native ExactJoinTablesRequest getExactJoin();
 
   public native FilterTableRequest getFilter();
 
@@ -2971,11 +3308,13 @@ public class Operation {
 
   public native HeadOrTailByRequest getHeadBy();
 
-  public native JoinTablesRequest getJoin();
-
   public native SelectOrUpdateRequest getLazyUpdate();
 
+  public native LeftJoinTablesRequest getLeftJoin();
+
   public native MergeTablesRequest getMerge();
+
+  public native NaturalJoinTablesRequest getNaturalJoin();
 
   public native int getOpCase();
 
@@ -3009,9 +3348,13 @@ public class Operation {
 
   public native boolean hasComboAggregate();
 
+  public native boolean hasCrossJoin();
+
   public native boolean hasDropColumns();
 
   public native boolean hasEmptyTable();
+
+  public native boolean hasExactJoin();
 
   public native boolean hasFilter();
 
@@ -3021,11 +3364,13 @@ public class Operation {
 
   public native boolean hasHeadBy();
 
-  public native boolean hasJoin();
-
   public native boolean hasLazyUpdate();
 
+  public native boolean hasLeftJoin();
+
   public native boolean hasMerge();
+
+  public native boolean hasNaturalJoin();
 
   public native boolean hasRunChartDownsample();
 
@@ -3063,6 +3408,10 @@ public class Operation {
 
   public native void setComboAggregate(ComboAggregateRequest value);
 
+  public native void setCrossJoin();
+
+  public native void setCrossJoin(CrossJoinTablesRequest value);
+
   public native void setDropColumns();
 
   public native void setDropColumns(DropColumnsRequest value);
@@ -3070,6 +3419,10 @@ public class Operation {
   public native void setEmptyTable();
 
   public native void setEmptyTable(EmptyTableRequest value);
+
+  public native void setExactJoin();
+
+  public native void setExactJoin(ExactJoinTablesRequest value);
 
   public native void setFilter();
 
@@ -3087,17 +3440,21 @@ public class Operation {
 
   public native void setHeadBy(HeadOrTailByRequest value);
 
-  public native void setJoin();
-
-  public native void setJoin(JoinTablesRequest value);
-
   public native void setLazyUpdate();
 
   public native void setLazyUpdate(SelectOrUpdateRequest value);
 
+  public native void setLeftJoin();
+
+  public native void setLeftJoin(LeftJoinTablesRequest value);
+
   public native void setMerge();
 
   public native void setMerge(MergeTablesRequest value);
+
+  public native void setNaturalJoin();
+
+  public native void setNaturalJoin(NaturalJoinTablesRequest value);
 
   public native void setRunChartDownsample();
 

@@ -4,8 +4,10 @@ import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest;
@@ -13,8 +15,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Filt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
@@ -225,6 +228,100 @@ public class TableServiceClient {
   }
 
   @JsFunction
+  public interface CrossJoinTablesCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.CrossJoinTablesCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.CrossJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface CrossJoinTablesMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.CrossJoinTablesMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.CrossJoinTablesMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface CrossJoinTablesMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default TableServiceClient.CrossJoinTablesMetadata_or_callbackFn
+        asCrossJoinTablesMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isCrossJoinTablesMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.CrossJoinTablesMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
   public interface DropColumnsCallbackFn {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface P0Type {
@@ -409,6 +506,100 @@ public class TableServiceClient {
     @JsOverlay
     default boolean isEmptyTableMetadata_or_callbackFn() {
       return (Object) this instanceof TableServiceClient.EmptyTableMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
+  public interface ExactJoinTablesCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.ExactJoinTablesCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.ExactJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface ExactJoinTablesMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.ExactJoinTablesMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.ExactJoinTablesMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface ExactJoinTablesMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default TableServiceClient.ExactJoinTablesMetadata_or_callbackFn
+        asExactJoinTablesMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isExactJoinTablesMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.ExactJoinTablesMetadata_or_callbackFn;
     }
   }
 
@@ -780,100 +971,6 @@ public class TableServiceClient {
   }
 
   @JsFunction
-  public interface JoinTablesCallbackFn {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface P0Type {
-      @JsOverlay
-      static TableServiceClient.JoinTablesCallbackFn.P0Type create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      double getCode();
-
-      @JsProperty
-      String getMessage();
-
-      @JsProperty
-      BrowserHeaders getMetadata();
-
-      @JsProperty
-      void setCode(double code);
-
-      @JsProperty
-      void setMessage(String message);
-
-      @JsProperty
-      void setMetadata(BrowserHeaders metadata);
-    }
-
-    void onInvoke(
-        TableServiceClient.JoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
-  }
-
-  @JsFunction
-  public interface JoinTablesMetadata_or_callbackFn {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface P0Type {
-      @JsOverlay
-      static TableServiceClient.JoinTablesMetadata_or_callbackFn.P0Type create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      double getCode();
-
-      @JsProperty
-      String getMessage();
-
-      @JsProperty
-      BrowserHeaders getMetadata();
-
-      @JsProperty
-      void setCode(double code);
-
-      @JsProperty
-      void setMessage(String message);
-
-      @JsProperty
-      void setMetadata(BrowserHeaders metadata);
-    }
-
-    void onInvoke(
-        TableServiceClient.JoinTablesMetadata_or_callbackFn.P0Type p0,
-        ExportedTableCreationResponse p1);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface JoinTablesMetadata_or_callbackUnionType {
-    @JsOverlay
-    static TableServiceClient.JoinTablesMetadata_or_callbackUnionType of(Object o) {
-      return Js.cast(o);
-    }
-
-    @JsOverlay
-    default BrowserHeaders asBrowserHeaders() {
-      return Js.cast(this);
-    }
-
-    @JsOverlay
-    default TableServiceClient.JoinTablesMetadata_or_callbackFn
-        asJoinTablesMetadata_or_callbackFn() {
-      return Js.cast(this);
-    }
-
-    @JsOverlay
-    default boolean isBrowserHeaders() {
-      return (Object) this instanceof BrowserHeaders;
-    }
-
-    @JsOverlay
-    default boolean isJoinTablesMetadata_or_callbackFn() {
-      return (Object) this instanceof TableServiceClient.JoinTablesMetadata_or_callbackFn;
-    }
-  }
-
-  @JsFunction
   public interface LazyUpdateCallbackFn {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface P0Type {
@@ -968,6 +1065,100 @@ public class TableServiceClient {
   }
 
   @JsFunction
+  public interface LeftJoinTablesCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.LeftJoinTablesCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.LeftJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface LeftJoinTablesMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.LeftJoinTablesMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.LeftJoinTablesMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface LeftJoinTablesMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default TableServiceClient.LeftJoinTablesMetadata_or_callbackFn
+        asLeftJoinTablesMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isLeftJoinTablesMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.LeftJoinTablesMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
   public interface MergeTablesCallbackFn {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface P0Type {
@@ -1058,6 +1249,100 @@ public class TableServiceClient {
     @JsOverlay
     default boolean isMergeTablesMetadata_or_callbackFn() {
       return (Object) this instanceof TableServiceClient.MergeTablesMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
+  public interface NaturalJoinTablesCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.NaturalJoinTablesCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.NaturalJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+  }
+
+  @JsFunction
+  public interface NaturalJoinTablesMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn.P0Type p0,
+        ExportedTableCreationResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface NaturalJoinTablesMetadata_or_callbackUnionType {
+    @JsOverlay
+    static TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn
+        asNaturalJoinTablesMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isNaturalJoinTablesMetadata_or_callbackFn() {
+      return (Object) this instanceof TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn;
     }
   }
 
@@ -2383,6 +2668,58 @@ public class TableServiceClient {
       TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback);
 
   @JsOverlay
+  public final UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.CrossJoinTablesCallbackFn callback) {
+    return crossJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return crossJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage,
+      TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.CrossJoinTablesCallbackFn callback) {
+    return crossJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage,
+      TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+    return crossJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage,
+      TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.CrossJoinTablesCallbackFn callback);
+
+  public native UnaryResponse crossJoinTables(
+      CrossJoinTablesRequest requestMessage,
+      TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
   public final UnaryResponse dropColumns(
       DropColumnsRequest requestMessage,
       BrowserHeaders metadata_or_callback,
@@ -2485,6 +2822,58 @@ public class TableServiceClient {
   public native UnaryResponse emptyTable(
       EmptyTableRequest requestMessage,
       TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
+  public final UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.ExactJoinTablesCallbackFn callback) {
+    return exactJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return exactJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage,
+      TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.ExactJoinTablesCallbackFn callback) {
+    return exactJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage,
+      TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+    return exactJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage,
+      TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.ExactJoinTablesCallbackFn callback);
+
+  public native UnaryResponse exactJoinTables(
+      ExactJoinTablesRequest requestMessage,
+      TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
   public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
       ExportedTableUpdatesRequest requestMessage, BrowserHeaders metadata);
@@ -2701,58 +3090,6 @@ public class TableServiceClient {
       TableServiceClient.HeadByMetadata_or_callbackUnionType metadata_or_callback);
 
   @JsOverlay
-  public final UnaryResponse joinTables(
-      JoinTablesRequest requestMessage,
-      BrowserHeaders metadata_or_callback,
-      TableServiceClient.JoinTablesCallbackFn callback) {
-    return joinTables(
-        requestMessage,
-        Js.<TableServiceClient.JoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-            metadata_or_callback),
-        callback);
-  }
-
-  @JsOverlay
-  public final UnaryResponse joinTables(
-      JoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
-    return joinTables(
-        requestMessage,
-        Js.<TableServiceClient.JoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-            metadata_or_callback));
-  }
-
-  @JsOverlay
-  public final UnaryResponse joinTables(
-      JoinTablesRequest requestMessage,
-      TableServiceClient.JoinTablesMetadata_or_callbackFn metadata_or_callback,
-      TableServiceClient.JoinTablesCallbackFn callback) {
-    return joinTables(
-        requestMessage,
-        Js.<TableServiceClient.JoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-            metadata_or_callback),
-        callback);
-  }
-
-  @JsOverlay
-  public final UnaryResponse joinTables(
-      JoinTablesRequest requestMessage,
-      TableServiceClient.JoinTablesMetadata_or_callbackFn metadata_or_callback) {
-    return joinTables(
-        requestMessage,
-        Js.<TableServiceClient.JoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-            metadata_or_callback));
-  }
-
-  public native UnaryResponse joinTables(
-      JoinTablesRequest requestMessage,
-      TableServiceClient.JoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-      TableServiceClient.JoinTablesCallbackFn callback);
-
-  public native UnaryResponse joinTables(
-      JoinTablesRequest requestMessage,
-      TableServiceClient.JoinTablesMetadata_or_callbackUnionType metadata_or_callback);
-
-  @JsOverlay
   public final UnaryResponse lazyUpdate(
       SelectOrUpdateRequest requestMessage,
       BrowserHeaders metadata_or_callback,
@@ -2805,6 +3142,58 @@ public class TableServiceClient {
       TableServiceClient.LazyUpdateMetadata_or_callbackUnionType metadata_or_callback);
 
   @JsOverlay
+  public final UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.LeftJoinTablesCallbackFn callback) {
+    return leftJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return leftJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage,
+      TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.LeftJoinTablesCallbackFn callback) {
+    return leftJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage,
+      TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+    return leftJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage,
+      TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.LeftJoinTablesCallbackFn callback);
+
+  public native UnaryResponse leftJoinTables(
+      LeftJoinTablesRequest requestMessage,
+      TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
   public final UnaryResponse mergeTables(
       MergeTablesRequest requestMessage,
       BrowserHeaders metadata_or_callback,
@@ -2855,6 +3244,58 @@ public class TableServiceClient {
   public native UnaryResponse mergeTables(
       MergeTablesRequest requestMessage,
       TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
+  public final UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      TableServiceClient.NaturalJoinTablesCallbackFn callback) {
+    return naturalJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return naturalJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage,
+      TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback,
+      TableServiceClient.NaturalJoinTablesCallbackFn callback) {
+    return naturalJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage,
+      TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+    return naturalJoinTables(
+        requestMessage,
+        Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage,
+      TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+      TableServiceClient.NaturalJoinTablesCallbackFn callback);
+
+  public native UnaryResponse naturalJoinTables(
+      NaturalJoinTablesRequest requestMessage,
+      TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
   @JsOverlay
   public final UnaryResponse runChartDownsample(

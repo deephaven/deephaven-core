@@ -9,7 +9,10 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.JoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
@@ -787,39 +790,120 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<JsTable> join(String joinType, JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
-        if (rightTable.workerConnection != workerConnection) {
-            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
-        }
-        final JsTableFetch joinFetch;
+    @Deprecated
+    public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
+                                 @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
-            joinFetch = (c, state, metadata) -> {
-                AsOfJoinTablesRequest request = new AsOfJoinTablesRequest();
-                request.setLeftId(state().getHandle().makeTableReference());
-                request.setRightId(rightTable.state().getHandle().makeTableReference());
-                request.setResultId(state.getHandle().makeTicket());
-                request.setColumnsToMatchList(columnsToMatch);
-                request.setColumnsToAddList(columnsToAdd);
-                if (asOfMatchRule != null) {
-                    request.setAsOfMatchRule(Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAny(asOfMatchRule).asDouble());
-                }
-                workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
-            };
-
-        } else if (Js.asPropertyMap(JoinTablesRequest.Type).has(joinType)){
-            joinFetch = (c, state, metadata) -> {
-                JoinTablesRequest request = new JoinTablesRequest();
-                request.setJoinType(Js.asPropertyMap(JoinTablesRequest.Type).getAny(joinType).asDouble());
-                request.setLeftId(state().getHandle().makeTableReference());
-                request.setRightId(rightTable.state().getHandle().makeTableReference());
-                request.setResultId(state.getHandle().makeTicket());
-                request.setColumnsToMatchList(columnsToMatch);
-                request.setColumnsToAddList(columnsToAdd);
-            };
+            return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String)asOfMatchRule);
+        } else if (joinType.equals("CROSS_JOIN")) {
+            return crossJoin(rightTable, columnsToMatch, columnsToAdd, null);
+        } else if (joinType.equals("EXACT_JOIN")) {
+            return exactJoin(rightTable, columnsToMatch, columnsToAdd);
+        } else if (joinType.equals("LEFT_JOIN")) {
+            return leftJoin(rightTable, columnsToMatch, columnsToAdd);
+        } else if (joinType.equals("NATURAL_JOIN")) {
+            return naturalJoin(rightTable, columnsToMatch, columnsToAdd);
         } else {
             throw new IllegalArgumentException("Unsupported join type " + joinType);
         }
-        return workerConnection.newState(joinFetch, "join(" + joinType + ", " + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")").refetch(this, workerConnection.metadata()).then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+    }
+
+    @JsMethod
+    public Promise<JsTable> asOfJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+                                     @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+        if (rightTable.workerConnection != workerConnection) {
+            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+            AsOfJoinTablesRequest request = new AsOfJoinTablesRequest();
+            request.setLeftId(state().getHandle().makeTableReference());
+            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setResultId(state.getHandle().makeTicket());
+            request.setColumnsToMatchList(columnsToMatch);
+            request.setColumnsToAddList(columnsToAdd);
+            if (asOfMatchRule != null) {
+                request.setAsOfMatchRule(Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAny(asOfMatchRule).asDouble());
+            }
+            workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
+        }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+    }
+
+    @JsMethod
+    public Promise<JsTable> crossJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+                                 @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
+        if (rightTable.workerConnection != workerConnection) {
+            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+            CrossJoinTablesRequest request = new CrossJoinTablesRequest();
+            request.setLeftId(state().getHandle().makeTableReference());
+            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setResultId(state.getHandle().makeTicket());
+            request.setColumnsToMatchList(columnsToMatch);
+            request.setColumnsToAddList(columnsToAdd);
+            if (reserve_bits != null) {
+                request.setReserveBits(reserve_bits);
+            }
+            workerConnection.tableServiceClient().crossJoinTables(request, metadata, c::apply);
+        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserve_bits + ")")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+    }
+
+    @JsMethod
+    public Promise<JsTable> exactJoin(JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd) {
+        if (rightTable.workerConnection != workerConnection) {
+            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+            ExactJoinTablesRequest request = new ExactJoinTablesRequest();
+            request.setLeftId(state().getHandle().makeTableReference());
+            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setResultId(state.getHandle().makeTicket());
+            request.setColumnsToMatchList(columnsToMatch);
+            request.setColumnsToAddList(columnsToAdd);
+            workerConnection.tableServiceClient().exactJoinTables(request, metadata, c::apply);
+        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+    }
+
+    @JsMethod
+    public Promise<JsTable> leftJoin(JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd) {
+        if (rightTable.workerConnection != workerConnection) {
+            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+            LeftJoinTablesRequest request = new LeftJoinTablesRequest();
+            request.setLeftId(state().getHandle().makeTableReference());
+            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setResultId(state.getHandle().makeTicket());
+            request.setColumnsToMatchList(columnsToMatch);
+            request.setColumnsToAddList(columnsToAdd);
+            workerConnection.tableServiceClient().leftJoinTables(request, metadata, c::apply);
+        }, "leftJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+    }
+
+    @JsMethod
+    public Promise<JsTable> naturalJoin(JsTable rightTable, JsArray<String> columnsToMatch, @JsOptional JsArray<String> columnsToAdd) {
+        if (rightTable.workerConnection != workerConnection) {
+            throw new IllegalStateException("Table argument passed to join is not from the same worker as current table");
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+            NaturalJoinTablesRequest request = new NaturalJoinTablesRequest();
+            request.setLeftId(state().getHandle().makeTableReference());
+            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setResultId(state.getHandle().makeTicket());
+            request.setColumnsToMatchList(columnsToMatch);
+            request.setColumnsToAddList(columnsToAdd);
+            workerConnection.tableServiceClient().naturalJoinTables(request, metadata, c::apply);
+        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
+                .refetch(this, workerConnection.metadata())
+                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @JsMethod

@@ -34,7 +34,8 @@ import java.util.function.LongConsumer;
  * Implementation for chunk-oriented aggregation operations, including {@link Table#join}.
  */
 public class CrossJoinHelper {
-    // Note: This should be >= 16 to get efficient performance from Index#insert and Index#shiftInPlace.
+    // Note: This would be >= 16 to get efficient performance from Index#insert and Index#shiftInPlace. However, it is
+    // very costly for joins of many small groups for the default to be so high.
     public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = Configuration.getInstance().getIntegerForClassWithDefault(CrossJoinHelper.class, "numRightBitsToReserve", 10);
 
     /**
