@@ -168,4 +168,9 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }

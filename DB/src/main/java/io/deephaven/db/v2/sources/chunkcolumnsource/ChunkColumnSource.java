@@ -90,4 +90,11 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * the column source; as it violates the immutability contract.
      */
     void clear();
+
+    /**
+     * Get the size of this column source (one more than the last valid index).
+     *
+     * @return the size of this column source
+     */
+    long getSize();
 }
