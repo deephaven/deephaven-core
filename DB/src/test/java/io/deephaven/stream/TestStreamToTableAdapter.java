@@ -56,20 +56,22 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(0, listener.getCount());
 
         final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[4];
-        final WritableObjectChunk<Object, Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(2);
-        chunks[0] = woc;
+        WritableObjectChunk<Object, Attributes.Values> woc;
+        WritableIntChunk<Attributes.Values> wic;
+        WritableLongChunk<Attributes.Values> wlc;
+        WritableDoubleChunk<Attributes.Values> wdc;
+
+        chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
+        chunks[1] = wic = WritableIntChunk.makeWritableChunk(2);
+        chunks[2] = wlc = WritableLongChunk.makeWritableChunk(2);
+        chunks[3] = wdc = WritableDoubleChunk.makeWritableChunk(2);
+
         woc.set(0, "Bill");
         woc.set(1, "Ted");
-        final WritableIntChunk<Attributes.Values> wic = WritableIntChunk.makeWritableChunk(2);
-        chunks[1] = wic;
         wic.set(0, 2);
         wic.set(1, 3);
-        final WritableLongChunk<Attributes.Values> wlc = WritableLongChunk.makeWritableChunk(2);
-        chunks[2] = wlc;
         wlc.set(0, 4);
         wlc.set(1, 5);
-        final WritableDoubleChunk<Attributes.Values> wdc = WritableDoubleChunk.makeWritableChunk(2);
-        chunks[3] = wdc;
         wdc.set(0, Math.PI);
         wdc.set(1, Math.E);
 
@@ -111,6 +113,98 @@ public class TestStreamToTableAdapter {
         listener.reset();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(0, listener.getCount());
+
+        chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
+        chunks[1] = wic = WritableIntChunk.makeWritableChunk(2);
+        chunks[2] = wlc = WritableLongChunk.makeWritableChunk(2);
+        chunks[3] = wdc = WritableDoubleChunk.makeWritableChunk(2);
+        woc.set(0, "Ren");
+        woc.set(1, "Stimpy");
+
+        wic.set(0, 7);
+        wic.set(1, 8);
+
+        wlc.set(0, 9);
+        wlc.set(1, 10);
+
+        wdc.set(0, 11.1);
+        wdc.set(1, 12.2);
+
+        adapter.accept(chunks);
+
+        chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
+        chunks[1] = wic = WritableIntChunk.makeWritableChunk(2);
+        chunks[2] = wlc = WritableLongChunk.makeWritableChunk(2);
+        chunks[3] = wdc = WritableDoubleChunk.makeWritableChunk(2);
+        woc.set(0, "Jekyll");
+        woc.set(1, "Hyde");
+
+        wic.set(0, 13);
+        wic.set(1, 14);
+
+        wlc.set(0, 15);
+        wlc.set(1, 16);
+
+        wdc.set(0, 17.7);
+        wdc.set(1, 18.8);
+        adapter.accept(chunks);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(4), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        final Table expect2 = TableTools.newTable(col("S", "Ren", "Stimpy", "Jekyll", "Hyde"), intCol("I", 7, 8, 13, 14), longCol("L", 9, 10, 15, 16), doubleCol("D", 11.1, 12.2, 17.7, 18.8));
+        TstUtils.assertTableEquals(expect2, result);
+
+        chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
+        chunks[1] = wic = WritableIntChunk.makeWritableChunk(2);
+        chunks[2] = wlc = WritableLongChunk.makeWritableChunk(2);
+        chunks[3] = wdc = WritableDoubleChunk.makeWritableChunk(2);
+        woc.set(0, "Ben");
+        woc.set(1, "Jerry");
+
+        wic.set(0, 19);
+        wic.set(1, 20);
+
+        wlc.set(0, 21);
+        wlc.set(1, 22);
+
+        wdc.set(0, 23.3);
+        wdc.set(1, 24.4);
+
+        adapter.accept(chunks);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(2), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(4), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        final Table expect3 = TableTools.newTable(col("S", "Ben", "Jerry"), intCol("I", 19, 20), longCol("L", 21, 22), doubleCol("D", 23.3, 24.4));
+        TstUtils.assertTableEquals(expect3, result);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(2), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(0, listener.getCount());
+        TstUtils.assertTableEquals(empty, result);
     }
 
     @Test
