@@ -168,4 +168,9 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }

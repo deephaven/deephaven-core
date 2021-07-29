@@ -165,4 +165,9 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }

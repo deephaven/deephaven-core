@@ -168,4 +168,9 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte> implements
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }

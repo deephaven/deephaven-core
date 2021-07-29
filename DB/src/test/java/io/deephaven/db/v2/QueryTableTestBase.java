@@ -13,8 +13,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static io.deephaven.db.tables.utils.TableTools.diff;
-
 /**
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
  */
@@ -314,49 +312,4 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    protected static class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdapter {
-        protected SimpleShiftAwareListener(DynamicTable source) {
-            super(source, false);
-            reset();
-        }
-
-        public int getCount() {
-            return count;
-        }
-
-        int count;
-        Update update;
-
-        void reset()
-        {
-            close();
-            count = 0;
-            update = null;
-        }
-
-        @Override
-        public void onUpdate(final Update upstream) {
-            close();
-            this.update = upstream.acquire();
-            ++count;
-        }
-
-        @Override
-        public String toString() {
-            return "SimpleShiftAwareListener{" +
-                    "count=" + count +
-                    ", added=" + update.added +
-                    ", removed=" + update.removed +
-                    ", modified=" + update.modified +
-                    ", shifted=" + update.shifted +
-                    ", modifiedColumnSet=" + update.modifiedColumnSet +
-                    '}';
-        }
-
-        public void close() {
-            if (update != null) {
-                update.release();
-            }
-        }
-    }
 }

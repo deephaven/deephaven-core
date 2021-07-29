@@ -168,4 +168,9 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }
