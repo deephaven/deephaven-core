@@ -28,11 +28,8 @@
         ide = await connection.startSession("groovy");
 
         await ide.runCode('remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")')
-        await ide.runCode('remoteTable2 = remoteTable.view("I2=I", "J2=J", "K")')
 
-        t1 = await ide.getTable('remoteTable');
-        t2 = await ide.getTable('remoteTable2');
-        openTable(await t1.join('CROSS_JOIN', t2, ['K']));
+        openTable(await ide.getTable('remoteTable'));
       })();
       function openTable(t) {
         // correctly disconnect from the old table, if any
