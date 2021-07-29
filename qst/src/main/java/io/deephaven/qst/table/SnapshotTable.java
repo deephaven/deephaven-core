@@ -23,7 +23,7 @@ public abstract class SnapshotTable extends TableBase {
 
     @Default
     public boolean doInitialSnapshot() {
-        return false;
+        return true;
     }
 
     @Override
