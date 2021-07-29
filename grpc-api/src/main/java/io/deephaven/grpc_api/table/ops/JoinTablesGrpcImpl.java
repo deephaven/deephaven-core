@@ -206,7 +206,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                                    final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                                    final NaturalJoinTablesRequest request) {
-            return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
+            return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
 }
