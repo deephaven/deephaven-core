@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * An {@link IntType} array.
+ */
 public final class IntArray extends PrimitiveArrayBase<Integer> {
 
     public static IntArray empty() {

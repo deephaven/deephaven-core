@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link DoubleType} array.
+ */
 public final class DoubleArray extends PrimitiveArrayBase<Double> {
 
     public static DoubleArray empty() {

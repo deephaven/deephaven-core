@@ -6,8 +6,12 @@ import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see io.deephaven.api.TableOperations#by(Collection, Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class AggregationTable extends TableBase implements SingleParentTable {

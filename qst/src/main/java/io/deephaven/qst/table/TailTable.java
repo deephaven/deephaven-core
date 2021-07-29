@@ -1,10 +1,14 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * @see TableOperations#tail(long)
+ */
 @Immutable
 @NodeStyle
 public abstract class TailTable extends TableBase implements SingleParentTable {

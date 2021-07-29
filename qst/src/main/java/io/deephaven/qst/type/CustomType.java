@@ -7,6 +7,14 @@ import org.immutables.value.Value.Parameter;
 
 import java.util.Optional;
 
+/**
+ * A custom type {@link #clazz() class}.
+ *
+ * <p>
+ * The {@link #clazz() class} must not be representable by a {@link Type#knownTypes() known type}.
+ *
+ * @param <T> the type
+ */
 @Immutable
 @SimpleStyle
 public abstract class CustomType<T> extends GenericTypeBase<T> {

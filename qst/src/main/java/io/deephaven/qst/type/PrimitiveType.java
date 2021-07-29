@@ -1,5 +1,18 @@
 package io.deephaven.qst.type;
 
+/**
+ * A primitive type.
+ *
+ * @param <T> the primitive type
+ * @see BooleanType
+ * @see ByteType
+ * @see CharType
+ * @see ShortType
+ * @see IntType
+ * @see LongType
+ * @see FloatType
+ * @see DoubleType
+ */
 public interface PrimitiveType<T> extends Type<T> {
 
     Class<T> primitiveClass();

@@ -1,6 +1,9 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.qst.TableCreation;
+import io.deephaven.qst.TableCreation.OperationsToTable;
+import io.deephaven.qst.TableCreation.TableToOperations;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -12,6 +15,21 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
+/**
+ * A table specification is a declarative description of a table query. Part of a "query syntax
+ * tree".
+ *
+ * <p>
+ * A table specification may be built-up explicitly via the individual implementation class build
+ * patterns, or may be built-up in a fluent-manner via the {@link TableOperations} interface.
+ *
+ * <p>
+ * A table specification can be "replayed" against the fluent interfaces, see
+ * {@link io.deephaven.qst.TableCreation#create(TableCreation, TableToOperations, OperationsToTable, TableSpec)}.
+ *
+ * @see io.deephaven.qst.TableCreation
+ * @see io.deephaven.api.TableOperations
+ */
 public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serializable {
 
     static EmptyTable empty(long size) {

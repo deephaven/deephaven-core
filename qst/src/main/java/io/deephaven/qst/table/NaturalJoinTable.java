@@ -3,6 +3,11 @@ package io.deephaven.qst.table;
 import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
+
+/**
+ * @see io.deephaven.api.TableOperations#naturalJoin(Object, Collection, Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class NaturalJoinTable extends JoinBase {

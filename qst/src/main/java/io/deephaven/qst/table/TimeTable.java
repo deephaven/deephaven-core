@@ -9,6 +9,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * A time table adds rows at a fixed {@link #interval() interval} with a
+ * {@link io.deephaven.qst.type.InstantType Timestamp} column.
+ */
 @Immutable
 @LeafStyle
 public abstract class TimeTable extends TableBase {

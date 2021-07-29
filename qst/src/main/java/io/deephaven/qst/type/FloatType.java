@@ -3,6 +3,9 @@ package io.deephaven.qst.type;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * The {@link Float} type.
+ */
 @Immutable
 @SimpleStyle
 public abstract class FloatType extends PrimitiveTypeBase<Float> {

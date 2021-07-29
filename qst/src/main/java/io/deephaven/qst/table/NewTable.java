@@ -15,6 +15,10 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * A new table is a list of {@link Column columns} of equal size. Each column will have a distinct
+ * name.
+ */
 @Immutable
 @LeafStyle
 public abstract class NewTable extends TableBase implements Iterable<Column<?>> {

@@ -3,6 +3,9 @@ package io.deephaven.qst.type;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * The {@link Byte} type.
+ */
 @Immutable
 @SimpleStyle
 public abstract class ByteType extends PrimitiveTypeBase<Byte> {

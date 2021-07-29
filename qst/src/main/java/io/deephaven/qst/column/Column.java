@@ -20,6 +20,11 @@ import org.immutables.value.Value.Parameter;
 import java.time.Instant;
 import java.util.Collection;
 
+/**
+ * A column is {@link #name() name} and {@link #array() array} pair.
+ *
+ * @param <T> the array's item type
+ */
 @Immutable
 @SimpleStyle
 public abstract class Column<T> {

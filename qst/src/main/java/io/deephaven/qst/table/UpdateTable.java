@@ -1,8 +1,14 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
+
+/**
+ * @see TableOperations#update(Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class UpdateTable extends TableBase implements SelectableTable {

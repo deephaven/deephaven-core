@@ -5,6 +5,9 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * @see io.deephaven.api.TableOperations#head(long)
+ */
 @Immutable
 @NodeStyle
 public abstract class HeadTable extends TableBase implements SingleParentTable {

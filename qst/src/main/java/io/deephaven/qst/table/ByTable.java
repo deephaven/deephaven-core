@@ -4,8 +4,12 @@ import io.deephaven.api.Selectable;
 import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see io.deephaven.api.TableOperations#by(Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class ByTable extends TableBase implements SingleParentTable {

@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link BooleanType} array.
+ */
 public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
 
     public static BooleanArray empty() {

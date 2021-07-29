@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link CharType} array.
+ */
 public final class CharArray extends PrimitiveArrayBase<Character> {
 
     public static CharArray empty() {

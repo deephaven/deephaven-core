@@ -96,7 +96,7 @@ public class TypeTest {
 
     @Test
     void nonEqualityCheck() {
-        final List<Type<?>> staticTypes = knownTypes().collect(Collectors.toList());
+        final List<Type<?>> staticTypes = knownTypes();
         final int L = staticTypes.size();
         for (int i = 0; i < L - 1; ++i) {
             for (int j = i + 1; j < L; ++j) {

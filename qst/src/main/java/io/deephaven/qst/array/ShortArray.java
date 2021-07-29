@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link ShortType} array.
+ */
 public final class ShortArray extends PrimitiveArrayBase<Short> {
 
     public static ShortArray empty() {

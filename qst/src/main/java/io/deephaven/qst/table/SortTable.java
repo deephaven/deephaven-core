@@ -2,10 +2,15 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see TableOperations#sort(Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class SortTable extends TableBase implements SingleParentTable {

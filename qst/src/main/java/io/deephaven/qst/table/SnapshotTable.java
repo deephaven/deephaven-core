@@ -2,11 +2,16 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see TableOperations#snapshot(Object, boolean, Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class SnapshotTable extends TableBase {

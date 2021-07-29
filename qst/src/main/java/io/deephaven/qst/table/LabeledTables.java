@@ -13,6 +13,9 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Labeled tables is a list of {@link LabeledTable labeled tables}. Each label will be distinct.
+ */
 @Immutable
 @BuildableStyle
 public abstract class LabeledTables implements Iterable<LabeledTable> {

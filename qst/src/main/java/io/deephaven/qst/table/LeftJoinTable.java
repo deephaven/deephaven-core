@@ -1,8 +1,14 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
+
+/**
+ * @see TableOperations#leftJoin(Object, Collection, Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class LeftJoinTable extends JoinBase {

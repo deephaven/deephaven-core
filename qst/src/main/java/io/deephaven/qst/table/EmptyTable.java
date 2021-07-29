@@ -5,6 +5,9 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * An empty table with {@link #size()} rows and {@code 0} columns.
+ */
 @Immutable
 @LeafStyle
 public abstract class EmptyTable extends TableBase {

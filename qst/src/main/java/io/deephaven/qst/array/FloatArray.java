@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link FloatType} array.
+ */
 public final class FloatArray extends PrimitiveArrayBase<Float> {
 
     public static FloatArray empty() {

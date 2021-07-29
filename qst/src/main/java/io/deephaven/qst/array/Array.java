@@ -6,9 +6,9 @@ import java.io.Serializable;
 import java.util.Collection;
 
 /**
- * Provides strong typing around an array-like object.
+ * Provides strong typing around an array-like object. Has a definite {@link #size() size}.
  *
- * @param <T> the generic type
+ * @param <T> the item type
  * @see PrimitiveArray
  * @see GenericArray
  */

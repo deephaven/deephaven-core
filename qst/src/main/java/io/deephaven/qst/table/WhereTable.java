@@ -1,11 +1,16 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see TableOperations#where(Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class WhereTable extends TableBase implements SingleParentTable {

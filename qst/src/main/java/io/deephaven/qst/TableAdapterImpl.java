@@ -36,26 +36,27 @@ import java.util.stream.Collectors;
 class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> implements Visitor {
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE toTable(
-        TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+        TableCreation<TABLE> creation, TableCreation.TableToOperations<TOPS, TABLE> toOps,
+        TableCreation.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getTableOut();
     }
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TOPS toOperations(
-        TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+        TableCreation<TABLE> creation, TableCreation.TableToOperations<TOPS, TABLE> toOps,
+        TableCreation.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getOperationsOut();
     }
 
     private final TableCreation<TABLE> tableCreation;
-    private final TableToOperations<TOPS, TABLE> toOps;
-    private final OperationsToTable<TOPS, TABLE> toTable;
+    private final TableCreation.TableToOperations<TOPS, TABLE> toOps;
+    private final TableCreation.OperationsToTable<TOPS, TABLE> toTable;
 
     private TABLE tableOut;
     private TOPS topsOut;
 
     private TableAdapterImpl(TableCreation<TABLE> tableCreation,
-        TableToOperations<TOPS, TABLE> toOps, OperationsToTable<TOPS, TABLE> toTable) {
+        TableCreation.TableToOperations<TOPS, TABLE> toOps,
+        TableCreation.OperationsToTable<TOPS, TABLE> toTable) {
         this.tableCreation = Objects.requireNonNull(tableCreation);
         this.toOps = Objects.requireNonNull(toOps);
         this.toTable = Objects.requireNonNull(toTable);

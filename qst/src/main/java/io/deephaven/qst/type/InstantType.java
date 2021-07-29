@@ -5,6 +5,9 @@ import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;
 
+/**
+ * The {@link Instant} type.
+ */
 @Immutable
 @SimpleStyle
 public abstract class InstantType extends GenericTypeBase<Instant> {

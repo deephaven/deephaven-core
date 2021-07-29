@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link ByteType} array.
+ */
 public final class ByteArray extends PrimitiveArrayBase<Byte> {
 
     public static ByteArray empty() {

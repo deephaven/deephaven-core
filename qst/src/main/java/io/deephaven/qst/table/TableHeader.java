@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.qst.column.Column;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.Type;
 import org.immutables.value.Value.Immutable;
@@ -13,6 +14,10 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * A table header is a list of {@link ColumnHeader column headers}. Each column header will have a
+ * distinct name.
+ */
 @Immutable
 @BuildableStyle
 public abstract class TableHeader implements Iterable<ColumnHeader<?>> {

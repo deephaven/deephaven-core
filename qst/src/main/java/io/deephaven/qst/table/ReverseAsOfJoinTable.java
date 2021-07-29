@@ -5,6 +5,11 @@ import io.deephaven.annotations.NodeStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
+
+/**
+ * @see io.deephaven.api.TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
+ */
 @Immutable
 @NodeStyle
 public abstract class ReverseAsOfJoinTable extends JoinBase {

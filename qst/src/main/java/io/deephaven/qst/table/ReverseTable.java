@@ -1,9 +1,13 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * @see TableOperations#reverse()
+ */
 @Immutable
 @NodeStyle
 public abstract class ReverseTable extends TableBase implements SingleParentTable {

@@ -2,11 +2,16 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinMatch;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
 import java.util.List;
 
+/**
+ * @see TableOperations#whereIn(Object, Collection)
+ */
 @Immutable
 @NodeStyle
 public abstract class WhereInTable extends TableBase {

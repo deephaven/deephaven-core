@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * A {@link LongType} array.
+ */
 public final class LongArray extends PrimitiveArrayBase<Long> {
 
     public static LongArray empty() {

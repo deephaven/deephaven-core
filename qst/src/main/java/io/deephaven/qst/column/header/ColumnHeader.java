@@ -16,6 +16,15 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * A column header is {@link #name() name} and {@link #type() type} pair.
+ *
+ * <p>
+ * Multiple column headers, up to 9, can be strongly-linked together to provide a convenient
+ * interface for building {@link NewTable new tables} in a row-oriented, type-safe manner.
+ *
+ * @param <T1> the type
+ */
 @Immutable
 @SimpleStyle
 public abstract class ColumnHeader<T1> implements TableHeader.Buildable {

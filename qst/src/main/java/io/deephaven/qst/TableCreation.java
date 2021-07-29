@@ -15,6 +15,17 @@ import java.util.Collection;
  */
 public interface TableCreation<TABLE> {
 
+    /**
+     * "Replay" the {@code table} against the given interfaces.
+     *
+     * @param creation the table creation
+     * @param toOps the table to operations
+     * @param toTable the operations to table
+     * @param table the table specification
+     * @param <TOPS> the table operations type
+     * @param <TABLE> the output table type
+     * @return the output table
+     */
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE create(
         TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
         OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
@@ -50,6 +61,33 @@ public interface TableCreation<TABLE> {
      *
      * @param tables the tables
      * @return the merged results
+     * @see io.deephaven.qst.table.MergeTable
      */
     TABLE merge(Collection<TABLE> tables);
+
+    /**
+     * Transform a table operation into a table.
+     *
+     * @param <TOPS> the table operations type
+     * @param <TABLE> the output table type
+     * @see #create(TableCreation, TableToOperations, OperationsToTable, TableSpec)
+     */
+    @FunctionalInterface
+    interface OperationsToTable<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
+
+        TABLE of(TOPS tableOperations);
+    }
+
+    /**
+     * Transform a table into a table operation.
+     *
+     * @param <TOPS> the table operations type
+     * @param <TABLE> the output table type
+     * @see #create(TableCreation, TableToOperations, OperationsToTable, TableSpec)
+     */
+    @FunctionalInterface
+    interface TableToOperations<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
+
+        TOPS of(TABLE table);
+    }
 }

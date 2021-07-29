@@ -3,6 +3,9 @@ package io.deephaven.qst.type;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * The {@link Integer} type.
+ */
 @Immutable
 @SimpleStyle
 public abstract class IntType extends PrimitiveTypeBase<Integer> {

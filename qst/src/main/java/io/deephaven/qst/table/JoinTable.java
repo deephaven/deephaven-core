@@ -1,9 +1,15 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.TableOperations;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collection;
+
+/**
+ * @see TableOperations#join(Object, Collection, Collection, int)
+ */
 @Immutable
 @NodeStyle
 public abstract class JoinTable extends JoinBase {
