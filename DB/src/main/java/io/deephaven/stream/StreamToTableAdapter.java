@@ -12,10 +12,8 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.db.v2.sources.chunkcolumnsource.CharChunkColumnSource;
 import io.deephaven.db.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
@@ -35,16 +33,18 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private final LiveTableRegistrar liveTableRegistrar;
 
     private final QueryTable table;
-
     private final Index index;
+    private final SwitchColumnSource<?> [] switchSources;
+
+    // to start out when we have no data, we use null value column sources which are cheap and singletons
+    private final NullValueColumnSource<?> [] nullColumnSources;
+
+    // we accumulate data into buffer from the ingester thread; capture it into current on the LTM thread; move it into
+    // prev after one cycle, and then then the cycle after that we clear out the chunks and reuse them for the buffers
+    // they all start out null in the constructor
     private ChunkColumnSource<?> [] bufferChunkSources;
     private ChunkColumnSource<?> [] currentChunkSources;
     private ChunkColumnSource<?> [] prevChunkSources;
-    private NullValueColumnSource<?> [] nullColumnSources;
-    private final SwitchColumnSource<?> [] switchSources;
-    private final ChunkType [] chunkTypes;
-    private final Class<?>[] columnTypesArray;
-    private final String[] columnNamesArray;
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
                                 @NotNull final StreamPublisher streamPublisher,
@@ -55,17 +55,10 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         streamPublisher.register(this);
         liveTableRegistrar.addTable(this);
 
-        columnTypesArray = tableDefinition.getColumnTypesArray();
-        columnNamesArray = tableDefinition.getColumnNamesArray();
-
-        chunkTypes = tableDefinitionToChunkTypes(columnTypesArray);
-        currentChunkSources = makeChunkSources(columnTypesArray, columnNamesArray);
-        nullColumnSources = makeNullColumnSources(currentChunkSources);
+        nullColumnSources = makeNullColumnSources(tableDefinition);
 
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
-        switchSources = makeSwitchSources(currentChunkSources, visibleSources);
-
-        bufferChunkSources = makeChunkSources(columnTypesArray, columnNamesArray);
+        switchSources = makeSwitchSources(tableDefinition, nullColumnSources, visibleSources);
 
         index = Index.FACTORY.getEmptyIndex();
 
@@ -75,31 +68,43 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
-    private ChunkColumnSource<?> [] makeChunkSources(Class<?>[] columnTypesArray, String[] columnNamesArray) {
-        final ChunkColumnSource<?> [] sources = new ChunkColumnSource[columnNamesArray.length];
+    private static ChunkColumnSource<?> [] makeChunkSources(TableDefinition tableDefinition) {
         final TLongArrayList offsets = new TLongArrayList();
-        for (int ii = 0; ii < columnTypesArray.length; ++ii) {
-            sources[ii]  = ChunkColumnSource.make(chunkTypes[ii], columnTypesArray[ii], offsets);
-        }
-        return sources;
+        return tableDefinition.getColumnStream().map(cd -> makeChunkSourceForColumn(offsets, cd)).toArray(ChunkColumnSource[]::new);
     }
 
     @NotNull
-    private NullValueColumnSource<?> [] makeNullColumnSources(ChunkColumnSource<?> [] chunkSources) {
-        final NullValueColumnSource<?> [] sources = new NullValueColumnSource[chunkSources.length];
-        final TLongArrayList offsets = new TLongArrayList();
-        for (int ii = 0; ii < columnTypesArray.length; ++ii) {
-            sources[ii]  = NullValueColumnSource.getInstance(chunkSources[ii].getType(), chunkSources[ii].getComponentType());
+    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, io.deephaven.db.tables.ColumnDefinition<?> cd) {
+        final Class<?> replacementType = replacementType(cd.getDataType());
+        if (replacementType != null) {
+            return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);
+        } else {
+            return ChunkColumnSource.make(ChunkType.fromElementType(cd.getDataType()), cd.getDataType(), cd.getComponentType(), offsets);
         }
-        return sources;
     }
 
     @NotNull
-    private SwitchColumnSource [] makeSwitchSources(ChunkColumnSource<?> [] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
-        final SwitchColumnSource [] switchSources = new SwitchColumnSource[wrapped.length];
-        final Map<String, SwitchColumnSource<?>> result = new LinkedHashMap<>();
+    private static NullValueColumnSource<?> [] makeNullColumnSources(TableDefinition tableDefinition) {
+        return tableDefinition.getColumnStream().map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition).toArray(NullValueColumnSource<?>[]::new);
+    }
+
+    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(io.deephaven.db.tables.ColumnDefinition<?> cd) {
+        final Class<?> replacementType = replacementType(cd.getDataType());
+        if (replacementType != null) {
+            return NullValueColumnSource.getInstance(replacementType, null);
+        } else {
+            return NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
+        }
+    }
+
+    @NotNull
+    private static SwitchColumnSource<?> [] makeSwitchSources(TableDefinition definition, NullValueColumnSource<?> [] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
+        final SwitchColumnSource<?> [] switchSources = new SwitchColumnSource[wrapped.length];
+        final Class<?> [] columnTypesArray = definition.getColumnTypesArray();
+        final String [] columnNamesArray = definition.getColumnNamesArray();
         for (int ii = 0; ii < wrapped.length; ++ii) {
-            final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(wrapped[ii]);
+            final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
+
             final ColumnSource<?> visibleSource;
             if (columnTypesArray[ii] == DBDateTime.class) {
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>)switchSource);
@@ -114,20 +119,28 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         return switchSources;
     }
 
-    @NotNull
-    private static ChunkType[] tableDefinitionToChunkTypes(Class<?>[] columnTypesArray) {
-        final ChunkType [] result = new ChunkType[columnTypesArray.length];
-        for (int ii = 0; ii < columnTypesArray.length; ++ii) {
-            if (columnTypesArray[ii] == DBDateTime.class) {
-                result[ii] = ChunkType.Long;
-            }
-            else if (columnTypesArray[ii] == Boolean.class) {
-                result[ii] = ChunkType.Byte;
-            } else {
-                result[ii] = ChunkType.fromElementType(columnTypesArray[ii]);
-            }
+    private static void maybeClearChunkColumnSource(ColumnSource<?> cs) {
+        if (cs instanceof ChunkColumnSource) {
+            ((ChunkColumnSource<?>) cs).clear();
         }
-        return result;
+    }
+
+    /**
+     * We change the inner columns to long and byte for DBDateTime and Boolean, respectively.  We expect our ingesters
+     * to pass us these primitive chunks for those types.
+     *
+     * @param columnType the type of the outer column
+     *
+     * @return the type of the inner column
+     */
+    private static Class<?> replacementType(Class<?> columnType) {
+        if (columnType == DBDateTime.class) {
+            return long.class;
+        } else if (columnType == Boolean.class) {
+            return byte.class;
+        } else {
+            return null;
+        }
     }
 
     public DynamicTable table() {
@@ -141,12 +154,21 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     @Override
     public void refresh() {
+        try {
+            doRefresh();
+        } catch (Exception e) {
+            table.notifyListenersOnError(e, null);
+        }
+    }
+
+    private void doRefresh() {
         streamPublisher.flush();
         // Switch columns, update index, deliver notification
 
         final long oldSize = index.size();
         final long newSize;
 
+        final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
@@ -154,35 +176,29 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 return;
             }
 
-            ChunkColumnSource<?> [] oldPrev = prevChunkSources;
+            capturedBufferSources = bufferChunkSources;
+            bufferChunkSources = prevChunkSources;
+        }
 
+        if (capturedBufferSources == null) {
+            // null out our current values
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                if (prevChunkSources != null) {
-                    prevChunkSources[ii].clear();
-                }
+                //noinspection unchecked
+                switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
             }
+        } else {
+            for (int ii = 0; ii < switchSources.length; ++ii) {
+                switchSources[ii].setNewCurrent((ColumnSource) capturedBufferSources[ii]);
+            }
+        }
 
-            if (bufferChunkSources == null) {
-                // null out our current values
-                for (int ii = 0; ii < switchSources.length; ++ii) {
-                    //noinspection unchecked
-                    switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
-                }
-            } else {
-                for (int ii = 0; ii < switchSources.length; ++ii) {
-                    switchSources[ii].setNewCurrent((ColumnSource) bufferChunkSources[ii]);
-                }
-            }
-            // current becomes prev, buffer becomes current, buffer is set to cleared prev for the next pass
-            prevChunkSources = currentChunkSources;
-            currentChunkSources = bufferChunkSources;
-            bufferChunkSources = oldPrev;
+        prevChunkSources = currentChunkSources;
+        currentChunkSources = capturedBufferSources;
 
-            if (oldSize < newSize) {
-                index.insertRange(oldSize, newSize - 1);
-            } else if (oldSize > newSize) {
-                index.removeRange(newSize, oldSize - 1);
-            }
+        if (oldSize < newSize) {
+            index.insertRange(oldSize, newSize - 1);
+        } else if (oldSize > newSize) {
+            index.removeRange(newSize, oldSize - 1);
         }
 
         table.notifyListeners(new ShiftAwareListener.Update(Index.FACTORY.getFlatIndex(newSize), Index.FACTORY.getFlatIndex(oldSize), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
@@ -194,10 +210,13 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         // Accumulate data into buffered column sources
         synchronized (this) {
             if (bufferChunkSources == null) {
-                bufferChunkSources = makeChunkSources(columnTypesArray, columnNamesArray);
+                bufferChunkSources = makeChunkSources(tableDefinition);
             }
             if (data.length != bufferChunkSources.length) {
-                throw new IllegalStateException();
+                // TODO: Our error handling should be better when in the ingester thread; since it seems proper to kill
+                //  the ingester, and also notify downstream tables
+                //  https://github.com/deephaven/deephaven-core/issues/934
+                throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected " + bufferChunkSources.length);
             }
             for (int ii = 0; ii < data.length; ++ii) {
                 bufferChunkSources[ii].addChunk(data[ii]);

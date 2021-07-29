@@ -6,22 +6,33 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     private long prevCycle = -1;
     private ColumnSource<T> prevSource;
     private ColumnSource<T> currentSource;
-    private final UpdateCommitter updateCommitter;
+    private final UpdateCommitter<SwitchColumnSource<T>> updateCommitter;
+    private final Consumer<ColumnSource<T>> onPreviousCommitted;
 
     public SwitchColumnSource(ColumnSource<T> currentSource) {
-        super(currentSource.getType());
+        this(currentSource, null);
+    }
+
+    public SwitchColumnSource(@NotNull final ColumnSource<T> currentSource, @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
+        super(currentSource.getType(), currentSource.getComponentType());
         this.currentSource = currentSource;
         this.updateCommitter = new UpdateCommitter<>(this, SwitchColumnSource::clearPrevious);
+        this.onPreviousCommitted = onPreviousCommitted;
     }
 
     private void clearPrevious() {
+        final ColumnSource<T> captured = prevSource;
         prevCycle = -1;
         prevSource = null;
+        onPreviousCommitted.accept(captured);
     }
 
     @Override

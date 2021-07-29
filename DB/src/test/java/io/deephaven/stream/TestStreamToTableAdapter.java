@@ -1,5 +1,6 @@
 package io.deephaven.stream;
 
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
@@ -172,6 +173,62 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(Index.FACTORY.getFlatIndex(3), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+    }
+
+    @Test
+    public void testArrayTypes() {
+        final TableDefinition tableDefinition = new TableDefinition(Arrays.asList(String[].class, int[].class), Arrays.asList("SA", "IA"));
+        final DynamicTable empty = TableTools.newTable(tableDefinition);
+
+        final StreamPublisher streamPublisher = new DummyStreamPublisher();
+
+        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final DynamicTable result = adapter.table();
+        TstUtils.assertTableEquals(empty, result);
+
+        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        result.listenForUpdates(listener);
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(0, listener.getCount());
+
+        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[2];
+        final WritableObjectChunk<String[], Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(2);
+        chunks[0] = woc;
+        woc.set(0, new String[]{"Gagarin", "Tereshkova"});
+        woc.set(1, new String[]{});
+        final WritableObjectChunk<int[], Attributes.Values> wic = WritableObjectChunk.makeWritableChunk(2);
+        chunks[1] = wic;
+        wic.set(0, new int[]{1, 2, 3});
+        wic.set(1, new int[]{4, 5, 6});
+
+        adapter.accept(chunks);
+
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(0, listener.getCount());
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(2), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        final Table expect1 = TableTools.newTable(col("SA", new String[]{"Gagarin", "Tereshkova"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY), col("IA", new int[]{1, 2, 3}, new int[]{4, 5, 6}));
+        TstUtils.assertTableEquals(expect1, result);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(2), listener.getUpdate().removed);
         TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().added);
         TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
