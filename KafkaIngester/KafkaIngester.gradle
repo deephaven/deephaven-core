@@ -21,7 +21,7 @@ configurations {
 
 dependencies {
     compile project(':DB')
-    testCompile 'junit:junit:4.12'
+    testCompile 'junit:junit:4.13.2'
     testCompile project(path: ':DB', configuration: 'testOutput')
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 
