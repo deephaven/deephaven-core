@@ -15,9 +15,9 @@ public abstract class WhereInTable extends TableBase {
         return ImmutableWhereInTable.builder();
     }
 
-    public abstract Table left();
+    public abstract TableSpec left();
 
-    public abstract Table right();
+    public abstract TableSpec right();
 
     public abstract List<JoinMatch> matches();
 
@@ -36,9 +36,9 @@ public abstract class WhereInTable extends TableBase {
 
     public interface Builder {
 
-        Builder left(Table left);
+        Builder left(TableSpec left);
 
-        Builder right(Table right);
+        Builder right(TableSpec right);
 
         Builder addMatches(JoinMatch element);
 

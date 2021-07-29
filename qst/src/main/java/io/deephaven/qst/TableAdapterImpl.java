@@ -18,8 +18,8 @@ import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SortTable;
-import io.deephaven.qst.table.Table;
-import io.deephaven.qst.table.Table.Visitor;
+import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TableSpec.Visitor;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TimeTable;
 import io.deephaven.qst.table.UpdateTable;
@@ -37,13 +37,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE toTable(
         TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, Table table) {
+        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getTableOut();
     }
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TOPS toOperations(
         TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, Table table) {
+        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getOperationsOut();
     }
 
@@ -85,11 +85,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         return ops(table.parent());
     }
 
-    private TOPS ops(Table table) {
+    private TOPS ops(TableSpec table) {
         return toOperations(tableCreation, toOps, toTable, table);
     }
 
-    private TABLE table(Table table) {
+    private TABLE table(TableSpec table) {
         return toTable(tableCreation, toOps, toTable, table);
     }
 

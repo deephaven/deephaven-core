@@ -8,12 +8,12 @@ import org.immutables.value.Value.Parameter;
 @NodeStyle
 public abstract class ReverseTable extends TableBase implements SingleParentTable {
 
-    public static ReverseTable of(Table parent) {
+    public static ReverseTable of(TableSpec parent) {
         return ImmutableReverseTable.of(parent);
     }
 
     @Parameter
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

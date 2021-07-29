@@ -5,20 +5,20 @@ import io.deephaven.api.JoinMatch;
 
 import java.util.List;
 
-public interface Join extends Table {
+public interface Join extends TableSpec {
 
-    Table left();
+    TableSpec left();
 
-    Table right();
+    TableSpec right();
 
     List<JoinMatch> matches();
 
     List<JoinAddition> additions();
 
     interface Builder<J extends Join, SELF extends Builder<J, SELF>> {
-        SELF left(Table left);
+        SELF left(TableSpec left);
 
-        SELF right(Table right);
+        SELF right(TableSpec right);
 
         SELF addMatches(JoinMatch element);
 

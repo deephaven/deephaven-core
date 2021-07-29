@@ -7,6 +7,7 @@ import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.qst.TableCreation;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeProvider;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
@@ -17,7 +18,7 @@ import java.util.Objects;
 enum TableCreationImpl implements TableCreation<Table> {
     INSTANCE;
 
-    public static Table create(io.deephaven.qst.table.Table table) {
+    public static Table create(TableSpec table) {
         return TableCreation.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
     }
 

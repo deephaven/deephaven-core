@@ -9,12 +9,12 @@ import org.immutables.value.Value.Parameter;
 @NodeStyle
 public abstract class TailTable extends TableBase implements SingleParentTable {
 
-    public static TailTable of(Table parent, long size) {
+    public static TailTable of(TableSpec parent, long size) {
         return ImmutableTailTable.of(parent, size);
     }
 
     @Parameter
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     @Parameter
     public abstract long size();
@@ -28,7 +28,8 @@ public abstract class TailTable extends TableBase implements SingleParentTable {
     @Check
     final void checkSize() {
         if (size() < 0) {
-            throw new IllegalArgumentException(String.format("tail must have a non-negative size: %d", size()));
+            throw new IllegalArgumentException(
+                String.format("tail must have a non-negative size: %d", size()));
         }
     }
 }

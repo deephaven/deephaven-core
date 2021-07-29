@@ -9,12 +9,12 @@ import org.immutables.value.Value.Parameter;
 @NodeStyle
 public abstract class HeadTable extends TableBase implements SingleParentTable {
 
-    public static HeadTable of(Table parent, long size) {
+    public static HeadTable of(TableSpec parent, long size) {
         return ImmutableHeadTable.of(parent, size);
     }
 
     @Parameter
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     @Parameter
     public abstract long size();
@@ -28,7 +28,8 @@ public abstract class HeadTable extends TableBase implements SingleParentTable {
     @Check
     final void checkSize() {
         if (size() < 0) {
-            throw new IllegalArgumentException(String.format("head must have a non-negative size: %d", size()));
+            throw new IllegalArgumentException(
+                String.format("head must have a non-negative size: %d", size()));
         }
     }
 }

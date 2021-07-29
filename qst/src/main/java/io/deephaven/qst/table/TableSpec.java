@@ -12,17 +12,17 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
-public interface Table extends TableOperations<Table, Table>, Serializable {
+public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serializable {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
     }
 
-    static Table merge(Table... tables) {
+    static TableSpec merge(TableSpec... tables) {
         return merge(Arrays.asList(tables));
     }
 
-    static Table merge(Collection<? extends Table> tables) {
+    static TableSpec merge(Collection<? extends TableSpec> tables) {
         if (tables.isEmpty()) {
             throw new IllegalArgumentException("Can't merge an empty collection");
         }
@@ -43,11 +43,11 @@ public interface Table extends TableOperations<Table, Table>, Serializable {
      * @throws IOException if an I/O error occurs
      * @throws ClassNotFoundException Class of a serialized object cannot be found.
      */
-    static Table file(Path path) throws IOException, ClassNotFoundException {
+    static TableSpec file(Path path) throws IOException, ClassNotFoundException {
         try (InputStream in = Files.newInputStream(path);
             BufferedInputStream buf = new BufferedInputStream(in);
             ObjectInputStream oIn = new ObjectInputStream(buf)) {
-            return (Table) oIn.readObject();
+            return (TableSpec) oIn.readObject();
         }
     }
 

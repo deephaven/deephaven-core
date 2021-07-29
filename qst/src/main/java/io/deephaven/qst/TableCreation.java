@@ -3,7 +3,7 @@ package io.deephaven.qst;
 import io.deephaven.api.TableOperations;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.Table;
+import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
 
 import java.util.Collection;
@@ -17,7 +17,7 @@ public interface TableCreation<TABLE> {
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE create(
         TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, Table table) {
+        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return TableAdapterImpl.toTable(creation, toOps, toTable, table);
     }
 

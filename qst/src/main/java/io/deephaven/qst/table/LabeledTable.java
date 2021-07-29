@@ -9,7 +9,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class LabeledTable {
 
-    public static LabeledTable of(String label, Table table) {
+    public static LabeledTable of(String label, TableSpec table) {
         return ImmutableLabeledTable.of(label, table);
     }
 
@@ -17,7 +17,7 @@ public abstract class LabeledTable {
     public abstract String label();
 
     @Parameter
-    public abstract Table table();
+    public abstract TableSpec table();
 
     @Check
     final void checkNotEmpty() {

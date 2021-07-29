@@ -4,16 +4,16 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * Provides a potentially descriptive label for the parents of a {@link Table}.
+ * Provides a potentially descriptive label for the parents of a {@link TableSpec}.
  */
 public class LinkDescriber extends TableVisitorGeneric {
 
     public interface LinkConsumer {
-        void link(Table table);
+        void link(TableSpec table);
 
-        void link(Table table, int linkIndex);
+        void link(TableSpec table, int linkIndex);
 
-        void link(Table table, String linkLabel);
+        void link(TableSpec table, String linkLabel);
     }
 
     private final LinkConsumer consumer;
@@ -23,12 +23,12 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void accept(Table t) {
-        Iterator<Table> it = ParentsVisitor.getParents(t).iterator();
+    public void accept(TableSpec t) {
+        Iterator<TableSpec> it = ParentsVisitor.getParents(t).iterator();
         if (!it.hasNext()) {
             return;
         }
-        Table first = it.next();
+        TableSpec first = it.next();
         if (!it.hasNext()) {
             consumer.link(first);
             return;

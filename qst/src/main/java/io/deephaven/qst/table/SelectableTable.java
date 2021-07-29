@@ -9,7 +9,7 @@ public interface SelectableTable extends SingleParentTable {
     List<Selectable> columns();
 
     interface Builder<S extends SelectableTable, SELF extends Builder<S, SELF>> {
-        SELF parent(Table parent);
+        SELF parent(TableSpec parent);
 
         SELF addColumns(Selectable element);
 

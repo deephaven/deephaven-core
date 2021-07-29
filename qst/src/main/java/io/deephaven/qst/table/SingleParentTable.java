@@ -1,6 +1,6 @@
 package io.deephaven.qst.table;
 
-public interface SingleParentTable extends Table {
+public interface SingleParentTable extends TableSpec {
 
-    Table parent();
+    TableSpec parent();
 }

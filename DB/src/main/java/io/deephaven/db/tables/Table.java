@@ -30,6 +30,7 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +45,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
-    static Table of(io.deephaven.qst.table.Table table) {
+    static Table of(TableSpec table) {
         return TableCreationImpl.create(table);
     }
 

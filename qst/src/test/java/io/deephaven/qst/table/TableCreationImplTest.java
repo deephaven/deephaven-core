@@ -17,12 +17,12 @@ public class TableCreationImplTest {
     // todo: this test will need to be replaced w/ a saner generator, or real examples, once we have
     // stricter query validation
 
-    private static final List<Table> SOURCE_TABLES =
+    private static final List<TableSpec> SOURCE_TABLES =
         Arrays.asList(NewTable.of(Column.of("Foo", 0, -1, 1, 42, null, 1, Integer.MAX_VALUE)),
             NewTable.of(Column.of("Bar", 0L, -1L, 1L, 42L, null, 1L, Long.MAX_VALUE)),
-            Table.empty(0), Table.empty(1), Table.empty(100), Table.empty(0));
+            TableSpec.empty(0), TableSpec.empty(1), TableSpec.empty(100), TableSpec.empty(0));
 
-    private static final List<Function<Table, Table>> SINGLE_PARENT_OPS =
+    private static final List<Function<TableSpec, TableSpec>> SINGLE_PARENT_OPS =
         Arrays.asList(TableCreationImplTest::head1, TableCreationImplTest::headMax,
             TableCreationImplTest::tail1, TableCreationImplTest::tailMax,
             TableCreationImplTest::whereFooEq1, TableCreationImplTest::whereFooEqTest,
@@ -34,136 +34,136 @@ public class TableCreationImplTest {
             TableCreationImplTest::selectFoo, TableCreationImplTest::selectFooPlus1,
             TableCreationImplTest::selectFooEqBar, TableCreationImplTest::selectAll);
 
-    private static final List<BiFunction<Table, Table, Table>> DUAL_TABLE_OPS =
+    private static final List<BiFunction<TableSpec, TableSpec, TableSpec>> DUAL_TABLE_OPS =
         Arrays.asList(TableCreationImplTest::naturalJoin1, TableCreationImplTest::naturalJoin2,
             TableCreationImplTest::naturalJoin3, TableCreationImplTest::naturalJoin4,
             TableCreationImplTest::exactJoin1, TableCreationImplTest::exactJoin2,
             TableCreationImplTest::exactJoin3, TableCreationImplTest::exactJoin4);
 
 
-    static Table head1(Table table) {
+    static TableSpec head1(TableSpec table) {
         return table.head(1);
     }
 
-    static Table headMax(Table table) {
+    static TableSpec headMax(TableSpec table) {
         return table.head(Long.MAX_VALUE);
     }
 
-    static Table tail1(Table table) {
+    static TableSpec tail1(TableSpec table) {
         return table.tail(1);
     }
 
-    static Table tailMax(Table table) {
+    static TableSpec tailMax(TableSpec table) {
         return table.tail(Long.MAX_VALUE);
     }
 
-    static Table whereFooEq1(Table table) {
+    static TableSpec whereFooEq1(TableSpec table) {
         return table.where("Foo=1");
     }
 
-    static Table whereFooEqTest(Table table) {
+    static TableSpec whereFooEqTest(TableSpec table) {
         return table.where("Foo=`test`");
     }
 
-    static Table whereFooIsNull(Table table) {
+    static TableSpec whereFooIsNull(TableSpec table) {
         return table.where("isNull(Foo)");
     }
 
-    static Table viewFoo(Table table) {
+    static TableSpec viewFoo(TableSpec table) {
         return table.view("Foo");
     }
 
-    static Table viewFooPlus1(Table table) {
+    static TableSpec viewFooPlus1(TableSpec table) {
         return table.view("Foo=Foo+1");
     }
 
-    static Table viewFooEqBar(Table table) {
+    static TableSpec viewFooEqBar(TableSpec table) {
         return table.view("Foo=Bar");
     }
 
-    static Table updateViewFoo(Table table) {
+    static TableSpec updateViewFoo(TableSpec table) {
         return table.updateView("Foo");
     }
 
-    static Table updateViewFooPlus1(Table table) {
+    static TableSpec updateViewFooPlus1(TableSpec table) {
         return table.updateView("Foo=Foo+1");
     }
 
-    static Table updateViewFooEqBar(Table table) {
+    static TableSpec updateViewFooEqBar(TableSpec table) {
         return table.updateView("Foo=Bar");
     }
 
-    static Table updateFoo(Table table) {
+    static TableSpec updateFoo(TableSpec table) {
         return table.update("Foo");
     }
 
-    static Table updateFooPlus1(Table table) {
+    static TableSpec updateFooPlus1(TableSpec table) {
         return table.update("Foo=Foo+1");
     }
 
-    static Table updateFooEqBar(Table table) {
+    static TableSpec updateFooEqBar(TableSpec table) {
         return table.update("Foo=Bar");
     }
 
-    static Table selectFoo(Table table) {
+    static TableSpec selectFoo(TableSpec table) {
         return table.select("Foo");
     }
 
-    static Table selectFooPlus1(Table table) {
+    static TableSpec selectFooPlus1(TableSpec table) {
         return table.select("Foo=Foo+1");
     }
 
-    static Table selectFooEqBar(Table table) {
+    static TableSpec selectFooEqBar(TableSpec table) {
         return table.select("Foo=Bar");
     }
 
-    static Table selectAll(Table table) {
+    static TableSpec selectAll(TableSpec table) {
         return table.select();
     }
 
-    static Table naturalJoin1(Table left, Table right) {
+    static TableSpec naturalJoin1(TableSpec left, TableSpec right) {
         return left.naturalJoin(right, "Foo");
     }
 
-    static Table naturalJoin2(Table left, Table right) {
+    static TableSpec naturalJoin2(TableSpec left, TableSpec right) {
         return left.naturalJoin(right, "Foo", "Bar");
     }
 
-    static Table naturalJoin3(Table left, Table right) {
+    static TableSpec naturalJoin3(TableSpec left, TableSpec right) {
         return left.naturalJoin(right, "Foo,Bar", "Baz");
     }
 
-    static Table naturalJoin4(Table left, Table right) {
+    static TableSpec naturalJoin4(TableSpec left, TableSpec right) {
         return left.naturalJoin(right, "Foo", "Bar,Baz");
     }
 
-    static Table exactJoin1(Table left, Table right) {
+    static TableSpec exactJoin1(TableSpec left, TableSpec right) {
         return left.exactJoin(right, "Foo");
     }
 
-    static Table exactJoin2(Table left, Table right) {
+    static TableSpec exactJoin2(TableSpec left, TableSpec right) {
         return left.exactJoin(right, "Foo", "Bar");
     }
 
-    static Table exactJoin3(Table left, Table right) {
+    static TableSpec exactJoin3(TableSpec left, TableSpec right) {
         return left.exactJoin(right, "Foo,Bar", "Baz");
     }
 
-    static Table exactJoin4(Table left, Table right) {
+    static TableSpec exactJoin4(TableSpec left, TableSpec right) {
         return left.exactJoin(right, "Foo", "Bar,Baz");
     }
 
-    static List<Table> createTables() {
-        List<Table> tables = new ArrayList<>();
-        for (Table sourceTable : SOURCE_TABLES) {
+    static List<TableSpec> createTables() {
+        List<TableSpec> tables = new ArrayList<>();
+        for (TableSpec sourceTable : SOURCE_TABLES) {
             tables.add(sourceTable);
-            for (Function<Table, Table> op1 : SINGLE_PARENT_OPS) {
-                Table inner1 = op1.apply(sourceTable);
+            for (Function<TableSpec, TableSpec> op1 : SINGLE_PARENT_OPS) {
+                TableSpec inner1 = op1.apply(sourceTable);
                 tables.add(inner1);
-                for (Function<Table, Table> op2 : SINGLE_PARENT_OPS) {
-                    Table inner2 = op2.apply(inner1);
+                for (Function<TableSpec, TableSpec> op2 : SINGLE_PARENT_OPS) {
+                    TableSpec inner2 = op2.apply(inner1);
                     tables.add(inner2);
-                    for (BiFunction<Table, Table, Table> dualTableOp : DUAL_TABLE_OPS) {
+                    for (BiFunction<TableSpec, TableSpec, TableSpec> dualTableOp : DUAL_TABLE_OPS) {
                         tables.add(dualTableOp.apply(inner1, inner2));
                         tables.add(dualTableOp.apply(inner2, inner1));
                     }
@@ -176,7 +176,7 @@ public class TableCreationImplTest {
 
     @Test
     void equivalence() {
-        for (Table table : createTables()) {
+        for (TableSpec table : createTables()) {
             // this is really a test of TableCreationAdapterImpl and QST TableOperations impl
             assertThat(TableCreationImpl.toTable(table)).isEqualTo(table);
         }

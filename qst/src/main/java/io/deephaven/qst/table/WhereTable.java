@@ -14,7 +14,7 @@ public abstract class WhereTable extends TableBase implements SingleParentTable 
         return ImmutableWhereTable.builder();
     }
 
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     public abstract List<Filter> filters();
 
@@ -26,7 +26,7 @@ public abstract class WhereTable extends TableBase implements SingleParentTable 
 
     public interface Builder {
 
-        Builder parent(Table parent);
+        Builder parent(TableSpec parent);
 
         Builder addFilters(Filter filter);
 

@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 /**
  * A visitor that returns the parent tables (if any) of the given table.
  */
-public class ParentsVisitor implements Table.Visitor {
+public class ParentsVisitor implements TableSpec.Visitor {
 
     /**
      * A traversal of the table's parents. Does not perform de-duplication.
@@ -19,7 +19,7 @@ public class ParentsVisitor implements Table.Visitor {
      * @param table the table
      * @return the parents stream
      */
-    public static Stream<Table> getParents(Table table) {
+    public static Stream<TableSpec> getParents(TableSpec table) {
         return table.walk(new ParentsVisitor()).getOut();
     }
 
@@ -31,8 +31,8 @@ public class ParentsVisitor implements Table.Visitor {
      *
      * @see #postOrderWalk(Iterable, Consumer)
      */
-    public static Set<Table> postOrder(Iterable<Table> tables) {
-        Set<Table> set = new LinkedHashSet<>();
+    public static Set<TableSpec> postOrder(Iterable<TableSpec> tables) {
+        Set<TableSpec> set = new LinkedHashSet<>();
         postOrderWalk(tables, set::add);
         return set;
     }
@@ -47,40 +47,40 @@ public class ParentsVisitor implements Table.Visitor {
      *
      * @see #postOrderWalk(Iterable, Consumer, int)
      */
-    public static Set<Table> postOrder(Iterable<Table> tables, int maxDepth) {
-        Set<Table> set = new LinkedHashSet<>();
+    public static Set<TableSpec> postOrder(Iterable<TableSpec> tables, int maxDepth) {
+        Set<TableSpec> set = new LinkedHashSet<>();
         postOrderWalk(tables, set::add, maxDepth);
         return set;
     }
 
     /**
-     * Walk the {@link Table tables} in post-order with de-duplication.
+     * Walk the {@link TableSpec tables} in post-order with de-duplication.
      *
      * @param tables the tables
      * @param consumer the consumer
      */
-    public static void postOrderWalk(Iterable<Table> tables, Consumer<Table> consumer) {
+    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer) {
         postOrderWalk(tables, consumer, Integer.MAX_VALUE);
     }
 
     /**
-     * Walk the {@link Table tables} post-order with de-duplication, up to a depth of
+     * Walk the {@link TableSpec tables} post-order with de-duplication, up to a depth of
      * {@code maxDepth}.
      *
      * @param tables the tables
      * @param consumer the consumer
      * @param maxDepth the maximum depth
      */
-    public static void postOrderWalk(Iterable<Table> tables, Consumer<Table> consumer,
+    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer,
         int maxDepth) {
-        Set<Table> visited = new HashSet<>();
-        for (Table table : tables) {
+        Set<TableSpec> visited = new HashSet<>();
+        for (TableSpec table : tables) {
             postOrderTraversal(visited, table, consumer, maxDepth);
         }
     }
 
-    private static void postOrderTraversal(Set<Table> visited, Table table,
-        Consumer<Table> consumer, int maxDepth) {
+    private static void postOrderTraversal(Set<TableSpec> visited, TableSpec table,
+        Consumer<TableSpec> consumer, int maxDepth) {
         // This method is much more efficient than trying to accomplish the same with
         // Stream#distinct, since we
         // can cut off the duplication at the highest-level table.
@@ -88,8 +88,8 @@ public class ParentsVisitor implements Table.Visitor {
             return;
         }
         if (maxDepth > 0) {
-            try (Stream<Table> stream = getParents(table)) {
-                Iterator<Table> it = stream.iterator();
+            try (Stream<TableSpec> stream = getParents(table)) {
+                Iterator<TableSpec> it = stream.iterator();
                 while (it.hasNext()) {
                     postOrderTraversal(visited, it.next(), consumer, maxDepth - 1);
                 }
@@ -98,19 +98,19 @@ public class ParentsVisitor implements Table.Visitor {
         consumer.accept(table);
     }
 
-    private Stream<Table> out;
+    private Stream<TableSpec> out;
 
     private ParentsVisitor() {}
 
-    public Stream<Table> getOut() {
+    public Stream<TableSpec> getOut() {
         return Objects.requireNonNull(out);
     }
 
-    private static Stream<Table> single(SingleParentTable singleParentTable) {
+    private static Stream<TableSpec> single(SingleParentTable singleParentTable) {
         return Stream.of(singleParentTable.parent());
     }
 
-    private static Stream<Table> none() {
+    private static Stream<TableSpec> none() {
         return Stream.empty();
     }
 

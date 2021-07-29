@@ -16,7 +16,7 @@ public abstract class AggregationTable extends TableBase implements SingleParent
         return ImmutableAggregationTable.builder();
     }
 
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     public abstract List<Selectable> columns();
 
@@ -36,7 +36,7 @@ public abstract class AggregationTable extends TableBase implements SingleParent
     }
 
     public interface Builder {
-        Builder parent(Table parent);
+        Builder parent(TableSpec parent);
 
         Builder addColumns(Selectable element);
 

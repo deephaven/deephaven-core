@@ -14,7 +14,7 @@ public abstract class ByTable extends TableBase implements SingleParentTable {
         return ImmutableByTable.builder();
     }
 
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     public abstract List<Selectable> columns();
 
@@ -25,7 +25,7 @@ public abstract class ByTable extends TableBase implements SingleParentTable {
     }
 
     public interface Builder {
-        Builder parent(Table parent);
+        Builder parent(TableSpec parent);
 
         Builder addColumns(Selectable element);
 

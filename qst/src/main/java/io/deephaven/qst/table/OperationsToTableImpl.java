@@ -2,11 +2,11 @@ package io.deephaven.qst.table;
 
 import io.deephaven.qst.OperationsToTable;
 
-enum OperationsToTableImpl implements OperationsToTable<Table, Table> {
+enum OperationsToTableImpl implements OperationsToTable<TableSpec, TableSpec> {
     INSTANCE;
 
     @Override
-    public final Table of(Table table) {
+    public final TableSpec of(TableSpec table) {
         return table;
     }
 }

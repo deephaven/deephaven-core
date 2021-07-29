@@ -15,9 +15,9 @@ public abstract class SnapshotTable extends TableBase {
         return ImmutableSnapshotTable.builder();
     }
 
-    public abstract Table base();
+    public abstract TableSpec base();
 
-    public abstract Table trigger();
+    public abstract TableSpec trigger();
 
     public abstract List<ColumnName> stampColumns();
 
@@ -34,9 +34,9 @@ public abstract class SnapshotTable extends TableBase {
 
     public interface Builder {
 
-        Builder base(Table base);
+        Builder base(TableSpec base);
 
-        Builder trigger(Table trigger);
+        Builder trigger(TableSpec trigger);
 
         Builder addStampColumns(ColumnName element);
 

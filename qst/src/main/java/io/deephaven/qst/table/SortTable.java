@@ -14,7 +14,7 @@ public abstract class SortTable extends TableBase implements SingleParentTable {
         return ImmutableSortTable.builder();
     }
 
-    public abstract Table parent();
+    public abstract TableSpec parent();
 
     public abstract List<SortColumn> columns();
 
@@ -26,7 +26,7 @@ public abstract class SortTable extends TableBase implements SingleParentTable {
 
     public interface Builder {
 
-        Builder parent(Table parent);
+        Builder parent(TableSpec parent);
 
         Builder addColumns(SortColumn column);
 

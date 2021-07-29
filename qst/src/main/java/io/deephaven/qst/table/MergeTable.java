@@ -10,11 +10,11 @@ import java.util.List;
 @NodeStyle
 public abstract class MergeTable extends TableBase {
 
-    public static MergeTable of(Table... tables) {
+    public static MergeTable of(TableSpec... tables) {
         return MergeTable.builder().addTables(tables).build();
     }
 
-    public static MergeTable of(Iterable<? extends Table> tables) {
+    public static MergeTable of(Iterable<? extends TableSpec> tables) {
         return MergeTable.builder().addAllTables(tables).build();
     }
 
@@ -22,7 +22,7 @@ public abstract class MergeTable extends TableBase {
         return ImmutableMergeTable.builder();
     }
 
-    public abstract List<Table> tables();
+    public abstract List<TableSpec> tables();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -39,11 +39,11 @@ public abstract class MergeTable extends TableBase {
 
     public interface Builder {
 
-        Builder addTables(Table element);
+        Builder addTables(TableSpec element);
 
-        Builder addTables(Table... elements);
+        Builder addTables(TableSpec... elements);
 
-        Builder addAllTables(Iterable<? extends Table> elements);
+        Builder addAllTables(Iterable<? extends TableSpec> elements);
 
         MergeTable build();
     }

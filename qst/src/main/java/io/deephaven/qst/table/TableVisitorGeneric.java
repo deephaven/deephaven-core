@@ -1,8 +1,8 @@
 package io.deephaven.qst.table;
 
-public abstract class TableVisitorGeneric implements Table.Visitor {
+public abstract class TableVisitorGeneric implements TableSpec.Visitor {
 
-    public abstract void accept(Table t);
+    public abstract void accept(TableSpec t);
 
     @Override
     public void visit(EmptyTable emptyTable) {

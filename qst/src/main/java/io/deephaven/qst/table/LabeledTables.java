@@ -19,7 +19,7 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
 
     public interface Builder {
 
-        Builder putMap(String key, Table value);
+        Builder putMap(String key, TableSpec value);
 
         default Builder addTables(LabeledTable element) {
             return putMap(element.label(), element.table());
@@ -50,13 +50,13 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
         return builder().addTables(tables).build();
     }
 
-    abstract Map<String, Table> map();
+    abstract Map<String, TableSpec> map();
 
-    public final Collection<Table> tables() {
+    public final Collection<TableSpec> tables() {
         return map().values();
     }
 
-    public final Table getTable(String name) {
+    public final TableSpec getTable(String name) {
         return map().get(name);
     }
 
@@ -71,7 +71,7 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
 
     @Override
     public final void forEach(Consumer<? super LabeledTable> action) {
-        for (Entry<String, Table> e : map().entrySet()) {
+        for (Entry<String, TableSpec> e : map().entrySet()) {
             action.accept(adapt(e));
         }
     }
@@ -81,14 +81,14 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
         return map().entrySet().stream().map(LabeledTables::adapt).spliterator();
     }
 
-    private static LabeledTable adapt(Entry<String, Table> e) {
+    private static LabeledTable adapt(Entry<String, TableSpec> e) {
         return LabeledTable.of(e.getKey(), e.getValue());
     }
 
     private static class LabeledTableIterator implements Iterator<LabeledTable> {
-        private final Iterator<Entry<String, Table>> it;
+        private final Iterator<Entry<String, TableSpec>> it;
 
-        LabeledTableIterator(Iterator<Entry<String, Table>> it) {
+        LabeledTableIterator(Iterator<Entry<String, TableSpec>> it) {
             this.it = Objects.requireNonNull(it);
         }
 

@@ -57,7 +57,7 @@ public abstract class TimeTable extends TableBase {
     abstract UUID id();
 
     @Override
-    public final <V extends Table.Visitor> V walk(V visitor) {
+    public final <V extends TableSpec.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

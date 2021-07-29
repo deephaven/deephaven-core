@@ -14,20 +14,20 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public class ParentsVisitorTest {
 
 
-    private static final Table S1 = Table.empty(42);
+    private static final TableSpec S1 = TableSpec.empty(42);
 
-    private static final Table S2 = S1.head(6);
+    private static final TableSpec S2 = S1.head(6);
 
-    private static final Table S3 = S2.tail(4);
+    private static final TableSpec S3 = S2.tail(4);
 
-    private static final Table S4 = S3.view("I=i");
+    private static final TableSpec S4 = S3.view("I=i");
 
-    private void checkDepth(Table table, List<Table> depthFirst) {
+    private void checkDepth(TableSpec table, List<TableSpec> depthFirst) {
         assertThat(new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table))))
             .isEqualTo(depthFirst);
     }
 
-    private void checkDepth(Table table, List<Table> depthFirst, int maxDepth) {
+    private void checkDepth(TableSpec table, List<TableSpec> depthFirst, int maxDepth) {
         assertThat(
             new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table), maxDepth)))
                 .isEqualTo(depthFirst);
@@ -87,10 +87,10 @@ public class ParentsVisitorTest {
      * depth-first implementation. Naive implementations may need to search every single path
      * through the DAG; but that is not feasible (2^64 paths).
      */
-    private static Table heavilyBranchedTable() {
-        Table current = Table.empty(1);
+    private static TableSpec heavilyBranchedTable() {
+        TableSpec current = TableSpec.empty(1);
         for (int i = 0; i < 64; ++i) {
-            current = Table.merge(current, current);
+            current = TableSpec.merge(current, current);
         }
         return current;
     }

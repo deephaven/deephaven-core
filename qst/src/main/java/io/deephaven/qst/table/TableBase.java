@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public abstract class TableBase implements Table {
+public abstract class TableBase implements TableSpec {
 
     @Override
     public final HeadTable head(long size) {
@@ -34,12 +34,12 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final SnapshotTable snapshot(Table baseTable, String... stampColumns) {
+    public final SnapshotTable snapshot(TableSpec baseTable, String... stampColumns) {
         return snapshot(baseTable, false, stampColumns);
     }
 
     @Override
-    public final SnapshotTable snapshot(Table baseTable, boolean doInitialSnapshot,
+    public final SnapshotTable snapshot(TableSpec baseTable, boolean doInitialSnapshot,
         String... stampColumns) {
         SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(baseTable)
             .doInitialSnapshot(doInitialSnapshot);
@@ -50,7 +50,7 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final SnapshotTable snapshot(Table baseTable, boolean doInitialSnapshot,
+    public final SnapshotTable snapshot(TableSpec baseTable, boolean doInitialSnapshot,
         Collection<ColumnName> stampColumns) {
         return SnapshotTable.builder().trigger(this).base(baseTable)
             .doInitialSnapshot(doInitialSnapshot).addAllStampColumns(stampColumns).build();
@@ -94,7 +94,7 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final WhereInTable whereIn(Table rightTable, String... columnsToMatch) {
+    public final WhereInTable whereIn(TableSpec rightTable, String... columnsToMatch) {
         WhereInTable.Builder builder = WhereInTable.builder().left(this).right(rightTable);
         for (String toMatch : columnsToMatch) {
             builder.addMatches(JoinMatch.parse(toMatch));
@@ -103,14 +103,14 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final WhereInTable whereIn(Table rightTable,
+    public final WhereInTable whereIn(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch) {
         return WhereInTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .build();
     }
 
     @Override
-    public final WhereNotInTable whereNotIn(Table rightTable, String... columnsToMatch) {
+    public final WhereNotInTable whereNotIn(TableSpec rightTable, String... columnsToMatch) {
         WhereNotInTable.Builder builder = WhereNotInTable.builder().left(this).right(rightTable);
         for (String toMatch : columnsToMatch) {
             builder.addMatches(JoinMatch.parse(toMatch));
@@ -119,14 +119,14 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final WhereNotInTable whereNotIn(Table rightTable,
+    public final WhereNotInTable whereNotIn(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch) {
         return WhereNotInTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .build();
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable,
+    public final NaturalJoinTable naturalJoin(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return NaturalJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
@@ -134,20 +134,20 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch) {
+    public final NaturalJoinTable naturalJoin(TableSpec rightTable, String columnsToMatch) {
         return naturalJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
             Collections.emptyList());
     }
 
     @Override
-    public final NaturalJoinTable naturalJoin(Table rightTable, String columnsToMatch,
+    public final NaturalJoinTable naturalJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
         return naturalJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)));
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable,
+    public final ExactJoinTable exactJoin(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return ExactJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
@@ -155,58 +155,59 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable, String columnsToMatch) {
+    public final ExactJoinTable exactJoin(TableSpec rightTable, String columnsToMatch) {
         return exactJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
             Collections.emptyList());
     }
 
     @Override
-    public final ExactJoinTable exactJoin(Table rightTable, String columnsToMatch,
+    public final ExactJoinTable exactJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
         return exactJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)));
     }
 
     @Override
-    public JoinTable join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public JoinTable join(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return JoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd).build();
     }
 
     @Override
-    public final JoinTable join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public final JoinTable join(TableSpec rightTable,
+        Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return JoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd).reserveBits(reserveBits).build();
     }
 
     @Override
-    public final JoinTable join(Table rightTable, String columnsToMatch) {
+    public final JoinTable join(TableSpec rightTable, String columnsToMatch) {
         return join(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList(),
             JoinTable.DEFAULT_RESERVE_BITS);
     }
 
     @Override
-    public final JoinTable join(Table rightTable, String columnsToMatch, String columnsToAdd) {
+    public final JoinTable join(TableSpec rightTable, String columnsToMatch, String columnsToAdd) {
         return join(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)), JoinTable.DEFAULT_RESERVE_BITS);
     }
 
     @Override
-    public final LeftJoinTable leftJoin(Table rightTable, String columnsToMatch) {
+    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch) {
         return leftJoin(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
     }
 
     @Override
-    public final LeftJoinTable leftJoin(Table rightTable, String columnsToMatch,
+    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
         return leftJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)));
     }
 
     @Override
-    public final LeftJoinTable leftJoin(Table rightTable,
+    public final LeftJoinTable leftJoin(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return LeftJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
@@ -214,44 +215,47 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final AsOfJoinTable aj(Table rightTable, String columnsToMatch) {
+    public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch) {
         return aj(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
     }
 
     @Override
-    public final AsOfJoinTable aj(Table rightTable, String columnsToMatch, String columnsToAdd) {
+    public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch,
+        String columnsToAdd) {
         return aj(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)));
     }
 
     @Override
-    public final AsOfJoinTable aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public final AsOfJoinTable aj(TableSpec rightTable,
+        Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return AsOfJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd).build();
     }
 
     @Override
-    public final AsOfJoinTable aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public final AsOfJoinTable aj(TableSpec rightTable,
+        Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return AsOfJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
             .addAllAdditions(columnsToAdd).rule(asOfJoinRule).build();
     }
 
     @Override
-    public final ReverseAsOfJoinTable raj(Table rightTable, String columnsToMatch) {
+    public final ReverseAsOfJoinTable raj(TableSpec rightTable, String columnsToMatch) {
         return raj(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
     }
 
     @Override
-    public final ReverseAsOfJoinTable raj(Table rightTable, String columnsToMatch,
+    public final ReverseAsOfJoinTable raj(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
         return raj(rightTable, JoinMatch.from(split(columnsToMatch)),
             JoinAddition.from(split(columnsToAdd)));
     }
 
     @Override
-    public final ReverseAsOfJoinTable raj(Table rightTable,
+    public final ReverseAsOfJoinTable raj(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd) {
         return ReverseAsOfJoinTable.builder().left(this).right(rightTable)
@@ -259,7 +263,7 @@ public abstract class TableBase implements Table {
     }
 
     @Override
-    public final ReverseAsOfJoinTable raj(Table rightTable,
+    public final ReverseAsOfJoinTable raj(TableSpec rightTable,
         Collection<? extends JoinMatch> columnsToMatch,
         Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return ReverseAsOfJoinTable.builder().left(this).right(rightTable)
