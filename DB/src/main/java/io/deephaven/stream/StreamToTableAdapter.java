@@ -1,6 +1,7 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTable;
@@ -36,7 +37,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private final Index index;
     private final SwitchColumnSource<?> [] switchSources;
 
-    // to start out when we have no data, we use null value column sources which are cheap and singletons
+    /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
     private final NullValueColumnSource<?> [] nullColumnSources;
 
     // we accumulate data into buffer from the ingester thread; capture it into current on the LTM thread; move it into
@@ -93,6 +94,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);
         } else {
+            //noinspection unchecked
             return NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
         }
     }
@@ -100,21 +102,22 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     @NotNull
     private static SwitchColumnSource<?> [] makeSwitchSources(TableDefinition definition, NullValueColumnSource<?> [] wrapped, Map<String, ColumnSource<?>> visibleSourcesMap) {
         final SwitchColumnSource<?> [] switchSources = new SwitchColumnSource[wrapped.length];
-        final Class<?> [] columnTypesArray = definition.getColumnTypesArray();
-        final String [] columnNamesArray = definition.getColumnNamesArray();
+        final ColumnDefinition<?> [] columns = definition.getColumns();
         for (int ii = 0; ii < wrapped.length; ++ii) {
             final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
-            if (columnTypesArray[ii] == DBDateTime.class) {
+            if (columns[ii].getDataType() == DBDateTime.class) {
+                //noinspection unchecked
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>)switchSource);
-            } else if (columnTypesArray[ii] == Boolean.class) {
+            } else if (columns[ii].getDataType() == Boolean.class) {
+                //noinspection unchecked
                 visibleSource = new ByteAsBooleanColumnSource((ColumnSource<Byte>)switchSource);
             } else {
                 visibleSource = switchSource;
             }
             switchSources[ii] = switchSource;
-            visibleSourcesMap.put(columnNamesArray[ii], visibleSource);
+            visibleSourcesMap.put(columns[ii].getName(), visibleSource);
         }
         return switchSources;
     }
@@ -183,7 +186,6 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         if (capturedBufferSources == null) {
             // null out our current values
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                //noinspection unchecked
                 switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
             }
         } else {
