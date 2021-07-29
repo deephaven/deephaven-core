@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.KafkaTools",
+ "methods": {
+  "partitionFilterFromArray": ":param partitions: int[]\n:return: java.util.function.IntPredicate",
+  "partitionToOffsetFromParallelArrays": ":param partitions: int[]\n:param offsets: long[]\n:return: java.util.function.IntToLongFunction",
+  "simpleConsumeToTable": "*Overload 1*  \n  :param kafkaConsumerProperties: java.util.Properties\n  :param topic: java.lang.String\n  :param partitionFilter: java.util.function.IntPredicate\n  :param partitionToInitialOffset: java.util.function.IntToLongFunction\n  :return: io.deephaven.db.tables.Table\n  \n*Overload 2*  \n  :param kafkaConsumerProperties: java.util.Properties\n  :param topic: java.lang.String\n  :param partitionFilter: java.util.function.IntPredicate\n  :return: io.deephaven.db.tables.Table\n  \n*Overload 3*  \n  :param kafkaConsumerProperties: java.util.Properties\n  :param topic: java.lang.String\n  :return: io.deephaven.db.tables.Table"
+ },
+ "path": "io.deephaven.kafka.KafkaTools",
+ "typeName": "class"
+}
