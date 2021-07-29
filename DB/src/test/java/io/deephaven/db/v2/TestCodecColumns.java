@@ -79,7 +79,7 @@ public class TestCodecColumns {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         final File dest = new File(dir, "Test.parquet");
         try {
-            ParquetTools.writeTable(TABLE, TABLE.getDefinition(), writeInstructions, dest);
+            ParquetTools.writeTable(TABLE, dest, TABLE.getDefinition(), writeInstructions);
             final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
             final Table result = ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
             TableTools.show(result);

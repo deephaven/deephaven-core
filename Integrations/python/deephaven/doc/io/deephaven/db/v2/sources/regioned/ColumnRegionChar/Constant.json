@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionChar$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superColumnRegionChar.Constant.ATTR>\n:param length: int",
+  "getChar": "Get a single char from this region.\n\n:param elementIndex: (long) - Element (char) index in the table's address space\n:return: (char) The char value at the specified element (char) index"
+ },
+ "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionChar.Constant",
+ "typeName": "class"
+}

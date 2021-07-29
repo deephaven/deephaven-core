@@ -1,8 +1,8 @@
 package io.deephaven.db.v2.locations.util;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.v2.locations.AbstractTableLocation;
-import io.deephaven.db.v2.locations.AbstractTableLocationProvider;
+import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
+import io.deephaven.db.v2.locations.impl.AbstractTableLocationProvider;
 import org.jetbrains.annotations.NotNull;
 
 /**

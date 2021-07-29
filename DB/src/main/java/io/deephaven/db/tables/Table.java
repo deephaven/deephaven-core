@@ -2291,7 +2291,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns);
 
     default Table snapshot(Table baseTable, String... stampColumns) {
-        return snapshot(baseTable, false, stampColumns);
+        return snapshot(baseTable, true, stampColumns);
     }
 
     Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns);

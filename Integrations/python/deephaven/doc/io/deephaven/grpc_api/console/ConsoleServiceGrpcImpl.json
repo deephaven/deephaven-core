@@ -6,6 +6,7 @@
   "changeDocument": ":param request: io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ChangeDocumentResponse>",
   "closeDocument": ":param request: io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.CloseDocumentResponse>",
   "executeCommand": ":param request: io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse>",
+  "fetchFigure": ":param request: io.deephaven.proto.backplane.script.grpc.FetchFigureRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.FetchFigureResponse>",
   "fetchTable": ":param request: io.deephaven.proto.backplane.script.grpc.FetchTableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getCompletionItems": ":param request: io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse>",
   "getConsoleTypes": ":param request: io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse>",

@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject$Null",
  "methods": {
-  "getNativeType": ":return: (java.lang.Class<ColumnRegionObject.Null.T>) null",
-  "getObject": "Get a single object from this region.\n\n:param elementIndex: (long) - Element (object) index in the table's address space\n:return: (ColumnRegionObject.Null.T) The object value at the specified element (object) index"
+  "getNativeType": ":return: (java.lang.Class<ColumnRegionObject.Null.DATA_TYPE>) null",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: (long) - Element (object) index in the table's address space\n:return: (ColumnRegionObject.Null.DATA_TYPE) The object value at the specified element (object) index"
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionObject.Null",
  "typeName": "class"

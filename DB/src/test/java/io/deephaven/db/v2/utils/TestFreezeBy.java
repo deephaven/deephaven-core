@@ -98,7 +98,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input);
         TableTools.showWithIndex(frozen);
 
-        final Table originalExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input, true));
+        final Table originalExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, originalExpect);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable)frozen);
@@ -133,7 +133,7 @@ public class TestFreezeBy extends LiveTableTestCase {
             input.notifyListeners(i(2), i(), i());
         });
         TableTools.showWithIndex(frozen);
-        final Table newExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input, true));
+        final Table newExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 

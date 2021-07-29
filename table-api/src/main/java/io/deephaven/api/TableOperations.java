@@ -27,7 +27,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     /**
      * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a
-     * result.
+     * result. The returned table will include an initial snapshot.
      *
      * <p>
      * Delegates to {@link #snapshot(Object, boolean, Collection)}.
@@ -280,7 +280,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *
      * <p>
      * Delegates to {@link #leftJoin(Object, Collection, Collection)}.
-     * 
+     *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
      *        "columnFoundInBoth")

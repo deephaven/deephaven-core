@@ -5,5 +5,6 @@
   "fillChunkAppend": "**Incompatible overloads text - text from the first overload:**\n\nAppends the values referenced by orderKeys onto destination.  orderKeys are assumed\n to be entirely contained on this Page.\n\n*Overload 1*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A context containing all mutable/state related data used in retrieving the Chunk.\n                               In particular, the Context may be used to provide a Chunk data pool\n  :param destination: (io.deephaven.db.v2.sources.chunk.WritableChunk<? superPage.WithDefaults.ATTR>) - The chunk to append the results to.\n  :param orderedKeysIterator: (io.deephaven.db.v2.utils.OrderedKeys.Iterator) - The iterator to the ordered keys, which contain at least the keys to extract from\n                               this ChunkSource.  The keys to extract will be at the beginning of iteration\n                               order.\n  \n*Overload 2*  \n  :param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n  :param destination: io.deephaven.db.v2.sources.chunk.WritableChunk<? superPage.WithDefaults.ATTR>\n  :param orderedKeys: io.deephaven.db.v2.utils.OrderedKeys"
  },
  "path": "io.deephaven.db.v2.sources.chunk.page.Page.WithDefaults",
+ "text": "Helper defaults for general pages.",
  "typeName": "interface"
 }

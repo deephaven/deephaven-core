@@ -1,15 +1,11 @@
 {
  "className": "io.deephaven.db.v2.locations.TableLocationKey",
  "methods": {
-  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
-  "areEqual": ":param key1: io.deephaven.db.v2.locations.TableLocationKey\n:param key2: io.deephaven.db.v2.locations.TableLocationKey\n:return: boolean",
-  "getColumnPartition": ":return: (java.lang.CharSequence) The column partition that encloses the identified table location, or null if none exists",
-  "getInternalPartition": ":return: (java.lang.CharSequence) The internal partition that encloses the identified table location, or null if none exists",
-  "getKeyedObjectKey": "Re-usable key object for TableLocationKeys that disregards the implementation class.\n\nNote: Java generics information - <VALUE_TYPE extends io.deephaven.db.v2.locations.TableLocationKey>\n\n:return: io.deephaven.hash.KeyedObjectKey<io.deephaven.db.v2.locations.TableLocationKey,VALUE_TYPE>",
-  "hash": ":param key: io.deephaven.db.v2.locations.TableLocationKey\n:return: int",
-  "toStringHelper": ":return: java.lang.String"
+  "getPartitionKeys": "Get the set of available partition keys.\n\n:return: (java.util.Set<java.lang.String>) The set of available partition keys",
+  "getPartitionValue": "Lookup the value of one of the table partitions enclosing the location keyed by this.\n\n:param partitionKey: (java.lang.String) - The name of the partition\n:return: (PARTITION_VALUE_TYPE) The partition value",
+  "makeImmutable": "Get an ImmutableTableLocationKey that is equal to this.\n\n:return: (io.deephaven.db.v2.locations.ImmutableTableLocationKey) An immutable version of this key"
  },
  "path": "io.deephaven.db.v2.locations.TableLocationKey",
- "text": "Interface that specifies key fields for any TableLocation.",
+ "text": "Interface for opaque table location keys for use in TableLocationProvider implementations.\n Note that implementations are generally only comparable to other implementations intended for use in the same\n provider and discovery framework.\n\n This interface also provides a mechanism for communicating partition information from a discovery\n framework to the table engine. A partition of a table represents some sub-range of the overall available data, but\n can always be thought of as a table in its own right. By representing partition membership as an ordered set of\n key-value pairs with mutually-comparable values, we make it possible to:\n \n* Totally order the set of partitions belonging to a table, and thus all rows of the table\n* Refer to partitions via columns of the data, allowing vast savings in filtering efficiency for\n     filters that only need evaluate one or more partitioning columns\n\nGenerally, only PartitionAwareSourceTable and\n SourceTableMap are properly partition-aware.",
  "typeName": "interface"
 }

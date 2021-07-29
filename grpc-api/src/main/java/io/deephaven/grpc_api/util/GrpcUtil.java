@@ -104,7 +104,7 @@ public class GrpcUtil {
         try {
             runner.run();
         } catch (final Exception err) {
-            log.error().append("Internal Error: ").append(err).endl();
+            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
 
@@ -120,7 +120,7 @@ public class GrpcUtil {
                 runner.run();
             }
         } catch (final Exception err) {
-            log.error().append("Internal Error: ").append(err).endl();
+            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
 }

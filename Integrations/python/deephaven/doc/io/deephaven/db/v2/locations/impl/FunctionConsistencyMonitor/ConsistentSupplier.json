@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.FunctionConsistencyMonitor$ConsistentSupplier",
+ "methods": {
+  "get": ":return: FunctionConsistencyMonitor.ConsistentSupplier.T"
+ },
+ "path": "io.deephaven.db.v2.locations.impl.FunctionConsistencyMonitor.ConsistentSupplier",
+ "text": "A supplier that uses a FunctionConsistencyMonitor to ensure that multiple invocations to the same function\n always return the same value, even if underlying conditions (like the date) change.",
+ "typeName": "class"
+}

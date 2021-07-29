@@ -62,7 +62,7 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * @return A symbol column source for the supplied location
      */
     static <STRING_LIKE_TYPE extends CharSequence> ColumnSource<STRING_LIKE_TYPE> makeSymbolColumnSource(@NotNull final ColumnDefinition<STRING_LIKE_TYPE> columnDefinition,
-                                                                                                         @NotNull final ColumnLocation<?> columnLocation,
+                                                                                                         @NotNull final ColumnLocation columnLocation,
                                                                                                          final StringCache<STRING_LIKE_TYPE> cache) {
         final RegionedColumnSource<STRING_LIKE_TYPE> columnSource = makeSymbolColumnSourceInternal(columnDefinition, cache);
         columnSource.addRegion(columnDefinition, columnLocation);

@@ -5,7 +5,7 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnRegionInt} implementation for regions that support fetching primitive ints from a
  * {@link ColumnChunkPageStore}.
  */
-public final class ParquetColumnRegionInt<ATTR extends Attributes.Any> extends ParquetColumnRegionBase<ATTR>
+public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
     implements ColumnRegionInt<ATTR>, ParquetColumnRegion<ATTR> {
 
-    ParquetColumnRegionInt(@NotNull ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    public ParquetColumnRegionInt(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore);
     }
 
@@ -28,7 +28,7 @@ public final class ParquetColumnRegionInt<ATTR extends Attributes.Any> extends P
             return page.asIntChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving int at table int index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 
@@ -40,7 +40,7 @@ public final class ParquetColumnRegionInt<ATTR extends Attributes.Any> extends P
             return page.asIntChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
             throw new TableDataException("Error retrieving int at table int index " + elementIndex
-                    + ", from a parquet table.", e);
+                    + ", from a parquet table", e);
         }
     }
 }

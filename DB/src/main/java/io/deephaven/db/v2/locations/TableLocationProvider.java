@@ -1,28 +1,36 @@
 package io.deephaven.db.v2.locations;
 
+import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
 /**
- * Discovery utility for table locations for a given table.
+ * Discovery utility for {@link TableLocation}s for a given table.
  */
-public interface TableLocationProvider extends TableKey {
+public interface TableLocationProvider extends NamedImplementation {
 
     /**
-     * Listener interface for anything that wants to know about new/updated table locations.
+     * Get the {@link TableKey} associated with this provider.
+     *
+     * @return The associated {@link TableKey}
+     */
+    ImmutableTableKey getKey();
+
+    /**
+     * Listener interface for anything that wants to know about new table location keys.
      */
     interface Listener extends BasicTableDataListener {
 
         /**
-         * Notify the listener of a table location encountered while initiating or maintaining the location
+         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription.  This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed.
          *
-         * @param tableLocation The table location
+         * @param tableLocationKey The new table location key
          */
-        void handleTableLocation(@NotNull TableLocation tableLocation);
+        void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
     }
 
     /**
@@ -35,7 +43,7 @@ public interface TableLocationProvider extends TableKey {
     /**
      * <p>Subscribe to pushed location additions. Subscribing more than once with the same listener without an
      * intervening unsubscribe is an error, and may result in undefined behavior.
-     * <p>This is a possibly asynchronous operation - listener will receive 0 or more handleTableLocation callbacks,
+     * <p>This is a possibly asynchronous operation - listener will receive 0 or more handleTableLocationKey callbacks,
      * followed by 0 or 1 handleException callbacks during invocation and continuing after completion, on a thread
      * determined by the implementation. As noted in {@link Listener#handleException(TableDataException)}, an exception
      * callback signifies that the subscription is no longer valid, and no unsubscribe is required in that case.
@@ -70,27 +78,26 @@ public interface TableLocationProvider extends TableKey {
     TableLocationProvider ensureInitialized();
 
     /**
-     * Get this provider's currently available locations.  Locations returned may have null size - that is, they may not
-     * "exist" for application purposes.
+     * Get this provider's currently known location keys. The locations specified by the keys returned may have null size
+     * - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
+     * guaranteed to succeed for all results.
      *
-     * @return A collection of locations available from this provider
+     * @return A collection of keys for locations available from this provider
      */
     @NotNull
-    Collection<TableLocation> getTableLocations();
+    Collection<ImmutableTableLocationKey> getTableLocationKeys();
 
     /**
-     * @param internalPartition The internal partition
-     * @param columnPartition   The column partition
-     * @return The TableLocation matching the given partition names
+     * Check if this provider knows the supplied location key.
+     *
+     * @param tableLocationKey The key to test for
+     * @return Whether the key is known to this provider
      */
-    @NotNull
-    default TableLocation getTableLocation(@NotNull final String internalPartition, @NotNull final String columnPartition) {
-        return getTableLocation(new TableLocationLookupKey.Immutable(internalPartition, columnPartition));
-    }
+    boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
 
     /**
-     * @param tableLocationKey A key specifying the location to get
-     * @return The TableLocation matching the given key
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
+     * @return The {@link TableLocation} matching the given key
      */
     @NotNull
     default TableLocation getTableLocation(@NotNull TableLocationKey tableLocationKey) {
@@ -102,14 +109,14 @@ public interface TableLocationProvider extends TableKey {
     }
 
     /**
-     * @param tableLocationKey A key specifying the location to get
-     * @return The TableLocation matching the given key if present, else null
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
+     * @return The {@link TableLocation} matching the given key if present, else null
      */
     @Nullable
     TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey);
 
     /**
-     * allow TableLocationProvider instances to have names.
+     * Allow TableLocationProvider instances to have names.
      */
     default String getName() {
         return getImplementationName() + ':' + System.identityHashCode(this);

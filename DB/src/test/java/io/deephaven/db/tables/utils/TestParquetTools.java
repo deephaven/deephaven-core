@@ -16,6 +16,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.locations.local.KeyValuePartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -28,8 +29,10 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
@@ -46,7 +49,6 @@ public class TestParquetTools {
     private static Table table1;
     private static Table emptyTable;
     private static Table brokenTable;
-
 
     @BeforeClass
     public static void setUpFirst() {
@@ -267,7 +269,7 @@ public class TestParquetTools {
         final double [] bid = new double[size];
         final double [] bidSize = new double[size];
         for (int ii = 0; ii < size; ++ii) {
-            symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
+            symbol[ii] =  (ii < 8) ? "Num" : "XYZ";
             bid[ii] =  (ii < 15) ? 98 : 99;
             bidSize[ii] =  ii;
         }
@@ -280,7 +282,7 @@ public class TestParquetTools {
         String path = testRoot + File.separator + "testWriteAggregatedTable.parquet";
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
-        ParquetTools.writeTable(table, def, new File(path));
+        ParquetTools.writeTable(table, new File(path), def);
         Table readBackTable = ParquetTools.readTable(new File(path));
         TableTools.show(readBackTable);
         TableTools.show(table);
@@ -289,35 +291,25 @@ public class TestParquetTools {
         readBackTable.close();
     }
 
-    public void compressionCodecTestHelper(final String codec) {
-        ParquetInstructions.setDefaultCompressionCodecName(codec);
-        String path = testRoot + File.separator + "Table1.parquet";
-        ParquetTools.writeTable(table1, path);
-        assertTrue(new File(path).length() > 0);
-    }
-
     @Test
-    public void testParquetLzoCompressionCodec() {
-        compressionCodecTestHelper("LZO");
-    }
+    public void testPartitionedRead() {
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file1.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file2.parquet"));
+        ParquetTools.writeTable(table1, new File(testRootFile, "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
 
-    @Test
-    public void testParquetLz4CompressionCodec() {
-        compressionCodecTestHelper("LZ4");
-    }
+        final List<ColumnDefinition> allColumns = new ArrayList<>();
+        allColumns.add(ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.add(ColumnDefinition.fromGenericType("Num", int.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        allColumns.addAll(table1.getDefinition().getColumnList());
+        final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 
-    @Test
-    public void testParquetBrotliCompressionCodec() {
-        compressionCodecTestHelper("BROTLI");
-    }
-
-    @Test
-    public void testParquetZstdCompressionCodec() {
-        compressionCodecTestHelper("ZSTD");
-    }
-
-    @Test
-    public void testParquetGzipCompressionCodec() {
-        compressionCodecTestHelper("GZIP");
+        final Table result = ParquetTools.readMultiFileTable(KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
+        TestCase.assertEquals(partitionedDefinition, result.getDefinition());
+        final Table expected = TableTools.merge(
+                table1.updateView("Date=`2021-07-20`", "Num=100"),
+                table1.updateView("Date=`2021-07-20`", "Num=200"),
+                table1.updateView("Date=`2021-07-21`", "Num=300")
+        ).moveUpColumns("Date", "Num");
+        TstUtils.assertTableEquals(expected, result);
     }
 }

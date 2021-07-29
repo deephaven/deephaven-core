@@ -7,11 +7,20 @@ package io.deephaven.db.tables.utils;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
-import io.deephaven.db.v2.locations.local.ReadOnlyLocalTableLocationProviderByParquetFile;
+import io.deephaven.db.v2.PartitionAwareSourceTable;
+import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.locations.impl.RecordingLocationKeyFinder;
+import io.deephaven.db.v2.locations.impl.TableLocationKeyFinder;
+import io.deephaven.db.v2.locations.impl.PollingTableLocationProvider;
+import io.deephaven.db.v2.locations.impl.StandaloneTableKey;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationFactory;
+import io.deephaven.db.v2.locations.local.SingleParquetFileLayout;
+import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
@@ -19,9 +28,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.SimpleSourceTable;
-import io.deephaven.db.v2.locations.StandaloneTableKey;
-import io.deephaven.db.v2.locations.TableLocationProvider;
-import io.deephaven.db.v2.locations.util.TableDataRefreshService;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
@@ -30,8 +36,10 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
+import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -160,7 +168,7 @@ public class ParquetTools {
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final String destPath) {
-        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, new File(destPath));
+        writeTable(sourceTable, new File(destPath), sourceTable.getDefinition(), ParquetInstructions.EMPTY);
     }
 
     /**
@@ -173,53 +181,53 @@ public class ParquetTools {
     public static void writeTable(
             @NotNull final Table sourceTable,
             @NotNull final File destFile) {
-        writeTable(sourceTable, sourceTable.getDefinition(), ParquetInstructions.EMPTY, destFile);
+        writeTable(sourceTable, destFile, sourceTable.getDefinition(), ParquetInstructions.EMPTY);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
      *                 If there is an error any intermediate directories previously created are removed;
      *                 note this makes this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
-            @NotNull final TableDefinition definition,
-            @NotNull final File destFile) {
-        writeTable(sourceTable, definition, ParquetInstructions.EMPTY, destFile);
+            @NotNull final File destFile,
+            @NotNull final TableDefinition definition) {
+        writeTable(sourceTable, destFile, definition, ParquetInstructions.EMPTY);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param writeInstructions instructions for customizations while writing
      * @param destFile destination file; its path must end in ".parquet".  Any non existing directories in the path are created
      *                 If there is an error any intermediate directories previously created are removed;
      *                 note this makes this method unsafe for concurrent use
+     * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
-            @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File destFile) {
-        writeTable(sourceTable, sourceTable.getDefinition(), writeInstructions, destFile);
+            @NotNull final File destFile,
+            @NotNull final ParquetInstructions writeInstructions) {
+        writeTable(sourceTable, destFile, sourceTable.getDefinition(), writeInstructions);
     }
 
     /**
      * Write a table to a file.
      * @param sourceTable source table
-     * @param definition table definition to use (instead of the one implied by the table itself)
-     * @param writeInstructions instructions for customizations while writing
      * @param destPath destination path; it must end in ".parquet".  Any non existing directories in the path are created
      *                     If there is an error any intermediate directories previously created are removed;
      *                     note this makes this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
+     * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final String destPath,
                                   @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions,
-                                  @NotNull final String destPath) {
-        writeTable(sourceTable, definition, writeInstructions, new File(destPath));
+                                  @NotNull final ParquetInstructions writeInstructions) {
+        writeTable(sourceTable, new File(destPath), definition, writeInstructions);
     }
 
     /**
@@ -232,9 +240,9 @@ public class ParquetTools {
      *                 note this makes this method unsafe for concurrent use
      */
     public static void writeTable(@NotNull final Table sourceTable,
+                                  @NotNull final File destFile,
                                   @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions,
-                                  @NotNull final File destFile) {
+                                  @NotNull final ParquetInstructions writeInstructions) {
         final File firstCreated = prepareDestinationFileLocation(destFile);
         try {
             writeParquetTableImpl(
@@ -370,14 +378,67 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final TableLocationProvider locationProvider = new ReadOnlyLocalTableLocationProviderByParquetFile(
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
-                sourceFile,
-                false,
-                TableDataRefreshService.getSharedRefreshService(),
-                readInstructions);
+                new SingleParquetFileLayout(sourceFile),
+                new ParquetTableLocationFactory(readInstructions),
+                null);
         return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + sourceFile,
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+    }
+
+    /**
+     * Reads in a table from files discovered with {@code locationKeyFinder} using the provided table definition.
+     *
+     * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
+     * @param readInstructions  Instructions for customizations while reading
+     * @param tableDefinition    The table's {@link TableDefinition definition}
+     * @return The table
+     */
+    public static Table readMultiFileTable(
+            @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final TableDefinition tableDefinition) {
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
+                StandaloneTableKey.getInstance(),
+                locationKeyFinder,
+                new ParquetTableLocationFactory(readInstructions),
+                null);
+        return new PartitionAwareSourceTable(tableDefinition, "Read multiple parquet files with " + locationKeyFinder,
+                RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+    }
+
+    /**
+     * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the
+     * first location found, which must have non-null partition values for all partition keys.
+     *
+     * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
+     * @param readInstructions  Instructions for customizations while reading
+     * @return The table
+     */
+    public static Table readMultiFileTable(
+            @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
+            @NotNull final ParquetInstructions readInstructions) {
+        final RecordingLocationKeyFinder<ParquetTableLocationKey> recordingLocationKeyFinder = new RecordingLocationKeyFinder<>();
+        locationKeyFinder.findKeys(recordingLocationKeyFinder);
+        final List<ParquetTableLocationKey> foundKeys = recordingLocationKeyFinder.getRecordedKeys();
+        if (foundKeys.isEmpty()) {
+            return TableTools.emptyTable(0);
+        }
+        // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple parquet files
+        final ParquetTableLocationKey firstKey = foundKeys.get(0);
+        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = readParquetSchemaFromFile(firstKey.getFile(), readInstructions);
+        final List<ColumnDefinition> allColumns = new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
+        for (final String partitionKey : firstKey.getPartitionKeys()) {
+            final Comparable<?> partitionValue = firstKey.getPartitionValue(partitionKey);
+            if (partitionValue == null) {
+                throw new IllegalArgumentException("First location key " + firstKey + " has null partition value at partition key " + partitionKey);
+            }
+            //noinspection unchecked
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+        }
+        allColumns.addAll(schemaInfo.getFirst());
+        return readMultiFileTable(recordingLocationKeyFinder, schemaInfo.getSecond(), new TableDefinition(allColumns));
     }
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
@@ -456,28 +517,31 @@ public class ParquetTools {
 
     @VisibleForTesting
     public static Table readParquetSchemaAndTable(
-            @NotNull final File source, @NotNull ParquetInstructions readInstructions, MutableObject<ParquetInstructions> instructionsOut) {
+            @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn, MutableObject<ParquetInstructions> instructionsOut) {
+        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = readParquetSchemaFromFile(source, readInstructionsIn);
+        final TableDefinition def = new TableDefinition(schemaInfo.getFirst());
+        if (instructionsOut != null) {
+            instructionsOut.setValue(schemaInfo.getSecond());
+        }
+        return readTableFromSingleParquetFile(source, schemaInfo.getSecond(), def);
+    }
+
+    private static Pair<List<ColumnDefinition>, ParquetInstructions> readParquetSchemaFromFile(
+            @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
-
         try {
             final String path = source.getPath();
-            readInstructions = ParquetSchemaReader.readParquetSchema(
+            return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(
                     path,
-                    readInstructions,
+                    readInstructionsIn,
                     colConsumer,
                     (final String colName, final Set<String> takenNames) ->
-                            NameValidator.legalizeColumnName(
-                                    colName, s -> s.replace(" ", "_"), takenNames));
-            if (instructionsOut != null) {
-                instructionsOut.setValue(readInstructions);
-            }
-        } catch (java.io.IOException e) {
-            throw new IllegalArgumentException("Error trying to load table definition from parquet file", e);
+                            NameValidator.legalizeColumnName(colName, s -> s.replace(" ", "_"), takenNames)));
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Error trying to load schema from parquet file", e);
         }
-        final TableDefinition def = new TableDefinition(cols);
-        return readTableFromSingleParquetFile(source, readInstructions, def);
     }
 
     private static void writeParquetTableImpl(

@@ -99,9 +99,19 @@ def Agg(*args):
       :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
       
     *Overload 2*  
+      :param factory: (io.deephaven.db.v2.by.AggregationStateFactory) - aggregation factory.
+      :param matchPairs: (io.deephaven.db.tables.select.MatchPair...) - the columns to apply the aggregation to.
+      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      
+    *Overload 3*  
       :param factoryType: (io.deephaven.db.v2.by.AggType) - aggregation factory type.
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
                          the same name, then the column name can be specified.
+      :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
+      
+    *Overload 4*  
+      :param factoryType: (io.deephaven.db.v2.by.AggType) - aggregation factory type.
+      :param matchPairs: (io.deephaven.db.tables.select.MatchPair...) - the columns to apply the aggregation to.
       :return: (io.deephaven.db.v2.by.ComboAggregateFactory.ComboBy) a ComboBy object suitable for passing to AggCombo(ComboBy...)
     """
     

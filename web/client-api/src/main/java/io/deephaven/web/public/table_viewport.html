@@ -24,13 +24,16 @@
 
 <script>
 var table;
-var ide
+var connection;
+var ide;
 var simplePagingTable = document.getElementById('simplePagingTable');
 var oldTableHandlerCleanup;
 var currentOffset;
 var PAGE_SIZE = 20;
 (async () => {
-    ide = await dh.Ide.getExistingSession(window.location.protocol + "//" + window.location.host, "", null, "groovy");
+    connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
+    ide = await connection.startSession("groovy");
 
     await ide.runCode('remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")')
 

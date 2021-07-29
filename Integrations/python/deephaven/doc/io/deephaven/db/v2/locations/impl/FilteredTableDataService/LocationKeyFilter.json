@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.FilteredTableDataService$LocationKeyFilter",
+ "methods": {
+  "accept": "Determine whether a TableLocationKey should be visible via this service.\n\n:param locationKey: (io.deephaven.db.v2.locations.TableLocationKey) - The location key\n:return: (boolean) True if the location key should be visible, false otherwise"
+ },
+ "path": "io.deephaven.db.v2.locations.impl.FilteredTableDataService.LocationKeyFilter",
+ "typeName": "interface"
+}

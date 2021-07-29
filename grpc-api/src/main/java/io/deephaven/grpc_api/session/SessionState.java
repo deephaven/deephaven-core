@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -88,6 +89,17 @@ public class SessionState {
     @AssistedFactory
     public interface Factory {
         SessionState create(AuthContext authContext);
+    }
+
+    /**
+     * Wrap an object in an ExportObject to make it conform to the session export API.
+     *
+     * @param export the object to wrap
+     * @param <T> the type of the object
+     * @return a sessionless export object
+     */
+    public static <T> ExportObject<T> wrapAsExport(final T export) {
+        return new ExportObject<>(export);
     }
 
     private static final Logger log = LoggerFactory.getLogger(SessionState.class);
@@ -456,6 +468,25 @@ public class SessionState {
             setState(ExportNotification.State.UNKNOWN);
         }
 
+        /**
+         * Create an ExportObject that is not tied to any session. These must be non-exports that have require no
+         * work to be performed. These export objects can be used as dependencies.
+         *
+         * @param result the object to wrap in an export
+         */
+        private ExportObject(final T result) {
+            this.session = null;
+            this.exportId = NON_EXPORT_ID;
+            this.state = ExportNotification.State.EXPORTED;
+            this.result = result;
+            this.dependentCount = 0;
+            this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
+
+            if (result instanceof LivenessReferent) {
+                manage((LivenessReferent) result);
+            }
+        }
+
         private boolean isNonExport() {
             return exportId == NON_EXPORT_ID;
         }
@@ -472,7 +503,7 @@ public class SessionState {
 
             this.parents = parents;
             dependentCount = parents.size();
-            parents.forEach(this::manage);
+            parents.stream().filter(Objects::nonNull).forEach(this::manage);
         }
 
 
@@ -544,7 +575,7 @@ public class SessionState {
          * @return the result of the computed export
          */
         public T get() {
-            if (session.isExpired()) {
+            if (session != null && session.isExpired()) {
                 throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
 
@@ -624,7 +655,7 @@ public class SessionState {
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
                 children.forEach(child -> child.onResolveOne(this));
                 children = Collections.emptyList();
-                parents.forEach(this::unmanage);
+                parents.stream().filter(Objects::nonNull).forEach(this::unmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
@@ -808,6 +839,9 @@ public class SessionState {
          * Releases this export; it will wait for the work to complete before releasing.
          */
         public synchronized void release() {
+            if (session == null) {
+                throw new UnsupportedOperationException("Session-less exports cannot be released");
+            }
             if (state == ExportNotification.State.EXPORTED) {
                 if (isNonExport()) {
                     return;
@@ -822,6 +856,9 @@ public class SessionState {
          * Releases this export; it will cancel the work and dependent exports proactively when possible.
          */
         public synchronized void cancel() {
+            if (session == null) {
+                throw new UnsupportedOperationException("Session-less exports cannot be cancelled");
+            }
             if (state == ExportNotification.State.EXPORTED) {
                 if (isNonExport()) {
                     return;

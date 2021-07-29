@@ -12,6 +12,7 @@
   "bindOperationJoinTables": ":param op: io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationLazyUpdate": ":param op: io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl.LazyUpdateGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationMergeTables": ":param op: io.deephaven.grpc_api.table.ops.MergeTablesGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
+  "bindOperationRunChartDownsample": ":param op: io.deephaven.grpc_api.table.ops.RunChartDownsampleGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationSelect": ":param op: io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl.SelectGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationSelectDistinct": ":param op: io.deephaven.grpc_api.table.ops.SelectDistinctGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationSnapshotTable": ":param op: io.deephaven.grpc_api.table.ops.SnapshotTableGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",

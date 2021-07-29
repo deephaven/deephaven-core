@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator$BufferInfo",
- "methods": {},
- "path": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.BufferInfo",
- "typeName": "class"
-}

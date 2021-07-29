@@ -415,7 +415,6 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertTableEquals(s2f, s2mergedSorted);
     }
 
-    @Category(OutOfBandTest.class)
     public void testTableMapRandomized() {
         for (int seed = 0; seed < 1; ++seed) {
             testTableMapRandomized(seed);

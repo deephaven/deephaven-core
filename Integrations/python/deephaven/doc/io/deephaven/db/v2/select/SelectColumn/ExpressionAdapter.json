@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.db.v2.select.SelectColumn$ExpressionAdapter",
+ "methods": {
+  "getOut": ":return: io.deephaven.db.v2.select.SelectColumn",
+  "visit": "*Overload 1*  \n  :param rhs: io.deephaven.api.value.Value\n  \n*Overload 2*  \n  :param rhs: io.deephaven.api.ColumnName\n  \n*Overload 3*  \n  :param rhs: io.deephaven.api.RawString\n  \n*Overload 4*  \n  :param rhs: long"
+ },
+ "path": "io.deephaven.db.v2.select.SelectColumn.ExpressionAdapter",
+ "typeName": "class"
+}

@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.ParquetSchemaReader$ColumnDefinition",
- "methods": {},
- "path": "io.deephaven.db.v2.parquet.ParquetSchemaReader.ColumnDefinition",
- "typeName": "class"
-}

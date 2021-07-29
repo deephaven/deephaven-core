@@ -72,7 +72,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
 
     @Override @OverridingMethodsMustInvokeSuper
     public synchronized int addRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                      @NotNull final ColumnLocation<?> columnLocation) {
+                                      @NotNull final ColumnLocation columnLocation) {
         maybeExtendRegions();
         final int regionIndex = regionCount;
         regions[regionIndex] = makeDeferred.make(() ->

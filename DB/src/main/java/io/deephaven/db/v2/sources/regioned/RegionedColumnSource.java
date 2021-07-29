@@ -69,5 +69,5 @@ public interface RegionedColumnSource<DATA_TYPE> extends DeferredGroupingColumnS
      * @return The index assigned to the added region
      */
     int addRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                  @NotNull final ColumnLocation<?> columnLocation);
+                  @NotNull final ColumnLocation columnLocation);
 }

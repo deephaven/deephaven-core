@@ -8,84 +8,48 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Service responsible for table location discovery.
+ * Service responsible for {@link TableLocation} discovery.
  */
 public interface TableDataService {
 
     /**
-     * Request a table location provider from this service.
+     * Request a {@link TableLocationProvider} from this service.
      *
-     * @param namespace The namespace
-     * @param tableName The table name
-     * @param tableType The table type
-     * @return A table location provider for the specified table key fields
+     * @param tableKey The {@link TableKey} to lookup
+     * @return A {@link TableLocationProvider} for the specified {@link TableKey}
      */
-    default @NotNull TableLocationProvider getTableLocationProvider(@NotNull final String namespace,
-                                                                    @NotNull final String tableName,
-                                                                    @NotNull final TableType tableType) {
-        return getTableLocationProvider(new TableLookupKey.Immutable(namespace, tableName, tableType));
-    }
+    @NotNull
+    TableLocationProvider getTableLocationProvider(@NotNull TableKey tableKey);
 
     /**
-     * Request a table location provider from this service.
-     *
-     * @param tableKey The table key
-     * @return A table location provider for the specified key
-     */
-    @NotNull TableLocationProvider getTableLocationProvider(@NotNull TableKey tableKey);
-
-    /**
-     * Forget all state for future requests.
+     * Forget all state for subsequent requests for all tables.
      */
     void reset();
 
     /**
-     * Forget all state for a single table.
+     * Forget all state for subsequent requests for a single table.
      *
-     * @param key
+     * @param tableKey {@link TableKey} to forget state for
      */
-    void reset(TableKey key);
+    void reset(@NotNull TableKey tableKey);
 
     /**
-     * Allow TableDataService instances to have names.
+     * Get an optional name for this service, or null if no name is defined.
+     *
+     * @return The service name, or null
      */
     @Nullable
-    String getName();
-
-    /**
-     * Like toString, but with more detail.
-     * @return a description string
-     */
-    default String describe() {
-        return this.toString();
+    default String getName() {
+        return null;
     }
 
-    class Null implements TableDataService {
-
-        public static final TableDataService INSTANCE = new Null();
-
-        private Null() {
-        }
-
-        @Override
-        public @NotNull TableLocationProvider getTableLocationProvider(@NotNull final TableKey tableKey) {
-            throw new TableDataException("This is the null service");
-        }
-
-        @Override
-        public void reset() {
-            throw new TableDataException("This is the null service");
-        }
-
-        @Override
-        public void reset(TableKey key) {
-            throw new TableDataException("This is the null service");
-        }
-
-        @Nullable
-        @Override
-        public String getName() {
-            return null;
-        }
+    /**
+     * Get a detailed description string.
+     *
+     * @return A description string
+     * @implNote Defaults to {@link #toString()}
+     */
+    default String describe() {
+        return toString();
     }
 }

@@ -108,7 +108,7 @@ def _custom_writeTable(*args):
     if len(args) == 2:
         return _java_type_.writeTable(args[0], getFileObject(args[1]))
     elif len(args) == 3:
-        return _java_type_.writeTable(args[0], getattr(_java_type_, args[1]), getFileObject(args[2]))
+        return _java_type_.writeTable(args[0], getFileObject(args[1]),  getattr(_java_type_, args[2]))
 
 
 def _custom_writeTables(sources, tableDefinition, destinations):

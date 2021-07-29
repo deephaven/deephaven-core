@@ -21,7 +21,6 @@ import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 @Category(OutOfBandTest.class)
 public class QueryTableHugeSortTest {
     @Test
-    @Category(OutOfBandTest.class)
     public void testHugeSort() {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;

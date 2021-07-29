@@ -445,7 +445,6 @@ public class TestByExternal extends QueryTableTestBase {
         assertTrue(((TableMapImpl)map).isRefreshing());
     }
 
-    @Category(OutOfBandTest.class)
     public void testByExternalWithShifts() {
         for (int seed = 0; seed < 100; ++seed) {
             System.out.println("Seed = " + seed);

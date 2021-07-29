@@ -3,14 +3,15 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Column region interface for regions that support fetching primitive floats.
  */
-public interface ColumnRegionFloat<ATTR extends Attributes.Any> extends ColumnRegion<ATTR> {
+public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> {
 
     /**
      * Get a single float from this region.
@@ -28,7 +29,7 @@ public interface ColumnRegionFloat<ATTR extends Attributes.Any> extends ColumnRe
      * @param elementIndex Element (float) index in the table's address space
      * @return The float value at the specified element (float) index
      */
-    default float getFloat(@NotNull FillContext context, long elementIndex) {
+    default float getFloat(@NotNull final FillContext context, final long elementIndex) {
         return getFloat(elementIndex);
     }
 
@@ -37,20 +38,42 @@ public interface ColumnRegionFloat<ATTR extends Attributes.Any> extends ColumnRe
         return float.class;
     }
 
-    static <ATTR extends Attributes.Any> ColumnRegionFloat.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionFloat.Null<ATTR> createNull() {
         //noinspection unchecked
         return Null.INSTANCE;
     }
 
-    final class Null<ATTR extends Attributes.Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionFloat<ATTR> {
+    final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionFloat<ATTR> {
         @SuppressWarnings("rawtypes")
         private static final ColumnRegionFloat.Null INSTANCE = new ColumnRegionFloat.Null();
 
-        private Null() {}
+        private Null() {
+        }
 
         @Override
-        public float getFloat(long elementIndex) {
+        public float getFloat(final long elementIndex) {
             return QueryConstants.NULL_FLOAT;
+        }
+    }
+
+    final class Constant<ATTR extends Any> implements ColumnRegionFloat<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+
+        private final float value;
+
+        public Constant(final float value) {
+            this.value = value;
+        }
+
+        @Override
+        public float getFloat(final long elementIndex) {
+            return value;
+        }
+
+        @Override
+        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, final int length) {
+            final int offset = destination.size();
+            destination.asWritableFloatChunk().fillWithValue(offset, length, value);
+            destination.setSize(offset + length);
         }
     }
 }

@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.SingleTableLocationProvider",
+ "methods": {
+  "ensureInitialized": "Ensure that this location provider is initialized. Mainly useful in cases where it cannot be otherwise\n guaranteed that TableLocationProvider.refresh() or TableLocationProvider.subscribe(Listener) has been called prior to calls to\n the various table location fetch methods.\n\n:return: (io.deephaven.db.v2.locations.TableLocationProvider) this, to allow method chaining",
+  "getImplementationName": "Get a name for the implementing class.  Useful for abstract classes that implement\n LogOutputAppendable or override\n toString.\n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "getKey": "Get the TableKey associated with this provider.\n\n:return: (io.deephaven.db.v2.locations.ImmutableTableKey) The associated TableKey",
+  "getTableLocationIfPresent": ":param tableLocationKey: (io.deephaven.db.v2.locations.TableLocationKey) - A TableLocationKey specifying the location to get\n:return: (io.deephaven.db.v2.locations.TableLocation) The TableLocation matching the given key if present, else null",
+  "getTableLocationKeys": "Get this provider's currently known location keys. The locations specified by the keys returned may have null size\n - that is, they may not \"exist\" for application purposes. TableLocationProvider.getTableLocation(TableLocationKey) is\n guaranteed to succeed for all results.\n\n:return: (java.util.Collection<io.deephaven.db.v2.locations.ImmutableTableLocationKey>) A collection of keys for locations available from this provider",
+  "hasTableLocationKey": "Check if this provider knows the supplied location key.\n\n:param tableLocationKey: (io.deephaven.db.v2.locations.TableLocationKey) - The key to test for\n:return: (boolean) Whether the key is known to this provider",
+  "refresh": "Initialize or refresh state information about the list of existing locations.",
+  "subscribe": "Subscribe to pushed location additions. Subscribing more than once with the same listener without an\n intervening unsubscribe is an error, and may result in undefined behavior.\n This is a possibly asynchronous operation - listener will receive 0 or more handleTableLocationKey callbacks,\n followed by 0 or 1 handleException callbacks during invocation and continuing after completion, on a thread\n determined by the implementation. As noted in BasicTableDataListener.handleException(TableDataException), an exception\n callback signifies that the subscription is no longer valid, and no unsubscribe is required in that case.\n Callers must not hold any lock that prevents notification delivery while subscribing.\n Callers must guard against duplicate notifications.\n This method only guarantees eventually consistent state.  To force a state update, use refresh() after\n subscription completes.\n\n:param listener: (io.deephaven.db.v2.locations.TableLocationProvider.Listener) - A listener.",
+  "supportsSubscriptions": "Does this provider support subscriptions? That is, can this provider ever have ticking data?\n\n:return: (boolean) True if this provider supports subscriptions.",
+  "unsubscribe": "Unsubscribe from pushed location additions.\n\n:param listener: (io.deephaven.db.v2.locations.TableLocationProvider.Listener) - The listener to forget about."
+ },
+ "path": "io.deephaven.db.v2.locations.impl.SingleTableLocationProvider",
+ "text": "A TableLocationProvider that provides access to exactly one, previously-known TableLocation.",
+ "typeName": "class"
+}

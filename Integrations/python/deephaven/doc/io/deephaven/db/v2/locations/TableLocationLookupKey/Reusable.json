@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.TableLocationLookupKey$Reusable",
- "methods": {
-  "getImplementationName": "Get a name for the implementing class.  Useful for abstract classes that implement\n LogOutputAppendable or override\n toString.\n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class"
- },
- "path": "io.deephaven.db.v2.locations.TableLocationLookupKey.Reusable",
- "typeName": "class"
-}
