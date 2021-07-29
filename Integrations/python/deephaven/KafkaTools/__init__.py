@@ -59,8 +59,42 @@ def dictToProperties(dict):
         r.setProperty(key, value)
     return r
 
-def _custom_simpleConsumeToTable(kafkaConsumerPropertiesDict, topicName):
-    return _java_type_.simpleConsumeToTable(dictToProperties(kafkaConsumerPropertiesDict), topicName)
+@_passThrough
+def _custom_simpleConsumeToTable(*args):
+    if len(args) < 2:
+        raise Exception('not enough arguments')
+    kafkaConsumerPropertiesDict = args[0]
+    topicName = args[1]
+    if len(args) >= 3:
+        partitionFilter = args[2]
+        if isinstance(partitionFilter, str):
+            partitionFilter = getattr(_java_type_, partitionFilter)
+        else:
+            partitionFilter = _java_type_.partitionFilterFromArray(jpy.array('int', partitionFilter))
+    else:
+        partitionFilter = getattr(_java_type_, 'ALL_PARTITIONS')
+
+    if len(args) == 4:
+        partitionToInitialOffset = args[3];
+        if isinstance(partitionToInitialOffset, str):
+            partitionToInitialOffset = getattr(_java_type_, partitionToInitialOffset)
+        elif isinstance(partitionToInitialOffset, dict):
+            dict = args[3];
+            partitionsArray = jpy.array('int', dict.keys())
+            offsetsArray = jpy.array('long', dict.values())
+            partitionToInitialOffset = _java_type_.partitionToOffsetFromParallelArrays(partitionsArray, offsetsArray)
+        else:
+            raise Exception('wrong type for 4th argument partitionToInitialOffset: str or dict allowed')
+    elif len(args) > 4:
+        raise Exception('too many arguments')
+    else:
+        partitionToInitialOffset = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
+
+    return _java_type_.simpleConsumeToTable(
+        dictToProperties(kafkaConsumerPropertiesDict),
+        topicName,
+        partitionFilter,
+        partitionToInitialOffset)
 
 
 # Define all of our functionality, if currently possible
@@ -68,12 +102,48 @@ try:
     _defineSymbols()
 except Exception as e:
     pass
+
 @_passThrough
-def simpleConsumeToTable(kafkaConsumerProperties, topic):
+def partitionFilterFromArray(partitions):
     """
-    :param kafkaConsumerProperties: java.util.Properties
-    :param topic: java.lang.String
-    :return: io.deephaven.db.tables.Table
+    :param partitions: int[]
+    :return: java.util.function.IntPredicate
     """
     
-    return _custom_simpleConsumeToTable(kafkaConsumerProperties, topic)
+    return _java_type_.partitionFilterFromArray(partitions)
+
+
+@_passThrough
+def partitionToOffsetFromParallelArrays(partitions, offsets):
+    """
+    :param partitions: int[]
+    :param offsets: long[]
+    :return: java.util.function.IntToLongFunction
+    """
+    
+    return _java_type_.partitionToOffsetFromParallelArrays(partitions, offsets)
+
+
+@_passThrough
+def simpleConsumeToTable(*args):
+    """
+    *Overload 1*  
+      :param kafkaConsumerProperties: java.util.Properties
+      :param topic: java.lang.String
+      :param partitionFilter: java.util.function.IntPredicate
+      :param partitionToInitialOffset: java.util.function.IntToLongFunction
+      :return: io.deephaven.db.tables.Table
+      
+    *Overload 2*  
+      :param kafkaConsumerProperties: java.util.Properties
+      :param topic: java.lang.String
+      :param partitionFilter: java.util.function.IntPredicate
+      :return: io.deephaven.db.tables.Table
+      
+    *Overload 3*  
+      :param kafkaConsumerProperties: java.util.Properties
+      :param topic: java.lang.String
+      :return: io.deephaven.db.tables.Table
+    """
+    
+    return _custom_simpleConsumeToTable(*args)

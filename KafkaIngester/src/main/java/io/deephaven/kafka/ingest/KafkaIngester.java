@@ -1,6 +1,7 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
@@ -166,6 +167,11 @@ public class KafkaIngester {
         this(log, props, topic, ALL_PARTITIONS, partitionToConsumer, partitionToInitialSeekOffset);
     }
 
+    public static long SEEK_TO_BEGINNING = -1;
+    public static long DONT_SEEK = -2;
+    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
+    public static IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
+
     /**
      * Creates a Kafka ingester for the given topic.
      * @param log                           a log for output
@@ -196,6 +202,9 @@ public class KafkaIngester {
         consumer.assign(openPartitions);
 
         final Set<TopicPartition> assignments = consumer.assignment();
+        if (assignments.size() <= 0) {
+            throw new UncheckedDeephavenException("Empty partition assignments");
+        }
         log.info().append(logPrefix).append("Partition Assignments: ").append(assignments.toString()).endl();
 
         if (assignments.size() != openPartitions.size()) {
@@ -204,10 +213,10 @@ public class KafkaIngester {
 
         for (final TopicPartition topicPartition : assignments) {
             final long seekOffset = partitionToInitialSeekOffset.applyAsLong(topicPartition.partition());
-            if (seekOffset == -1) {
+            if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.").append(seekOffset).endl();
                 consumer.seekToBeginning(Collections.singletonList(topicPartition));
-            } else {
+            } else if (seekOffset != DONT_SEEK) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to offset ").append(seekOffset).append(".").endl();
                 consumer.seek(topicPartition, seekOffset);
             }
@@ -253,7 +262,7 @@ public class KafkaIngester {
             boolean noMore = pollOnce(Duration.ofNanos(remainingNanos));
             if (noMore) {
                 log.error().append(logPrefix)
-                        .append("Stopping due to too many errors.")
+                        .append("Stopping due to errors.")
                         .endl();
                 break;
             }
@@ -285,6 +294,10 @@ public class KafkaIngester {
         try {
             records = consumer.poll(timeout);
         } catch (WakeupException we) {
+            // we interpret this as a signal to stop.
+            return false;
+        } catch (Exception ex) {
+            log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex).append(", aborting.");
             return false;
         }
         for (final ConsumerRecord<?, ?> record : records) {

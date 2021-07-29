@@ -57,8 +57,42 @@ def dictToProperties(dict):
         r.setProperty(key, value)
     return r
 
-def _custom_simpleConsumeToTable(kafkaConsumerPropertiesDict, topicName):
-    return _java_type_.simpleConsumeToTable(dictToProperties(kafkaConsumerPropertiesDict), topicName)
+@_passThrough
+def _custom_simpleConsumeToTable(*args):
+    if len(args) < 2:
+        raise Exception('not enough arguments')
+    kafkaConsumerPropertiesDict = args[0]
+    topicName = args[1]
+    if len(args) >= 3:
+        partitionFilter = args[2]
+        if isinstance(partitionFilter, str):
+            partitionFilter = getattr(_java_type_, partitionFilter)
+        else:
+            partitionFilter = _java_type_.partitionFilterFromArray(jpy.array('int', partitionFilter))
+    else:
+        partitionFilter = getattr(_java_type_, 'ALL_PARTITIONS')
+
+    if len(args) == 4:
+        partitionToInitialOffset = args[3];
+        if isinstance(partitionToInitialOffset, str):
+            partitionToInitialOffset = getattr(_java_type_, partitionToInitialOffset)
+        elif isinstance(partitionToInitialOffset, dict):
+            dict = args[3];
+            partitionsArray = jpy.array('int', dict.keys())
+            offsetsArray = jpy.array('long', dict.values())
+            partitionToInitialOffset = _java_type_.partitionToOffsetFromParallelArrays(partitionsArray, offsetsArray)
+        else:
+            raise Exception('wrong type for 4th argument partitionToInitialOffset: str or dict allowed')
+    elif len(args) > 4:
+        raise Exception('too many arguments')
+    else:
+        partitionToInitialOffset = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
+
+    return _java_type_.simpleConsumeToTable(
+        dictToProperties(kafkaConsumerPropertiesDict),
+        topicName,
+        partitionFilter,
+        partitionToInitialOffset)
 
 
 # Define all of our functionality, if currently possible
@@ -66,3 +100,4 @@ try:
     _defineSymbols()
 except Exception as e:
     pass
+
