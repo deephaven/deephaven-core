@@ -16,6 +16,7 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
 import io.deephaven.grpc_api.barrage.BarrageModule;
+import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.session.SessionModule;
@@ -284,6 +285,39 @@ public class FlightMessageRoundTripTest {
         Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
     }
 
+    @Test
+    public void testGetSchema() {
+        final String staticTableName = "flightInfoTest";
+        final String tickingTableName = "flightInfoTestTicking";
+        final Table table = TableTools.emptyTable(10).update("I = i");
+
+        final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+            // stuff table into the scope
+            scriptSession.setVariable(staticTableName, table);
+            scriptSession.setVariable(tickingTableName, tickingTable);
+
+            // test fetch info from scoped ticket
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(), table);
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(), tickingTable);
+
+            // test list flights which runs through scoped tickets
+            final MutableInt seenTables = new MutableInt();
+            client.listFlights(Criteria.ALL).forEach(fi -> {
+                seenTables.increment();
+                if (fi.getDescriptor().equals(arrowFlightDescriptorForName(staticTableName))) {
+                    assertInfoMatchesTable(fi, table);
+                } else {
+                    assertInfoMatchesTable(fi, tickingTable);
+                }
+            });
+
+            Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        }
+    }
+
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {
         return FlightDescriptor.path(ScopeTicketResolver.descriptorForName(name).getPathList());
     }
@@ -316,8 +350,13 @@ public class FlightMessageRoundTripTest {
         // we don't try to compute this for the user; verify we are sending UNKNOWN instead of 0
         Assert.eq(info.getBytes(), "info.getBytes()", -1L);
 
-        final Schema schema = info.getSchema();
+        assertSchemaMatchesTable(info.getSchema(), table);
+    }
+
+    private void assertSchemaMatchesTable(Schema schema, Table table) {
         Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length, "table.getColumns().length");
+        Assert.equals(BarrageSchemaUtil.schemaToTableDefinition(schema), "BarrageSchemaUtil.schemaToTableDefinition(schema)",
+                table.getDefinition(), "table.getDefinition()");
     }
 
     private static int nextTicket = 1;
