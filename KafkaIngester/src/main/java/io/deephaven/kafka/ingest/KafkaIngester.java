@@ -5,8 +5,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamConsumer;
-import io.deephaven.stream.StreamPublisher;
-import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;

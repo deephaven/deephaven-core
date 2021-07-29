@@ -84,6 +84,17 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
                 tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
     }
 
+    public static ConsumerRecordToTableWriterAdapter make(
+            final TableWriter tw,
+            final String kafkaPartitionColumnName,
+            final String offsetColumnName,
+            final String timestampColumnName,
+            final String keyColumnName,
+            @NotNull final String valueColumnName) {
+        return new SimpleConsumerRecordToTableWriterAdapter(
+                tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {

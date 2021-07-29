@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.ingest.KafkaIngester$PartitionRange",
+ "methods": {
+  "test": ":param value: int\n:return: boolean",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.kafka.ingest.KafkaIngester.PartitionRange",
+ "text": "A predicate for handling a range of partitions.",
+ "typeName": "class"
+}

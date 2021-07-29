@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.kafka.KafkaTools",
+ "methods": {
+  "simpleConsumeToTable": ":param kafkaConsumerProperties: java.util.Properties\n:param topic: java.lang.String\n:return: io.deephaven.db.tables.Table"
+ },
+ "path": "io.deephaven.kafka.KafkaTools",
+ "typeName": "class"
+}
