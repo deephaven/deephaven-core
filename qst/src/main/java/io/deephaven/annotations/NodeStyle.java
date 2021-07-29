@@ -1,4 +1,4 @@
-package io.deephaven.api;
+package io.deephaven.annotations;
 
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;
@@ -9,14 +9,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A simple style is for objects that are simple to build. Not recommended for objects with more
- * than two fields. Not applicable for objects with default fields.
+ * The node style is suitable for nested / recursive structures. As such, it is prehashed and
+ * interned.
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(visibility = ImplementationVisibility.PACKAGE,
-    defaults = @Value.Immutable(builder = false, copy = false), strictBuilder = true,
+    defaults = @Value.Immutable(prehash = true, intern = true), strictBuilder = true,
     weakInterning = true)
-public @interface SimpleStyle {
-    // Note: this produces ImmutableX.of() methods for the implementation classes
+public @interface NodeStyle {
 }

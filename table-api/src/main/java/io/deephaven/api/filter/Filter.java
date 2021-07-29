@@ -3,6 +3,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
@@ -10,7 +11,7 @@ import java.util.Collection;
  *
  * @see io.deephaven.api.TableOperations#where(Collection)
  */
-public interface Filter {
+public interface Filter extends Serializable {
 
     static FilterIsNull isNull(ColumnName column) {
         return FilterIsNull.of(column);

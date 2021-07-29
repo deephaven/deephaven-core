@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;

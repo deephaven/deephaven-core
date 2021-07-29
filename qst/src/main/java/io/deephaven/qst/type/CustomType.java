@@ -1,0 +1,43 @@
+package io.deephaven.qst.type;
+
+import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
+
+import java.util.Optional;
+
+/**
+ * A custom type {@link #clazz() class}.
+ *
+ * <p>
+ * The {@link #clazz() class} must not be representable by a {@link Type#knownTypes() known type}.
+ *
+ * @param <T> the type
+ */
+@Immutable
+@SimpleStyle
+public abstract class CustomType<T> extends GenericTypeBase<T> {
+
+    public static <T> CustomType<T> of(Class<T> clazz) {
+        return ImmutableCustomType.of(clazz);
+    }
+
+    @Parameter
+    public abstract Class<T> clazz();
+
+    @Override
+    public final <V extends GenericType.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
+    }
+
+    @Check
+    final void checkClazz() {
+        final Optional<Type<T>> staticType = TypeHelper.findStatic(clazz());
+        if (staticType.isPresent()) {
+            throw new IllegalArgumentException(
+                String.format("Use static type %s instead", staticType.get()));
+        }
+    }
+}

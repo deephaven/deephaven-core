@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

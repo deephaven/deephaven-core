@@ -104,17 +104,17 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
 
     @Override
     public void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        super.fillFromChunkByRanges(orderedKeys, src, DBTimeUtils::nanos);
+        super.<DBDateTime>fillFromChunkByRanges(orderedKeys, src, DBTimeUtils::nanos);
     }
 
     @Override
     void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Values> src) {
-        super.fillFromChunkByKeys(orderedKeys, src, DBTimeUtils::nanos);
+        super.<DBDateTime>fillFromChunkByKeys(orderedKeys, src, DBTimeUtils::nanos);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.KeyIndices> keys) {
-        super.fillFromChunkUnordered(src, keys, DBTimeUtils::nanos);
+        super.<DBDateTime>fillFromChunkUnordered(src, keys, DBTimeUtils::nanos);
     }
 
     @Override

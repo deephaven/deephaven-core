@@ -1,6 +1,6 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.BuildableStyle;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.SortColumn;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

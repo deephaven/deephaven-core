@@ -1,6 +1,6 @@
 package io.deephaven.api.filter;
 
-import io.deephaven.api.BuildableStyle;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.value.Value;
 import org.immutables.value.Value.Immutable;
