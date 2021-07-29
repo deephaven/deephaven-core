@@ -27,8 +27,8 @@ public abstract class TailTable extends TableBase implements SingleParentTable {
 
     @Check
     final void checkSize() {
-        if (size() <= 0) {
-            throw new IllegalArgumentException("Must have positive size");
+        if (size() < 0) {
+            throw new IllegalArgumentException(String.format("tail must have a non-negative size: %d", size()));
         }
     }
 }
