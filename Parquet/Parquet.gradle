@@ -26,6 +26,6 @@ dependencies {
     compile 'org.apache.parquet:parquet-encoding:1.10.0'
     compile 'org.apache.parquet:parquet-column:1.10.0'
     */
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
 
 }
