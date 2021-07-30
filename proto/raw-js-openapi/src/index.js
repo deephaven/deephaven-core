@@ -18,14 +18,14 @@ var barrage = require("@deephaven/barrage");
 
 var io = { deephaven: {
     proto: {
-            barrage_pb: proto.io.deephaven.proto.backplane.grpc,
-            barrage_pb_service: barrageService,
-            session_pb: proto.io.deephaven.proto.backplane.grpc,
-            session_pb_service: sessionService,
-            table_pb: proto.io.deephaven.proto.backplane.grpc,
-            table_pb_service: tableService,
-            console_pb: proto.io.deephaven.proto.backplane.script.grpc,
-            console_pb_service: consoleService,
+            Barrage_pb: proto.io.deephaven.proto.backplane.grpc,
+            Barrage_pb_service: barrageService,
+            Session_pb: proto.io.deephaven.proto.backplane.grpc,
+            Session_pb_service: sessionService,
+            Table_pb: proto.io.deephaven.proto.backplane.grpc,
+            Table_pb_service: tableService,
+            Console_pb: proto.io.deephaven.proto.backplane.script.grpc,
+            Console_pb_service: consoleService,
         },
         barrage: {
             "flatbuf": {

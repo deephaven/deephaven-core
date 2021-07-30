@@ -28,7 +28,6 @@ RUN set -eux; \
     --grpc_python_out=/generated/python \
     -I/dependencies \
     -I/includes \
-    /dependencies/flight.proto \
     /includes/Barrage.proto \
     /includes/Console.proto \
     /includes/Session.proto \
