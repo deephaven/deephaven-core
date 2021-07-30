@@ -6,6 +6,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_gen
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
@@ -34,12 +35,21 @@ public class BarrageUtils {
     //TODO another wrapper that makes something which looks like a stream and manages rpcTicket internally
     public static Uint8Array barrageMessage(Builder innerBuilder, int messageType, Uint8Array rpcTicket, int sequence, boolean halfCloseAfterMessage) {
         Builder outerBuilder = new Builder(1024);
-
+        //noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
         double messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.asUint8Array());
+        //noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
         double rpcTicketOffset = BarrageMessageWrapper.createRpcTicketVector(outerBuilder, rpcTicket);
         double offset = BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset, rpcTicketOffset, Long.create(sequence, 0), halfCloseAfterMessage);
         outerBuilder.finish(offset);
         return outerBuilder.asUint8Array();
+    }
+    public static Uint8Array barrageMessage(Uint8Array rpcTicket, int sequence, boolean halfCloseAfterMessage) {
+        Builder builder = new Builder(1024);
+        //noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
+        double rpcTicketOffset = BarrageMessageWrapper.createRpcTicketVector(builder, rpcTicket);
+        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0, rpcTicketOffset, Long.create(sequence, 0), halfCloseAfterMessage);
+        builder.finish(offset);
+        return builder.asUint8Array();
     }
 
     /**
