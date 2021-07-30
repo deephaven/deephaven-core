@@ -61,7 +61,6 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Chunk<ATTR>[] dictionaries;
     private ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores;
-    private RegionedPageStore.Parameters regionParameters;
 
     /**
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
@@ -98,6 +97,10 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         return columnChunkReaders != null || pageStores != null;
     }
 
+    private ParquetTableLocation tl() {
+        return (ParquetTableLocation) getTableLocation();
+    }
+
     private static final ColumnDefinition<Long> FIRST_KEY_COL_DEF = ColumnDefinition.ofLong("__firstKey__");
     private static final ColumnDefinition<Long> LAST_KEY_COL_DEF = ColumnDefinition.ofLong("__lastKey__");
 
@@ -108,12 +111,11 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
             return null;
         }
 
-        final ParquetTableLocation parquetTableLocation = (ParquetTableLocation) getTableLocation();
         final Function<String, String> defaultGroupingFilenameByColumnName =
-                ParquetTableWriter.defaultGroupingFileName(parquetTableLocation.getParquetFile().getAbsolutePath());
+                ParquetTableWriter.defaultGroupingFileName(tl().getParquetFile().getAbsolutePath());
         try {
             final ParquetFileReader parquetFileReader = new ParquetFileReader(
-                    defaultGroupingFilenameByColumnName.apply(parquetColumnName), parquetTableLocation.getChannelProvider(), -1);
+                    defaultGroupingFilenameByColumnName.apply(parquetColumnName), tl().getChannelProvider(), -1);
             final Map<String, String> keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
 
             final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
@@ -153,7 +155,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     private <SOURCE, REGION_TYPE> REGION_TYPE makeSingleColumnRegion(final SOURCE source,
                                                                      @NotNull final LongFunction<REGION_TYPE> nullRegionFactory,
                                                                      @NotNull final Function<SOURCE, REGION_TYPE> singleRegionFactory) {
-        return source == null ? nullRegionFactory.apply(regionParameters.regionMask) : singleRegionFactory.apply(source);
+        return source == null ? nullRegionFactory.apply(tl().getRegionParameters().regionMask) : singleRegionFactory.apply(source);
     }
 
     @Override
@@ -161,7 +163,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
-                rs -> new ColumnRegionChar.StaticPageStore(regionParameters, rs.toArray(ColumnRegionChar[]::new)));
+                rs -> new ColumnRegionChar.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionChar[]::new)));
     }
 
     @Override
@@ -169,7 +171,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
-                rs -> new ColumnRegionByte.StaticPageStore(regionParameters, rs.toArray(ColumnRegionByte[]::new)));
+                rs -> new ColumnRegionByte.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionByte[]::new)));
     }
 
     @Override
@@ -177,7 +179,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
-                rs -> new ColumnRegionShort.StaticPageStore(regionParameters, rs.toArray(ColumnRegionShort[]::new)));
+                rs -> new ColumnRegionShort.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionShort[]::new)));
     }
 
     @Override
@@ -185,7 +187,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
-                rs -> new ColumnRegionInt.StaticPageStore(regionParameters, rs.toArray(ColumnRegionInt[]::new)));
+                rs -> new ColumnRegionInt.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionInt[]::new)));
     }
 
     @Override
@@ -193,7 +195,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
-                rs -> new ColumnRegionLong.StaticPageStore(regionParameters, rs.toArray(ColumnRegionLong[]::new)));
+                rs -> new ColumnRegionLong.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionLong[]::new)));
     }
 
     @Override
@@ -201,7 +203,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
-                rs -> new ColumnRegionFloat.StaticPageStore(regionParameters, rs.toArray(ColumnRegionFloat[]::new)));
+                rs -> new ColumnRegionFloat.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionFloat[]::new)));
     }
 
     @Override
@@ -209,7 +211,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
-                rs -> new ColumnRegionDouble.StaticPageStore(regionParameters, rs.toArray(ColumnRegionDouble[]::new)));
+                rs -> new ColumnRegionDouble.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionDouble[]::new)));
     }
 
     @Override
@@ -217,7 +219,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionObject::createNull, ParquetColumnRegionObject::new,
-                rs -> new ColumnRegionObject.StaticPageStore(regionParameters, rs.toArray(ColumnRegionObject[]::new)));
+                rs -> new ColumnRegionObject.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionObject[]::new)));
     }
 
     @Override
@@ -227,7 +229,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         //noinspection unchecked
         return makeColumnRegion(this::getDictionaryKeysPageStores, columnDefinition,
                 ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
-                rs -> new ColumnRegionInt.StaticPageStore(regionParameters, rs.toArray(ColumnRegionInt[]::new)));
+                rs -> new ColumnRegionInt.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionInt[]::new)));
     }
 
     @SuppressWarnings("unchecked")
@@ -236,8 +238,8 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus multiple dictionary pages)
         return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getDictionaries, columnDefinition,
                 ColumnRegionObject::createNull,
-                (oc -> ColumnRegionChunkDictionary.create(regionParameters.regionMask, columnDefinition.getDataType(), oc)),
-                rs -> new ColumnRegionObject.StaticPageStore(regionParameters, rs.toArray(ColumnRegionObject[]::new)));
+                (oc -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask, columnDefinition.getDataType(), oc)),
+                rs -> new ColumnRegionObject.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionObject[]::new)));
     }
 
     /**
@@ -288,12 +290,6 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
             }
 
             final int pageStoreCount = columnChunkReaders.length;
-            regionParameters = new RegionedPageStore.Parameters(
-                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
-                    pageStoreCount,
-                    Arrays.stream(columnChunkReaders).filter(Objects::nonNull).mapToLong(ColumnChunkReader::numRows).max().orElseThrow(IllegalStateException::new));
-            final ParquetTableLocation parquetTableLocation = (ParquetTableLocation) getTableLocation();
-
             pageStores = new ColumnChunkPageStore[pageStoreCount];
             dictionaries = new Chunk[pageStoreCount];
             dictionaryKeysPageStores = new ColumnChunkPageStore[pageStoreCount];
@@ -302,8 +298,8 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
                 try {
                     final ColumnChunkPageStore.CreatorResult<ATTR> creatorResult = ColumnChunkPageStore.create(
                             columnChunkReader,
-                            regionParameters.regionMask,
-                            makeToPage(parquetTableLocation.getKeyValueMetaData(), parquetTableLocation.getReadInstructions(), parquetColumnName, columnChunkReader, columnDefinition));
+                            tl().getRegionParameters().regionMask,
+                            makeToPage(tl().getKeyValueMetaData(), tl().getReadInstructions(), parquetColumnName, columnChunkReader, columnDefinition));
                     pageStores[psi] = creatorResult.pageStore;
                     dictionaries[psi] = creatorResult.dictionary;
                     dictionaryKeysPageStores[psi] = creatorResult.dictionaryKeysPageStore;

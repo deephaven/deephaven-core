@@ -11,8 +11,8 @@ import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.db.v2.sources.regioned.RegionedPageStore;
+import io.deephaven.db.v2.utils.CurrentOnlyIndex;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
@@ -50,7 +50,6 @@ class ParquetTableLocation extends AbstractTableLocation {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         this.parquetFile = parquetFile;
-        int totalRows = 0;
         try {
             final ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
 
@@ -61,7 +60,6 @@ class ParquetTableLocation extends AbstractTableLocation {
                 final RowGroupReader reader = parquetFileReader.getRowGroup(rgi);
                 rowGroupReaders[rgi] = reader;
                 maxRowCount = Math.max(maxRowCount, reader.numRows());
-                totalRows += reader.numRows();
             }
             regionParameters = new RegionedPageStore.Parameters(
                     RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,  rowGroupCount, maxRowCount);
@@ -83,7 +81,7 @@ class ParquetTableLocation extends AbstractTableLocation {
             throw new TableDataException("Can't read parquet file " + parquetFile, e);
         }
 
-        handleUpdate(totalRows, parquetFile.lastModified());
+        handleUpdate(computeIndex(), parquetFile.lastModified());
     }
 
     @Override
@@ -107,7 +105,7 @@ class ParquetTableLocation extends AbstractTableLocation {
         return cachedChannelProvider;
     }
 
-    public RegionedPageStore.Parameters getRegionParameters() {
+    RegionedPageStore.Parameters getRegionParameters() {
         return regionParameters;
     }
 
@@ -128,7 +126,14 @@ class ParquetTableLocation extends AbstractTableLocation {
                 exists && groupingParquetColumnNames.contains(parquetColumnName));
     }
 
-    public void appendIndex(final long firstRegionKey, @NotNull final Index.SequentialBuilder sequentialBuilder) {
-        
+    private CurrentOnlyIndex computeIndex() {
+        final CurrentOnlyIndex.SequentialBuilder sequentialBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
+        for (int ri = 0; ri < rowGroupReaders.length; ++ri) {
+            final long subRegionSize = rowGroupReaders[ri].numRows();
+            final long subRegionFirstKey = (long) ri << regionParameters.regionMaskNumBits;
+            final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
+            sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
+        }
+        return (CurrentOnlyIndex) sequentialBuilder.getIndex();
     }
 }
