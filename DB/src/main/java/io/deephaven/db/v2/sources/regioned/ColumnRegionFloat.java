@@ -41,14 +41,14 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
         return ChunkType.Float;
     }
 
-    static <ATTR extends Any> ColumnRegionFloat.Null<ATTR> createNull(final long pageMask) {
+    static <ATTR extends Any> ColumnRegionFloat<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return pageMask == ColumnRegionFloat.Null.DEFAULT_INSTANCE.mask() ? ColumnRegionFloat.Null.DEFAULT_INSTANCE : new ColumnRegionFloat.Null<ATTR>(pageMask);
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionFloat<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionFloat.Null DEFAULT_INSTANCE = new ColumnRegionFloat.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionFloat DEFAULT_INSTANCE = new ColumnRegionFloat.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -81,6 +81,25 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
             final int offset = destination.size();
             destination.asWritableFloatChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionFloat<ATTR>>
+            implements ColumnRegionFloat<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionFloat<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public float getFloat(final long elementIndex) {
+            return lookupRegion(elementIndex).getFloat(elementIndex);
+        }
+
+        @Override
+        public float getFloat(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getFloat(context, elementIndex);
         }
     }
 }

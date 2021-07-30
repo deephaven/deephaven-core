@@ -25,8 +25,8 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     private volatile ColumnPageReader[] columnPageReaders;
     private volatile WeakReference<IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, @NotNull final ToPage<ATTR, ?> toPage, final long mask) throws IOException {
-        super(columnChunkReader, toPage, mask);
+    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+        super(columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
         pageRowOffsets = new long[INIT_ARRAY_SIZE +1];
@@ -128,7 +128,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     @Override
     public ChunkPage<ATTR> getPageContaining(@NotNull final FillContext fillContext, long row) {
         row &= mask();
-        Require.inRange(row - pageRowOffsets[0], "row", length(), "numRows");
+        Require.inRange(row - pageRowOffsets[0], "row", size(), "numRows");
 
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);

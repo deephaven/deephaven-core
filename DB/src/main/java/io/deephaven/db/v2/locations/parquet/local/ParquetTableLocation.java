@@ -1,20 +1,13 @@
 package io.deephaven.db.v2.locations.parquet.local;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.CodecLookup;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableKey;
 import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
-import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.locations.parquet.topage.*;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
-import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
@@ -22,19 +15,12 @@ import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
-import io.deephaven.util.codec.CodecCache;
-import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.codec.SimpleByteArrayCodec;
 import org.apache.parquet.column.ColumnDescriptor;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
-import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 class ParquetTableLocation extends AbstractTableLocation {
 
@@ -104,203 +90,28 @@ class ParquetTableLocation extends AbstractTableLocation {
         return parquetFile;
     }
 
+    ParquetInstructions getReadInstructions() {
+        return readInstructions;
+    }
+
     SeekableChannelsProvider getChannelProvider() {
         return cachedChannelProvider;
+    }
+
+    Map<String, String> getKeyValueMetaData() {
+        return keyValueMetaData;
     }
 
     @NotNull
     @Override
     protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        //noinspection unchecked
-        final ColumnChunkPageStore.Creator<Values>[] creators = new ColumnChunkPageStore.Creator[rowGroupReaders.length];
-        int nullCreatorCount = 0;
-        for (int rgi = 0; rgi < rowGroupReaders.length; ++rgi) {
-            nullCreatorCount += (creators[rgi] = makeColumnCreator(parquetColumnName, rowGroupReaders[rgi], keyValueMetaData)) == null ? 1 : 0;
-        }
-
-        // NB: We do not support column chunks that exist in only *some* row groups within a file.
-        //     As far as we can tell, this is the Parquet standard enforced by pyarrow and other projects.
-        //     If this changes, or becomes wrong some day in the future, we'll need to implement some kind of null
-        //     ChunkPage. For evidence, see:
-        // https://stackoverflow.com/questions/57564621/can-we-have-different-schema-per-row-group-in-the-same-parquet-file
-        // https://github.com/dask/dask/issues/6243
-        if (nullCreatorCount != 0 && nullCreatorCount != creators.length) {
-            throw new TableDataException("Column " + columnName + " (parquet column " + parquetColumnName + ") is inconsistent in " + parquetFile
-                    + ": Present in row groups ["
-                    + IntStream.range(0, creators.length).filter(ci -> creators[ci] != null).mapToObj(Integer::toString).collect(Collectors.joining(","))
-                    + "] out of " + creators.length);
-        }
-
-        final boolean exists = nullCreatorCount > 0;
+        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
+        final List<String> nameList = columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(rowGroupReaders).map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? creators : null,
+                exists ? columnChunkReaders : null,
                 exists && groupingParquetColumnNames.contains(parquetColumnName));
-    }
-
-    <ATTR extends Any> ColumnChunkPageStore.Creator<ATTR> makeColumnCreator(
-            @NotNull final String parquetColumnName,
-            @NotNull final RowGroupReader rowGroupReader,
-            @NotNull final Map<String, String> keyValueMetaData) {
-        final String[] nameList = parquetColumnNameToPath.get(parquetColumnName);
-        final ColumnChunkReader columnChunkReader = rowGroupReader.getColumnChunk(
-                nameList == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(nameList));
-        if (columnChunkReader == null) {
-            return null;
-        }
-        return ColumnChunkPageStore.makeCreator(columnChunkReader, (@NotNull ColumnDefinition columnDefinition) -> {
-            final PrimitiveType type = columnChunkReader.getType();
-            final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
-            final String codecFromInstructions = readInstructions.getCodecName(columnDefinition.getName());
-            final String codecName = (codecFromInstructions != null)
-                    ? codecFromInstructions
-                    : keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + parquetColumnName);
-            final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + parquetColumnName);
-
-            final boolean isArray = columnChunkReader.getMaxRl() > 0;
-            final boolean isCodec = CodecLookup.explicitCodecPresent(codecName);
-
-            if (isArray && columnChunkReader.getMaxRl() > 1) {
-                throw new TableDataException("No support for nested repeated parquet columns.");
-            }
-
-            try {
-                // Note that componentType is null for a StringSet. ToStringSetPage.create specifically doesn't take this parameter.
-                final Class<?> dataType = columnDefinition.getDataType();
-                final Class<?> componentType = columnDefinition.getComponentType();
-                final Class<?> pageType = isArray ? componentType : dataType;
-
-                ToPage<ATTR, ?> toPage = null;
-
-                if (logicalTypeAnnotation != null) {
-                    toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(parquetColumnName, columnChunkReader, pageType)).orElse(null);
-                }
-
-                if (toPage == null) {
-                    final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
-                    switch (typeName) {
-                        case BOOLEAN:
-                            toPage = ToBooleanAsBytePage.create(pageType);
-                            break;
-                        case INT32:
-                            toPage = ToIntPage.create(pageType);
-                            break;
-                        case INT64:
-                            toPage = ToLongPage.create(pageType);
-                            break;
-                        case INT96:
-                            toPage = ToDBDateTimePageFromInt96.create(pageType);
-                            break;
-                        case DOUBLE:
-                            toPage = ToDoublePage.create(pageType);
-                            break;
-                        case FLOAT:
-                            toPage = ToFloatPage.create(pageType);
-                            break;
-                        case BINARY:
-                        case FIXED_LEN_BYTE_ARRAY:
-                            //noinspection rawtypes
-                            final ObjectCodec codec;
-                            if (isCodec) {
-                                final String codecArgs = (codecFromInstructions != null)
-                                        ? readInstructions.getCodecArgs(columnDefinition.getName())
-                                        : keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + parquetColumnName);
-                                codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
-                            } else {
-                                final String codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
-                                        ? Integer.toString(type.getTypeLength())
-                                        : null;
-                                codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecArgs);
-                            }
-                            //noinspection unchecked
-                            toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
-                            break;
-                        default:
-                    }
-                }
-
-                if (toPage == null) {
-                    throw new TableDataException("Unsupported parquet column type " + type.getPrimitiveTypeName() +
-                            " with logical type " + logicalTypeAnnotation);
-                }
-
-                if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
-                    Assert.assertion(isArray, "isArray");
-                    toPage = ToStringSetPage.create(dataType, toPage);
-                } else if (isArray) {
-                    Assert.assertion(!isCodec, "!isCodec");
-                    if (DbArrayBase.class.isAssignableFrom(dataType)) {
-                        toPage = ToDbArrayPage.create(dataType, componentType, toPage);
-                    } else if (dataType.isArray()) {
-                        toPage = ToArrayPage.create(dataType, componentType, toPage);
-                    }
-                }
-
-                return toPage;
-
-            } catch (IOException except) {
-                throw new TableDataException("IO exception accessing column " + parquetColumnName, except);
-            } catch (RuntimeException except) {
-                throw new TableDataException("Unexpected exception accessing column " + parquetColumnName, except);
-            }
-        });
-    }
-
-    private static class LogicalTypeVisitor<ATTR extends Any> implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<ToPage<ATTR, ?>> {
-
-        private final String name;
-        private final ColumnChunkReader columnChunkReader;
-        private final Class<?> componentType;
-
-        LogicalTypeVisitor(@NotNull String name, @NotNull ColumnChunkReader columnChunkReader, Class<?> componentType) {
-            this.name = name;
-            this.columnChunkReader = columnChunkReader;
-            this.componentType = componentType;
-        }
-
-        @Override
-        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-            try {
-                return Optional.of(ToStringPage.create(componentType, columnChunkReader.getDictionary()));
-            } catch (IOException except) {
-                throw new TableDataException("Failure accessing string column " + name, except);
-            }
-        }
-
-        @Override
-        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
-            if (timestampLogicalType.isAdjustedToUTC()) {
-                return Optional.of(ToDBDateTimePage.create(componentType, timestampLogicalType.getUnit()));
-            }
-
-            throw new TableDataException("Timestamp column is not UTC or is not nanoseconds " + name);
-        }
-
-        @Override
-        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
-
-            if (intLogicalType.isSigned()) {
-                switch (intLogicalType.getBitWidth()) {
-                    case 8:
-                        return Optional.of(ToBytePageFromInt.create(componentType));
-                    case 16:
-                        return Optional.of(ToShortPageFromInt.create(componentType));
-                    case 32:
-                        return Optional.of(ToIntPage.create(componentType));
-                    case 64:
-                        return Optional.of(ToLongPage.create(componentType));
-                }
-            } else {
-                switch (intLogicalType.getBitWidth()) {
-                    case 8:
-                    case 16:
-                        return Optional.of(ToCharPageFromInt.create(componentType));
-                    case 32:
-                        return Optional.of(ToLongPage.create(componentType));
-                }
-            }
-
-            return Optional.empty();
-        }
     }
 }

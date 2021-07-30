@@ -14,22 +14,11 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
         implements ColumnRegionChar<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     @Override
     public char getChar(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-        try {
-            return page.asCharChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving char at table char index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public char getChar(@NotNull final FillContext context, final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
         try {
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));

@@ -72,47 +72,30 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     @FunctionalInterface
-    public interface Creator<ATTR extends Any> {
-
-        @NotNull
-        CreatorResult<ATTR> get(@NotNull ColumnDefinition columnDefinition, long mask) throws IOException;
-
-        @NotNull
-        default CreatorResult<ATTR> get(@NotNull final ColumnDefinition columnDefinition) throws IOException {
-            return get(columnDefinition, (1L << 63) - 1);
-        }
-    }
-
-    @FunctionalInterface
     public interface ToPageCreator<ATTR extends Any> {
         ToPage<ATTR, ?> get(@NotNull ColumnDefinition columnDefinition);
     }
 
-    public static <ATTR extends Any> Creator<ATTR> makeCreator(@NotNull final ColumnChunkReader columnChunkReader,
-                                                               @NotNull final ToPageCreator<ATTR> toPageCreator) {
+    public static <ATTR extends Any> CreatorResult<ATTR> create(@NotNull final ColumnChunkReader columnChunkReader,
+                                                                final long mask,
+                                                                @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         if (columnChunkReader.getPageFixedSize() >= 1) {
-            return (columnDefinition, mask) -> {
-                final ToPage<ATTR, ?> toPage = toPageCreator.get(columnDefinition);
-                final ColumnChunkPageStore<ATTR> columnChunkPageStore =
-                        new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, toPage, mask);
-                final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
-                        new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, toPage.getDictionaryKeysToPage(), mask);
-
-                return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
-            };
-        }
-        return (columnDefinition, mask) -> {
-            final ToPage<ATTR, ?> toPage = toPageCreator.get(columnDefinition);
             final ColumnChunkPageStore<ATTR> columnChunkPageStore =
-                    new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, toPage, mask);
+                    new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
             final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
-                    new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, toPage.getDictionaryKeysToPage(), mask);
+                    new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage.getDictionaryKeysToPage());
 
             return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
-        };
+        }
+        final ColumnChunkPageStore<ATTR> columnChunkPageStore =
+                new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
+        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
+                new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage.getDictionaryKeysToPage());
+
+        return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
     }
 
-    public ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final ToPage<ATTR, ?> toPage, final long mask) throws IOException {
+    ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, final ToPage<ATTR, ?> toPage) throws IOException {
         Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
         this.toPage = toPage;
@@ -135,8 +118,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         return 0;
     }
 
-    @Override
-    public long length() {
+    public long size() {
         return size;
     }
 

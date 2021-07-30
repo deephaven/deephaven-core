@@ -10,8 +10,8 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This provides the {@link ChunkSource} interface to a contiguous block of data from
- * the range [{@link #firstRowOffset()},{@link #firstRowOffset()} + {@link #length()}).
+ * This provides the {@link ChunkSource} interface to a contiguous block of data beginning at {@link #firstRowOffset()}
+ * and continuing to some row less than or equal to {@link #firstRowOffset()} + {@link #maxRow(long)}.
  * <p>
  * Non overlapping pages can be collected together in a {@link PageStore}, which provides the {@link ChunkSource}
  * interface to the collection of all of its Pages.
@@ -45,28 +45,11 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
      */
     @FinalDefault
     default long firstRow(final long row) {
-        final long m = mask();
-        return (row & ~m) | firstRowOffset();
+        return (row & ~mask()) | firstRowOffset();
     }
 
     /**
-     * @param row Any row contained on this page.
-     * @return the last row of this page, located in the same way as row.
-     */
-    default long lastRow(final long row) {
-        long l = length();
-        long m = mask();
-
-        return (row & ~m) | (firstRowOffset() + l - 1);
-    }
-
-    /**
-     * @return the length of this page.
-     */
-    long length();
-
-    /**
-     * @return the offset for the given row in this page, between [0, {@link #length()}).
+     * @return the offset for the given row in this page, in [0, {@code maxRow(row)}].
      */
     @FinalDefault
     default long getRowOffset(long row) {
@@ -102,18 +85,6 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
      * Helper defaults for pages that represent a repeating value, e.g. null or partitioning column regions.
      */
     interface WithDefaultsForRepeatingValues<ATTR extends Any> extends Page<ATTR>, DefaultChunkSource<ATTR> {
-
-        @Override
-        @FinalDefault
-        default long length() {
-            return 0;
-        }
-
-        @Override
-        @FinalDefault
-        default long lastRow(final long row) {
-            return maxRow(row);
-        }
 
         @Override
         @FinalDefault

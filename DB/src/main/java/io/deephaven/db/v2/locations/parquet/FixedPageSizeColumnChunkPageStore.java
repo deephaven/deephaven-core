@@ -21,14 +21,14 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
     private final ColumnPageReader[] columnPageReaders;
     private final WeakReference<IntrusivePage<ATTR>> [] pages;
 
-    FixedPageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, @NotNull final ToPage<ATTR, ?> toPage, final long mask) throws IOException {
-        super(columnChunkReader, toPage, mask);
+    FixedPageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+        super(columnChunkReader, mask, toPage);
 
         this.pageFixedSize = columnChunkReader.getPageFixedSize();
 
         Require.gtZero(pageFixedSize, "pageFixedSize");
 
-        final int numPages = Math.toIntExact((length()-1)/pageFixedSize + 1);
+        final int numPages = Math.toIntExact((size()-1)/pageFixedSize + 1);
         this.columnPageReaders = new ColumnPageReader[numPages];
 
         //noinspection unchecked
@@ -76,7 +76,7 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
     public @NotNull
     ChunkPage<ATTR> getPageContaining(FillContext fillContext, final long elementIndex) {
         final long row = elementIndex & mask();
-        Require.inRange(row, "row", length(), "numRows" );
+        Require.inRange(row, "row", size(), "numRows" );
 
         // This is safe because of our check in the constructor, and we know the row is in range.
         final int pageNum = (int) (row / pageFixedSize);

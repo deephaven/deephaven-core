@@ -13,14 +13,16 @@ public interface ChunkPage<ATTR extends Attributes.Any> extends Page.WithDefault
     @Override
     ChunkType getChunkType();
 
-    @FinalDefault
-    @Override
-    default long length() {
-        return size();
+    /**
+     * @param row Any row contained on this page.
+     * @return the last row of this page, located in the same way as row.
+     */
+    default long lastRow(final long row) {
+        return (row & ~mask()) | (firstRowOffset() + size() - 1);
     }
 
-    @FinalDefault
     @Override
+    @FinalDefault
     default long maxRow(final long row) {
         return lastRow(row);
     }

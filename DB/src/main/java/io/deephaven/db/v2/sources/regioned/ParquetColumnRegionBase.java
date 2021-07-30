@@ -12,28 +12,19 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-public abstract class ParquetColumnRegionBase<ATTR extends Any> implements ParquetColumnRegion<ATTR> {
+public abstract class ParquetColumnRegionBase<ATTR extends Any>
+        extends GenericColumnRegionBase<ATTR>
+        implements ParquetColumnRegion<ATTR> {
 
-    private final long mask;
     private final ColumnChunkPageStore<ATTR> columnChunkPageStore;
 
-    ParquetColumnRegionBase(final long mask, @NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        this.mask = mask;
+    ParquetColumnRegionBase(final long pageMask, @NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+        super(pageMask);
         this.columnChunkPageStore = Require.neqNull(columnChunkPageStore, "columnChunkPageStore");
 
         // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
         Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
         Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstrRowOffset()");
-    }
-
-    @Override
-    public final long mask() {
-        return mask;
-    }
-
-    @Override
-    public final long length() {
-        return columnChunkPageStore.length();
     }
 
     @Override

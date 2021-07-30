@@ -41,7 +41,7 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
      * That is, there is only one {@code PagingChunkSource} for {@code OrderedKey}s with the same bits outside of
      * {@link #mask()}.</p>
      *
-     * <p>It is also possible to pack multiple, non-overlapping {@code PagingChunkSource}s into the same page reference.
+     * <p>It is also possible to pack multiple, non-overlapping {@code PagingChunkSources} into the same page reference.
      * In this case, one typically will want to override {@code maxRow}.  An example such implementation is
      * {@link ChunkPage}.
      *

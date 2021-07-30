@@ -17,22 +17,11 @@ public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetCol
         implements ColumnRegionFloat<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionFloat(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     @Override
     public float getFloat(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-        try {
-            return page.asFloatChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving float at table float index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public float getFloat(@NotNull final FillContext context, final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
         try {
             return page.asFloatChunk().get(page.getChunkOffset(elementIndex));

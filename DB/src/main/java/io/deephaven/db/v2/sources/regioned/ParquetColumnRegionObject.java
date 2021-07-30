@@ -15,7 +15,7 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
         implements ColumnRegionObject<DATA_TYPE, ATTR>, ParquetColumnRegion<ATTR>, Page<ATTR> {
 
     public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     public DATA_TYPE getObject(final long elementIndex) {

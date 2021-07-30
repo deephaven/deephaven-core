@@ -44,15 +44,4 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
                     + ", from a parquet table", e);
         }
     }
-
-    @Override
-    public byte getByte(@NotNull final FillContext context, final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-        try {
-            return page.asByteChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving byte at table byte index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
 }

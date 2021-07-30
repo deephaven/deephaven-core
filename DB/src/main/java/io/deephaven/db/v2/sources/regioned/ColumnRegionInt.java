@@ -41,14 +41,14 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
         return ChunkType.Int;
     }
 
-    static <ATTR extends Any> ColumnRegionInt.Null<ATTR> createNull(final long pageMask) {
+    static <ATTR extends Any> ColumnRegionInt<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return pageMask == ColumnRegionInt.Null.DEFAULT_INSTANCE.mask() ? ColumnRegionInt.Null.DEFAULT_INSTANCE : new ColumnRegionInt.Null<ATTR>(pageMask);
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionInt<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionInt.Null DEFAULT_INSTANCE = new ColumnRegionInt.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionInt DEFAULT_INSTANCE = new ColumnRegionInt.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -81,6 +81,25 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
             final int offset = destination.size();
             destination.asWritableIntChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionInt<ATTR>>
+            implements ColumnRegionInt<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionInt<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public int getInt(final long elementIndex) {
+            return lookupRegion(elementIndex).getInt(elementIndex);
+        }
+
+        @Override
+        public int getInt(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getInt(context, elementIndex);
         }
     }
 }

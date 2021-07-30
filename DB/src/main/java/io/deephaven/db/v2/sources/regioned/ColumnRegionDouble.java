@@ -41,14 +41,14 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         return ChunkType.Double;
     }
 
-    static <ATTR extends Any> ColumnRegionDouble.Null<ATTR> createNull(final long pageMask) {
+    static <ATTR extends Any> ColumnRegionDouble<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return pageMask == ColumnRegionDouble.Null.DEFAULT_INSTANCE.mask() ? ColumnRegionDouble.Null.DEFAULT_INSTANCE : new ColumnRegionDouble.Null<ATTR>(pageMask);
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionDouble<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionDouble.Null DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionDouble DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -81,6 +81,25 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
             final int offset = destination.size();
             destination.asWritableDoubleChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionDouble<ATTR>>
+            implements ColumnRegionDouble<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionDouble<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public double getDouble(final long elementIndex) {
+            return lookupRegion(elementIndex).getDouble(elementIndex);
+        }
+
+        @Override
+        public double getDouble(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getDouble(context, elementIndex);
         }
     }
 }

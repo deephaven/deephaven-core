@@ -17,22 +17,11 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
         implements ColumnRegionInt<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionInt(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     @Override
     public int getInt(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-        try {
-            return page.asIntChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving int at table int index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public int getInt(@NotNull final FillContext context, final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
         try {
             return page.asIntChunk().get(page.getChunkOffset(elementIndex));

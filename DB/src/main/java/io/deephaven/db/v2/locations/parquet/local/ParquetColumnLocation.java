@@ -4,38 +4,43 @@
 
 package io.deephaven.db.v2.locations.parquet.local;
 
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.impl.AbstractColumnLocation;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
+import io.deephaven.db.v2.locations.parquet.topage.*;
+import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.Attributes.UnorderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.sources.chunk.page.Page;
 import io.deephaven.db.v2.sources.regioned.*;
 import io.deephaven.db.v2.utils.ChunkBoxer;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
+import io.deephaven.util.codec.CodecCache;
+import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
 import org.apache.parquet.column.Dictionary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
-
-import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
 
 final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation {
 
@@ -48,7 +53,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to ensure
      * visibility of the derived fields.
      */
-    private volatile ColumnChunkPageStore.Creator<ATTR>[] pageStoreCreators;
+    private volatile ColumnChunkReader[] columnChunkReaders;
     private final boolean hasGroupingTable;
 
     private ColumnChunkPageStore<ATTR>[] pageStores;
@@ -59,19 +64,19 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     /**
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
      *
-     * @param tableLocation     The table location enclosing this column location
-     * @param parquetColumnName The Parquet file column name
-     * @param pageStoreCreators Factories for per-row group page stores, or null if this column location does not exist
-     * @param hasGroupingTable  Whether this column has an associated grouping table file
+     * @param tableLocation      The table location enclosing this column location
+     * @param parquetColumnName  The Parquet file column name
+     * @param columnChunkReaders The {@link ColumnChunkReader column chunk readers} for this location
+     * @param hasGroupingTable   Whether this column has an associated grouping table file
      */
     ParquetColumnLocation(@NotNull final ParquetTableLocation tableLocation,
                           @NotNull final String columnName,
                           @NotNull final String parquetColumnName,
-                          final ColumnChunkPageStore.Creator<ATTR>[] pageStoreCreators,
+                          @Nullable final ColumnChunkReader[] columnChunkReaders,
                           final boolean hasGroupingTable) {
         super(tableLocation, columnName);
         this.parquetColumnName = parquetColumnName;
-        this.pageStoreCreators = pageStoreCreators == null ? null : Require.elementsNeqNull(pageStoreCreators, "pageStoreCreators");
+        this.columnChunkReaders = columnChunkReaders;
         this.hasGroupingTable = hasGroupingTable;
     }
 
@@ -86,14 +91,9 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     @Override
     public final boolean exists() {
-        if (pageStoreCreators != null) {
-            synchronized (this) {
-                if (pageStoreCreators != null) {
-                    return pageStoreCreators != null;
-                }
-            }
-        }
-        return pageStores != null;
+        // If we see a null columnChunkReaders array, either we don't exist or we are guaranteed to see a non-null
+        // pageStores array
+        return columnChunkReaders != null || pageStores != null;
     }
 
     private static final ColumnDefinition<Long> FIRST_KEY_COL_DEF = ColumnDefinition.ofLong("__firstKey__");
@@ -112,13 +112,25 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         try {
             final ParquetFileReader parquetFileReader = new ParquetFileReader(
                     defaultGroupingFilenameByColumnName.apply(parquetColumnName), parquetTableLocation.getChannelProvider(), -1);
-            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
             final Map<String, String> keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
+
+            final RowGroupReader rowGroupReader = parquetFileReader.getRowGroup(0);
+            final ColumnChunkReader groupingKeyReader = rowGroupReader.getColumnChunk(Collections.singletonList(ParquetTableWriter.GROUPING_KEY));
+            final ColumnChunkReader beginPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(ParquetTableWriter.BEGIN_POS));
+            final ColumnChunkReader endPosReader = rowGroupReader.getColumnChunk(Collections.singletonList(ParquetTableWriter.END_POS));
+            if (groupingKeyReader == null || beginPosReader == null || endPosReader == null) {
+                // "hasGroupingTable" is wrong; bail out here rather than blowing up
+                return null;
+            }
+
             //noinspection unchecked
-            return (METADATA_TYPE) new ParquetColumnLocation.MetaDataTableFactory(
-                    parquetTableLocation.<Values>makeColumnCreator(ParquetTableWriter.GROUPING_KEY, rowGroupReader, keyValueMetaData).get(columnDefinition).pageStore,
-                    parquetTableLocation.<UnorderedKeyIndices>makeColumnCreator(ParquetTableWriter.BEGIN_POS, rowGroupReader, keyValueMetaData).get(FIRST_KEY_COL_DEF).pageStore,
-                    parquetTableLocation.<UnorderedKeyIndices>makeColumnCreator(ParquetTableWriter.END_POS, rowGroupReader, keyValueMetaData).get(LAST_KEY_COL_DEF).pageStore
+            return (METADATA_TYPE) new MetaDataTableFactory(
+                    ColumnChunkPageStore.<Values>create(groupingKeyReader, RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            makeToPage(keyValueMetaData, ParquetInstructions.EMPTY, ParquetTableWriter.GROUPING_KEY, groupingKeyReader, columnDefinition)).pageStore,
+                    ColumnChunkPageStore.<UnorderedKeyIndices>create(beginPosReader, RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            makeToPage(keyValueMetaData, ParquetInstructions.EMPTY, ParquetTableWriter.BEGIN_POS, beginPosReader, FIRST_KEY_COL_DEF)).pageStore,
+                    ColumnChunkPageStore.<UnorderedKeyIndices>create(endPosReader, RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            makeToPage(keyValueMetaData, ParquetInstructions.EMPTY, ParquetTableWriter.END_POS, beginPosReader, LAST_KEY_COL_DEF)).pageStore
             ).get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -128,7 +140,9 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     @Override
     public ColumnRegionChar<Values> makeColumnRegionChar(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionChar<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return new ColumnRegionChar.StaticPageStore<>(regionParameters, Arrays.stream(getPageStores(columnDefinition)).map(
+                ccps -> ccps == null ? ColumnRegionChar.<Values>createNull(regionParameters.regionMask) : new ParquetColumnRegionChar<>(ccps)
+        ).toArray(ColumnRegionChar[]::new));
     }
 
     @Override
@@ -228,36 +242,44 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
     @SuppressWarnings("unchecked")
     private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
-        if (pageStoreCreators == null) {
+        if (columnChunkReaders == null) {
             return;
         }
         synchronized (this) {
-            if (pageStoreCreators == null) {
+            if (columnChunkReaders == null) {
                 return;
             }
-            final int pageStoreCount = pageStoreCreators.length;
+
+            final int pageStoreCount = columnChunkReaders.length;
+            regionParameters = new RegionedPageStore.Parameters(
+                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                    pageStoreCount,
+                    Arrays.stream(columnChunkReaders).filter(Objects::nonNull).mapToLong(ColumnChunkReader::numRows).max().orElseThrow(IllegalStateException::new));
+            final ParquetTableLocation parquetTableLocation = (ParquetTableLocation) getTableLocation();
+
             pageStores = new ColumnChunkPageStore[pageStoreCount];
             dictionaries = new Chunk[pageStoreCount];
             dictionaryKeysPageStores = new ColumnChunkPageStore[pageStoreCount];
             for (int psi = 0; psi < pageStoreCount; ++psi) {
+                final ColumnChunkReader columnChunkReader = columnChunkReaders[psi];
                 try {
-                    final ColumnChunkPageStore.CreatorResult<ATTR> creatorResult = pageStoreCreators[psi].get(columnDefinition, ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+                    final ColumnChunkPageStore.CreatorResult<ATTR> creatorResult = ColumnChunkPageStore.create(
+                            columnChunkReader,
+                            regionParameters.regionMask,
+                            makeToPage(parquetTableLocation.getKeyValueMetaData(), parquetTableLocation.getReadInstructions(), parquetColumnName, columnChunkReader, columnDefinition));
                     pageStores[psi] = creatorResult.pageStore;
                     dictionaries[psi] = creatorResult.dictionary;
                     dictionaryKeysPageStores[psi] = creatorResult.dictionaryKeysPageStore;
                 } catch (IOException e) {
-                    throw new TableDataException("Failed to read parquet file for " + this + " row group " + psi, e);
+                    throw new TableDataException("Failed to read parquet file for " + this + ", row group " + psi, e);
                 }
             }
-            regionParameters = new RegionedPageStore.Parameters(
-                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
-                    pageStoreCount,
-                    Arrays.stream(pageStores).mapToLong(Page::length).max().orElseThrow(IllegalStateException::new));
-            pageStoreCreators = null;
+
+            columnChunkReaders = null;
         }
     }
 
-    public static final class MetaDataTableFactory {
+    private static final class MetaDataTableFactory {
 
         private final ColumnChunkPageStore<Values> keyColumn;
         private final ColumnChunkPageStore<UnorderedKeyIndices> firstColumn;
@@ -265,9 +287,9 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
 
         private volatile Object metaData;
 
-        MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
-                             @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> firstColumn,
-                             @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> lastColumn) {
+        private MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
+                                     @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> firstColumn,
+                                     @NotNull final ColumnChunkPageStore<UnorderedKeyIndices> lastColumn) {
             this.keyColumn = Require.neqNull(keyColumn, "keyColumn");
             this.firstColumn = Require.neqNull(firstColumn, "firstColumn");
             this.lastColumn = Require.neqNull(lastColumn, "lastColumn");
@@ -281,7 +303,7 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
                 if (metaData != null) {
                     return metaData;
                 }
-                final int numRows = (int) keyColumn.length();
+                final int numRows = (int) keyColumn.size();
 
                 try (final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyColumn.getChunkType(), CHUNK_SIZE);
                      final BuildGrouping buildGrouping = BuildGrouping.builder(firstColumn.getChunkType(), numRows);
@@ -384,6 +406,166 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
                     return grouping;
                 }
             }
+        }
+    }
+
+    private static <ATTR extends Any, RESULT> ToPage<ATTR, RESULT> makeToPage(@NotNull final Map<String, String> keyValueMetaData,
+                                                                              @NotNull final ParquetInstructions readInstructions,
+                                                                              @NotNull final String parquetColumnName,
+                                                                              @NotNull final ColumnChunkReader columnChunkReader,
+                                                                              @NotNull final ColumnDefinition columnDefinition) {
+        final PrimitiveType type = columnChunkReader.getType();
+        final LogicalTypeAnnotation logicalTypeAnnotation = type.getLogicalTypeAnnotation();
+        final String codecFromInstructions = readInstructions.getCodecName(columnDefinition.getName());
+        final String codecName = (codecFromInstructions != null)
+                ? codecFromInstructions
+                : keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + parquetColumnName);
+        final String specialTypeName = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + parquetColumnName);
+
+        final boolean isArray = columnChunkReader.getMaxRl() > 0;
+        final boolean isCodec = CodecLookup.explicitCodecPresent(codecName);
+
+        if (isArray && columnChunkReader.getMaxRl() > 1) {
+            throw new TableDataException("No support for nested repeated parquet columns.");
+        }
+
+        try {
+            // Note that componentType is null for a StringSet. ToStringSetPage.create specifically doesn't take this parameter.
+            final Class<?> dataType = columnDefinition.getDataType();
+            final Class<?> componentType = columnDefinition.getComponentType();
+            final Class<?> pageType = isArray ? componentType : dataType;
+
+            ToPage<ATTR, ?> toPage = null;
+
+            if (logicalTypeAnnotation != null) {
+                toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(parquetColumnName, columnChunkReader, pageType)).orElse(null);
+            }
+
+            if (toPage == null) {
+                final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
+                switch (typeName) {
+                    case BOOLEAN:
+                        toPage = ToBooleanAsBytePage.create(pageType);
+                        break;
+                    case INT32:
+                        toPage = ToIntPage.create(pageType);
+                        break;
+                    case INT64:
+                        toPage = ToLongPage.create(pageType);
+                        break;
+                    case INT96:
+                        toPage = ToDBDateTimePageFromInt96.create(pageType);
+                        break;
+                    case DOUBLE:
+                        toPage = ToDoublePage.create(pageType);
+                        break;
+                    case FLOAT:
+                        toPage = ToFloatPage.create(pageType);
+                        break;
+                    case BINARY:
+                    case FIXED_LEN_BYTE_ARRAY:
+                        //noinspection rawtypes
+                        final ObjectCodec codec;
+                        if (isCodec) {
+                            final String codecArgs = (codecFromInstructions != null)
+                                    ? readInstructions.getCodecArgs(columnDefinition.getName())
+                                    : keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + parquetColumnName);
+                            codec = CodecCache.DEFAULT.getCodec(codecName, codecArgs);
+                        } else {
+                            final String codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
+                                    ? Integer.toString(type.getTypeLength())
+                                    : null;
+                            codec = CodecCache.DEFAULT.getCodec(SimpleByteArrayCodec.class.getName(), codecArgs);
+                        }
+                        //noinspection unchecked
+                        toPage = ToObjectPage.create(dataType, codec, columnChunkReader.getDictionary());
+                        break;
+                    default:
+                }
+            }
+
+            if (toPage == null) {
+                throw new TableDataException("Unsupported parquet column type " + type.getPrimitiveTypeName() +
+                        " with logical type " + logicalTypeAnnotation);
+            }
+
+            if (Objects.equals(specialTypeName, ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                Assert.assertion(isArray, "isArray");
+                toPage = ToStringSetPage.create(dataType, toPage);
+            } else if (isArray) {
+                Assert.assertion(!isCodec, "!isCodec");
+                if (DbArrayBase.class.isAssignableFrom(dataType)) {
+                    toPage = ToDbArrayPage.create(dataType, componentType, toPage);
+                } else if (dataType.isArray()) {
+                    toPage = ToArrayPage.create(dataType, componentType, toPage);
+                }
+            }
+
+            //noinspection unchecked
+            return (ToPage<ATTR, RESULT>) toPage;
+
+        } catch (IOException except) {
+            throw new TableDataException("IO exception accessing column " + parquetColumnName, except);
+        } catch (RuntimeException except) {
+            throw new TableDataException("Unexpected exception accessing column " + parquetColumnName, except);
+        }
+    }
+
+    private static class LogicalTypeVisitor<ATTR extends Any> implements LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<ToPage<ATTR, ?>> {
+
+        private final String name;
+        private final ColumnChunkReader columnChunkReader;
+        private final Class<?> componentType;
+
+        LogicalTypeVisitor(@NotNull String name, @NotNull ColumnChunkReader columnChunkReader, Class<?> componentType) {
+            this.name = name;
+            this.columnChunkReader = columnChunkReader;
+            this.componentType = componentType;
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
+            try {
+                return Optional.of(ToStringPage.create(componentType, columnChunkReader.getDictionary()));
+            } catch (IOException except) {
+                throw new TableDataException("Failure accessing string column " + name, except);
+            }
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+            if (timestampLogicalType.isAdjustedToUTC()) {
+                return Optional.of(ToDBDateTimePage.create(componentType, timestampLogicalType.getUnit()));
+            }
+
+            throw new TableDataException("Timestamp column is not UTC or is not nanoseconds " + name);
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
+
+            if (intLogicalType.isSigned()) {
+                switch (intLogicalType.getBitWidth()) {
+                    case 8:
+                        return Optional.of(ToBytePageFromInt.create(componentType));
+                    case 16:
+                        return Optional.of(ToShortPageFromInt.create(componentType));
+                    case 32:
+                        return Optional.of(ToIntPage.create(componentType));
+                    case 64:
+                        return Optional.of(ToLongPage.create(componentType));
+                }
+            } else {
+                switch (intLogicalType.getBitWidth()) {
+                    case 8:
+                    case 16:
+                        return Optional.of(ToCharPageFromInt.create(componentType));
+                    case 32:
+                        return Optional.of(ToLongPage.create(componentType));
+                }
+            }
+
+            return Optional.empty();
         }
     }
 }

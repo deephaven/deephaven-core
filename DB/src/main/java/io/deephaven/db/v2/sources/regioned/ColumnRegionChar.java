@@ -90,11 +90,6 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        public long length() {
-            return 0;
-        }
-
-        @Override
         public char getChar(final long elementIndex) {
             return lookupRegion(elementIndex).getChar(elementIndex);
         }

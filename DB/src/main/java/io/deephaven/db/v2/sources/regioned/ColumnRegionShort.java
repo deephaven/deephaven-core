@@ -41,14 +41,14 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
         return ChunkType.Short;
     }
 
-    static <ATTR extends Any> ColumnRegionShort.Null<ATTR> createNull(final long pageMask) {
+    static <ATTR extends Any> ColumnRegionShort<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return pageMask == ColumnRegionShort.Null.DEFAULT_INSTANCE.mask() ? ColumnRegionShort.Null.DEFAULT_INSTANCE : new ColumnRegionShort.Null<ATTR>(pageMask);
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionShort<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionShort.Null DEFAULT_INSTANCE = new ColumnRegionShort.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionShort DEFAULT_INSTANCE = new ColumnRegionShort.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -81,6 +81,25 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
             final int offset = destination.size();
             destination.asWritableShortChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionShort<ATTR>>
+            implements ColumnRegionShort<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionShort<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public short getShort(final long elementIndex) {
+            return lookupRegion(elementIndex).getShort(elementIndex);
+        }
+
+        @Override
+        public short getShort(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getShort(context, elementIndex);
         }
     }
 }
