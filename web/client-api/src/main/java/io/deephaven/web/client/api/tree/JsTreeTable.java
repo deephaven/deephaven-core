@@ -856,6 +856,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         });
     }
 
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
     public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
@@ -864,6 +866,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         return sourceTable.then(t -> Promise.resolve(t.getTotalsTableConfig()));
     }
 
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
     public Promise<JsTotalsTable> getTotalsTable(Object config) {
         return sourceTable.then(t -> {
             //if this is the first time it is used, it might not be filtered correctly, so check that the filters match up.
@@ -874,6 +878,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         });
     }
 
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(Object config) {
         return sourceTable.then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
