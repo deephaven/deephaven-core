@@ -72,6 +72,6 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
     @VisibleForTesting
     static <STRING_LIKE_TYPE extends CharSequence> RegionedColumnSourceSymbol<STRING_LIKE_TYPE, ?> makeSymbolColumnSourceInternal(@NotNull final ColumnDefinition<STRING_LIKE_TYPE> columnDefinition,
                                                                                                                                   final StringCache<STRING_LIKE_TYPE> cache) {
-        return RegionedColumnSourceSymbol.createWithoutCache(RegionedTableComponentFactory.getStringDecoder(cache, columnDefinition), cache.getType());
+        return RegionedColumnSourceSymbol.createWithoutCache(cache.getType());
     }
 }

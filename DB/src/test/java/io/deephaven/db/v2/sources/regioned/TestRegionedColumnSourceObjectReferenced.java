@@ -27,7 +27,7 @@ public class TestRegionedColumnSourceObjectReferenced extends TstRegionedColumnS
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT_R = new RegionedColumnSourceObject.AsValues<>(String.class, null);
+        SUT_R = new RegionedColumnSourceObject.AsValues<>(String.class);
         SUT = new RegionedColumnSourceObjectWithDictionary<>(String.class, SUT_R);
 
         assertEquals(String.class, SUT.getType());

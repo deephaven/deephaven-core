@@ -6,7 +6,6 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.FillContextMaker;
 import io.deephaven.db.v2.sources.regioned.ColumnRegionObjectCached.CreateCache;
-import io.deephaven.util.codec.ObjectDecoder;
 import io.deephaven.util.datastructures.cache.ArrayBackedOffsetLookupCache;
 import io.deephaven.util.datastructures.cache.OffsetLookup;
 import io.deephaven.util.datastructures.cache.OffsetLookupCache;
@@ -18,21 +17,19 @@ class RegionedColumnSourceSymbol<T, OFFSET_CACHE extends OffsetLookupCache<T, Ch
 
     private final CreateCache<T, OFFSET_CACHE> createCache;
 
-    RegionedColumnSourceSymbol(ObjectDecoder<T> decoder, Class<T> dataType, CreateCache<T, OFFSET_CACHE> createCache) {
-        super(dataType, decoder);
+    RegionedColumnSourceSymbol(Class<T> dataType, CreateCache<T, OFFSET_CACHE> createCache) {
+        super(dataType);
         this.createCache = createCache;
     }
 
-    public static <T> RegionedColumnSourceSymbol<T, OffsetLookupCache<T, FillContext>>
-    createWithLookupCache(ObjectDecoder<T> decoder, Class<T> dataType, boolean useSoft) {
-        return new RegionedColumnSourceSymbol<>(decoder, dataType, useSoft ?
+    public static <T> RegionedColumnSourceSymbol<T, OffsetLookupCache<T, FillContext>> createWithLookupCache(Class<T> dataType, boolean useSoft) {
+        return new RegionedColumnSourceSymbol<>(dataType, useSoft ?
                 (OffsetLookup<T, FillContext> offsetLookup, FillContextMaker unused) -> new SoftArrayBackedOffsetLookupCache<>(dataType, offsetLookup) :
                 (OffsetLookup<T, FillContext> offsetLookup, FillContextMaker unused) -> new ArrayBackedOffsetLookupCache<>(dataType, offsetLookup));
     }
 
-    public static <T> RegionedColumnSourceSymbol<T, ?>
-    createWithoutCache(ObjectDecoder<T> decoder, Class<T> dataType) {
-        return new RegionedColumnSourceSymbol<>(decoder, dataType, null);
+    public static <T> RegionedColumnSourceSymbol<T, ?> createWithoutCache(Class<T> dataType) {
+        return new RegionedColumnSourceSymbol<>(dataType, null);
     }
 
     @Override

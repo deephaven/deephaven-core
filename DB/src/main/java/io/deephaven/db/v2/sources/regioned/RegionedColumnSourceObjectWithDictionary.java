@@ -13,7 +13,6 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.codec.ObjectDecoder;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -33,15 +32,15 @@ class RegionedColumnSourceObjectWithDictionary<T>
 
     private final RegionedColumnSourceBase<T, Attributes.Values, ColumnRegionObject<T, Attributes.Values>> dictionaryColumn;
 
-    RegionedColumnSourceObjectWithDictionary(@NotNull Class<T> dataType, ObjectDecoder<T> decoder) {
+    RegionedColumnSourceObjectWithDictionary(@NotNull Class<T> dataType) {
         super(ColumnRegionInt.createNull(), dataType, RegionedColumnSourceDictionaryKey::new);
-        dictionaryColumn = RegionedColumnSourceSymbol.createWithLookupCache(decoder, dataType, true);
+        dictionaryColumn = RegionedColumnSourceSymbol.createWithLookupCache(dataType, true);
     }
 
     @TestUseOnly
     RegionedColumnSourceObjectWithDictionary(@NotNull Class<T> dataType,
                                              RegionedColumnSourceBase<T, Attributes.Values, ColumnRegionObject<T, Attributes.Values>> dictionaryColumn) {
-        super(ColumnRegionInt.createNull(), dataType, RegionedColumnSourceDictionaryKey::new);
+        super(ColumnRegionInt.createNull(PARAMETERS.regionMask), dataType, RegionedColumnSourceDictionaryKey::new);
         this.dictionaryColumn = dictionaryColumn;
     }
 

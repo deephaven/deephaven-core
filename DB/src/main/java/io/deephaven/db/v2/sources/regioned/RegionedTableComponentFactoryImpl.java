@@ -4,13 +4,10 @@
 
 package io.deephaven.db.v2.sources.regioned;
 
-import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.ColumnSourceManager;
 import io.deephaven.db.v2.ColumnToCodecMappings;
-import io.deephaven.util.codec.*;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -78,6 +75,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         if (simpleImplementationSupplier != null) {
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/866): Clean this mess up:
         //   1. Dictionary-ness should not be a top-level, definition-driven concept.
         //   2. Encodings should not be the business of the column source.
@@ -88,17 +86,11 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
                 return columnDefinition.hasSymbolTable()
-                        ? new RegionedColumnSourceObjectWithDictionary<>(
-                                dataType,
-                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
-                        : new RegionedColumnSourceObject.AsValues<>(dataType,
-                                RegionedTableComponentFactory.getStringDecoder(dataType, columnDefinition))
+                        ? new RegionedColumnSourceObjectWithDictionary<>(dataType)
+                        : new RegionedColumnSourceObject.AsValues<>(dataType)
                         ;
-            } else if (StringSet.class.isAssignableFrom(dataType)) {
-                return (RegionedColumnSource<DATA_TYPE>) new RegionedColumnSourceStringSet();
             } else {
-                final ObjectDecoder<DATA_TYPE> decoder = CodecLookup.lookup(columnDefinition, codecMappings);
-                return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType(), decoder);
+                return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType());
             }
         } catch (IllegalArgumentException except) {
             throw new UnsupportedOperationException("Can't create column for " + dataType + " in column definition " + columnDefinition, except);

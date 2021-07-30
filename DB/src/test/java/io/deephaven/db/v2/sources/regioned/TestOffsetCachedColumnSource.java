@@ -7,7 +7,6 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
-import io.deephaven.db.v2.sources.regioned.decoder.SimpleStringDecoder;
 import io.deephaven.util.datastructures.cache.OffsetLookupCache;
 import org.junit.Test;
 
@@ -34,7 +33,7 @@ public class TestOffsetCachedColumnSource extends BaseCachedJMockTestCase {
         }});
 
         final RegionedColumnSourceSymbol<String, OffsetLookupCache<String, ChunkSource.FillContext>> SUT =
-                RegionedColumnSourceSymbol.createWithLookupCache(new SimpleStringDecoder<>(String.class), String.class, soft);
+                RegionedColumnSourceSymbol.createWithLookupCache(String.class, soft);
 
         SUT.addRegionForUnitTests(source);
 
