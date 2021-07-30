@@ -856,8 +856,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         });
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
