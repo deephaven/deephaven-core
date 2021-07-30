@@ -110,4 +110,28 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
             return destination;
         }
     }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionByte<ATTR>>
+            implements ColumnRegionByte<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionByte<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public byte getByte(final long elementIndex) {
+            return lookupRegion(elementIndex).getByte(elementIndex);
+        }
+
+        @Override
+        public byte getByte(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getByte(context, elementIndex);
+        }
+
+        @Override
+        public byte[] getBytes(final long firstElementIndex, @NotNull final byte[] destination, final int destinationOffset, final int length) {
+            return lookupRegion(firstElementIndex).getBytes(firstElementIndex, destination, destinationOffset, length);
+        }
+    }
 }

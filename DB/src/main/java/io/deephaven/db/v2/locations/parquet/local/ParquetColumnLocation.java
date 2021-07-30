@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.stream.Stream;
 
 final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation {
 
@@ -137,70 +139,105 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
         }
     }
 
+    private <SOURCE, REGION_TYPE> REGION_TYPE makeColumnRegion(@NotNull final Function<ColumnDefinition<?>, SOURCE[]> sourceArrayFactory,
+                                                               @NotNull final ColumnDefinition<?> columnDefinition,
+                                                               @NotNull final LongFunction<REGION_TYPE> nullRegionFactory,
+                                                               @NotNull final Function<SOURCE, REGION_TYPE> singleRegionFactory,
+                                                               @NotNull final Function<Stream<REGION_TYPE>, REGION_TYPE> multiRegionFactory) {
+        final SOURCE[] sources = sourceArrayFactory.apply(columnDefinition);
+        return sources.length == 1
+                ? makeSingleColumnRegion(sources[0], nullRegionFactory, singleRegionFactory)
+                : multiRegionFactory.apply(Arrays.stream(sources).map(source -> makeSingleColumnRegion(source, nullRegionFactory, singleRegionFactory)));
+    }
+
+    private <SOURCE, REGION_TYPE> REGION_TYPE makeSingleColumnRegion(final SOURCE source,
+                                                                     @NotNull final LongFunction<REGION_TYPE> nullRegionFactory,
+                                                                     @NotNull final Function<SOURCE, REGION_TYPE> singleRegionFactory) {
+        return source == null ? nullRegionFactory.apply(regionParameters.regionMask) : singleRegionFactory.apply(source);
+    }
+
     @Override
     public ColumnRegionChar<Values> makeColumnRegionChar(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ColumnRegionChar.StaticPageStore<>(regionParameters, Arrays.stream(getPageStores(columnDefinition)).map(
-                ccps -> ccps == null ? ColumnRegionChar.<Values>createNull(regionParameters.regionMask) : new ParquetColumnRegionChar<>(ccps)
-        ).toArray(ColumnRegionChar[]::new));
+        return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
+                rs -> new ColumnRegionChar.StaticPageStore(regionParameters, rs.toArray(ColumnRegionChar[]::new)));
     }
 
     @Override
     public ColumnRegionByte<Values> makeColumnRegionByte(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionByte<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
+                rs -> new ColumnRegionByte.StaticPageStore(regionParameters, rs.toArray(ColumnRegionByte[]::new)));
     }
 
     @Override
     public ColumnRegionShort<Values> makeColumnRegionShort(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionShort<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
+                rs -> new ColumnRegionShort.StaticPageStore(regionParameters, rs.toArray(ColumnRegionShort[]::new)));
     }
 
     @Override
     public ColumnRegionInt<Values> makeColumnRegionInt(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionInt<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
+                rs -> new ColumnRegionInt.StaticPageStore(regionParameters, rs.toArray(ColumnRegionInt[]::new)));
     }
 
     @Override
     public ColumnRegionLong<Values> makeColumnRegionLong(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionLong<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
+                rs -> new ColumnRegionLong.StaticPageStore(regionParameters, rs.toArray(ColumnRegionLong[]::new)));
     }
 
     @Override
     public ColumnRegionFloat<Values> makeColumnRegionFloat(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionFloat<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
+                rs -> new ColumnRegionFloat.StaticPageStore(regionParameters, rs.toArray(ColumnRegionFloat[]::new)));
     }
 
     @Override
     public ColumnRegionDouble<Values> makeColumnRegionDouble(@NotNull final ColumnDefinition<?> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionDouble<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
+                rs -> new ColumnRegionDouble.StaticPageStore(regionParameters, rs.toArray(ColumnRegionDouble[]::new)));
     }
 
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull final ColumnDefinition<TYPE> columnDefinition) {
         //noinspection unchecked
-        return new ParquetColumnRegionObject<>((ColumnChunkPageStore<Values>[]) getPageStores(columnDefinition));
+        return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getPageStores, columnDefinition,
+                ColumnRegionObject::createNull, ParquetColumnRegionObject::new,
+                rs -> new ColumnRegionObject.StaticPageStore(regionParameters, rs.toArray(ColumnRegionObject[]::new)));
     }
 
     @Override
     public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus offset adjustments for multiple dictionaries)
-        final ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores = getDictionaryKeysPageStores(columnDefinition);
-        // TODO-RWC: This is insufficient. We need to add the length of prior dictionaries to keys.
-        return dictionaryKeysPageStores == null ? null : new ParquetColumnRegionInt<>(dictionaryKeysPageStores);
+        // TODO-RWC: This is insufficient. We need to add the length of prior dictionaries to keys. Or recurse, which is now possible.
+        //noinspection unchecked
+        return makeColumnRegion(this::getDictionaryKeysPageStores, columnDefinition,
+                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
+                rs -> new ColumnRegionInt.StaticPageStore(regionParameters, rs.toArray(ColumnRegionInt[]::new)));
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus multiple dictionary pages)
-        final Chunk<Values>[] dictionaryValuesChunks = (Chunk<Values>[]) getDictionaries(columnDefinition);
-        return dictionaryValuesChunks == null ? null : ParquetColumnRegionSymbolTable.create(columnDefinition.getDataType(), dictionaryValuesChunks);
+        return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getDictionaries, columnDefinition,
+                ColumnRegionObject::createNull,
+                (oc -> ColumnRegionChunkDictionary.create(regionParameters.regionMask, columnDefinition.getDataType(), oc)),
+                rs -> new ColumnRegionObject.StaticPageStore(regionParameters, rs.toArray(ColumnRegionObject[]::new)));
     }
 
     /**

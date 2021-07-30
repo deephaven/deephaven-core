@@ -83,4 +83,23 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             destination.setSize(offset + length);
         }
     }
+
+    final class StaticPageStore<DATA_TYPE, ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
+            implements ColumnRegionObject<DATA_TYPE, ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public DATA_TYPE getObject(final long elementIndex) {
+            return lookupRegion(elementIndex).getObject(elementIndex);
+        }
+
+        @Override
+        public DATA_TYPE getObject(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getObject(context, elementIndex);
+        }
+    }
 }
