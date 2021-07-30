@@ -90,7 +90,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
         @FinalDefault
         default void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
             fillChunkAppend(context, destination, LongSizedDataStructure.intSize("fillChunkAppend",
-                    orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()))));
+                    orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1)));
         }
 
         @Override
