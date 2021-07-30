@@ -19,7 +19,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -96,7 +95,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
     }
 
     class AsLong extends RegionedColumnSourceBase<Long, Attributes.DictionaryKeys, ColumnRegionReferencing<Attributes.DictionaryKeys, ColumnRegionInt<Attributes.DictionaryKeys>>>
-            implements ColumnSourceGetDefaults.ForLong, ColumnRegionReferencingImpl.Converter<Attributes.DictionaryKeys>  {
+            implements ColumnSourceGetDefaults.ForLong, ColumnRegionReferencingImpl.Converter<Attributes.DictionaryKeys> {
 
         AsLong() {
             super(long.class);
@@ -174,13 +173,26 @@ class RegionedColumnSourceObjectWithDictionary<T>
             return RegionedColumnSourceObjectWithDictionary.this.makeFillContext(this, chunkCapacity, sharedContext);
         }
 
-        @Override @OverridingMethodsMustInvokeSuper
+        @Override
+        @OverridingMethodsMustInvokeSuper
         public void releaseCachedResources() {
             // We are a reinterpreted column of RegionedColumnSourceObjectReferencing.this, so if we're asked to release
             // our resources, release the real resources in the underlying column.
             super.releaseCachedResources();
             RegionedColumnSourceObjectWithDictionary.this.releaseCachedResources();
         }
+    }
+
+    @Override
+    public boolean hasSymbolTable(@NotNull final ReadOnlyIndex sourceIndex) {
+        try (final OrderedKeys.Iterator sourceIterator = sourceIndex.getOrderedKeysIterator()) {
+            while (sourceIterator.hasMore()) {
+                if (((ColumnRegionObject) lookupRegion(sourceIterator.peekNextKey())).supportsDictionaryFormat(sourceIterator, true)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

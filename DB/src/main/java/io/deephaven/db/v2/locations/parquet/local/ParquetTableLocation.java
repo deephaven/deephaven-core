@@ -9,6 +9,10 @@ import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
+import io.deephaven.db.v2.sources.regioned.RegionedColumnSource;
+import io.deephaven.db.v2.sources.regioned.RegionedPageStore;
+import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
@@ -29,9 +33,10 @@ class ParquetTableLocation extends AbstractTableLocation {
     private final File parquetFile;
     private final ParquetInstructions readInstructions;
 
-    private final Map<String, String> keyValueMetaData;
     private final RowGroupReader[] rowGroupReaders;
+    private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
+    private final Map<String, String> keyValueMetaData;
 
     private final Set<String> groupingParquetColumnNames = new HashSet<>();
 
@@ -51,11 +56,15 @@ class ParquetTableLocation extends AbstractTableLocation {
 
             final int rowGroupCount = parquetFileReader.fileMetaData.getRow_groups().size();
             rowGroupReaders = new RowGroupReader[rowGroupCount];
+            long maxRowCount = 0;
             for (int rgi = 0; rgi < rowGroupCount; ++rgi) {
                 final RowGroupReader reader = parquetFileReader.getRowGroup(rgi);
                 rowGroupReaders[rgi] = reader;
+                maxRowCount = Math.max(maxRowCount, reader.numRows());
                 totalRows += reader.numRows();
             }
+            regionParameters = new RegionedPageStore.Parameters(
+                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,  rowGroupCount, maxRowCount);
 
             parquetColumnNameToPath = new HashMap<>();
             for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
@@ -98,6 +107,10 @@ class ParquetTableLocation extends AbstractTableLocation {
         return cachedChannelProvider;
     }
 
+    public RegionedPageStore.Parameters getRegionParameters() {
+        return regionParameters;
+    }
+
     Map<String, String> getKeyValueMetaData() {
         return keyValueMetaData;
     }
@@ -113,5 +126,9 @@ class ParquetTableLocation extends AbstractTableLocation {
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,
                 exists && groupingParquetColumnNames.contains(parquetColumnName));
+    }
+
+    public void appendIndex(final long firstRegionKey, @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        
     }
 }
