@@ -212,19 +212,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return hasInputTable;
     }
 
-    @JsProperty
-    public JsTotalsTableConfig getTotalsTableConfig() {
-        // we want to communicate to the JS dev that there is no default config, so we allow
-        // returning null here, rather than a default config. They can then easily build a
-        // default config, but without this ability, there is no way to indicate that the
-        // config omitted a totals table
-        String config = lastVisibleState().getTableDef().getAttributes().getTotalsTableConfig();
-        if (config == null) {
-            return null;
-        }
-        return JsTotalsTableConfig.parse(config);
-    }
-
     @JsMethod
     public Promise<JsInputTable> inputTable() {
         if (!hasInputTable) {
@@ -575,13 +562,27 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
         return Promise.resolve(new JsTable(this));
     }
-
-    @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
+    public Promise<JsTotalsTable> getTotalsTable(/* @JsOptional */Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
         return fetchTotals(config, this::lastVisibleState);
+    }
+
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
+    public JsTotalsTableConfig getTotalsTableConfig() {
+        // we want to communicate to the JS dev that there is no default config, so we allow
+        // returning null here, rather than a default config. They can then easily build a
+        // default config, but without this ability, there is no way to indicate that the
+        // config omitted a totals table
+        String config = lastVisibleState().getTableDef().getAttributes().getTotalsTableConfig();
+        if (config == null) {
+            return null;
+        }
+        return JsTotalsTableConfig.parse(config);
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
@@ -691,8 +692,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
     }
 
-    @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
+    public Promise<JsTotalsTable> getGrandTotalsTable(/* @JsOptional */Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
@@ -706,7 +708,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         });
     }
 
-    @JsMethod
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
     public Promise<JsTreeTable> rollup(Object configObject) {
         Objects.requireNonNull(configObject, "Table.rollup configuration");
         final JsRollupConfig config;
@@ -724,7 +727,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata()).then(state -> new JsTreeTable(state, workerConnection).finishFetch());
     }
 
-    @JsMethod
+    // TODO: #37: Need SmartKey support for this functionality
+    // @JsMethod
     public Promise<JsTreeTable> treeTable(Object configObject) {
         Objects.requireNonNull(configObject, "Table.treeTable configuration");
         final JsTreeTableConfig config;
@@ -925,7 +929,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }).refetch();
     }
 
-    @JsMethod
+    // TODO: #697: Column statistic support
+    // @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
         return Callbacks.<ColumnStatistics, String>promise(null, c -> {
 //            workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);

@@ -64,6 +64,8 @@ public class IdeSession extends HasEventHandling {
         return table;
     }
 
+    // TODO: #37: Need SmartKey support for this functionality
+    @JsIgnore
     public Promise<JsTreeTable> getTreeTable(String name) {
         return connection.getTreeTable(name, result);
     }
