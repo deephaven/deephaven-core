@@ -560,27 +560,24 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return Promise.resolve(new JsTable(this));
     }
 
-// TODO: #37: Need SmartKey support for this functionality
-//    @JsMethod
-//    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
-//        // fetch the handle and wrap it in a new jstable. listen for changes
-//        // on the parent table, and re-fetch each time.
-//
-//        return fetchTotals(config, this::lastVisibleState);
-//    }
-//
-//    @JsProperty
-//    public JsTotalsTableConfig getTotalsTableConfig() {
-//        // we want to communicate to the JS dev that there is no default config, so we allow
-//        // returning null here, rather than a default config. They can then easily build a
-//        // default config, but without this ability, there is no way to indicate that the
-//        // config omitted a totals table
-//        String config = lastVisibleState().getTableDef().getAttributes().getTotalsTableConfig();
-//        if (config == null) {
-//            return null;
-//        }
-//        return JsTotalsTableConfig.parse(config);
-//    }
+    public Promise<JsTotalsTable> getTotalsTable(Object config) {
+        // fetch the handle and wrap it in a new jstable. listen for changes
+        // on the parent table, and re-fetch each time.
+
+        return fetchTotals(config, this::lastVisibleState);
+    }
+
+    public JsTotalsTableConfig getTotalsTableConfig() {
+        // we want to communicate to the JS dev that there is no default config, so we allow
+        // returning null here, rather than a default config. They can then easily build a
+        // default config, but without this ability, there is no way to indicate that the
+        // config omitted a totals table
+        String config = lastVisibleState().getTableDef().getAttributes().getTotalsTableConfig();
+        if (config == null) {
+            return null;
+        }
+        return JsTotalsTableConfig.parse(config);
+    }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
 
@@ -689,61 +686,57 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
     }
 
-// TODO: #37: Need SmartKey support for this functionality
-//    @JsMethod
-//    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
-//        // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
-//        // most-derived table which has no filter, or the least-derived table which has all custom columns.
-//        // Currently, these two mean the same thing.
-//        return fetchTotals(config, ()->{
-//            ClientTableState unfiltered = state();
-//            while (!unfiltered.getFilters().isEmpty()) {
-//                unfiltered = unfiltered.getPrevious();
-//                assert unfiltered != null : "no table is unfiltered, even base table!";
-//            }
-//            return unfiltered;
-//        });
-//    }
-//
-//    @JsMethod
-//    public Promise<JsTreeTable> rollup(Object configObject) {
-//        Objects.requireNonNull(configObject, "Table.rollup configuration");
-//        final JsRollupConfig config;
-//        if (configObject instanceof JsRollupConfig) {
-//            config = (JsRollupConfig)configObject;
-//        } else {
-//            config = new JsRollupConfig(Js.cast(configObject));
-//        }
-//        return workerConnection.newState((c, state, metadata) -> {
-////            RollupTableRequest rollupRequest = config.buildRequest();
-////            rollupRequest.setTable(state().getHandle());
-////            rollupRequest.setResultHandle(state.getHandle());
-////            workerConnection.getServer().rollup(rollupRequest, c);
-//            throw new UnsupportedOperationException("rollup");
-//        }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata()).then(state -> new JsTreeTable(state, workerConnection).finishFetch());
-//    }
+    public Promise<JsTotalsTable> getGrandTotalsTable(Object config) {
+        // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
+        // most-derived table which has no filter, or the least-derived table which has all custom columns.
+        // Currently, these two mean the same thing.
+        return fetchTotals(config, ()->{
+            ClientTableState unfiltered = state();
+            while (!unfiltered.getFilters().isEmpty()) {
+                unfiltered = unfiltered.getPrevious();
+                assert unfiltered != null : "no table is unfiltered, even base table!";
+            }
+            return unfiltered;
+        });
+    }
 
-//    @JsMethod
-//    public Promise<JsTreeTable> treeTable(Object configObject) {
-//        Objects.requireNonNull(configObject, "Table.treeTable configuration");
-//        final JsTreeTableConfig config;
-//        if (configObject instanceof JsTreeTableConfig) {
-//            config = (JsTreeTableConfig) configObject;
-//        } else {
-//            config = new JsTreeTableConfig(Js.cast(configObject));
-//        }
-//        return workerConnection.newState((c, state, metadata) -> {
-////            workerConnection.getServer().treeTable(
-////                    state().getHandle(),
-////                    state.getHandle(),
-////                    config.idColumn,
-////                    config.parentColumn,
-////                    config.promoteOrphansToRoot,
-////                    c
-////            );
-//            throw new UnsupportedOperationException("treeTable");
-//        }, "treeTable " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata()).then(state -> new JsTreeTable(state, workerConnection).finishFetch());
-//    }
+    public Promise<JsTreeTable> rollup(Object configObject) {
+        Objects.requireNonNull(configObject, "Table.rollup configuration");
+        final JsRollupConfig config;
+        if (configObject instanceof JsRollupConfig) {
+            config = (JsRollupConfig)configObject;
+        } else {
+            config = new JsRollupConfig(Js.cast(configObject));
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+//            RollupTableRequest rollupRequest = config.buildRequest();
+//            rollupRequest.setTable(state().getHandle());
+//            rollupRequest.setResultHandle(state.getHandle());
+//            workerConnection.getServer().rollup(rollupRequest, c);
+            throw new UnsupportedOperationException("rollup");
+        }, "rollup " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata()).then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+    }
+
+    public Promise<JsTreeTable> treeTable(Object configObject) {
+        Objects.requireNonNull(configObject, "Table.treeTable configuration");
+        final JsTreeTableConfig config;
+        if (configObject instanceof JsTreeTableConfig) {
+            config = (JsTreeTableConfig) configObject;
+        } else {
+            config = new JsTreeTableConfig(Js.cast(configObject));
+        }
+        return workerConnection.newState((c, state, metadata) -> {
+//            workerConnection.getServer().treeTable(
+//                    state().getHandle(),
+//                    state.getHandle(),
+//                    config.idColumn,
+//                    config.parentColumn,
+//                    config.promoteOrphansToRoot,
+//                    c
+//            );
+            throw new UnsupportedOperationException("treeTable");
+        }, "treeTable " + Global.JSON.stringify(config)).refetch(this, workerConnection.metadata()).then(state -> new JsTreeTable(state, workerConnection).finishFetch());
+    }
 
     @JsMethod
     public Promise<JsTable> freeze() {
@@ -843,15 +836,13 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }).refetch();
     }
 
-// TODO: #697: Column statistic support
-//    @JsMethod
-//    public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-//        return Callbacks.<ColumnStatistics, String>promise(null, c -> {
-////            workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);
-//            throw new UnsupportedOperationException("getColumnStatistics");
-//        }).then(
-//                tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
-//    }
+    public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
+        return Callbacks.<ColumnStatistics, String>promise(null, c -> {
+//            workerConnection.getServer().getColumnStatisticsForTable(state().getHandle(), column.getName(), c);
+            throw new UnsupportedOperationException("getColumnStatistics");
+        }).then(
+                tableStatics -> Promise.resolve(new JsColumnStatistics(tableStatics)));
+    }
 
     public void maybeRevive(ClientTableState state) {
         if (isSuppress()) {
