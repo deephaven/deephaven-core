@@ -6,7 +6,7 @@ package io.deephaven.proto.backplane.grpc;
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
-import "arrow/flight/protocol/flight.proto";
+import "flight.proto";
 
 /*
  * A barrage service is an endpoint for retrieving or storing ticking Arrow data.

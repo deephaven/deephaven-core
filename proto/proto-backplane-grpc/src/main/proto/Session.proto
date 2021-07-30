@@ -6,7 +6,7 @@ syntax = "proto3";
 
 package io.deephaven.proto.backplane.grpc;
 
-import "arrow/flight/protocol/flight.proto";
+import "flight.proto";
 
 option java_multiple_files = true;
 option optimize_for = SPEED;

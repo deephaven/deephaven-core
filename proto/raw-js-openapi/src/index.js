@@ -1,13 +1,13 @@
-require("io/deephaven/proto/barrage_pb");
-require("io/deephaven/proto/session_pb");
-require("io/deephaven/proto/table_pb");
-require("io/deephaven/proto/console_pb");
-require("arrow/flight/protocol/flight_pb");
-var barrageService = require("io/deephaven/proto/barrage_pb_service");
-var sessionService = require("io/deephaven/proto/session_pb_service");
-var tableService = require("io/deephaven/proto/table_pb_service");
-var consoleService = require("io/deephaven/proto/console_pb_service");
-var flightService = require("arrow/flight/protocol/flight_pb_service");
+require("Barrage_pb");
+require("Session_pb");
+require("Table_pb");
+require("Console_pb");
+require("flight_pb");
+var barrageService = require("Barrage_pb_service");
+var sessionService = require("Session_pb_service");
+var tableService = require("Table_pb_service");
+var consoleService = require("Console_pb_service");
+var flightService = require("flight_pb_service");
 
 var browserHeaders = require("browser-headers");
 

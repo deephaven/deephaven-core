@@ -9,8 +9,8 @@ package io.deephaven.proto.backplane.script.grpc;
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
-import "io/deephaven/proto/table.proto";
-import "arrow/flight/protocol/flight.proto";
+import "Table.proto";
+import "flight.proto";
 
 /*
  * Console interaction service

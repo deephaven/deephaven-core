@@ -22,7 +22,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
       exclude 'build.gradle'
     }
     from(zipTree(configurations.download.singleFile)) {
-      include("flight.proto").into("dependencies/arrow/flight/protocol")
+      include("flight.proto").into("dependencies")
     }
   }
   parentContainers = [ project(':protoc').tasks.findByName('buildDocker') ]

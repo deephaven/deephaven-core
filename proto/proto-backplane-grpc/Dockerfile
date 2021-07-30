@@ -8,6 +8,7 @@ RUN set -eux; \
   mkdir -p /generated/java; \
   mkdir -p /generated/grpc; \
   mkdir -p /generated/js; \
+  mkdir -p /generated/python; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/protoc-gen-grpc-java \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
@@ -15,10 +16,21 @@ RUN set -eux; \
     --js_out=import_style=commonjs:/generated/js \
     --grpc_out=/generated/grpc \
     --ts_out=service=grpc-web:/generated/js \
+    --python_out=/generated/python \
     -I/dependencies \
     -I/includes \
-    /dependencies/arrow/flight/protocol/flight.proto \
-    /includes/io/deephaven/proto/barrage.proto \
-    /includes/io/deephaven/proto/console.proto \
-    /includes/io/deephaven/proto/session.proto \
-    /includes/io/deephaven/proto/table.proto
+    /dependencies/flight.proto \
+    /includes/Barrage.proto \
+    /includes/Console.proto \
+    /includes/Session.proto \
+    /includes/Table.proto; \
+  python3 -m grpc_tools.protoc \
+    --grpc_python_out=/generated/python \
+    -I/dependencies \
+    -I/includes \
+    /dependencies/flight.proto \
+    /includes/Barrage.proto \
+    /includes/Console.proto \
+    /includes/Session.proto \
+    /includes/Table.proto;
+
