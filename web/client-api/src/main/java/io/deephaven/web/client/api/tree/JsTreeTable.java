@@ -866,9 +866,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         return sourceTable.then(t -> Promise.resolve(t.getTotalsTableConfig()));
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(Object config) {
+    @JsMethod
+    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
         return sourceTable.then(t -> {
             //if this is the first time it is used, it might not be filtered correctly, so check that the filters match up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
@@ -878,9 +877,8 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
         });
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(Object config) {
+    @JsMethod
+    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
         return sourceTable.then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 

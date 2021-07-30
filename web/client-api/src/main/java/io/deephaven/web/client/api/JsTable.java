@@ -561,7 +561,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(Object config) {
+    public Promise<JsTotalsTable> getTotalsTable(/* @JsOptional */Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
@@ -691,7 +691,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(Object config) {
+    public Promise<JsTotalsTable> getGrandTotalsTable(/* @JsOptional */Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
