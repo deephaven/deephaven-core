@@ -8,7 +8,7 @@ metadata:
     cloud.google.com/app-protocols: '{"grpc-api":"HTTP2"}'
     cloud.google.com/neg: '{"ingress": true, "exposed_ports": {"{{ .Values.dh.portGrpcApiInternal }}":{}}}'
     beta.cloud.google.com/backend-config: '{"ports": {
-    "grpc-api":"dh-backend"
+    "grpc-api":"dh-backend-grpc"
     }}'
 spec:
   # type: {{ .Values.dh.envoyServiceType }}

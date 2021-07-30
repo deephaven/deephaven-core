@@ -123,6 +123,12 @@ spec:
             initialDelaySeconds: 2
             periodSeconds: 1
             failureThreshold: 28
+        # Ugh, need to build a better image that has sh (can't attach to this from scratch)
+        # - name: grpccurl
+        #   image: fullstorydev/grpcurl:v1.8.2
+        #   imagePullPolicy: IfNotPresent
+        #   args: [ "localhost:8888", "grpc.health.v1.Health/Check" ]
+
         #
         # The envoy container. All ingress to the pod flows through envoy,
         # who then routes it to grpc-api or web as appropriate
@@ -148,6 +154,18 @@ spec:
             - name: envoy-secrets
               mountPath: /etc/ssl
               readOnly: true
+          readinessProbe:
+            httpGet:
+              port: 10000
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
+          livenessProbe:
+            httpGet:
+              port: 10000
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
 
       volumes:
         - name: envoy-conf

@@ -7,12 +7,15 @@ metadata:
   annotations:
     cloud.google.com/app-protocols: '{"web": "HTTP"}'
     cloud.google.com/neg: '{"ingress": true, "exposed_ports": {"{{ .Values.dh.portWebInternal }}":{}}}'
+    # cloud.google.com/neg: '{"ingress": true}'
     beta.cloud.google.com/backend-config: '{"ports": {
-    "web":"dh-backend"
+    "web":"dh-backend-web"
     }}'
 spec:
-  # type: {{ .Values.dh.envoyServiceType }}
   type: NodePort
+  # Important: when using NodePort, you *can* assign a nodePort: int in the ports: list,
+  # but we don't want multiple ports on a host node to collide;
+  # luckily, leaving it undefined will get a generated port.
   ports:
     -
       name: web
