@@ -1,0 +1,17 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: dh-backend
+spec:
+  timeoutSec: {{ .Values.dh.backendResponseSeconds }}
+  #sessionAffinity:
+  #  affinityType: "GENERATED_COOKIE"
+  #  affinityCookieTtlSec: {{ .Values.dh.cookieTtlSeconds }}
+  healthCheck:
+    port: {{ .Values.dh.portWebInternal }}
+    requestPath: /ide/
+    type: HTTP
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3

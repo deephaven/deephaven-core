@@ -15,8 +15,31 @@ dh:
 #  version: local-build
 #  repo: deephaven
   # Bottom section is for remote builds (see README.md for instructions on pushing images!)
-  version: 0.0.3
+  version: 0.0.4
   repo: us-central1-docker.pkg.dev/deephaven-oss/deephaven
+  ipAddrName: dh-demo-ip
+  certName: dh-demo-cert
+  # certName: mcrt-f9433292-b613-4300-86dc-2995fe3e150f
+  ingressName: dh-ingress
+  portEnvoy: 10000
+  portGrpcApi: 8888
+#  portGrpcApiInternal: 9443
+  portGrpcApiInternal: 8888
+  portWeb: 8080
+#  portWebInternal: 8443
+  portWebInternal: 8080
+  envoyServiceType: ClusterIP
+  webSocketTtlSeconds: 30
+  cookieTtlSeconds: 2700
+  backendResponseSeconds: 2700
+  svcNameGrpc: dh-grpc
+  svcNameWeb: dh-web
+  frontendConfigName: dh-frontend
+  dnsName: demo.deephavencommunity.com
+
+google:
+  project: deephaven-oss
+  svcAccountName: dhce-demo@deephaven-oss.iam.gserviceaccount.com
 
 envVars:
   - name: MY_NODE_NAME

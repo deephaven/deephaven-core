@@ -45,8 +45,38 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
             {{- toYaml .Values.envVars | nindent 12 }}
-        #
-        # grpc-proxy container.  Converts http 1.1 to http2 for grpc
+            #- name: DH_TLS_CHAIN
+            #  value: /etc/ssl/tls.crt
+            #- name: DH_TLS_KEY
+            #  value: /etc/ssl/tls.key
+          volumeMounts:
+            - name: envoy-secrets
+              mountPath: /etc/ssl
+              readOnly: true
+          # readinessProbe:
+          #   httpGet:
+          #     port: 8080
+          #   initialDelaySeconds: 2
+          #   periodSeconds: 1
+          #   failureThreshold: 28
+          # livenessProbe:
+          #   httpGet:
+          #     port: 8080
+          #   initialDelaySeconds: 2
+          #   periodSeconds: 1
+          #   failureThreshold: 28
+          # readinessProbe:
+          #   exec:
+          #     command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+          #   initialDelaySeconds: 2
+          #   periodSeconds: 1
+          #   failureThreshold: 28
+          # livenessProbe:
+          #   exec:
+          #     command: [ "/health/grpc_health_probe", "-addr=:8080" ]
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 8
+         # grpc-proxy container.  Converts http 1.1 to http2 for grpc
         #
         - name: grpc-proxy
           image: "{{ .Values.dh.repo}}/grpc-proxy:{{ .Values.dh.version }}"
@@ -81,6 +111,18 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
             {{- toYaml .Values.envVars | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
+          livenessProbe:
+            httpGet:
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 1
+            failureThreshold: 28
         #
         # The envoy container. All ingress to the pod flows through envoy,
         # who then routes it to grpc-api or web as appropriate

@@ -56,7 +56,7 @@ services:
   grpc-proxy:
     image: deephaven/grpc-proxy:local-build
     environment:
-      - BACKEND_ADDR=grpc-api:8080
+      - BACKEND_ADDR=grpc-api:8888
     expose:
       - '8080'
 #      - '8443' #unused

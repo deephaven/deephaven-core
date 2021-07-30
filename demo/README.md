@@ -67,7 +67,7 @@ PROJECT_ID=deephaven-oss
 ZONE=us-central1
 K8S_CONTEXT=gke_"$PROJECT_ID"_"$ZONE"_"$CLUSTER_NAME"
 K8S_NAMESPACE=dh
-DOCKER_VERSION=0.0.3
+DOCKER_VERSION=0.0.4
 
 https://console.cloud.google.com/artifacts/create-repo?project=deephaven-oss
 
@@ -86,9 +86,9 @@ docker tag deephaven/web:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deepha
 enable artifact registry:
 https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=deephaven-oss
 
-docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION
-docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION
-docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION &
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION &
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION &
 
 
 gcloud container clusters get-credentials "${CLUSTER_NAME}" \
@@ -145,8 +145,9 @@ Setup DNS:
 
 DNS_ZONE=dhce-zone
 DOMAIN_ROOT=deephavencommunity.com
-NODE_IP=35.224.115.186
+NODE_IP=34.149.181.117
 MACHINE_NAME=dhce
+
 
 gcloud beta dns --project=${PROJECT_ID} managed-zones create ${DNS_ZONE} --description="DNS for Deephaven" --dns-name="${DOMAIN_ROOT}." --visibility="public" --dnssec-state="off"
 
@@ -154,3 +155,57 @@ gcloud dns --project=${PROJECT_ID} record-sets transaction start --zone=${DNS_ZO
 gcloud dns --project=${PROJECT_ID} record-sets transaction add ${NODE_IP} --name=${MACHINE_NAME}.${DOMAIN_ROOT}. --ttl=300 --type=A --zone=${DNS_ZONE}
 gcloud dns --project=${PROJECT_ID} record-sets transaction execute --zone=${DNS_ZONE}
 
+
+# Get certificates for your domain
+
+https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs
+You are a project Owner or Editor (roles/owner or roles/editor).
+You have both the Compute Security Admin role (compute.securityAdmin) and the Compute Network Admin role (compute.networkAdmin) in the project.
+You have a custom role for the project that includes the compute.sslCertificates.* permissions and one or both of compute.targetHttpsProxies.* and compute.targetSslProxies.*, depending on the type of load balancer that you are using.
+
+
+
+CERT_NAME=dh-demo-cert
+CERT_DESC="Certificate used to enable deephaven https / tls"
+DOMAINS_CSV="demo.deephavencommunity.com"
+
+gcloud compute ssl-certificates create "$CERT_NAME" \
+--description="$CERT_DESC" \
+--domains="$DOMAINS_CSV" \
+--global \
+--project "$PROJECT_ID"
+
+# [optional] wait until this gcloud reports certificate is ACTIVE
+# Note: cert can be added to load balancer while in PROVISIONING state
+while ! gcloud compute ssl-certificates describe "$CERT_NAME" --project "${PROJECT_ID}" --global    --format="get(name,managed.status, managed.domainStatus)" --project "${PROJECT_ID}" | grep -q "ACTIVE"; do
+    echo -n .
+    sleep 1
+done
+echo ""
+echo "Certificate $CERT_NAME is ACTIVE!"
+
+
+# [optional] use a static IP address so you don't have to update DNS
+# we are using --global and IPV6. You can use IPV4 and --region $ZONE if you prefer
+DH_IP_ADDR=dh-ip
+gcloud compute addresses create $DH_IP_ADDR \
+--global \
+--project "$PROJECT_ID"
+
+# gcloud compute addresses create $DH_IP_ADDR \
+# --global \
+# --project "$PROJECT_ID" \
+# --ip-version IPV6
+
+
+Now, pass the name of your ip address to helm
+--set dh.ipAddrName=$DH_IP
+
+
+
+
+Progress notes:
+expose web and grpc-api as separate services over separate protocols
+web will be https, grpc-api as http/2, http redirects to https
+grpc-api will need a sidecar to handle healthchecks (health check goes to the port of the container, not targetPort)
+ditch envoy. ditch grpc-proxy. just web + grpc-api

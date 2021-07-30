@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -57,6 +58,20 @@ public class DeephavenApiServerModule {
             final ServerBuilder<?> builder,
             final Set<BindableService> services,
             final Set<ServerInterceptor> interceptors) {
+
+        String chainLoc = System.getenv("DH_TLS_CHAIN");
+        if (chainLoc != null) {
+            String chainKey = System.getenv("DH_TLS_KEY");
+            final File chain = new File(chainLoc);
+            final File key = new File(chainKey);
+            if (!chain.exists()) {
+                throw new IllegalArgumentException("TLS chain " + chain + " does not exist!");
+            }
+            if (!key.exists()) {
+                throw new IllegalArgumentException("TLS key " + key + " does not exist!");
+            }
+            builder.useTransportSecurity(chain, key);
+        }
         for (final BindableService service : services) {
             builder.addService(service);
         }

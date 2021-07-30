@@ -53,14 +53,14 @@ docker {
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
 //    ports = [ 8080 ]
-    ports = [ 8080, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
+    ports = [ 8888, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
     jvmArgs = [
         '-server',
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
 	    // Add for debugging, select port to match what you expect from your debugger/IDE side.
-	    '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
+	    // '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
 
         // Settings based on the cgroup limits:
         // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
