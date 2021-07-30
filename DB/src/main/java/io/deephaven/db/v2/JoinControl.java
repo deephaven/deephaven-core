@@ -51,7 +51,8 @@ public class JoinControl {
     boolean considerSymbolTables(QueryTable leftTable, @SuppressWarnings("unused") QueryTable rightTable, boolean useLeftGrouping, boolean useRightGrouping, ColumnSource<?> leftSource, ColumnSource<?> rightSource) {
         return !leftTable.isRefreshing() && !useLeftGrouping && leftSource.getType() == String.class
                 && !rightTable.isRefreshing() && !useRightGrouping && rightSource.getType() == String.class
-                && leftSource instanceof SymbolTableSource && rightSource instanceof SymbolTableSource;
+                && leftSource instanceof SymbolTableSource && rightSource instanceof SymbolTableSource
+                && ((SymbolTableSource<?>) leftSource).hasSymbolTable(leftTable.getIndex()) && ((SymbolTableSource<?>) rightSource).hasSymbolTable(rightTable.getIndex());
     }
 
     boolean useSymbolTableLookupCaching() {

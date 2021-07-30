@@ -1,13 +1,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
-import io.deephaven.base.string.cache.StringCache;
-import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -30,15 +27,21 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
     String SYMBOL_COLUMN_NAME = "Symbol";
 
     /**
+     * @param sourceIndex The {@link ReadOnlyIndex} whose keys must be mappable
+     * @return Whether this SymbolTableSource can provide a symbol table that covers all keys in {@code sourceIndex}.
+     */
+    boolean hasSymbolTable(@NotNull final ReadOnlyIndex sourceIndex);
+
+    /**
      * <p>Get a static {@link Table} view of this SymbolTableSource's symbol table, providing a many:1 or 1:1 mapping of
      * unique {@code long} identifiers to the symbol values in this source.
      *
-     * @param sourceIndex      The {@link Index} whose keys must be mappable via the result {@link Table}'s identifier
-     *                         column
+     * @param sourceIndex      The {@link ReadOnlyIndex} whose keys must be mappable via the result {@link Table}'s
+     *                         identifier column
      * @param useLookupCaching Whether symbol lookups performed to generate the symbol table should apply caching
      * @return The symbol table
      */
-    Table getStaticSymbolTable(@NotNull Index sourceIndex, boolean useLookupCaching);
+    Table getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching);
 
     /**
      * <p>Get a {@link Table} view of this SymbolTableSource's symbol table, providing a many:1 or 1:1 mapping of unique
@@ -52,26 +55,4 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * @return The symbol table
      */
     Table getSymbolTable(@NotNull QueryTable sourceTable, boolean useLookupCaching);
-
-    /**
-     * Construct a symbol column source for the supplied location, with no built-in offset caching.
-     *
-     * @param columnDefinition The column definition
-     * @param columnLocation   The column location
-     * @param cache            The string cache
-     * @return A symbol column source for the supplied location
-     */
-    static <STRING_LIKE_TYPE extends CharSequence> ColumnSource<STRING_LIKE_TYPE> makeSymbolColumnSource(@NotNull final ColumnDefinition<STRING_LIKE_TYPE> columnDefinition,
-                                                                                                         @NotNull final ColumnLocation columnLocation,
-                                                                                                         final StringCache<STRING_LIKE_TYPE> cache) {
-        final RegionedColumnSource<STRING_LIKE_TYPE> columnSource = makeSymbolColumnSourceInternal(columnDefinition, cache);
-        columnSource.addRegion(columnDefinition, columnLocation);
-        return columnSource;
-    }
-
-    @VisibleForTesting
-    static <STRING_LIKE_TYPE extends CharSequence> RegionedColumnSourceSymbol<STRING_LIKE_TYPE, ?> makeSymbolColumnSourceInternal(@NotNull final ColumnDefinition<STRING_LIKE_TYPE> columnDefinition,
-                                                                                                                                  final StringCache<STRING_LIKE_TYPE> cache) {
-        return RegionedColumnSourceSymbol.createWithoutCache(cache.getType());
-    }
 }

@@ -12,6 +12,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -183,7 +184,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
     }
 
     @Override
-    public QueryTable getStaticSymbolTable(@NotNull Index sourceIndex, boolean useLookupCaching) {
+    public QueryTable getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching) {
         final Index.SequentialBuilder symbolTableIndexBuilder = Index.FACTORY.getSequentialBuilder();
 
         try (Index.SearchIterator sourceIndexIterator = sourceIndex.searchIterator()) {

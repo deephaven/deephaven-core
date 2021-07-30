@@ -23,7 +23,8 @@ public class TestSymbolTableSource extends BaseCachedJMockTestCase {
             allowing(source).getObject(2L); will(returnValue(adapter.create("C")));
         }});
 
-        final RegionedColumnSourceSymbol<T, ?> SUT = SymbolTableSource.makeSymbolColumnSourceInternal(ColumnDefinition.fromGenericType("TestColumn", stringCache.getType()), stringCache);
+        ColumnDefinition.fromGenericType("TestColumn", stringCache.getType());
+        final RegionedColumnSourceSymbol<T, ?> SUT = RegionedColumnSourceSymbol.createWithoutCache(stringCache.getType());
 
         SUT.addRegionForUnitTests(source);
 
