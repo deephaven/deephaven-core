@@ -48,7 +48,7 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionDouble<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionDouble DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionDouble DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
         private Null(final long pageMask) {
             super(pageMask);

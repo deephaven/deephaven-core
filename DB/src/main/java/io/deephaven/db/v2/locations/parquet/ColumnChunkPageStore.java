@@ -29,11 +29,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     final IntrusiveSoftLRU<IntrusivePage<ATTR>> intrusiveSoftLRU =
             new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(), CACHE_SIZE);
-    private final long size;
-    private final long mask;
 
+    private final ColumnChunkReader columnChunkReader;
+    private final long mask;
     private final ToPage<ATTR, ?> toPage;
 
+    private final long size;
     final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
 
     private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
@@ -71,11 +72,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
     }
 
-    @FunctionalInterface
-    public interface ToPageCreator<ATTR extends Any> {
-        ToPage<ATTR, ?> get(@NotNull ColumnDefinition columnDefinition);
-    }
-
     public static <ATTR extends Any> CreatorResult<ATTR> create(@NotNull final ColumnChunkReader columnChunkReader,
                                                                 final long mask,
                                                                 @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
@@ -98,8 +94,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, final ToPage<ATTR, ?> toPage) throws IOException {
         Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
-        this.toPage = toPage;
+        this.columnChunkReader = columnChunkReader;
         this.mask = mask;
+        this.toPage = toPage;
+
         this.size = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
         this.columnPageReaderIterator = columnChunkReader.getPageIterator();
     }
@@ -144,5 +142,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     @NotNull
     public ChunkPage<ATTR> getPageContaining(final long row) {
         return getPageContaining(DEFAULT_FILL_INSTANCE, row);
+    }
+
+    /**
+     * @see ColumnChunkReader#usesDictionaryOnEveryPage()
+     */
+    public boolean usesDictionaryOnEveryPage() {
+        return columnChunkReader.usesDictionaryOnEveryPage();
     }
 }

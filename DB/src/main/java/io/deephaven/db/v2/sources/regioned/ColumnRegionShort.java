@@ -48,7 +48,7 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionShort<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionShort DEFAULT_INSTANCE = new ColumnRegionShort.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionShort DEFAULT_INSTANCE = new ColumnRegionShort.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
         private Null(final long pageMask) {
             super(pageMask);

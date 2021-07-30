@@ -16,8 +16,8 @@ public class DeferredColumnRegionDouble<ATTR extends Attributes.Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionDouble<ATTR>>
         implements ColumnRegionDouble<ATTR> {
 
-    DeferredColumnRegionDouble(@NotNull Supplier<ColumnRegionDouble<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionDouble(final long pageMask, @NotNull Supplier<ColumnRegionDouble<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

@@ -2,7 +2,6 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.db.v2.sources.chunk.page.Page;
@@ -11,7 +10,7 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
-        extends PageStore<ATTR, INNER_ATTR, REGION_TYPE>, LongSizedDataStructure {
+        extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
     /**
      * @return The parameters object that describes this regioned page store
@@ -42,24 +41,6 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     @FinalDefault
     default int regionMaskNumBits() {
         return parameters().regionMaskNumBits;
-    }
-
-    /**
-     * @return The total number of rows across all regions.
-     * @implNote We intentionally do not derive from Page and implement Page.length() because our index is not
-     * contiguous.
-     */
-    default long size() {
-        long size = 0;
-        final int regionCount = getRegionCount();
-
-        for (int ri = 0; ri < regionCount; ri++) {
-            REGION_TYPE region = getRegion(ri);
-            // TODO-RWC: This is inaccurate. What do we need it for?
-            size += region.length();
-        }
-
-        return size;
     }
 
     /**
@@ -152,7 +133,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
             implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
         private final Parameters parameters;
-        private final REGION_TYPE[] regions;
+        final REGION_TYPE[] regions;
 
         /**
          * @param parameters Mask and shift parameters
@@ -163,10 +144,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
             this.parameters = parameters;
             this.regions = Require.elementsNeqNull(regions, "regions");
             Require.leq(regions.length, "regions.length", parameters.maximumRegionCount, "parameters.maximumRegionCount");
-            for (int ri = 0; ri < regions.length; ++ri) {
-                REGION_TYPE region = regions[ri];
+            for (final REGION_TYPE region : regions) {
                 Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
-                Require.leq(region.length(), "region.length()", parameters.maximumRegionSize, "parameters.maximumRegionSize");
             }
         }
 

@@ -105,4 +105,15 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
          */
         void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, int length);
     }
+
+    /**
+     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * page.
+     *
+     * @param orderedKeysIterator The iterator to advance
+     */
+    @FinalDefault
+    default void advanceToNextPage(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+        orderedKeysIterator.advance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    }
 }

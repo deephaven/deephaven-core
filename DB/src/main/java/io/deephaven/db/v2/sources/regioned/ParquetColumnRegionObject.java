@@ -5,6 +5,7 @@ import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.db.v2.sources.chunk.page.Page;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -26,5 +27,14 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             throw new TableDataException("Error retrieving object at table object index " + elementIndex
                     + ", from a parquet table", e);
         }
+    }
+
+    @Override
+    public boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
+        final boolean result = columnChunkPageStore.usesDictionaryOnEveryPage();
+        if (result || !failFast) {
+            advanceToNextPage(remainingKeys);
+        }
+        return result;
     }
 }

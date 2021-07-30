@@ -11,8 +11,6 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
-
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
@@ -81,7 +79,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
 
         Partitioning() {
             super(ColumnRegionDouble.createNull(PARAMETERS.regionMask),
-                    Supplier::get // No need to interpose a deferred region in this case
+                    (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 

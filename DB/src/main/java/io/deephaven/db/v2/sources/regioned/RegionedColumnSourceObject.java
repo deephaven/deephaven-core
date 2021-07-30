@@ -54,7 +54,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
 
         Partitioning(@NotNull final Class<DATA_TYPE> dataType) {
             super(ColumnRegionObject.createNull(PARAMETERS.regionMask), dataType, null,
-                    Supplier::get // No need to interpose a deferred region in this case
+                    (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 

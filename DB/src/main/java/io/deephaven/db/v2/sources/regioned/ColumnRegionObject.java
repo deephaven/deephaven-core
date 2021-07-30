@@ -3,6 +3,7 @@ package io.deephaven.db.v2.sources.regioned;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,6 +32,23 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return getObject(elementIndex);
     }
 
+    /**
+     * Check if this region can expose an alternate form as paired regions of {@code int} keys and {@code DATA_TYPE}
+     * values covering all of its index keys in {@code remainingKeys}.
+     *
+     * @param remainingKeys Iterator positioned at the first relevant index key belonging to this region.
+     *                      Will be advanced to <em>after</em> this region if {@code failFast == false} or {@code true}
+     *                      is returned.
+     *                      No guarantee is made if {@code failFast == true} and {@code false} is returned.
+     * @param failFast      Whether this is part of an iteration that should short-circuit on the first {@code false}
+     *                      result
+     * @return Whether this region can supply a dictionary format covering all of its keys in {@code remainingKeys}
+     */
+    default boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
+        advanceToNextPage(remainingKeys);
+        return true;
+    }
+
     default ColumnRegionObject<DATA_TYPE, ATTR> skipCache() {
         return this;
     }
@@ -41,14 +59,14 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return ChunkType.Object;
     }
 
-    static <T, ATTR extends Any> ColumnRegionObject<T, ATTR> createNull(final long pageMask) {
+    static <DATA_TYPE, ATTR extends Any> ColumnRegionObject<DATA_TYPE, ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<T, ATTR>(pageMask);
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<DATA_TYPE, ATTR>(pageMask);
     }
 
     final class Null<DATA_TYPE, ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionObject<DATA_TYPE, ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionObject DEFAULT_INSTANCE = new ColumnRegionObject.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionObject DEFAULT_INSTANCE = new ColumnRegionObject.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
         private Null(final long pageMask) {
             super(pageMask);
@@ -100,6 +118,23 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         @Override
         public DATA_TYPE getObject(@NotNull final FillContext context, final long elementIndex) {
             return lookupRegion(elementIndex).getObject(context, elementIndex);
+        }
+
+        @Override
+        public boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
+            boolean result = true;
+            try (final OrderedKeys regionKeys = remainingKeys.getNextOrderedKeysThrough(maxRow(remainingKeys.peekNextKey()));
+                 final OrderedKeys.Iterator regionRemainingKeys = regionKeys.getOrderedKeysIterator()) {
+                while (regionRemainingKeys.hasMore()) {
+                    if (!lookupRegion(regionRemainingKeys.peekNextKey()).supportsDictionaryFormat(regionRemainingKeys, failFast)) {
+                        result = false;
+                        if (failFast) {
+                            break;
+                        }
+                    }
+                }
+            }
+            return result;
         }
     }
 }

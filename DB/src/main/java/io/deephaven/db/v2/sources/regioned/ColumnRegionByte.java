@@ -63,7 +63,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionByte<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionByte DEFAULT_INSTANCE = new ColumnRegionByte.Null(RegionedColumnSourceBase.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK);
+        private static final ColumnRegionByte DEFAULT_INSTANCE = new ColumnRegionByte.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
         private Null(final long pageMask) {
             super(pageMask);
