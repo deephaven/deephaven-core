@@ -80,6 +80,7 @@ public class ParquetFileReader {
      *
      * @return A set of parquet column names that satisfies the required condition.
      */
+    @SuppressWarnings("unused")
     public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
             columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();

@@ -500,9 +500,6 @@ public class ParquetTools {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
                 }
             }
-            if (colDef.getDataType() == String.class && parquetColDef.dictionaryUsedOnEveryDataPage) {
-                colDef = colDef.withSymbolTable();
-            }
             if (parquetColDef.isGrouping) {
                 colDef = colDef.withGrouping();
             }

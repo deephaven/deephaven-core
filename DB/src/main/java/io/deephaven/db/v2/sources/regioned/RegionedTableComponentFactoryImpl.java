@@ -52,8 +52,6 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
 
     /**
      * Create a new {@link RegionedColumnSource} appropriate to implement the supplied {@link ColumnDefinition}.
-     * <br><b>Note:</b> This implementation currently lets arrays fall into the catch-all (Serializable) case.
-     * <br><b>Note:</b> There is no handling for Enum(Set) assignables.  No existing tables should have legacy Enum(Set) columns.
      *
      * @param columnDefinition The column definition
      * @param <DATA_TYPE>      The data type of the column
@@ -76,19 +74,9 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
 
-        // TODO (https://github.com/deephaven/deephaven-core/issues/866): Clean this mess up:
-        //   1. Dictionary-ness should not be a top-level, definition-driven concept.
-        //   2. Encodings should not be the business of the column source.
-        //      That applies to fixed/variable width objects, StringSet, etc.
-        //   3. Maybe we can eliminate the component factory entirely if we play our cards right.
-        //   4. Contexts are meant to support any possible region type; that's too brittle for future expansion, we
-        //      should delegate to the regions.
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
-                return columnDefinition.hasSymbolTable()
-                        ? new RegionedColumnSourceObjectWithDictionary<>(dataType)
-                        : new RegionedColumnSourceObject.AsValues<>(dataType)
-                        ;
+                return new RegionedColumnSourceObjectWithDictionary<>(dataType);
             } else {
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType());
             }

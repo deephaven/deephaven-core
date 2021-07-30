@@ -36,6 +36,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -396,81 +397,95 @@ public class ParquetTableWriter {
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
-        if (supportsDictionary(columnSource) && columnDefinition.hasSymbolTable()) {
-            List<IntBuffer> buffersPerPage = new ArrayList<>();
-            Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
-            Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
-            final Object[][] keys = {keyArrayBuilder.apply(INITIAL_DICTIONARY_SIZE)};
-            Map<Object, Integer> keyToPos = new HashMap<>();
-            final MutableInt keyCount = new MutableInt(0);
-            final MutableBoolean hasNulls = new MutableBoolean(false);
-            try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
-                 final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
-                for (int step = 0; step < stepsCount; step++) {
-                    OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
-                    ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
-                    IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
-                    for (int i = 0; i < chunk.size(); i++) {
-                        posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(i), o -> {
-                            if (o == null) {
-                                hasNulls.setValue(true);
-                                return Integer.MIN_VALUE;
-                            }
-                            if (keyCount.intValue() == keys[0].length) {
-                                keys[0] = Arrays.copyOf(keys[0], keys[0].length * 2);
-                            }
-                            keys[0][keyCount.intValue()] = toParquetPrimitive.apply(o);
-                            Integer result = keyCount.getValue();
-                            keyCount.increment();
-                            return result;
-                        }));
+        boolean usedDictionary = false;
+        if (supportsDictionary(columnSource.getType())) {
+            final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
+            final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
+            final class DictionarySizeExceededException extends RuntimeException {}
+            try {
+                final List<IntBuffer> buffersPerPage = new ArrayList<>();
+                final Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
+                final Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
+                final Object[][] keys = {keyArrayBuilder.apply(INITIAL_DICTIONARY_SIZE)};
+                final Map<Object, Integer> keyToPos = new HashMap<>();
+                final MutableInt keyCount = new MutableInt(0);
+                final MutableBoolean hasNulls = new MutableBoolean(false);
+                try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
+                     final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                    for (int step = 0; step < stepsCount; step++) {
+                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
+                        //noinspection unchecked
+                        final ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
+                        final IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
+                        for (int vi = 0; vi < chunk.size(); vi++) {
+                            posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(vi), o -> {
+                                if (o == null) {
+                                    hasNulls.setValue(true);
+                                    return Integer.MIN_VALUE;
+                                }
+                                if (keyCount.intValue() == keys[0].length) {
+                                    if (keyCount.intValue() == maxKeys) {
+                                        throw new DictionarySizeExceededException();
+                                    }
+                                    keys[0] = Arrays.copyOf(keys[0], Math.max(keys[0].length * 2, maxKeys));
+                                }
+                                keys[0][keyCount.intValue()] = toParquetPrimitive.apply(o);
+                                Integer result = keyCount.getValue();
+                                keyCount.increment();
+                                return result;
+                            }));
 
-                    }
-                    buffersPerPage.add(posInDictionary);
-                }
-            }
-            List<IntBuffer> repeatCount = null;
-            if (lengthSource != null) {
-                repeatCount = new ArrayList<>();
-                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
-                     final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
-                    while (it.hasMore()) {
-                        OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
-                        IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
-                        IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
-                        chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
-                        newBuffer.limit(chunk.size());
-                        repeatCount.add(newBuffer);
+                        }
+                        buffersPerPage.add(posInDictionary);
                     }
                 }
-            }
-            columnWriter.addDictionaryPage(keys[0], keyCount.intValue());
-            Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();
-            for (IntBuffer intBuffer : buffersPerPage) {
-                intBuffer.flip();
+                List<IntBuffer> repeatCount = null;
                 if (lengthSource != null) {
-                    columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(), Integer.MIN_VALUE);
-                } else if (hasNulls.getValue()) {
-                    columnWriter.addPage(intBuffer, Integer.MIN_VALUE, intBuffer.remaining());
-                } else {
-                    columnWriter.addPageNoNulls(intBuffer, intBuffer.remaining());
+                    repeatCount = new ArrayList<>();
+                    try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
+                         final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
+                        while (it.hasMore()) {
+                            final OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
+                            final IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
+                            final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
+                            chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
+                            newBuffer.limit(chunk.size());
+                            repeatCount.add(newBuffer);
+                        }
+                    }
                 }
+                columnWriter.addDictionaryPage(keys[0], keyCount.intValue());
+                final Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();
+                for (final IntBuffer intBuffer : buffersPerPage) {
+                    intBuffer.flip();
+                    if (lengthSource != null) {
+                        columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(), Integer.MIN_VALUE);
+                    } else if (hasNulls.getValue()) {
+                        columnWriter.addPage(intBuffer, Integer.MIN_VALUE, intBuffer.remaining());
+                    } else {
+                        columnWriter.addPageNoNulls(intBuffer, intBuffer.remaining());
+                    }
+                }
+                usedDictionary = true;
+            } catch (DictionarySizeExceededException ignored) {
             }
-        } else {
+        }
+        if (!usedDictionary) {
+            //noinspection unchecked
             try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
-                boolean supportNulls = supportNulls(columnType);
-                Object bufferToWrite = transferObject.getBuffer();
-                Object nullValue = getNullValue(columnType);
+                final boolean supportNulls = supportNulls(columnType);
+                final Object bufferToWrite = transferObject.getBuffer();
+                final Object nullValue = getNullValue(columnType);
                 try (final OrderedKeys.Iterator lengthIndexIt = lengthIndex != null ? lengthIndex.getOrderedKeysIterator() : null;
                      final ChunkSource.GetContext lengthSourceContext = lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
                      final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
-                    IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
+                    final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
                     for (int step = 0; step < stepsCount; step++) {
-                        OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
+                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
                         transferObject.fetchData(ok);
                         transferObject.propagateChunkData();
                         if (lengthIndexIt != null) {
-                            IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext, lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
+                            final IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext, lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
                             lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                             repeatCount.limit(lenChunk.size());
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), nullValue);
@@ -502,10 +517,9 @@ public class ParquetTableWriter {
         throw new UnsupportedOperationException("Dictionary storage not supported for " + type);
     }
 
-    private static boolean supportsDictionary(ColumnSource columnSource) {
-        return columnSource.getType() == String.class;
+    private static boolean supportsDictionary(Class<?> dataType) {
+        return dataType == String.class;
     }
-
 
     private static Object getNullValue(Class columnType) {
         if (columnType == Boolean.class) {

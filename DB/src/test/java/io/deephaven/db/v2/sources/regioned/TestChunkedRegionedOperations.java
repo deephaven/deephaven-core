@@ -158,7 +158,7 @@ public class TestChunkedRegionedOperations {
             ColumnDefinition.ofDouble("D"),
             ColumnDefinition.ofBoolean("Bl"),
             ColumnDefinition.ofString("Sym"),
-            ColumnDefinition.ofString("Str").withSymbolTable(),
+            ColumnDefinition.ofString("Str"),
             ColumnDefinition.ofTime("DT"),
             ColumnDefinition.fromGenericType("SymS", StringSet.class),
             ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
@@ -169,6 +169,8 @@ public class TestChunkedRegionedOperations {
         final ParquetInstructions parquetInstructions = new ParquetInstructions.Builder()
                 .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
                 .addColumnCodec("Var", BigIntegerCodec.class.getName())
+                .useDictionary("Sym", true)
+                .setMaximumDictionaryKeys(100) // Force "Str" to use non-dictionary encoding
                 .build();
 
         final Table inputData = ((QueryTable)TableTools.emptyTable(TABLE_SIZE)
