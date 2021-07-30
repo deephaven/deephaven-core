@@ -427,7 +427,7 @@ public class ParquetTableWriter {
                                     if (keyCount.intValue() == maxKeys) {
                                         throw new DictionarySizeExceededException();
                                     }
-                                    keys[0] = Arrays.copyOf(keys[0], Math.max(keys[0].length * 2, maxKeys));
+                                    keys[0] = Arrays.copyOf(keys[0], (int) Math.max(keys[0].length * 2L, maxKeys));
                                 }
                                 keys[0][keyCount.intValue()] = toParquetPrimitive.apply(o);
                                 Integer result = keyCount.getValue();
