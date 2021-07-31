@@ -96,7 +96,11 @@ public class KafkaTools {
         final int nCols = 5;
         final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
         int c = 0;
-        columns[c++] = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME);
+        final ColumnDefinition<?> partitionColumn = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME);
+        columns[c++] = (partitionFilter == ALL_PARTITIONS)
+                ? partitionColumn
+                : partitionColumn.withPartitioning()
+                ;
         columns[c++] = ColumnDefinition.ofLong(OFFSET_COLUMN_NAME);
         columns[c++] = ColumnDefinition.fromGenericType(TIMESTAMP_COLUMN_NAME, DBDateTime.class);
         columns[c++] = getCol(kafkaConsumerProperties, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KEY_COLUMN_NAME);
