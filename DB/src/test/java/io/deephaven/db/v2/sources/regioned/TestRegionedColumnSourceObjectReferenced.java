@@ -9,7 +9,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
- * Tests for {@link RegionedColumnSourceObjectWithDictionary}.
+ * Tests for {@link RegionedColumnSourceWithDictionary}.
  */
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase"})
 public class TestRegionedColumnSourceObjectReferenced extends TstRegionedColumnSourceReferenced<String, Attributes.DictionaryKeys, ColumnRegionInt<Attributes.DictionaryKeys>, String,
@@ -28,7 +28,7 @@ public class TestRegionedColumnSourceObjectReferenced extends TstRegionedColumnS
         super.setUp();
 
         SUT_R = new RegionedColumnSourceObject.AsValues<>(String.class);
-        SUT = new RegionedColumnSourceObjectWithDictionary<>(String.class, SUT_R);
+        SUT = new RegionedColumnSourceWithDictionary<>(String.class, SUT_R);
 
         assertEquals(String.class, SUT.getType());
     }

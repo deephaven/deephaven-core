@@ -8,7 +8,6 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.db.v2.sources.ImmutableColumnSource;
-import io.deephaven.db.v2.sources.SizedColumnSource;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,8 +32,8 @@ import org.jetbrains.annotations.NotNull;
  * locations with {@value REGION_CAPACITY_IN_ELEMENTS} each.
  */
 @VisibleForTesting // This could be package-private, but for mock-based unit testing purposes it must be public
-public interface RegionedColumnSource<DATA_TYPE> extends DeferredGroupingColumnSource<DATA_TYPE>,
-        ImmutableColumnSource<DATA_TYPE>, SizedColumnSource<DATA_TYPE> {
+public interface RegionedColumnSource<DATA_TYPE>
+        extends DeferredGroupingColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
 
     /**
      * Address bits allocated to the region index.

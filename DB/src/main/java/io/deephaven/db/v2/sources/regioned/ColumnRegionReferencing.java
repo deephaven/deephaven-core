@@ -29,12 +29,14 @@ public interface ColumnRegionReferencing<ATTR extends Any, REFERENCED_COLUMN_REG
         void convertRegion(WritableChunk<? super ATTR> destination, Chunk<? extends ATTR> source, OrderedKeys orderedKeys);
     }
 
-    class Null<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>> extends ColumnRegion.Null<ATTR>
+    class Null<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
+            extends ColumnRegion.Null<ATTR>
             implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION> {
 
         private final REFERENCED_COLUMN_REGION nullReferencedColumnRegion;
 
         public Null(REFERENCED_COLUMN_REGION nullReferencedColumnRegion) {
+            super((nullReferencedColumnRegion.mask()));
             this.nullReferencedColumnRegion = nullReferencedColumnRegion;
         }
 

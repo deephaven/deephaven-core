@@ -9,11 +9,11 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.RowIdSource;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
-import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -26,55 +26,26 @@ import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-class RegionedColumnSourceObjectWithDictionary<T>
-        extends RegionedColumnSourceReferencing<T, Attributes.DictionaryKeys, Integer, ColumnRegionInt<Attributes.DictionaryKeys>>
-        implements ColumnSourceGetDefaults.ForObject<T>, SymbolTableSource<T> {
+/**
+ * {@link RegionedColumnSourceObject} with support for dictionary access via {@link SymbolTableSource} methods.
+ * Note that it may not be the case that all values are stored as dictionary offsets.
+ * See {@link #hasSymbolTable(ReadOnlyIndex)}.
+ */
+class RegionedColumnSourceWithDictionary<DATA_TYPE>
+        extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
+        implements SymbolTableSource<DATA_TYPE> {
 
-    private final RegionedColumnSourceBase<T, Attributes.Values, ColumnRegionObject<T, Attributes.Values>> dictionaryColumn;
-
-    RegionedColumnSourceObjectWithDictionary(@NotNull Class<T> dataType) {
-        super(ColumnRegionInt.createNull(), dataType, RegionedColumnSourceDictionaryKey::new);
-        dictionaryColumn = RegionedColumnSourceSymbol.createWithLookupCache(dataType, true);
+    RegionedColumnSourceWithDictionary(@NotNull final Class<DATA_TYPE> dataType) {
+        // This source is never used for any type that might have a component type.
+        super(dataType);
     }
-
-    @TestUseOnly
-    RegionedColumnSourceObjectWithDictionary(@NotNull Class<T> dataType,
-                                             RegionedColumnSourceBase<T, Attributes.Values, ColumnRegionObject<T, Attributes.Values>> dictionaryColumn) {
-        super(ColumnRegionInt.createNull(PARAMETERS.regionMask), dataType, RegionedColumnSourceDictionaryKey::new);
-        this.dictionaryColumn = dictionaryColumn;
-    }
-
-    @Override
-    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
-        dictionaryColumn.addRegion(columnDefinition, columnLocation);
-        return super.addRegion(columnDefinition, columnLocation);
-    }
-
-    @Override
-    public void convertRegion(WritableChunk<? super Attributes.DictionaryKeys> destination,
-                              Chunk<? extends Attributes.DictionaryKeys> source,
-                              OrderedKeys orderedKeys) {
-
-        WritableObjectChunk<T, ? super Attributes.DictionaryKeys> objectChunk = destination.asWritableObjectChunk();
-        IntChunk<? extends Attributes.Values> intSource = source.asIntChunk();
-
-        ColumnRegionObject<T, Attributes.Values> region = dictionaryColumn.lookupRegion(orderedKeys.firstKey());
-
-        final int size = objectChunk.size();
-        final int length = intSource.size();
-
-        for (int i = 0; i < length; ++i) {
-            int key = intSource.get(i);
-            objectChunk.set(size + i, key == NULL_INT ? null : region.getObject(key));
-        }
-        objectChunk.setSize(size + length);
-    }
-
-    @Override
-    public T get(long elementIndex) {
-        int key = elementIndex == NULL_KEY ? NULL_INT : lookupRegion(elementIndex).getReferencedRegion().getInt(elementIndex);
-        return key == NULL_INT ? null : dictionaryColumn.lookupRegion(elementIndex).getObject(key);
-    }
+//
+//    @TestUseOnly
+//    RegionedColumnSourceWithDictionary(@NotNull Class<DATA_TYPE> dataType,
+//                                             RegionedColumnSourceBase<DATA_TYPE, Attributes.Values, ColumnRegionObject<DATA_TYPE, Attributes.Values>> dictionaryColumn) {
+//        super(ColumnRegionInt.createNull(PARAMETERS.regionMask), dataType, RegionedColumnSourceDictionaryKey::new);
+//        this.dictionaryColumn = dictionaryColumn;
+//    }
 
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
@@ -84,54 +55,54 @@ class RegionedColumnSourceObjectWithDictionary<T>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         //noinspection unchecked
-        return alternateDataType == long.class ? (ColumnSource<ALTERNATE_DATA_TYPE>) new AsLong() :
-                super.doReinterpret(alternateDataType);
+        return alternateDataType == long.class ? (ColumnSource<ALTERNATE_DATA_TYPE>) new AsLong() : super.doReinterpret(alternateDataType);
     }
 
     @Override
     public void releaseCachedResources() {
         super.releaseCachedResources();
-        dictionaryColumn.releaseCachedResources();
     }
 
-    class AsLong extends RegionedColumnSourceBase<Long, Attributes.DictionaryKeys, ColumnRegionReferencing<Attributes.DictionaryKeys, ColumnRegionInt<Attributes.DictionaryKeys>>>
-            implements ColumnSourceGetDefaults.ForLong, ColumnRegionReferencingImpl.Converter<Attributes.DictionaryKeys> {
+    final class AsLong extends RegionedColumnSourceBase<Long, DictionaryKeys, ColumnRegionObject<Long, DictionaryKeys>>
+            implements ColumnSourceGetDefaults.ForLong {
+        
+        
+    }
 
         AsLong() {
             super(long.class);
-        }
 
         @Override
         <OTHER_REGION_TYPE> int addRegionForUnitTests(OTHER_REGION_TYPE region) {
-            return RegionedColumnSourceObjectWithDictionary.this.addRegionForUnitTests(region);
+            return RegionedColumnSourceWithDictionary.this.addRegionForUnitTests(region);
         }
 
         @NotNull
         @Override
-        ColumnRegionReferencing<Attributes.DictionaryKeys, ColumnRegionInt<Attributes.DictionaryKeys>> getNullRegion() {
-            return RegionedColumnSourceObjectWithDictionary.this.getNullRegion();
+        ColumnRegionReferencing<DictionaryKeys, ColumnRegionInt<DictionaryKeys>> getNullRegion() {
+            return RegionedColumnSourceWithDictionary.this.getNullRegion();
         }
 
         @Override
         public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
-            return RegionedColumnSourceObjectWithDictionary.this.addRegion(columnDefinition, columnLocation);
+            return RegionedColumnSourceWithDictionary.this.addRegion(columnDefinition, columnLocation);
         }
 
         @Override
         public int getRegionCount() {
-            return RegionedColumnSourceObjectWithDictionary.this.getRegionCount();
+            return RegionedColumnSourceWithDictionary.this.getRegionCount();
         }
 
         @Override
-        public ColumnRegionReferencing<Attributes.DictionaryKeys, ColumnRegionInt<Attributes.DictionaryKeys>> getRegion(int regionIndex) {
-            return RegionedColumnSourceObjectWithDictionary.this.getRegion(regionIndex);
+        public ColumnRegionReferencing<DictionaryKeys, ColumnRegionInt<DictionaryKeys>> getRegion(int regionIndex) {
+            return RegionedColumnSourceWithDictionary.this.getRegion(regionIndex);
         }
 
         @Override
         public long getLong(long elementIndex) {
             if (elementIndex != NULL_KEY) {
                 int regionIndex = getRegionIndex(elementIndex);
-                int key = RegionedColumnSourceObjectWithDictionary.this.getRegion(regionIndex).getReferencedRegion().getInt(elementIndex);
+                int key = RegionedColumnSourceWithDictionary.this.getRegion(regionIndex).getReferencedRegion().getInt(elementIndex);
                 if (key != NULL_INT) {
                     return RegionedColumnSource.getElementIndex(regionIndex, key);
                 }
@@ -141,36 +112,36 @@ class RegionedColumnSourceObjectWithDictionary<T>
         }
 
         @Override
-        public void convertRegion(WritableChunk<? super Attributes.DictionaryKeys> destination, Chunk<? extends Attributes.DictionaryKeys> source, OrderedKeys orderedKeys) {
-            WritableLongChunk<? super Attributes.DictionaryKeys> longChunk = destination.asWritableLongChunk();
-            IntChunk<? extends Attributes.DictionaryKeys> intChunk = source.asIntChunk();
+        public void convertRegion(WritableChunk<? super DictionaryKeys> destination, Chunk<? extends DictionaryKeys> source, OrderedKeys orderedKeys) {
+            WritableLongChunk<? super DictionaryKeys> longChunk = destination.asWritableLongChunk();
+            IntChunk<? extends DictionaryKeys> intChunk = source.asIntChunk();
 
             final int regionIndex = getRegionIndex(orderedKeys.firstKey());
 
             final int size = longChunk.size();
             final int length = intChunk.size();
 
-            for (int i = 0; i < length; ++i) {
-                int key = intChunk.get(i);
-                longChunk.set(size + i, key == NULL_INT ? NULL_LONG : RegionedColumnSource.getElementIndex(regionIndex, key));
+            for (int ii = 0; ii < length; ++ii) {
+                final int key = intChunk.get(ii);
+                longChunk.set(size + ii, key == NULL_INT ? NULL_LONG : RegionedColumnSource.getElementIndex(regionIndex, key));
             }
             longChunk.setSize(size + length);
         }
 
         @Override
         public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            return alternateDataType == RegionedColumnSourceObjectWithDictionary.this.getType();
+            return alternateDataType == RegionedColumnSourceWithDictionary.this.getType();
         }
 
         @Override
         protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
             //noinspection unchecked
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) RegionedColumnSourceObjectWithDictionary.this;
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) RegionedColumnSourceWithDictionary.this;
         }
 
         @Override
         public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-            return RegionedColumnSourceObjectWithDictionary.this.makeFillContext(this, chunkCapacity, sharedContext);
+            return RegionedColumnSourceWithDictionary.this.makeFillContext(this, chunkCapacity, sharedContext);
         }
 
         @Override
@@ -179,7 +150,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
             // We are a reinterpreted column of RegionedColumnSourceObjectReferencing.this, so if we're asked to release
             // our resources, release the real resources in the underlying column.
             super.releaseCachedResources();
-            RegionedColumnSourceObjectWithDictionary.this.releaseCachedResources();
+            RegionedColumnSourceWithDictionary.this.releaseCachedResources();
         }
     }
 
@@ -203,7 +174,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
             for (int regionIndex = 0; sourceIndexIterator.advance(RegionedColumnSource.getFirstElementIndex(regionIndex)); ++regionIndex) {
                 long sourceElementIndex = sourceIndexIterator.currentValue();
                 regionIndex = getRegionIndex(sourceElementIndex);
-                ColumnRegionObject<T, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
+                ColumnRegionObject<DATA_TYPE, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
 
                 if (region.length() > 0) {
                     symbolTableIndexBuilder.appendRange(region.firstRow(sourceElementIndex), region.lastRow(sourceElementIndex));
@@ -272,7 +243,7 @@ class RegionedColumnSourceObjectWithDictionary<T>
                 for (int regionIndex = 0; sourceAddedIterator.advance(RegionedColumnSource.getFirstElementIndex(regionIndex)); ++regionIndex) {
                     final long sourceElementIndex = sourceAddedIterator.currentValue();
                     regionIndex = getRegionIndex(sourceElementIndex);
-                    ColumnRegionObject<T, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
+                    ColumnRegionObject<DATA_TYPE, Attributes.Values> region = dictionaryColumn.getRegion(regionIndex);
 
                     if (region.length() > 0) {
                         final long regionFirstSymbolIndex = region.firstRow(sourceElementIndex);

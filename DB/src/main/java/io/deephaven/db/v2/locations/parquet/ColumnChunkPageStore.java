@@ -2,7 +2,6 @@ package io.deephaven.db.v2.locations.parquet;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.locations.parquet.topage.ToPage;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
@@ -63,9 +62,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         public final Chunk<ATTR> dictionary;
         public final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
 
-        public CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
-                             final Chunk<ATTR> dictionary,
-                             final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
+        private CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
+                              final Chunk<ATTR> dictionary,
+                              final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
             this.pageStore = pageStore;
             this.dictionary = dictionary;
             this.dictionaryKeysPageStore = dictionaryKeysPageStore;

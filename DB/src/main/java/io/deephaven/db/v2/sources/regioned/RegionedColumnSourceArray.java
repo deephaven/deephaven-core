@@ -16,7 +16,8 @@ import java.util.function.Supplier;
  * Base class for all {@link RegionedColumnSource} implementations with column regions stored in an array.
  */
 abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
-        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> implements MakeRegion<ATTR, REGION_TYPE> {
+        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE>
+        implements MakeRegion<ATTR, REGION_TYPE> {
 
     @FunctionalInterface
     interface MakeDeferred<ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> {

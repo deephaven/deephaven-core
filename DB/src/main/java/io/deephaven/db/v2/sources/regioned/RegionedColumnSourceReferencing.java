@@ -15,7 +15,6 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  * Base class for a column of {@code DATA_TYPE} which is a wrapped {@code NATIVE_DATA_TYPE}.
  * The column owns the underlying native column and its resources.
  */
-
 abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
         implements ColumnRegionReferencingImpl.Converter<ATTR> {
@@ -36,20 +35,22 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attribute
         nativeSource = nativeSourceCreator.create(this);
     }
 
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return nativeSource.getType() == alternateDataType || nativeSource.allowsReinterpret(alternateDataType);
     }
 
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         //noinspection unchecked
         return nativeSource.getType() == alternateDataType ? (ColumnSource<ALTERNATE_DATA_TYPE>) nativeSource :
                 nativeSource.reinterpret(alternateDataType);
     }
 
-    @Nullable
     @Override
+    @Nullable
     public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> makeRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation, int regionIndex) {
         NATIVE_REGION_TYPE nativeRegionType = nativeSource.makeRegion(columnDefinition, columnLocation, regionIndex);
         return nativeRegionType == null ? null : new ColumnRegionReferencingImpl<>(PARAMETERS.regionMask, nativeRegionType);
@@ -73,8 +74,8 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attribute
             super(type, outerColumnSource);
         }
 
-        @NotNull
         @Override
+        @NotNull
         NATIVE_REGION_TYPE getNullRegion() {
             return getOuterColumnSource().getNullRegion().getReferencedRegion();
         }
