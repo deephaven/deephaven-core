@@ -104,6 +104,19 @@ except Exception as e:
     pass
 
 @_passThrough
+def getAvroSchema(schemaServerUrl, group, schemaId, schemaVersion):
+    """
+    :param schemaServerUrl: java.lang.String
+    :param group: java.lang.String
+    :param schemaId: java.lang.String
+    :param schemaVersion: java.lang.String
+    :return: org.apache.avro.Schema
+    """
+    
+    return _java_type_.getAvroSchema(schemaServerUrl, group, schemaId, schemaVersion)
+
+
+@_passThrough
 def partitionFilterFromArray(partitions):
     """
     :param partitions: int[]

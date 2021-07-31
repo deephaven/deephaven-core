@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl$ExactJoinTablesGrpcImpl",
+ "methods": {
+  "doJoin": ":param lhs: io.deephaven.db.tables.Table\n:param rhs: io.deephaven.db.tables.Table\n:param columnsToMatch: io.deephaven.db.tables.select.MatchPair[]\n:param columnsToAdd: io.deephaven.db.tables.select.MatchPair[]\n:param request: io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest\n:return: io.deephaven.db.tables.Table"
+ },
+ "path": "io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl.ExactJoinTablesGrpcImpl",
+ "typeName": "class"
+}

@@ -1,7 +1,6 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
