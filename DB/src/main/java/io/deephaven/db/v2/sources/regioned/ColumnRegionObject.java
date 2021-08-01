@@ -64,6 +64,10 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return false;
     }
 
+    default void gatherDictionaryValuesIndex((@NotNull final OrderedKeys.Iterator remainingOuterKeys, ) {
+
+    }
+
     /**
      * @return A dictionary keys region as specified by {@link #supportsDictionaryFormat(OrderedKeys.Iterator, boolean)}
      * @throws UnsupportedOperationException If this region does not support dictionary format
@@ -239,9 +243,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     final class DictionaryKeysWrapper implements ColumnRegionLong<DictionaryKeys>, Page.WithDefaults<DictionaryKeys> {
 
-        static ColumnRegionLong<DictionaryKeys> create(@NotNull final RegionedPageStore.Parameters parameters,
-                                                       final int regionIndex,
-                                                       @NotNull final ColumnRegionObject<?, ?> sourceRegion) {
+        public static ColumnRegionLong<DictionaryKeys> create(@NotNull final RegionedPageStore.Parameters parameters,
+                                                              final int regionIndex,
+                                                              @NotNull final ColumnRegionObject<?, ?> sourceRegion) {
             return new DictionaryKeysWrapper((long) regionIndex << parameters.regionMaskNumBits, sourceRegion.getDictionaryKeysRegion());
         }
 
@@ -261,13 +265,13 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         @Override
         public long getLong(final long elementIndex) {
             final long dictionaryKey = wrapped.getLong(elementIndex);
-            return dictionaryKey == NULL_LONG ? NULL_LONG : prefixBits | dictionaryKey ;
+            return dictionaryKey == NULL_LONG ? NULL_LONG : prefixBits | dictionaryKey;
         }
 
         @Override
         public long getLong(@NotNull final FillContext context, final long elementIndex) {
             final long dictionaryKey = wrapped.getLong(context, elementIndex);
-            return dictionaryKey == NULL_LONG ? NULL_LONG : prefixBits | dictionaryKey ;
+            return dictionaryKey == NULL_LONG ? NULL_LONG : prefixBits | dictionaryKey;
         }
 
         @Override

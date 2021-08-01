@@ -34,8 +34,6 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
         implements SymbolTableSource<DATA_TYPE> {
 
-    // TODO-RWC: Wrap dictionary key regions. Implement traversal to collect dictionary value changes.
-
     RegionedColumnSourceWithDictionary(@NotNull final Class<DATA_TYPE> dataType, @Nullable final Class<?> componentType) {
         super(dataType, componentType);
     }

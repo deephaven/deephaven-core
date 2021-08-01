@@ -42,9 +42,10 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocation {
+final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
@@ -217,29 +218,31 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull final ColumnDefinition<TYPE> columnDefinition) {
         //noinspection unchecked
-        return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionObject::createNull, ParquetColumnRegionObject::new,
-                rs -> new ColumnRegionObject.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionObject[]::new)));
-    }
-
-    @Override
-    public ColumnRegionInt<DictionaryKeys> makeDictionaryKeysRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus offset adjustments for multiple dictionaries)
-        // TODO-RWC: This is insufficient. We need to add the length of prior dictionaries to keys. Or recurse, which is now possible.
+        final Class<TYPE> dataType = columnDefinition.getDataType();
+        final ColumnChunkPageStore<ATTR>[] sources = getPageStores(columnDefinition);
+        final ColumnChunkPageStore<DictionaryKeys>[] dictKeySources = getDictionaryKeysPageStores(columnDefinition);
+        final Chunk<ATTR>[] dicts = getDictionaries(columnDefinition);
+        if (sources.length == 1) {
+            //noinspection unchecked
+            return (ColumnRegionObject<TYPE, Values>) makeSingleColumnRegionObject(dataType, sources[0], dictKeySources[0], dicts[0]);
+        }
         //noinspection unchecked
-        return makeColumnRegion(this::getDictionaryKeysPageStores, columnDefinition,
-                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
-                rs -> new ColumnRegionInt.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionInt[]::new)));
+        return (ColumnRegionObject<TYPE, Values>) new ColumnRegionObject.StaticPageStore<TYPE, ATTR>(tl().getRegionParameters(),
+                IntStream.range(0, sources.length)
+                        .mapToObj(ri -> makeSingleColumnRegionObject(dataType, sources[ri], dictKeySources[ri], dicts[ri]))
+                        .toArray(ColumnRegionObject[]::new));
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <TYPE> ColumnRegionObject<TYPE, Values> makeDictionaryRegion(@NotNull final ColumnDefinition<?> columnDefinition) {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/857): Address multiple row groups (and thus multiple dictionary pages)
-        return (ColumnRegionObject<TYPE, Values>) makeColumnRegion(this::getDictionaries, columnDefinition,
-                ColumnRegionObject::createNull,
-                (oc -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask, columnDefinition.getDataType(), oc)),
-                rs -> new ColumnRegionObject.StaticPageStore(tl().getRegionParameters(), rs.toArray(ColumnRegionObject[]::new)));
+    private <TYPE> ColumnRegionObject<TYPE, ATTR> makeSingleColumnRegionObject(@NotNull final Class<TYPE> dataType,
+                                                                               @Nullable final ColumnChunkPageStore<ATTR> source,
+                                                                               @Nullable final ColumnChunkPageStore<DictionaryKeys> dictKeySource,
+                                                                               @Nullable final Chunk<ATTR> dict) {
+        if (source == null) {
+            return ColumnRegionObject.createNull(tl().getRegionParameters().regionMask);
+        }
+        return new ParquetColumnRegionObject<>(source,
+                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource")),
+                () -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask, dataType, Require.neqNull(dict, "dict")));
     }
 
     /**
@@ -260,7 +263,6 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionaries, or null if none exist
      */
-    @Nullable
     public Chunk<ATTR>[] getDictionaries(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return dictionaries;
@@ -273,7 +275,6 @@ final class ParquetColumnLocation<ATTR extends Any> extends AbstractColumnLocati
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The page stores
      */
-    @Nullable
     private ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(@NotNull final ColumnDefinition<?> columnDefinition) {
         fetchValues(columnDefinition);
         return dictionaryKeysPageStores;

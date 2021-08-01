@@ -74,19 +74,14 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public static <ATTR extends Any> CreatorResult<ATTR> create(@NotNull final ColumnChunkReader columnChunkReader,
                                                                 final long mask,
                                                                 @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
-        if (columnChunkReader.getPageFixedSize() >= 1) {
-            final ColumnChunkPageStore<ATTR> columnChunkPageStore =
-                    new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
-            final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
-                    new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage.getDictionaryKeysToPage());
-
-            return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
-        }
-        final ColumnChunkPageStore<ATTR> columnChunkPageStore =
-                new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
-        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
-                new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage.getDictionaryKeysToPage());
-
+        final boolean fixedSizePages = columnChunkReader.getPageFixedSize() >= 1;
+        final ColumnChunkPageStore<ATTR> columnChunkPageStore = fixedSizePages
+                ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage)
+                : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
+        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage = toPage.getDictionaryKeysToPage();
+        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore = dictionaryKeysToPage == null ? null : fixedSizePages
+                ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage)
+                : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage);
         return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
     }
 

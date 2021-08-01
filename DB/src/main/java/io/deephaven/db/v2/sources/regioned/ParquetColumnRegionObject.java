@@ -2,7 +2,6 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
@@ -19,12 +18,18 @@ import java.util.function.Supplier;
 public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionObject<DATA_TYPE, ATTR>, ParquetColumnRegion<ATTR>, Page<ATTR> {
 
-    // TODO-RWC
-    private final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier;
-    private final Supplier<ColumnRegionObject<DATA_TYPE>> dictionaryValuesRegionSupplier;
+    private volatile Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier;
+    private volatile Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier;
 
-    public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
+    private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
+    private ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
+
+    public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+                                     @NotNull final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier,
+                                     @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier) {
         super(columnChunkPageStore.mask(), columnChunkPageStore);
+        this.dictionaryKeysRegionSupplier = dictionaryKeysRegionSupplier;
+        this.dictionaryValuesRegionSupplier = dictionaryValuesRegionSupplier;
     }
 
     public DATA_TYPE getObject(final long elementIndex) {
@@ -48,11 +53,27 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
 
     @Override
     public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
-        return ColumnRegionObject.super.getDictionaryKeysRegion();
+        if (dictionaryKeysRegionSupplier != null) {
+            synchronized (this) {
+                if (dictionaryKeysRegionSupplier != null) {
+                    dictionaryKeysRegion = dictionaryKeysRegionSupplier.get();
+                    dictionaryKeysRegionSupplier = null;
+                }
+            }
+        }
+        return dictionaryKeysRegion;
     }
 
     @Override
     public ColumnRegionObject<DATA_TYPE, ATTR> getDictionaryValuesRegion() {
-        return ColumnRegionObject.super.getDictionaryValuesRegion();
+        if (dictionaryValuesRegionSupplier != null) {
+            synchronized (this) {
+                if (dictionaryValuesRegionSupplier != null) {
+                    dictionaryValuesRegion = dictionaryValuesRegionSupplier.get();
+                    dictionaryValuesRegionSupplier = null;
+                }
+            }
+        }
+        return dictionaryValuesRegion;
     }
 }

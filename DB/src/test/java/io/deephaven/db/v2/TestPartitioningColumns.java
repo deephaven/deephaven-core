@@ -161,15 +161,6 @@ public class TestPartitioningColumns {
                     throw new UnsupportedOperationException();
                 }
 
-                @Override
-                public ColumnRegionInt<Attributes.DictionaryKeys> makeDictionaryKeysRegion(@NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public <TYPE> ColumnRegionObject<TYPE, Attributes.Values> makeDictionaryRegion(@NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
             };
         }
     }
