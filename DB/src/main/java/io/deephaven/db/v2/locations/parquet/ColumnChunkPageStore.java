@@ -3,6 +3,7 @@ package io.deephaven.db.v2.locations.parquet;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.v2.locations.parquet.topage.ToPage;
+import io.deephaven.db.v2.sources.Releasable;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.Chunk;
@@ -21,7 +22,7 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
-        implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable {
+        implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     private static final int CACHE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize", 10000);
@@ -120,16 +121,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     @Override
-    public void close() {
-        intrusiveSoftLRU.clear();
-        try {
-            columnPageReaderIterator.close();
-        } catch (IOException except) {
-            throw new UncheckedIOException(except);
-        }
-    }
-
-    @Override
     @NotNull
     public ChunkType getChunkType() {
         return toPage.getChunkType();
@@ -148,5 +139,21 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      */
     public boolean usesDictionaryOnEveryPage() {
         return columnChunkReader.usesDictionaryOnEveryPage();
+    }
+
+    @Override
+    public void close() {
+        intrusiveSoftLRU.clear();
+        try {
+            columnPageReaderIterator.close();
+        } catch (IOException except) {
+            throw new UncheckedIOException(except);
+        }
+    }
+
+    @Override
+    public void releaseCachedResources() {
+        Releasable.super.releaseCachedResources();
+        intrusiveSoftLRU.clear();
     }
 }

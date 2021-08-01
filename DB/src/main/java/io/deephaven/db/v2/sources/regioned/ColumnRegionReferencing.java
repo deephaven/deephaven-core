@@ -17,7 +17,7 @@ public interface ColumnRegionReferencing<ATTR extends Any, REFERENCED_COLUMN_REG
     @Override
     @FinalDefault
     default ChunkType getChunkType() {
-        return getReferencedRegion().getChunkType();
+        throw new UnsupportedOperationException(getClass() + " does not know its chunk type");
     }
 
     interface Converter<ATTR extends Any> {

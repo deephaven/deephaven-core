@@ -12,13 +12,11 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
-        extends GenericColumnRegionBase<ATTR>
         implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>, Page.WithDefaults<ATTR> {
 
     private final REFERENCED_COLUMN_REGION referencedColumnRegion;
 
-    public ColumnRegionReferencingImpl(final long pageMask, @NotNull final REFERENCED_COLUMN_REGION referencedColumnRegion) {
-        super(pageMask);
+    public ColumnRegionReferencingImpl(@NotNull final REFERENCED_COLUMN_REGION referencedColumnRegion) {
         this.referencedColumnRegion = referencedColumnRegion;
     }
 
@@ -26,6 +24,11 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
     @Override
     public REFERENCED_COLUMN_REGION getReferencedRegion() {
         return referencedColumnRegion;
+    }
+
+    @Override
+    public long mask() {
+        return getReferencedRegion().mask();
     }
 
     @Override

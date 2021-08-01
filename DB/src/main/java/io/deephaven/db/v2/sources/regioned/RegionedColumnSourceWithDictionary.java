@@ -14,6 +14,7 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +35,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 class RegionedColumnSourceWithDictionary<DATA_TYPE>
         extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
         implements SymbolTableSource<DATA_TYPE> {
+
+    // TODO-RWC: Wrap dictionary key regions. Implement traversal to collect dictionary value changes.
 
     RegionedColumnSourceWithDictionary(@NotNull final Class<DATA_TYPE> dataType) {
         // This source is never used for any type that might have a component type.
@@ -65,10 +68,40 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     final class AsLong extends RegionedColumnSourceBase<Long, DictionaryKeys, ColumnRegionObject<Long, DictionaryKeys>>
             implements ColumnSourceGetDefaults.ForLong {
-        
-        
-    }
 
+        @Override
+        public long getLong(long index) {
+            return 0;
+        }
+
+        @Override
+        public int addRegion(@NotNull final ColumnDefinition<?> columnDefinition, @NotNull final ColumnLocation columnLocation) {
+            return RegionedColumnSourceWithDictionary.this.addRegion(columnDefinition, columnLocation);
+        }
+
+        @Override
+        @VisibleForTesting
+        <OTHER_REGION_TYPE> int addRegionForUnitTests(@NotNull final OTHER_REGION_TYPE region) {
+            return RegionedColumnSourceWithDictionary.this.addRegionForUnitTests(region);
+        }
+
+        @NotNull
+        @Override
+        ColumnRegionObject<Long, DictionaryKeys> getNullRegion() {
+            return ColumnRegionObject.createNull(PARAMETERS.regionMask);
+        }
+
+        @Override
+        public int getRegionCount() {
+            return RegionedColumnSourceWithDictionary.this.getRegionCount();
+        }
+
+        @Override
+        public ColumnRegionObject<Long, DictionaryKeys> getRegion(int regionIndex) {
+            return null;
+        }
+    }
+    {
         AsLong() {
             super(long.class);
 

@@ -56,8 +56,7 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
     @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
         ParquetColumnRegion.super.releaseCachedResources();
-        // TODO-RWC: This seems wrong.
-        columnChunkPageStore.close();
+        columnChunkPageStore.releaseCachedResources();
     }
 
     @Override

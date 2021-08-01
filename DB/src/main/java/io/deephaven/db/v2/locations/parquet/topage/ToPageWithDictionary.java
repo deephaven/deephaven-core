@@ -15,6 +15,7 @@ import java.nio.IntBuffer;
 import java.util.function.Function;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage<ATTR, DATA_TYPE[]> {
 
@@ -23,9 +24,9 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
     private final Function<Object, DATA_TYPE[]> convertResultFallbackFun;
 
     ToPageWithDictionary(
-            final Class<DATA_TYPE> nativeType,
-            final Dictionary<DATA_TYPE, ATTR> dictionary,
-            final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
+            @NotNull final Class<DATA_TYPE> nativeType,
+            @NotNull final Dictionary<DATA_TYPE, ATTR> dictionary,
+            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
         this.nativeType = nativeType;
         this.dictionary = dictionary;
         this.convertResultFallbackFun = convertResultFallbackFun;
@@ -45,7 +46,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
 
     @Override
     @NotNull
-    public final Object getResult(final ColumnPageReader columnPageReader) throws IOException {
+    public final Object getResult(@NotNull final ColumnPageReader columnPageReader) throws IOException {
         if (columnPageReader.getDictionary() == null) {
             return ToPage.super.getResult(columnPageReader);
         }
@@ -58,7 +59,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
 
     @Override
     @NotNull
-    public final DATA_TYPE[] convertResult(final Object result) {
+    public final DATA_TYPE[] convertResult(@NotNull final Object result) {
         if (!(result instanceof int[])) {
             return convertResultFallbackFun.apply(result);
         }
@@ -67,8 +68,8 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
         //noinspection unchecked
         final DATA_TYPE[] to = (DATA_TYPE[]) Array.newInstance(nativeType, from.length);
 
-        for (int fi = 0; fi < from.length; ++fi) {
-            to[fi] = dictionary.get(from[fi]);
+        for (int ii = 0; ii < from.length; ++ii) {
+            to[ii] = dictionary.get(from[ii]);
         }
 
         return to;
@@ -87,19 +88,19 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
 
     @Override
     @NotNull
-    public final ToPage<DictionaryKeys, int[]> getDictionaryKeysToPage() {
-        return new ToPage<DictionaryKeys, int[]>() {
+    public final ToPage<DictionaryKeys, long[]> getDictionaryKeysToPage() {
+        return new ToPage<DictionaryKeys, long[]>() {
 
             @Override
             @NotNull
             public Class<?> getNativeType() {
-                return int.class;
+                return long.class;
             }
 
             @Override
             @NotNull
             public ChunkType getChunkType() {
-                return ChunkType.Int;
+                return ChunkType.Long;
             }
 
             @Override
@@ -108,8 +109,21 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
             }
 
             @Override
-            public Object getResult(final ColumnPageReader columnPageReader) throws IOException {
+            public Object getResult(@NotNull final ColumnPageReader columnPageReader) throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
+            }
+
+            @Override
+            public long[] convertResult(@NotNull final Object result) {
+                final int[] from = (int[]) result;
+                final long[] to = new long[from.length];
+
+                for (int ii = 0; ii < from.length; ++ii) {
+                    final int intKey = from[ii];
+                    to[ii] = intKey == NULL_INT ? NULL_LONG : intKey;
+                }
+
+                return to;
             }
         };
     }

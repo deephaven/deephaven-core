@@ -1,7 +1,6 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.string.cache.StringCache;
-import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -9,38 +8,44 @@ import io.deephaven.db.v2.sources.chunk.page.Page;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Function;
+
 /**
  * {@link ColumnRegionObject} implementation for regions that support fetching symbols from a dictionary represented as
  * an {@link ObjectChunk}.
  */
-public class ColumnRegionChunkDictionary<ATTR extends Any, STRING_LIKE_TYPE extends CharSequence>
+public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
         extends GenericColumnRegionBase<ATTR>
-        implements ColumnRegionObject<STRING_LIKE_TYPE, ATTR>, Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
+        implements ColumnRegionObject<DATA_TYPE, ATTR>, Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
-    private final ObjectChunk<String, ATTR> dictionary;
-    private final StringCache<STRING_LIKE_TYPE> stringCache;
+    private final ObjectChunk<DICT_TYPE, ATTR> dictionary;
+    private final Function<DICT_TYPE, DATA_TYPE> conversion;
 
-    public static <STRING_LIKE_TYPE, ATTR extends Any> ColumnRegionObject<STRING_LIKE_TYPE, ATTR> create(
+    public static <DATA_TYPE, ATTR extends Any> ColumnRegionObject<DATA_TYPE, ATTR> create(
             final long pageMask,
-            @NotNull final Class<STRING_LIKE_TYPE> dataType,
+            @NotNull final Class<DATA_TYPE> dataType,
             @NotNull final Chunk<ATTR> dictionary) {
-        Require.eqTrue(CharSequence.class.isAssignableFrom(dataType), "Dictionary result is not a string like type.");
-        Require.neqNull(dictionary, "dictionary");
-        //noinspection unchecked
-        return new ColumnRegionChunkDictionary(pageMask, dataType, dictionary.asObjectChunk());
+        if (CharSequence.class.isAssignableFrom(dataType)) {
+            //noinspection unchecked
+            final StringCache<?> stringCache = StringUtils.getStringCache((Class<? extends CharSequence>) dataType);
+            //noinspection unchecked
+            final Function<String, DATA_TYPE> conversion = (final String dictValue) -> (DATA_TYPE) stringCache.getCachedString(dictValue);
+            return new ColumnRegionChunkDictionary<>(pageMask, dictionary.asObjectChunk(), conversion);
+        }
+        return new ColumnRegionChunkDictionary<>(pageMask, dictionary.asObjectChunk(), Function.identity());
     }
 
     private ColumnRegionChunkDictionary(final long pageMask,
-                                        @NotNull final Class<STRING_LIKE_TYPE> dataType,
-                                        @NotNull final ObjectChunk<String, ATTR> dictionary) {
+                                        @NotNull final ObjectChunk<DICT_TYPE, ATTR> dictionary,
+                                        @NotNull final Function<DICT_TYPE, DATA_TYPE> conversion) {
         super(pageMask);
         this.dictionary = dictionary;
-        this.stringCache = StringUtils.getStringCache(dataType);
+        this.conversion = conversion;
     }
 
     @Override
-    public STRING_LIKE_TYPE getObject(final long elementIndex) {
-        return stringCache.getCachedString(dictionary.get((int) getRowOffset(elementIndex)));
+    public DATA_TYPE getObject(final long elementIndex) {
+        return conversion.apply(dictionary.get((int) getRowOffset(elementIndex)));
     }
 
     @Override
@@ -50,7 +55,7 @@ public class ColumnRegionChunkDictionary<ATTR extends Any, STRING_LIKE_TYPE exte
 
     @Override
     public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
-        final WritableObjectChunk<STRING_LIKE_TYPE, ? super ATTR> objectDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination = destination.asWritableObjectChunk();
         orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
     }
 }

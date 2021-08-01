@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
@@ -31,5 +32,15 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
     @Override
     public boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
         return getResultRegion().supportsDictionaryFormat(remainingKeys, failFast);
+    }
+
+    @Override
+    public ColumnRegionLong<Attributes.DictionaryKeys> getDictionaryKeysRegion() {
+        return getResultRegion().getDictionaryKeysRegion();
+    }
+
+    @Override
+    public ColumnRegionObject<DATA_TYPE, ATTR> getDictionaryValuesRegion() {
+        return getResultRegion().getDictionaryValuesRegion();
     }
 }

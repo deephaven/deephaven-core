@@ -133,7 +133,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
             implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
         private final Parameters parameters;
-        final REGION_TYPE[] regions;
+        private final REGION_TYPE[] regions;
 
         /**
          * @param parameters Mask and shift parameters
