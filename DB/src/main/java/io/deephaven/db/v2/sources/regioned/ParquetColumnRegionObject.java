@@ -2,11 +2,15 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore;
+import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.db.v2.sources.chunk.page.Page;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
 
 /**
  * {@link ColumnRegionObject} implementation for regions that support fetching objects from
@@ -14,6 +18,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionObject<DATA_TYPE, ATTR>, ParquetColumnRegion<ATTR>, Page<ATTR> {
+
+    // TODO-RWC
+    private final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier;
+    private final Supplier<ColumnRegionObject<DATA_TYPE>> dictionaryValuesRegionSupplier;
 
     public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
         super(columnChunkPageStore.mask(), columnChunkPageStore);
@@ -36,5 +44,15 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             advanceToNextPage(remainingKeys);
         }
         return result;
+    }
+
+    @Override
+    public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
+        return ColumnRegionObject.super.getDictionaryKeysRegion();
+    }
+
+    @Override
+    public ColumnRegionObject<DATA_TYPE, ATTR> getDictionaryValuesRegion() {
+        return ColumnRegionObject.super.getDictionaryValuesRegion();
     }
 }

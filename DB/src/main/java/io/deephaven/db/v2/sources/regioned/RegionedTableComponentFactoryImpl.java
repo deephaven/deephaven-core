@@ -76,7 +76,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
 
         try {
             if (CharSequence.class.isAssignableFrom(dataType)) {
-                return new RegionedColumnSourceWithDictionary<>(dataType);
+                return new RegionedColumnSourceWithDictionary<>(dataType, null);
             } else {
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType());
             }

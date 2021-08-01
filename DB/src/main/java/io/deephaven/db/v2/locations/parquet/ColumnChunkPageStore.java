@@ -26,9 +26,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     private static final int CACHE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize", 10000);
-
-    final IntrusiveSoftLRU<IntrusivePage<ATTR>> intrusiveSoftLRU =
-            new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(), CACHE_SIZE);
+    private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
 
     private final ColumnChunkReader columnChunkReader;
     private final long mask;
@@ -37,7 +35,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private final long size;
     final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
 
-    private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
+    final IntrusiveSoftLRU<IntrusivePage<ATTR>> intrusiveSoftLRU =
+            new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(), CACHE_SIZE);
 
     static <ATTR extends Any> WeakReference<IntrusivePage<ATTR>> getNullPage() {
         //noinspection unchecked
