@@ -14,9 +14,13 @@ import io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter;
 import io.deephaven.kafka.ingest.KafkaIngester;
 import io.deephaven.kafka.ingest.SimpleConsumerRecordToTableWriterAdapter;
 import org.apache.avro.Schema;
+import org.apache.commons.codec.Charsets;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.*;
@@ -28,6 +32,8 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.function.IntPredicate;
@@ -48,25 +54,25 @@ public class KafkaTools {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
 
-    public static org.apache.avro.Schema getAvroSchema(
-            final String schemaServerUrl, final String group, final String artifactId, final String artifactVersion) {
-        String action = "setup schema server connection";
+    public static org.apache.avro.Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
+        String action = "setup http client";
         try (CloseableHttpClient client = HttpClients.custom().build()) {
-            final HttpUriRequest request = RequestBuilder.get().setUri(
-                    schemaServerUrl + "/apis/registry/v2/groups/" + group + "/aritifacts/" + artifactId + "/versions/" + artifactVersion)
-                    .build();
-            action = "execute schema server request";
+            final String requestStr = schemaServerUrl + "/subjects/" + resourceName + "/versions/" + version + "/schema";
+            final HttpUriRequest request = RequestBuilder.get().setUri(requestStr).build();
+            action = "execute schema request " + requestStr;
             final HttpResponse response = client.execute(request);
             final int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_OK) {
-                throw new UncheckedDeephavenException(
-                        "Got status code " + statusCode
-                                + " requesting group=" + group
-                                + ", artifact=" + artifactId
-                                + ", version=" + artifactVersion);
+                throw new UncheckedDeephavenException("Got status code " + statusCode + " requesting " + request);
             }
-            action = "parse schema server response";
-            final String json = response.getEntity().getContent().toString();
+            action = "extract json server response";
+            final HttpEntity entity = response.getEntity();
+            final Header encodingHeader = entity.getContentEncoding();
+            final Charset encoding = encodingHeader == null
+                    ? StandardCharsets.UTF_8
+                    : Charsets.toCharset(encodingHeader.getValue());
+            final String json = EntityUtils.toString(entity, encoding);
+            action = "parse schema server response: " + json;
             return new Schema.Parser().parse(json);
         } catch (Exception e) {
             throw new UncheckedDeephavenException("Exception while trying to " + action, e);

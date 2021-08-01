@@ -104,16 +104,15 @@ except Exception as e:
     pass
 
 @_passThrough
-def getAvroSchema(schemaServerUrl, group, schemaId, schemaVersion):
+def getAvroSchema(schemaServerUrl, resourceName, version):
     """
     :param schemaServerUrl: java.lang.String
-    :param group: java.lang.String
-    :param schemaId: java.lang.String
-    :param schemaVersion: java.lang.String
+    :param resourceName: java.lang.String
+    :param version: java.lang.String
     :return: org.apache.avro.Schema
     """
     
-    return _java_type_.getAvroSchema(schemaServerUrl, group, schemaId, schemaVersion)
+    return _java_type_.getAvroSchema(schemaServerUrl, resourceName, version)
 
 
 @_passThrough
@@ -140,12 +139,20 @@ def partitionToOffsetFromParallelArrays(partitions, offsets):
 @_passThrough
 def simpleConsumeToTable(*args):
     """
+    Consume a number of partitions from a single, simple type key and single type value Kafka topic to a single table,
+     with table partitions matching Kafka partitions.
+    
+     The types of key and value are deduced from the serializer classes for key and value in the provided Properties
+     object for the Kafka Consumer initialization; if the Properties object provided does not contain
+     keys for key deserializer or value deserializer, they are assumed to be of String type and the corresponding
+     property for the respective deserializer are added.
+    
     *Overload 1*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :param partitionFilter: java.util.function.IntPredicate
-      :param partitionToInitialOffset: java.util.function.IntToLongFunction
-      :return: io.deephaven.db.tables.Table
+      :param kafkaConsumerProperties: (java.util.Properties) - Properties to be passed to create the KafkaConsumer.
+      :param topic: (java.lang.String) - Kafka topic name.
+      :param partitionFilter: (java.util.function.IntPredicate) - A predicate returning true for the partitions to consume.
+      :param partitionToInitialOffset: (java.util.function.IntToLongFunction) - A function specifying the desired initial offset for each partition consumed.
+      :return: (io.deephaven.db.tables.Table) The resulting live table.
       
     *Overload 2*  
       :param kafkaConsumerProperties: java.util.Properties
