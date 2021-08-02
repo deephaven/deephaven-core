@@ -25,7 +25,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     private static final int CACHE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize", 10000);
+            Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize", 1 << 13);
     private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
 
     private final ColumnChunkReader columnChunkReader;

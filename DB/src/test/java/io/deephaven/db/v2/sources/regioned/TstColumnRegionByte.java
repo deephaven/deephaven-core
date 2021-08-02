@@ -26,6 +26,11 @@ public abstract class TstColumnRegionByte {
     static class Identity implements ColumnRegionByte<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
+        public long mask() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
         public byte getByte(long elementIndex) {
             return (byte) elementIndex;
         }
@@ -37,11 +42,6 @@ public abstract class TstColumnRegionByte {
             }
 
             return destination;
-        }
-
-        @Override
-        public long length() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -66,7 +66,7 @@ public abstract class TstColumnRegionByte {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionByte.createNull();
+            SUT = ColumnRegionByte.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -102,7 +102,7 @@ public abstract class TstColumnRegionByte {
                 oneOf(regionSupplier).get();
                 will(returnValue(new TstColumnRegionByte.Identity()));
             }});
-            SUT = new DeferredColumnRegionByte<>(regionSupplier);
+            SUT = new DeferredColumnRegionByte<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

@@ -156,6 +156,13 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                     return lastSizes[li];
                 }
             });
+            allowing(tl).getIndex();
+            will(new CustomAction("Return last size") {
+                @Override
+                public Object invoke(Invocation invocation) {
+                    return Index.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
+                }
+            });
         }});
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
             final ColumnLocation cl = columnLocations[li][ci];

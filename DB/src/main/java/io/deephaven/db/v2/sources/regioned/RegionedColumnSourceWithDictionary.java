@@ -173,6 +173,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     @Override
     public QueryTable getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching) {
+        // NB: We assume that hasSymbolTable has been tested by the caller
         final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn = new AsDictionary();
 
         final Index symbolTableIndex;
@@ -198,6 +199,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
     @Override
     public final Table getSymbolTable(@NotNull final QueryTable sourceTable, final boolean useLookupCaching) {
+        // NB: We assume that hasSymbolTable has been tested by the caller, and that for refreshing tables it will
+        //     remain true.
         return sourceTable.memoizeResult(MemoizedOperationKey.symbolTable(this, useLookupCaching), () -> {
             final String description = "getSymbolTable(" + sourceTable.getDescription() + ", " + useLookupCaching + ')';
             return QueryPerformanceRecorder.withNugget(description, sourceTable.size(), () -> {

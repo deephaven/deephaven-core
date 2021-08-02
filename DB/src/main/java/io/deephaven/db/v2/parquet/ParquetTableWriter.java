@@ -30,13 +30,13 @@ import io.deephaven.parquet.RowGroupWriter;
 import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -406,7 +406,7 @@ public class ParquetTableWriter {
                 final List<IntBuffer> buffersPerPage = new ArrayList<>();
                 final Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
                 final Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
-                final Object[][] keys = {keyArrayBuilder.apply(INITIAL_DICTIONARY_SIZE)};
+                final MutableObject<Object[]> keys = new MutableObject<>(keyArrayBuilder.apply(Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)));
                 final Map<Object, Integer> keyToPos = new HashMap<>();
                 final MutableInt keyCount = new MutableInt(0);
                 final MutableBoolean hasNulls = new MutableBoolean(false);
@@ -423,13 +423,13 @@ public class ParquetTableWriter {
                                     hasNulls.setValue(true);
                                     return Integer.MIN_VALUE;
                                 }
-                                if (keyCount.intValue() == keys[0].length) {
+                                if (keyCount.intValue() == keys.getValue().length) {
                                     if (keyCount.intValue() == maxKeys) {
                                         throw new DictionarySizeExceededException();
                                     }
-                                    keys[0] = Arrays.copyOf(keys[0], (int) Math.max(keys[0].length * 2L, maxKeys));
+                                    keys.setValue(Arrays.copyOf(keys.getValue(), (int) Math.min(keyCount.intValue() * 2L, maxKeys)));
                                 }
-                                keys[0][keyCount.intValue()] = toParquetPrimitive.apply(o);
+                                keys.getValue()[keyCount.intValue()] = toParquetPrimitive.apply(o);
                                 Integer result = keyCount.getValue();
                                 keyCount.increment();
                                 return result;
@@ -454,7 +454,7 @@ public class ParquetTableWriter {
                         }
                     }
                 }
-                columnWriter.addDictionaryPage(keys[0], keyCount.intValue());
+                columnWriter.addDictionaryPage(keys.getValue(), keyCount.intValue());
                 final Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();
                 for (final IntBuffer intBuffer : buffersPerPage) {
                     intBuffer.flip();
