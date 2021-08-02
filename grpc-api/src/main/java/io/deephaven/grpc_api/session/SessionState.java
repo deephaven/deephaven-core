@@ -31,6 +31,7 @@ import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
@@ -216,6 +217,15 @@ public class SessionState {
      * @param ticket the export ticket
      * @return a future-like object that represents this export
      */
+    public <T> ExportObject<T> getExport(final Ticket ticket) {
+        return getExport(ExportTicketHelper.ticketToExportId(ticket));
+    }
+
+    /**
+     * Grab the ExportObject for the provided ticket.
+     * @param ticket the export ticket
+     * @return a future-like object that represents this export
+     */
     public <T> ExportObject<T> getExport(final Flight.Ticket ticket) {
         return getExport(ExportTicketHelper.ticketToExportId(ticket));
     }
@@ -267,7 +277,7 @@ public class SessionState {
      * @return a future-like object that represents this export
      */
     @SuppressWarnings("unchecked")
-    public <T> ExportObject<T> getExportIfExists(final Flight.Ticket ticket) {
+    public <T> ExportObject<T> getExportIfExists(final Ticket ticket) {
         return getExportIfExists(ExportTicketHelper.ticketToExportId(ticket));
     }
 
@@ -300,6 +310,17 @@ public class SessionState {
      * @return an export builder
      */
     public <T> ExportBuilder<T> newExport(final Flight.Ticket ticket) {
+        return newExport(ExportTicketHelper.ticketToExportId(ticket));
+    }
+
+    /**
+     * Create an ExportBuilder to create the export after dependencies are satisfied.
+     *
+     * @param ticket the grpc {@link Flight.Ticket} for this export
+     * @param <T> the export type that the callable will return
+     * @return an export builder
+     */
+    public <T> ExportBuilder<T> newExport(final Ticket ticket) {
         return newExport(ExportTicketHelper.ticketToExportId(ticket));
     }
 
@@ -597,7 +618,7 @@ public class SessionState {
         /**
          * @return the export id or NON_EXPORT_ID if it does not have one
          */
-        public Flight.Ticket getExportId() {
+        public Ticket getExportId() {
             return ExportTicketHelper.exportIdToTicket(exportId);
         }
 

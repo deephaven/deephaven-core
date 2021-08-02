@@ -2,7 +2,7 @@ FROM deephaven/protoc:local-build
 
 COPY src/main/proto /includes
 
-COPY dependencies /dependencies
+#COPY dependencies /dependencies
 
 RUN set -eux; \
   mkdir -p /generated/java; \
@@ -17,19 +17,18 @@ RUN set -eux; \
     --grpc_out=/generated/grpc \
     --ts_out=service=grpc-web:/generated/js \
     --python_out=/generated/python \
-    -I/dependencies \
     -I/includes \
-    /dependencies/flight.proto \
-    /includes/Barrage.proto \
-    /includes/Console.proto \
-    /includes/Session.proto \
-    /includes/Table.proto; \
+    /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/barrage.proto \
+    /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/session.proto \
+    /includes/deephaven/proto/table.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
-    -I/dependencies \
     -I/includes \
-    /includes/Barrage.proto \
-    /includes/Console.proto \
-    /includes/Session.proto \
-    /includes/Table.proto;
+    /includes/deephaven/proto/ticket.proto \
+    /includes/deephaven/proto/barrage.proto \
+    /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/session.proto \
+    /includes/deephaven/proto/table.proto;
 

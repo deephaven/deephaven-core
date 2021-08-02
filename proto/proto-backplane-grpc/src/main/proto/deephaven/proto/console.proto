@@ -9,8 +9,8 @@ package io.deephaven.proto.backplane.script.grpc;
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
-import "Table.proto";
-import "flight.proto";
+import "deephaven/proto/table.proto";
+import "deephaven/proto/ticket.proto";
 
 /*
  * Console interaction service
@@ -46,11 +46,11 @@ message GetConsoleTypesResponse {
 }
 
 message StartConsoleRequest {
-    arrow.flight.protocol.Ticket result_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
     string session_type = 2;
 }
 message StartConsoleResponse {
-    arrow.flight.protocol.Ticket result_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
 
     // TOOD i think these are unused without an init script thingie
     repeated string table_names = 2;
@@ -59,7 +59,7 @@ message StartConsoleResponse {
 
 message LogSubscriptionRequest {
     // presently you get _all_ logs, not just your console
-//    arrow.flight.protocol.Ticket console_id = 1;
+//    Ticket console_id = 1;
     int64 last_seen_log_timestamp = 1;
     repeated string levels = 2;
 }
@@ -68,10 +68,10 @@ message LogSubscriptionData {
     string log_level = 2;
     string message = 3;
     reserved 4;//if we can scope logs to a script session
-    //    arrow.flight.protocol.Ticket console_id = 4;
+    //    Ticket console_id = 4;
 }
 message ExecuteCommandRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
 }
@@ -86,24 +86,24 @@ message VariableDefinition {
     string type = 2;
 }
 message BindTableToVariableRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string variable_name = 3;
-    arrow.flight.protocol.Ticket table_id = 4;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 4;
 }
 message BindTableToVariableResponse {
 }
 
 message CancelCommandRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
-    arrow.flight.protocol.Ticket command_id = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket command_id = 2;
 }
 message CancelCommandResponse {
 
 }
 
 message OpenDocumentRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     TextDocumentItem text_document = 2;
 }
 message TextDocumentItem {
@@ -117,7 +117,7 @@ message OpenDocumentResponse {
 }
 
 message CloseDocumentRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
 }
 message CloseDocumentResponse {
@@ -125,7 +125,7 @@ message CloseDocumentResponse {
 }
 
 message ChangeDocumentRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
     repeated TextDocumentContentChangeEvent content_changes = 3;
 
@@ -151,7 +151,7 @@ message ChangeDocumentResponse {
 
 }
 message GetCompletionItemsRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
 
     CompletionContext context = 2;
     VersionedTextDocumentIdentifier text_document = 3;
@@ -186,19 +186,19 @@ message TextEdit {
 }
 
 message FetchTableRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
-    arrow.flight.protocol.Ticket table_id = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
 
     string table_name = 3;
 }
 
 message FetchPandasTableRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
-    arrow.flight.protocol.Ticket table_id = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
 }
 
 message FetchFigureRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
 
     string figure_name = 2;
 }
@@ -222,7 +222,7 @@ message FigureDescriptor {
 
     // TODO (deephaven-core#62) implement once tablemaps are ready
     reserved 12;// reserved for tablemaps
-//    repeated arrow.flight.protocol.Ticket table_maps = 12;
+//    repeated Ticket table_maps = 12;
 
     repeated string errors = 13;
 
@@ -462,7 +462,7 @@ message FigureDescriptor {
 }
 
 message FetchTableMapRequest {
-    arrow.flight.protocol.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;// ticket to place the result in
 }
 message FetchTableMapResponse {

@@ -1,13 +1,12 @@
-require("Barrage_pb");
-require("Session_pb");
-require("Table_pb");
-require("Console_pb");
-require("flight_pb");
-var barrageService = require("Barrage_pb_service");
-var sessionService = require("Session_pb_service");
-var tableService = require("Table_pb_service");
-var consoleService = require("Console_pb_service");
-var flightService = require("flight_pb_service");
+require("deephaven/proto/barrage_pb");
+require("deephaven/proto/session_pb");
+require("deephaven/proto/table_pb");
+require("deephaven/proto/console_pb");
+require("deephaven/proto/ticket_pb");
+var barrageService = require("deephaven/proto/barrage_pb_service");
+var sessionService = require("deephaven/proto/session_pb_service");
+var tableService = require("deephaven/proto/table_pb_service");
+var consoleService = require("deephaven/proto/console_pb_service");
 
 var browserHeaders = require("browser-headers");
 
@@ -26,6 +25,7 @@ var io = { deephaven: {
             Table_pb_service: tableService,
             Console_pb: proto.io.deephaven.proto.backplane.script.grpc,
             Console_pb_service: consoleService,
+            Ticket_pb: proto.io.deephaven.proto.backplane.grpc,
         },
         barrage: {
             "flatbuf": {
@@ -35,21 +35,12 @@ var io = { deephaven: {
             }
         }
 }};
-var arrow = {
-    flight: {
-        protocol: {
-            flight_pb: proto.arrow.flight.protocol,
-            flight_pb_service: flightService
-        }
-    }
-};
 var dhinternal = {
     browserHeaders,
     jspb,
     grpcWeb,//TODO need to expand this to the specific things we need
     flatbuffers,
-    io,
-    arrow
+    io
 };
 export {
     dhinternal
