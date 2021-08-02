@@ -7,6 +7,7 @@ import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
+import io.deephaven.db.v2.sources.Releasable;
 import io.deephaven.db.v2.sources.RowIdSource;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
@@ -20,8 +21,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 
@@ -58,8 +61,14 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             extends RegionedColumnSourceBase<Long, DictionaryKeys, ColumnRegionLong<DictionaryKeys>>
             implements ColumnSourceGetDefaults.ForLong {
 
+        private final ColumnRegionLong<DictionaryKeys> nullRegion;
+        private volatile ColumnRegionLong<DictionaryKeys>[] wrapperRegions;
+
         private AsLong() {
             super(long.class);
+            nullRegion = ColumnRegionLong.createNull(PARAMETERS.regionMask);
+            //noinspection unchecked
+            wrapperRegions = new ColumnRegionLong[0];
         }
 
         @Override
@@ -80,7 +89,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         @NotNull
         @Override
         ColumnRegionLong<DictionaryKeys> getNullRegion() {
-            return ColumnRegionLong.createNull(parameters().regionMask);
+            return nullRegion;
         }
 
         @Override
@@ -90,7 +99,24 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public ColumnRegionLong<DictionaryKeys> getRegion(final int regionIndex) {
-            return ColumnRegionObject.DictionaryKeysWrapper.create(parameters(), regionIndex, RegionedColumnSourceWithDictionary.this.getRegion(regionIndex));
+            final ColumnRegionObject<DATA_TYPE, Values> sourceRegion = RegionedColumnSourceWithDictionary.this.getRegion(regionIndex);
+            if (sourceRegion instanceof ColumnRegion.Null) {
+                return nullRegion;
+            }
+            ColumnRegionLong<DictionaryKeys>[] localWrappers;
+            ColumnRegionLong<DictionaryKeys> wrapper;
+            if ((localWrappers = wrapperRegions).length > regionIndex && (wrapper = localWrappers[regionIndex]) != null) {
+                return wrapper;
+            }
+            synchronized (this) {
+                if ((localWrappers = wrapperRegions).length > regionIndex && (wrapper = localWrappers[regionIndex]) != null) {
+                    return wrapper;
+                }
+                if (localWrappers.length <= regionIndex) {
+                    wrapperRegions = localWrappers = Arrays.copyOf(localWrappers, Math.min(regionIndex + 1 << 1, getRegionCount()));
+                }
+                return localWrappers[regionIndex] = ColumnRegionObject.DictionaryKeysWrapper.create(parameters(), regionIndex, sourceRegion);
+            }
         }
 
         @Override
@@ -107,10 +133,14 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         @Override
         @OverridingMethodsMustInvokeSuper
         public void releaseCachedResources() {
+            super.releaseCachedResources();
             // We are a reinterpreted column of RegionedColumnSourceObjectReferencing.this, so if we're asked to release
             // our resources, release the real resources in the underlying column.
-            super.releaseCachedResources();
             RegionedColumnSourceWithDictionary.this.releaseCachedResources();
+            final ColumnRegionLong<DictionaryKeys>[] localWrappers = wrapperRegions;
+            //noinspection unchecked
+            wrapperRegions = new ColumnRegionLong[0];
+            Arrays.stream(localWrappers).filter(Objects::nonNull).forEach(Releasable::releaseCachedResources);
         }
     }
 
@@ -150,6 +180,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public ColumnRegionObject<DATA_TYPE, Values> getRegion(final int regionIndex) {
+            // ColumnRegionObject implementations are expected to cache the result of getDictionaryValuesRegion(),
+            // so it's fine to call more than once and avoid extra backing storage in the column source.
             return RegionedColumnSourceWithDictionary.this.getRegion(regionIndex).getDictionaryValuesRegion();
         }
     }

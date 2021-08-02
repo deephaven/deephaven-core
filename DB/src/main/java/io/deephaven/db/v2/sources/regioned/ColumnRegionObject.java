@@ -236,7 +236,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 if (!lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
                     return false;
                 }
-            } while(keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
+            } while (keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
             return true;
         }
 
@@ -247,7 +247,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
             do {
                 lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
-            } while(keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
+            } while (keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
         }
 
         @Override
