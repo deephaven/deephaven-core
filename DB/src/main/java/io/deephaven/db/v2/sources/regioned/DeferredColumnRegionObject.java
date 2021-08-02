@@ -32,15 +32,15 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+    public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
         return getResultRegion().supportsDictionaryFormat(keysToVisit);
     }
 
     @Override
-    public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                            @NotNull final OrderedKeys.Iterator knownKeys,
-                                            @NotNull final Index.SequentialBuilder sequentialBuilder) {
-        getResultRegion().gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
+    public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                               @NotNull final OrderedKeys.Iterator knownKeys,
+                                               @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        return getResultRegion().gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
     }
 
     @Override

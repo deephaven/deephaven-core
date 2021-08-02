@@ -192,15 +192,14 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             // Trivially true
             return true;
         }
+        RegionVisitResult result;
         try (final ReadOnlyIndex.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
             keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
             do {
-                if (!lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
-                    return false;
-                }
-            } while (keysToVisit.hasNext());
+                result = lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit);
+            } while (result == RegionVisitResult.CONTINUE);
         }
-        return true;
+        return result != RegionVisitResult.FAILED;
     }
 
     @Override

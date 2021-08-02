@@ -62,9 +62,9 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                            @NotNull final OrderedKeys.Iterator knownKeys,
-                                            @NotNull final Index.SequentialBuilder sequentialBuilder) {
+    public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                               @NotNull final OrderedKeys.Iterator knownKeys,
+                                               @NotNull final Index.SequentialBuilder sequentialBuilder) {
         final long pageFirstKey = firstRow(keysToVisit.currentValue());
         final long pageLastKey = pageFirstKey + dictionary.size() - 1;
         if (knownKeys.peekNextKey() != pageFirstKey) {
@@ -77,6 +77,6 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
                 sequentialBuilder.appendRange(pageFirstKey + knownSize, pageLastKey);
             }
         }
-        advanceToNextPage(keysToVisit);
+        return advanceToNextPage(keysToVisit);
     }
 }

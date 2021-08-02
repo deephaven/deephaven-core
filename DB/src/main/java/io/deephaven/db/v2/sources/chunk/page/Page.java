@@ -134,9 +134,10 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
      * page.
      *
      * @param searchIterator The iterator to advance
+     * @return The result of {@link io.deephaven.db.v2.utils.ReadOnlyIndex.SearchIterator#advance(long)}
      */
     @FinalDefault
-    default void advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {
-        searchIterator.advance(maxRow(searchIterator.currentValue()) + 1);
+    default boolean advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {
+        return searchIterator.advance(maxRow(searchIterator.currentValue()) + 1);
     }
 }

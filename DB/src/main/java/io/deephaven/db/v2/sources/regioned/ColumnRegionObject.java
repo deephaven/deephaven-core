@@ -55,10 +55,12 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * @param keysToVisit Iterator positioned at the first relevant index key belonging to this region.
      *                    Will be advanced to <em>after</em> this region if {@code true} is returned.
      *                    No guarantee is made if {@code false} is returned.
-     * @return Whether this region can supply a dictionary format covering all of its keys in {@code keysToVisit}
+     * @return A {@link RegionVisitResult} specifying {@code FAILED} if this region cannot supply a dictionary,
+     * {@code CONTINUE} if it can and {@code keysToVisit} is <em>not</em> exhausted, and {@code COMPLETE} if it can and
+     * {@code keysToVisit} is exhausted
      */
-    default boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
-        return false;
+    default RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+        return RegionVisitResult.FAILED;
     }
 
     /**
@@ -74,10 +76,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * @param sequentialBuilder Output builder; implementations should append ranges for index keys not found in
      *                          {@code knownKeys}
      * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values index
+     * @return Whether {@code keysToVisit} has been exhausted
      */
-    default void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                             @NotNull final OrderedKeys.Iterator knownKeys,
-                                             @NotNull final Index.SequentialBuilder sequentialBuilder) {
+    default boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                @NotNull final OrderedKeys.Iterator knownKeys,
+                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
         throw new UnsupportedOperationException();
     }
 
@@ -109,9 +112,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         @FinalDefault
-        default boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
-            advanceToNextPage(keysToVisit);
-            return true;
+        default RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+            return advanceToNextPage(keysToVisit) ? RegionVisitResult.CONTINUE : RegionVisitResult.COMPLETE;
         }
 
         @Override
@@ -143,12 +145,12 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                @NotNull final OrderedKeys.Iterator knownKeys,
-                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
             // Nothing to be gathered, we don't include null regions in dictionary values.
-            advanceToNextPage(keysToVisit);
             advanceToNextPage(knownKeys);
+            return advanceToNextPage(keysToVisit);
         }
 
         @Override
@@ -191,15 +193,15 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                @NotNull final OrderedKeys.Iterator knownKeys,
-                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
             final long pageOnlyKey = firstRow(keysToVisit.currentValue());
             if (knownKeys.peekNextKey() != pageOnlyKey) {
                 sequentialBuilder.appendKey(pageOnlyKey);
             }
-            advanceToNextPage(keysToVisit);
             advanceToNextPage(knownKeys);
+            return advanceToNextPage(keysToVisit);
         }
 
         @Override
@@ -230,24 +232,25 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+        public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
+            RegionVisitResult result;
             do {
-                if (!lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
-                    return false;
-                }
-            } while (keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
-            return true;
+                result = lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit);
+            } while (result == RegionVisitResult.CONTINUE && keysToVisit.currentValue() <= pageMaxKey);
+            return result;
         }
 
         @Override
-        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                                @NotNull final OrderedKeys.Iterator knownKeys,
-                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                   @NotNull final OrderedKeys.Iterator knownKeys,
+                                                   @NotNull final Index.SequentialBuilder sequentialBuilder) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
+            boolean moreKeysToVisit;
             do {
-                lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
-            } while (keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
+                moreKeysToVisit = lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
+            } while (moreKeysToVisit && keysToVisit.currentValue() <= pageMaxKey);
+            return moreKeysToVisit;
         }
 
         @Override

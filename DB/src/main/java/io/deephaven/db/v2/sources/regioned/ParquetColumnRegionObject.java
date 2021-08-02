@@ -6,8 +6,6 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.db.v2.sources.chunk.page.Page;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,12 +43,11 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
     }
 
     @Override
-    public boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+    public RegionVisitResult supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
         if (!columnChunkPageStore.usesDictionaryOnEveryPage()) {
-            return false;
+            return RegionVisitResult.FAILED;
         }
-        advanceToNextPage(keysToVisit);
-        return true;
+        return advanceToNextPage(keysToVisit) ? RegionVisitResult.CONTINUE : RegionVisitResult.COMPLETE;
     }
 
     @Override
