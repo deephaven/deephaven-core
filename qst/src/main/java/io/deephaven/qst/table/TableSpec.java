@@ -36,8 +36,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
         return EmptyTable.of(size);
     }
 
-    static TableSpec merge(TableSpec... tables) {
-        return merge(Arrays.asList(tables));
+    static MergeTable merge(TableSpec first, TableSpec second, TableSpec... rest) {
+        return MergeTable.builder().addTables(first, second).addTables(rest).build();
     }
 
     static TableSpec merge(Collection<? extends TableSpec> tables) {

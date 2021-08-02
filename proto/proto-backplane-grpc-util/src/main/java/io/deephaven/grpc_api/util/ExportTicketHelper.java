@@ -6,6 +6,7 @@ package io.deephaven.grpc_api.util;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
+import io.deephaven.proto.backplane.grpc.TableReference;
 import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteBuffer;
@@ -139,6 +140,22 @@ public class ExportTicketHelper {
     public static String toReadableString(final Flight.Ticket ticket) {
         return toReadableString(
             ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
+    }
+
+    /**
+     * Convenience method to create a human readable string from a table reference.
+     *
+     * @param tableReference the table reference
+     * @return a log-friendly string
+     */
+    public static String toReadableString(final TableReference tableReference) {
+        if (tableReference.hasTicket()) {
+            return toReadableString(tableReference.getTicket());
+        }
+        if (tableReference.hasBatchOffset()) {
+            return String.format("batchOffset[%d]", tableReference.getBatchOffset());
+        }
+        throw new IllegalArgumentException("Unexpected TableReference type");
     }
 
     /**

@@ -5,6 +5,8 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import javax.lang.model.SourceVersion;
+
 /**
  * A labeled table is {@link #label() label} and {@link #table() table} pair.
  */
@@ -23,10 +25,9 @@ public abstract class LabeledTable {
     public abstract TableSpec table();
 
     @Check
-    final void checkNotEmpty() {
-        if (label().isEmpty()) {
-            throw new IllegalArgumentException(
-                "label is empty, must provide non-empty label for LabeledTable");
+    final void checkLabel() {
+        if (!SourceVersion.isName(label())) {
+            throw new IllegalArgumentException("label is not a valid name");
         }
     }
 }

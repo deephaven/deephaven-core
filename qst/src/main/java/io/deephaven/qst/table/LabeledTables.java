@@ -55,6 +55,10 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
 
     abstract Map<String, TableSpec> map();
 
+    public final int size() {
+        return map().size();
+    }
+
     public final Collection<TableSpec> tables() {
         return map().values();
     }
