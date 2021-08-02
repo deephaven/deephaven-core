@@ -18,7 +18,6 @@ from ..conversion_utils import _isJavaType, _isStr
 
 _java_type_ = None  # None until the first _defineSymbols() call
 
-
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
@@ -51,6 +50,7 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+
 @_passThrough
 def dictToProperties(dict):
     JProps = jpy.get_type("java.util.Properties")
@@ -59,10 +59,11 @@ def dictToProperties(dict):
         r.setProperty(key, value)
     return r
 
+
 @_passThrough
 def _custom_avroSchemaToColumnDefinitions(*args):
     if len(args) == 0:
-        raise Exception('not enough arguments'
+        raise Exception('not enough arguments')
     if len(args) == 1:
         return _java_type_.avroSchemaToColumnDefinitions(args[0])
     if len(args) == 2:
@@ -74,8 +75,9 @@ def _custom_avroSchemaToColumnDefinitions(*args):
         return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
     raise Exception('too many arguments: ' + len(args))
 
+
 @_passThrough
-def _custom_simpleConsumeToTable(*args):
+def _commonKafkaArgs(args):
     if len(args) < 2:
         raise Exception('not enough arguments')
     kafkaConsumerPropertiesDict = args[0]
@@ -105,12 +107,25 @@ def _custom_simpleConsumeToTable(*args):
     else:
         partitionToInitialOffset = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
 
-    return _java_type_.simpleConsumeToTable(
+    return [
         dictToProperties(kafkaConsumerPropertiesDict),
         topicName,
         partitionFilter,
-        partitionToInitialOffset)
+        partitionToInitialOffset
+    ]
 
+
+@_passThrough
+def _custom_simpleConsumeToTable(*args):
+    r = commonKafkaArgs(args)
+    return _java_type_.simpleConsumeToTable(r[0], r[1], r[2], r[3])
+
+
+@_passThrough
+def genericAvroConsumeToTableOnlyValues(*args):
+    r = _commonKafkaArgs(args[0:4])
+    mapping = getattr(_java_type_, 'DIRECT_MAPPING')
+    return _java_type_.genericAvroConsumeToTable(r[0], r[1], r[2], r[3], None, None, args[4], mapping)
 
 # Define all of our functionality, if currently possible
 try:
@@ -122,11 +137,17 @@ except Exception as e:
 def avroSchemaToColumnDefinitions(*args):
     """
     *Overload 1*  
+      :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
       :param schema: org.apache.avro.Schema
       :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
       :return: io.deephaven.db.tables.ColumnDefinition<?>[]
       
     *Overload 2*  
+      :param schema: org.apache.avro.Schema
+      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+      
+    *Overload 3*  
       :param schema: org.apache.avro.Schema
       :return: io.deephaven.db.tables.ColumnDefinition<?>[]
     """
@@ -143,6 +164,23 @@ def fieldNameMappingFromParallelArrays(fieldNames, columnNames):
     """
     
     return _java_type_.fieldNameMappingFromParallelArrays(fieldNames, columnNames)
+
+
+@_passThrough
+def genericAvroConsumeToTable(kafkaConsumerProperties, topic, partitionFilter, partitionToInitialOffset, keySchema, keyFieldNameMapping, valueSchema, valueFieldNameMapping):
+    """
+    :param kafkaConsumerProperties: java.util.Properties
+    :param topic: java.lang.String
+    :param partitionFilter: java.util.function.IntPredicate
+    :param partitionToInitialOffset: java.util.function.IntToLongFunction
+    :param keySchema: org.apache.avro.Schema
+    :param keyFieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+    :param valueSchema: org.apache.avro.Schema
+    :param valueFieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+    :return: io.deephaven.db.tables.Table
+    """
+    
+    return _java_type_.genericAvroConsumeToTable(kafkaConsumerProperties, topic, partitionFilter, partitionToInitialOffset, keySchema, keyFieldNameMapping, valueSchema, valueFieldNameMapping)
 
 
 @_passThrough

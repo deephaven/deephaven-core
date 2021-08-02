@@ -27,7 +27,7 @@ def delivery_report(err, msg):
 
 
 avroProducer = AvroProducer({
-    'bootstrap.servers': 'localhost:29092',
+    'bootstrap.servers': 'localhost:9092',
     'on_delivery': delivery_report,
     'schema.registry.url': 'http://localhost:8081/api/ccompat'
 }, default_value_schema=value_schema)
@@ -54,6 +54,5 @@ for value_arg in sys.argv[3:]:
         exec("v=" + cast)
         value[s[0]] = v
 
-sys.exit(0)
 avroProducer.produce(topic=topic_name, key=None, value=value)
 avroProducer.flush()

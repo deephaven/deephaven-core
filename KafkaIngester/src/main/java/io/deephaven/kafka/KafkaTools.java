@@ -1,6 +1,7 @@
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
+import io.apicurio.registry.utils.serde.AvroKafkaDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -11,6 +12,7 @@ import io.deephaven.db.v2.utils.DynamicTableWriter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter;
+import io.deephaven.kafka.ingest.GenericRecordConsumerRecordToTableWriterAdapter;
 import io.deephaven.kafka.ingest.KafkaIngester;
 import io.deephaven.kafka.ingest.SimpleConsumerRecordToTableWriterAdapter;
 import org.apache.avro.Schema;
@@ -79,7 +81,8 @@ public class KafkaTools {
         }
     }
 
-    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema, final Function<String, String> fieldNameMapping) {
+    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(
+            final Map<String, String> mappedOut, final Schema schema, final Function<String, String> fieldNameMapping) {
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Union Avro Schemas are not supported");
         }
@@ -93,7 +96,7 @@ public class KafkaTools {
         final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
         for (final Schema.Field field : fields) {
             final Schema fieldSchema = field.schema();
-            final String fieldName = fieldSchema.getName();
+            final String fieldName = field.name();
             final String mappedName = fieldNameMapping.apply(fieldName);
             final Schema.Type fieldType = fieldSchema.getType();
             switch (fieldType) {
@@ -126,13 +129,123 @@ public class KafkaTools {
                 default:
                     throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
             }
+            if (mappedOut != null) {
+                mappedOut.put(fieldName, mappedName);
+            }
         }
         Assert.eq(nCols, "nCols", c, "c");
         return columns;
     }
 
+    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema, final Function<String, String> fieldNameMapping) {
+        return avroSchemaToColumnDefinitions(null, schema, fieldNameMapping);
+    }
+
     public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema) {
-        return avroSchemaToColumnDefinitions(schema, Function.identity());
+        return avroSchemaToColumnDefinitions(schema, DIRECT_MAPPING);
+    }
+
+    public static Table genericAvroConsumeToTable(
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final Schema keySchema,
+            final Function<String, String> keyFieldNameMapping,
+            final Schema valueSchema,
+            final Function<String, String> valueFieldNameMapping) {
+        if (keySchema == null && valueSchema == null) {
+            throw new IllegalArgumentException("key and value schemas can't be both null");
+        }
+
+        final ColumnDefinition<?>[] keyColumns;
+        final Map<String, String> keyColumnsMap;
+        if (keySchema != null) {
+            keyColumnsMap = new HashMap<>();
+            keyColumns = avroSchemaToColumnDefinitions(keyColumnsMap, keySchema, keyFieldNameMapping);
+        } else {
+            keyColumnsMap = Collections.emptyMap();
+            keyColumns = null;
+        }
+
+        final ColumnDefinition<?>[] valueColumns;
+        final Map<String, String> valueColumnsMap;
+        if (valueSchema != null) {
+            valueColumnsMap = new HashMap<>();
+            valueColumns = avroSchemaToColumnDefinitions(valueColumnsMap, valueSchema, valueFieldNameMapping);
+        } else {
+            valueColumnsMap = Collections.emptyMap();
+            valueColumns = null;
+        }
+
+        final int nCols = 3 +
+                ((keySchema != null) ? keyColumns.length : 0) +
+                ((valueSchema != null) ? valueColumns.length : 0);
+        final ColumnDefinition<?>[] allColumns = new ColumnDefinition<?>[nCols];
+        int c = 0;
+        final ColumnDefinition<?> partitionColumn = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME);
+        allColumns[c++] = (partitionFilter == ALL_PARTITIONS)
+                ? partitionColumn
+                : partitionColumn.withPartitioning()
+                ;
+        allColumns[c++] = ColumnDefinition.ofLong(OFFSET_COLUMN_NAME);
+        allColumns[c++] = ColumnDefinition.fromGenericType(TIMESTAMP_COLUMN_NAME, DBDateTime.class);
+        if (keySchema != null) {
+            System.arraycopy(keyColumns, 0, allColumns, c, keyColumns.length);
+            c += keyColumns.length;
+        }
+        if (valueSchema != null) {
+            System.arraycopy(valueColumns, 0, allColumns, c, valueColumns.length);
+            c += valueColumns.length;
+        }
+        Assert.eq(nCols, "nCols", c, "c");
+        final TableDefinition tableDefinition = new TableDefinition(allColumns);
+        final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
+        final GenericRecordConsumerRecordToTableWriterAdapter adapter = GenericRecordConsumerRecordToTableWriterAdapter.make(
+                tableWriter,
+                KAFKA_PARTITION_COLUMN_NAME,
+                OFFSET_COLUMN_NAME,
+                TIMESTAMP_COLUMN_NAME,
+                null,
+                keyColumnsMap,
+                valueColumnsMap);
+
+        if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+            if (keySchema != null) {
+                kafkaConsumerProperties.setProperty(
+                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
+            } else {
+                kafkaConsumerProperties.setProperty(
+                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+            }
+        }
+
+        if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+            if (keySchema != null) {
+                kafkaConsumerProperties.setProperty(
+                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
+            } else {
+                kafkaConsumerProperties.setProperty(
+                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+            }
+        }
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                kafkaConsumerProperties,
+                topic,
+                partitionFilter,
+                (int partition) -> (ConsumerRecord<?, ?> record) -> {
+                    try {
+                        adapter.consumeRecord(record);
+                    } catch (IOException ex) {
+                        throw new UncheckedDeephavenException(ex);
+                    }
+                },
+                partitionToInitialOffset
+        );
+        ingester.start();
+        return tableWriter.getTable();
     }
 
     /**
@@ -232,6 +345,7 @@ public class KafkaTools {
     public static final IntPredicate ALL_PARTITIONS = KafkaIngester.ALL_PARTITIONS;
     public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = KafkaIngester.ALL_PARTITIONS_SEEK_TO_BEGINNING;
     public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = KafkaIngester.ALL_PARTITIONS_DONT_SEEK;
+    public static final Function<String, String> DIRECT_MAPPING = Function.identity();
 
     //
     // For the benefit of our python integration
