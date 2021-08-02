@@ -104,13 +104,13 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
 
         public Parameters(final long pageMask, final int maximumRegionCount, final long maximumRegionSize) {
             this.pageMask = validateMask(pageMask, "page");
-            this.maximumRegionCount = Require.gtZero(maximumRegionCount, "maximum region count");
-            this.maximumRegionSize = Require.gtZero(maximumRegionSize, "maximum region size");
+            this.maximumRegionCount = Require.geqZero(maximumRegionCount, "maximum region count");
+            this.maximumRegionSize = Require.geqZero(maximumRegionSize, "maximum region size");
 
-            final int regionNumBits = MathUtil.ceilLog2(maximumRegionCount);
+            final int regionNumBits = maximumRegionCount == 0 ? 0 : MathUtil.ceilLog2(maximumRegionCount);
             regionMask = validateMask(pageMask >>> regionNumBits, "region");
             regionMaskNumBits = MathUtil.ceilLog2(regionMask);
-            final long maxRegionSizeNumBits = MathUtil.ceilLog2(maximumRegionSize);
+            final long maxRegionSizeNumBits = maximumRegionSize == 0 ? 0 : MathUtil.ceilLog2(maximumRegionSize);
             if (maxRegionSizeNumBits > regionMaskNumBits) {
                 throw new IllegalArgumentException(String.format(
                         "Maximum region size %,d is too large to access with page mask %#016X and maximum region count %,d",

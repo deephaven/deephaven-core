@@ -52,9 +52,16 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     public AbstractColumnSource(@NotNull final Class<T> type, @Nullable final Class<?> elementType) {
-        final Class unboxedType = TypeUtils.getUnboxedType(type);
-        //noinspection unchecked
-        this.type = (unboxedType != null && type != Boolean.class && type != boolean.class ? unboxedType : type);
+        if (type == boolean.class) {
+            //noinspection unchecked
+            this.type = (Class<T>) Boolean.class;
+        } else if (type == Boolean.class) {
+            this.type = type;
+        } else {
+            final Class unboxedType = TypeUtils.getUnboxedType(type);
+            //noinspection unchecked
+            this.type = unboxedType != null ? unboxedType : type;
+        }
         if (type.isArray()) {
             componentType = type.getComponentType();
         } else if (DbArrayBase.class.isAssignableFrom(type)) {

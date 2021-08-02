@@ -62,7 +62,7 @@ class ParquetTableLocation extends AbstractTableLocation {
                 maxRowCount = Math.max(maxRowCount, reader.numRows());
             }
             regionParameters = new RegionedPageStore.Parameters(
-                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,  rowGroupCount, maxRowCount);
+                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
 
             parquetColumnNameToPath = new HashMap<>();
             for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {

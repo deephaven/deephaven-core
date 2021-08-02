@@ -9,7 +9,7 @@ public class ChunkAdapter<T> {
     public static <T> ChunkAdapter<T> create(Class type, final WritableChunkSink baseline,
                                              final WritableChunkSink delta) {
         //noinspection unchecked
-        return type == boolean.class ? (ChunkAdapter<T>)new BooleanChunkAdapter(baseline, delta) :
+        return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta) :
                 new ChunkAdapter<>(baseline, delta);
     }
 
