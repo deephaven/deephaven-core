@@ -17,7 +17,6 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
         implements ColumnRegionByte<ATTR> {
 
     public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        // TODO-RWC: We need to refactor things so that we derive the region bits and mask from the columnChunkReaders statically before constructing stuff.
         super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
