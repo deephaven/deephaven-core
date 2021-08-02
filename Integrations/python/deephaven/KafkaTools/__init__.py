@@ -60,6 +60,21 @@ def dictToProperties(dict):
     return r
 
 @_passThrough
+def _custom_avroSchemaToColumnDefinitions(*args):
+    if len(args) == 0:
+        raise Exception('not enough arguments'
+    if len(args) == 1:
+        return _java_type_.avroSchemaToColumnDefinitions(args[0])
+    if len(args) == 2:
+        schema = args[0]
+        dict = args[1];
+        fieldNamesArray = jpy.array('java.lang.String', dict.keys())
+        columnNamesArray = jpy.array('java.lang.String', dict.values())
+        mapping = _java_type_.fieldNameMappingFromParallelArrays(fieldNamesArray, columnNamesArray)
+        return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
+    raise Exception('too many arguments: ' + len(args))
+
+@_passThrough
 def _custom_simpleConsumeToTable(*args):
     if len(args) < 2:
         raise Exception('not enough arguments')
@@ -102,6 +117,33 @@ try:
     _defineSymbols()
 except Exception as e:
     pass
+
+@_passThrough
+def avroSchemaToColumnDefinitions(*args):
+    """
+    *Overload 1*  
+      :param schema: org.apache.avro.Schema
+      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+      
+    *Overload 2*  
+      :param schema: org.apache.avro.Schema
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+    """
+    
+    return _custom_avroSchemaToColumnDefinitions(*args)
+
+
+@_passThrough
+def fieldNameMappingFromParallelArrays(fieldNames, columnNames):
+    """
+    :param fieldNames: java.lang.String[]
+    :param columnNames: java.lang.String[]
+    :return: java.util.function.Function<java.lang.String,java.lang.String>
+    """
+    
+    return _java_type_.fieldNameMappingFromParallelArrays(fieldNames, columnNames)
+
 
 @_passThrough
 def getAvroSchema(schemaServerUrl, resourceName, version):

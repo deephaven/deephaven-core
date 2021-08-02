@@ -4,7 +4,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.stream.StreamConsumer;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -38,7 +37,6 @@ public class KafkaIngester {
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
             KafkaIngester.class, "maxErrs", 500);
     private final KafkaConsumer<?, ?> consumer;
-    private StreamConsumer streamConsumer;
     @NotNull
     private final Logger log;
     private final String topic;

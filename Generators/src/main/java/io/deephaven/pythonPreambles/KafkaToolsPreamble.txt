@@ -58,6 +58,21 @@ def dictToProperties(dict):
     return r
 
 @_passThrough
+def _custom_avroSchemaToColumnDefinitions(*args):
+    if len(args) == 0:
+        raise Exception('not enough arguments'
+    if len(args) == 1:
+        return _java_type_.avroSchemaToColumnDefinitions(args[0])
+    if len(args) == 2:
+        schema = args[0]
+        dict = args[1];
+        fieldNamesArray = jpy.array('java.lang.String', dict.keys())
+        columnNamesArray = jpy.array('java.lang.String', dict.values())
+        mapping = _java_type_.fieldNameMappingFromParallelArrays(fieldNamesArray, columnNamesArray)
+        return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
+    raise Exception('too many arguments: ' + len(args))
+
+@_passThrough
 def _custom_simpleConsumeToTable(*args):
     if len(args) < 2:
         raise Exception('not enough arguments')

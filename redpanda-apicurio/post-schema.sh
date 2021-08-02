@@ -1,1 +1,0 @@
-curl -X POST -H "Content-type: application/json; artifactType=AVRO" -H "X-Registry-ArtifactId: share_price_record" -H "X-Registry-Version: 1" --data-binary "@examples/avro/share-price.json" http://localhost:8081/api/artifacts

@@ -34,8 +34,8 @@ import org.apache.http.impl.client.HttpClients;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Properties;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.IntToLongFunction;
 
@@ -54,9 +54,9 @@ public class KafkaTools {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
 
-    public static org.apache.avro.Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
+    public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
         String action = "setup http client";
-        try (CloseableHttpClient client = HttpClients.custom().build()) {
+        try (final CloseableHttpClient client = HttpClients.custom().build()) {
             final String requestStr = schemaServerUrl + "/subjects/" + resourceName + "/versions/" + version + "/schema";
             final HttpUriRequest request = RequestBuilder.get().setUri(requestStr).build();
             action = "execute schema request " + requestStr;
@@ -77,6 +77,62 @@ public class KafkaTools {
         } catch (Exception e) {
             throw new UncheckedDeephavenException("Exception while trying to " + action, e);
         }
+    }
+
+    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema, final Function<String, String> fieldNameMapping) {
+        if (schema.isUnion()) {
+            throw new UnsupportedOperationException("Union Avro Schemas are not supported");
+        }
+        final Schema.Type type = schema.getType();
+        if (type != Schema.Type.RECORD) {
+            throw new IllegalArgumentException("The schema is not a toplevel redcord definition.");
+        }
+        final List<Schema.Field> fields = schema.getFields();
+        final int nCols = fields.size();
+        int c = 0;
+        final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
+        for (final Schema.Field field : fields) {
+            final Schema fieldSchema = field.schema();
+            final String fieldName = fieldSchema.getName();
+            final String mappedName = fieldNameMapping.apply(fieldName);
+            final Schema.Type fieldType = fieldSchema.getType();
+            switch (fieldType) {
+                case BOOLEAN:
+                    columns[c++] = ColumnDefinition.ofBoolean(mappedName);
+                    break;
+                case INT:
+                    columns[c++] = ColumnDefinition.ofInt(mappedName);
+                    break;
+                case LONG:
+                    columns[c++] = ColumnDefinition.ofLong(mappedName);
+                    break;
+                case FLOAT:
+                    columns[c++] = ColumnDefinition.ofFloat(mappedName);
+                    break;
+                case DOUBLE:
+                    columns[c++] = ColumnDefinition.ofDouble(mappedName);
+                    break;
+                case STRING:
+                    columns[c++] = ColumnDefinition.ofString(mappedName);
+                    break;
+                case MAP:
+                case ENUM:
+                case NULL:
+                case ARRAY:
+                case RECORD:
+                case BYTES:
+                case FIXED:
+                case UNION:
+                default:
+                    throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
+            }
+        }
+        Assert.eq(nCols, "nCols", c, "c");
+        return columns;
+    }
+
+    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema) {
+        return avroSchemaToColumnDefinitions(schema, Function.identity());
     }
 
     /**
@@ -177,14 +233,16 @@ public class KafkaTools {
     public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = KafkaIngester.ALL_PARTITIONS_SEEK_TO_BEGINNING;
     public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = KafkaIngester.ALL_PARTITIONS_DONT_SEEK;
 
+    //
     // For the benefit of our python integration
+    //
+
     @SuppressWarnings("unused")
     public static IntPredicate partitionFilterFromArray(final int[] partitions) {
         Arrays.sort(partitions);
         return (final int p) -> Arrays.binarySearch(partitions, p) >= 0;
     }
 
-    // For the benefit of our python integration
     @SuppressWarnings("unused")
     public static IntToLongFunction partitionToOffsetFromParallelArrays(
             final int[] partitions,
@@ -197,5 +255,19 @@ public class KafkaTools {
             map.put(partitions[i], offsets[i]);
         }
         return map::get;
+    }
+
+    @SuppressWarnings("unused")
+    public static Function<String, String> fieldNameMappingFromParallelArrays(
+            final String[] fieldNames,
+            final String[] columnNames) {
+        if (fieldNames.length != columnNames.length) {
+            throw new IllegalArgumentException("lengths of array arguments do not match");
+        }
+        final Map<String, String> map = new HashMap(fieldNames.length);
+        for (int i = 0; i < fieldNames.length; ++i) {
+            map.put(fieldNames[i], columnNames[i]);
+        }
+        return (final String fieldName) -> map.getOrDefault(fieldName, fieldName);
     }
 }
