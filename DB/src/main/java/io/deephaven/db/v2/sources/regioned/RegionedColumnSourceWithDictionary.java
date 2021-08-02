@@ -163,7 +163,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         try (final ReadOnlyIndex.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
             keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
             do {
-                if (lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
+                if (!lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
                     return false;
                 }
             } while (keysToVisit.hasNext());
