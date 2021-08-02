@@ -229,7 +229,7 @@ public class TestChunkedRegionedOperations {
         final TableMap partitionedInputData = inputData.byExternal("PC");
         ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-                partitionedDataDefinition,
+                partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
                         .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
@@ -240,7 +240,7 @@ public class TestChunkedRegionedOperations {
         final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").byExternal("PC");
         ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-                partitionedMissingDataDefinition,
+                partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
                         .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
