@@ -8,20 +8,21 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.WireFormat;
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageFieldNode;
-import io.deephaven.barrage.flatbuf.BarrageRecordBatch;
-import io.deephaven.barrage.flatbuf.Buffer;
-import io.deephaven.barrage.flatbuf.FieldNode;
-import io.deephaven.barrage.flatbuf.Message;
-import io.deephaven.barrage.flatbuf.MessageHeader;
-import io.deephaven.barrage.flatbuf.MetadataVersion;
-import io.deephaven.barrage.flatbuf.RecordBatch;
-import io.deephaven.base.verify.Assert;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
+import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
+import org.apache.arrow.flatbuf.Buffer;
+import org.apache.arrow.flatbuf.FieldNode;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MetadataVersion;
+import org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
 import io.deephaven.db.v2.utils.Index;
@@ -32,8 +33,8 @@ import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.BarrageData;
 import io.grpc.Drainable;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
@@ -55,8 +56,10 @@ import static io.deephaven.grpc_api_client.barrage.chunk.BaseChunkInputStreamGen
 public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
 
+    public static final long FLATBUFFER_MAGIC = 0x6E687064;
+
     public interface View {
-        InputStream getInputStream() throws IOException;
+        void forEachStream(Consumer<InputStream> visitor) throws IOException;
     }
 
     @Singleton
@@ -73,23 +76,17 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         public View getSchemaView(final ChunkInputStreamGenerator.Options options, final TableDefinition table, final Map<String, Object> attributes) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
-            builder.finish(wrapInMessage(builder, schemaOffset, BarrageStreamGenerator.SCHEMA_TYPE_ID));
+            builder.finish(wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
         }
     }
 
-    public static final byte SCHEMA_TYPE_ID = 1;
-    public static final byte BARRAGE_RECORD_BATCH_TYPE_ID = 6;
-    public static final short BARRAGE_RECORD_BATCH_VERSION = 0;
-
     public static class ModColumnData {
         public final IndexGenerator rowsModified;
-        public final IndexGenerator rowsIncluded;
         public final ChunkInputStreamGenerator data;
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new IndexGenerator(col.rowsModified);
-            rowsIncluded = new IndexGenerator(col.rowsIncluded);
             data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(), col.type, col.data);
         }
     }
@@ -165,27 +162,40 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
                 mcd.rowsModified.close();
-                mcd.rowsIncluded.close();
                 mcd.data.close();
             }
         }
     }
 
     /**
+     * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
+     *
      * @param options serialization options for this specific view
-     * @param isInitialSnapshot is this the first snapshot for the listener
+     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
      * @param viewport is the position-space viewport
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
-     * @return a view wrapping the input parameters in the context of this generator
+     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
     public SubView getSubView(final ChunkInputStreamGenerator.Options options,
-                           final boolean isInitialSnapshot,
-                           @Nullable final Index viewport,
-                           @Nullable final Index keyspaceViewport,
-                           @Nullable final BitSet subscribedColumns) {
+                              final boolean isInitialSnapshot,
+                              @Nullable final Index viewport,
+                              @Nullable final Index keyspaceViewport,
+                              @Nullable final BitSet subscribedColumns) {
         return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
+    }
+
+    /**
+     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+     *
+     * @param options serialization options for this specific view
+     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
+     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     */
+    @Override
+    public SubView getSubView(ChunkInputStreamGenerator.Options options, boolean isInitialSnapshot) {
+        return getSubView(options, isInitialSnapshot, null, null, null);
     }
 
     public static class SubView implements View {
@@ -195,6 +205,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         public final Index viewport;
         public final Index keyspaceViewport;
         public final BitSet subscribedColumns;
+        public final boolean hasAddBatch;
+        public final boolean hasModBatch;
 
         public SubView(final BarrageStreamGenerator generator,
                        final ChunkInputStreamGenerator.Options options,
@@ -208,11 +220,21 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             this.viewport = viewport;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
+            this.hasModBatch = generator.doesSubViewHaveMods(this);
+            // require an add batch if the mod batch is being skipped
+            this.hasAddBatch = !this.hasModBatch || generator.rowsIncluded.original.nonempty();
         }
 
         @Override
-        public InputStream getInputStream() throws IOException {
-            return generator.getInputStream(this);
+        public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            ByteBuffer metadata = generator.getMetadata(this);
+            if (hasAddBatch) {
+                visitor.accept(generator.getInputStream(this, metadata, generator::appendAddColumns));
+                metadata = null;
+            }
+            if (hasModBatch) {
+                visitor.accept(generator.getInputStream(this, metadata, generator::appendModColumns));
+            }
         }
 
         public boolean isViewport() {
@@ -224,23 +246,42 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         final byte[] msgBytes;
 
         public SchemaView(final ByteBuffer buffer) {
-            this.msgBytes = BarrageData.newBuilder()
+            this.msgBytes = Flight.FlightData.newBuilder()
                     .setDataHeader(ByteStringAccess.wrap(buffer))
                     .build()
                     .toByteArray();
         }
 
         @Override
-        public InputStream getInputStream() {
-            return new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length);
+        public void forEachStream(Consumer<InputStream> visitor) {
+            visitor.accept(new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
         }
     }
 
     /**
+     * Treats the visitor with FlightData InputStream's to fulfill a DoGet.
+     */
+    public void forEachDoGetStream(final SubView view, final Consumer<InputStream> visitor) throws IOException {
+        visitor.accept(getInputStream(view, null, view.generator::appendAddColumns));
+    }
+
+    @FunctionalInterface
+    private interface ColumnVisitor {
+        long visit(final SubView view,
+                   final Consumer<InputStream> addStream,
+                   final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+                   final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
+    }
+
+    /**
      * Returns an InputStream of the message filtered to the viewport.
+     *
+     * @param view the view of the overall chunk to generate a RecordBatch for
+     * @param metadata the optional flight data metadata to attach to the message
+     * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final SubView view) throws IOException {
+    private InputStream getInputStream(final SubView view, final ByteBuffer metadata, final ColumnVisitor columnVisitor) throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
 
@@ -266,132 +307,59 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             }
         };
 
-        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        final FlatBufferBuilder header = new FlatBufferBuilder();
 
-        int effectiveViewportOffset = 0;
-        if (isSnapshot && view.isViewport()) {
-            try (final IndexGenerator viewportGen = new IndexGenerator(view.viewport)) {
-                effectiveViewportOffset = viewportGen.addToFlatBuffer(builder);
-            }
-        }
-
-        int effectiveColumnSetOffset = 0;
-        if (isSnapshot && view.subscribedColumns != null) {
-            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(builder);
-        }
-
-        final int rowsAddedOffset;
-        if (isSnapshot && !view.isInitialSnapshot) {
-            // client's don't need/want to receive the full index on every snapshot
-            rowsAddedOffset = EmptyIndexGenerator.INSTANCE.addToFlatBuffer(builder);
-        } else {
-            rowsAddedOffset = rowsAdded.addToFlatBuffer(builder);
-        }
-
-        final int rowsRemovedOffset = rowsRemoved.addToFlatBuffer(builder);
-        final int shiftDataOffset = shifted.addToFlatBuffer(builder);
-
-        // Added Chunk Data:
-        final Index myAddedOffsets;
-        int addedRowsIncludedOffset = 0;
-        if (view.isViewport()) {
-            // only include added rows that are within the viewport
-            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport.intersect(rowsIncluded.original));
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, builder);
-        } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-            // there are scoped rows included in the chunks that need to be removed
-            myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
-        } else {
-            // use chunk data as-is
-            myAddedOffsets = null;
-        }
-
+        final long numRows;
         final int nodesOffset;
         final int buffersOffset;
-        final int numOffsets = addColumnData.length + modColumnData.length;
-        try (final WritableIntChunk<Attributes.Values> nodeOffsets = WritableIntChunk.makeWritableChunk(numOffsets);
-             final WritableObjectChunk<ChunkInputStreamGenerator.BufferInfo, Attributes.Values> bufferInfos = WritableObjectChunk.makeWritableChunk(numOffsets * 3)) {
+        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Attributes.Values> nodeOffsets = WritableObjectChunk.makeWritableChunk(addColumnData.length);
+             final WritableLongChunk<Attributes.Values> bufferInfos = WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, 0, 0));
+                    (numElements, nullCount) -> nodeOffsets.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
                 totalBufferLength.add(length);
-                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
+                bufferInfos.add(length);
             };
+            numRows = columnVisitor.visit(view, addStream, fieldNodeListener, bufferListener);
 
-            // add the add-column streams
-            for (final ChunkInputStreamGenerator col : addColumnData) {
-                final ChunkInputStreamGenerator.DrainableColumn drainableColumn = col.getInputStream(view.options, myAddedOffsets);
-                addStream.accept(drainableColumn);
-                drainableColumn.visitFieldNodes(fieldNodeListener);
-                drainableColumn.visitBuffers(bufferListener);
-            }
-
-            // now add mod-column streams, and write the mod column indexes
-            for (final ModColumnData mcd : modColumnData) {
-                final int modRowOffset = mcd.rowsModified.addToFlatBuffer(builder);
-
-                Index myModOffsets = null;
-                final int myModRowOffset;
-                if (view.isViewport()) {
-                    // only include added rows that are within the viewport
-                    myModOffsets = mcd.rowsIncluded.original.invert(view.keyspaceViewport.intersect(mcd.rowsIncluded.original));
-                    myModRowOffset = mcd.rowsIncluded.addToFlatBuffer(view.keyspaceViewport, builder);
-                } else {
-                    myModRowOffset = 0;
-                }
-
-                final ChunkInputStreamGenerator.FieldNodeListener modFieldNodeListener =
-                        (numElements, nullCount) -> nodeOffsets.add(BarrageFieldNode.createBarrageFieldNode(builder, numElements, nullCount, modRowOffset, myModRowOffset));
-
-                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                        mcd.data.getInputStream(view.options, myModOffsets);
-
-                addStream.accept(drainableColumn);
-                drainableColumn.visitFieldNodes(modFieldNodeListener);
-                drainableColumn.visitBuffers(bufferListener);
-            }
-
-            BarrageRecordBatch.startNodesVector(builder, nodeOffsets.size());
+            RecordBatch.startNodesVector(header, nodeOffsets.size());
             for (int i = nodeOffsets.size() - 1; i >= 0; --i) {
-                builder.addOffset(nodeOffsets.get(i));
+                final ChunkInputStreamGenerator.FieldNodeInfo node = nodeOffsets.get(i);
+                FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
-            nodesOffset = builder.endVector();
+            nodesOffset = header.endVector();
 
-            BarrageRecordBatch.startBuffersVector(builder, bufferInfos.size());
+            RecordBatch.startBuffersVector(header, bufferInfos.size());
             for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(bufferInfos.get(i).length);
-                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
+                totalBufferLength.subtract(bufferInfos.get(i));
+                Buffer.createBuffer(header, totalBufferLength.longValue(), bufferInfos.get(i));
             }
-            buffersOffset = builder.endVector();
+            buffersOffset = header.endVector();
         }
 
-        BarrageRecordBatch.startBarrageRecordBatch(builder);
-        BarrageRecordBatch.addIsSnapshot(builder, isSnapshot);
-        BarrageRecordBatch.addFirstSeq(builder, firstSeq);
-        BarrageRecordBatch.addLastSeq(builder, lastSeq);
-        BarrageRecordBatch.addEffectiveViewport(builder, effectiveViewportOffset);
-        BarrageRecordBatch.addEffectiveColumnSet(builder, effectiveColumnSetOffset);
-        BarrageRecordBatch.addAddedRows(builder, rowsAddedOffset);
-        BarrageRecordBatch.addRemovedRows(builder, rowsRemovedOffset);
-        BarrageRecordBatch.addShiftData(builder, shiftDataOffset);
-        BarrageRecordBatch.addAddedRowsIncluded(builder, addedRowsIncludedOffset);
-        BarrageRecordBatch.addNodes(builder, nodesOffset);
-        BarrageRecordBatch.addBuffers(builder, buffersOffset);
-        final int headerOffset = BarrageRecordBatch.endBarrageRecordBatch(builder);
+        RecordBatch.startRecordBatch(header);
+        RecordBatch.addNodes(header, nodesOffset);
+        RecordBatch.addBuffers(header, buffersOffset);
+        RecordBatch.addLength(header, numRows);
+        final int headerOffset = RecordBatch.endRecordBatch(header);
 
-        builder.finish(wrapInMessage(builder, headerOffset, BARRAGE_RECORD_BATCH_TYPE_ID, size.intValue()));
+        header.finish(wrapInMessage(header, headerOffset, org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
             final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
 
-            cos.writeByteBuffer(BarrageData.DATA_HEADER_FIELD_NUMBER, builder.dataBuffer().slice());
+            cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, header.dataBuffer().slice());
+            if (metadata != null) {
+                cos.writeByteBuffer(Flight.FlightData.APP_METADATA_FIELD_NUMBER, metadata);
+            }
 
-            cos.writeTag(BarrageData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
+            cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
             cos.writeUInt32NoTag(size.intValue());
             cos.flush();
 
@@ -430,36 +398,40 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         return builder.endVector();
     }
 
-    /**
-     * Returns an InputStream of the message in a DoGet arrow compatible format.
-     * @return an InputStream ready to be drained by GRPC
-     */
-    public InputStream getDoGetInputStream(final SubView view) throws IOException {
-        Assert.assertion(rowsRemoved.original.isEmpty(), "rowsRemoved.original.isEmpty()", "update is not a snapshot");
-        Assert.assertion(shifted.original.empty(), "shifted.original.empty()", "update is not a snapshot");
-        Assert.eqZero(modColumnData.length, "modColumnData.length");
+//    /**
+//     * Returns an InputStream of the message in a DoGet arrow compatible format.
+//     * @return an InputStream ready to be drained by GRPC
+//     */
+//    public InputStream getDoGetInputStream(final SubView view) throws IOException {
+//        Assert.assertion(rowsRemoved.original.isEmpty(), "rowsRemoved.original.isEmpty()", "update is not a snapshot");
+//        Assert.assertion(shifted.original.empty(), "shifted.original.empty()", "update is not a snapshot");
+//        Assert.eqZero(modColumnData.length, "modColumnData.length");
+//
+//        final ArrayDeque<InputStream> streams = new ArrayDeque<>();
+//        final MutableInt size = new MutableInt();
+//
+//        final Consumer<InputStream> addStream = (final InputStream is) -> {
+//            streams.add(is);
+//            try {
+//                size.add(is.available());
+//            } catch (final IOException e) {
+//                throw new UncheckedDeephavenException("Unexpected IOException", e);
+//            }
+//
+//            // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like C++.
+//            if (size.intValue() % 8 != 0) {
+//                final int paddingBytes = (8 - (size.intValue() % 8));
+//                size.add(paddingBytes);
+//                streams.add(new DrainableByteArrayInputStream(PADDING_BUFFER, 0, paddingBytes));
+//            }
+//        };
+//
+//        final FlatBufferBuilder builder = new FlatBufferBuilder();
 
-        final ArrayDeque<InputStream> streams = new ArrayDeque<>();
-        final MutableInt size = new MutableInt();
-
-        final Consumer<InputStream> addStream = (final InputStream is) -> {
-            streams.add(is);
-            try {
-                size.add(is.available());
-            } catch (final IOException e) {
-                throw new UncheckedDeephavenException("Unexpected IOException", e);
-            }
-
-            // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like C++.
-            if (size.intValue() % 8 != 0) {
-                final int paddingBytes = (8 - (size.intValue() % 8));
-                size.add(paddingBytes);
-                streams.add(new DrainableByteArrayInputStream(PADDING_BUFFER, 0, paddingBytes));
-            }
-        };
-
-        final FlatBufferBuilder builder = new FlatBufferBuilder();
-
+    private long appendAddColumns(final SubView view,
+                                  final Consumer<InputStream> addStream,
+                                  final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+                                  final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // Added Chunk Data:
         final Index myAddedOffsets;
         if (view.isViewport()) {
@@ -473,68 +445,134 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             myAddedOffsets = null;
         }
 
-        final int nodesOffset;
-        final int buffersOffset;
-        final int numOffsets = addColumnData.length;
-        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Attributes.Values> nodeInfos = WritableObjectChunk.makeWritableChunk(numOffsets);
-             final WritableObjectChunk<ChunkInputStreamGenerator.BufferInfo, Attributes.Values> bufferInfos = WritableObjectChunk.makeWritableChunk(numOffsets * 3)) {
-            nodeInfos.setSize(0);
-            bufferInfos.setSize(0);
-
-            final MutableLong totalBufferLength = new MutableLong();
-            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> nodeInfos.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
-            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
-                totalBufferLength.add(length);
-                bufferInfos.add(new ChunkInputStreamGenerator.BufferInfo(length));
-            };
-
-            for (final ChunkInputStreamGenerator column : addColumnData) {
-                final ChunkInputStreamGenerator.DrainableColumn drainableColumn = column.getInputStream(view.options, myAddedOffsets);
-                addStream.accept(drainableColumn);
-                drainableColumn.visitFieldNodes(fieldNodeListener);
-                drainableColumn.visitBuffers(bufferListener);
-            }
-
-            RecordBatch.startNodesVector(builder, nodeInfos.size());
-            for (int i = nodeInfos.size() - 1; i >= 0; --i) {
-                FieldNode.createFieldNode(builder, nodeInfos.get(i).numElements, nodeInfos.get(i).nullCount);
-            }
-            nodesOffset = builder.endVector();
-
-            RecordBatch.startBuffersVector(builder, bufferInfos.size());
-            for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(bufferInfos.get(i).length);
-                Buffer.createBuffer(builder, totalBufferLength.longValue(), bufferInfos.get(i).length);
-            }
-            buffersOffset = builder.endVector();
+        // add the add-column streams
+        for (final ChunkInputStreamGenerator col : addColumnData) {
+            final ChunkInputStreamGenerator.DrainableColumn drainableColumn = col.getInputStream(view.options, myAddedOffsets);
+            addStream.accept(drainableColumn);
+            drainableColumn.visitFieldNodes(fieldNodeListener);
+            drainableColumn.visitBuffers(bufferListener);
         }
-
-        RecordBatch.startRecordBatch(builder);
-        RecordBatch.addNodes(builder, nodesOffset);
-        RecordBatch.addBuffers(builder, buffersOffset);
-        RecordBatch.addLength(builder, rowsAdded.original.size());
-        final int headerOffset = RecordBatch.endRecordBatch(builder);
-
-        builder.finish(wrapInMessage(builder, headerOffset, MessageHeader.RecordBatch, size.intValue()));
-
-        // now create the proto header
-        try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
-            final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
-
-            cos.writeByteBuffer(BarrageData.DATA_HEADER_FIELD_NUMBER, builder.dataBuffer().slice());
-
-            cos.writeTag(BarrageData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-            cos.writeUInt32NoTag(size.intValue());
-            cos.flush();
-
-            streams.addFirst(new DrainableByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-
-            return new ConsecutiveDrainableStreams(streams.toArray(new InputStream[0]));
-        } catch (final IOException ex) {
-            throw new UncheckedDeephavenException("Unexpected IOException", ex);
-        }
+        return rowsAdded.original.size();
     }
+
+    private long appendModColumns(final SubView view,
+                                  final Consumer<InputStream> addStream,
+                                  final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+                                  final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+        // now add mod-column streams, and write the mod column indexes
+        long numRows = 0;
+        for (final ModColumnData mcd : modColumnData) {
+            Index myModOffsets = null;
+            if (view.isViewport()) {
+                // only include added rows that are within the viewport
+                myModOffsets = mcd.rowsModified.original.invert(view.keyspaceViewport.intersect(mcd.rowsModified.original));
+                numRows = Math.max(numRows, myModOffsets.size());
+            } else {
+                numRows = Math.max(numRows, mcd.rowsModified.original.size());
+            }
+
+            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                    mcd.data.getInputStream(view.options, myModOffsets);
+
+            addStream.accept(drainableColumn);
+            drainableColumn.visitFieldNodes(fieldNodeListener);
+            drainableColumn.visitBuffers(bufferListener);
+        }
+        return numRows;
+    }
+
+    private boolean doesSubViewHaveMods(final SubView view) {
+        for (final ModColumnData mcd : modColumnData) {
+            Index myModOffsets = null;
+            if (view.isViewport()) {
+                // only include added rows that are within the viewport
+                if (view.keyspaceViewport.overlaps(mcd.rowsModified.original)) {
+                    return true;
+                }
+            } else {
+                if (mcd.rowsModified.original.nonempty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private ByteBuffer getMetadata(final SubView view) throws IOException {
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int effectiveViewportOffset = 0;
+        if (isSnapshot && view.isViewport()) {
+            try (final IndexGenerator viewportGen = new IndexGenerator(view.viewport)) {
+                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
+            }
+        }
+
+        int effectiveColumnSetOffset = 0;
+        if (isSnapshot && view.subscribedColumns != null) {
+            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
+        }
+
+        final int rowsAddedOffset;
+        if (isSnapshot && !view.isInitialSnapshot) {
+            // client's don't need/want to receive the full index on every snapshot
+            rowsAddedOffset = EmptyIndexGenerator.INSTANCE.addToFlatBuffer(metadata);
+        } else {
+            rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
+        }
+
+        final int rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
+        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
+        // Added Chunk Data:
+        int addedRowsIncludedOffset = 0;
+        if (view.isViewport()) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        }
+
+        // now add mod-column streams, and write the mod column indexes
+        TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
+        for (final ModColumnData mcd : modColumnData) {
+            final int myModRowOffset;
+            if (view.isViewport()) {
+                myModRowOffset = mcd.rowsModified.addToFlatBuffer(view.keyspaceViewport, metadata);
+            } else {
+                myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
+            }
+            modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
+        }
+
+        BarrageUpdateMetadata.startNodesVector(metadata, modOffsets.size());
+        modOffsets.forEachDescending(offset -> { metadata.addOffset(offset); return true; });
+        final int nodesOffset = metadata.endVector();
+
+        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
+        BarrageUpdateMetadata.addNumAddBatches(metadata, view.hasAddBatch ? 1 : 0);
+        BarrageUpdateMetadata.addNumModBatches(metadata, view.hasModBatch ? 1 : 0);
+        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
+        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
+        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
+        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
+        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
+        BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
+        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
+        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
+        BarrageUpdateMetadata.addNodes(metadata, nodesOffset);
+        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
+
+        final FlatBufferBuilder header = new FlatBufferBuilder();
+        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+        BarrageMessageWrapper.startBarrageMessageWrapper(header);
+        BarrageMessageWrapper.addMagic(header, FLATBUFFER_MAGIC);
+        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
+        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
+        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
+
+        return header.dataBuffer().slice();
+    }
+
+
 
     public static abstract class ByteArrayGenerator {
         protected int len;

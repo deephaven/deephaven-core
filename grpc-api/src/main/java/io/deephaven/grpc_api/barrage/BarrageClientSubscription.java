@@ -4,8 +4,14 @@
 
 package io.deephaven.grpc_api.barrage;
 
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteStringAccess;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
@@ -14,7 +20,6 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.proto.backplane.grpc.SubscriptionRequest;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -39,12 +44,12 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     private final String logName;
     private final boolean isViewport;
 
-    private final ClientCall<SubscriptionRequest, BarrageMessage> call;
+    private final ClientCall<Flight.FlightData, BarrageMessage> call;
 
     public BarrageClientSubscription(
             final String logName,
             final Channel channel,
-            final SubscriptionRequest initialRequest,
+            final BarrageSubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
             final BarrageSourcedTable resultTable) {
         this(logName, channel, initialRequest, streamReader,
@@ -57,14 +62,14 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     public BarrageClientSubscription(
             final String logName,
             final Channel channel,
-            final SubscriptionRequest initialRequest,
+            final BarrageSubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
             final ChunkType[] wireChunkTypes,
             final Class<?>[] wireTypes,
             final Class<?>[] wireComponentTypes,
             final WeakReference<BarrageMessage.Listener> weakListener) {
         this.logName = logName;
-        this.isViewport = !initialRequest.getViewport().isEmpty();
+        this.isViewport = initialRequest.viewportVector() != null;
 
 //        final Channel channel = authClientManager.getAuthChannel();
 
@@ -75,17 +80,15 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             return;
         }
 
-        final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
-                .setIsViewport(isViewport)
-                .setUseDeephavenNulls(initialRequest.getUseDeephavenNulls())
-                .build();
-        final MethodDescriptor<SubscriptionRequest, BarrageMessage> subscribeDescriptor =
-                BarrageServiceGrpcBinding.getClientDoSubscribeDescriptor(options, wireChunkTypes, wireTypes, wireComponentTypes, streamReader);
+        final ChunkInputStreamGenerator.Options options = ChunkInputStreamGenerator.Options.of(initialRequest);
+
+        final MethodDescriptor<Flight.FlightData, BarrageMessage> subscribeDescriptor =
+                FlightServiceGrpcBinding.getClientDoExchangeDescriptor(options, wireChunkTypes, wireTypes, wireComponentTypes, streamReader);
         this.call = channel.newCall(subscribeDescriptor, CallOptions.DEFAULT);
 
-        ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<SubscriptionRequest, BarrageMessage>() {
+        ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<Flight.FlightData, BarrageMessage>() {
             @Override
-            public void beforeStart(final ClientCallStreamObserver<SubscriptionRequest> requestStream) {
+            public void beforeStart(final ClientCallStreamObserver<Flight.FlightData> requestStream) {
                 // IDS-6890-3: control flow may be needed here
                 requestStream.disableAutoInboundFlowControl();
             }
@@ -139,7 +142,9 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         this.connected = true;
 
         // Send the initial subscription:
-        call.sendMessage(initialRequest);
+        call.sendMessage(Flight.FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(initialRequest.getByteBuffer()))
+                .build());
 
         // Allow the server to send us all of the commands when there is bandwidth:
         call.request(Integer.MAX_VALUE);
@@ -162,33 +167,43 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     }
 
     public synchronized void update(final BitSet columns) {
-        final SubscriptionRequest request = SubscriptionRequest.newBuilder()
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .build();
-        call.sendMessage(request);
+        update(null, columns);
+
     }
 
     public synchronized void update(final Index viewport) {
-        if (!isViewport) {
-            throw new IllegalStateException("Cannot set viewport on a full subscription.");
-        }
-
-        final SubscriptionRequest request = SubscriptionRequest.newBuilder()
-                .setViewport(BarrageProtoUtil.toByteString(viewport))
-                .build();
-        call.sendMessage(request);
+        update(viewport, null);
     }
 
     public synchronized void update(final Index viewport, final BitSet columns) {
-        if (!isViewport) {
+        if (viewport != null && !isViewport) {
             throw new IllegalStateException("Cannot set viewport on a full subscription.");
         }
 
-        final SubscriptionRequest request = SubscriptionRequest.newBuilder()
-                .setViewport(BarrageProtoUtil.toByteString(viewport))
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .build();
-        call.sendMessage(request);
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int colOffset = 0;
+        if (columns != null) {
+            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+        }
+        int vpOffset = 0;
+        if (viewport != null) {
+            vpOffset = BarrageSubscriptionRequest.createViewportVector(metadata, BarrageProtoUtil.toByteBuffer(viewport));
+        }
+
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
+        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
+        final int subscription = BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata);
+
+        BarrageMessageWrapper.startBarrageMessageWrapper(metadata);
+        BarrageMessageWrapper.addMagic(metadata, BarrageStreamGenerator.FLATBUFFER_MAGIC);
+        BarrageMessageWrapper.addMsgType(metadata, BarrageMessageType.BarrageSubscriptionRequest);
+        BarrageMessageWrapper.addMsgPayload(metadata, subscription);
+        metadata.finish(BarrageMessageWrapper.endBarrageMessageWrapper(metadata));
+        call.sendMessage(Flight.FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(metadata.dataBuffer()))
+                .build());
     }
 
     @Override

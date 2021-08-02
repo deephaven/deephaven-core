@@ -6,7 +6,7 @@ package io.deephaven.proto.backplane.grpc;
 option java_multiple_files = true;
 option optimize_for = SPEED;
 
-import "deephaven/proto/ticket.proto";
+import "arrow/flight/protocol/flight.proto";
 
 /*
  * A barrage service is an endpoint for retrieving or storing ticking Arrow data.
@@ -64,7 +64,7 @@ message SubscriptionRequest {
   /*
    * The ticket identifying this data set.
    */
-  Ticket ticket = 1;
+  arrow.flight.protocol.Ticket ticket = 1;
 
   /*
    * A bitset of columns to subscribe to. An empty bitset unsubscribes from everything.
@@ -89,7 +89,7 @@ message SubscriptionRequest {
   /*
    * Export this subscription so that it can be referenced for out of band updates.
    */
-  Ticket export_id = 21;
+  arrow.flight.protocol.Ticket export_id = 21;
 
   /*
    * Subscription request processing may incur some for of coalescing. Additionally, out of band updates may

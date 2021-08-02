@@ -236,14 +236,6 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
 
         try (final Index currRowsFromPrev = currentIndex.clone();
              final Index populatedRows = (serverViewport != null ? currentIndex.subindexByPos(serverViewport) : null)) {
-            if (REPLICATED_TABLE_DEBUG) {
-                // the included modifications must be a subset of the actual modifications
-                for (int i = 0; i < update.modColumnData.length; ++i) {
-                    final BarrageMessage.ModColumnData column = update.modColumnData[i];
-                    Assert.assertion(column.rowsIncluded.subsetOf(column.rowsModified),
-                            "column.rowsIncluded.subsetOf(column.rowsModified)");
-                }
-            }
 
             // removes
             currentIndex.remove(update.rowsRemoved);
@@ -262,11 +254,9 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
             currentIndex.insert(update.rowsAdded);
 
             final Index totalMods = Index.FACTORY.getEmptyIndex();
-            final Index includedMods = Index.FACTORY.getEmptyIndex();
             for (int i = 0; i < update.modColumnData.length; ++i) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[i];
                 totalMods.insert(column.rowsModified);
-                includedMods.insert(column.rowsIncluded);
             }
 
             if (update.rowsIncluded.nonempty()) {
@@ -291,15 +281,15 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
             modifiedColumnSet.clear();
             for (int ii = 0; ii < update.modColumnData.length; ++ii) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[ii];
-                if (column.rowsIncluded.empty()) {
+                if (column.rowsModified.empty()) {
                     continue;
                 }
 
                 modifiedColumnSet.setColumnWithIndex(ii);
 
-                try (final RedirectionIndex.FillContext redirContext = redirectionIndex.makeFillContext(column.rowsIncluded.intSize(), null);
-                     final WritableLongChunk<Attributes.KeyIndices> keys = WritableLongChunk.makeWritableChunk(column.rowsIncluded.intSize())) {
-                    redirectionIndex.fillChunk(redirContext, keys, column.rowsIncluded);
+                try (final RedirectionIndex.FillContext redirContext = redirectionIndex.makeFillContext(column.rowsModified.intSize(), null);
+                     final WritableLongChunk<Attributes.KeyIndices> keys = WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
+                    redirectionIndex.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
                         Assert.notEquals(keys.get(i), "keys[i]", Index.NULL_KEY, "Index.NULL_KEY");
                     }

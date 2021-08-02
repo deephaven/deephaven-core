@@ -4,16 +4,17 @@
 
 package io.deephaven.grpc_api.arrow;
 
+import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.db.v2.utils.BarrageMessage;
+import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
+import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
+import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api_client.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
-import io.deephaven.proto.backplane.grpc.BarrageServiceGrpc;
 import io.grpc.BindableService;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.protobuf.ProtoUtils;
-import io.grpc.stub.ServerCallStreamObserver;
-import io.grpc.stub.ServerCalls;
-import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
@@ -23,110 +24,87 @@ import java.io.InputStream;
 
 @Singleton
 public class FlightServiceGrpcBinding implements BindableService {
-    private static final String SERVICE = FlightServiceGrpc.SERVICE_NAME;
 
-    private static final String DO_GET = MethodDescriptor.generateFullMethodName(SERVICE, "DoGet");
+    // Arrow Flight related overrides:
+    private static final String FLIGHT_SERVICE = FlightServiceGrpc.SERVICE_NAME;
+    private static final String DO_GET = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoGet");
+    private static final String DO_PUT = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoPut");
+    private static final String DO_EXCHANGE = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoExchange");
 
-    private static final String DO_PUT = MethodDescriptor.generateFullMethodName(SERVICE, "DoPut");
-    private static final String DO_PUT_OOB_CLIENT_STREAM = MethodDescriptor.generateFullMethodName(SERVICE, "DoPutOOBClientStream");
-    private static final String DO_PUT_OOB_CLIENT_STREAM_UPDATE = MethodDescriptor.generateFullMethodName(SERVICE, "DoPutOOBClientStreamUpdate");
-
-    private final FlightServiceGrpcImpl delegate;
+    private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
 
     @Inject
-    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl service) {
+    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
         this.delegate = service;
     }
 
     @Override
     public ServerServiceDefinition bindService() {
         return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService())
-                .override(GrpcServiceOverrideBuilder.descriptorFor(
-                        MethodDescriptor.MethodType.SERVER_STREAMING, DO_GET,
+                .onOpenOverride(delegate::doGetCustom, DO_GET, FlightServiceGrpc.getDoGetMethod(),
                         ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
+                        PassthroughInputStreamMarshaller.INSTANCE)
+                .onBidiOverride(delegate::doPutCustom, DO_PUT, FlightServiceGrpc.getDoPutMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
-                        FlightServiceGrpc.getDoGetMethod()), new DoGet(delegate))
-                .override(GrpcServiceOverrideBuilder.descriptorFor(
-                        MethodDescriptor.MethodType.BIDI_STREAMING, DO_PUT,
+                        ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
+                .onBidiOverride(delegate::doExchangeCustom, DO_EXCHANGE, FlightServiceGrpc.getDoExchangeMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
-                        ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()),
-                        FlightServiceGrpc.getDoPutMethod()), new DoPut(delegate))
-                //TODO restore as part of #412
-//                .override(GrpcServiceOverrideBuilder.descriptorFor(
-//                        MethodDescriptor.MethodType.SERVER_STREAMING, DO_PUT_OOB_CLIENT_STREAM,
-//                        PassthroughInputStreamMarshaller.INSTANCE,
-//                        ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()),
-//                        FlightServiceGrpc.getDoPutOOBClientStreamMethod()), new DoPutOOB(delegate))
-//                .override(GrpcServiceOverrideBuilder.descriptorFor(
-//                        MethodDescriptor.MethodType.UNARY, DO_PUT_OOB_CLIENT_STREAM_UPDATE,
-//                        PassthroughInputStreamMarshaller.INSTANCE,
-//                        ProtoUtils.marshaller(Flight.OOBPutResult.getDefaultInstance()),
-//                        FlightServiceGrpc.getDoPutOOBClientStreamUpdateMethod()), new DoPutOOBUpdate(delegate))
+                        PassthroughInputStreamMarshaller.INSTANCE)
                 .build();
     }
 
-    private static class DoGet implements ServerCalls.ServerStreamingMethod<Flight.Ticket, InputStream> {
-        private final FlightServiceGrpcImpl delegate;
+    /**
+     * Fetch the client side descriptor for a specific table schema.
+     *
+     * @param options           the set of options that last across the entire life of the subscription
+     * @param columnChunkTypes  the chunk types per column
+     * @param columnTypes       the class type per column
+     * @param componentTypes    the component class type per column
+     * @param streamReader      the stream reader - intended to be thread safe and re-usable
+     * @param <Options>         the options related to deserialization
+     * @return the client side method descriptor
+     */
+    public static <Options> MethodDescriptor<Flight.FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+            final Options options,
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+        return GrpcServiceOverrideBuilder.descriptorFor(
+                MethodDescriptor.MethodType.BIDI_STREAMING, DO_EXCHANGE,
+                ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
+                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
+                FlightServiceGrpc.getDoExchangeMethod());
+    }
 
-        private DoGet(final FlightServiceGrpcImpl delegate) {
-            this.delegate = delegate;
+    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
+        private final Options options;
+        private final ChunkType[] columnChunkTypes;
+        private final Class<?>[] columnTypes;
+        private final Class<?>[] componentTypes;
+        private final BarrageMessageConsumer.StreamReader<Options> streamReader;
+
+        public BarrageDataMarshaller(
+                final Options options,
+                final ChunkType[] columnChunkTypes,
+                final Class<?>[] columnTypes,
+                final Class<?>[] componentTypes,
+                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            this.options = options;
+            this.columnChunkTypes = columnChunkTypes;
+            this.columnTypes = columnTypes;
+            this.componentTypes = componentTypes;
+            this.streamReader = streamReader;
         }
 
         @Override
-        public void invoke(final Flight.Ticket request, final StreamObserver<InputStream> responseObserver) {
-            final ServerCallStreamObserver<InputStream> serverCall = (ServerCallStreamObserver<InputStream>) responseObserver;
-            serverCall.disableAutoInboundFlowControl();
-            serverCall.request(Integer.MAX_VALUE);
-            delegate.doGetCustom(request, responseObserver);
-        }
-    }
-
-    private static class DoPut implements ServerCalls.BidiStreamingMethod<InputStream, Flight.PutResult> {
-        private final FlightServiceGrpcImpl delegate;
-
-        private DoPut(final FlightServiceGrpcImpl delegate) {
-            this.delegate = delegate;
+        public InputStream stream(final BarrageMessage value) {
+            throw new UnsupportedOperationException("BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
         }
 
         @Override
-        public StreamObserver<InputStream> invoke(final StreamObserver<Flight.PutResult> responseObserver) {
-            final ServerCallStreamObserver<Flight.PutResult> serverCall = (ServerCallStreamObserver<Flight.PutResult>) responseObserver;
-            serverCall.disableAutoInboundFlowControl();
-            serverCall.request(Integer.MAX_VALUE);
-            return delegate.doPutCustom(responseObserver);
+        public BarrageMessage parse(final InputStream stream) {
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
-
-    //TODO restore as part of #412
-//    private static class DoPutOOB implements ServerCalls.ServerStreamingMethod<InputStream, Flight.PutResult> {
-//        private final FlightServiceGrpcImpl delegate;
-//
-//        private DoPutOOB(final FlightServiceGrpcImpl delegate) {
-//            this.delegate = delegate;
-//        }
-//
-//        @Override
-//        public void invoke(final InputStream request, final StreamObserver<Flight.PutResult> responseObserver) {
-//            final ServerCallStreamObserver<Flight.PutResult> serverCall = (ServerCallStreamObserver<Flight.PutResult>) responseObserver;
-//            serverCall.disableAutoInboundFlowControl();
-//            serverCall.request(Integer.MAX_VALUE);
-//            delegate.doPutCustom(request, responseObserver);
-//        }
-//    }
-//
-//    private static class DoPutOOBUpdate implements ServerCalls.UnaryMethod<InputStream, Flight.OOBPutResult> {
-//        private final FlightServiceGrpcImpl delegate;
-//
-//        private DoPutOOBUpdate(final FlightServiceGrpcImpl delegate) {
-//            this.delegate = delegate;
-//        }
-//
-//        @Override
-//        public void invoke(final InputStream request, final StreamObserver<Flight.OOBPutResult> responseObserver) {
-//            final ServerCallStreamObserver<Flight.OOBPutResult> serverCall = (ServerCallStreamObserver<Flight.OOBPutResult>) responseObserver;
-//            serverCall.disableAutoInboundFlowControl();
-//            serverCall.request(Integer.MAX_VALUE);
-//            delegate.doPutUpdateCustom(request, responseObserver);
-//        }
-//    }
 }

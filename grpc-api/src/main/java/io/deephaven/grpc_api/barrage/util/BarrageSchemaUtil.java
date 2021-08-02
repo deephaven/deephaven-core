@@ -9,7 +9,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.KeyValue;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
@@ -172,9 +172,9 @@ public class BarrageSchemaUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    public static TableDefinition schemaToTableDefinition(final io.deephaven.barrage.flatbuf.Schema schema) {
+    public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
         return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
-            final io.deephaven.barrage.flatbuf.Field field = schema.fields(i);
+            final org.apache.arrow.flatbuf.Field field = schema.fields(i);
             for (int j = 0; j < field.customMetadataLength(); j++) {
                 final KeyValue keyValue = field.customMetadata(j);
                 visitor.accept(keyValue.key(), keyValue.value());

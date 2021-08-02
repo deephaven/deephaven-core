@@ -6,8 +6,7 @@ package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import gnu.trove.iterator.TLongIterator;
-import io.deephaven.barrage.flatbuf.BarrageFieldNode;
-import io.deephaven.barrage.flatbuf.FieldNode;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
@@ -23,18 +22,49 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
+    enum ColumnConversionMode {
+        Stringify,
+        JavaSerialization,
+        ThrowError
+    }
+
     class Options {
         public final boolean isViewport;
         public final boolean useDeephavenNulls;
+        public final ColumnConversionMode columnConversionMode;
 
-        private Options(final boolean isViewport, final boolean useDeephavenNulls) {
+        public static Options of(final BarrageSubscriptionRequest subscriptionRequest) {
+            final byte mode = subscriptionRequest.serializationOptions().columnConversionMode();
+            return new Builder()
+                    .setIsViewport(subscriptionRequest.viewportVector() != null)
+                    .setUseDeephavenNulls(subscriptionRequest.serializationOptions().useDeephavenNulls())
+                    .setColumnConversionMode(convertColumnConversionMode(mode))
+                    .build();
+        }
+
+        private static ChunkInputStreamGenerator.ColumnConversionMode convertColumnConversionMode(byte mode) {
+            switch (mode) {
+                case io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify:
+                    return ChunkInputStreamGenerator.ColumnConversionMode.Stringify;
+                case io.deephaven.barrage.flatbuf.ColumnConversionMode.JavaSerialization:
+                    return ChunkInputStreamGenerator.ColumnConversionMode.JavaSerialization;
+                case io.deephaven.barrage.flatbuf.ColumnConversionMode.ThrowError:
+                    return ChunkInputStreamGenerator.ColumnConversionMode.ThrowError;
+                default:
+                    throw new UnsupportedOperationException("Unexpected column conversion mode " + mode + " (byte)");
+            }
+        }
+
+        private Options(final boolean isViewport, final boolean useDeephavenNulls, final ColumnConversionMode columnConversionMode) {
             this.isViewport = isViewport;
             this.useDeephavenNulls = useDeephavenNulls;
+            this.columnConversionMode = columnConversionMode;
         }
 
         public static class Builder {
             private boolean isViewport;
             private boolean useDeephavenNulls;
+            private ColumnConversionMode columnConversionMode;
 
             public Builder setIsViewport(final boolean isViewport) {
                 this.isViewport = isViewport;
@@ -46,8 +76,13 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 return this;
             }
 
+            public Builder setColumnConversionMode(final ColumnConversionMode columnConversionMode) {
+                this.columnConversionMode = columnConversionMode;
+                return this;
+            }
+
             public Options build() {
-                return new Options(isViewport, useDeephavenNulls);
+                return new Options(isViewport, useDeephavenNulls, columnConversionMode);
             }
         }
     }
@@ -79,6 +114,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     });
                 }
                 // TODO (core#513): BigDecimal, BigInteger
+                // TODO: (core#936): support column conversion modes
 
                 return new VarBinaryChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), (out, item) -> {
                     out.write(item.toString().getBytes(Charsets.UTF_8));
@@ -116,8 +152,12 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                    return VarListChunkInputStreamGenerator.extractChunkFromInputStream(options, type, fieldNodeIter, bufferInfoIter, is) ;
                 }
 
-                return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
-                        (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
+                if (options.columnConversionMode.equals(ColumnConversionMode.Stringify)) {
+                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
+                            (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
+                } else {
+                    throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode);
+                }
             default:
                 throw new UnsupportedOperationException();
         }
@@ -141,12 +181,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             this.nullCount = nullCount;
         }
 
-        public FieldNodeInfo(final FieldNode node) {
-            this(LongSizedDataStructure.intSize("FieldNodeInfo", node.length()),
-                    LongSizedDataStructure.intSize("FieldNodeInfo", node.nullCount()));
-        }
-
-        public FieldNodeInfo(final BarrageFieldNode node) {
+        public FieldNodeInfo(final org.apache.arrow.flatbuf.FieldNode node) {
             this(LongSizedDataStructure.intSize("FieldNodeInfo", node.length()),
                     LongSizedDataStructure.intSize("FieldNodeInfo", node.nullCount()));
         }

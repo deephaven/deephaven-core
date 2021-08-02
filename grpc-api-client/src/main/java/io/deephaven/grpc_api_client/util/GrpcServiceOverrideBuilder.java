@@ -4,11 +4,15 @@
 
 package io.deephaven.grpc_api_client.util;
 
+import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.ServiceDescriptor;
+import io.grpc.protobuf.ProtoUtils;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.ServerCalls;
+import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -66,6 +70,53 @@ public class GrpcServiceOverrideBuilder {
         return this;
     }
 
+    public <ReqT> GrpcServiceOverrideBuilder onNextOverride(
+            final Delegate<ReqT, BrowserFlight.BrowserNextResponse> delegate,
+            final String fullMethodName,
+            final MethodDescriptor<?, ?> descriptor,
+            final MethodDescriptor.Marshaller<ReqT> requestMarshaller) {
+        return override(MethodDescriptor.<ReqT, BrowserFlight.BrowserNextResponse>newBuilder()
+                .setType(MethodDescriptor.MethodType.UNARY)
+                .setFullMethodName(fullMethodName)
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(ProtoUtils.marshaller(BrowserFlight.BrowserNextResponse.getDefaultInstance()))
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build(), new NextBrowserStreamMethod<>(delegate));
+    }
+
+    public <ReqT, RespT> GrpcServiceOverrideBuilder onOpenOverride(
+            final Delegate<ReqT, RespT> delegate,
+            final String fullMethodName,
+            final MethodDescriptor<?, ?> descriptor,
+            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
+            final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
+        return override(MethodDescriptor.<ReqT, RespT>newBuilder()
+                .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
+                .setFullMethodName(fullMethodName)
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(responseMarshaller)
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build(), new OpenBrowserStreamMethod<>(delegate));
+    }
+
+    public <ReqT, RespT> GrpcServiceOverrideBuilder onBidiOverride(
+            final BidiDelegate<ReqT, RespT> delegate,
+            final String fullMethodName,
+            final MethodDescriptor<?, ?> descriptor,
+            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
+            final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
+        return override(MethodDescriptor.<ReqT, RespT>newBuilder()
+                .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
+                .setFullMethodName(fullMethodName)
+                .setSampledToLocalTracing(false)
+                .setRequestMarshaller(requestMarshaller)
+                .setResponseMarshaller(responseMarshaller)
+                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
+                .build(), new BidiStreamMethod<>(delegate));
+    }
+
     public ServerServiceDefinition build() {
         final String service = baseDefinition.getServiceDescriptor().getName();
 
@@ -114,6 +165,63 @@ public class GrpcServiceOverrideBuilder {
                 .setResponseMarshaller(responseMarshaller)
                 .setSchemaDescriptor(descriptor.getSchemaDescriptor())
                 .build();
+    }
+
+    @FunctionalInterface
+    public interface Delegate<ReqT, RespT> {
+        void doInvoke(final ReqT request, final StreamObserver<RespT> responseObserver);
+    }
+
+    public static class OpenBrowserStreamMethod<ReqT, RespT> implements ServerCalls.ServerStreamingMethod<ReqT, RespT> {
+
+        private final Delegate<ReqT, RespT> delegate;
+
+        public OpenBrowserStreamMethod(final Delegate<ReqT, RespT> delegate) {
+            this.delegate = delegate;
+        }
+
+        @java.lang.Override
+        public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
+            final ServerCallStreamObserver<RespT> serverCall = (ServerCallStreamObserver<RespT>) responseObserver;
+            serverCall.disableAutoInboundFlowControl();
+            serverCall.request(Integer.MAX_VALUE);
+            delegate.doInvoke(request, responseObserver);
+        }
+    }
+
+    public static class NextBrowserStreamMethod<ReqT, RespT> implements ServerCalls.UnaryMethod<ReqT, RespT> {
+
+        private final Delegate<ReqT, RespT> delegate;
+
+        public NextBrowserStreamMethod(final Delegate<ReqT, RespT> delegate) {
+            this.delegate = delegate;
+        }
+
+        @java.lang.Override
+        public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
+            delegate.doInvoke(request, responseObserver);
+        }
+    }
+
+    @FunctionalInterface
+    public interface BidiDelegate<ReqT, RespT> {
+        StreamObserver<ReqT> doInvoke(final StreamObserver<RespT> responseObserver);
+    }
+
+    public static class BidiStreamMethod<ReqT, RespT> implements ServerCalls.BidiStreamingMethod<ReqT, RespT> {
+        private final BidiDelegate<ReqT, RespT> delegate;
+
+        public BidiStreamMethod(final BidiDelegate<ReqT, RespT> delegate) {
+            this.delegate = delegate;
+        }
+
+        @java.lang.Override
+        public StreamObserver<ReqT> invoke(final StreamObserver<RespT> responseObserver) {
+            final ServerCallStreamObserver<RespT> serverCall = (ServerCallStreamObserver<RespT>) responseObserver;
+            serverCall.disableAutoInboundFlowControl();
+            serverCall.request(Integer.MAX_VALUE);
+            return delegate.doInvoke(responseObserver);
+        }
     }
 
     private static void validateMethodType(MethodDescriptor.MethodType methodType, MethodDescriptor.MethodType handlerType) {
