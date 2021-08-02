@@ -5,7 +5,9 @@ import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.page.Page;
+import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
@@ -57,5 +59,24 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
         final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination = destination.asWritableObjectChunk();
         orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
+    }
+
+    @Override
+    public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                            @NotNull final OrderedKeys.Iterator knownKeys,
+                                            @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        final long pageFirstKey = firstRow(keysToVisit.currentValue());
+        final long pageLastKey = pageFirstKey + dictionary.size() - 1;
+        if (knownKeys.peekNextKey() != pageFirstKey) {
+            // We need to add the entire page
+            sequentialBuilder.appendRange(pageFirstKey, pageLastKey);
+            advanceToNextPage(knownKeys);
+        } else {
+            final long knownSize = advanceToNextPageAndGetPositionDistance(knownKeys);
+            if (knownSize != dictionary.size()) {
+                sequentialBuilder.appendRange(pageFirstKey + knownSize, pageLastKey);
+            }
+        }
+        advanceToNextPage(keysToVisit);
     }
 }

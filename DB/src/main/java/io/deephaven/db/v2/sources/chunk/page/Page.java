@@ -6,6 +6,7 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.DefaultChunkSource;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -115,5 +116,27 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     @FinalDefault
     default void advanceToNextPage(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
         orderedKeysIterator.advance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    }
+
+    /**
+     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * page and return the number of keys consumed.
+     *
+     * @param orderedKeysIterator The iterator to advance
+     */
+    @FinalDefault
+    default long advanceToNextPageAndGetPositionDistance(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+        return orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    }
+
+    /**
+     * Assuming {@code searchIterator} is position at its first index key on this page, consume all keys on this
+     * page.
+     *
+     * @param searchIterator The iterator to advance
+     */
+    @FinalDefault
+    default void advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {
+        searchIterator.advance(maxRow(searchIterator.currentValue()) + 1);
     }
 }

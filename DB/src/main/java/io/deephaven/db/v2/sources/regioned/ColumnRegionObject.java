@@ -6,7 +6,9 @@ import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.page.Page;
+import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,35 +43,46 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     /**
      * Check if this region can expose an alternate form as paired regions of {@code long} keys and {@code DATA_TYPE}
-     * values covering all of its index keys in {@code remainingKeys}.
+     * values covering all of its index keys in {@code keysToVisit}.
      *
      * <p>Both alternate regions must use the same or smaller index key space as this one. Keys fetched from the
-     * keys region must represent valid element indices in the values region.
+     * keys region must represent valid element indices in the values region. Values regions must support
+     * {@link #gatherDictionaryValuesIndex(ReadOnlyIndex.SearchIterator, OrderedKeys.Iterator, Index.SequentialBuilder)}.
      *
      * <p>Use {@link #getDictionaryKeysRegion()} to access the region of keys and {@link #getDictionaryValuesRegion()}
      * to access the region of values.
      *
-     * @param remainingKeys Iterator positioned at the first relevant index key belonging to this region.
-     *                      Will be advanced to <em>after</em> this region if {@code failFast == false} or {@code true}
-     *                      is returned.
-     *                      No guarantee is made if {@code failFast == true} and {@code false} is returned.
-     * @param failFast      Whether this is part of an iteration that should short-circuit on the first {@code false}
-     *                      result
-     * @return Whether this region can supply a dictionary format covering all of its keys in {@code remainingKeys}
+     * @param keysToVisit Iterator positioned at the first relevant index key belonging to this region.
+     *                    Will be advanced to <em>after</em> this region if {@code true} is returned.
+     *                    No guarantee is made if {@code false} is returned.
+     * @return Whether this region can supply a dictionary format covering all of its keys in {@code keysToVisit}
      */
-    default boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
-        if (!failFast) {
-            advanceToNextPage(remainingKeys);
-        }
+    default boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
         return false;
     }
 
-    default void gatherDictionaryValuesIndex((@NotNull final OrderedKeys.Iterator remainingOuterKeys, ) {
-
+    /**
+     * Optional method that should only be used on regions returned by {@link #getDictionaryValuesRegion()}.
+     * Gathers
+     *
+     * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
+     *                          regions at the same masks), positioned at an index key in this region. Used to
+     *                          identify regions to visit. Should be advanced to after this region as a side-effect.
+     * @param knownKeys         An iterator over the previously-known index keys, positioned at the first known key in
+     *                          this region, or after the region's maximum key if no keys are known. Should be advanced
+     *                          to after this region as a side effect.
+     * @param sequentialBuilder Output builder; implementations should append ranges for index keys not found in
+     *                          {@code knownKeys}
+     * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values index
+     */
+    default void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                             @NotNull final OrderedKeys.Iterator knownKeys,
+                                             @NotNull final Index.SequentialBuilder sequentialBuilder) {
+        throw new UnsupportedOperationException();
     }
 
     /**
-     * @return A dictionary keys region as specified by {@link #supportsDictionaryFormat(OrderedKeys.Iterator, boolean)}
+     * @return A dictionary keys region as specified by {@link #supportsDictionaryFormat(ReadOnlyIndex.SearchIterator)}
      * @throws UnsupportedOperationException If this region does not support dictionary format
      * @implNote Implementations should cache the result
      */
@@ -78,7 +91,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
     }
 
     /**
-     * @return A dictionary values region as specified by {@link #supportsDictionaryFormat(OrderedKeys.Iterator, boolean)}
+     * @return A dictionary values region as specified by {@link #supportsDictionaryFormat(ReadOnlyIndex.SearchIterator)}
      * @throws UnsupportedOperationException If this region does not support dictionary format
      * @implNote Implementations should cache the result
      */
@@ -92,20 +105,12 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return ChunkType.Object;
     }
 
-    static ColumnRegionLong<DictionaryKeys> createSingletonDictionaryKeysRegion(final long pageMask) {
-        return pageMask == SingletonDictionaryRegion.DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION.mask()
-                ? SingletonDictionaryRegion.DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION
-                : new ColumnRegionLong.Constant<>(pageMask, 0L);
-    }
-
-    interface SingletonDictionaryRegion<DATA_TYPE, ATTR extends Any> extends ColumnRegionObject<DATA_TYPE, ATTR> {
-
-        ColumnRegionLong<DictionaryKeys> DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION = new ColumnRegionLong.Constant<>(RegionedColumnSourceBase.PARAMETERS.regionMask, 0L);
+    interface SelfDictionaryRegion<DATA_TYPE, ATTR extends Any> extends ColumnRegionObject<DATA_TYPE, ATTR> {
 
         @Override
         @FinalDefault
-        default boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
-            advanceToNextPage(remainingKeys);
+        default boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+            advanceToNextPage(keysToVisit);
             return true;
         }
 
@@ -121,7 +126,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<DATA_TYPE, ATTR>(pageMask);
     }
 
-    final class Null<DATA_TYPE, ATTR extends Any> extends ColumnRegion.Null<ATTR> implements SingletonDictionaryRegion<DATA_TYPE, ATTR> {
+    final class Null<DATA_TYPE, ATTR extends Any> extends ColumnRegion.Null<ATTR> implements SelfDictionaryRegion<DATA_TYPE, ATTR> {
 
         @SuppressWarnings("rawtypes")
         private static final ColumnRegionObject DEFAULT_INSTANCE = new ColumnRegionObject.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
@@ -138,14 +143,31 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
-            return dictionaryKeysRegion == null ? dictionaryKeysRegion = createSingletonDictionaryKeysRegion(mask()) : dictionaryKeysRegion;
+        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                @NotNull final OrderedKeys.Iterator knownKeys,
+                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+            // Nothing to be gathered, we don't include null regions in dictionary values.
+            advanceToNextPage(keysToVisit);
+            advanceToNextPage(knownKeys);
         }
+
+        @Override
+        public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
+            return dictionaryKeysRegion == null ? dictionaryKeysRegion = ColumnRegionLong.createNull(mask()) : dictionaryKeysRegion;
+        }
+    }
+
+    static ColumnRegionLong<DictionaryKeys> createConstantDictionaryKeysRegion(final long pageMask) {
+        return pageMask == Constant.DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION.mask()
+                ? Constant.DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION
+                : new ColumnRegionLong.Constant<>(pageMask, 0L);
     }
 
     final class Constant<DATA_TYPE, ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>
-            implements SingletonDictionaryRegion<DATA_TYPE, ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+            implements SelfDictionaryRegion<DATA_TYPE, ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+
+        private static final ColumnRegionLong<DictionaryKeys> DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION = new ColumnRegionLong.Constant<>(RegionedColumnSourceBase.PARAMETERS.regionMask, 0L);
 
         private final DATA_TYPE value;
 
@@ -169,8 +191,20 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
+        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                @NotNull final OrderedKeys.Iterator knownKeys,
+                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+            final long pageOnlyKey = firstRow(keysToVisit.currentValue());
+            if (knownKeys.peekNextKey() != pageOnlyKey) {
+                sequentialBuilder.appendKey(pageOnlyKey);
+            }
+            advanceToNextPage(keysToVisit);
+            advanceToNextPage(knownKeys);
+        }
+
+        @Override
         public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
-            return dictionaryKeysRegion == null ? dictionaryKeysRegion = createSingletonDictionaryKeysRegion(mask()) : dictionaryKeysRegion;
+            return dictionaryKeysRegion == null ? dictionaryKeysRegion = createConstantDictionaryKeysRegion(mask()) : dictionaryKeysRegion;
         }
     }
 
@@ -196,20 +230,24 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        public boolean supportsDictionaryFormat(@NotNull final OrderedKeys.Iterator remainingKeys, final boolean failFast) {
-            boolean result = true;
-            try (final OrderedKeys regionKeys = remainingKeys.getNextOrderedKeysThrough(maxRow(remainingKeys.peekNextKey()));
-                 final OrderedKeys.Iterator regionRemainingKeys = regionKeys.getOrderedKeysIterator()) {
-                while (regionRemainingKeys.hasMore()) {
-                    if (!lookupRegion(regionRemainingKeys.peekNextKey()).supportsDictionaryFormat(regionRemainingKeys, failFast)) {
-                        result = false;
-                        if (failFast) {
-                            break;
-                        }
-                    }
+        public boolean supportsDictionaryFormat(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit) {
+            final long pageMaxKey = maxRow(keysToVisit.currentValue());
+            do {
+                if (!lookupRegion(keysToVisit.currentValue()).supportsDictionaryFormat(keysToVisit)) {
+                    return false;
                 }
-            }
-            return result;
+            } while(keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
+            return true;
+        }
+
+        @Override
+        public void gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+                                                @NotNull final OrderedKeys.Iterator knownKeys,
+                                                @NotNull final Index.SequentialBuilder sequentialBuilder) {
+            final long pageMaxKey = maxRow(keysToVisit.currentValue());
+            do {
+                lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
+            } while(keysToVisit.hasNext() && keysToVisit.currentValue() <= pageMaxKey);
         }
 
         @Override
@@ -246,7 +284,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public static ColumnRegionLong<DictionaryKeys> create(@NotNull final RegionedPageStore.Parameters parameters,
                                                               final int regionIndex,
                                                               @NotNull final ColumnRegionObject<?, ?> sourceRegion) {
-            return new DictionaryKeysWrapper((long) regionIndex << parameters.regionMaskNumBits, sourceRegion.getDictionaryKeysRegion());
+            final ColumnRegionLong<DictionaryKeys> sourceDictKeys = sourceRegion.getDictionaryKeysRegion();
+            if (sourceDictKeys instanceof ColumnRegionLong.Null) {
+                return sourceDictKeys;
+            }
+            return new DictionaryKeysWrapper((long) regionIndex << parameters.regionMaskNumBits, sourceDictKeys);
         }
 
         private final long prefixBits;

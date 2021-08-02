@@ -38,7 +38,8 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      *
      * @param sourceIndex      The {@link ReadOnlyIndex} whose keys must be mappable via the result {@link Table}'s
      *                         identifier column
-     * @param useLookupCaching Whether symbol lookups performed to generate the symbol table should apply caching
+     * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
+     *                         Implementations may ignore this hint.
      * @return The symbol table
      */
     Table getStaticSymbolTable(@NotNull ReadOnlyIndex sourceIndex, boolean useLookupCaching);
@@ -51,7 +52,8 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      *
      * @param sourceTable      The {@link QueryTable} whose {@link Index} keys must be mappable via the result
      *                         {@link Table}'s identifier column
-     * @param useLookupCaching Whether symbol lookups performed to generate the symbol table should apply caching
+     * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
+     *                         Implementations may ignore this hint.
      * @return The symbol table
      */
     Table getSymbolTable(@NotNull QueryTable sourceTable, boolean useLookupCaching);
