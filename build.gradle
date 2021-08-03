@@ -404,7 +404,8 @@ tasks.register('quick') {
     it.description 'A lifecycle task that defines the simple check tasks to be run in CI, see .github/workflows/check-ci.yml'
     it.dependsOn allprojects.collect {
         allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
-        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } }
+        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
     it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
@@ -424,7 +425,8 @@ tasks.register('smoke') {
     it.description 'A lifecycle task for a local-development workflow to make sure things are looking "OK"'
     it.dependsOn allprojects.collect {
         allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
-        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } }
+        allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
+        allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
     it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile')
