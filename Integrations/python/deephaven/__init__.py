@@ -94,6 +94,7 @@ from . import Calendars as cals, \
 
 from .Plot import figure_wrapper as figw
 
+DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
