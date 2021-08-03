@@ -1,7 +1,8 @@
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
-import io.apicurio.registry.utils.serde.AvroKafkaDeserializer;
+
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -213,7 +214,7 @@ public class KafkaTools {
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
             if (keySchema != null) {
                 kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
+                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
@@ -221,9 +222,9 @@ public class KafkaTools {
         }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
-            if (keySchema != null) {
+            if (valueSchema != null) {
                 kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, AvroKafkaDeserializer.class.getName());
+                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
