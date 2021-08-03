@@ -22,7 +22,6 @@ import io.grpc.MethodDescriptor;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
-import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
@@ -38,20 +37,17 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     private volatile boolean connected = false;
 
     private final String logName;
-    private final Flight.Ticket handle;
     private final boolean isViewport;
 
     private final ClientCall<SubscriptionRequest, BarrageMessage> call;
 
     public BarrageClientSubscription(
-//            final AuthSessionClientManager authClientManager,
             final String logName,
             final Channel channel,
-            final Flight.Ticket handle,
             final SubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
             final BarrageSourcedTable resultTable) {
-        this(logName, channel, handle, initialRequest, streamReader,
+        this(logName, channel, initialRequest, streamReader,
                 resultTable.getWireChunkTypes(),
                 resultTable.getWireTypes(),
                 resultTable.getWireComponentTypes(),
@@ -59,10 +55,8 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     }
 
     public BarrageClientSubscription(
-//            final AuthSessionClientManager authClientManager,
             final String logName,
             final Channel channel,
-            final Flight.Ticket handle,
             final SubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
             final ChunkType[] wireChunkTypes,
@@ -70,7 +64,6 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             final Class<?>[] wireComponentTypes,
             final WeakReference<BarrageMessage.Listener> weakListener) {
         this.logName = logName;
-        this.handle = handle;
         this.isViewport = !initialRequest.getViewport().isEmpty();
 
 //        final Channel channel = authClientManager.getAuthChannel();

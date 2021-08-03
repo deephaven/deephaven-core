@@ -29,7 +29,6 @@ import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.BarrageServiceGrpc;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
@@ -44,6 +43,7 @@ import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SubscriptionRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -133,8 +133,8 @@ public class SimpleDeephavenClient {
         return ++nextTableId;
     }
 
-    final Flight.Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
-    final Flight.Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
+    final Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
+    final Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
 
     BarrageSourcedTable resultTable;
     BarrageClientSubscription resultSub;
@@ -186,7 +186,7 @@ public class SimpleDeephavenClient {
                 .onError(this::onError)
                 .onComplete(() -> log.info().append("Flight PUT Complete").endl())
                 .build());
-        flightService.doGet(exportTable, new ResponseBuilder<Flight.FlightData>()
+        flightService.doGet(Flight.Ticket.newBuilder().setTicket(exportTable.getTicket()).build(), new ResponseBuilder<Flight.FlightData>()
                 .onError(this::onError)
                 .onNext(data -> {
                     log.info().append("DoGet Recv Payload").endl();
@@ -220,7 +220,7 @@ public class SimpleDeephavenClient {
 
         resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, exportTable, SubscriptionRequest.newBuilder()
+                serverChannel, SubscriptionRequest.newBuilder()
                 .setTicket(exportTable)
                 .setColumns(BarrageProtoUtil.toByteString(columns))
                 .setUseDeephavenNulls(true)
@@ -239,7 +239,7 @@ public class SimpleDeephavenClient {
 
         resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, exportTable, SubscriptionRequest.newBuilder()
+                serverChannel, SubscriptionRequest.newBuilder()
                 .setTicket(exportTable)
                 .setColumns(BarrageProtoUtil.toByteString(columns))
                 .setUseDeephavenNulls(true)
