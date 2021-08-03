@@ -49,7 +49,7 @@ For ease of namespace population in a python console, consider::
 """
 
 __all__ = [
-    "PythonFunction", "PythonListenerAdapter", "PythonShiftAwareListenerAdapter",
+    "DynamicTableWriter", "PythonFunction", "PythonListenerAdapter", "PythonShiftAwareListenerAdapter",
     "TableListenerHandle", "listen", "doLocked",  # from here
 
     "convertJavaArray", "tableToDataFrame", "columnToNumpyArray",  # from java_to_python
@@ -94,14 +94,13 @@ from . import Calendars as cals, \
 
 from .Plot import figure_wrapper as figw
 
-DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
-
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
     __initializer__(jpy.get_type("io.deephaven.configuration.Configuration"), Config)
     __initializer__(jpy.get_type("io.deephaven.db.util.PickledResult"), PickledResult)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter"), PythonListenerAdapter)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonFunction"), PythonFunction)
+    __initializer__(jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter"), DynamicTableWriter)
 
     # ensure that all the symbols are called and reimport the broken symbols
     cals._defineSymbols()
@@ -230,6 +229,8 @@ def PythonFunction(func, classString):
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonFunction')
     return jtype(func, getJavaClassObject(classString))
 
+def DynamicTableWriter():
+    return jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 class TableListenerHandle:
     """
