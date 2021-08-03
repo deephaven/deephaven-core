@@ -8,7 +8,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
 import java.io.Closeable;
-import java.util.function.Consumer;
 
 public class BrowserStream<T extends BrowserStream.MessageBase> implements Closeable {
     public enum Mode {
@@ -35,6 +34,13 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
         }
     }
 
+    public interface Marshaller<T> {
+        void onMessageReceived(T message);
+        void onCancel();
+        void onError(Throwable err);
+        void onCompleted();
+    }
+
     private static final Logger log = LoggerFactory.getLogger(BrowserStream.class);
 
     /** represents the sequence that the listener will process next */
@@ -47,9 +53,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     private final Mode mode;
     private final String logIdentity;
     private final SessionState session;
-    private final Consumer<T> listener;
-    private final Runnable onCancel;
-    private final Runnable onComplete;
+    private final Marshaller<T> marshaller;
 
     /** priority queue for all pending seq when mode is Mode.IN_ORDER */
     private RAPriQueue<T> pendingSeq;
@@ -57,14 +61,11 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     /** most recent queued msg for when mode is Mode.MOST_RECENT */
     private T queuedMessage;
 
-    public BrowserStream(final Mode mode, final SessionState session,
-                         final Consumer<T> listener, final Runnable onCancel, final Runnable onComplete) {
+    public BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
         this.mode = mode;
         this.logIdentity = "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
         this.session = session;
-        this.listener = listener;
-        this.onCancel = onCancel;
-        this.onComplete = onComplete;
+        this.marshaller = marshaller;
 
         this.session.addOnCloseCallback(this);
     }
@@ -128,7 +129,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
 
         do {
             try {
-                listener.accept(message);
+                marshaller.onMessageReceived(message);
             } catch (final RuntimeException e) {
                 onError(e);
                 return;
@@ -163,29 +164,22 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
 
     }
 
-    public void onCancel() {
-        if (session.removeOnCloseCallback(this) != null) {
-            log.info().append(logIdentity).append("browser stream cancelled").endl();
-            this.onCancel.run();
-        }
-    }
-
     public void onError(final RuntimeException e) {
         if (session.removeOnCloseCallback(this) != null) {
             log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e).endl();
-            this.onCancel.run();
+            this.marshaller.onError(e);
         }
     }
 
     @Override
     public void close() {
-        this.onCancel.run();
+        this.marshaller.onCancel();
     }
 
     private void onComplete() {
         if (session.removeOnCloseCallback(this) != null) {
             log.info().append(logIdentity).append("browser stream completed").endl();
-            this.onComplete.run();
+            this.marshaller.onCompleted();
         }
     }
 

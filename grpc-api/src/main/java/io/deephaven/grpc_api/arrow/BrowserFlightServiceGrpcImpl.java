@@ -1,10 +1,8 @@
 package io.deephaven.grpc_api.arrow;
 
 import com.google.rpc.Code;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
-import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
@@ -30,22 +28,15 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
 
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
-
-    private final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory;
-    private final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter;
-    private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter;
+    private final ArrowFlightUtil.DoExchangeMarshaller.Factory<Options, View> doExchangeFactory;
 
     @Inject()
     public BrowserFlightServiceGrpcImpl(final SessionService sessionService,
                                         final TicketRouter ticketRouter,
-                                        final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory,
-                                        final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter,
-                                        final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter) {
+                                        final ArrowFlightUtil.DoExchangeMarshaller.Factory<Options, View> doExchangeFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
-        this.operationFactory = operationFactory;
-        this.listenerAdapter = listenerAdapter;
-        this.optionsAdapter = optionsAdapter;
+        this.doExchangeFactory = doExchangeFactory;
     }
 
     public void openHandshakeCustom(final Flight.HandshakeRequest request, final StreamObserver<Flight.HandshakeResponse> responseObserver) {
@@ -59,7 +50,7 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
     public void openDoPutCustom(final InputStream request, final StreamObserver<Flight.PutResult> responseObserver) {
         internalOnOpen(request, responseObserver, session -> {
             final ArrowFlightUtil.DoPutObserver marshaller = new ArrowFlightUtil.DoPutObserver(session, ticketRouter, responseObserver);
-            return new BrowserStream<>(BrowserStream.Mode.IN_ORDER, session, marshaller::process, marshaller::onCancel, marshaller::onComplete);
+            return new BrowserStream<>(BrowserStream.Mode.IN_ORDER, session, marshaller);
         });
     }
 
@@ -68,7 +59,10 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
     }
 
     public void openDoExchangeCustom(final InputStream request, final StreamObserver<InputStream> responseObserver) {
-        throw new UnsupportedOperationException("TODO: open do exchange");
+        internalOnOpen(request, responseObserver, session -> {
+            final ArrowFlightUtil.DoExchangeMarshaller<Options, View> marshaller = doExchangeFactory.openExchange(session, responseObserver);
+            return new BrowserStream<>(BrowserStream.Mode.IN_ORDER, session, marshaller);
+        });
     }
 
     public void nextDoExchangeCustom(final InputStream request, final StreamObserver<BrowserFlight.BrowserNextResponse> responseObserver) {
@@ -101,7 +95,7 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
         });
     }
 
-    public void internalOnNext(final InputStream request, final StreamObserver<BrowserFlight.BrowserNextResponse> responseObserver) {
+    private void internalOnNext(final InputStream request, final StreamObserver<BrowserFlight.BrowserNextResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
@@ -123,6 +117,8 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
                     .onError(responseObserver::onError)
                     .submit(() -> {
                         browserStream.get().onMessageReceived(mi);
+                        responseObserver.onNext(BrowserFlight.BrowserNextResponse.getDefaultInstance());
+                        responseObserver.onCompleted();
                     });
         });
     }
