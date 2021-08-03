@@ -253,38 +253,39 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         });
     }
 
-    public void doPutUpdateCustom(final InputStream request, final StreamObserver<Flight.OOBPutResult> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-
-            final MessageInfo mi;
-            try {
-                mi = parseProtoMessage(request);
-            } catch (final IOException unexpected) {
-                throw GrpcUtil.securelyWrapError(log, unexpected);
-            }
-
-            final BarragePutMetadata app_metadata = mi.app_metadata;
-            if (app_metadata == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No app_metadata provided");
-            }
-            final ByteBuffer ticketBuf = app_metadata.rpcTicketAsByteBuffer();
-            if (ticketBuf == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No rpc ticket provided");
-            }
-
-            final SessionState.ExportObject<PutMarshaller> putExport = ticketRouter.resolve(session, ticketBuf);
-
-            session.nonExport()
-                    .require(putExport)
-                    .onError(responseObserver::onError)
-                    .submit(() -> {
-                        putExport.get().parseNext(mi);
-                        responseObserver.onNext(Flight.OOBPutResult.getDefaultInstance()); // nothing to report
-                        responseObserver.onCompleted();
-                    });
-        });
-    }
+    //TODO restore as part of #412
+//    public void doPutUpdateCustom(final InputStream request, final StreamObserver<Flight.OOBPutResult> responseObserver) {
+//        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+//            final SessionState session = sessionService.getCurrentSession();
+//
+//            final MessageInfo mi;
+//            try {
+//                mi = parseProtoMessage(request);
+//            } catch (final IOException unexpected) {
+//                throw GrpcUtil.securelyWrapError(log, unexpected);
+//            }
+//
+//            final BarragePutMetadata app_metadata = mi.app_metadata;
+//            if (app_metadata == null) {
+//                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No app_metadata provided");
+//            }
+//            final ByteBuffer ticketBuf = app_metadata.rpcTicketAsByteBuffer();
+//            if (ticketBuf == null) {
+//                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No rpc ticket provided");
+//            }
+//
+//            final SessionState.ExportObject<PutMarshaller> putExport = ticketRouter.resolve(session, ticketBuf);
+//
+//            session.nonExport()
+//                    .require(putExport)
+//                    .onError(responseObserver::onError)
+//                    .submit(() -> {
+//                        putExport.get().parseNext(mi);
+//                        responseObserver.onNext(Flight.OOBPutResult.getDefaultInstance()); // nothing to report
+//                        responseObserver.onCompleted();
+//                    });
+//        });
+//    }
 
     private static final int TAG_TYPE_BITS = 3;
     private static final int BODY_TAG = (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;

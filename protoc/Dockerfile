@@ -15,6 +15,14 @@ RUN set -eux; \
     chmod +x /opt/protoc-gen-grpc-java; \
     rm protoc-3.15.6-linux-x86_64.zip
 
+# protoc includes support for python, but not support for grpc python, we need pip to get it
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y python3-pip; \
+    rm -rf /var/lib/apt/lists/*; \
+    pip3 install --upgrade pip; \
+    pip3 install grpcio-tools;
+
 COPY . .
 
 RUN set -eux; \

@@ -6,7 +6,7 @@ syntax = "proto3";
 
 package io.deephaven.proto.backplane.grpc;
 
-import "arrow/flight/protocol/flight.proto";
+import "deephaven/proto/ticket.proto";
 
 option java_multiple_files = true;
 option optimize_for = SPEED;
@@ -49,7 +49,7 @@ service SessionService {
    * Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
    * responsibility to release all resources they no longer want the server to hold on to.
    */
-  rpc Release(arrow.flight.protocol.Ticket) returns (ReleaseResponse) {}
+  rpc Release(Ticket) returns (ReleaseResponse) {}
 
   /*
    * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
@@ -130,7 +130,7 @@ message ExportNotificationRequest {
 }
 
 message ExportNotification {
-  arrow.flight.protocol.Ticket ticket = 1;
+  Ticket ticket = 1;
   enum State {
     UNKNOWN = 0; // This item is a dependency, but hasn't been registered yet.
     PENDING = 1; // This item has pending dependencies.
