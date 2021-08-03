@@ -2,13 +2,12 @@ package io.deephaven.grpc_api.util;
 
 import io.deephaven.io.logger.Logger;
 import com.google.rpc.Code;
-import com.google.rpc.Status;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.internal.log.LoggerFactory;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 
 import java.util.UUID;
@@ -22,7 +21,12 @@ public class GrpcUtil {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             lambda.run();
         } catch (final StatusRuntimeException err) {
-            log.error().append(err).endl();
+            if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
+                // most of the time we do not want to log this
+                log.debug().append("ignoring unauthenticated request").endl();
+            } else {
+                log.error().append(err).endl();
+            }
             response.onError(err);
         } catch (final RuntimeException | Error err) {
             response.onError(securelyWrapError(log, err));
