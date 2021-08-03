@@ -13,7 +13,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -27,6 +27,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
+import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
@@ -51,7 +52,7 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             final Channel channel,
             final BarrageSubscriptionRequest initialRequest,
             final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
-            final BarrageSourcedTable resultTable) {
+            final BarrageTable resultTable) {
         this(logName, channel, initialRequest, streamReader,
                 resultTable.getWireChunkTypes(),
                 resultTable.getWireTypes(),

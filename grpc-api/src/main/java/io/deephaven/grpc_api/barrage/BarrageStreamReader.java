@@ -19,6 +19,7 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.grpc_api.arrow.ArrowFlightUtil;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcImpl;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
@@ -57,11 +58,11 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
             final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
             for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
-                if (tag == FlightServiceGrpcImpl.DATA_HEADER_TAG) {
+                if (tag == ArrowFlightUtil.DATA_HEADER_TAG) {
                     final int size = decoder.readRawVarint32();
                     header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
                     continue;
-                } else if (tag == FlightServiceGrpcImpl.APP_METADATA_TAG) {
+                } else if (tag == ArrowFlightUtil.APP_METADATA_TAG) {
                     final int size = decoder.readRawVarint32();
                     final ByteBuffer msgAsBB = ByteBuffer.wrap(decoder.readRawBytes(size));
                     final BarrageMessageWrapper wrapper = BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
@@ -121,7 +122,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                     }
 
                     continue;
-                } else if (tag != FlightServiceGrpcImpl.BODY_TAG) {
+                } else if (tag != ArrowFlightUtil.BODY_TAG) {
                     decoder.skipField(tag);
                     continue;
                 }

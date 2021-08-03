@@ -104,6 +104,26 @@ public class ExportTicketHelper {
             : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
+
+    /**
+     * Convenience method to convert from {@link ByteBuffer} to export ticket. Most efficient when
+     * {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
+     *
+     * <p>
+     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
+     * int export id in little-endian.
+     *
+     * <p>
+     * Does not consume the {@code ticket}.
+     *
+     * @param ticket the grpc Ticket
+     * @return the export id that the Ticket wraps
+     */
+    public static Ticket exportIdToTicket(final ByteBuffer ticket) {
+        final ByteBuffer lebb = ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticket : ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
+        return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(lebb)).build();
+    }
+
     /**
      * Convenience method to convert from {@link Flight.FlightDescriptor} to export id.
      *

@@ -48,12 +48,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  *
  * Note that in this case <b>viewport</b> is defined as a set of positions into the original table.
  */
-public class BarrageSourcedTable extends QueryTable implements LiveTable, BarrageMessage.Listener {
+public class BarrageTable extends QueryTable implements LiveTable, BarrageMessage.Listener {
 
     private static final boolean REQUEST_LIVE_TABLE_MONITOR_REFRESH = Configuration.getInstance().getBooleanWithDefault("BarrageSourcedTable.requestLiveTableMonitorRefresh", true);
     public static final boolean REPLICATED_TABLE_DEBUG = Configuration.getInstance().getBooleanWithDefault("BarrageSourcedTable.debug", false);
 
-    private static final Logger log = LoggerFactory.getLogger(BarrageSourcedTable.class);
+    private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
     private final LiveTableRegistrar registrar;
     private final NotificationQueue notificationQueue;
@@ -111,15 +111,15 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
 
     /** enable prev tracking only after receiving first snapshot */
     private volatile int prevTrackingEnabled = 0;
-    private static final AtomicIntegerFieldUpdater<BarrageSourcedTable> PREV_TRACKING_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(BarrageSourcedTable.class, "prevTrackingEnabled");
+    private static final AtomicIntegerFieldUpdater<BarrageTable> PREV_TRACKING_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
 
-    protected BarrageSourcedTable(final LiveTableRegistrar registrar,
-                                  final NotificationQueue notificationQueue,
-                                  final LinkedHashMap<String, ColumnSource<?>> columns,
-                                  final WritableSource<?>[] writableSources,
-                                  final RedirectionIndex redirectionIndex,
-                                  final boolean isViewPort) {
+    protected BarrageTable(final LiveTableRegistrar registrar,
+                           final NotificationQueue notificationQueue,
+                           final LinkedHashMap<String, ColumnSource<?>> columns,
+                           final WritableSource<?>[] writableSources,
+                           final RedirectionIndex redirectionIndex,
+                           final boolean isViewPort) {
         super(Index.FACTORY.getEmptyIndex(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
@@ -495,24 +495,24 @@ public class BarrageSourcedTable extends QueryTable implements LiveTable, Barrag
      * @param tableDefinition the table definition
      * @param isViewPort true if the table will be a viewport.
      *
-     * @return a properly initialized {@link BarrageSourcedTable}
+     * @return a properly initialized {@link BarrageTable}
      */
     @InternalUseOnly
-    public static BarrageSourcedTable make(final TableDefinition tableDefinition, final boolean isViewPort) {
+    public static BarrageTable make(final TableDefinition tableDefinition, final boolean isViewPort) {
         return make(LiveTableMonitor.DEFAULT, LiveTableMonitor.DEFAULT, tableDefinition, isViewPort);
     }
 
     @VisibleForTesting
-    public static BarrageSourcedTable make(final LiveTableRegistrar registrar,
-                                           final NotificationQueue queue,
-                                           final TableDefinition tableDefinition,
-                                           final boolean isViewPort) {
+    public static BarrageTable make(final LiveTableRegistrar registrar,
+                                    final NotificationQueue queue,
+                                    final TableDefinition tableDefinition,
+                                    final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableSource<?>[] writableSources = new WritableSource[columns.length];
         final RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources, redirectionIndex);
 
-        final BarrageSourcedTable table = new BarrageSourcedTable(registrar, queue, finalColumns, writableSources, redirectionIndex, isViewPort);
+        final BarrageTable table = new BarrageTable(registrar, queue, finalColumns, writableSources, redirectionIndex, isViewPort);
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.

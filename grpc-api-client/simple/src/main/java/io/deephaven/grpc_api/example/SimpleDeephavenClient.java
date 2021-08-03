@@ -16,7 +16,7 @@ import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
-import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -126,7 +126,7 @@ public class SimpleDeephavenClient {
     final Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
     final Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
 
-    BarrageSourcedTable resultTable;
+    BarrageTable resultTable;
     BarrageClientSubscription resultSub;
 
     private void runScript() {
@@ -193,7 +193,7 @@ public class SimpleDeephavenClient {
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
-        resultTable = BarrageSourcedTable.make(definition, false);
+        resultTable = BarrageTable.make(definition, false);
         final InstrumentedShiftAwareListener listener = new InstrumentedShiftAwareListener("test") {
             @Override
             protected void onFailureInternal(final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
@@ -224,7 +224,7 @@ public class SimpleDeephavenClient {
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
-        BarrageSourcedTable dummy = BarrageSourcedTable.make(definition, false);
+        BarrageTable dummy = BarrageTable.make(definition, false);
 
         resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(exportTable),

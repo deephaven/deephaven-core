@@ -40,7 +40,7 @@ import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -164,7 +164,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         private final String name;
 
-        private final BarrageSourcedTable barrageTable;
+        private final BarrageTable barrageTable;
         @ReferentialIntegrity
         private final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer;
 
@@ -193,7 +193,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
-            this.barrageTable = BarrageSourcedTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT, barrageMessageProducer.getTableDefinition(), viewport != null);
+            this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT, barrageMessageProducer.getTableDefinition(), viewport != null);
 
             final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
                     .setIsViewport(viewport != null)

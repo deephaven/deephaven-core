@@ -64,7 +64,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         public static class Builder {
             private boolean isViewport;
             private boolean useDeephavenNulls;
-            private ColumnConversionMode columnConversionMode;
+            private ColumnConversionMode columnConversionMode = ColumnConversionMode.Stringify;
 
             public Builder setIsViewport(final boolean isViewport) {
                 this.isViewport = isViewport;
