@@ -1,4 +1,4 @@
-import threading
+import threading, os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
@@ -75,7 +75,8 @@ class Session:
         self._barrage_finish_event = threading.Event()
         self._barrage_wait_event = threading.Event()
         self._executor = ThreadPoolExecutor()
-        self.host = host
+        self.host = os.environ.get("DHCE_HOST", host)
+        self.port = os.environ.get("DHCE_PORT", port)
         self.port = port
         self.user = user
         self.password = password

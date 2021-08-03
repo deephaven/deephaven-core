@@ -1,17 +1,9 @@
-import unittest
-import warnings
 import time
-from deephaven import Session
+
+from tests.testbase import BaseTestCase
 
 
-class QueryTestCase(unittest.TestCase):
-    def setUp(self) -> None:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-        self.session = Session()
-
-    def tearDown(self) -> None:
-        self.session.close()
-
+class QueryTestCase(BaseTestCase):
     def test_tail_update_static(self):
         tbl = self.session.empty_table(10)
         query = self.session.query(tbl).update(column_specs=["Col1=i + 1"]) \
@@ -31,7 +23,3 @@ class QueryTestCase(unittest.TestCase):
         rlt2 = query.exec()
         # rlt.snapshot().to_pandas()
         self.assertLess(rlt.size, rlt2.size)
-
-
-if __name__ == '__main__':
-    unittest.main()
