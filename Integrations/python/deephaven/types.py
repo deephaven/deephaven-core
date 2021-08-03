@@ -10,6 +10,7 @@ import jpy
 
 # Java primitives
 
+Bool = jpy.get_type("boolean")
 Byte = jpy.get_type("byte")
 Char = jpy.get_type("char")
 Double = jpy.get_type("double")
@@ -22,4 +23,3 @@ String = jpy.get_type("java.lang.String")
 # Deephaven internal types
 
 DateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
-DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
