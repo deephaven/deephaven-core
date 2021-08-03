@@ -317,7 +317,7 @@ public class SessionState {
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
-     * @param ticket the grpc {@link Flight.Ticket} for this export
+     * @param ticket the grpc {@link Ticket} for this export
      * @param <T> the export type that the callable will return
      * @return an export builder
      */
