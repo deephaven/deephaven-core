@@ -1,15 +1,10 @@
-import unittest
-import warnings
-
-from deephaven import Session
 from deephaven import DHError
+from deephaven import Session
 from deephaven.table import EmptyTable, TimeTable
+from tests.testbase import BaseTestCase
 
 
-class SessionTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+class SessionTestCase(BaseTestCase):
 
     def test_connect(self):
         session = Session()
@@ -38,7 +33,3 @@ class SessionTestCase(unittest.TestCase):
         t = session.time_table(period=100000)
         self.assertIsInstance(t, TimeTable)
         session.close()
-
-
-if __name__ == '__main__':
-    unittest.main()

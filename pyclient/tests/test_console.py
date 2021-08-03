@@ -1,27 +1,12 @@
-import unittest
-import warnings
-
 from pyarrow import csv
 
-from deephaven import Session, DHError
-from tests.gen_test_data import make_random_csv
+from tests.testbase import BaseTestCase
 
 
-class ConsoleTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-    def setUp(self) -> None:
-        self.session = Session()
-        make_random_csv(num_cols=5, num_rows=3000, output_file='data/test_console_csv')
-
-    def tearDown(self) -> None:
-        self.session.close()
+class ConsoleTestCase(BaseTestCase):
 
     def test_bind_table(self):
-        pa_table = csv.read_csv('data/test_console_csv')
+        pa_table = csv.read_csv(self.csv_file)
         user_table = self.session.import_table(pa_table)
         variable_name = "t"
         self.session.bind_table(user_table, variable_name)
@@ -53,7 +38,3 @@ demo_table = TableTools.emptyTable(table_size) \
                 pa_table = self.session.open_table(t_name).snapshot()
                 df = pa_table.to_pandas()
                 self.assertEquals(1000, len(df.index))
-
-
-if __name__ == '__main__':
-    unittest.main()

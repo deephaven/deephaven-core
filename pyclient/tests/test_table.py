@@ -1,26 +1,12 @@
-import unittest
+import time
 
+import pyarrow as pa
 from pyarrow import csv
 
-from deephaven import Session
-import time
-import warnings
-import pyarrow as pa
-
-from tests.gen_test_data import make_random_csv
+from tests.testbase import BaseTestCase
 
 
-class TableTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-    def setUp(self) -> None:
-        self.session = Session()
-
-    def tearDown(self) -> None:
-        self.session.close()
+class TableTestCase(BaseTestCase):
 
     def test_update(self):
         t = self.session.time_table(period=10000000)
@@ -36,8 +22,7 @@ class TableTestCase(unittest.TestCase):
         self.assertGreaterEqual(pa_table.num_rows, 1)
 
     def test_import_table_long_csv(self):
-        make_random_csv(num_cols=5, num_rows=1000, output_file='data/test_csv')
-        pa_table = csv.read_csv('data/test_csv')
+        pa_table = csv.read_csv(self.csv_file)
         new_table = self.session.import_table(pa_table)
         pa_table2 = new_table.snapshot()
         self.assertEqual(pa_table2, pa_table)
@@ -103,7 +88,7 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(0, len(exception_list))
 
     def test_import_table_strings(self):
-        types=[pa.string(), pa.utf8()]
+        types = [pa.string(), pa.utf8()]
         exception_list = []
         for t in types:
             pa_array = pa.array(['text1', "text2"], type=t)
@@ -119,7 +104,7 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(0, len(exception_list))
 
     def test_import_table_dates(self):
-        types=[pa.date32(), pa.date64()]
+        types = [pa.date32(), pa.date64()]
         exception_list = []
         for t in types:
             pa_array = pa.array([1245, 123456], type=t)
@@ -135,14 +120,9 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(0, len(exception_list))
 
     def test_create_data_table_then_update(self):
-        make_random_csv(num_cols=5, num_rows=1000, output_file='data/test_csv')
-        pa_table = csv.read_csv('data/test_csv')
+        pa_table = csv.read_csv(self.csv_file)
         new_table = self.session.import_table(pa_table).update(column_specs=['Sum=a+b+c+d'])
         pa_table2 = new_table.snapshot()
         df = pa_table2.to_pandas()
         self.assertEquals(df.shape[1], 6)
         self.assertEquals(1000, len(df.index))
-
-
-if __name__ == '__main__':
-    unittest.main()

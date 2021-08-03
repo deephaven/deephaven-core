@@ -5,7 +5,6 @@ from tests.test_query import QueryTestCase
 from tests.test_session import SessionTestCase
 from tests.test_table import TableTestCase
 
-
 if __name__ == '__main__':
     suite = unittest.TestSuite()
     suite.addTests(unittest.TestLoader().loadTestsFromTestCase(SessionTestCase))
