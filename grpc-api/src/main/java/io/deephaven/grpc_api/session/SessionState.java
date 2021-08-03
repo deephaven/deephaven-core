@@ -617,7 +617,8 @@ public class SessionState {
         }
 
         /**
-         * @return the export id or NON_EXPORT_ID if it does not have one
+         * @return the ticket for this export; note if this is a non-export the returned ticket will not resolve to
+         * anything and is considered an invalid ticket
          */
         public Ticket getExportId() {
             return ExportTicketHelper.exportIdToTicket(exportId);
