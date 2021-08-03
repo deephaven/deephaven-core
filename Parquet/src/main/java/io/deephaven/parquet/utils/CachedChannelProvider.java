@@ -1,115 +1,118 @@
 package io.deephaven.parquet.utils;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
+ */
 public class CachedChannelProvider implements SeekableChannelsProvider {
 
-    private final AtomicLong logicalClock = new AtomicLong(0);
-    private final Map<ChannelType, ChannelPool> pools = new HashMap<>();
+    private final SeekableChannelsProvider wrappedProvider;
     private final int maxSize;
 
+    private final AtomicLong logicalClock = new AtomicLong(0);
+
+    enum ChannelType {
+        Read, Write, WriteAppend
+    }
+
+    private final Map<ChannelType, ChannelPool> pools;
+    {
+        final Map<ChannelType, ChannelPool> poolsTemp = new EnumMap<>(ChannelType.class);
+        Arrays.stream(ChannelType.values()).forEach(ct -> poolsTemp.put(ct, new ChannelPool()));
+        pools = Collections.unmodifiableMap(poolsTemp);
+    }
+
     public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider, final int maxSize) {
+        this.wrappedProvider = wrappedProvider;
         this.maxSize = maxSize;
-        pools.put(ChannelType.Read, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }));
-        pools.put(ChannelType.Write, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getWriteChannel(path, false), ChannelType.Write, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }));
-        pools.put(ChannelType.WriteAppend, new ChannelPool((path) -> {
-            String absolutePath = Paths.get(path).toAbsolutePath().toString();
-            try {
-                return new CachedChannel(wrappedProvider.getWriteChannel(path, true), ChannelType.WriteAppend, absolutePath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }));
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        final boolean needsRelease = poolSize() >= maxSize;
+        final String pathKey = path.toAbsolutePath().toString();
         final ChannelPool channelPool = pools.get(ChannelType.Read);
-        final SeekableByteChannel seekableByteChannel = getSeekableByteChannel(path, needsRelease, channelPool);
-        seekableByteChannel.position(0);
-        return seekableByteChannel;
+        final SeekableByteChannel result;
+        synchronized (this) {
+            result = getSeekableByteChannel(pathKey, totalPooledCount() >= maxSize, channelPool);
+        }
+        return result == null ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey) : result.position(0);
     }
 
-    private synchronized SeekableByteChannel getSeekableByteChannel(@NotNull final Path path, final boolean needsRelease,
-                                                                    @NotNull final ChannelPool channelPool) throws IOException {
-        final boolean isReleasing = needsRelease && channelPool.count() > 0;
-        final CachedChannel result = channelPool.getChannel(path.toAbsolutePath().toString(), isReleasing);
+    @Override
+    public synchronized SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
+        final String pathKey = path.toAbsolutePath().toString();
+        final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
+        final ChannelPool channelPool = pools.get(channelType);
+        final SeekableByteChannel result;
+        synchronized (this) {
+            result = getSeekableByteChannel(pathKey, totalPooledCount() >= maxSize, channelPool);
+        }
+        return result == null
+                ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
+                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at end no matter what.
+    }
+
+    private int totalPooledCount() {
+        int sum = 0;
+        for (final ChannelPool channelPool : pools.values()) {
+            sum += channelPool.pooledCount();
+        }
+        return sum;
+    }
+
+    @Nullable
+    private SeekableByteChannel getSeekableByteChannel(@NotNull final String pathKey,
+                                                       final boolean needsRelease,
+                                                       @NotNull final ChannelPool channelPool) throws IOException {
+        final boolean isReleasing = needsRelease && channelPool.pooledCount() > 0;
+        final CachedChannel result = channelPool.take(pathKey, isReleasing);
         if (needsRelease && !isReleasing) {
             releaseOther();
         }
         return result;
     }
 
-    @Override
-    public synchronized SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
-        final boolean needsRelease = poolSize() >= maxSize;
-        final ChannelPool channelPool;
-        if (append) {
-            channelPool = pools.get(ChannelType.WriteAppend);
-        } else {
-            channelPool = pools.get(ChannelType.Write);
-        }
-        final SeekableByteChannel result = getSeekableByteChannel(filePath, needsRelease, channelPool);
-        if (append) {
-            result.position(result.size());
-        } else {
-            result.position(0);
-        }
-        return result;
-    }
-
     private void releaseOther() throws IOException {
-        for (ChannelPool pool : pools.values()) {
-            if (pool.count() > 0) {
+        for (final ChannelPool pool : pools.values()) {
+            if (pool.pooledCount() > 0) {
                 pool.releaseNext();
                 return;
             }
         }
     }
 
-    private int poolSize() {
-        return pools.values().stream().mapToInt(ChannelPool::count).sum();
+    private synchronized void give(@NotNull final CachedChannel cachedChannel, @NotNull final ChannelType channelType) throws IOException {
+        pools.get(channelType).give(cachedChannel);
+        if (totalPooledCount() > maxSize) {
+            releaseOther();
+        }
     }
 
-    enum ChannelType {
-        Read, Write, WriteAppend
-    }
-
-    class CachedChannel implements SeekableByteChannel {
+    /**
+     * {@link SeekableByteChannel Channel} wrapper for pooled usage.
+     */
+    private class CachedChannel implements SeekableByteChannel {
 
         private final SeekableByteChannel wrappedChannel;
         private final ChannelType channelType;
         private final String path;
 
-        boolean isOpen;
+        private boolean isOpen;
         private long closeTime;
 
-        CachedChannel(@NotNull final SeekableByteChannel wrappedChannel, @NotNull final ChannelType channelType, @NotNull final String path) {
+        private CachedChannel(@NotNull final SeekableByteChannel wrappedChannel, @NotNull final ChannelType channelType, @NotNull final String path) {
             this.wrappedChannel = wrappedChannel;
             this.channelType = channelType;
             this.path = path;
@@ -162,14 +165,14 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             Require.eqTrue(isOpen, "isOpen");
             closeTime = logicalClock.incrementAndGet();
             isOpen = false;
-            pool(this, channelType);
+            give(this, channelType);
         }
 
         public String getPath() {
             return path;
         }
 
-        long closeTime() {
+        private long closeTime() {
             return closeTime;
         }
 
@@ -178,12 +181,77 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
     }
 
+    /**
+     * Per-{@link ChannelType type} pool.
+     */
+    private static class ChannelPool {
 
-    private synchronized void pool(@NotNull final CachedChannel cachedChannel, @NotNull final ChannelType channelType) throws IOException {
-        pools.get(channelType).pool(cachedChannel);
-        if (poolSize() > maxSize) {
-            releaseOther();
+        private final Map<String, Deque<CachedChannel>> pool = new HashMap<>();
+        private final PriorityQueue<TimeToPath> thingsToRelease = new PriorityQueue<>();
+
+        private int pooledCount = 0;
+
+        private ChannelPool() {
+        }
+
+        private int pooledCount() {
+            return pooledCount;
+        }
+
+        private static class TimeToPath implements Comparable<TimeToPath> {
+
+            private final String path;
+            private final long logicalTime;
+
+            TimeToPath(String path, long logicalTime) {
+                this.path = path;
+                this.logicalTime = logicalTime;
+            }
+
+            @Override
+            public int compareTo(@NotNull final TimeToPath other) {
+                return Long.compare(logicalTime, other.logicalTime);
+            }
+        }
+
+        private void give(@NotNull final CachedChannel cachedChannel) {
+            Assert.neqTrue(cachedChannel.isOpen, "cachedChannel.isOpen");
+            final Deque<CachedChannel> dest = pool.computeIfAbsent(cachedChannel.getPath(), (path) -> {
+                thingsToRelease.add(new TimeToPath(cachedChannel.getPath(), cachedChannel.closeTime()));
+                return new ArrayDeque<>();
+            });
+            dest.addFirst(cachedChannel);
+            pooledCount++;
+        }
+
+        @Nullable
+        private CachedChannel take(@NotNull final String path, final boolean needsRelease) throws IOException {
+            final Deque<CachedChannel> queue = pool.get(path);
+            if (queue == null || queue.isEmpty()) {
+                if (needsRelease) {
+                    releaseNext();
+                }
+                return null;
+            }
+            pooledCount--;
+            final CachedChannel cachedChannel = queue.removeFirst();
+            Assert.neqTrue(cachedChannel.isOpen, "cachedChannel.isOpen");
+            cachedChannel.isOpen = true;
+            return cachedChannel;
+        }
+
+        private void releaseNext() throws IOException {
+            final TimeToPath toRelease = thingsToRelease.poll();
+            if (toRelease == null) {
+                return;
+            }
+            final Deque<CachedChannel> cachedChannels = pool.get(toRelease.path);
+            cachedChannels.removeLast().dispose();
+            if (!cachedChannels.isEmpty()) {
+                final CachedChannel nextInLine = cachedChannels.peekLast();
+                thingsToRelease.add(new TimeToPath(nextInLine.getPath(), nextInLine.closeTime()));
+            }
+            pooledCount--;
         }
     }
-
 }

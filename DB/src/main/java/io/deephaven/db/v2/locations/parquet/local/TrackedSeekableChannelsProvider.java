@@ -4,6 +4,7 @@ import io.deephaven.db.util.file.FileHandle;
 import io.deephaven.db.util.file.FileHandleFactory;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.util.file.TrackedSeekableByteChannel;
+import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,11 +17,25 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 /**
  * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
  */
-class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
+public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
+
+    private static volatile CachedChannelProvider instance;
+
+    public static CachedChannelProvider getCachedInstance() {
+        if (instance == null) {
+            synchronized (CachedChannelProvider.class) {
+                if (instance == null) {
+                    final TrackedFileHandleFactory inner = TrackedFileHandleFactory.getInstance();
+                    instance = new CachedChannelProvider(new TrackedSeekableChannelsProvider(inner), inner.getCapacity());
+                }
+            }
+        }
+        return instance;
+    }
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 
@@ -31,6 +46,7 @@ class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
     @Override
     public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
+        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
     }
 

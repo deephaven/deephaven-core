@@ -9,6 +9,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.QueryTable;
+import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
 import io.deephaven.db.v2.select.FormulaColumn;
 import io.deephaven.db.v2.select.NullSelectColumn;
 import io.deephaven.db.v2.select.SelectColumn;
@@ -27,7 +28,6 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.parquet.ColumnWriter;
 import io.deephaven.parquet.ParquetFileWriter;
 import io.deephaven.parquet.RowGroupWriter;
-import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -303,7 +303,7 @@ public class ParquetTableWriter {
                 extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX + colName, DBARRAY_SPECIAL_TYPE);
             }
         }
-        return new ParquetFileWriter(path, new LocalFSChannelProvider(), PAGE_SIZE,
+        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getCachedInstance(), PAGE_SIZE,
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
     }
 
