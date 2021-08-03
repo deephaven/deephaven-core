@@ -2,6 +2,7 @@ FROM deephaven/protoc:local-build
 
 COPY src/main/proto /includes
 
+# TODO restore as part of #412
 #COPY dependencies /dependencies
 
 RUN set -eux; \

@@ -21,6 +21,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
       exclude 'build'
       exclude 'build.gradle'
     }
+    // TODO #412 will use this same idea, but differently
 //    from(zipTree(configurations.download.singleFile)) {
 //      include("flight.proto").into("dependencies")
 //    }
