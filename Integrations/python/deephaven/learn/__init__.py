@@ -183,4 +183,4 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     QueryScope.addParam("computer", computer)
     QueryScope.addParam("scatterer", scatterer)
 
-    return table.update("Future = computer.compute(k)", "Clean1 = computer.clear()", f"{outputs.getColNames[0]} = scatterer.scatter(Future.get(), Future.getOffset())").dropColumns("Future", "Clean1")
+    return table.update("Future = computer.compute(k)", "Clean1 = computer.clear()", f"{outputs.getColNames()[0]} = scatterer.scatter(Future.get(), Future.getOffset())").dropColumns("Future", "Clean1")
