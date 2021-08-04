@@ -30,6 +30,7 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,6 +44,10 @@ import java.util.stream.Stream;
 public interface Table extends LongSizedDataStructure, LivenessNode, TableOperations<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
+    static Table of(TableSpec table) {
+        return TableCreationImpl.create(table);
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -107,6 +112,11 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     String COLUMN_RENDERERS_ATTRIBUTE = "ColumnRenderers";
     String COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle after
+     * the stream table is refreshed the rows are removed.
+     */
+    String STREAM_TABLE_ATTRIBUTE = "StreamTable";
     /**
      * The query engine may set or read this attribute to determine if a table is sorted by a particular column.
      */
@@ -2284,10 +2294,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
+    Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns);
 
-    default Table snapshot(Table rightTable, String... stampColumns) {
-        return snapshot(rightTable, true, stampColumns);
+    default Table snapshot(Table baseTable, String... stampColumns) {
+        return snapshot(baseTable, true, stampColumns);
     }
 
     Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
@@ -2299,8 +2309,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table snapshotHistory(final Table rightTable);
 
     @Override
-    default Table snapshot(Table rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(rightTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
+    default Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
+        return snapshot(baseTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -2440,9 +2450,4 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
-
-    @Override
-    default Table toTable() {
-        return this;
-    }
 }

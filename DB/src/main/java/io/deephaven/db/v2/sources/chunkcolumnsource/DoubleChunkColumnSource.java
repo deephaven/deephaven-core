@@ -168,4 +168,9 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }

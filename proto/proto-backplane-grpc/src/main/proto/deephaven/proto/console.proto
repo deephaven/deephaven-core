@@ -1,0 +1,470 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.script.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+import "deephaven/proto/table.proto";
+import "deephaven/proto/ticket.proto";
+
+/*
+ * Console interaction service
+*/
+service ConsoleService {
+    rpc GetConsoleTypes(GetConsoleTypesRequest) returns (GetConsoleTypesResponse) {}
+    rpc StartConsole(StartConsoleRequest) returns (StartConsoleResponse) {}
+
+    rpc SubscribeToLogs(LogSubscriptionRequest) returns (stream LogSubscriptionData) {}
+
+    rpc ExecuteCommand(ExecuteCommandRequest) returns (ExecuteCommandResponse) {}
+    rpc CancelCommand(CancelCommandRequest) returns (CancelCommandResponse) {}
+
+    rpc BindTableToVariable(BindTableToVariableRequest) returns (BindTableToVariableResponse) {}
+
+    rpc OpenDocument(OpenDocumentRequest) returns (OpenDocumentResponse) {}
+    rpc ChangeDocument(ChangeDocumentRequest) returns (ChangeDocumentResponse) {}
+    rpc GetCompletionItems(GetCompletionItemsRequest) returns (GetCompletionItemsResponse) {}
+    rpc CloseDocument(CloseDocumentRequest) returns (CloseDocumentResponse) {}
+
+    rpc FetchTable(FetchTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
+    rpc FetchPandasTable(FetchPandasTableRequest) returns (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) {}
+    rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
+    rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
+}
+
+
+message GetConsoleTypesRequest {
+    // left empty for future compatibility
+}
+message GetConsoleTypesResponse {
+    repeated string console_types = 1;
+}
+
+message StartConsoleRequest {
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+    string session_type = 2;
+}
+message StartConsoleResponse {
+    io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+
+    // TOOD i think these are unused without an init script thingie
+    repeated string table_names = 2;
+    repeated string widget_names = 3;
+}
+
+message LogSubscriptionRequest {
+    // presently you get _all_ logs, not just your console
+//    Ticket console_id = 1;
+    int64 last_seen_log_timestamp = 1;
+    repeated string levels = 2;
+}
+message LogSubscriptionData {
+    int64 micros = 1;
+    string log_level = 2;
+    string message = 3;
+    reserved 4;//if we can scope logs to a script session
+    //    Ticket console_id = 4;
+}
+message ExecuteCommandRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    reserved 2;//if script sessions get a ticket, we will use this reserved tag
+    string code = 3;
+}
+message ExecuteCommandResponse {
+    string error_message = 1;
+    repeated VariableDefinition created = 2;
+    repeated VariableDefinition updated = 3;
+    repeated VariableDefinition removed = 4;
+}
+message VariableDefinition {
+    string name = 1;
+    string type = 2;
+}
+message BindTableToVariableRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    reserved 2;//if script sessions get a ticket, we will use this reserved tag
+    string variable_name = 3;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 4;
+}
+message BindTableToVariableResponse {
+}
+
+message CancelCommandRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket command_id = 2;
+}
+message CancelCommandResponse {
+
+}
+
+message OpenDocumentRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    TextDocumentItem text_document = 2;
+}
+message TextDocumentItem {
+    string uri = 1;
+    string language_id = 2;
+    int32 version = 3;
+    string text = 4;
+}
+message OpenDocumentResponse {
+
+}
+
+message CloseDocumentRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+}
+message CloseDocumentResponse {
+
+}
+
+message ChangeDocumentRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    repeated TextDocumentContentChangeEvent content_changes = 3;
+
+    message TextDocumentContentChangeEvent {
+        DocumentRange range = 1;
+        int32 range_length = 2;
+        string text = 3;
+    }
+}
+message DocumentRange {
+    Position start = 1;
+    Position end = 2;
+}
+message VersionedTextDocumentIdentifier {
+    string uri = 1;
+    int32 version = 2;
+}
+message Position {
+    int32 line = 1;
+    int32 character = 2;
+}
+message ChangeDocumentResponse {
+
+}
+message GetCompletionItemsRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+
+    CompletionContext context = 2;
+    VersionedTextDocumentIdentifier text_document = 3;
+    Position position = 4;
+}
+message CompletionContext {
+    int32 trigger_kind = 1;
+    string trigger_character = 2;
+}
+message GetCompletionItemsResponse {
+    repeated CompletionItem items = 1;
+}
+message CompletionItem {
+    int32 start = 1;
+    int32 length = 2;
+    string label = 3;
+    int32 kind = 4;
+    string detail = 5;
+    string documentation = 6;
+    bool deprecated = 7;
+    bool preselect = 8;
+    TextEdit text_edit = 9;
+    string sort_text = 10;
+    string filter_text = 11;
+    int32 insert_text_format = 12;
+    repeated TextEdit additional_text_edits = 13;
+    repeated string commit_characters = 14;
+}
+message TextEdit {
+    DocumentRange range = 1;
+    string text = 2;
+}
+
+message FetchTableRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
+
+    string table_name = 3;
+}
+
+message FetchPandasTableRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket table_id = 2;
+}
+
+message FetchFigureRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+
+    string figure_name = 2;
+}
+message FetchFigureResponse {
+    FigureDescriptor figure_descriptor = 1;
+}
+
+message FigureDescriptor {
+    optional string title = 1;
+    string title_font = 2;
+    string title_color = 3;
+
+    int64 update_interval = 7;
+
+    int32 cols = 8;
+    int32 rows = 9;
+
+    repeated ChartDescriptor charts = 10;
+
+    repeated io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;
+
+    // TODO (deephaven-core#62) implement once tablemaps are ready
+    reserved 12;// reserved for tablemaps
+//    repeated Ticket table_maps = 12;
+
+    repeated string errors = 13;
+
+    message ChartDescriptor {
+        enum ChartType {
+            XY = 0;
+            PIE = 1;
+            OHLC = 2;
+            CATEGORY = 3;
+            XYZ = 4;
+            CATEGORY_3D = 5;
+        }
+        int32 colspan = 1;
+        int32 rowspan = 2;
+
+        repeated SeriesDescriptor series = 3;
+        repeated MultiSeriesDescriptor multi_series = 4;
+        repeated AxisDescriptor axes = 5;
+
+        ChartType chart_type = 6;
+
+        optional string title = 7;
+        string title_font = 8;
+        string title_color = 9;
+
+        bool show_legend = 10;
+        string legend_font = 11;
+        string legend_color = 12;
+
+        bool is3d = 13;
+    }
+
+    enum SeriesPlotStyle {
+        BAR = 0;
+        STACKED_BAR = 1;
+        LINE = 2;
+        AREA = 3;
+        STACKED_AREA = 4;
+        PIE = 5;
+        HISTOGRAM = 6;
+        OHLC = 7;
+        SCATTER = 8;
+        STEP = 9;
+        ERROR_BAR = 10;
+    }
+
+    message SeriesDescriptor {
+        SeriesPlotStyle plot_style = 1;
+
+        string name = 2;
+
+        optional bool lines_visible = 3;
+        optional bool shapes_visible = 4;
+
+        bool gradient_visible = 5;
+        string line_color = 6;
+        //TODO (deephaven-core#774) finish this field or remove it from the DSL
+        //    string line_style = 7;
+        reserved 7;
+        optional string point_label_format = 8;
+        optional string x_tool_tip_pattern = 9;
+        optional string y_tool_tip_pattern = 10;
+
+        string shape_label = 11;
+        optional double shape_size = 12;
+        string shape_color = 13;
+        string shape = 14;
+
+        repeated SourceDescriptor data_sources = 15;
+    }
+    message MultiSeriesDescriptor {
+        SeriesPlotStyle plot_style = 1;
+
+        string name = 2;
+
+        StringMapWithDefault line_color = 3;
+
+        StringMapWithDefault point_color = 4;
+
+        BoolMapWithDefault lines_visible = 5;
+
+        BoolMapWithDefault points_visible = 6;
+
+        BoolMapWithDefault gradient_visible = 7;
+
+        StringMapWithDefault point_label_format = 8;
+
+        StringMapWithDefault x_tool_tip_pattern = 9;
+
+        StringMapWithDefault y_tool_tip_pattern = 10;
+
+        StringMapWithDefault point_label = 11;
+
+        DoubleMapWithDefault point_size = 12;
+
+        StringMapWithDefault point_shape = 13;
+
+        repeated MultiSeriesSourceDescriptor data_sources = 14;
+
+    }
+    message StringMapWithDefault {
+        string default_string = 1;
+        repeated string keys = 2;
+        repeated string values = 3;
+    }
+    message DoubleMapWithDefault {
+        double default_double = 1;
+        repeated string keys = 2;
+        repeated double values = 3;
+    }
+    message BoolMapWithDefault {
+        bool default_bool = 1;
+        repeated string keys = 2;
+        repeated bool values = 3;
+    }
+    message AxisDescriptor {
+        enum AxisFormatType {
+            CATEGORY = 0;
+            NUMBER = 1;
+        }
+        enum AxisType {
+            X = 0;
+            Y = 1;
+            SHAPE = 2;
+            SIZE = 3;
+            LABEL = 4;
+            COLOR = 5;
+        }
+        enum AxisPosition {
+            TOP = 0;
+            BOTTOM = 1;
+            LEFT = 2;
+            RIGHT = 3;
+            NONE = 4;
+        }
+
+        string id = 1;
+
+        AxisFormatType format_type = 2;
+
+        AxisType type = 3;
+
+        AxisPosition position = 4;
+
+        bool log = 5;
+        string label = 6;
+        string label_font = 7;
+        string ticks_font = 8;
+        optional string format_pattern = 9;
+        string color = 10;
+        double min_range = 11;
+        double max_range = 12;
+        bool minor_ticks_visible = 13;
+        bool major_ticks_visible = 14;
+        int32 minor_tick_count = 15;
+        optional double gap_between_major_ticks = 16;
+        repeated double major_tick_locations = 17;
+        double tick_label_angle = 18;
+        bool invert = 19;
+        bool is_time_axis = 20;
+        BusinessCalendarDescriptor business_calendar_descriptor = 21;
+    }
+    message BusinessCalendarDescriptor {
+        enum DayOfWeek {
+            SUNDAY = 0;
+            MONDAY = 1;
+            TUESDAY = 2;
+            WEDNESDAY = 3;
+            THURSDAY = 4;
+            FRIDAY = 5;
+            SATURDAY = 6;
+        }
+        message BusinessPeriod {
+            string open = 1;
+            string close = 2;
+        }
+        message Holiday {
+            LocalDate date = 1;
+            repeated BusinessPeriod business_periods = 2;
+        }
+        message LocalDate {
+            int32 year = 1;
+            int32 month = 2;
+            int32 day = 3;
+        }
+        string name = 1;
+        string time_zone = 2;
+        repeated DayOfWeek business_days = 3;
+        repeated BusinessPeriod business_periods = 4;
+        repeated Holiday holidays = 5;
+    }
+    message MultiSeriesSourceDescriptor {
+        string axis_id = 1;
+
+        SourceType type = 2;
+
+        int32 table_map_id = 3;
+        string column_name = 4;
+    }
+
+    enum SourceType {
+        X = 0;
+        Y = 1;
+        Z = 2;
+        X_LOW = 3;
+        X_HIGH = 4;
+        Y_LOW = 5;
+        Y_HIGH = 6;
+        TIME = 7;
+        OPEN = 8;
+        HIGH = 9;
+        LOW = 10;
+        CLOSE = 11;
+        SHAPE = 12;
+        SIZE = 13;
+        LABEL = 14;
+        COLOR = 15;
+    }
+    message SourceDescriptor {
+        string axis_id = 1;
+
+        SourceType type = 2;
+
+        int32 table_id = 3;
+        int32 table_map_id = 4;
+        string column_name = 5;
+
+        string column_type = 6;
+
+        OneClickDescriptor one_click = 7;
+    }
+    message OneClickDescriptor {
+        repeated string columns = 1;
+        repeated string column_types = 2;
+        bool require_all_filters_to_display = 3;
+    }
+}
+
+message FetchTableMapRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    reserved 2;// ticket to place the result in
+}
+message FetchTableMapResponse {
+
+}

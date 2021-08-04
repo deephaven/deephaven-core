@@ -20,10 +20,10 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,7 +66,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "client cancelled the stream");
         }
 
-        final Flight.Ticket ticket = notification.getTicket();
+        final Ticket ticket = notification.getTicket();
         final int exportId = ExportTicketHelper.ticketToExportId(ticket);
 
         try {
@@ -119,7 +119,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
-    private synchronized void onNewTableExport(final Flight.Ticket ticket, final int exportId, final BaseTable table) {
+    private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
         if (!table.isLive()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
@@ -154,7 +154,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param size   the current size of the table
      * @param error  any propagated error of the table
      */
-    private synchronized void sendUpdateMessage(final Flight.Ticket ticket, final long size, final Throwable error) {
+    private synchronized void sendUpdateMessage(final Ticket ticket, final long size, final Throwable error) {
         if (isDestroyed) {
             return;
         }

@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#whereIn(Object, Collection)
  * @see TableOperations#whereNotIn(Object, Collection)
  */
-public interface JoinMatch {
+public interface JoinMatch extends Serializable {
 
     static JoinMatch of(ColumnName left, ColumnName right) {
         if (left.equals(right)) {

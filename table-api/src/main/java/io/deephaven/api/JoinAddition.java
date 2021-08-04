@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
  * @see TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
  */
-public interface JoinAddition {
+public interface JoinAddition extends Serializable {
 
     static JoinAddition of(ColumnName newColumn, ColumnName existingColumn) {
         if (newColumn.equals(existingColumn)) {

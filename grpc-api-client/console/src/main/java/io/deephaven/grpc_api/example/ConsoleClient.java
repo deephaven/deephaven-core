@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 
 public class ConsoleClient {
     private static final Logger log = LoggerFactory.getLogger(ConsoleClient.class);
-    private Flight.Ticket consoleTicket;
+    private Ticket consoleTicket;
 
     public static class RemoteStdout {
         private static final Logger log = LoggerFactory.getLogger(RemoteStdout.class);

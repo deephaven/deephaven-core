@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+/*
+ * This file only contains arrow's Ticket type, so that we don't need to
+ * regenerate the entire flight.proto for other languages, since arrow
+ * doesn't make these types available for all languages. Ticket's
+ * definition must be updated to match if there is a change in arrow, so
+ * that we can remain compatible.
+ */
+
+/*
+ * An opaque identifier that the service can use to retrieve a particular
+ * portion of a stream.
+ */
+message Ticket {
+    bytes ticket = 1;
+}

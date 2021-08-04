@@ -1,0 +1,568 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+import "deephaven/proto/ticket.proto";
+
+service TableService {
+
+  /*
+   * Create an empty table with the given column names and types.
+   */
+  rpc EmptyTable(EmptyTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Create a time table with the given start time and period.
+   */
+  rpc TimeTable(TimeTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Drop columns from the parent table.
+   */
+  rpc DropColumns(DropColumnsRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Add columns to the given table using the given column specifications and the update table operation.
+   */
+  rpc Update(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Add columns to the given table using the given column specifications and the lazyUpdate table operation.
+   */
+  rpc LazyUpdate(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Add columns to the given table using the given column specifications and the view table operation.
+   */
+  rpc View(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Add columns to the given table using the given column specifications and the updateView table operation.
+   */
+  rpc UpdateView(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Select the given columns from the given table.
+   */
+  rpc Select(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns a new table definition with the unique tuples of the specified columns
+   */
+  rpc SelectDistinct(SelectDistinctRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Filter parent table with structured filters.
+   */
+  rpc Filter(FilterTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Filter parent table with unstructured filters.
+   */
+  rpc UnstructuredFilter(UnstructuredFilterTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Sort parent table via the provide sort descriptors.
+   */
+  rpc Sort(SortTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Extract rows from the head of the parent table.
+   */
+  rpc Head(HeadOrTailRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Extract rows from the tail of the parent table.
+   */
+  rpc Tail(HeadOrTailRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Run the headBy table operation for the given group by columns on the given table.
+   */
+  rpc HeadBy(HeadOrTailByRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Run the tailBy operation for the given group by columns on the given table.
+   */
+  rpc TailBy(HeadOrTailByRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Ungroup the given columns (all columns will be ungrouped if columnsToUngroup is empty or unspecified).
+   */
+  rpc Ungroup(UngroupRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Create a merged table from the given input tables. If a key column is provided (not null), a sorted
+   * merged will be performed using that column.
+   */
+  rpc MergeTables(MergeTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a cross join operation. Also known as the cartesian product.
+   */
+  rpc CrossJoinTables(CrossJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a natural join operation.
+   */
+  rpc NaturalJoinTables(NaturalJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an exact join operation.
+   */
+  rpc ExactJoinTables(ExactJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of a left join operation.
+   */
+  rpc LeftJoinTables(LeftJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an as of join operation.
+   */
+  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an aggregate table operation.
+   */
+  rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Snapshot rightId, triggered by leftId, and export the resulting new Table.
+   * The left table's change events cause a new snapshot to be taken. The result table includes a
+   * "snapshot key" which is a subset (possibly all) of the left table's columns. The
+   * remaining columns in the result table come from right table, the table being snapshotted.
+   */
+  rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns a new table with a flattened index.
+   */
+  rpc Flatten(FlattenRequest) returns (ExportedTableCreationResponse) {}
+
+  /**
+   * Downsamples a table assume its contents will be rendered in a run chart, with each subsequent row holding a later
+   * X value (i.e., sorted on that column). Multiple Y columns can be specified, as can a range of values for the X
+   * column to support zooming in.
+   */
+  rpc RunChartDownsample(RunChartDownsampleRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
+   * requiring them to be exported and managed by the client. The server will automatically release any tables when they
+   * are no longer depended upon.
+   */
+  rpc Batch(BatchTableRequest) returns (stream ExportedTableCreationResponse) {}
+
+  /*
+   * Establish a stream of table updates for cheap notifications of table size updates.
+   *
+   * New streams will flush updates for all existing table exports. An export id of zero will be sent to indicate all
+   * exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
+   * initial update had been sent.
+   */
+  rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateMessage) {}
+}
+
+message TableReference {
+  oneof ref {
+    // an exported ticket
+    Ticket ticket = 1;
+    // an offset into a BatchRequest -- used to reference a result that will not be exported
+    sint32 batch_offset = 2;
+  }
+}
+
+message ExportedTableCreationResponse {
+  TableReference result_id = 1;
+
+  // If this is part of a batch, you may receive creation messages that indicate the sub-operation failed.
+  bool success = 2;
+
+  // If this is part of a batch, this errorInfo will be the message provided
+  string error_info = 3;
+
+  // Schema as described in Arrow Message.fbs::Message.
+  bytes schema_header = 4;
+
+  // Whether or not this table might change.
+  bool is_static = 5;
+
+  // The current number of rows for this table.
+  sint64 size = 6 [jstype=JS_STRING];
+
+  // TODO: attributes
+}
+
+message ExportedTableUpdatesRequest {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+message ExportedTableUpdateMessage {
+  Ticket export_id = 1;
+  sint64 size = 2 [jstype=JS_STRING];
+  string update_failure_message = 3;
+}
+
+message EmptyTableRequest {
+  Ticket result_id = 1;
+  sint64 size = 2 [jstype=JS_STRING];
+}
+
+message TimeTableRequest {
+  Ticket result_id = 1;
+  sint64 start_time_nanos = 2 [jstype=JS_STRING];
+  sint64 period_nanos = 3 [jstype=JS_STRING];
+}
+
+message SelectOrUpdateRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated string column_specs = 3;
+}
+
+message SelectDistinctRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated string column_names = 3;
+}
+
+message DropColumnsRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated string column_names = 3;
+}
+
+message UnstructuredFilterTableRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated string filters = 3;
+}
+
+message HeadOrTailRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  sint64 num_rows = 3 [jstype=JS_STRING];
+}
+
+message HeadOrTailByRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  sint64 num_rows = 3 [jstype=JS_STRING];
+  repeated string group_by_column_specs = 4;
+}
+
+message UngroupRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  bool null_fill = 3;
+  repeated string columns_to_ungroup = 4;
+}
+
+message MergeTablesRequest {
+  Ticket result_id = 1;
+  repeated TableReference source_ids = 2;
+  string key_column = 3; // if specified, the result will be sorted by this column
+}
+
+message SnapshotTableRequest {
+  Ticket result_id = 1;
+
+  // The table on which to invoke the snapshot function. If unset, an empty(1) table will be used.
+  TableReference left_id = 2;
+  // The table to pass into the snapshot function.
+  TableReference right_id = 3;
+  // Whether to take an initial snapshot (passed to table.snapshot function).
+  bool do_initial_snapshot = 4;
+  // Which columns to take from the left table (can be renamed if desired).
+  repeated string stamp_columns = 5;
+}
+
+message CrossJoinTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+
+  // the number of bits of key-space to initially reserve per group; default is 10
+  int32 reserve_bits = 6;
+}
+
+message NaturalJoinTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message ExactJoinTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message LeftJoinTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message AsOfJoinTablesRequest {
+  enum MatchRule {
+    LESS_THAN_EQUAL = 0;
+    LESS_THAN = 1;
+    GREATER_THAN_EQUAL = 2;
+    GREATER_THAN = 3;
+  }
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+  // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
+  // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
+  MatchRule as_of_match_rule = 7;
+}
+
+message ComboAggregateRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated Aggregate aggregates = 3;
+  repeated string group_by_columns = 4;
+  bool force_combo = 5; // don't use direct single-aggregate table operations even if there is only a single aggregate
+
+  message Aggregate {
+    AggType type = 1;
+    repeated string match_pairs = 2; // used in all aggregates except countBy
+    string column_name = 3; // countBy result (output) column OR weighted avg weight (input) column, otherwise unused
+    double percentile = 4; // required by percentileBy aggregates, otherwise unused
+    bool avg_median = 5; // used in percentileBy only
+  }
+
+  enum AggType {
+    SUM = 0;
+    ABS_SUM = 1;
+    ARRAY = 2;
+    AVG = 3;
+    COUNT = 4;
+    FIRST = 5;
+    LAST = 6;
+    MIN = 7;
+    MAX = 8;
+    MEDIAN = 9;
+    PERCENTILE = 10;
+    STD = 11;
+    VAR = 12;
+    WEIGHTED_AVG = 13;
+  }
+}
+
+message SortDescriptor {
+  string column_name = 1;
+  bool is_absolute = 2;
+  SortDirection direction = 3;
+
+  enum SortDirection {
+    UNKNOWN = 0;
+    DESCENDING = -1;
+    ASCENDING = 1;
+    REVERSE = 2;
+  }
+}
+
+message SortTableRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  repeated SortDescriptor sorts = 3;
+}
+
+message FilterTableRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  repeated Condition filters = 3;
+}
+
+message Reference {
+  string column_name = 1;
+}
+
+message Literal {
+  oneof value {
+    string string_value = 1;
+    double double_value = 2;
+    bool bool_value = 3;
+    sint64 long_value = 4 [jstype=JS_STRING];
+    sint64 nano_time_value = 5 [jstype=JS_STRING]; // nanos since the epoch
+  }
+}
+// could also inline this to each place that uses it
+message Value {
+  oneof data {
+    Reference reference = 1;
+    Literal literal = 2;
+  }
+}
+
+message Condition {
+  oneof data {
+    AndCondition and = 1;
+    OrCondition or = 2;
+    NotCondition not = 3;
+
+    CompareCondition compare = 4;
+
+    InCondition in = 5;
+
+    InvokeCondition invoke = 6;
+
+    IsNullCondition is_null = 7;
+
+    MatchesCondition matches = 8;
+    ContainsCondition contains = 9;
+
+    SearchCondition search = 10;
+  }
+}
+
+// merge AND and OR into one and give them an "operation"?
+message AndCondition {
+  repeated Condition filters = 1;
+}
+message OrCondition {
+  repeated Condition filters = 1;
+}
+message NotCondition {
+  Condition filter = 1;
+}
+
+message CompareCondition {
+  enum CompareOperation {
+    LESS_THAN = 0;
+    LESS_THAN_OR_EQUAL = 1;
+    GREATER_THAN = 2;
+    GREATER_THAN_OR_EQUAL = 3;
+    EQUALS = 4;
+    NOT_EQUALS = 5;
+  }
+  CompareOperation operation = 1;
+  CaseSensitivity case_sensitivity = 2;
+  Value lhs = 3;
+  Value rhs = 4;
+}
+
+enum CaseSensitivity {
+  MATCH_CASE = 0;
+  IGNORE_CASE = 1;
+}
+enum MatchType {
+  REGULAR = 0;
+  INVERTED = 1;
+}
+
+message InCondition {
+  Value target = 1;
+  repeated Value candidates = 2;
+
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
+}
+
+message InvokeCondition {
+  string method = 1;
+  Value target = 2;
+  repeated Value arguments = 3;
+}
+message IsNullCondition {
+  Reference reference = 1;
+}
+
+message MatchesCondition {
+  Reference reference = 1;
+  string regex = 2;
+
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
+}
+
+message ContainsCondition {
+  Reference reference = 1;
+  string search_string = 2;
+
+  CaseSensitivity case_sensitivity = 3;
+  MatchType match_type = 4;
+}
+
+// search
+message SearchCondition {
+  string search_string = 1;
+  repeated Reference optional_references = 2;
+}
+
+message FlattenRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+}
+
+message RunChartDownsampleRequest {
+  message ZoomRange {
+    optional int64 min_date_nanos = 1 [jstype=JS_STRING];
+    optional int64 max_date_nanos = 2 [jstype=JS_STRING];
+  }
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  int32 pixel_count = 3;
+  ZoomRange zoom_range = 4;
+  string x_column_name = 5;
+  repeated string y_column_names = 6;
+}
+
+message BatchTableRequest {
+  repeated Operation ops = 1;
+
+  message Operation {
+    oneof op {
+      EmptyTableRequest empty_table = 1;
+      TimeTableRequest time_table = 2;
+      DropColumnsRequest drop_columns = 3;
+      SelectOrUpdateRequest update = 4;
+      SelectOrUpdateRequest lazy_update = 5;
+      SelectOrUpdateRequest view = 6;
+      SelectOrUpdateRequest update_view = 7;
+      SelectOrUpdateRequest select = 8;
+      SelectDistinctRequest select_distinct = 9;
+      FilterTableRequest filter = 10;
+      UnstructuredFilterTableRequest unstructured_filter = 11;
+      SortTableRequest sort = 12;
+      HeadOrTailRequest head = 13;
+      HeadOrTailRequest tail = 14;
+      HeadOrTailByRequest head_by = 15;
+      HeadOrTailByRequest tail_by = 16;
+      UngroupRequest ungroup = 17;
+      MergeTablesRequest merge = 18;
+      ComboAggregateRequest combo_aggregate = 19;
+      SnapshotTableRequest snapshot = 20;
+      FlattenRequest flatten = 21;
+      RunChartDownsampleRequest run_chart_downsample = 22;
+      CrossJoinTablesRequest cross_join = 23;
+      NaturalJoinTablesRequest natural_join = 24;
+      ExactJoinTablesRequest exact_join = 25;
+      LeftJoinTablesRequest left_join = 26;
+      AsOfJoinTablesRequest as_of_join = 27;
+    }
+  }
+}

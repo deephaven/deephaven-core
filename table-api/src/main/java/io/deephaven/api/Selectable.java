@@ -2,6 +2,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#updateView(Collection)
  * @see TableOperations#select(Collection)
  */
-public interface Selectable {
+public interface Selectable extends Serializable {
 
     static Selectable of(ColumnName newColumn, Expression expression) {
         if (newColumn.equals(expression)) {

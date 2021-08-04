@@ -1800,15 +1800,15 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshot(rightTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", rightTable.sizeForInstrumentation(), () -> {
+    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+        return QueryPerformanceRecorder.withNugget("snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", baseTable.sizeForInstrumentation(), () -> {
 
             // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty, we get
             // a view containing all of the columns (in that case, basically we get this table back).
             QueryTable viewTable = (QueryTable) view(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
             // Whatever viewTable came back from the above, we do the snapshot
-            return viewTable.snapshotInternal(rightTable, doInitialSnapshot, viewTable.getDefinition().getColumnNamesArray());
+            return viewTable.snapshotInternal(baseTable, doInitialSnapshot, viewTable.getDefinition().getColumnNamesArray());
         });
     }
 

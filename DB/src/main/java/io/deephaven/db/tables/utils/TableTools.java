@@ -1282,6 +1282,20 @@ public class TableTools {
         return timeTable(DBTimeUtils.convertDateTime(startTime), periodNanos, replayer);
     }
 
+    /**
+     * Creates a table that adds a new row on a regular interval.
+     *
+     * @param timeProvider    the time provider
+     * @param startTime   start time for adding new rows
+     * @param periodNanos time interval between new row additions in nanoseconds.
+     * @return time table
+     */
+    public static Table timeTable(TimeProvider timeProvider, DBDateTime startTime, long periodNanos) {
+        final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
+        LiveTableMonitor.DEFAULT.addTable(timeTable);
+        return timeTable;
+    }
+
     // endregion time tables
 
     ///////////  Utilities For Merging Tables /////////////////

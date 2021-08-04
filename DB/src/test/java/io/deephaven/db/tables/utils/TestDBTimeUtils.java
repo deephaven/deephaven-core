@@ -36,7 +36,7 @@ public class TestDBTimeUtils extends BaseArrayTestCase {
 
         assertEquals(jodaDateTime.getMillis()*1000000+123456, DBTimeUtils.nanos(dateTime));
 
-        assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DBTimeUtils.nanos(null));
+        assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DBTimeUtils.nanos((DBDateTime) null));
     }
 
     public void testMidnightConversion() throws Exception{

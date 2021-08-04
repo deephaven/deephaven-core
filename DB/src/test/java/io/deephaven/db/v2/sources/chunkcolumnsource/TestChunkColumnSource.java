@@ -4,7 +4,6 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.v2.hashing.ChunkEquals;
 import io.deephaven.db.v2.hashing.IntChunkEquals;
 import io.deephaven.db.v2.sources.ByteAsBooleanColumnSource;
 import io.deephaven.db.v2.sources.LongAsDateTimeColumnSource;

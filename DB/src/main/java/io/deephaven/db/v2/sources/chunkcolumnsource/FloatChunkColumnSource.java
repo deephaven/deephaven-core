@@ -168,4 +168,9 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
         data.clear();
         firstOffsetForData.resetQuick();
     }
+
+    @Override
+    public long getSize() {
+        return totalSize;
+    }
 }
