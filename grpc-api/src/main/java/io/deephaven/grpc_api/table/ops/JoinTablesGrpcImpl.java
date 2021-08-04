@@ -8,16 +8,16 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.MatchPairFactory;
+import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.StatusRuntimeException;
-import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,7 +37,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
     protected JoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor,
                                  final Function<BatchTableRequest.Operation, T> getRequest,
-                                 final Function<T, Flight.Ticket> getTicket,
+                                 final Function<T, Ticket> getTicket,
                                  final MultiDependencyFunction<T> getDependencies,
                                  final Function<T, List<String>> getColMatchList,
                                  final Function<T, List<String>> getColAddList,

@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -10,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.PutResult",
+    name = "dhinternal.io.deephaven.proto.ticket_pb.Ticket",
     namespace = JsPackage.GLOBAL)
-public class PutResult {
+public class Ticket {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface GetAppMetadataUnionType {
+  public interface GetTicketUnionType {
     @JsOverlay
-    static PutResult.GetAppMetadataUnionType of(Object o) {
+    static Ticket.GetTicketUnionType of(Object o) {
       return Js.cast(o);
     }
 
@@ -42,9 +42,9 @@ public class PutResult {
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface SetAppMetadataValueUnionType {
+  public interface SetTicketValueUnionType {
     @JsOverlay
-    static PutResult.SetAppMetadataValueUnionType of(Object o) {
+    static Ticket.SetTicketValueUnionType of(Object o) {
       return Js.cast(o);
     }
 
@@ -72,9 +72,9 @@ public class PutResult {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface GetAppMetadataUnionType {
+    public interface GetTicketUnionType {
       @JsOverlay
-      static PutResult.ToObjectReturnType.GetAppMetadataUnionType of(Object o) {
+      static Ticket.ToObjectReturnType.GetTicketUnionType of(Object o) {
         return Js.cast(o);
       }
 
@@ -100,35 +100,33 @@ public class PutResult {
     }
 
     @JsOverlay
-    static PutResult.ToObjectReturnType create() {
+    static Ticket.ToObjectReturnType create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    PutResult.ToObjectReturnType.GetAppMetadataUnionType getAppMetadata();
+    Ticket.ToObjectReturnType.GetTicketUnionType getTicket();
 
     @JsProperty
-    void setAppMetadata(PutResult.ToObjectReturnType.GetAppMetadataUnionType appMetadata);
+    void setTicket(Ticket.ToObjectReturnType.GetTicketUnionType ticket);
 
     @JsOverlay
-    default void setAppMetadata(String appMetadata) {
-      setAppMetadata(
-          Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
+    default void setTicket(String ticket) {
+      setTicket(Js.<Ticket.ToObjectReturnType.GetTicketUnionType>uncheckedCast(ticket));
     }
 
     @JsOverlay
-    default void setAppMetadata(Uint8Array appMetadata) {
-      setAppMetadata(
-          Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
+    default void setTicket(Uint8Array ticket) {
+      setTicket(Js.<Ticket.ToObjectReturnType.GetTicketUnionType>uncheckedCast(ticket));
     }
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface GetAppMetadataUnionType {
+    public interface GetTicketUnionType {
       @JsOverlay
-      static PutResult.ToObjectReturnType0.GetAppMetadataUnionType of(Object o) {
+      static Ticket.ToObjectReturnType0.GetTicketUnionType of(Object o) {
         return Js.cast(o);
       }
 
@@ -154,59 +152,56 @@ public class PutResult {
     }
 
     @JsOverlay
-    static PutResult.ToObjectReturnType0 create() {
+    static Ticket.ToObjectReturnType0 create() {
       return Js.uncheckedCast(JsPropertyMap.of());
     }
 
     @JsProperty
-    PutResult.ToObjectReturnType0.GetAppMetadataUnionType getAppMetadata();
+    Ticket.ToObjectReturnType0.GetTicketUnionType getTicket();
 
     @JsProperty
-    void setAppMetadata(PutResult.ToObjectReturnType0.GetAppMetadataUnionType appMetadata);
+    void setTicket(Ticket.ToObjectReturnType0.GetTicketUnionType ticket);
 
     @JsOverlay
-    default void setAppMetadata(String appMetadata) {
-      setAppMetadata(
-          Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
+    default void setTicket(String ticket) {
+      setTicket(Js.<Ticket.ToObjectReturnType0.GetTicketUnionType>uncheckedCast(ticket));
     }
 
     @JsOverlay
-    default void setAppMetadata(Uint8Array appMetadata) {
-      setAppMetadata(
-          Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
+    default void setTicket(Uint8Array ticket) {
+      setTicket(Js.<Ticket.ToObjectReturnType0.GetTicketUnionType>uncheckedCast(ticket));
     }
   }
 
-  public static native PutResult deserializeBinary(Uint8Array bytes);
+  public static native Ticket deserializeBinary(Uint8Array bytes);
 
-  public static native PutResult deserializeBinaryFromReader(PutResult message, Object reader);
+  public static native Ticket deserializeBinaryFromReader(Ticket message, Object reader);
 
-  public static native void serializeBinaryToWriter(PutResult message, Object writer);
+  public static native void serializeBinaryToWriter(Ticket message, Object writer);
 
-  public static native PutResult.ToObjectReturnType toObject(
-      boolean includeInstance, PutResult msg);
+  public static native Ticket.ToObjectReturnType toObject(boolean includeInstance, Ticket msg);
 
-  public native PutResult.GetAppMetadataUnionType getAppMetadata();
+  public native Ticket.GetTicketUnionType getTicket();
 
-  public native String getAppMetadata_asB64();
+  public native String getTicket_asB64();
 
-  public native Uint8Array getAppMetadata_asU8();
+  public native Uint8Array getTicket_asU8();
 
   public native Uint8Array serializeBinary();
 
-  public native void setAppMetadata(PutResult.SetAppMetadataValueUnionType value);
+  public native void setTicket(Ticket.SetTicketValueUnionType value);
 
   @JsOverlay
-  public final void setAppMetadata(String value) {
-    setAppMetadata(Js.<PutResult.SetAppMetadataValueUnionType>uncheckedCast(value));
+  public final void setTicket(String value) {
+    setTicket(Js.<Ticket.SetTicketValueUnionType>uncheckedCast(value));
   }
 
   @JsOverlay
-  public final void setAppMetadata(Uint8Array value) {
-    setAppMetadata(Js.<PutResult.SetAppMetadataValueUnionType>uncheckedCast(value));
+  public final void setTicket(Uint8Array value) {
+    setTicket(Js.<Ticket.SetTicketValueUnionType>uncheckedCast(value));
   }
 
-  public native PutResult.ToObjectReturnType0 toObject();
+  public native Ticket.ToObjectReturnType0 toObject();
 
-  public native PutResult.ToObjectReturnType0 toObject(boolean includeInstance);
+  public native Ticket.ToObjectReturnType0 toObject(boolean includeInstance);
 }
