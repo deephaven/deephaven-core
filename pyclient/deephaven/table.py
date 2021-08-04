@@ -17,7 +17,7 @@ class Table:
             self._parse_schema(schema_header)
 
     def update(self, column_specs=[]):
-        return self.session.update_table(self, column_specs)
+        return self.session.table_service.update_table(self, column_specs)
 
     def _parse_schema(self, schema_header):
         if not schema_header:
@@ -46,8 +46,8 @@ class Table:
         # self.session.subscribe_table(self)
         return self.session.snapshot_table(self)
 
-    def filter(self):
-        ...
+    def drop_columns(self, column_names=None):
+        return self.session.drop_columns(self, column_names)
 
 
 class EmptyTable(Table):
