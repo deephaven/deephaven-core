@@ -53,7 +53,8 @@ public class ParquetTableWriter {
 
     private static final int PAGE_SIZE = 1 << 20;
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-    public static final String GROUPING = "grouping";
+
+    public static final String GROUPING_COLUMNS = "dh_grouping";
     public static final String CODEC_NAME_PREFIX = "dh_codec_name:";
     public static final String CODEC_ARGS_PREFIX = "dh_codec_args:";
     public static final String CODEC_DATA_TYPE_PREFIX = "dh_codec_data_type:";
@@ -61,10 +62,13 @@ public class ParquetTableWriter {
     public static final String SPECIAL_TYPE_NAME_PREFIX = "dh_special_type:";
     public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
     public static final String DBARRAY_SPECIAL_TYPE = "Vector";
+
     private static final int LOCAL_CHUNK_SIZE = 1024;
+
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
+
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
     private static String minusParquetSuffix(final String s) {
@@ -174,7 +178,7 @@ public class ParquetTableWriter {
             if (groupingColumns.length > 0) {
                 cleanupPaths = new ArrayList<>(groupingColumns.length);
                 tableMeta = new HashMap<>(incomingMeta);
-                tableMeta.put(GROUPING, String.join(",", groupingColumns));
+                tableMeta.put(GROUPING_COLUMNS, String.join(",", groupingColumns));
                 final Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 for (int i = 0; i < auxiliaryTables.length; i++) {
                     final String groupingPath = groupingPathFactory.apply(groupingColumns[i]);

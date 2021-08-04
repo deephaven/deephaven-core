@@ -70,9 +70,9 @@ class ParquetTableLocation extends AbstractTableLocation {
         }
 
         keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
-        final String grouping = keyValueMetaData.get(ParquetTableWriter.GROUPING);
-        if (grouping != null) {
-            groupingParquetColumnNames.addAll(Arrays.asList(grouping.split(",")));
+        final String groupingParquetColumnNamesCSV = keyValueMetaData.get(ParquetTableWriter.GROUPING_COLUMNS);
+        if (groupingParquetColumnNamesCSV != null) {
+            groupingParquetColumnNames.addAll(Arrays.asList(groupingParquetColumnNamesCSV.split(",")));
         }
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());

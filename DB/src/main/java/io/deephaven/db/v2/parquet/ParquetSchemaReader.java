@@ -4,10 +4,8 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.ParquetTools;
-import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
-import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -110,7 +108,7 @@ public class ParquetSchemaReader {
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(keyValueMetaData, errorString, currentColumn);
-        final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING);
+        final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING_COLUMNS);
         Set<String> groupingCols = Collections.emptySet();
         if (csvGroupingCols != null && !csvGroupingCols.isEmpty()) {
             groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
