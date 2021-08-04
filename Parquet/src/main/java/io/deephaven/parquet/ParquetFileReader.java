@@ -40,8 +40,8 @@ public class ParquetFileReader {
     public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider, int pageSizeHint) throws IOException {
         this.channelsProvider = channelsProvider;
         this.codecFactory =  ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
-        rootPath = Paths.get(filePath);
-
+        // Root path should be this file if a single file, else the parent directory for a metadata file
+        rootPath = filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
         SeekableByteChannel f = channelsProvider.getReadChannel(filePath);
         long fileLen = f.size();

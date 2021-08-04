@@ -14,6 +14,7 @@ import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,8 +28,9 @@ class ParquetTableLocation extends AbstractTableLocation {
 
     private final ParquetInstructions readInstructions;
     private final ParquetFileReader parquetFileReader;
-    private final int[] rowGroupOrdinals;
+    private final int[] rowGroupIndices;
 
+    private final RowGroup[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
     private final Map<String, String> keyValueMetaData;
@@ -47,11 +49,15 @@ class ParquetTableLocation extends AbstractTableLocation {
         synchronized (tableLocationKey) {
             parquetFileReader = tableLocationKey.getFileReader();
             parquetMetadata = tableLocationKey.getMetadata();
-            rowGroupOrdinals = tableLocationKey.getRowGroupOrdinals();
+            rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
 
-        final int rowGroupCount = rowGroupOrdinals.length;
-        final long maxRowCount = IntStream.of(rowGroupOrdinals).mapToLong(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi).getNum_rows()).max().orElse(0L);
+        final int rowGroupCount = rowGroupIndices.length;
+        rowGroups = IntStream.of(rowGroupIndices)
+                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
+                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
+                .toArray(RowGroup[]::new);
+        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
         regionParameters = new RegionedPageStore.Parameters(
                 RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
 
@@ -110,7 +116,10 @@ class ParquetTableLocation extends AbstractTableLocation {
             if ((local = rowGroupReaders) != null) {
                 return local;
             }
-            return rowGroupReaders = IntStream.of(rowGroupOrdinals).mapToObj(parquetFileReader::getRowGroup).toArray(RowGroupReader[]::new);
+            return rowGroupReaders = IntStream.of(rowGroupIndices)
+                    .mapToObj(parquetFileReader::getRowGroup)
+                    .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
+                    .toArray(RowGroupReader[]::new);
         }
     }
 
@@ -129,8 +138,9 @@ class ParquetTableLocation extends AbstractTableLocation {
 
     private CurrentOnlyIndex computeIndex() {
         final CurrentOnlyIndex.SequentialBuilder sequentialBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-        for (int rgi = 0; rgi < rowGroupOrdinals.length; ++rgi) {
-            final long subRegionSize = parquetFileReader.fileMetaData.getRow_groups().get(rgi).getNum_rows();
+
+        for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
+            final long subRegionSize = rowGroups[rgi].getNum_rows();
             final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);

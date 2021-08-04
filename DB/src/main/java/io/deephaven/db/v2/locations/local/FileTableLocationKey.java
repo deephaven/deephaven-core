@@ -22,6 +22,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     private static final String IMPLEMENTATION_NAME = FileTableLocationKey.class.getSimpleName();
 
     protected final File file;
+    private final int order;
 
     private int cachedHashCode;
 
@@ -29,14 +30,16 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
      * @param file        The file (or directory) that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order      Explicit ordering index, taking precedence over other fields
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
      *                   parameter is {@code null}, the location will be a member of no partitions. An ordered copy
      *                   of the map will be made, so the calling code is free to mutate the map after this call
      *                   completes, but the partition keys and values themselves <em>must</em> be effectively immutable.
      */
-    public FileTableLocationKey(@NotNull final File file, @Nullable final Map<String, Comparable<?>> partitions) {
+    public FileTableLocationKey(@NotNull final File file, final int order, @Nullable final Map<String, Comparable<?>> partitions) {
         super(partitions);
         this.file = file.getAbsoluteFile();
+        this.order = order;
     }
 
     public final File getFile() {
@@ -60,8 +63,15 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     public int compareTo(@NotNull final TableLocationKey other) {
         if (other instanceof FileTableLocationKey) {
             final FileTableLocationKey otherTyped = (FileTableLocationKey) other;
+            final int orderingComparisonResult = Integer.compare(order, otherTyped.order);
+            if (orderingComparisonResult != 0) {
+                return orderingComparisonResult;
+            }
             final int partitionComparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions);
-            return partitionComparisonResult != 0 ? partitionComparisonResult : file.compareTo(otherTyped.file);
+            if (partitionComparisonResult != 0) {
+                return partitionComparisonResult;
+            }
+            return file.compareTo(otherTyped.file);
         }
         throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
     }

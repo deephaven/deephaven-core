@@ -257,7 +257,7 @@ public class TestChunkedRegionedOperations {
                         "DT_R = nanos(DT)"
                 );
 
-        actual = ParquetTools.readMultiFileTable(
+        actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition

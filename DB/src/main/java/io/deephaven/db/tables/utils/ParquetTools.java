@@ -20,6 +20,7 @@ import io.deephaven.db.v2.SimpleSourceTable;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.locations.impl.*;
+import io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationFactory;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
@@ -111,7 +112,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String sourceFilePath,
             final TableDefinition definition) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), null), ParquetInstructions.EMPTY, definition);
+        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), 0, null), ParquetInstructions.EMPTY, definition);
     }
 
     /**
@@ -127,7 +128,7 @@ public class ParquetTools {
             @NotNull final String sourceFilePath,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), null), readInstructions, definition);
+        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), 0, null), readInstructions, definition);
     }
 
     /**
@@ -140,7 +141,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final File sourceFile,
             @NotNull final TableDefinition definition) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, null), ParquetInstructions.EMPTY, definition);
+        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, 0, null), ParquetInstructions.EMPTY, definition);
     }
 
     /**
@@ -155,7 +156,7 @@ public class ParquetTools {
             @NotNull final File sourceFile,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, null), readInstructions, definition);
+        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, 0, null), readInstructions, definition);
     }
 
     /**
@@ -407,7 +408,7 @@ public class ParquetTools {
      * @param tableDefinition   The table's {@link TableDefinition definition}
      * @return The table
      */
-    public static Table readMultiFileTable(
+    public static Table readPartitionedTable(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
@@ -428,7 +429,7 @@ public class ParquetTools {
      * @param readInstructions  Instructions for customizations while reading
      * @return The table
      */
-    public static Table readMultiFileTable(
+    public static Table readPartitionedTableInferSchema(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
         final RecordingLocationKeyFinder<ParquetTableLocationKey> recordingLocationKeyFinder = new RecordingLocationKeyFinder<>();
@@ -450,7 +451,27 @@ public class ParquetTools {
             allColumns.add(ColumnDefinition.fromGenericType(partitionKey, getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         }
         allColumns.addAll(schemaInfo.getFirst());
-        return readMultiFileTable(recordingLocationKeyFinder, schemaInfo.getSecond(), new TableDefinition(allColumns));
+        return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(), new TableDefinition(allColumns));
+    }
+
+    /**
+     * Reads in a table using metadata files found in the supplied directory.
+     *
+     * @param directory        The source of {@link ParquetTableLocationKey location keys} to include
+     * @param readInstructions Instructions for customizations while reading
+     * @return The table
+     */
+    public static Table readPartitionedTableWithMetadata(
+            @NotNull final File directory,
+            @NotNull final ParquetInstructions readInstructions) {
+        final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
+        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
+                StandaloneTableKey.getInstance(),
+                layout,
+                new ParquetTableLocationFactory(layout.getInstructions()),
+                null);
+        return new PartitionAwareSourceTable(layout.getTableDefinition(), "Read multiple parquet files with metadata  " + directory,
+                RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
     // TODO-RWC: Support "JUST DO THE RIGHT THING" read method
@@ -545,7 +566,7 @@ public class ParquetTools {
     @VisibleForTesting
     public static Table readParquetSchemaAndTable(
             @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn, MutableObject<ParquetInstructions> instructionsOut) {
-        final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, null);
+        final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
         final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(tableLocationKey.getMetadata(), readInstructionsIn);
         final TableDefinition def = new TableDefinition(schemaInfo.getFirst());
         if (instructionsOut != null) {

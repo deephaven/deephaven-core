@@ -1,5 +1,7 @@
 package io.deephaven.db.v2.locations.local;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -13,6 +15,7 @@ import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -64,7 +69,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 final ColumnDefinition leafDefinition = leafDefinitionsMap.get(fullDefinition.getName());
                 if (leafDefinition == null) {
                     adjustedColumnDefinitions.add(adjustPartitionDefinition(fullDefinition));
-                } else if (!fullDefinition.equals(leafDefinition)) {
+                } else if (fullDefinition.equals(leafDefinition)) {
+                    adjustedColumnDefinitions.add(fullDefinition); // No adjustments to apply in this case
+                } else {
                     final List<String> differences = new ArrayList<>();
                     //noinspection unchecked
                     fullDefinition.describeDifferences(differences, leafDefinition, "full schema", "file schema", "");
@@ -82,52 +89,57 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final List<ColumnDefinition> partitioningColumns = definition.getPartitioningColumns();
         final Map<String, ColumnDefinition> partitioningColumnsMap = partitioningColumns.stream().collect(
                 toMap(ColumnDefinition::getName, Function.identity(), Assert::neverInvoked, LinkedHashMap::new));
-        final Map<String, List<RowGroup>> fileNameToRowGroups =
-                metadataFileReader.fileMetaData.getRow_groups().stream().collect(groupingBy(rg -> rg.getColumns().get(0).getFile_path()));
-        keys = fileNameToRowGroups.entrySet().stream().map(entry -> {
-            final String fileName = entry.getKey();
-            final int[] rowGroupOrdinals = entry.getValue().stream().mapToInt(RowGroup::getOrdinal).toArray();
+        final Map<String, TIntList> fileNameToRowGroupIndices = new LinkedHashMap<>();
+        final List<RowGroup> rowGroups = metadataFileReader.fileMetaData.getRow_groups();
+        final int numRowGroups = rowGroups.size();
+        for (int rgi = 0; rgi < numRowGroups; ++rgi) {
+            fileNameToRowGroupIndices.computeIfAbsent(rowGroups.get(rgi).getColumns().get(0).getFile_path(), fn -> new TIntArrayList()).add(rgi);
+        }
+        final MutableInt partitionOrder = new MutableInt(0);
+        keys = fileNameToRowGroupIndices.entrySet().stream().map(entry -> {
+            final String filePathString = entry.getKey();
+            final int[] rowGroupIndices = entry.getValue().toArray();
 
-            if (fileName == null || fileName.isEmpty()) {
-                throw new TableDataException("Missing parquet file name for row groups " + Arrays.toString(rowGroupOrdinals) + " in " + metadataFile);
+            if (filePathString == null || filePathString.isEmpty()) {
+                throw new TableDataException("Missing parquet file name for row groups " + Arrays.toString(rowGroupIndices) + " in " + metadataFile);
             }
             final LinkedHashMap<String, Comparable<?>> partitions = partitioningColumns.isEmpty() ? null : new LinkedHashMap<>();
             if (partitions != null) {
-                final String[] paths = fileName.split(File.pathSeparator);
-                final int numPartitions = paths.length - 1;
+                final Path filePath = Paths.get(filePathString);
+                final int numPartitions = filePath.getNameCount() - 1;
                 if (numPartitions != partitioningColumns.size()) {
-                    throw new TableDataException("Unexpected number of path elements in " + fileName + " for partitions " + partitions.keySet());
+                    throw new TableDataException("Unexpected number of path elements in " + filePathString + " for partitions " + partitions.keySet());
                 }
-                final boolean useHiveStyle = paths[0].contains("=");
+                final boolean useHiveStyle = filePath.getName(0).toString().contains("=");
                 for (int pi = 0; pi < numPartitions; ++pi) {
-                    final String path = paths[pi];
+                    final String pathElement = filePath.getName(pi).toString();
                     final ColumnDefinition columnDefinition;
                     final String partitionKey;
                     final String partitionValueRaw;
                     if (useHiveStyle) {
-                        final String[] pathComponents = path.split("=");
+                        final String[] pathComponents = pathElement.split("=");
                         if (pathComponents.length != 2) {
-                            throw new TableDataException("Unexpected path format found for hive-style partitioning from " + fileName + " for " + metadataFile);
+                            throw new TableDataException("Unexpected path format found for hive-style partitioning from " + filePathString + " for " + metadataFile);
                         }
-                        partitionKey = instructions.getColumnNameFromParquetColumnName(pathComponents[0]);
+                        partitionKey = instructions.getColumnNameFromParquetColumnNameOrDefault(pathComponents[0]);
                         columnDefinition = partitioningColumnsMap.get(partitionKey);
                         partitionValueRaw = pathComponents[1];
                     } else {
                         columnDefinition = partitioningColumns.get(pi);
                         partitionKey = columnDefinition.getName();
-                        partitionValueRaw = path;
+                        partitionValueRaw = pathElement;
                     }
                     final Comparable<?> partitionValue = CONVERSION_FUNCTIONS.get(columnDefinition.getDataType()).apply(partitionValueRaw);
                     if (partitions.containsKey(partitionKey)) {
-                        throw new TableDataException("Unexpected duplicate partition key " + partitionKey + " when parsing " + fileName + " for " + metadataFile);
+                        throw new TableDataException("Unexpected duplicate partition key " + partitionKey + " when parsing " + filePathString + " for " + metadataFile);
                     }
                     partitions.put(partitionKey, partitionValue);
                 }
             }
-            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(new File(directory, fileName), partitions);
+            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(new File(directory, filePathString), partitionOrder.getAndIncrement(), partitions);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(metadataFileMetadata);
-            tlk.setRowGroupOrdinals(rowGroupOrdinals);
+            tlk.setRowGroupIndices(rowGroupIndices);
             return tlk;
         }).collect(Collectors.toList());
     }
@@ -158,7 +170,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             return columnDefinition.withPartitioning();
         }
         final Class<?> unboxedType = TypeUtils.getUnboxedType(dataType);
-        if (unboxedType.isPrimitive()) {
+        if (unboxedType != null && unboxedType.isPrimitive()) {
             return ColumnDefinition.fromGenericType(columnDefinition.getName(), unboxedType, ColumnDefinition.COLUMNTYPE_PARTITIONING, null);
         }
         if (dataType == Boolean.class || dataType == String.class || dataType == BigDecimal.class || dataType == BigInteger.class) {

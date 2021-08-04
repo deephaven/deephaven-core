@@ -42,7 +42,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
         return new KeyValuePartitionLayout<>(
                 tableRootDirectory,
                 path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
-                (path, partitions) -> new ParquetTableLocationKey(path.toFile(), partitions),
+                (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels
         );
     }
