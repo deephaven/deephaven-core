@@ -96,7 +96,7 @@ public class KafkaTools {
         }
         final Schema.Type type = schema.getType();
         if (type != Schema.Type.RECORD) {
-            throw new IllegalArgumentException("The schema is not a toplevel redcord definition.");
+            throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
         final List<Schema.Field> fields = schema.getFields();
         final int nCols = fields.size();
@@ -467,6 +467,9 @@ public class KafkaTools {
         }
         if (BYTE_ARRAY_DESERIALIZER.equals(deserializer)) {
             return ColumnDefinition.fromGenericType(columnName, byte[].class, byte.class);
+        }
+        if (STRING_DESERIALIZER.equals(deserializer)) {
+            return ColumnDefinition.ofString(columnName);
         }
         throw new IllegalArgumentException(
                 "Deserializer type " + deserializer + " for " + deserializerProperty + " not supported.");
