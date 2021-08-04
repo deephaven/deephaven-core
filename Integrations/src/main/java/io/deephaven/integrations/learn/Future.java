@@ -20,6 +20,7 @@ public class Future {
     boolean called;
     IndexSet indexSet;
     PyObject result;
+    long offset;
 
     /**
      * Constructor for Future. Creates an IndexSet of maximum size batchSize and initializes necessary fields.
@@ -39,6 +40,7 @@ public class Future {
         this.called = false;
         this.indexSet = new IndexSet(batchSize);
         this.result = null;
+        this.offset = -1;
     }
 
     /**
@@ -76,8 +78,12 @@ public class Future {
             this.result = funcCaller.passThrough(gathered);
             this.func = null;
             this.called = true;
-            //this.indexSet = null;
         }
         return this.result;
+    }
+
+    public long getOffset() {
+        this.offset += 1;
+        return this.offset % this.batchSize;
     }
 }

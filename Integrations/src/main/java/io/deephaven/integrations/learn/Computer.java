@@ -105,7 +105,6 @@ public class Computer {
         }
         return newInputs;
     }
-    */
 
     public void printMe() {
         System.out.println(this.func);
@@ -117,4 +116,6 @@ public class Computer {
     public Input[] getInputs() {
         return this.inputs;
     }
+    */
+
 }

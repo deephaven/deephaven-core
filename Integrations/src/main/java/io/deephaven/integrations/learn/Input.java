@@ -39,6 +39,7 @@ public class Input {
         }
     }
 
+    /*
     public void printMe() {
         System.out.println(this.colNames);
         System.out.println(this.colSet);
@@ -50,4 +51,6 @@ public class Input {
         System.out.println(this.colSet.getClass().getSimpleName());
         System.out.println(this.func.getClass().getSimpleName());
     }
+    */
+
 }
