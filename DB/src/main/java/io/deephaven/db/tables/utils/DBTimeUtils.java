@@ -29,6 +29,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -188,6 +189,13 @@ public class DBTimeUtils {
         }
 
         return dateTime.getNanos();
+    }
+
+    public static long nanos(Instant instant) {
+        if (instant == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+        return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
     }
 
     /**

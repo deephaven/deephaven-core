@@ -1,0 +1,77 @@
+version: "3.4"
+
+services:
+  grpc-api:
+    image: deephaven/grpc-api:local-build
+
+    environment:
+      # https://bugs.openjdk.java.net/browse/JDK-8230305
+      # cgroups v2 resource reservations only work w/ java 15+ ATM, so it's best for our java processes to be explicit
+      # with max memory.
+      #
+      # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
+      - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=${IO_DEEPHAVEN_CONSOLE_TYPE}
+
+    expose:
+      - '8080'
+#    ports:
+#      - '5005:5005'        # For remote debugging (change if using different port)
+
+    # Note: using old-style volume mounts, so that the directories get created if they don't exist
+    # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
+    volumes:
+      - ./docker/core/data:/data
+      - ./docker/core/cache:/cache
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4500M
+        reservations:
+          memory: 1000M
+
+    # Allows the querying of this process jinfo/jmap
+    # docker-compose exec grpc-api jmap -heap 1
+    # docker-compose exec grpc-api jinfo 1
+    cap_add:
+      - SYS_PTRACE
+
+  web:
+    image: deephaven/web:local-build
+    expose:
+      - "80"
+    volumes:
+      - ./docker/core/data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
+  grpc-proxy:
+    image: deephaven/grpc-proxy:local-build
+    environment:
+      - BACKEND_ADDR=grpc-api:8080
+    expose:
+      - '8080'
+#      - '8443' #unused
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+  envoy:
+    # A reverse proxy configured for no SSL on localhost. It fronts the requests
+    # for the static content and the websocket proxy.
+    image: deephaven/envoy:local-build
+    ports:
+      - "${PORT}:10000"
+#      - '9090:9090' #envoy admin
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M

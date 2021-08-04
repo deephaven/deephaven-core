@@ -1,0 +1,159 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+import "deephaven/proto/ticket.proto";
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+/*
+ * User supplied Flight.Ticket(s) should begin with 'e' byte followed by an signed little-endian int. The client is only
+ * allowed to use the positive exportId key-space (client generated exportIds should be greater than 0). The client is
+ * encouraged to use a packed ranges of ids as this yields the smallest footprint server side for long running sessions.
+ *
+ * The client is responsible for releasing all Flight.Tickets that they create or that were created for them via a gRPC
+ * call. The documentation for the gRPC call will indicate that the exports must be released. Exports that need to be
+ * released will always be communicated over the session's ExportNotification stream.
+ *
+ * When a session ends, either explicitly or due to timeout, all exported objects in that session are released
+ * automatically.
+ *
+ * Some parts of the API return a Flight.Ticket that does not need to be released. It is not an error to attempt to
+ * release them.
+ */
+service SessionService {
+  /*
+   * Handshake between client and server to create a new session. The response includes a metadata header name and the
+   * token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+   */
+  rpc NewSession(HandshakeRequest) returns (HandshakeResponse) {}
+
+  /*
+   * Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
+   * token that should replace the existing token for subsequent requests.
+   */
+  rpc RefreshSessionToken(HandshakeRequest) returns (HandshakeResponse) {}
+
+  /*
+   * Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all
+   * unreleased exports will be automatically released.
+   */
+  rpc CloseSession(HandshakeRequest) returns (ReleaseResponse) {}
+
+  /*
+   * Attempts to release an export by its ticket. Returns true if an existing export was found. It is the client's
+   * responsibility to release all resources they no longer want the server to hold on to.
+   */
+  rpc Release(Ticket) returns (ReleaseResponse) {}
+
+  /*
+   * Establish a stream to manage all session exports, including those lost due to partially complete rpc calls.
+   *
+   * New streams will flush notifications for all un-released exports, prior to seeing any new or updated exports
+   * for all live exports. After the refresh of existing state, subscribers will receive notifications of new and
+   * updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
+   */
+  rpc ExportNotifications(ExportNotificationRequest) returns (stream ExportNotification) {}
+}
+
+/*
+ * The request that a client provides to a server on handshake.
+ */
+message HandshakeRequest {
+
+  /*
+   * A defined protocol version.
+   *
+   * Deephaven's OSS protocols are as follows:
+   * - protocol = 0: most recent HandshakeResponse payload
+   * - protocol = 1: payload is BasicAuth
+   */
+  sint32 auth_protocol = 1;
+
+  /*
+   * Arbitrary auth/handshake info.
+   */
+  bytes payload = 2;
+}
+
+/*
+ * Servers respond with information needed to make subsequent requests tied to this session.
+ * The session token should be refreshed prior to the deadline, which is represented as milliseconds since the
+ * epoch. Clients are encouraged to use the expiration delay and cookie deadline to determine a good time to refresh.
+ */
+message HandshakeResponse {
+
+  /*
+   * The metadata header to identify the session. This value is static and defined via configuration.
+   */
+  bytes metadata_header = 1;
+
+  /*
+   * Arbitrary session_token to assign to the value to the provided metadata header.
+   */
+  bytes session_token = 2;
+
+  /*
+   * When this session_token will be considered invalid by the server.
+   */
+  sint64 token_deadline_time_millis = 3 [jstype=JS_STRING];
+
+  /*
+   * The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
+   * existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
+   */
+  sint64 token_expiration_delay_millis = 4 [jstype=JS_STRING];
+}
+
+/*
+ * A message for doing simple auth.
+ */
+message BasicAuth {
+  string username = 2;
+  string password = 3;
+}
+
+/*
+ * Returns success=true if an item was found to release. The export is released and/or cancelled if applicable.
+ */
+message ReleaseResponse {
+  bool success = 1;
+}
+
+message ExportNotificationRequest {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+message ExportNotification {
+  Ticket ticket = 1;
+  enum State {
+    UNKNOWN = 0; // This item is a dependency, but hasn't been registered yet.
+    PENDING = 1; // This item has pending dependencies.
+    PUBLISHING = 2; // This item is a client-supplied dependency with no guarantee on timing to EXPORT state.
+    QUEUED = 3; // This item is eligible for resolution and has been submitted to the executor.
+    EXPORTED = 4; // This item was successfully exported and is currently being retained.
+    RELEASED = 5; // This item was successfully released.
+    CANCELLED = 6; //  CANCELLED: The user cancelled the item before it exported.
+    FAILED = 7; // This item had a specific error.
+    DEPENDENCY_FAILED = 8; // One of this item's dependencies had an internal error before it exported.
+    DEPENDENCY_NEVER_FOUND = 9; // One of this item's dependencies was already released or never submitted within the out-of-order window.
+    DEPENDENCY_CANCELLED = 10; // Dependency was cancelled, causing a cascading cancel that applies to this export.
+    DEPENDENCY_RELEASED = 11; // Dependency was already released, causing a cascading failure that applies to this export.
+  }
+  State export_state = 2;
+
+  /*
+   * any errors will include an id that can be used to find details of the error in the logs
+   */
+  string context = 3;
+
+  /*
+   * will be set to an identifier of the dependency that cascaded the error if applicable
+   */
+  string dependent_handle = 4;
+}

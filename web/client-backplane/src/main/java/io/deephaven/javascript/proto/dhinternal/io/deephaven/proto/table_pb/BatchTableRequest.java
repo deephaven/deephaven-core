@@ -184,6 +184,60 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface CrossJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        double getReserveBits();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setReserveBits(double reserveBits);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface DropColumnsFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
@@ -331,6 +385,54 @@ public class BatchTableRequest {
 
         @JsProperty
         void setSize(String size);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface ExactJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -952,9 +1054,9 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface JoinFieldType {
+      public interface LeftJoinFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType create() {
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -963,9 +1065,6 @@ public class BatchTableRequest {
 
         @JsProperty
         JsArray<String> getColumnsToMatchList();
-
-        @JsProperty
-        double getJoinType();
 
         @JsProperty
         Object getLeftId();
@@ -991,9 +1090,6 @@ public class BatchTableRequest {
         default void setColumnsToMatchList(String[] columnsToMatchList) {
           setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
         }
-
-        @JsProperty
-        void setJoinType(double joinType);
 
         @JsProperty
         void setLeftId(Object leftId);
@@ -1034,6 +1130,54 @@ public class BatchTableRequest {
         default void setSourceIdsList(Object[] sourceIdsList) {
           setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
         }
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface NaturalJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1400,10 +1544,16 @@ public class BatchTableRequest {
           getComboAggregate();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType getCrossJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType getDropColumns();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType getEmptyTable();
+
+      @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType getFilter();
@@ -1418,13 +1568,16 @@ public class BatchTableRequest {
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType getHeadBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType getJoin();
-
-      @JsProperty
       Object getLazyUpdate();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType getLeftJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType getMerge();
+
+      @JsProperty
+      BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType getNaturalJoin();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType
@@ -1478,12 +1631,20 @@ public class BatchTableRequest {
               comboAggregate);
 
       @JsProperty
+      void setCrossJoin(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.CrossJoinFieldType crossJoin);
+
+      @JsProperty
       void setDropColumns(
           BatchTableRequest.ToObjectReturnType.OpsListFieldType.DropColumnsFieldType dropColumns);
 
       @JsProperty
       void setEmptyTable(
           BatchTableRequest.ToObjectReturnType.OpsListFieldType.EmptyTableFieldType emptyTable);
+
+      @JsProperty
+      void setExactJoin(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.ExactJoinFieldType exactJoin);
 
       @JsProperty
       void setFilter(BatchTableRequest.ToObjectReturnType.OpsListFieldType.FilterFieldType filter);
@@ -1499,13 +1660,18 @@ public class BatchTableRequest {
       void setHeadBy(BatchTableRequest.ToObjectReturnType.OpsListFieldType.HeadByFieldType headBy);
 
       @JsProperty
-      void setJoin(BatchTableRequest.ToObjectReturnType.OpsListFieldType.JoinFieldType join);
-
-      @JsProperty
       void setLazyUpdate(Object lazyUpdate);
 
       @JsProperty
+      void setLeftJoin(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType leftJoin);
+
+      @JsProperty
       void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
+
+      @JsProperty
+      void setNaturalJoin(
+          BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType naturalJoin);
 
       @JsProperty
       void setRunChartDownsample(
@@ -1744,6 +1910,60 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface CrossJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        double getReserveBits();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setReserveBits(double reserveBits);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
       public interface DropColumnsFieldType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
@@ -1893,6 +2113,54 @@ public class BatchTableRequest {
 
         @JsProperty
         void setSize(String size);
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface ExactJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2514,9 +2782,9 @@ public class BatchTableRequest {
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface JoinFieldType {
+      public interface LeftJoinFieldType {
         @JsOverlay
-        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType create() {
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType create() {
           return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -2525,9 +2793,6 @@ public class BatchTableRequest {
 
         @JsProperty
         JsArray<String> getColumnsToMatchList();
-
-        @JsProperty
-        double getJoinType();
 
         @JsProperty
         Object getLeftId();
@@ -2553,9 +2818,6 @@ public class BatchTableRequest {
         default void setColumnsToMatchList(String[] columnsToMatchList) {
           setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
         }
-
-        @JsProperty
-        void setJoinType(double joinType);
 
         @JsProperty
         void setLeftId(Object leftId);
@@ -2596,6 +2858,55 @@ public class BatchTableRequest {
         default void setSourceIdsList(Object[] sourceIdsList) {
           setSourceIdsList(Js.<JsArray<Object>>uncheckedCast(sourceIdsList));
         }
+      }
+
+      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+      public interface NaturalJoinFieldType {
+        @JsOverlay
+        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType
+            create() {
+          return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnsToAddList();
+
+        @JsProperty
+        JsArray<String> getColumnsToMatchList();
+
+        @JsProperty
+        Object getLeftId();
+
+        @JsProperty
+        Object getResultId();
+
+        @JsProperty
+        Object getRightId();
+
+        @JsProperty
+        void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+        @JsOverlay
+        default void setColumnsToAddList(String[] columnsToAddList) {
+          setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+        }
+
+        @JsProperty
+        void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+        @JsOverlay
+        default void setColumnsToMatchList(String[] columnsToMatchList) {
+          setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+        }
+
+        @JsProperty
+        void setLeftId(Object leftId);
+
+        @JsProperty
+        void setResultId(Object resultId);
+
+        @JsProperty
+        void setRightId(Object rightId);
       }
 
       @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2963,10 +3274,16 @@ public class BatchTableRequest {
           getComboAggregate();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType getCrossJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType getDropColumns();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType getEmptyTable();
+
+      @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType getExactJoin();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType getFilter();
@@ -2981,13 +3298,16 @@ public class BatchTableRequest {
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType getHeadBy();
 
       @JsProperty
-      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType getJoin();
-
-      @JsProperty
       Object getLazyUpdate();
 
       @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType getLeftJoin();
+
+      @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType getMerge();
+
+      @JsProperty
+      BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType getNaturalJoin();
 
       @JsProperty
       BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType
@@ -3041,12 +3361,20 @@ public class BatchTableRequest {
               comboAggregate);
 
       @JsProperty
+      void setCrossJoin(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CrossJoinFieldType crossJoin);
+
+      @JsProperty
       void setDropColumns(
           BatchTableRequest.ToObjectReturnType0.OpsListFieldType.DropColumnsFieldType dropColumns);
 
       @JsProperty
       void setEmptyTable(
           BatchTableRequest.ToObjectReturnType0.OpsListFieldType.EmptyTableFieldType emptyTable);
+
+      @JsProperty
+      void setExactJoin(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ExactJoinFieldType exactJoin);
 
       @JsProperty
       void setFilter(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.FilterFieldType filter);
@@ -3062,13 +3390,18 @@ public class BatchTableRequest {
       void setHeadBy(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.HeadByFieldType headBy);
 
       @JsProperty
-      void setJoin(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.JoinFieldType join);
-
-      @JsProperty
       void setLazyUpdate(Object lazyUpdate);
 
       @JsProperty
+      void setLeftJoin(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType leftJoin);
+
+      @JsProperty
       void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
+
+      @JsProperty
+      void setNaturalJoin(
+          BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType naturalJoin);
 
       @JsProperty
       void setRunChartDownsample(

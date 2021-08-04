@@ -557,6 +557,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return true;
             }
             if (sar == null || nextRangeIdx == sar.count) {
+                currRangeStart = currRangeEnd = -1;
+                closeImpl();
                 return false;
             }
             int p = sar.unpackedBinarySearch(v, nextRangeIdx);
@@ -875,8 +877,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 rangeCurr = Math.min(v, rangeCurr);
                 return true;
             }
-            if (nextRangeIdx < 0 || sar == null) {
+            if (sar == null || nextRangeIdx < 0) {
                 rangeCurr = rangeStart;
+                close();
                 return false;
             }
             final long packedValue = sar.pack(v);

@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api project(':proto:proto-backplane-grpc')
+    api 'org.apache.arrow:flight-grpc:4.0.1'
 }
 
 spotless {

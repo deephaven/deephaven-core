@@ -853,6 +853,7 @@ public class ChunkerCompleter implements CompletionHandler<ParsedDocument> {
             if (Modifier.isPublic(method.getModifiers())) {
                 // TODO we'll likely want to pick between static or instance methods, based on calling scope.
                 //   IDS-1517-19
+                // TODO(deephaven-core#875): Auto-complete on instance should not suggest static methods
                 if (camelMatch(method.getName(), methodPrefix)) {
                     sorter.add(method.getName(), method);
                 }

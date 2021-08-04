@@ -271,33 +271,33 @@ def writeTable(*args):
       
     *Overload 3*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
                        If there is an error any intermediate directories previously created are removed;
                        note this makes this method unsafe for concurrent use
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       
     *Overload 4*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
                        If there is an error any intermediate directories previously created are removed;
                        note this makes this method unsafe for concurrent use
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 5*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
-      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       :param destPath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
                            If there is an error any intermediate directories previously created are removed;
                            note this makes this method unsafe for concurrent use
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 6*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
-      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
                        If there is an error any intermediate directories previously created are removed;
                        note this makes this method unsafe for concurrent use
+      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
+      :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
     """
     
     return _custom_writeTable(*args)

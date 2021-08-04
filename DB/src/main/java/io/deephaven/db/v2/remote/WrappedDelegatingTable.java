@@ -318,8 +318,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return wrapTable.apply(parent.snapshot(rightTable, doInitialSnapshot, stampColumns));
+    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+        return wrapTable.apply(parent.snapshot(baseTable, doInitialSnapshot, stampColumns));
     }
 
     @Override

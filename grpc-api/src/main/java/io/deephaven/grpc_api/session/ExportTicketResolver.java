@@ -40,7 +40,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                 .require(export)
                 .submit(() -> {
                     if (export.get() instanceof Table) {
-                        return TicketRouter.getFlightInfo((Table) export.get(), descriptor, ExportTicketHelper.descriptorToTicket(descriptor));
+                        return TicketRouter.getFlightInfo((Table) export.get(), descriptor, ExportTicketHelper.descriptorToArrowTicket(descriptor));
                     }
 
                     throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No such flight exists");

@@ -1,0 +1,39 @@
+# Developer-oriented local docker compose file to run together
+# Deephaven Core and Redpanda (Kafka compatible event streaming)
+
+version: "3.4"
+
+services:
+  grpc-api:
+    extends:
+      file: ../docker-compose-common.yml
+      service: grpc-api
+
+  web:
+    extends:
+      file: ../docker-compose-common.yml
+      service: web
+
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
+  grpc-proxy:
+    extends:
+      file: ../docker-compose-common.yml
+      service: grpc-proxy
+    depends_on:
+      - grpc-api
+
+  envoy:
+    # A reverse proxy configured for no SSL on localhost. It fronts the requests
+    # for the static content and the websocket proxy.
+    extends:
+      file: ../docker-compose-common.yml
+      service: envoy
+    depends_on:
+      - web
+      - grpc-proxy
+      - grpc-api
+
+  redpanda:
+    extends:
+      file: ../redpanda-standalone/docker-compose.yml
+      service: redpanda

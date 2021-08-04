@@ -29,12 +29,12 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
     private long totalSize = 0;
 
     // region constructor
-    protected ObjectChunkColumnSource(Class<T> type) {
-        this(type, new TLongArrayList());
+    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {
+        this(type, componentType, new TLongArrayList());
     }
 
-    protected ObjectChunkColumnSource(Class<T> type, final TLongArrayList firstOffsetForData) {
-        super(type);
+    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {
+        super(type, componentType);
         this.firstOffsetForData = firstOffsetForData;
     }
     // endregion constructor
@@ -167,5 +167,10 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         data.forEach(SafeCloseable::close);
         data.clear();
         firstOffsetForData.resetQuick();
+    }
+
+    @Override
+    public long getSize() {
+        return totalSize;
     }
 }

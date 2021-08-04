@@ -1,27 +1,41 @@
 package io.deephaven.db.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     private long prevCycle = -1;
     private ColumnSource<T> prevSource;
     private ColumnSource<T> currentSource;
-    private final UpdateCommitter updateCommitter;
+    private final UpdateCommitter<SwitchColumnSource<T>> updateCommitter;
+    private final Consumer<ColumnSource<T>> onPreviousCommitted;
 
     public SwitchColumnSource(ColumnSource<T> currentSource) {
-        super(currentSource.getType());
+        this(currentSource, null);
+    }
+
+    public SwitchColumnSource(@NotNull final ColumnSource<T> currentSource, @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
+        super(currentSource.getType(), currentSource.getComponentType());
         this.currentSource = currentSource;
         this.updateCommitter = new UpdateCommitter<>(this, SwitchColumnSource::clearPrevious);
+        this.onPreviousCommitted = onPreviousCommitted;
     }
 
     private void clearPrevious() {
+        final ColumnSource<T> captured = prevSource;
         prevCycle = -1;
         prevSource = null;
+        if (onPreviousCommitted != null) {
+            onPreviousCommitted.accept(captured);
+        }
     }
 
     @Override
@@ -65,21 +79,21 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         //noinspection unchecked
         currentSource.fillChunk(((SwitchFillContext)context).currentContext, destination, orderedKeys);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final OrderedKeys orderedKeys) {
         if (prevInvalid()) {
+            //noinspection unchecked
             currentSource.fillPrevChunk(((SwitchFillContext)context).currentContext, destination, orderedKeys);
             return;
         }
         //noinspection unchecked
         final SwitchFillContext switchContext = (SwitchFillContext) context;
         final FillContext useContext = switchContext.prevContext != null ? switchContext.prevContext : switchContext.currentContext;
-        //noinspection unchecked
         prevSource.fillPrevChunk(useContext, destination, orderedKeys);
     }
 
