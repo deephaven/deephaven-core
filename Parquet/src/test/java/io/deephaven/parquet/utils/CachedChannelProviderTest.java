@@ -1,8 +1,6 @@
-package io.deephaven.parquet.util;
+package io.deephaven.parquet.utils;
 
 
-import io.deephaven.parquet.utils.CachedChannelProvider;
-import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,8 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CachedChannelProviderTest {
 
-    private List<String> closed = new ArrayList<>();
-
+    private final List<String> closed = new ArrayList<>();
 
     @org.junit.After
     public void tearDown() {
@@ -27,15 +24,20 @@ public class CachedChannelProviderTest {
 
     @Test
     public void testSimpleRead() throws IOException {
-        SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
-        for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getReadChannel("r" + i);
-            rc.close();
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        final CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
+        for (int ii = 0; ii < 100; ++ii) {
+            final SeekableByteChannel[] sameFile = new SeekableByteChannel[10];
+            for (int jj = 0; jj < sameFile.length; ++jj) {
+                sameFile[jj] = cachedChannelProvider.getReadChannel("r" + ii);
+            }
+            for (int jj = 0; jj < 10; ++jj) {
+                sameFile[jj].close();
+            }
         }
         Assert.assertEquals(closed.size(), 900);
-        for (int i = 0; i < 900; i++) {
-            Assert.assertTrue(closed.get(i).endsWith("r" + (i)));
+        for (int ii = 0; ii < 900; ++ii) {
+            Assert.assertTrue(closed.get(ii).endsWith("r" + ii/10));
         }
     }
 
@@ -94,7 +96,6 @@ public class CachedChannelProviderTest {
         }
         Assert.assertEquals(closed.size(), 900);
         for (int i = 0; i < 1; i++) {
-            List<SeekableByteChannel> channels = new ArrayList<>();
             for (int j = 0; j < 50; j++) {
                 Assert.assertTrue(closed.get(j + 50 * i).endsWith("r" + (50 * i + 49 - j)));
             }
@@ -103,45 +104,48 @@ public class CachedChannelProviderTest {
 
     @Test
     public void testReuse() throws IOException {
-        SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
-        SeekableByteChannel someResult[] = new SeekableByteChannel[50];
-        for (int i = 0; i < 50; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getReadChannel("r" + i % 50);
-            rc.close();
-            someResult[i] = rc;
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        final CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 50);
+        final SeekableByteChannel[] someResult = new SeekableByteChannel[50];
+        for (int ci = 0; ci < someResult.length; ++ci) {
+            someResult[ci] = cachedChannelProvider.getReadChannel("r" + ci);
         }
-        for (int i = 50; i < 1000; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getReadChannel("r" + i % 50);
-            rc.close();
-            Assert.assertSame(rc, someResult[i % 50]);
+        for (int ci = 0; ci < someResult.length; ++ci) {
+            someResult[someResult.length - ci - 1].close();
+        }
+        for (int step = 0; step < 10; ++step) {
+            for (int ci = 0; ci < someResult.length; ++ci) {
+                Assert.assertSame(someResult[ci], cachedChannelProvider.getReadChannel("r" + ci));
+            }
+            for (int ci = 0; ci < someResult.length; ++ci) {
+                someResult[someResult.length - ci - 1].close();
+            }
         }
         Assert.assertEquals(closed.size(), 0);
     }
 
     @Test
     public void testReuse10() throws IOException {
-        SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
-        SeekableByteChannel someResult[] = new SeekableByteChannel[100];
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                SeekableByteChannel rc = cachedChannelProvider.getReadChannel("r" + i % 10);
-                someResult[i * 10 + j] = rc;
+        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
+        final CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
+        final SeekableByteChannel[] someResult = new SeekableByteChannel[100];
+        for (int pi = 0; pi < 10; ++pi) {
+            for (int ci = 0; ci < 10; ++ci) {
+                someResult[pi * 10 + ci] = cachedChannelProvider.getWriteChannel("w" + pi % 10, false);
             }
-            for (int j = 0; j < 10; j++) {
-                someResult[i * 10 + 9 - j].close();
+            for (int ci = 0; ci < 10; ++ci) {
+                someResult[pi * 10 + 9 - ci].close();
             }
         }
-        for (int j = 0; j < 10; j++) {
-            SeekableByteChannel reuse[] = new SeekableByteChannel[100];
-            for (int i = 0; i < 100; i++) {
-                SeekableByteChannel rc = cachedChannelProvider.getReadChannel("r" + (i / 10) % 10);
-                Assert.assertSame(rc, someResult[i % 100]);
-                reuse[i] = rc;
+        for (int step = 0; step < 10; ++step) {
+            final SeekableByteChannel[] reused = new SeekableByteChannel[100];
+            for (int ri = 0; ri < 100; ++ri) {
+                SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("w" + (ri / 10) % 10, false);
+                Assert.assertSame(rc, someResult[ri % 100]);
+                reused[ri] = rc;
             }
-            for (int i = 0; i < 100; i++) {
-                reuse[99 - i].close();
+            for (int ri = 0; ri < 100; ++ri) {
+                reused[99 - ri].close();
             }
         }
         Assert.assertEquals(closed.size(), 0);
@@ -175,7 +179,6 @@ public class CachedChannelProviderTest {
 
     private class TestMockChannel implements SeekableByteChannel {
 
-
         private final int id;
         private final String path;
 
@@ -185,32 +188,32 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public int read(ByteBuffer dst) throws IOException {
+        public int read(ByteBuffer dst) {
             return 0;
         }
 
         @Override
-        public int write(ByteBuffer src) throws IOException {
+        public int write(ByteBuffer src) {
             return 0;
         }
 
         @Override
-        public long position() throws IOException {
+        public long position() {
             return 0;
         }
 
         @Override
-        public SeekableByteChannel position(long newPosition) throws IOException {
+        public SeekableByteChannel position(long newPosition) {
             return null;
         }
 
         @Override
-        public long size() throws IOException {
+        public long size() {
             return 0;
         }
 
         @Override
-        public SeekableByteChannel truncate(long size) throws IOException {
+        public SeekableByteChannel truncate(long size) {
             return null;
         }
 
@@ -220,7 +223,7 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             closing(id, path);
         }
     }

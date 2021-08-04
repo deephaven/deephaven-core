@@ -1,8 +1,10 @@
 package io.deephaven.parquet.utils;
 
+import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.configuration.Configuration;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
@@ -19,85 +20,100 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CachedChannelProvider implements SeekableChannelsProvider {
 
     private final SeekableChannelsProvider wrappedProvider;
-    private final int maxSize;
+    private final int maximumPooledCount;
 
-    private final AtomicLong logicalClock = new AtomicLong(0);
+    private long logicalClock;
+    private long pooledCount;
 
     enum ChannelType {
         Read, Write, WriteAppend
     }
 
-    private final Map<ChannelType, ChannelPool> pools;
+    private final Map<ChannelType, KeyedObjectHashMap<String, PerPathPool>> channelPools;
+
     {
-        final Map<ChannelType, ChannelPool> poolsTemp = new EnumMap<>(ChannelType.class);
-        Arrays.stream(ChannelType.values()).forEach(ct -> poolsTemp.put(ct, new ChannelPool()));
-        pools = Collections.unmodifiableMap(poolsTemp);
+        final Map<ChannelType, KeyedObjectHashMap<String, PerPathPool>> channelPoolsTemp = new EnumMap<>(ChannelType.class);
+        Arrays.stream(ChannelType.values()).forEach(ct -> channelPoolsTemp.put(ct, new KeyedObjectHashMap<>((PerPathPool.KOHM_KEY))));
+        channelPools = Collections.unmodifiableMap(channelPoolsTemp);
     }
 
-    public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider, final int maxSize) {
+    private final RAPriQueue<PerPathPool> releasePriority = new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
+
+    public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider, final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
-        this.maxSize = maxSize;
+        this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
-        final ChannelPool channelPool = pools.get(ChannelType.Read);
-        final SeekableByteChannel result;
-        synchronized (this) {
-            result = getSeekableByteChannel(pathKey, totalPooledCount() >= maxSize, channelPool);
-        }
-        return result == null ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey) : result.position(0);
+        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
+        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
+        return result == null
+                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
+                : result.position(0);
     }
 
     @Override
-    public synchronized SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
+    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
-        final ChannelPool channelPool = pools.get(channelType);
-        final SeekableByteChannel result;
-        synchronized (this) {
-            result = getSeekableByteChannel(pathKey, totalPooledCount() >= maxSize, channelPool);
-        }
+        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
+        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
         return result == null
                 ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
                 : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at end no matter what.
     }
 
-    private int totalPooledCount() {
-        int sum = 0;
-        for (final ChannelPool channelPool : pools.values()) {
-            sum += channelPool.pooledCount();
-        }
-        return sum;
-    }
-
     @Nullable
-    private SeekableByteChannel getSeekableByteChannel(@NotNull final String pathKey,
-                                                       final boolean needsRelease,
-                                                       @NotNull final ChannelPool channelPool) throws IOException {
-        final boolean isReleasing = needsRelease && channelPool.pooledCount() > 0;
-        final CachedChannel result = channelPool.take(pathKey, isReleasing);
-        if (needsRelease && !isReleasing) {
-            releaseOther();
+    private synchronized CachedChannel tryGetPooledChannel(@NotNull final String pathKey,
+                                                           @NotNull final KeyedObjectHashMap<String, PerPathPool> channelPool) {
+        final PerPathPool perPathPool = channelPool.get(pathKey);
+        final CachedChannel result;
+        if (perPathPool == null || perPathPool.availableChannels.isEmpty()) {
+            result = null;
+        } else {
+            result = perPathPool.availableChannels.removeFirst();
+            Assert.eqFalse(result.isOpen, "result.isOpen");
+            result.isOpen = true;
+            if (perPathPool.availableChannels.isEmpty()) {
+                releasePriority.remove(perPathPool);
+            }
+            --pooledCount;
         }
         return result;
     }
 
-    private void releaseOther() throws IOException {
-        for (final ChannelPool pool : pools.values()) {
-            if (pool.pooledCount() > 0) {
-                pool.releaseNext();
-                return;
+    private synchronized void returnPoolableChannel(@NotNull final CachedChannel cachedChannel) throws IOException {
+        Assert.eqFalse(cachedChannel.isOpen, "cachedChannel.isOpen");
+        cachedChannel.closeTime = advanceClock();
+        if (pooledCount == maximumPooledCount) {
+            final PerPathPool oldestClosedNonEmpty = releasePriority.removeTop();
+            oldestClosedNonEmpty.availableChannels.removeLast().dispose();
+            if (!oldestClosedNonEmpty.availableChannels.isEmpty()) {
+                releasePriority.enter(oldestClosedNonEmpty);
             }
+            // Conservation of pooled quantity; pooledCount does not change
+        } else {
+            ++pooledCount;
         }
+        final PerPathPool perPathPool = channelPools.get(cachedChannel.channelType)
+                .putIfAbsent(cachedChannel.pathKey, pk -> new PerPathPool(cachedChannel.channelType, cachedChannel.pathKey));
+        perPathPool.availableChannels.addFirst(cachedChannel);
+        releasePriority.enter(perPathPool);
     }
 
-    private synchronized void give(@NotNull final CachedChannel cachedChannel, @NotNull final ChannelType channelType) throws IOException {
-        pools.get(channelType).give(cachedChannel);
-        if (totalPooledCount() > maxSize) {
-            releaseOther();
+    private long advanceClock() {
+        Assert.holdsLock(this, "this");
+        final long newClock = ++logicalClock;
+        if (newClock > 0) {
+            return newClock;
         }
+        // This is pretty unlikely, but reset to empty if it happens
+        channelPools.values().forEach(Map::clear);
+        releasePriority.clear();
+        pooledCount = 0;
+        return logicalClock = 1;
     }
 
     /**
@@ -107,16 +123,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
         private final SeekableByteChannel wrappedChannel;
         private final ChannelType channelType;
-        private final String path;
+        private final String pathKey;
 
-        private boolean isOpen;
+        private volatile boolean isOpen = true;
         private long closeTime;
 
-        private CachedChannel(@NotNull final SeekableByteChannel wrappedChannel, @NotNull final ChannelType channelType, @NotNull final String path) {
+        private CachedChannel(@NotNull final SeekableByteChannel wrappedChannel, @NotNull final ChannelType channelType, @NotNull final String pathKey) {
             this.wrappedChannel = wrappedChannel;
             this.channelType = channelType;
-            this.path = path;
-            isOpen = true;
+            this.pathKey = pathKey;
         }
 
         @Override
@@ -140,7 +155,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         @Override
         public SeekableByteChannel position(final long newPosition) throws IOException {
             Require.eqTrue(isOpen, "isOpen");
-            return wrappedChannel.position(newPosition);
+            wrappedChannel.position(newPosition);
+            return this;
         }
 
         @Override
@@ -152,7 +168,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         @Override
         public SeekableByteChannel truncate(final long size) throws IOException {
             Require.eqTrue(isOpen, "isOpen");
-            return wrappedChannel.truncate(size);
+            wrappedChannel.truncate(size);
+            return this;
         }
 
         @Override
@@ -163,95 +180,60 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         @Override
         public void close() throws IOException {
             Require.eqTrue(isOpen, "isOpen");
-            closeTime = logicalClock.incrementAndGet();
             isOpen = false;
-            give(this, channelType);
+            returnPoolableChannel(this);
         }
 
-        public String getPath() {
-            return path;
-        }
-
-        private long closeTime() {
-            return closeTime;
-        }
-
-        public void dispose() throws IOException {
+        private void dispose() throws IOException {
             wrappedChannel.close();
         }
     }
 
     /**
-     * Per-{@link ChannelType type} pool.
+     * Per-path pool holder for use within a ChannelPool.
      */
-    private static class ChannelPool {
+    private static class PerPathPool {
 
-        private final Map<String, Deque<CachedChannel>> pool = new HashMap<>();
-        private final PriorityQueue<TimeToPath> thingsToRelease = new PriorityQueue<>();
+        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<PerPathPool>() {
 
-        private int pooledCount = 0;
-
-        private ChannelPool() {
-        }
-
-        private int pooledCount() {
-            return pooledCount;
-        }
-
-        private static class TimeToPath implements Comparable<TimeToPath> {
-
-            private final String path;
-            private final long logicalTime;
-
-            TimeToPath(String path, long logicalTime) {
-                this.path = path;
-                this.logicalTime = logicalTime;
+            @Override
+            public boolean less(@NotNull final PerPathPool ppp1, @NotNull final PerPathPool ppp2) {
+                final CachedChannel ch1 = ppp1.availableChannels.peekLast(); // Oldest channel is at the tail
+                final CachedChannel ch2 = ppp2.availableChannels.peekLast();
+                Assert.neq(Objects.requireNonNull(ch1).closeTime, "ch1.closeTime", Objects.requireNonNull(ch2).closeTime, "ch2.closeTime");
+                return ch1.closeTime < ch2.closeTime;
             }
 
             @Override
-            public int compareTo(@NotNull final TimeToPath other) {
-                return Long.compare(logicalTime, other.logicalTime);
+            public void setPos(@NotNull final PerPathPool ppp, final int slot) {
+                ppp.priorityQueueSlot = slot;
             }
-        }
 
-        private void give(@NotNull final CachedChannel cachedChannel) {
-            Assert.neqTrue(cachedChannel.isOpen, "cachedChannel.isOpen");
-            final Deque<CachedChannel> dest = pool.computeIfAbsent(cachedChannel.getPath(), (path) -> {
-                thingsToRelease.add(new TimeToPath(cachedChannel.getPath(), cachedChannel.closeTime()));
-                return new ArrayDeque<>();
-            });
-            dest.addFirst(cachedChannel);
-            pooledCount++;
-        }
+            @Override
+            public int getPos(@NotNull final PerPathPool ppp) {
+                return ppp.priorityQueueSlot;
+            }
+        };
 
-        @Nullable
-        private CachedChannel take(@NotNull final String path, final boolean needsRelease) throws IOException {
-            final Deque<CachedChannel> queue = pool.get(path);
-            if (queue == null || queue.isEmpty()) {
-                if (needsRelease) {
-                    releaseNext();
-                }
-                return null;
-            }
-            pooledCount--;
-            final CachedChannel cachedChannel = queue.removeFirst();
-            Assert.neqTrue(cachedChannel.isOpen, "cachedChannel.isOpen");
-            cachedChannel.isOpen = true;
-            return cachedChannel;
-        }
+        private static final KeyedObjectKey<String, PerPathPool> KOHM_KEY = new KeyedObjectKey.Basic<String, PerPathPool>() {
 
-        private void releaseNext() throws IOException {
-            final TimeToPath toRelease = thingsToRelease.poll();
-            if (toRelease == null) {
-                return;
+            @Override
+            public String getKey(@NotNull final PerPathPool ppp) {
+                return ppp.path;
             }
-            final Deque<CachedChannel> cachedChannels = pool.get(toRelease.path);
-            cachedChannels.removeLast().dispose();
-            if (!cachedChannels.isEmpty()) {
-                final CachedChannel nextInLine = cachedChannels.peekLast();
-                thingsToRelease.add(new TimeToPath(nextInLine.getPath(), nextInLine.closeTime()));
-            }
-            pooledCount--;
+        };
+
+        @SuppressWarnings({"FieldCanBeLocal", "unused"}) // Field has debugging utility
+        private final ChannelType channelType;
+        private final String path;
+
+        private final Deque<CachedChannel> availableChannels = new ArrayDeque<>();
+
+        private int priorityQueueSlot;
+
+        private PerPathPool(@NotNull final ChannelType channelType, @NotNull final String path) {
+            this.channelType = channelType;
+            this.path = path;
         }
     }
 }
