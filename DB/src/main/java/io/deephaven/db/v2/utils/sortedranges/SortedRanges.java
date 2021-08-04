@@ -556,11 +556,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 return true;
             }
-            if (sar == null) {
-                currRangeStart = currRangeEnd = -1;
-                return false;
-            }
-            if (nextRangeIdx == sar.count) {
+            if (sar == null || nextRangeIdx == sar.count) {
                 currRangeStart = currRangeEnd = -1;
                 closeImpl();
                 return false;
@@ -881,11 +877,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 rangeCurr = Math.min(v, rangeCurr);
                 return true;
             }
-            if (sar == null) {
-                rangeCurr = rangeStart;
-                return false;
-            }
-            if (nextRangeIdx < 0) {
+            if (sar == null || nextRangeIdx < 0) {
                 rangeCurr = rangeStart;
                 close();
                 return false;
