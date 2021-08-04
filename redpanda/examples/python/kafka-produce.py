@@ -1,3 +1,31 @@
+#
+# Examples of use for DH testing together with web UI.
+#
+# == Common to all:
+#
+#  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
+#  * From web UI do: > from deephaven import KafkaTools
+#
+# == Example (1)
+#
+# From web UI do:
+# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'dh.key.column.name':'Symbol', 'dh.value.column.name':'Price', 'dh.value.column.type':'double'}, 'quotes')
+# You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
+#
+# Run this script to produce one row:
+# $ python ./kafka-produce.py quotes MSFT double:274.82
+# You should see one row show up on the web UI table, data matching above.
+#
+# == Example (2) 
+#
+# From web UI do:
+# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'dh.key.column.name':'Metric', 'dh.value.column.name':'Value', 'dh.value.column.type':'long', 'dh.offset.column.name':'', 'dh.partition.column.name':''}, 'metrics')
+# You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
+#
+# Run this script to produce one row:
+# $ python ./kafka-produce.py metrics us_west.latency.millis long:29
+#
+
 from confluent_kafka import Producer
 
 import sys

@@ -44,18 +44,18 @@ import java.util.function.IntToLongFunction;
 
 public class KafkaTools {
 
-    public static final String KAFKA_PARTITION_COLUMN_NAME_PROPERTY = "partition.column.name";
-    public static final String KAFKA_PARTITION_COLUMN_NAME_DEFAULT = "kafkaPartition";
-    public static final String OFFSET_COLUMN_NAME_PROPERTY = "offset.column.name";
-    public static final String OFFSET_COLUMN_NAME_DEFAULT = "offset";
-    public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "timestamp.column.name";
-    public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "timestamp";
-    public static final String KEY_COLUMN_NAME_PROPERTY = "key.column.name";
-    public static final String KEY_COLUMN_NAME_DEFAULT = "key";
-    public static final String VALUE_COLUMN_NAME_PROPERTY = "value.column.name";
-    public static final String VALUE_COLUMN_NAME_DEFAULT = "value";
-    public static final String KEY_COLUMN_TYPE_PROPERTY = "key.column.type";
-    public static final String VALUE_COLUMN_TYPE_PROPERTY = "value.column.type";
+    public static final String KAFKA_PARTITION_COLUMN_NAME_PROPERTY = "dh.partition.column.name";
+    public static final String KAFKA_PARTITION_COLUMN_NAME_DEFAULT = "KafkaPartition";
+    public static final String OFFSET_COLUMN_NAME_PROPERTY = "dh.offset.column.name";
+    public static final String OFFSET_COLUMN_NAME_DEFAULT = "KafkaOffset";
+    public static final String TIMESTAMP_COLUMN_NAME_PROPERTY = "dh.timestamp.column.name";
+    public static final String TIMESTAMP_COLUMN_NAME_DEFAULT = "KafkaTimestamp";
+    public static final String KEY_COLUMN_NAME_PROPERTY = "dh.key.column.name";
+    public static final String KEY_COLUMN_NAME_DEFAULT = "KafkaKey";
+    public static final String VALUE_COLUMN_NAME_PROPERTY = "dh.value.column.name";
+    public static final String VALUE_COLUMN_NAME_DEFAULT = "KafkaValue";
+    public static final String KEY_COLUMN_TYPE_PROPERTY = "dh.key.column.type";
+    public static final String VALUE_COLUMN_TYPE_PROPERTY = "dh.value.column.type";
     public static final String INT_DESERIALIZER = IntegerDeserializer.class.getName();
     public static final String LONG_DESERIALIZER = LongDeserializer.class.getName();
     public static final String DOUBLE_DESERIALIZER = DoubleDeserializer.class.getName();

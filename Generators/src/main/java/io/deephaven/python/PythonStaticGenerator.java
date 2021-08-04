@@ -32,7 +32,7 @@ public class PythonStaticGenerator {
             "io.deephaven.db.tables.utils.DBTimeUtils,yearDiff",
             "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
             "io.deephaven.db.plot.colors.ColorMaps,closureMap",
-            "io.deephaven.kafka.KafkaTools.genericAvroConsumeToTable"
+            "io.deephaven.kafka.KafkaTools,genericAvroConsumeToTable"
             );
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
