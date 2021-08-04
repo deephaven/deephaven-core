@@ -72,6 +72,8 @@ public class Computer {
         this.current.indexSet.add(k);
         return this.current;
     }
+    
+    // this method has yet to be totally translated from Python, still working on that
 
     /*
     public List<Input> parseInput(Table table) {
