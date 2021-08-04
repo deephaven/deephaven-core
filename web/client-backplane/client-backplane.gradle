@@ -8,3 +8,87 @@ Classpaths.inheritJsInterop project
 Classpaths.inheritJsInterop project, 'jsinterop-annotations'
 Classpaths.inheritElemental project
 Classpaths.inheritElemental project, 'elemental2-promise'
+
+/**
+ * Presently this doesn't generate valid code, so is not part of the build, but can be run manually
+ * so that updated .proto files can result in working JS. Two deficiencies currently exist:
+ *  o Classes with instance methods that share a name with static methods cause compile errors, see
+ *    https://github.com/google/jsinterop-generator/issues/47
+ *  o TS/JS enums emit @JsEnum instead of numbers, which doesn't work in GWT2.
+ *
+ * After building, these will have to be reverted or corrected by hand.
+ */
+Docker.registerDockerTask(project, 'regenerateGwtBindings') {
+    copyIn {
+        // scripts and setup
+        from(file('docker')) {
+            into 'layout'
+        }
+        // generated .d.ts files from this project
+        from(project(':proto:proto-backplane-grpc').tasks.getByName('generateProtobuf').outputs.files) {
+            into 'project/src'
+            include "js/**/*.d.ts"
+            eachFile { f ->
+                if (f.path.contains('Flight')) {
+                    f.path = f.path.replaceFirst('js/', 'dhinternal/arrow/flight/protocol/')
+                } else {
+                    f.path = f.path.replaceFirst('js/', 'dhinternal/io/')
+                }
+            }
+            includeEmptyDirs = false
+        }
+    }
+    imageName = 'deephaven/jsinterop-generate-grpc-bindings:local-build'
+    dockerfile {
+        // Basing our image on node, so we can easily use node and npm
+        from 'docker.io/library/node:14.16.0'
+
+        // Install bazelisk so we can handle any version of bazel
+        runCommand '''set -eux; \\
+                      apt-get update; \\
+                      apt-get install openjdk-8-jdk-headless --no-install-recommends -y; \\
+                      rm -rf /var/lib/apt/lists/*; \\
+                      mkdir -p /bazelisk; \\
+                      curl --silent --show-error --location --fail --retry 3 --output /bazelisk/bazel  https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64; \\
+                      chmod +x /bazelisk/bazel; \\
+                      /bazelisk/bazel version'''
+        environmentVariable 'PATH', '${PATH}:/bazelisk'
+
+        // Copy the project layout, so we can cache the build setup
+        copyFile 'layout', '/project'
+        workingDir '/project'
+
+        // Get the right bazel version, build dependencies, cache those results
+        runCommand 'bazel build //:openapi || true'
+
+        // Get .d.ts files from all sources, only rebuild this when package.json updates
+        runCommand '''set -eux; \\
+                      npm ci --unsafe-perm; \\
+                      mkdir -p src/dhinternal/jspb; \\
+                      cp node_modules/@types/google-protobuf/index.d.ts src/dhinternal/jspb/; \\
+                      mkdir src/dhinternal/grpcWeb; \\
+                      cp -r node_modules/@improbable-eng/grpc-web/dist/typings/* src/dhinternal/grpcWeb/; \\
+                      mkdir src/dhinternal/flatbuffers; \\
+                      cp node_modules/@types/flatbuffers/index.d.ts src/dhinternal/flatbuffers; \\
+                      mkdir src/dhinternal/browserHeaders; \\
+                      cp node_modules/browser-headers/dist/typings/* src/dhinternal/browserHeaders; \\
+                      mkdir -p src/dhinternal/io/deephaven/barrage/flatbuf; \\
+                      cp node_modules/@deephaven/barrage/dist/typings/generated/* src/dhinternal/io/deephaven/barrage/flatbuf/'''
+
+        // Copy in our own .d.ts, this is later because we expect more frequent local .proto changes
+        copyFile 'project', '/project'
+
+        // generate final output
+        runCommand './build.sh'
+    }
+    containerOutPath = '/project/java'
+    copyOut {
+        into file('src/main/java')
+        include '**/*.java'
+        preserve {
+            include '**/*.gwt.xml'
+        }
+        includeEmptyDirs = false
+    }
+}
+>>>>>>> bb3244b5a7 (RGB update to handle new barrage, new flight)
