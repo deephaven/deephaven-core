@@ -1,3 +1,17 @@
+#
+# Test driver to produce kafka messages using an avro schema.
+#
+# From the web IDE, run:
+# > from deephaven import KafkaTools
+# > s = getAvroSchema('http://registry:8080/api/ccompat', 'share_price_record', '1')
+# > t3 = genericAvroConsumeToTableOnlyValues({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', 'ALL_PARTITIONS', 'ALL_PARTITIONS_DONT_SEEK', s)
+#
+# The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
+#
+# Run this script to generate one row:
+# $ python ./produce-avro.py share_price str:Symbol:MSFT double:Price:274.82
+# You should see a new row show up in the web IDE with data matching the data sent above.
+#
 from confluent_kafka import avro
 from confluent_kafka.avro import AvroProducer
 

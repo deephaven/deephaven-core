@@ -2,7 +2,7 @@
   "namespace" : "io.deephaven.examples",
   "name" : "share_price",
   "fields" : [
-    { "name" : "symbol", "type" : "string" },
-    { "name" : "price",  "type" : "double" }
+    { "name" : "Symbol", "type" : "string" },
+    { "name" : "Price",  "type" : "double" }
   ]
 }
