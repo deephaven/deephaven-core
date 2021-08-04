@@ -1,10 +1,6 @@
 package io.deephaven.db.v2.locations.parquet.local;
 
-import io.deephaven.configuration.Configuration;
-import io.deephaven.db.util.file.TrackedFileHandleFactory;
-import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableKey;
-import io.deephaven.db.v2.locations.TableLocationKey;
 import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
@@ -16,72 +12,64 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
-import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
-import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
+import java.util.stream.IntStream;
 
 class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
-    private final File parquetFile;
     private final ParquetInstructions readInstructions;
+    private final ParquetFileReader parquetFileReader;
+    private final int[] rowGroupOrdinals;
 
-    private final RowGroupReader[] rowGroupReaders;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
     private final Map<String, String> keyValueMetaData;
 
     private final Set<String> groupingParquetColumnNames = new HashSet<>();
 
-    private final SeekableChannelsProvider cachedChannelProvider = new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()),
-            Configuration.getInstance().getIntegerForClassWithDefault(ParquetTableLocation.class, "maxChannels", 100));
+    private volatile RowGroupReader[] rowGroupReaders;
 
     ParquetTableLocation(@NotNull final TableKey tableKey,
-                         @NotNull final TableLocationKey tableLocationKey,
-                         final File parquetFile,
-                         final ParquetInstructions readInstructions) {
+                         @NotNull final ParquetTableLocationKey tableLocationKey,
+                         @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
-        this.parquetFile = parquetFile;
-        try {
-            final ParquetFileReader parquetFileReader = new ParquetFileReader(parquetFile.getPath(), cachedChannelProvider, -1);
-
-            final int rowGroupCount = parquetFileReader.fileMetaData.getRow_groups().size();
-            rowGroupReaders = new RowGroupReader[rowGroupCount];
-            long maxRowCount = 0;
-            for (int rgi = 0; rgi < rowGroupCount; ++rgi) {
-                final RowGroupReader reader = parquetFileReader.getRowGroup(rgi);
-                rowGroupReaders[rgi] = reader;
-                maxRowCount = Math.max(maxRowCount, reader.numRows());
-            }
-            regionParameters = new RegionedPageStore.Parameters(
-                    RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
-
-            parquetColumnNameToPath = new HashMap<>();
-            for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
-                final String[] path = column.getPath();
-                if (path.length > 1) {
-                    parquetColumnNameToPath.put(path[0], path);
-                }
-            }
-
-            keyValueMetaData = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData).getFileMetaData().getKeyValueMetaData();
-            final String grouping = keyValueMetaData.get(ParquetTableWriter.GROUPING);
-            if (grouping != null) {
-                groupingParquetColumnNames.addAll(Arrays.asList(grouping.split(",")));
-            }
-        } catch (IOException e) {
-            throw new TableDataException("Can't read parquet file " + parquetFile, e);
+        final ParquetMetadata parquetMetadata;
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (tableLocationKey) {
+            parquetFileReader = tableLocationKey.getFileReader();
+            parquetMetadata = tableLocationKey.getMetadata();
+            rowGroupOrdinals = tableLocationKey.getRowGroupOrdinals();
         }
 
-        handleUpdate(computeIndex(), parquetFile.lastModified());
+        final int rowGroupCount = rowGroupOrdinals.length;
+        final long maxRowCount = IntStream.of(rowGroupOrdinals).mapToLong(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi).getNum_rows()).max().orElse(0L);
+        regionParameters = new RegionedPageStore.Parameters(
+                RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
+
+        parquetColumnNameToPath = new HashMap<>();
+        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
+            final String[] path = column.getPath();
+            if (path.length > 1) {
+                parquetColumnNameToPath.put(path[0], path);
+            }
+        }
+
+        keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
+        final String grouping = keyValueMetaData.get(ParquetTableWriter.GROUPING);
+        if (grouping != null) {
+            groupingParquetColumnNames.addAll(Arrays.asList(grouping.split(",")));
+        }
+
+        handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
     }
 
     @Override
@@ -94,7 +82,7 @@ class ParquetTableLocation extends AbstractTableLocation {
     }
 
     File getParquetFile() {
-        return parquetFile;
+        return ((ParquetTableLocationKey) getKey()).getFile();
     }
 
     ParquetInstructions getReadInstructions() {
@@ -102,7 +90,7 @@ class ParquetTableLocation extends AbstractTableLocation {
     }
 
     SeekableChannelsProvider getChannelProvider() {
-        return cachedChannelProvider;
+        return TrackedSeekableChannelsProvider.getCachedInstance();
     }
 
     RegionedPageStore.Parameters getRegionParameters() {
@@ -113,13 +101,26 @@ class ParquetTableLocation extends AbstractTableLocation {
         return keyValueMetaData;
     }
 
+    private RowGroupReader[] getRowGroupReaders() {
+        RowGroupReader[] local;
+        if ((local = rowGroupReaders) != null) {
+            return local;
+        }
+        synchronized (this) {
+            if ((local = rowGroupReaders) != null) {
+                return local;
+            }
+            return rowGroupReaders = IntStream.of(rowGroupOrdinals).mapToObj(parquetFileReader::getRowGroup).toArray(RowGroupReader[]::new);
+        }
+    }
+
     @NotNull
     @Override
     protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList = columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(rowGroupReaders).map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders()).map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,
@@ -128,9 +129,9 @@ class ParquetTableLocation extends AbstractTableLocation {
 
     private CurrentOnlyIndex computeIndex() {
         final CurrentOnlyIndex.SequentialBuilder sequentialBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-        for (int ri = 0; ri < rowGroupReaders.length; ++ri) {
-            final long subRegionSize = rowGroupReaders[ri].numRows();
-            final long subRegionFirstKey = (long) ri << regionParameters.regionMaskNumBits;
+        for (int rgi = 0; rgi < rowGroupOrdinals.length; ++rgi) {
+            final long subRegionSize = parquetFileReader.fileMetaData.getRow_groups().get(rgi).getNum_rows();
+            final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
         }

@@ -1,7 +1,6 @@
 package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.db.v2.locations.impl.TableLocationKeyFinder;
-import io.deephaven.db.v2.locations.local.PrivilegedFileAccessUtil;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 

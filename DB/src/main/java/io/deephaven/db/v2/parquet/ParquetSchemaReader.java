@@ -3,10 +3,9 @@ package io.deephaven.db.v2.parquet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.parquet.*;
+import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
+import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
-import io.deephaven.parquet.utils.CachedChannelProvider;
-import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
@@ -16,6 +15,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.*;
@@ -67,26 +67,44 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param filePath  Location for input parquet file
-     * @param readInstructions  Parquet read instructions specifying transformations like column mappings and codecs.
-     *                          Note a new read instructions based on this one may be returned by this method to provide necessary
-     *                          transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer  A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     * @param filePath          Location for input parquet file
+     * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
+     *                         Note a new read instructions based on this one may be returned by this method to provide necessary
+     *                         transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param consumer         A ColumnDefinitionConsumer whose accept method would be called for each column in the file
      * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     *         transformations added.
-     * @throws IOException if the specified file cannot be read
+     * transformations added.
      */
     public static ParquetInstructions readParquetSchema(
-            final String filePath,
-            final ParquetInstructions readInstructions,
-            final ColumnDefinitionConsumer consumer,
-            final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
+            @NotNull final String filePath,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final ColumnDefinitionConsumer consumer,
+            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
     ) throws IOException {
-        final ParquetFileReader pf = new ParquetFileReader(
-                filePath, getChannelsProvider(), 0);
-        final MessageType schema = pf.getSchema();
-        final ParquetMetadata pm = new ParquetMetadataConverter().fromParquetMetadata(pf.fileMetaData);
-        final Map<String, String> keyValueMetaData = pm.getFileMetaData().getKeyValueMetaData();
+        final ParquetFileReader parquetFileReader = new ParquetFileReader(filePath, getChannelsProvider(), 0);
+        final ParquetMetadata parquetMetadata = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
+        return readParquetSchema(parquetMetadata, readInstructions, consumer, legalizeColumnNameFunc);
+    }
+
+    /**
+     * Obtain schema information from a parquet file
+     *
+     * @param parquetMetadata  Parquet metadata object
+     * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
+     *                         Note a new read instructions based on this one may be returned by this method to provide necessary
+     *                         transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param consumer         A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
+     * transformations added.
+     */
+    public static ParquetInstructions readParquetSchema(
+            @NotNull final ParquetMetadata parquetMetadata,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final ColumnDefinitionConsumer consumer,
+            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
+    ) {
+        final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
+        final Map<String, String> keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(keyValueMetaData, errorString, currentColumn);
@@ -354,6 +372,6 @@ public class ParquetSchemaReader {
     }
 
     private static SeekableChannelsProvider getChannelsProvider() {
-        return new CachedChannelProvider(new LocalFSChannelProvider(), 1024);
+        return TrackedSeekableChannelsProvider.getCachedInstance();
     }
 }
