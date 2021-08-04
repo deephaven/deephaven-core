@@ -2,9 +2,12 @@ require("deephaven/proto/session_pb");
 require("deephaven/proto/table_pb");
 require("deephaven/proto/console_pb");
 require("deephaven/proto/ticket_pb");
+require("Flight_pb")
+require("BrowserFlight_pb")
 var sessionService = require("deephaven/proto/session_pb_service");
 var tableService = require("deephaven/proto/table_pb_service");
 var consoleService = require("deephaven/proto/console_pb_service");
+var flightService = require("BrowserFlight_pb_service");
 
 var browserHeaders = require("browser-headers");
 
@@ -31,12 +34,20 @@ var io = { deephaven: {
             }
         }
 }};
+var arrow = { flight: {
+    protocol: {
+            flight_pb: proto.arrow.flight.protocol,
+            browserFlight_pb: proto.arrow.flight.protocol,
+            browserFlight_pb_service: flightService
+    }
+}};
 var dhinternal = {
     browserHeaders,
     jspb,
     grpcWeb,//TODO need to expand this to the specific things we need
     flatbuffers,
-    io
+    io,
+    arrow
 };
 export {
     dhinternal
