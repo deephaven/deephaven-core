@@ -7,9 +7,9 @@ import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

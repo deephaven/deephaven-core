@@ -2,8 +2,8 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
-import org.apache.arrow.flight.impl.Flight.Ticket;
 
 import java.util.Objects;
 

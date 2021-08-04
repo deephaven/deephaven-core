@@ -53,6 +53,7 @@ import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.qst.table.AggregationTable;
@@ -84,7 +85,6 @@ import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereInTable;
 import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
-import org.apache.arrow.flight.impl.Flight.Ticket;
 
 import java.time.Instant;
 import java.util.ArrayList;

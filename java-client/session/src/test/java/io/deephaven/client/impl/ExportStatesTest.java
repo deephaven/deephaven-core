@@ -10,6 +10,7 @@ import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceImplBa
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceImplBase;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.TableSpec;
@@ -18,7 +19,6 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
