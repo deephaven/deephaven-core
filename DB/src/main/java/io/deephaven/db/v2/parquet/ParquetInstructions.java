@@ -22,8 +22,22 @@ import java.util.function.Predicate;
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
+
+    /**
+     * Set the default for {@link #getCompressionCodecName()}.
+     *
+     * @param name The new default
+     * @see Builder#setCompressionCodecName(String)
+     */
     public static void setDefaultCompressionCodecName(final String name) {
         defaultCompressionCodecName = name;
+    }
+
+    /**
+     * @return The default for {@link #getCompressionCodecName()}
+     */
+    public static String getDefaultCompressionCodecName() {
+        return defaultCompressionCodecName;
     }
 
     private static volatile int defaultMaximumDictionaryKeys = 1 << 20;
@@ -36,6 +50,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public static void setDefaultMaximumDictionaryKeys(final int maximumDictionaryKeys) {
         defaultMaximumDictionaryKeys = Require.geqZero(maximumDictionaryKeys, "maximumDictionaryKeys");
+    }
+
+    /**
+     * @return The default for {@link #getMaximumDictionaryKeys()}
+     */
+    public static int getDefaultMaximumDictionaryKeys() {
+        return defaultMaximumDictionaryKeys;
     }
 
     public ParquetInstructions() {

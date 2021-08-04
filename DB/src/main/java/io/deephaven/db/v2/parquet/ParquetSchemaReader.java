@@ -3,6 +3,7 @@ package io.deephaven.db.v2.parquet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.tables.utils.ParquetTools;
 import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
@@ -17,6 +18,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -81,7 +83,7 @@ public class ParquetSchemaReader {
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
     ) throws IOException {
-        final ParquetFileReader parquetFileReader = new ParquetFileReader(filePath, getChannelsProvider(), 0);
+        final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReader(new File(filePath));
         final ParquetMetadata parquetMetadata = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetMetadata, readInstructions, consumer, legalizeColumnNameFunc);
     }
@@ -369,9 +371,5 @@ public class ParquetSchemaReader {
                 return Optional.empty();
             }
         };
-    }
-
-    private static SeekableChannelsProvider getChannelsProvider() {
-        return TrackedSeekableChannelsProvider.getCachedInstance();
     }
 }

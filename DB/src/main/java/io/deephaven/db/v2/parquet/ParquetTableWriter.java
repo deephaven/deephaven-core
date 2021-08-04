@@ -303,7 +303,7 @@ public class ParquetTableWriter {
                 extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX + colName, DBARRAY_SPECIAL_TYPE);
             }
         }
-        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getCachedInstance(), PAGE_SIZE,
+        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(), PAGE_SIZE,
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
     }
 

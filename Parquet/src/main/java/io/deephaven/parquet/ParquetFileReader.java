@@ -73,6 +73,13 @@ public class ParquetFileReader {
         type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
     }
 
+    /**
+     * @return The {@link SeekableChannelsProvider} used for this reader, appropriate to use for related file acccess
+     */
+    public SeekableChannelsProvider getChannelsProvider() {
+        return channelsProvider;
+    }
+
     private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
     /**
      * Get the name of all columns that we can know for certain

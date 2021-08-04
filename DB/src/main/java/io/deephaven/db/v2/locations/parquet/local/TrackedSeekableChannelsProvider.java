@@ -4,7 +4,6 @@ import io.deephaven.db.util.file.FileHandle;
 import io.deephaven.db.util.file.FileHandleFactory;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.util.file.TrackedSeekableByteChannel;
-import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,14 +18,13 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  */
 public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
-    private static volatile CachedChannelProvider instance;
+    private static volatile SeekableChannelsProvider instance;
 
-    public static CachedChannelProvider getCachedInstance() {
+    public static SeekableChannelsProvider getInstance() {
         if (instance == null) {
-            synchronized (CachedChannelProvider.class) {
+            synchronized (TrackedSeekableChannelsProvider.class) {
                 if (instance == null) {
-                    final TrackedFileHandleFactory inner = TrackedFileHandleFactory.getInstance();
-                    instance = new CachedChannelProvider(new TrackedSeekableChannelsProvider(inner), inner.getCapacity());
+                    return instance = new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
                 }
             }
         }

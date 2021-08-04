@@ -14,6 +14,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.dbarrays.*;
 import io.deephaven.db.tables.libs.StringSet;
+import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.PartitionAwareSourceTable;
 import io.deephaven.db.v2.SimpleSourceTable;
 import io.deephaven.db.v2.locations.TableDataException;
@@ -30,6 +31,7 @@ import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.ParquetFileReader;
+import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -518,9 +520,18 @@ public class ParquetTools {
         };
     }
 
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link File}.
+     *
+     * @param parquetFile The {@link File} to read
+     * @return The new {@link ParquetFileReader}
+     */
     public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile) {
         try {
-            return new ParquetFileReader(parquetFile.getAbsolutePath(), TrackedSeekableChannelsProvider.getCachedInstance(), 0);
+            return new ParquetFileReader(
+                    parquetFile.getAbsolutePath(),
+                    new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7),
+                    0);
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
         }

@@ -90,7 +90,7 @@ class ParquetTableLocation extends AbstractTableLocation {
     }
 
     SeekableChannelsProvider getChannelProvider() {
-        return TrackedSeekableChannelsProvider.getCachedInstance();
+        return parquetFileReader.getChannelsProvider();
     }
 
     RegionedPageStore.Parameters getRegionParameters() {
