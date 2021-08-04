@@ -398,36 +398,6 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         return builder.endVector();
     }
 
-//    /**
-//     * Returns an InputStream of the message in a DoGet arrow compatible format.
-//     * @return an InputStream ready to be drained by GRPC
-//     */
-//    public InputStream getDoGetInputStream(final SubView view) throws IOException {
-//        Assert.assertion(rowsRemoved.original.isEmpty(), "rowsRemoved.original.isEmpty()", "update is not a snapshot");
-//        Assert.assertion(shifted.original.empty(), "shifted.original.empty()", "update is not a snapshot");
-//        Assert.eqZero(modColumnData.length, "modColumnData.length");
-//
-//        final ArrayDeque<InputStream> streams = new ArrayDeque<>();
-//        final MutableInt size = new MutableInt();
-//
-//        final Consumer<InputStream> addStream = (final InputStream is) -> {
-//            streams.add(is);
-//            try {
-//                size.add(is.available());
-//            } catch (final IOException e) {
-//                throw new UncheckedDeephavenException("Unexpected IOException", e);
-//            }
-//
-//            // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like C++.
-//            if (size.intValue() % 8 != 0) {
-//                final int paddingBytes = (8 - (size.intValue() % 8));
-//                size.add(paddingBytes);
-//                streams.add(new DrainableByteArrayInputStream(PADDING_BUFFER, 0, paddingBytes));
-//            }
-//        };
-//
-//        final FlatBufferBuilder builder = new FlatBufferBuilder();
-
     private long appendAddColumns(final SubView view,
                                   final Consumer<InputStream> addStream,
                                   final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
@@ -571,8 +541,6 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         return header.dataBuffer().slice();
     }
-
-
 
     public static abstract class ByteArrayGenerator {
         protected int len;
