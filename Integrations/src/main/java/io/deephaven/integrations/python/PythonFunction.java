@@ -4,8 +4,13 @@
 
 package io.deephaven.integrations.python;
 
+import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.integrations.learn.IndexSet;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
+
+import java.util.List;
+import java.util.PrimitiveIterator;
 import java.util.function.Function;
 import io.deephaven.util.QueryConstants;
 
@@ -65,9 +70,26 @@ public class PythonFunction<T> implements Function<T, Object> {
         }
     }
 
-    // this method returns the PyObject result of pyCallable.call without attempting to wrap it in a java type
+
+    // these methods call Python functions and return them as PyObjects without attempting to wrap them in java types
+    // I'm sure there's a cleaner way to do this?
     public PyObject passThrough(T[] t) {
         PyObject out = pyCallable.call("__call__", t);
+        return out;
+    }
+
+    public PyObject passThrough(T t) {
+        PyObject out = pyCallable.call("__call__", t);
+        return out;
+    }
+
+    public PyObject passThroughGather(IndexSet idx, ColumnSource<?>[] colSet) {
+        PyObject out = pyCallable.call("__call__", idx, colSet);
+        return out;
+    }
+
+    public PyObject passThroughScatter(PyObject result, long k) {
+        PyObject out = pyCallable.call("__call__", result, k);
         return out;
     }
 
