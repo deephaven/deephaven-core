@@ -114,9 +114,9 @@ def _commonKafkaArgs(args):
 
 
 @_passThrough
-def _custom_simpleConsumeToTable(*args):
-    r = commonKafkaArgs(args)
-    return _java_type_.simpleConsumeToTable(r[0], r[1], r[2], r[3])
+def _custom_consumeToTable(*args):
+    r = _commonKafkaArgs(args)
+    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
 
 
 @_passThrough

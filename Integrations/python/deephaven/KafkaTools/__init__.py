@@ -116,9 +116,9 @@ def _commonKafkaArgs(args):
 
 
 @_passThrough
-def _custom_simpleConsumeToTable(*args):
-    r = commonKafkaArgs(args)
-    return _java_type_.simpleConsumeToTable(r[0], r[1], r[2], r[3])
+def _custom_consumeToTable(*args):
+    r = _commonKafkaArgs(args)
+    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
 
 
 @_passThrough
@@ -153,6 +153,42 @@ def avroSchemaToColumnDefinitions(*args):
     """
     
     return _custom_avroSchemaToColumnDefinitions(*args)
+
+
+@_passThrough
+def consumeToTable(*args):
+    """
+    Consume a number of partitions from a single, simple type key and single type value Kafka topic to a single table,
+     with table partitions matching Kafka partitions.
+    
+     The types of key and value are either specified in the properties as "key.type" and "value.type",
+     or deduced from the serializer classes for key and value in the provided Properties object.
+     The names for the key and value columns can be provided in the properties as "key.column.name" and "value.column.name",
+     and otherwise default to "key" and "value".
+     object for the Kafka Consumer initialization; if the Properties object provided does not contain
+     keys for key deserializer or value deserializer, they are assumed to be of String type and the corresponding
+     property for the respective deserializer are added.
+    
+    *Overload 1*  
+      :param consumerProperties: (java.util.Properties) - Properties to configure this table and also to be passed to create the KafkaConsumer.
+      :param topic: (java.lang.String) - Kafka topic name.
+      :param partitionFilter: (java.util.function.IntPredicate) - A predicate returning true for the partitions to consume.
+      :param partitionToInitialOffset: (java.util.function.IntToLongFunction) - A function specifying the desired initial offset for each partition consumed.
+      :return: (io.deephaven.db.tables.Table) The resulting live table.
+      
+    *Overload 2*  
+      :param kafkaConsumerProperties: java.util.Properties
+      :param topic: java.lang.String
+      :param partitionFilter: java.util.function.IntPredicate
+      :return: io.deephaven.db.tables.Table
+      
+    *Overload 3*  
+      :param kafkaConsumerProperties: java.util.Properties
+      :param topic: java.lang.String
+      :return: io.deephaven.db.tables.Table
+    """
+    
+    return _custom_consumeToTable(*args)
 
 
 @_passThrough
@@ -214,36 +250,3 @@ def partitionToOffsetFromParallelArrays(partitions, offsets):
     """
     
     return _java_type_.partitionToOffsetFromParallelArrays(partitions, offsets)
-
-
-@_passThrough
-def simpleConsumeToTable(*args):
-    """
-    Consume a number of partitions from a single, simple type key and single type value Kafka topic to a single table,
-     with table partitions matching Kafka partitions.
-    
-     The types of key and value are deduced from the serializer classes for key and value in the provided Properties
-     object for the Kafka Consumer initialization; if the Properties object provided does not contain
-     keys for key deserializer or value deserializer, they are assumed to be of String type and the corresponding
-     property for the respective deserializer are added.
-    
-    *Overload 1*  
-      :param kafkaConsumerProperties: (java.util.Properties) - Properties to be passed to create the KafkaConsumer.
-      :param topic: (java.lang.String) - Kafka topic name.
-      :param partitionFilter: (java.util.function.IntPredicate) - A predicate returning true for the partitions to consume.
-      :param partitionToInitialOffset: (java.util.function.IntToLongFunction) - A function specifying the desired initial offset for each partition consumed.
-      :return: (io.deephaven.db.tables.Table) The resulting live table.
-      
-    *Overload 2*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :param partitionFilter: java.util.function.IntPredicate
-      :return: io.deephaven.db.tables.Table
-      
-    *Overload 3*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :return: io.deephaven.db.tables.Table
-    """
-    
-    return _custom_simpleConsumeToTable(*args)
