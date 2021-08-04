@@ -9,7 +9,7 @@
 # == Example (1)
 #
 # From web UI do:
-# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'dh.key.column.name':'Symbol', 'dh.value.column.name':'Price', 'dh.value.column.type':'double'}, 'quotes')
+# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes')
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
 # Run this script to produce one row:
@@ -19,7 +19,7 @@
 # == Example (2) 
 #
 # From web UI do:
-# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'dh.key.column.name':'Metric', 'dh.value.column.name':'Value', 'dh.value.column.type':'long', 'dh.offset.column.name':'', 'dh.partition.column.name':''}, 'metrics')
+# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics')
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
 # Run this script to produce one row:
