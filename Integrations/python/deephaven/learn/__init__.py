@@ -29,17 +29,22 @@ Functions:
 
 import jpy
 import wrapt
-import numpy as np
 from deephaven import npy
 from deephaven import listen
 from deephaven import QueryScope
+import numpy as np
+import torch
+import tensorflow as tf
 
-_class_name_ = "io.deephaven.integrations.numpy.Java2NumpyCopy"
-_Java2NumpyCopy_ = None
+_called_ = False
+# None until the first _defineSymbols() call
+_IndexSet_ = None
+_Future_ = None
+_Computer_ = None
+_CallPyFunc_ = None
+_Scatterer_ = None
 
 
-# the following two methods will only be used once I implement some parts of this code in java. They are here now for
-# completeness but will not be used until I need to invoke java methods.
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
@@ -50,13 +55,17 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _Java2NumpyCopy_
-    if _Java2NumpyCopy_ is None:
-        # This will raise an exception if the desired object is not in the classpath
-        _Java2NumpyCopy_ = jpy.get_type(_class_name_)
+    global _called_, _IndexSet_, _Future_, _Computer_, _CallPyFunc_, _Scatterer_
+    if not _called_:
+        _called_ = True
+        _IndexSet_ = jpy.get_type("io.deephaven.integrations.learn.IndexSet")
+        _Future_ = jpy.get_type("io.deephaven.integrations.learn.Future")
+        _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
+        _CallPyFunc_ = jpy.get_type("io.deephaven.integrations.learn.CallPyFunc")
+        _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
 
 
-# every module method should be decorated with @_passThrough
+# every module method that invokes Java classes should be decorated with @_passThrough
 @wrapt.decorator
 def _passThrough(wrapped, instance, args, kwargs):
     """
@@ -73,82 +82,8 @@ def _passThrough(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-class Input:
-    """
-    The Input class provides an interface for converting Deephaven tables to objects that Python deep learning libraries
-    are familiar with. Input objects are intended to be used as the input argument of an eval() function call.
-    """
-    def __init__(self, columns, gather):
-        """
-        :param columns: the list of column names from a Deephaven table that you want to use in modelling
-        :param gather: the function that determines how data from a Deephaven table is collected
-        """
-        if type(columns) is list:
-            self.columns = columns
-        else:
-            self.columns = [columns]
-
-        self.gather = gather
-
-
-class Output:
-    """
-    The Output class provides an interface for converting Python objects (such as tensors or dataframes) into Deephaven
-    tables. Output objects are intended to be used as the output argument of an eval() function call.
-    """
-    def __init__(self, column, scatter, col_type="java.lang.Object"):
-        """
-        :param column: the string name of the column you would like to create to store your output
-        :param scatter: the function that determines how data from a Python object is stored in a Deephaven table
-        :param col_type: optional string that defaults to 'java.lang.Object', determines the type of output column
-        """
-        self.column = column
-        self.scatter = scatter
-        self.col_type = col_type
-
-
-#TODO: this should be implemented in Java for speed.  This efficiently iterates over the indices in multiple index sets.  Works for hist and real time.
-class _IndexSetIterator:
-    """
-    The IndexSetIterator class provides functionality for iterating over multiple sets of given indices for static or real
-    time tables. IndexSetIterator objects are used to subset tables by indices that have been added or modified, in the
-    case of a real time table.
-    """
-    def __init__(self, *indexes):
-        """
-        :param indexes: the set or multiple sets of indices that determine how to subset a Deephaven table
-        """
-        self.indexes = indexes
-
-    def __len__(self):
-        rst = 0
-
-        for index in self.indexes:
-            rst += index.size()
-
-        return rst
-
-    def __iter__(self):
-        for index in self.indexes:
-            it = index.iterator()
-
-            while it.hasNext():
-                yield it.next()
-
-
-class _ListenAndReturn:
-    def __init__(self, table, model_func, inputs, outputs, col_sets):
-        self.table = table
-        self.model_func = model_func
-        self.inputs = inputs
-        self.outputs = outputs
-        self.col_sets = col_sets
-        self.newTable = None
-
-    def onUpdate(self, isReplay, update):
-        self.idx = _IndexSetIterator(update.added, update.modified)
-        self.gathered = [ input.gather(self.idx, col_set) for (input,col_set) in zip(self.inputs, self.col_sets) ]
-        self.newTable = _create_output(self.table, self.model_func, self.gathered, self.outputs)
+Input = jpy.get_type("io.deephaven.integrations.learn.Input")
+Output = jpy.get_type("io.deephaven.integrations.learn.Output")
 
 
 # could be that this should be broken up into two pieces, one to check errors and one to transform input?
@@ -180,6 +115,8 @@ def _parse_input(inputs, table):
     elif len(inputs) == 1:
         # ensure input class is used
         if not isinstance(inputs[0], Input):
+            print(type(inputs[0]))
+            print(type(Input))
             raise TypeError('Please use the Input class provided with learn to pass input.')
         # if list of features is empty, replace with all columns and return
         if len(inputs[0].columns) == 0:
@@ -193,7 +130,10 @@ def _parse_input(inputs, table):
     else:
         # verify all input is of type Input
         if not all(isinstance(input, Input) for input in inputs):
+            print(type(inputs[0]))
+            print(type(Input))
             raise TypeError('Please use the Input class provided with learn to pass input.')
+            print("not is all")
         # now that we know input length at least 2, ensure target non-empty
         if len(inputs[0].columns) == 0:
             raise ValueError('Target input cannot be empty.')
@@ -217,53 +157,8 @@ def _parse_input(inputs, table):
                     pass
             return new_inputs
 
-
-# TODO: at the moment this cannot handle real time, real time can be kind of accomplished by uncommenting 198 amd 203
-def _create_output(table=None, model_func=None, gathered=[], outputs=[]):
-    """
-    Passes gathered inputs to model_func to create output, then uses the list of Output objects to store the newly
-    created output in the given Deephaven table.
-
-    :param table: the Deephaven used for computing and storing output
-    :param model_func: the user-defined function for performing computations on the dataset
-    :param gathered: the list of Python objects that results from applying the gather function to the Deephaven table
-    :param outputs: the list of Output objects that determine how data will be stored in the Deephaven table
-    """
-    # if there are no outputs, we just want to call model_func and return nothing
-    if outputs == None:
-        print("COMPUTE NEW DATA")
-        model_func(*gathered)
-        return
-
-    else:
-        print("COMPUTE NEW DATA")
-        output_values = model_func(*gathered)
-        #print(output_values)
-
-        print("POPULATE OUTPUT TABLE")
-        rst = table.by()
-
-        #return
-
-        n = table.size()
-
-        for output in outputs:
-            print(f"GENERATING OUTPUT: {output.column}")
-            #TODO: maybe we can infer the type
-            data = jpy.array(output.col_type, n)
-
-            #TODO: python looping is slow.  should avoid or numba it
-            # this is the line that breaks, the bad logic is probably elsewhere
-            for i in range(n):
-                data[i] = output.scatter(output_values, i)
-
-            QueryScope.addParam("__temp", data)
-            rst = rst.update(f"{output.column} = __temp")
-
-        return rst.ungroup()
-
-
-def eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
+@_passThrough
+def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     """
     Takes relevant data from Deephaven table using inputs, converts that data to the desired Python type, feeds
     it to model_func, and stores that output in a Deephaven table using outputs.
@@ -271,92 +166,21 @@ def eval(table=None, model_func=None, live=False, inputs=[], outputs=[]):
     :param table: the Deephaven table to perform computations on
     :param model_func: the function that takes in data and performs AI computations. NOTE that model_func must have
                        'target' and 'features' arguments in that order
-    :param live: indicates whether to treat your computation as a live computation. NOTE that this is not asking if
-                 your table is live or not, but whether model_func should be called at every table update. For instance,
-                 when performing training on a live dataset, you do not want to re-train at every table update
     :param inputs: the list of Input objects that determine which columns get extracted from the Deephaven table
     :param outputs: the list of Output objects that determine how to store output from model_func into the Deephaven table
     """
-    print("SETUP")
-    inputs = _parse_input(inputs, table)
-    col_sets = [ [ table.getColumnSource(col) for col in input.columns ] for input in inputs ]
+    # set batch to be number of rows in whole table if batch size is not provided
+    if batch_size == None:
+        batch_size = table.size()
 
-    print("GATHER")
-    # this is where we need to begin making the distinction between static and live data
-    if live:
-        # instantiate class to listen to updates and update output accordingly
-        listener = _ListenAndReturn(table, model_func, inputs, outputs, col_sets)
-        handle = listen(table, listener, replay_initial=True)
+    # set output to be an empty output object if none
+    if outputs == None:
+        outputs = Output(None, None, None)
 
-    else:
-        idx = _IndexSetIterator(table.getIndex())
-        gathered = [ input.gather(idx, col_set) for (input,col_set) in zip(inputs,col_sets) ]
-        return _create_output(table, model_func, gathered, outputs)
+    computer = _Computer_(model_func, table, batch_size, *inputs)
+    scatterer = _Scatterer_(batch_size, outputs)
 
-########################################################################################################################
-# Finally, we should provide some common gather and scatter functions
-########################################################################################################################
+    QueryScope.addParam("computer", computer)
+    QueryScope.addParam("scatterer", scatterer)
 
-# numpy gather functions
-def np_1d(idx, col, dtype=np.float32):
-    rst = np.empty([len(idx)], dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        rst[i] = col[0].get(kk)
-
-    return rst
-
-def np_2d(idx, cols, dtype=np.float32):
-    rst = np.empty([len(idx), len(cols)], dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        for (j,col) in enumerate(cols):
-            rst[i,j] = col.get(kk)
-
-    return rst
-
-# dataframe gather functions
-def df_1d(idx, cols):
-
-    return
-
-def df_2d(idx, cols):
-
-    return
-
-# pytorch gather functions
-def pt_1d(idx, col, dtype=torch.float32):
-    rst = torch.empty(len(idx), dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        rst[i] = col[0].get(kk)
-
-    return rst
-
-def pt_2d(idx, cols, dtype=torch.float32):
-    rst = torch.empty(len(idx), len(cols), dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        for (j,col) in enumerate(cols):
-            rst[i,j] = col.get(kk)
-
-    return rst
-
-# tensorflow gather functions
-# these tensorflow functions do not work at the moment
-def tf_1d(idx, col, dtype=tf.float32):
-    rst = tf.Variable(len(idx), dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        rst[i] = col[0].get(kk)
-
-    return rst
-
-def tf_2d(idx, cols, dtype=tf.float32):
-    rst = tf.Variable(len(idx), len(cols), dtype=dtype)
-
-    for (i,kk) in enumerate(idx):
-        for (j,col) in enumerate(cols):
-            rst[i,j] = col.get(kk)
-
-    return rst
+    return table.update("Future = computer.compute(k)", "Clean1 = computer.clear()", f"{outputs.getColNames[0]} = scatterer.scatter(Future.get(), Future.getOffset())").dropColumns("Future", "Clean1")
