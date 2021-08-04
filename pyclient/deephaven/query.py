@@ -10,7 +10,7 @@ class Query:
         self._dag = self._last_op = NoneOp(table=table)
 
     def exec(self):
-        return self.session.batch(self._dag)
+        return self.session.table_service.batch(self._dag)
 
     def drop_columns(self, column_names):
         self._last_op = DropColumnsOp(parent=self._last_op, column_names=column_names)
