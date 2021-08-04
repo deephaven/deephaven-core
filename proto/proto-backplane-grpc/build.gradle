@@ -24,8 +24,8 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
     }
     configurations.download.each {
       from(zipTree(it)) {
-        include("BrowserFlight.proto").into("dependencies")
-        include("Flight.proto").into("dependencies")
+        include('BrowserFlight.proto').into('dependencies')
+        include('Flight.proto').into('dependencies')
       }
     }
   }
