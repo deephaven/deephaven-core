@@ -16,6 +16,9 @@ var jspb = require("google-protobuf");
 var flatbuffers = require("flatbuffers").flatbuffers;
 var barrage = require("@deephaven/barrage");
 
+var message = require('./arrow/flight/flatbuf/Message_generated');
+var schema = require('./arrow/flight/flatbuf/Schema_generated');
+
 var io = { deephaven: {
     proto: {
             session_pb: proto.io.deephaven.proto.backplane.grpc,
@@ -29,12 +32,14 @@ var io = { deephaven: {
         barrage: {
             "flatbuf": {
                 "Barrage_generated": barrage,
-                "Schema_generated": barrage,
-                "Message_generated": barrage
             }
         }
 }};
 var arrow = { flight: {
+    flatbuf: {
+        Message_generated: message,
+        Schema_generated: schema,
+    },
     protocol: {
             flight_pb: proto.arrow.flight.protocol,
             browserFlight_pb: proto.arrow.flight.protocol,
