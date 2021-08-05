@@ -69,25 +69,8 @@ public class PythonFunction<T> implements Function<T, Object> {
     }
 
 
-    // these methods call Python functions and return them as PyObjects without attempting to wrap them in java types
-    // I'm sure there's a cleaner way to do this?
-    public PyObject passThrough(T[] t) {
-        PyObject out = pyCallable.call("__call__", t);
-        return out;
-    }
-
-    public PyObject passThrough(T t) {
-        PyObject out = pyCallable.call("__call__", t);
-        return out;
-    }
-
-    public PyObject passThroughGather(IndexSet idx, ColumnSource<?>[] colSet) {
-        PyObject out = pyCallable.call("__call__", idx, colSet);
-        return out;
-    }
-
-    public PyObject passThroughScatter(PyObject result, long k) {
-        PyObject out = pyCallable.call("__call__", result, k);
+    public PyObject pyObjectApply(Object ... objects) {
+        PyObject out = pyCallable.call("__call__", objects);
         return out;
     }
 
