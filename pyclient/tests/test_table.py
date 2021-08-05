@@ -60,10 +60,9 @@ class TableTestCase(BaseTestCase):
             pa_array = pa.array([0, 255, 65535], type=t)
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
-            print(pa_table)
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.snapshot()
-            print(pa_table2)
+            # print(pa_table, pa_table2)
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:

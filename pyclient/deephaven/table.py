@@ -44,7 +44,7 @@ class Table:
 
     def snapshot(self) -> pyarrow.Table:
         # self.session.subscribe_table(self)
-        return self.session.snapshot_table(self)
+        return self.session.flight_service.snapshot_table(self)
 
     def drop_columns(self, column_names=None):
         return self.session.drop_columns(self, column_names)
