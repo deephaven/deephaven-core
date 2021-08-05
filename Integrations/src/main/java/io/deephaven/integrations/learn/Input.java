@@ -12,8 +12,8 @@ import org.jpy.PyObject;
 
 public class Input {
 
+    final Table table;
     final String[] colNames;
-    final ColumnSource<?>[] colSet;
     final PyObject func;
 
     /**
@@ -22,35 +22,23 @@ public class Input {
      * @param colNames The array of column names from a Deephaven table to be used in modelling.
      * @param func The function that determines how data from a Deephaven table is collected.
      */
-    public Input(String[] colNames, PyObject func) {
+    public Input(Table table, String[] colNames, PyObject func) {
+
+        this.table = table;
         this.colNames = colNames;
-        this.colSet = new ColumnSource[colNames.length];
         this.func = func;
     }
 
     /**
-     * Creates an array list of Deephaven ColumnSources to be used by gather functions.
-     *
-     * @param table Deephaven table containing the columns that colNames should pull from.
+     * Creates a list of Deephaven ColumnSources to be used by gather functions.
      */
-    void createColumnSource(Table table) {
+    public ColumnSource<?>[] createColumnSource() {
+
+        ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
         for (int i = 0 ; i < colNames.length ; i++) {
-            this.colSet[i] = table.getColumnSource(colNames[i]);
+            colSet[i] = this.table.getColumnSource(colNames[i]);
         }
-    }
 
-    /*
-    public void printMe() {
-        System.out.println(this.colNames);
-        System.out.println(this.colSet);
-        System.out.println(this.func);
+        return colSet;
     }
-
-    public void printType() {
-        System.out.println(this.colNames.getClass().getSimpleName());
-        System.out.println(this.colSet.getClass().getSimpleName());
-        System.out.println(this.func.getClass().getSimpleName());
-    }
-    */
-
 }

@@ -26,11 +26,6 @@ public class IndexSetTest {
         TestCase.assertEquals(135, (long) itr.next());
         TestCase.assertEquals(54, (long) itr.next());
         TestCase.assertEquals(100000, (long) itr.next());
-
-        indexSet.clear();
-
-        TestCase.assertEquals(-1, indexSet.current);
-        TestCase.assertEquals(5, indexSet.maxSize);
     }
 
     @Test(expected = Exception.class)
@@ -40,7 +35,6 @@ public class IndexSetTest {
         for (int i = 0 ; i < 6 ; i++) {
             indexSet.add(i);
         }
-        indexSet.clear();
     }
 
     @Test(expected = NoSuchElementException.class)
@@ -55,7 +49,6 @@ public class IndexSetTest {
         for (int i = 0 ; i < 5 ; i++) {
             itr.next();
         }
-        indexSet.clear();
     }
 
     @Test
@@ -70,8 +63,6 @@ public class IndexSetTest {
         indexSet.add(42);
         indexSet.add(600);
         TestCase.assertEquals(true, indexSet.isFull());
-
-        indexSet.clear();
     }
 
     @Test(expected = IllegalArgumentException.class)

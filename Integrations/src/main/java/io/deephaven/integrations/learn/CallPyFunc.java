@@ -20,6 +20,6 @@ class CallPyFunc {
 
     PyObject call() {
         PythonFunction<PyObject> funcCaller = new PythonFunction<PyObject>(this.func, PyObject.class);
-        return funcCaller.passThrough(args);
+        return funcCaller.pyObjectApply(args);
     }
 }

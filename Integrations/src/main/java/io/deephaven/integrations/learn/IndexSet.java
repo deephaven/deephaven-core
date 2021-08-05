@@ -15,7 +15,7 @@ public class IndexSet implements Iterable<Long> {
 
     int current;
     final int maxSize;
-    long[] idx;
+    final long[] idx;
 
     /**
      * Constructor for IndexSet. Allocates memory for a long array of size maxSize and sets the ticker to -1.
@@ -24,22 +24,13 @@ public class IndexSet implements Iterable<Long> {
      */
     public IndexSet(int maxSize) {
 
-        // first verify that maxSize is a strictly positive integer
         if (maxSize <= 0) {
             throw new IllegalArgumentException("Max size must be a strictly positive integer.");
         }
+
         this.current = -1;
         this.maxSize = maxSize;
         this.idx = new long[maxSize];
-    }
-
-
-    /**
-     * Resets this ticker to -1 and clears this index set.
-     */
-    void clear() {
-        this.current = -1;
-        this.idx = new long[this.maxSize];
     }
 
     /**
@@ -63,9 +54,11 @@ public class IndexSet implements Iterable<Long> {
      * @throws Exception Cannot add more indices to the index set than the maximum size allowed.
      */
     void add(long k) throws Exception {
+
         if (this.current == this.idx.length) {
             throw new Exception("Adding more indices than can fit.");
         }
+
         this.current += 1;
         this.idx[this.current] = k;
     }
@@ -76,7 +69,6 @@ public class IndexSet implements Iterable<Long> {
         return new PrimitiveIterator.OfLong() {
             int i = -1;
             @Override
-            // return the next element in the index set if possible
             public long nextLong() {
                 if (!hasNext()) {
                     throw new NoSuchElementException("There are no more elements in the index set.");
@@ -86,7 +78,6 @@ public class IndexSet implements Iterable<Long> {
             }
 
             @Override
-            // whether there are any elements left to be traversed
             public boolean hasNext() {
                 return i < IndexSet.this.current;
             }

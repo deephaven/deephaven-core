@@ -15,45 +15,50 @@ import java.util.ArrayList;
 
 public class Scatterer {
 
-    final int batchSize;
     final Output[] outputs;
     PyObject scattered;
-    int currentOutputIndex;
 
     /**
-     * Constructor for Scatterer. Initializes the scatterer and sets the count to -1,
-     * @param batchSize
+     * Constructor for Scatterer.
+     *
      * @param outputs
      */
+    public Scatterer(Output ... outputs) { this.outputs = outputs; }
 
-    public Scatterer(int batchSize, Output ... outputs) {
+    /**
+     * Getter method for Outputs.
+     *
+     * @return Array of Deephaven Output objects.
+     */
+    public Output[] getOutputs() { return this.outputs; }
 
-        this.batchSize = batchSize;
-        this.outputs = outputs;
-    }
+    /**
+     *
+     * @param result
+     * @param scatterFunc
+     * @param offset
+     * @return
+     */
+    public PyObject scatter(PyObject result, PyObject scatterFunc, long offset) {
 
-    public void clear() {
-        //this.count = -1;
-    }
-
-    public Output[] getOutputs() {
-        return this.outputs;
-    }
-
-    public PyObject scatter(PyObject result, PyObject scatterFunc, long offset, int i, int j) {
         PythonFunction<PyObject> scatterCaller = new PythonFunction<>(scatterFunc, PyObject.class);
-        this.scattered = scatterCaller.passThroughScatter(result, offset);
+        this.scattered = scatterCaller.pyObjectApply(result, offset);
         return this.scattered;
     }
 
+    /**
+     * Uses user input via Output objects to create a list of Query strings that are used to produce new columns
+     * with the scattered result, specified by the user.
+     *
+     * @return List of query strings to be used in .update() call
+     */
     public String[] generateQueryStrings() {
-        ArrayList<String> queryStrings = new ArrayList<String>();
 
+        ArrayList<String> queryStrings = new ArrayList<String>();
         for (int i = 0 ; i < this.outputs.length ; i++) {
-            for (int j = 0; j < this.outputs[i].getColNames().length; j++) {
-                queryStrings.add(String.format("%s = scatterer.scatter(Future.get(), scatterer.getOutputs()[%d].getFunc(), Future.getOffset())", this.outputs[i].getColNames()[j], i));
-            }
+            queryStrings.add(String.format("%s = scatterer.scatter(FutureOffset.getFuture().get(), scatterer.getOutputs()[%d].getFunc(), FutureOffset.getOffset())", this.outputs[i].getColName(), i));
         }
+
         return queryStrings.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     }
 }

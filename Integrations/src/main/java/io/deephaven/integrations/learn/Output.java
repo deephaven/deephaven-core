@@ -9,33 +9,42 @@ import org.jpy.PyObject;
 
 public class Output {
 
-    final String[] colNames;
+    final String colNames;
     final PyObject func;
     final String type;
 
     /**
      * Constructor for Output object.
      *
-     * @param colNames The array of column names from a Deephaven table to be used in modelling.
+     * @param colNames The array of column names from a Deephaven table.
      * @param func     The function that determines how data from a Python object is scattered back to a Deephaven table.
-     * @param type     The datatype that the user wishes to return. Note this will probably only be useful if it's a
-     *                 primitive data type.
+     * @param type     The datatype that the user wishes to return.
      */
-    public Output(String[] colNames, PyObject func, String type) {
+    public Output(String colNames, PyObject func, String type) {
+
         this.colNames = colNames;
         this.func = func;
         this.type = type;
     }
 
-    public String[] getColNames() {
-        return colNames;
-    }
+    /**
+     * Getter method for column names.
+     *
+     * @return String array of column names provided by the user
+     */
+    public String getColName() { return this.colNames; }
 
-    public PyObject getFunc() {
-        return func;
-    }
+    /**
+     * Getter method for Python function.
+     *
+     * @return Python function provided by the user.
+     */
+    public PyObject getFunc() { return this.func; }
 
-    public String getType() {
-        return type;
-    }
+    /**
+     * Getter method for type.
+     *
+     * @return String containing type provided by the user.
+     */
+    public String getType() { return this.type; }
 }

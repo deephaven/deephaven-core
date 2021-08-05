@@ -14,13 +14,12 @@ import org.jpy.PyObject;
 
 public class Future {
 
-    PyObject func;
+    final PyObject func;
     final int batchSize;
     final Input[] inputs;
+    final IndexSet indexSet;
     boolean called;
-    IndexSet indexSet;
     PyObject result;
-    long offset;
 
     /**
      * Constructor for Future. Creates an IndexSet of maximum size batchSize and initializes necessary fields.
@@ -37,10 +36,9 @@ public class Future {
         this.func = func;
         this.batchSize = batchSize;
         this.inputs = inputs;
-        this.called = false;
         this.indexSet = new IndexSet(batchSize);
+        this.called = false;
         this.result = null;
-        this.offset = -1;
     }
 
     /**
@@ -51,35 +49,28 @@ public class Future {
      * @return  PyObject that is the result of applying the given Python function to the gathered dataset.
      */
     public PyObject get() {
+
         // if this is the first time .get has been called, it has not yet been evaluated. So, evaluate
         // and return results. If this is not the first time, we have already evaluated, so just return results.
         if (!this.called) {
+
             // create array to hold gathered object. Each element of array corresponds to gathering for that Input
             PyObject[] gathered = new PyObject[this.inputs.length];
             // create a python function caller to call the user-provided function on the gathered data
             PythonFunction<PyObject> funcCaller = new PythonFunction<>(this.func, PyObject.class);
             // for each Input, gather data according to provided gather function and insert into gathered array
+
             for (int i = 0 ; i < inputs.length ; i++) {
                 PyObject thisGathered;
                 PythonFunction<IndexSet> gatherCaller = new PythonFunction<>(inputs[i].func, PyObject.class);
-                thisGathered = gatherCaller.passThroughGather(this.indexSet, inputs[i].colSet);
+                thisGathered = gatherCaller.pyObjectApply(this.indexSet, inputs[i].createColumnSource());
                 gathered[i] = thisGathered;
             }
-            // finally, push gathered data through the user-provided function, reset values, and return
-            this.result = funcCaller.passThrough(gathered);
-            this.func = null;
+
+            this.result = funcCaller.pyObjectApply(gathered);
             this.called = true;
         }
+
         return this.result;
-    }
-
-    public long getOffset() {
-        this.offset += 1;
-        return this.offset % this.indexSet.size() % this.batchSize;
-    }
-
-    public boolean clearOffset() {
-        this.offset = -1;
-        return false;
     }
 }
