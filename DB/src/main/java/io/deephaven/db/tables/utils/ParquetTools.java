@@ -29,6 +29,7 @@ import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvide
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.parquet.ParquetSchemaReader;
 import io.deephaven.db.v2.parquet.ParquetTableWriter;
+import io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo;
 import io.deephaven.db.v2.sources.chunk.util.SimpleTypeMap;
 import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
@@ -524,9 +525,9 @@ public class ParquetTools {
                 final Class<?> dataType = loadClass(parquetColDef.name, "codecType", parquetColDef.codecType);
                 colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
             } else if (parquetColDef.dhSpecialType != null) {
-                if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
-                } else if (parquetColDef.dhSpecialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
                     final Class<?> dbArrayType = DB_ARRAY_TYPE_MAP.get(baseType);
                     if (dbArrayType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dbArrayType, baseType);

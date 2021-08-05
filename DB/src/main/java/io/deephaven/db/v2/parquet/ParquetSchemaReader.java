@@ -1,9 +1,14 @@
 package io.deephaven.db.v2.parquet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.ParquetTools;
+import io.deephaven.db.v2.locations.TableDataException;
+import io.deephaven.db.v2.parquet.metadata.CodecInfo;
+import io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo;
+import io.deephaven.db.v2.parquet.metadata.TableInfo;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
@@ -36,7 +41,7 @@ public class ParquetSchemaReader {
         /** Some types require special annotations to support regular parquet tools and efficient DH handling.
          * Examples are StringSet and DbArray; a parquet file with a DbIntArray special type metadata annotation,
          * but storing types as repeated int, can be loaded both by other parquet tools and efficiently by DH. */
-        public String dhSpecialType;
+        public ColumnTypeInfo.SpecialType dhSpecialType;
         /** Parquet 1.0 did not support logical types; if we encounter a type like this is true.
          * For example, in parquet 1.0 binary columns with no annotation are used to represent strings.
          * They are also used to represent other things that are not strings.  Good luck, may the force be with you. */
@@ -86,6 +91,18 @@ public class ParquetSchemaReader {
         return readParquetSchema(parquetMetadata, readInstructions, consumer, legalizeColumnNameFunc);
     }
 
+    public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {
+        final String tableInfoRaw = keyValueMetadata.get(ParquetTableWriter.METADATA_KEY);
+        if (tableInfoRaw == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(TableInfo.deserializeFromJSON(tableInfoRaw));
+        } catch (JsonProcessingException e) {
+            throw new TableDataException("Failed to parse " + ParquetTableWriter.METADATA_KEY + " metadata", e);
+        }
+    }
+
     /**
      * Obtain schema information from a parquet file
      *
@@ -107,12 +124,10 @@ public class ParquetSchemaReader {
         final Map<String, String> keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
-        final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(keyValueMetaData, errorString, currentColumn);
-        final String csvGroupingCols = keyValueMetaData.get(ParquetTableWriter.GROUPING_COLUMNS);
-        Set<String> groupingCols = Collections.emptySet();
-        if (csvGroupingCols != null && !csvGroupingCols.isEmpty()) {
-            groupingCols = new HashSet<>(Arrays.asList(csvGroupingCols.split(",")));
-        }
+        final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetaData);
+        final Set<String> groupingColumnNames = tableInfo.map(TableInfo::groupingColumnNames).orElse(Collections.emptySet());
+        final Map<String, ColumnTypeInfo> nonDefaultTypeColumns = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+        final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(nonDefaultTypeColumns, errorString, currentColumn);
 
         final MutableObject<ParquetInstructions.Builder> instructionsBuilder = new MutableObject<>();
         final Supplier<ParquetInstructions.Builder> builderSupplier = () -> {
@@ -145,18 +160,21 @@ public class ParquetSchemaReader {
                     colName = parquetColumnName;
                 }
             }
+            final Optional<ColumnTypeInfo> columnTypeInfo = Optional.ofNullable(nonDefaultTypeColumns.get(colName));
+
             colDef.name = colName;
-            colDef.dhSpecialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + colName);
-            colDef.isGrouping = groupingCols.contains(colName);
-            String codecName = keyValueMetaData.get(ParquetTableWriter.CODEC_NAME_PREFIX + colName);
-            String codecArgs = keyValueMetaData.get(ParquetTableWriter.CODEC_ARGS_PREFIX + colName);
-            colDef.codecType = keyValueMetaData.get(ParquetTableWriter.CODEC_DATA_TYPE_PREFIX + colName);
+            colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);
+            colDef.isGrouping = groupingColumnNames.contains(colName);
+            final Optional<CodecInfo> codecInfo = columnTypeInfo.flatMap(ColumnTypeInfo::codec);
+            String codecName = codecInfo.map(CodecInfo::codecName).orElse(null);
+            String codecArgs = codecInfo.flatMap(CodecInfo::codecArg).orElse(null);
+            colDef.codecType = codecInfo.map(CodecInfo::dataType).orElse(null);
             if (codecName != null && !codecName.isEmpty()) {
                 builderSupplier.get().addColumnCodec(colName, codecName, codecArgs);
             }
             colDef.isArray = column.getMaxRepetitionLevel() > 0;
             if (colDef.codecType != null && !colDef.codecType.isEmpty()) {
-                colDef.codecComponentType = keyValueMetaData.get(ParquetTableWriter.CODEC_COMPONENT_TYPE_PREFIX + colName);
+                colDef.codecComponentType = codecInfo.flatMap(CodecInfo::componentType).orElse(null);
                 consumer.accept(colDef);
                 continue;
             }
@@ -185,7 +203,7 @@ public class ParquetSchemaReader {
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
                         if (colDef.dhSpecialType != null) {
-                            if (colDef.dhSpecialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                            if (colDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                                 colDef.baseType = null;  // when dhSpecialType is set, it takes precedence.
                                 colDef.isArray = true;
                             } else {
@@ -235,19 +253,21 @@ public class ParquetSchemaReader {
     }
 
     private static LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> getVisitor(
-            final Map<String, String> keyValueMetaData,
+            final Map<String, ColumnTypeInfo> nonDefaultTypeColumns,
             final MutableObject<String> errorString,
             final MutableObject<ColumnDescriptor> currentColumn) {
         return new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
                 final ColumnDescriptor column = currentColumn.getValue();
-                final String specialType = keyValueMetaData.get(ParquetTableWriter.SPECIAL_TYPE_NAME_PREFIX + column.getPath()[0]);
+                final String columnName = column.getPath()[0];
+                final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
+                final ColumnTypeInfo.SpecialType specialType = columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
                 if (specialType != null) {
-                    if (specialType.equals(ParquetTableWriter.STRING_SET_SPECIAL_TYPE)) {
+                    if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
                         return Optional.of(StringSet.class);
                     }
-                    if (!specialType.equals(ParquetTableWriter.DBARRAY_SPECIAL_TYPE)) {
+                    if (specialType != ColumnTypeInfo.SpecialType.Vector) {
                         throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
                                 + " for column " + Arrays.toString(column.getPath())
                                 + " with unknown or incompatible special type " + specialType);

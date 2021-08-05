@@ -3,7 +3,10 @@ package io.deephaven.db.v2.locations.parquet.local;
 import io.deephaven.db.v2.locations.TableKey;
 import io.deephaven.db.v2.locations.impl.AbstractTableLocation;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
-import io.deephaven.db.v2.parquet.ParquetTableWriter;
+import io.deephaven.db.v2.parquet.ParquetSchemaReader;
+import io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo;
+import io.deephaven.db.v2.parquet.metadata.GroupingColumnInfo;
+import io.deephaven.db.v2.parquet.metadata.TableInfo;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.db.v2.sources.regioned.RegionedPageStore;
@@ -33,9 +36,8 @@ class ParquetTableLocation extends AbstractTableLocation {
     private final RowGroup[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
-    private final Map<String, String> keyValueMetaData;
-
-    private final Set<String> groupingParquetColumnNames = new HashSet<>();
+    private final Map<String, GroupingColumnInfo> groupingColumns;
+    private final Map<String, ColumnTypeInfo> columnTypes;
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -69,11 +71,14 @@ class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
-        keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
-        final String groupingParquetColumnNamesCSV = keyValueMetaData.get(ParquetTableWriter.GROUPING_COLUMNS);
-        if (groupingParquetColumnNamesCSV != null) {
-            groupingParquetColumnNames.addAll(Arrays.asList(groupingParquetColumnNamesCSV.split(",")));
-        }
+        // TODO (https://github.com/deephaven/deephaven-core/issues/958):
+        //     When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
+        //     in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
+        //     Obvious issues included grouping table paths, codecs, etc.
+        //     Presumably, we could store per-file instances of the metadata in the _metadata file's map.
+        final Optional<TableInfo> tableInfo = ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
+        groupingColumns = tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
+        columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
     }
@@ -103,8 +108,12 @@ class ParquetTableLocation extends AbstractTableLocation {
         return regionParameters;
     }
 
-    Map<String, String> getKeyValueMetaData() {
-        return keyValueMetaData;
+    public Map<String, GroupingColumnInfo> getGroupingColumns() {
+        return groupingColumns;
+    }
+
+    public Map<String, ColumnTypeInfo> getColumnTypes() {
+        return columnTypes;
     }
 
     private RowGroupReader[] getRowGroupReaders() {
@@ -133,7 +142,7 @@ class ParquetTableLocation extends AbstractTableLocation {
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,
-                exists && groupingParquetColumnNames.contains(parquetColumnName));
+                exists && groupingColumns.containsKey(parquetColumnName));
     }
 
     private CurrentOnlyIndex computeIndex() {
