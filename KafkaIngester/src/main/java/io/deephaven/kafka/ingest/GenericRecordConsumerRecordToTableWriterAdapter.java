@@ -104,6 +104,30 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
         }
     }
 
+    public static GenericRecordConsumerRecordToTableWriterAdapter make(
+            final TableWriter<?> writer,
+            final String kafkaPartitionColumn,
+            final String offsetColumnName,
+            final String timestampColumnName,
+            String rawKeyColumnName,
+            final Map<String, String> keyColumns,
+            final Map<String, String> valueColumns) {
+        return new GenericRecordConsumerRecordToTableWriterAdapter(
+                writer,
+                kafkaPartitionColumn,
+                offsetColumnName,
+                timestampColumnName,
+                rawKeyColumnName,
+                keyColumns,
+                valueColumns,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                Collections.emptySet(),
+                false,
+                true,
+                true);
+    }
+
     /**
      * A builder to map key and value fields to table columns.
      *
