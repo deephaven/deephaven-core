@@ -12,9 +12,9 @@ class ConsoleTestCase(BaseTestCase):
         self.session.bind_table(user_table, variable_name)
         server_script = '''t2 = t.update("col1 = i*i")'''
         self.session.run_script(server_script)
-        self.assertIn('t2', self.session.console_tables)
+        self.assertIn('t2', self.session.tables)
 
-    def test_open_table(self):
+    def test_run_script_and_open_table(self):
         server_script = '''
 import time
 import math
@@ -33,8 +33,7 @@ demo_table = TableTools.emptyTable(table_size) \
     .view("K = vectorized_func(I, J)")
         '''
         self.session.run_script(server_script)
-        for t_name, t_type in self.session.console_tables.items():
-            if t_type == 'Table':
-                pa_table = self.session.open_table(t_name).snapshot()
-                df = pa_table.to_pandas()
-                self.assertEquals(1000, len(df.index))
+        for t_name in self.session.tables:
+            pa_table = self.session.open_table(t_name).snapshot()
+            df = pa_table.to_pandas()
+            self.assertEquals(1000, len(df.index))
