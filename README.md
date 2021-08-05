@@ -195,6 +195,8 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 
 ## Resources
+* [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
+* [Discussions](https://docs.github.com/en/discussions)
 * [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
 * [Java API docs](https://deephaven.io/core/javadoc/)
