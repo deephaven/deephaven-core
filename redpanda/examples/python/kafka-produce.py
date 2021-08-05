@@ -1,12 +1,17 @@
 #
 # To run this script, you need confluent-kafka libraries installed.
-# To create a dedicated venv for this, you can do:
+# To create a dedicated venv for it, you can do:
 #
 # $ mkdir confluent-kafka; cd confluent-kafka
 # $ python3 -m venv confluent-kafka
 # $ cd confluent-kafka
 # $ source bin/activate
 # $ pip3 install confluent-kafka
+#
+# Note: On a Mac you may need to install the librdkafka package.
+# You can use "brew install librdkafka" if the pip3 command fails
+# with an error like "librdkafka/rdkafka.h' file not found"
+# as found at confluentinc/confluent-kafka-python#166.
 #
 # Examples of use for DH testing together with web UI.
 #
