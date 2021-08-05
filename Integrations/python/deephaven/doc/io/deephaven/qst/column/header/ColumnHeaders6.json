@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.column.header.ColumnHeaders6",
+ "methods": {
+  "header": "*Overload 1*  \n  Note: Java generics information - <T7>\n  \n  :param name: java.lang.String\n  :param clazz: java.lang.Class<T7>\n  :return: io.deephaven.qst.column.header.ColumnHeaders7<ColumnHeaders6.T1,ColumnHeaders6.T2,ColumnHeaders6.T3,ColumnHeaders6.T4,ColumnHeaders6.T5,ColumnHeaders6.T6,T7>\n  \n*Overload 2*  \n  Note: Java generics information - <T7>\n  \n  :param name: java.lang.String\n  :param type: io.deephaven.qst.type.Type<T7>\n  :return: io.deephaven.qst.column.header.ColumnHeaders7<ColumnHeaders6.T1,ColumnHeaders6.T2,ColumnHeaders6.T3,ColumnHeaders6.T4,ColumnHeaders6.T5,ColumnHeaders6.T6,T7>\n  \n*Overload 3*  \n  Note: Java generics information - <T7>\n  \n  :param header: io.deephaven.qst.column.header.ColumnHeader<T7>\n  :return: io.deephaven.qst.column.header.ColumnHeaders7<ColumnHeaders6.T1,ColumnHeaders6.T2,ColumnHeaders6.T3,ColumnHeaders6.T4,ColumnHeaders6.T5,ColumnHeaders6.T6,T7>",
+  "header6": ":return: io.deephaven.qst.column.header.ColumnHeader<ColumnHeaders6.T6>",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.header.ColumnHeader<?>>",
+  "others": ":return: io.deephaven.qst.column.header.ColumnHeaders5<ColumnHeaders6.T1,ColumnHeaders6.T2,ColumnHeaders6.T3,ColumnHeaders6.T4,ColumnHeaders6.T5>",
+  "row": ":param a: ColumnHeaders6.T1\n:param b: ColumnHeaders6.T2\n:param c: ColumnHeaders6.T3\n:param d: ColumnHeaders6.T4\n:param e: ColumnHeaders6.T5\n:param f: ColumnHeaders6.T6\n:return: io.deephaven.qst.column.header.ColumnHeaders6.Rows",
+  "start": ":param initialCapacity: int\n:return: io.deephaven.qst.column.header.ColumnHeaders6.Rows"
+ },
+ "path": "io.deephaven.qst.column.header.ColumnHeaders6",
+ "typeName": "class"
+}

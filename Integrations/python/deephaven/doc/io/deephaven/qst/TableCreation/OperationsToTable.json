@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.TableCreation$OperationsToTable",
+ "methods": {
+  "of": ":param tableOperations: TableCreation.OperationsToTable.TOPS\n:return: TableCreation.OperationsToTable.TABLE"
+ },
+ "path": "io.deephaven.qst.TableCreation.OperationsToTable",
+ "text": "Transform a table operation into a table.",
+ "typeName": "interface"
+}

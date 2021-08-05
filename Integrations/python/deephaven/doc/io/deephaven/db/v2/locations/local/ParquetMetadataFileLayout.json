@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout",
+ "methods": {
+  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - Per-key callback",
+  "getInstructions": ":return: io.deephaven.db.v2.parquet.ParquetInstructions",
+  "getTableDefinition": ":return: io.deephaven.db.tables.TableDefinition",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout",
+ "text": "Location finder that will examine a parquet metadata file to discover locations.",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.SingleParentTable",
+ "methods": {
+  "parent": ":return: io.deephaven.qst.table.TableSpec"
+ },
+ "path": "io.deephaven.qst.table.SingleParentTable",
+ "typeName": "interface"
+}

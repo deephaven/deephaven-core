@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.qst.table.TableHeader",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.TableHeader.Builder",
+  "empty": ":return: io.deephaven.qst.table.TableHeader",
+  "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.column.header.ColumnHeader<?>>",
+  "getHeader": ":param name: java.lang.String\n:return: io.deephaven.qst.type.Type<?>",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.header.ColumnHeader<?>>",
+  "numColumns": ":return: int",
+  "of": "*Overload 1*  \n  :param headers: io.deephaven.qst.column.header.ColumnHeader<?>...\n  :return: io.deephaven.qst.table.TableHeader\n  \n*Overload 2*  \n  :param headers: java.lang.Iterable<io.deephaven.qst.column.header.ColumnHeader<?>>\n  :return: io.deephaven.qst.table.TableHeader",
+  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.column.header.ColumnHeader<?>>"
+ },
+ "path": "io.deephaven.qst.table.TableHeader",
+ "text": "A table header is a list of column headers. Each column header will have a\n distinct name.",
+ "typeName": "class"
+}

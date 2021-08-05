@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore$Creator",
- "methods": {
-  "exists": ":return: boolean",
-  "get": "*Overload 1*  \n  :param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n  :param mask: long\n  :return: io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore.Values<ColumnChunkPageStore.Creator.ATTR>\n  \n*Overload 2*  \n  :param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n  :return: io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore.Values<ColumnChunkPageStore.Creator.ATTR>"
- },
- "path": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore.Creator",
- "typeName": "interface"
-}

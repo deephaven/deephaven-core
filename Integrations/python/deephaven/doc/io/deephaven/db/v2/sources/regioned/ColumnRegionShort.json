@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionShort",
  "methods": {
-  "createNull": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.regioned.ColumnRegionShort.Null<ATTR>",
-  "getNativeType": ":return: java.lang.Class<?>",
-  "getShort": "Get a single short from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A ColumnRegionFillContext to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index"
+  "createNull": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param pageMask: long\n:return: io.deephaven.db.v2.sources.regioned.ColumnRegionShort<ATTR>",
+  "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.db.v2.sources.chunk.ChunkType) The ChunkType",
+  "getShort": "Get a single short from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index"
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionShort",
  "text": "Column region interface for regions that support fetching primitive shorts.",
