@@ -1,5 +1,6 @@
 evaluationDependsOn ':proto'
 evaluationDependsOn ':proto:proto-backplane-grpc'
+evaluationDependsOn ':proto:raw-js-openapi'
 
 apply from: "$rootDir/gradle/web-common.gradle"
 
@@ -37,6 +38,13 @@ Docker.registerDockerTask(project, 'regenerateGwtBindings') {
             }
             includeEmptyDirs = false
         }
+        from(project(':proto:raw-js-openapi').tasks.getByName('webpackSources')) {
+            into 'project/src'
+            include '**/*.d.ts'
+            eachFile { f ->
+                f.path = f.path.replaceFirst('typings/', 'dhinternal/arrow/flight/flatbuf/')
+            }
+        }
     }
     imageName = 'deephaven/jsinterop-generate-grpc-bindings:local-build'
     dockerfile {
@@ -73,7 +81,8 @@ Docker.registerDockerTask(project, 'regenerateGwtBindings') {
                       mkdir src/dhinternal/browserHeaders; \\
                       cp node_modules/browser-headers/dist/typings/* src/dhinternal/browserHeaders; \\
                       mkdir -p src/dhinternal/io/deephaven/barrage/flatbuf; \\
-                      cp node_modules/@deephaven/barrage/dist/typings/generated/* src/dhinternal/io/deephaven/barrage/flatbuf/'''
+                      cp node_modules/@deephaven/barrage/dist/typings/generated/* src/dhinternal/io/deephaven/barrage/flatbuf/;'''
+//                      echo "$(cd node_modules/apache-arrow/; find . -name '*.d.ts' | grep -v node_modules)" | while read line; do mkdir -p src/dhinternal/arrow/$(dirname $line); cp node_modules/apache-arrow/$line src/dhinternal/arrow/$line; done'''
 
         // Copy in our own .d.ts, this is later because we expect more frequent local .proto changes
         copyFile 'project', '/project'
