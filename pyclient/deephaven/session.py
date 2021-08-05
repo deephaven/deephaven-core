@@ -2,68 +2,15 @@ import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-import pyarrow as pa
-import pyarrow.flight
 from bitstring import BitArray
 
+from deephaven.arrow_flight_service import ArrowFlightService
 from deephaven.console_service import ConsoleService
 from deephaven.dherror import DHError
-from deephaven.proto import barrage_pb2_grpc, console_pb2, console_pb2_grpc, ticket_pb2
+from deephaven.proto import barrage_pb2_grpc, ticket_pb2
 from deephaven.query import Query
 from deephaven.session_service import SessionService
-from deephaven.table import Table
 from deephaven.table_service import TableService
-
-
-def _map_arrow_type(arrow_type):
-    arrow_to_dh = {
-        pa.null(): '',
-        pa.bool_(): '',
-        pa.int8(): 'byte',
-        pa.int16(): 'short',
-        pa.int32(): 'int',
-        pa.int64(): 'long',
-        pa.uint8(): '',
-        pa.uint16(): 'char',
-        pa.uint32(): '',
-        pa.uint64(): '',
-        pa.float16(): '',
-        pa.float32(): 'float',
-        pa.float64(): 'double',
-        pa.time32('s'): '',
-        pa.time32('ms'): '',
-        pa.time64('us'): '',
-        pa.time64('ns'): 'io.deephaven.db.tables.utils.DBDateTime',
-        pa.timestamp('us', tz=None): '',
-        pa.timestamp('ns', tz=None): '',
-        pa.date32(): 'java.time.LocalDate',
-        pa.date64(): 'java.time.LocalDate',
-        pa.binary(): '',
-        pa.string(): 'java.lang.String',
-        pa.utf8(): 'java.lang.String',
-        pa.large_binary(): '',
-        pa.large_string(): '',
-        pa.large_utf8(): '',
-        # decimal128(int precision, int scale=0)
-        # list_(value_type, int list_size=-1)
-        # large_list(value_type)
-        # map_(key_type, item_type[, keys_sorted])
-        # struct(fields)
-        # dictionary(index_type, value_type, …)
-        # field(name, type, bool nullable = True[, metadata])
-        # schema(fields[, metadata])
-        # from_numpy_dtype(dtype)
-    }
-
-    dh_type = arrow_to_dh.get(arrow_type)
-    if not dh_type:
-        # if this is a case of timestamp with tz specified
-        if isinstance(arrow_type, pa.TimestampType):
-            dh_type = "io.deephaven.db.tables.utils.DBDateTime"
-
-    if not dh_type:
-        raise DHError('unsupported arrow data type : ', arrow_type)
-    return {"deephaven:type": dh_type}
 
 
 class Session:
@@ -71,12 +18,8 @@ class Session:
         self._r_lock = threading.RLock()
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
-        self._barrage_finish_event = threading.Event()
-        self._barrage_wait_event = threading.Event()
-        self._executor = ThreadPoolExecutor()
         self.host = os.environ.get("DHCE_HOST", host)
         self.port = os.environ.get("DHCE_PORT", port)
-        self.port = port
         self.user = user
         self.password = password
         self.is_connected = False
@@ -86,8 +29,11 @@ class Session:
         self._table_service = None
         self._grpc_barrage_stub = None
         self._console_service = None
-        self._flight_client = None
-        self._executor_future = None
+        self._flight_service = None
+        # self._barrage_finish_event = threading.Event()
+        # self._barrage_wait_event = threading.Event()
+        # self._executor = ThreadPoolExecutor()
+        # self._executor_future = None
         self.console_tables = {}
 
         self._connect()
@@ -122,18 +68,17 @@ class Session:
         return self._grpc_barrage_stub
 
     @property
-    def flight_client(self):
-        if not self._flight_client:
-            self._flight_client = pyarrow.flight.connect((self.host, self.port))
+    def flight_service(self):
+        if not self._flight_service:
+            self._flight_service = ArrowFlightService(self)
 
-        return self._flight_client
+        return self._flight_service
 
     def make_flight_ticket(self, ticket_no=None):
-        with self._r_lock:
-            if not ticket_no:
-                ticket_no = self.get_ticket()
-            ticket_bytes = ticket_no.to_bytes(4, 'little', signed=True)
-            return ticket_pb2.Ticket(ticket=b'e' + ticket_bytes)
+        if not ticket_no:
+            ticket_no = self.get_ticket()
+        ticket_bytes = ticket_no.to_bytes(4, 'little', signed=True)
+        return ticket_pb2.Ticket(ticket=b'e' + ticket_bytes)
 
     def get_ticket(self):
         with self._r_lock:
@@ -184,7 +129,7 @@ class Session:
                 self.grpc_channel.close()
                 self.is_connected = False
                 self._last_ticket = 0
-                self._executor.shutdown()
+                # self._executor.shutdown()
 
     def _update_console_tables(self, response):
         if response.created:
@@ -199,6 +144,7 @@ class Session:
             for t in response.removed:
                 self.console_tables.pop(t.name, None)
 
+    # convenience/factory methods
     def run_script(self, server_script):
         with self._r_lock:
             response = self.console_service.run_script(server_script)
@@ -212,53 +158,17 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=variable_name)
 
-    # convenience factory methods
     def time_table(self, start_time=0, period=1000000000):
         return self.table_service.time_table(start_time=start_time, period=period)
 
     def empty_table(self, size=0):
         return self.table_service.empty_table(size=size)
 
-    def snapshot_table(self, table):
-        try:
-            options = pyarrow.flight.FlightCallOptions(headers=self.grpc_metadata)
-            flight_ticket = pyarrow.flight.Ticket(table.ticket.ticket)
-            reader = self.flight_client.do_get(flight_ticket, options=options)
-            return reader.read_all()
-            # batches = [b.data for b in reader]
-            # return pyarrow.Table.from_batches(batches)
-            # df = reader.read_pandas()
-            # return df
-        except Exception as e:
-            raise DHError("failed to take a snapshot of the table.") from e
-
     def import_table(self, data):
-        try:
-            options = pyarrow.flight.FlightCallOptions(headers=self.grpc_metadata)
-            if not isinstance(data, (pyarrow.Table, pyarrow.RecordBatch)):
-                raise DHError("source data must be either a PyArrow table or RecordBatch.")
-            ticket = self.get_ticket()
-            dh_fields = []
-            for f in data.schema:
-                dh_fields.append(pyarrow.field(name=f.name, type=f.type, metadata=_map_arrow_type(f.type)))
-            dh_schema = pyarrow.schema(dh_fields)
+        return self.flight_service.import_table(data=data)
 
-            writer, reader = self.flight_client.do_put(
-                pyarrow.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema, options=options)
-            writer.write_table(data)
-            writer.close()
-            _ = reader.read()
-            flight_ticket = self.make_flight_ticket(ticket)
-            return Table(self, ticket=flight_ticket, schema=dh_schema)
-        except Exception as e:
-            raise DHError("failed to create a Deephaven table from Arrow data.") from e
-
-    # factory method
     def query(self, table):
         return Query(self, table)
-
-    def drop_columns(self, table, column_names):
-        ...
 
 #     @staticmethod
 #     def parse_barrage_data(data_header, data_body):
