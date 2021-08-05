@@ -384,7 +384,7 @@ public class ParquetTools {
             } catch (IOException e) {
                 throw new TableDataException("Error reading source directory " + source, e);
             }
-            final String firstEntryFileName = sourcePath.getFileName().toString();
+            final String firstEntryFileName = firstEntryPath.getFileName().toString();
             final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
             if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
                 return readPartitionedTableInferSchema(KeyValuePartitionLayout.forParquet(source, 32), instructions);
