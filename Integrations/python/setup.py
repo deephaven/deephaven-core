@@ -55,6 +55,6 @@ setup(name='deephaven',
       keywords='Deephaven Development',
       packages=find_packages(exclude=['docs', 'test']),
       install_requires=['deephaven-jpy=={}'.format(__normalized_version__),
-                        'numpy', 'torch', 'torchsummary', 'torchvision', 'scikit-learn==0.23.1', 'dill>=0.2.8', 'optuna',
-                        'ray', 'wrapt', 'pandas', 'tensorflow', 'numba;python_version>"3.0"', 'enum34;python_version<"3.4"'],
+        'numpy', 'torch', 'torchsummary', 'torchvision', 'scikit-learn==0.23.1', 'dill>=0.2.8', 'optuna',
+        'ray', 'wrapt', 'pandas', 'tensorflow', 'numba;python_version>"3.0"', 'enum34;python_version<"3.4"'],
       )

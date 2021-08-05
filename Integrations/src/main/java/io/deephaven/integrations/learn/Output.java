@@ -31,6 +31,10 @@ public class Output {
         return colNames;
     }
 
+    public PyObject getFunc() {
+        return func;
+    }
+
     public String getType() {
         return type;
     }

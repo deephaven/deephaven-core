@@ -86,7 +86,7 @@ Input = jpy.get_type("io.deephaven.integrations.learn.Input")
 Output = jpy.get_type("io.deephaven.integrations.learn.Output")
 
 
-# could be that this should be broken up into two pieces, one to check errors and one to transform input?
+# this is unused for the moment, will rewrite in Java and get rid of this
 def _parse_input(inputs, table):
     """
     Converts the list of user inputs into a new list of inputs with the following rules:
@@ -178,9 +178,9 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
         outputs = Output(None, None, None)
 
     computer = _Computer_(model_func, table, batch_size, *inputs)
-    scatterer = _Scatterer_(batch_size, outputs)
+    scatterer = _Scatterer_(batch_size, *outputs)
 
     QueryScope.addParam("computer", computer)
     QueryScope.addParam("scatterer", scatterer)
 
-    return table.update("Future = computer.compute(k)", "Clean1 = computer.clear()", f"{outputs.getColNames()[0]} = scatterer.scatter(Future.get(), Future.getOffset())").dropColumns("Future", "Clean1")
+    return table.update("Future = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("Clean")

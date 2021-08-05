@@ -44,15 +44,6 @@ public class Future {
     }
 
     /**
-     * Resets this result to null.
-     */
-    public boolean clear() {
-        this.called = false;
-        this.result = null;
-        return false;
-    }
-
-    /**
      * Calls the given Python function on the data contained in the Deephaven table at the specified indices. This is
      * where the computations actually happen, as data is both gathered via gather functions and passed through the
      * given Python function here. It gets evaluated once per Future and can then be accessed as many times as needed.
@@ -84,6 +75,11 @@ public class Future {
 
     public long getOffset() {
         this.offset += 1;
-        return this.offset % this.batchSize;
+        return this.offset % this.indexSet.size() % this.batchSize;
+    }
+
+    public boolean clearOffset() {
+        this.offset = -1;
+        return false;
     }
 }
