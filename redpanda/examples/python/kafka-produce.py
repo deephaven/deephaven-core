@@ -1,4 +1,13 @@
 #
+# To run this script, you need confluent-kafka libraries installed.
+# To create a dedicated venv for this, you can do:
+#
+# $ mkdir confluent-kafka; cd confluent-kafka
+# $ python3 -m venv confluent-kafka
+# $ cd confluent-kafka
+# $ source bin/activate
+# $ pip3 install confluent-kafka
+#
 # Examples of use for DH testing together with web UI.
 #
 # == Common to all:
@@ -12,7 +21,7 @@
 # > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes')
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
-# Run this script to produce one row:
+# Run this script on the host (not on a docker image) to produce one row:
 # $ python ./kafka-produce.py quotes MSFT double:274.82
 # You should see one row show up on the web UI table, data matching above.
 #
@@ -22,7 +31,7 @@
 # > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics')
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
-# Run this script to produce one row:
+# Run this script on the host (not on a docker image) to produce one row:
 # $ python ./kafka-produce.py metrics us_west.latency.millis long:29
 #
 
