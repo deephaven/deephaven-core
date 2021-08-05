@@ -238,7 +238,7 @@ public class ParquetSchemaReader {
                     final String logicalTypeString = errorString.getValue();
                     String msg = "Unable to read column " + Arrays.toString(column.getPath()) + ": ";
                     msg += (logicalTypeString != null)
-                            ? (logicalTypeString + "not supported")
+                            ? (logicalTypeString + " not supported")
                             : "no mappable logical type annotation found"
                         ;
                     return new UncheckedDeephavenException(msg);
@@ -308,7 +308,7 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-                errorString.setValue("TimeLogicalType,isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
+                errorString.setValue("TimeLogicalType, isAdjustedToUTC=" + timeLogicalType.isAdjustedToUTC());
                 return Optional.empty();
             }
 
@@ -322,7 +322,7 @@ public class ParquetSchemaReader {
                             return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
                     }
                 }
-                errorString.setValue("TimestampLogicalType,isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ",unit=" + timestampLogicalType.getUnit());
+                errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ", unit=" + timestampLogicalType.getUnit());
                 return Optional.empty();
             }
 
@@ -355,7 +355,7 @@ public class ParquetSchemaReader {
                             // fallthrough.
                     }
                 }
-                errorString.setValue("IntLogicalType,isSigned=" + intLogicalType.isSigned() + ",bitWidth=" + intLogicalType.getBitWidth());
+                errorString.setValue("IntLogicalType, isSigned=" + intLogicalType.isSigned() + ", bitWidth=" + intLogicalType.getBitWidth());
                 return Optional.empty();
             }
 
