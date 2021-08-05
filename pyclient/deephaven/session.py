@@ -34,9 +34,13 @@ class Session:
         # self._barrage_wait_event = threading.Event()
         # self._executor = ThreadPoolExecutor()
         # self._executor_future = None
-        self.console_tables = {}
+        self._tables = {}
 
         self._connect()
+
+    @property
+    def tables(self):
+        return [t for t in self._tables if self._tables[t] == 'Table']
 
     @property
     def grpc_metadata(self):
@@ -131,24 +135,24 @@ class Session:
                 self._last_ticket = 0
                 # self._executor.shutdown()
 
-    def _update_console_tables(self, response):
+    def _parse_script_response(self, response):
         if response.created:
             for t in response.created:
-                self.console_tables[t.name] = t.type
+                self._tables[t.name] = t.type
 
         if response.updated:
             for t in response.updated:
-                self.console_tables[t.name] = t.type
+                self._tables[t.name] = t.type
 
         if response.removed:
             for t in response.removed:
-                self.console_tables.pop(t.name, None)
+                self._tables.pop(t.name, None)
 
     # convenience/factory methods
     def run_script(self, server_script):
         with self._r_lock:
             response = self.console_service.run_script(server_script)
-            self._update_console_tables(response)
+            self._parse_script_response(response)
 
     def open_table(self, name):
         with self._r_lock:
