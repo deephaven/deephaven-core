@@ -20,6 +20,8 @@ import io.deephaven.db.v2.SimpleSourceTable;
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.TableLocationProvider;
 import io.deephaven.db.v2.locations.impl.*;
+import io.deephaven.db.v2.locations.local.FlatParquetLayout;
+import io.deephaven.db.v2.locations.local.KeyValuePartitionLayout;
 import io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationFactory;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
@@ -40,6 +42,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
@@ -57,106 +63,49 @@ public class ParquetTools {
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
     /**
-     * Reads in a table from a file.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
+     * @param sourceFilePath The file or directory to examine
      * @return table
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
-        return readParquetSchemaAndTable(new File(sourceFilePath), ParquetInstructions.EMPTY);
+        return readTableInternal(new File(sourceFilePath), ParquetInstructions.EMPTY);
     }
 
     /**
-     * Reads in a table from a file.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFilePath   table location; the file should exist and end in ".parquet" extension
-     * @param readInstructions instructions for customizations while reading
+     * @param sourceFilePath   The file or directory to examine
+     * @param readInstructions Instructions for customizations while reading
      * @return table
      */
     public static Table readTable(
             @NotNull final String sourceFilePath,
             @NotNull final ParquetInstructions readInstructions) {
-        return readParquetSchemaAndTable(new File(sourceFilePath), readInstructions);
+        return readTableInternal(new File(sourceFilePath), readInstructions);
     }
 
     /**
-     * Reads in a table from a file.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension
+     * @param sourceFile The file or directory to examine
      * @return table
      */
     public static Table readTable(@NotNull final File sourceFile) {
-        return readParquetSchemaAndTable(sourceFile, ParquetInstructions.EMPTY);
+        return readTableInternal(sourceFile, ParquetInstructions.EMPTY);
     }
 
     /**
-     * Reads in a table from a file.
+     * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFile       table location; the file should exist and end in ".parquet" extension
-     * @param readInstructions instructions for customizations while reading
+     * @param sourceFile       The file or directory to examine
+     * @param readInstructions Instructions for customizations while reading
      * @return table
      */
     public static Table readTable(
             @NotNull final File sourceFile,
             @NotNull final ParquetInstructions readInstructions) {
-        return readParquetSchemaAndTable(sourceFile, readInstructions);
-    }
-
-    /**
-     * Reads in a table from a file using the provided table definition.
-     *
-     * @param sourceFilePath table location; the file should exist and end in ".parquet" extension
-     * @param definition     table definition
-     * @return table
-     */
-    public static Table readTable(
-            @NotNull final String sourceFilePath,
-            final TableDefinition definition) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), 0, null), ParquetInstructions.EMPTY, definition);
-    }
-
-    /**
-     * Reads in a table from a file, using the provided table definition
-     * (instead of the definition implied by the file).
-     *
-     * @param sourceFilePath   table location; the file should exist and end in ".parquet" extension
-     * @param definition       table definition
-     * @param readInstructions instructions for customizations while reading
-     * @return table
-     */
-    public static Table readTable(
-            @NotNull final String sourceFilePath,
-            @NotNull final TableDefinition definition,
-            @NotNull final ParquetInstructions readInstructions) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(new File(sourceFilePath), 0, null), readInstructions, definition);
-    }
-
-    /**
-     * Reads in a table from a file, using the provided table definition.
-     *
-     * @param sourceFile table location; the file should exist and end in ".parquet" extension
-     * @param definition table definition
-     * @return table
-     */
-    public static Table readTable(
-            @NotNull final File sourceFile,
-            @NotNull final TableDefinition definition) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, 0, null), ParquetInstructions.EMPTY, definition);
-    }
-
-    /**
-     * Reads in a table from a file, using the provided table definition.
-     *
-     * @param sourceFile       table location; the file should exist and end in ".parquet" extension
-     * @param definition       table definition
-     * @param readInstructions instructions for customizations while reading
-     * @return table
-     */
-    public static Table readTable(
-            @NotNull final File sourceFile,
-            @NotNull final TableDefinition definition,
-            @NotNull final ParquetInstructions readInstructions) {
-        return readTableFromSingleParquetFile(new ParquetTableLocationKey(sourceFile, 0, null), readInstructions, definition);
+        return readTableInternal(sourceFile, readInstructions);
     }
 
     /**
@@ -387,7 +336,83 @@ public class ParquetTools {
         FileUtils.deleteRecursivelyOnNFS(path);
     }
 
-    private static Table readTableFromSingleParquetFile(
+    /**
+     * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
+     * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless
+     * a metadata file is supplied or discovered in the directory, the first found parquet file will be used to infer
+     * schema.
+     *
+     * @param source       The source file or directory
+     * @param instructions Instructions for reading
+     * @return A {@link Table}
+     */
+    private static Table readTableInternal(@NotNull final File source,
+                                           @NotNull final ParquetInstructions instructions) {
+        final Path sourcePath = source.toPath();
+        if (!Files.exists(sourcePath)) {
+            throw new TableDataException("Source file " + source + " does not exist");
+        }
+        final String sourceFileName = sourcePath.getFileName().toString();
+        final BasicFileAttributes sourceAttr = readAttributes(sourcePath);
+        if (sourceAttr.isRegularFile()) {
+            if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
+                final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
+                final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(tableLocationKey.getMetadata(), instructions);
+                return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(), new TableDefinition(schemaInfo.getFirst()));
+            }
+            if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
+                return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
+            }
+            if (sourceFileName.equals(ParquetMetadataFileLayout.COMMON_METADATA_FILE_NAME)) {
+                return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
+            }
+            throw new TableDataException("Source file " + source + " does not appear to be a parquet file or metadata file");
+        }
+        if (sourceAttr.isDirectory()) {
+            final Path metadataPath = sourcePath.resolve(ParquetMetadataFileLayout.METADATA_FILE_NAME);
+            if (Files.exists(metadataPath)) {
+                return readPartitionedTableWithMetadata(source, instructions);
+            }
+            final Path firstEntryPath;
+            try (final DirectoryStream<Path> sourceStream = Files.newDirectoryStream(sourcePath)) {
+                final Iterator<Path> entryIterator = sourceStream.iterator();
+                if (!entryIterator.hasNext()) {
+                    throw new TableDataException("Source directory " + source + " is empty");
+                }
+                firstEntryPath = entryIterator.next();
+            } catch (IOException e) {
+                throw new TableDataException("Error reading source directory " + source, e);
+            }
+            final String firstEntryFileName = sourcePath.getFileName().toString();
+            final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
+            if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
+                return readPartitionedTableInferSchema(KeyValuePartitionLayout.forParquet(source, 32), instructions);
+            }
+            if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
+                return readPartitionedTableInferSchema(new FlatParquetLayout(source), instructions);
+            }
+            throw new TableDataException("No recognized Parquet table layout found in " + source);
+        }
+        throw new TableDataException("Source " + source + " is neither a directory nor a regular file");
+    }
+
+    private static BasicFileAttributes readAttributes(@NotNull final Path path) {
+        try {
+            return Files.readAttributes(path, BasicFileAttributes.class);
+        } catch (IOException e) {
+            throw new TableDataException("Failed to read " + path + " file attributes", e);
+        }
+    }
+
+    /**
+     * Reads in a table from a single parquet file using the provided table definition.
+     *
+     * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
+     * @param readInstructions Instructions for customizations while reading
+     * @param tableDefinition  The table's {@link TableDefinition definition}
+     * @return The table
+     */
+    public static Table readSingleFileTable(
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
@@ -465,16 +490,8 @@ public class ParquetTools {
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
         final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
-        final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
-                StandaloneTableKey.getInstance(),
-                layout,
-                new ParquetTableLocationFactory(layout.getInstructions()),
-                null);
-        return new PartitionAwareSourceTable(layout.getTableDefinition(), "Read multiple parquet files with metadata  " + directory,
-                RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+        return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
     }
-
-    // TODO-RWC: Support "JUST DO THE RIGHT THING" read method
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
             null, DbCharArray.class, DbByteArray.class, DbShortArray.class, DbIntArray.class, DbLongArray.class,
@@ -558,11 +575,6 @@ public class ParquetTools {
         }
     }
 
-    private static Table readParquetSchemaAndTable(
-            @NotNull final File source, @NotNull ParquetInstructions readInstructions) {
-        return readParquetSchemaAndTable(source, readInstructions, null);
-    }
-
     @VisibleForTesting
     public static Table readParquetSchemaAndTable(
             @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn, MutableObject<ParquetInstructions> instructionsOut) {
@@ -572,7 +584,7 @@ public class ParquetTools {
         if (instructionsOut != null) {
             instructionsOut.setValue(schemaInfo.getSecond());
         }
-        return readTableFromSingleParquetFile(tableLocationKey, schemaInfo.getSecond(), def);
+        return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(), def);
     }
 
     /**

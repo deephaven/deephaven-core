@@ -19,6 +19,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -39,16 +39,35 @@ import static java.util.stream.Collectors.toMap;
  */
 public class ParquetMetadataFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static final String METADATA_FILE_NAME = "_metadata";
-    private static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
+    public static final String METADATA_FILE_NAME = "_metadata";
+    public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
+
+    private final File metadataFile;
+    private final File commonMetadataFile;
 
     private final TableDefinition definition;
     private final ParquetInstructions instructions;
     private final List<ParquetTableLocationKey> keys;
 
+    public ParquetMetadataFileLayout(@NotNull final File directory) {
+        this(directory, ParquetInstructions.EMPTY);
+    }
+
     public ParquetMetadataFileLayout(@NotNull final File directory,
                                      @NotNull final ParquetInstructions inputInstructions) {
-        final File metadataFile = new File(directory, METADATA_FILE_NAME);
+        this(new File(directory, METADATA_FILE_NAME), new File(directory, COMMON_METADATA_FILE_NAME), inputInstructions);
+    }
+
+    public ParquetMetadataFileLayout(@NotNull final File metadataFile,
+                                     @Nullable final File commonMetadataFile) {
+        this(metadataFile, commonMetadataFile, ParquetInstructions.EMPTY);
+    }
+
+    public ParquetMetadataFileLayout(@NotNull final File metadataFile,
+                                     @Nullable final File commonMetadataFile,
+                                     @NotNull final ParquetInstructions inputInstructions) {
+        this.metadataFile = metadataFile;
+        this.commonMetadataFile = commonMetadataFile;
         if (!metadataFile.exists()) {
             throw new TableDataException("Parquet metadata file " + metadataFile + " does not exist");
         }
@@ -58,8 +77,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
         final Pair<List<ColumnDefinition>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(metadataFileMetadata, inputInstructions);
 
-        final File commonMetadataFile = new File(directory, COMMON_METADATA_FILE_NAME);
-        if (commonMetadataFile.exists()) {
+        if (commonMetadataFile != null && commonMetadataFile.exists()) {
             final Pair<List<ColumnDefinition>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
                     convertMetadata(commonMetadataFile, ParquetTools.getParquetFileReader(commonMetadataFile), converter),
                     leafSchemaInfo.getSecond());
@@ -95,6 +113,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         for (int rgi = 0; rgi < numRowGroups; ++rgi) {
             fileNameToRowGroupIndices.computeIfAbsent(rowGroups.get(rgi).getColumns().get(0).getFile_path(), fn -> new TIntArrayList()).add(rgi);
         }
+        final File directory = metadataFile.getParentFile();
         final MutableInt partitionOrder = new MutableInt(0);
         keys = fileNameToRowGroupIndices.entrySet().stream().map(entry -> {
             final String filePathString = entry.getKey();
@@ -144,8 +163,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         }).collect(Collectors.toList());
     }
 
-    public ParquetMetadataFileLayout(@NotNull final File directory) {
-        this(directory, ParquetInstructions.EMPTY);
+    public String toString() {
+        return ParquetMetadataFileLayout.class.getSimpleName() + '[' + metadataFile + ',' + commonMetadataFile + ']';
     }
 
     private static ParquetMetadata convertMetadata(@NotNull final File file,

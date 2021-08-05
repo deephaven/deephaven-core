@@ -65,6 +65,10 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
         this.internalPartitionValueFilter = internalPartitionValueFilter;
     }
 
+    public String toString() {
+        return DeephavenNestedPartitionLayout.class.getSimpleName() + '[' + tableRootDirectory + ',' + tableName + ']';
+    }
+
     @Override
     public final void findKeys(@NotNull final Consumer<TLK> locationKeyObserver) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();

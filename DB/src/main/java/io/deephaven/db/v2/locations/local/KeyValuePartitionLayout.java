@@ -69,6 +69,10 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
     }
 
+    public String toString() {
+        return KeyValuePartitionLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
+    }
+
     @Override
     public void findKeys(@NotNull final Consumer<TLK> locationKeyObserver) {
         final StringBuilder csvBuilder = new StringBuilder();

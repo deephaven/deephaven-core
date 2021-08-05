@@ -28,6 +28,10 @@ public final class FlatParquetLayout implements TableLocationKeyFinder<ParquetTa
         this.tableRootDirectory = tableRootDirectory;
     }
 
+    public String toString() {
+        return FlatParquetLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
+    }
+
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         PrivilegedFileAccessUtil.doFilesystemAction(() -> {
