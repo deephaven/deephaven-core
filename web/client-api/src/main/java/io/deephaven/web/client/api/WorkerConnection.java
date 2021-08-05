@@ -5,15 +5,17 @@ import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageRecordBatch;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.BarrageData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb.SubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.barrage_pb_service.BarrageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
@@ -119,8 +121,8 @@ public class WorkerConnection {
     private double killTimerCancelation;
     private SessionServiceClient sessionServiceClient;
     private TableServiceClient tableServiceClient;
-    private BarrageServiceClient barrageApiClient;
     private ConsoleServiceClient consoleServiceClient;
+    private BrowserFlightServiceClient flightServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -129,7 +131,7 @@ public class WorkerConnection {
     private final Set<ClientTableState> flushable = new HashSet<>();
     private final JsSet<JsConsumer<LogItem>> logCallbacks = new JsSet<>();
 
-    private final Map<ClientTableState, ResponseStreamWrapper<BarrageData>> subscriptionStreams = new HashMap<>();
+    private final Map<ClientTableState, ResponseStreamWrapper<FlightData>> subscriptionStreams = new HashMap<>();
 
     private Map<TableMapHandle, TableMap> tableMaps = new HashMap<>();
 
@@ -147,8 +149,8 @@ public class WorkerConnection {
         boolean debugGrpc = false;
         sessionServiceClient = new SessionServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         tableServiceClient = new TableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        barrageApiClient = new BarrageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        flightServiceClient = new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
 //        builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -844,7 +846,7 @@ public class WorkerConnection {
                     if (state.isSubscribed()) {
                         state.setSubscribed(false);
                         if (state.getHandle().isConnected()) {
-                            ResponseStreamWrapper<BarrageData> stream = subscriptionStreams.remove(state);
+                            ResponseStreamWrapper<FlightData> stream = subscriptionStreams.remove(state);
                             if (stream != null) {
                                 stream.cancel();
                             }
@@ -875,35 +877,39 @@ public class WorkerConnection {
 
                 state.setSubscribed(true);
 
-                SubscriptionRequest request = new SubscriptionRequest();
-                request.setColumns(makeUint8ArrayFromBitset(includedColumns));
-                if (isViewport) {
-                    request.setViewport(serializeRanges(vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
-                }
-//                request.setUpdateintervalms();//TODO core#188 support this, along with other subscription improvements
-                request.setUseDeephavenNulls(true);
-
-                request.setTicket(state.getHandle().makeTicket());
-
-                final Ticket handle = new Ticket();
-                handle.setTicket(config.newTicket());
-                request.setExportId(handle);
-                ResponseStreamWrapper<BarrageData> stream = ResponseStreamWrapper.of(barrageApiClient.doSubscribeNoClientStream(request, metadata));
+//                SubscriptionRequest request = new SubscriptionRequest();
+//                request.setColumns(makeUint8ArrayFromBitset(includedColumns));
+//                if (isViewport) {
+//                    request.setViewport(serializeRanges(vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
+//                }
+////                request.setUpdateintervalms();//TODO core#188 support this, along with other subscription improvements
+//                request.setUseDeephavenNulls(true);
+//
+//                request.setTicket(state.getHandle().makeTicket());
+//
+//                final Ticket handle = new Ticket();
+//                handle.setTicket(config.newTicket());
+//                request.setExportId(handle);
+                FlightData request = new FlightData();
+                ResponseStreamWrapper<FlightData> stream = ResponseStreamWrapper.of(flightServiceClient.openDoExchange(request, metadata));
                 stream.onData(data -> {
                     ByteBuffer body = typedArrayToLittleEndianByteBuffer(data.getDataBody_asU8());
                     Message headerMessage = Message.getRootAsMessage(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(data.getDataHeader_asU8()));
-                    if (body.limit() == 0 && headerMessage.headerType() != MessageHeader.BarrageRecordBatch) {
+                    if (body.limit() == 0 && headerMessage.headerType() != MessageHeader.RecordBatch) {
                         // a subscription stream presently ignores schemas and other message types
                         return;
                     }
-                    BarrageRecordBatch header = headerMessage.header(new BarrageRecordBatch());
-                    if (header.isSnapshot()) {
-                        initialSnapshot(state.getHandle(), createSnapshot(header, body, isViewport, columnTypes));
+                    RecordBatch header = headerMessage.header(new RecordBatch());
+                    BarrageMessageWrapper barrageMessageWrapper = BarrageMessageWrapper.getRootAsBarrageMessageWrapper(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(data.getAppMetadata_asU8()));
+                    assert barrageMessageWrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata;
+                    BarrageUpdateMetadata barrageUpdate = null;//BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(barrageMessageWrapper.msgPayloadArray()));
+                    if (barrageUpdate.isSnapshot()) {
+                        initialSnapshot(state.getHandle(), createSnapshot(header, body, barrageUpdate, isViewport, columnTypes));
                     } else {
-                        incrementalUpdates(state.getHandle(), createDelta(header, body, isViewport, columnTypes));
+                        incrementalUpdates(state.getHandle(), createDelta(header, body, barrageUpdate, isViewport, columnTypes));
                     }
                 });
-                ResponseStreamWrapper<BarrageData> oldStream = subscriptionStreams.put(state, stream);
+                ResponseStreamWrapper<FlightData> oldStream = subscriptionStreams.put(state, stream);
                 if (oldStream != null) {
                     // cancel any old stream, we presently expect a fresh instance
                     oldStream.cancel();

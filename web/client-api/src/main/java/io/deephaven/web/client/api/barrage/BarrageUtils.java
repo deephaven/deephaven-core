@@ -1,9 +1,11 @@
 package io.deephaven.web.client.api.barrage;
 
 import elemental2.core.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageFieldNode;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageRecordBatch;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Buffer;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.*;
 import jsinterop.base.Js;
@@ -99,19 +101,19 @@ public class BarrageUtils {
         return bb;
     }
 
-    public static TableSnapshot createSnapshot(BarrageRecordBatch header, ByteBuffer body, boolean isViewport, String[] columnTypes) {
-        RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsArray()));
+    public static TableSnapshot createSnapshot(RecordBatch header, ByteBuffer body, BarrageUpdateMetadata barrageUpdate, boolean isViewport, String[] columnTypes) {
+        RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray()));
 
         final RangeSet includedAdditions;
         if (isViewport) {
-            includedAdditions = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsIncludedArray()));
+            includedAdditions = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsIncludedArray()));
         } else {
             // if this isn't a viewport, then a second index isn't sent, because all rows are included
             includedAdditions = added;
         }
 
         // read the nodes and buffers into iterators so that we can descend into the data columns as necessary
-        Iter<BarrageFieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
+        Iter<FieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
         Iter<Buffer> buffers = new Iter<>(IntStream.range(0, (int) header.buffersLength()).mapToObj(header::buffers).iterator());
         ColumnData[] columnData = new ColumnData[0];
         for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
@@ -121,23 +123,24 @@ public class BarrageUtils {
         return new TableSnapshot(added, includedAdditions, columnData);
     }
 
-    public static DeltaUpdates createDelta(BarrageRecordBatch header, ByteBuffer body, boolean isViewport, String[] columnTypes) {
-        RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsArray()));
+    public static DeltaUpdates createDelta(RecordBatch header, ByteBuffer body, BarrageUpdateMetadata barrageUpdate, boolean isViewport, String[] columnTypes) {
+        RangeSet added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray()));
 
-        RangeSet removed = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.removedRowsArray()));
+        RangeSet removed = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.removedRowsArray()));
 
-        ShiftedRange[] shifted = new ShiftedRangeReader().read(typedArrayToLittleEndianByteBuffer(header.shiftDataArray()));
+        ShiftedRange[] shifted = new ShiftedRangeReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.shiftDataArray()));
 
         RangeSet includedAdditions;
         if (isViewport) {
-            includedAdditions = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(header.addedRowsIncludedArray()));
+            includedAdditions = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsIncludedArray()));
         } else {
             // if this isn't a viewport, then a second index isn't sent, because all rows are included
             includedAdditions = added;
         }
 
-        Iter<BarrageFieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
+        Iter<FieldNode> nodes = new Iter<>(IntStream.range(0, (int) header.nodesLength()).mapToObj(header::nodes).iterator());
         Iter<Buffer> buffers = new Iter<>(IntStream.range(0, (int) header.buffersLength()).mapToObj(header::buffers).iterator());
+        Iter<BarrageModColumnMetadata> barrageNode = new Iter<>(IntStream.range(0, (int) barrageUpdate.nodesLength()).mapToObj(barrageUpdate::nodes).iterator());
 
         DeltaUpdates.ColumnAdditions[] addedColumnData = new DeltaUpdates.ColumnAdditions[0];
         for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
@@ -149,13 +152,14 @@ public class BarrageUtils {
 
         DeltaUpdates.ColumnModifications[] modifiedColumnData = new DeltaUpdates.ColumnModifications[0];
         for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
-            assert nodes.hasNext() && buffers.hasNext();
+            assert nodes.hasNext() && buffers.hasNext() && barrageNode.hasNext();
 
-            BarrageFieldNode node = nodes.peek();
-            RangeSet modifiedRows = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(node.modifiedRowsArray()));
+            FieldNode node = nodes.peek();
+            BarrageModColumnMetadata columnMetadata = barrageNode.peek();
+            RangeSet modifiedRows = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(columnMetadata.modifiedRowsArray()));
             RangeSet includedModifications;
             if (isViewport) {
-                includedModifications = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(node.includedRowsArray()));
+                includedModifications = null;//new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(columnMetadata.includedRowsArray()));
             } else {
                 includedModifications = modifiedRows;
             }
@@ -167,10 +171,10 @@ public class BarrageUtils {
         return new DeltaUpdates(added, removed, shifted, includedAdditions, addedColumnData, modifiedColumnData);
     }
 
-    private static ColumnData readArrowBuffer(ByteBuffer data, Iter<BarrageFieldNode> nodes, Iter<Buffer> buffers, int size, String columnType) {
+    private static ColumnData readArrowBuffer(ByteBuffer data, Iter<FieldNode> nodes, Iter<Buffer> buffers, int size, String columnType) {
         //explicit cast to be clear that we're rounding down
         BitSet valid = readValidityBufferAsBitset(data, size, buffers.next());
-        BarrageFieldNode thisNode = nodes.next();
+        FieldNode thisNode = nodes.next();
         boolean hasNulls = thisNode.nullCount().toFloat64() != 0;
         size = Math.min(size, (int) thisNode.length().toFloat64());
 
