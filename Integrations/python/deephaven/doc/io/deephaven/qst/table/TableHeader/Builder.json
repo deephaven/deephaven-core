@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.TableHeader$Builder",
+ "methods": {
+  "addAllHeaders": ":param headers: java.lang.Iterable<io.deephaven.qst.column.header.ColumnHeader<?>>\n:return: io.deephaven.qst.table.TableHeader.Builder",
+  "addHeaders": "*Overload 1*  \n  :param header: io.deephaven.qst.column.header.ColumnHeader<?>\n  :return: io.deephaven.qst.table.TableHeader.Builder\n  \n*Overload 2*  \n  :param headers: io.deephaven.qst.column.header.ColumnHeader<?>...\n  :return: io.deephaven.qst.table.TableHeader.Builder",
+  "build": ":return: io.deephaven.qst.table.TableHeader",
+  "putHeaders": ":param key: java.lang.String\n:param value: io.deephaven.qst.type.Type<?>\n:return: io.deephaven.qst.table.TableHeader.Builder"
+ },
+ "path": "io.deephaven.qst.table.TableHeader.Builder",
+ "typeName": "interface"
+}

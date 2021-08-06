@@ -89,60 +89,88 @@ public class KafkaTools {
         }
     }
 
+    private static void pushColumnTypesFromAvroField(
+            final List<ColumnDefinition<?>> columnsOut,
+            final Map<String, String> mappedOut,
+            final Schema.Field field,
+            final Function<String, String> fieldNameMapping) {
+        final Schema fieldSchema = field.schema();
+        String fieldName = field.name();
+        final String mappedName = fieldNameMapping.apply(fieldName);
+        final Schema.Type fieldType = fieldSchema.getType();
+        switch (fieldType) {
+            case BOOLEAN:
+                columnsOut.add(ColumnDefinition.ofBoolean(mappedName));
+                break;
+            case INT:
+                columnsOut.add(ColumnDefinition.ofInt(mappedName));
+                break;
+            case LONG:
+                columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                break;
+            case FLOAT:
+                columnsOut.add(ColumnDefinition.ofFloat(mappedName));
+                break;
+            case DOUBLE:
+                columnsOut.add(ColumnDefinition.ofDouble(mappedName));
+                break;
+            case STRING:
+                columnsOut.add(ColumnDefinition.ofString(mappedName));
+                break;
+            case UNION:
+                final List<Schema.Field> unionFields = fieldSchema.getFields();
+                final int unionSize = unionFields.size();
+                if (unionSize != 2) {
+                    throw new UnsupportedOperationException("Union " + fieldName + " with more than 2 fields not supported");
+                }
+                final Schema.Field unionField1 = unionFields.get(0);
+                final Schema.Field unionField2 = unionFields.get(1);
+                if (unionField1.schema().getType() == Schema.Type.NULL) {
+                    pushColumnTypesFromAvroField(columnsOut, mappedOut, unionField2, fieldNameMapping);
+                    return;
+                }
+                else if (unionField1.schema().getType() == Schema.Type.NULL) {
+                    pushColumnTypesFromAvroField(columnsOut, mappedOut, unionField1, fieldNameMapping);
+                    return;
+                } else {
+                    throw new UnsupportedOperationException("Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
+                }
+            case RECORD:
+                // Linearize any nesting.
+                for (final Schema.Field nestedField : field.schema().getFields()) {
+                    pushColumnTypesFromAvroField(columnsOut, mappedOut, nestedField, fieldNameMapping);
+                }
+                return;
+            case MAP:
+            case ENUM:
+            case NULL:
+            case ARRAY:
+            case BYTES:
+            case FIXED:
+            default:
+                throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
+        }
+        if (mappedOut != null) {
+            mappedOut.put(fieldName, mappedName);
+        }
+    }
+
     public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(
             final Map<String, String> mappedOut, final Schema schema, final Function<String, String> fieldNameMapping) {
         if (schema.isUnion()) {
-            throw new UnsupportedOperationException("Union Avro Schemas are not supported");
+            throw new UnsupportedOperationException("Union of records schemas are not supported");
         }
         final Schema.Type type = schema.getType();
         if (type != Schema.Type.RECORD) {
             throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
         final List<Schema.Field> fields = schema.getFields();
-        final int nCols = fields.size();
-        int c = 0;
-        final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
+        final ArrayList<ColumnDefinition<?>> columns = new ArrayList<>(fields.size());
         for (final Schema.Field field : fields) {
-            final Schema fieldSchema = field.schema();
-            final String fieldName = field.name();
-            final String mappedName = fieldNameMapping.apply(fieldName);
-            final Schema.Type fieldType = fieldSchema.getType();
-            switch (fieldType) {
-                case BOOLEAN:
-                    columns[c++] = ColumnDefinition.ofBoolean(mappedName);
-                    break;
-                case INT:
-                    columns[c++] = ColumnDefinition.ofInt(mappedName);
-                    break;
-                case LONG:
-                    columns[c++] = ColumnDefinition.ofLong(mappedName);
-                    break;
-                case FLOAT:
-                    columns[c++] = ColumnDefinition.ofFloat(mappedName);
-                    break;
-                case DOUBLE:
-                    columns[c++] = ColumnDefinition.ofDouble(mappedName);
-                    break;
-                case STRING:
-                    columns[c++] = ColumnDefinition.ofString(mappedName);
-                    break;
-                case MAP:
-                case ENUM:
-                case NULL:
-                case ARRAY:
-                case RECORD:
-                case BYTES:
-                case FIXED:
-                case UNION:
-                default:
-                    throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
-            }
-            if (mappedOut != null) {
-                mappedOut.put(fieldName, mappedName);
-            }
+            pushColumnTypesFromAvroField(columns, mappedOut, field, fieldNameMapping);
+
         }
-        Assert.eq(nCols, "nCols", c, "c");
-        return columns;
+        return columns.toArray(new ColumnDefinition<?>[columns.size()]);
     }
 
     public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema, final Function<String, String> fieldNameMapping) {
@@ -153,7 +181,20 @@ public class KafkaTools {
         return avroSchemaToColumnDefinitions(schema, DIRECT_MAPPING);
     }
 
-    public static Table genericAvroConsumeToTable(
+    /**
+     * Consume from Kafka to a Deephaven live table using avro schemas.
+     *
+     * @param kafkaConsumerProperties
+     * @param topic
+     * @param partitionFilter
+     * @param partitionToInitialOffset
+     * @param keySchema                Avro schema for the key, or null if no key expected
+     * @param keyFieldNameMapping      Mapping of key schema field names to deephaven table column names, or null if no key expected
+     * @param valueSchema              Avro schema for the value
+     * @param valueFieldNameMapping    Mapping of key schema field names to deephaven table column names
+     * @return                         The live table where kafka events are ingested
+     */
+    public static Table consumeToTable(
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final String topic,
             @NotNull final IntPredicate partitionFilter,

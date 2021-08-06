@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.table.TimeProvider",
+ "methods": {
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TimeProvider.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.TimeProvider",
+ "text": "The time provider for a TimeTable.",
+ "typeName": "interface"
+}

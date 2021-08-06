@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.array.FloatArray$Builder",
+ "methods": {
+  "add": "*Overload 1*  \n  :param item: float\n  :return: io.deephaven.qst.array.FloatArray.Builder\n  \n*Overload 2*  \n  :param items: float...\n  :return: io.deephaven.qst.array.FloatArray.Builder\n  \n*Overload 3*  \n  :param item: java.lang.Float\n  :return: io.deephaven.qst.array.FloatArray.Builder\n  \n*Overload 4*  \n  :param items: java.lang.Float...\n  :return: io.deephaven.qst.array.FloatArray.Builder\n  \n*Overload 5*  \n  :param items: java.lang.Iterable<java.lang.Float>\n  :return: io.deephaven.qst.array.FloatArray.Builder",
+  "build": ":return: io.deephaven.qst.array.FloatArray"
+ },
+ "path": "io.deephaven.qst.array.FloatArray.Builder",
+ "typeName": "class"
+}

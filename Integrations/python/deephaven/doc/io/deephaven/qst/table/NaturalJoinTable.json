@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.table.NaturalJoinTable",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.NaturalJoinTable.Builder",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.NaturalJoinTable",
+ "typeName": "class"
+}

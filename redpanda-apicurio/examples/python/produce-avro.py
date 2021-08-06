@@ -17,7 +17,7 @@ from confluent_kafka.avro import AvroProducer
 
 import sys
 
-value_arg_form = "type:field=value"
+value_arg_form = "python_type:field=value"
 
 if len(sys.argv) < 4:
     print("Usage: " + sys.argv[0] + " topic-name avro-schema-file-path " +
@@ -56,15 +56,24 @@ for value_arg in sys.argv[3:]:
     s = value_arg.split(':', 1)
     if len(s) != 2:
         wrong_form(value_arg)
-    type_for_value_as_string = s[0]
+    ptype = s[0]
     field_eq_value = s[1]
     s = field_eq_value.split('=', 1)
     if len(s) != 2:
         wrong_form(value_arg)
-    if (type_for_value_as_string == "str"):
+    # Strictly speaking we are calling for a python type here (eg, "str", "int", "float", "bool").
+    # We allow other type names for ease of use for us, people accostumed to Java.
+    if (ptype == "str" or ptype == "string"):
         value[s[0]] = s[1]
+    elif (ptype == "bool" or ptype == "boolean"):
+        value[s[0]] = (s[1] == "true" or s[1] == "True")
     else:
-        cast = type_for_value_as_string + "('" + s[1] + "')"
+        if ptype == "double":
+            ptype = "float"
+        elif ptype == "long" or ptype == "short":
+            ptype = "int"
+        # Do a python cast of the string value to the right type via exec
+        cast = ptype + "('" + s[1] + "')"
         exec("v=" + cast)
         value[s[0]] = v
 

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.AsOfJoinTable$Builder",
+ "methods": {
+  "rule": ":param rule: io.deephaven.api.AsOfJoinRule\n:return: io.deephaven.qst.table.AsOfJoinTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.AsOfJoinTable.Builder",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.TimeProvider$Visitor",
+ "methods": {
+  "visit": ":param system: io.deephaven.qst.table.TimeProviderSystem"
+ },
+ "path": "io.deephaven.qst.table.TimeProvider.Visitor",
+ "typeName": "interface"
+}
