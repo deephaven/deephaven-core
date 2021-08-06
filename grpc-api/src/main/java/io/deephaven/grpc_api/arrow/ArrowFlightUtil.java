@@ -336,19 +336,17 @@ public class ArrowFlightUtil {
         private final String myPrefix;
         private final SessionState session;
 
-        private long seqWatermark;
         private boolean isViewport;
         private BarrageMessageProducer<Options, View> bmp;
-        private Queue<BarrageMessageWrapper> preExportSubscriptions;
+        private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
 
         private final StreamObserver<View> listener;
 
         private boolean isClosed = false;
-        private SessionState.ExportObject<DoExchangeMarshaller<Options, View>> subscriptionExport;
+        private SessionState.ExportObject<?> onExportResolvedContinuation;
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory;
-        private final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter;
 
         @AssistedInject
@@ -362,7 +360,6 @@ public class ArrowFlightUtil {
             this.myPrefix = "SubscriptionObserver{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.operationFactory = operationFactory;
-            this.listenerAdapter = listenerAdapter;
             this.optionsAdapter = optionsAdapter;
             this.session = session;
             this.listener = listenerAdapter.adapt(responseObserver);
@@ -386,26 +383,97 @@ public class ArrowFlightUtil {
         }
 
         // this is the entry point for browser streams; and client-streams delegate to this
-        public void onMessageReceived(final MessageInfo message) {
-            queueRequest(message.app_metadata);
+        public synchronized void onMessageReceived(final MessageInfo message) {
+            if (message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
+                    || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
+                log.warn().append("DoExchangeMarshaller received a message without app_metadata").endl();
+                return;
+            }
+            final BarrageSubscriptionRequest subscriptionRequest =
+                    BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+            if (bmp != null) {
+                apply(subscriptionRequest);
+                return;
+            }
+
+            if (isClosed) {
+                return;
+            }
+
+            // have we already created the queue?
+            if (preExportSubscriptions != null) {
+                preExportSubscriptions.add(subscriptionRequest);
+                return;
+            }
+
+            if (subscriptionRequest.ticketVector() == null) {
+                listener.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Ticket not specified."));
+                return;
+            }
+
+            preExportSubscriptions = new ArrayDeque<>();
+            preExportSubscriptions.add(subscriptionRequest);
+            final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
+
+            onExportResolvedContinuation = session.nonExport()
+                    .require(parent)
+                    .onError(listener::onError)
+                    .submit(() -> onExportResolved(parent));
+        }
+
+        private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
+            onExportResolvedContinuation = null;
+
+            if (isClosed) {
+                preExportSubscriptions = null;
+                return;
+            }
+
+            // we know there is at least one request; it was put there when we knew which parent to wait on
+            final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
+
+            final Object export = parent.get();
+            if (export instanceof QueryTable) {
+                final QueryTable table = (QueryTable) export;
+                long updateIntervalMs = subscriptionRequest.updateIntervalMs();
+                if (updateIntervalMs == 0) {
+                    updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
+                }
+                bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
+                manage(bmp);
+            } else {
+                listener.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                        + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
+                        + ") is not a subscribable table."));
+                return;
+            }
+
+            log.info().append(myPrefix).append("processing initial subscription").endl();
+
+            final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+            final BitSet columns = hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
+
+            isViewport = subscriptionRequest.viewportVector() != null;
+            final Index viewport = isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+
+            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
+                throw new IllegalStateException("listener is already a subscriber!");
+            }
+
+            for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
+                apply(request);
+            }
+
+            // we will now process requests as they are received
+            preExportSubscriptions = null;
         }
 
         /**
          * Update the existing subscription to match the new request.
-         * @param msg the requested view change
+         * @param subscriptionRequest the requested view change
          */
-        private void apply(final BarrageMessageWrapper msg) {
-            if (msg.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC || msg.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-                return;
-            }
-
-            if (seqWatermark > 0 && seqWatermark >= msg.sequence()) {
-                return;
-            }
-            seqWatermark = msg.sequence();
-            log.info().append(myPrefix).append("applying subscription request w/seq ").append(seqWatermark).endl();
-
-            final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(msg.msgPayloadAsByteBuffer());
+        private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
             final boolean hasColumns = subscriptionRequest.columnsVector() != null;
             final BitSet columns = hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
 
@@ -426,82 +494,6 @@ public class ArrowFlightUtil {
             if (!subscriptionFound) {
                 throw GrpcUtil.statusRuntimeException(Code.INTERNAL, "Subscription was not found.");
             }
-        }
-
-        private synchronized void queueRequest(final BarrageMessageWrapper msg) {
-            if (preExportSubscriptions != null) {
-                preExportSubscriptions.add(msg);
-                return;
-            }
-
-            preExportSubscriptions = new ArrayDeque<>();
-            preExportSubscriptions.add(msg);
-
-            final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(msg.msgPayloadAsByteBuffer());
-            if (subscriptionRequest.ticketVector() == null) {
-                listener.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Ticket not specified."));
-                return;
-            }
-
-            final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
-
-            final SessionState.ExportBuilder<DoExchangeMarshaller<Options, View>> exportBuilder;
-            if (msg.rpcTicketVector() != null) {
-                exportBuilder = session.newExport(ExportTicketHelper.ticketToExportId(msg.rpcTicketAsByteBuffer()));
-            } else {
-                exportBuilder = session.nonExport();
-            }
-
-            subscriptionExport = exportBuilder
-                    .require(parent)
-                    .onError(listener::onError)
-                    .submit(() -> {
-                        synchronized (DoExchangeMarshaller.this) {
-                            subscriptionExport = null;
-
-                            if (isClosed) {
-                                return null;
-                            }
-
-                            final Object export = parent.get();
-                            if (export instanceof QueryTable) {
-                                final QueryTable table = (QueryTable) export;
-                                long updateIntervalMs = subscriptionRequest.updateIntervalMs();
-                                if (updateIntervalMs == 0) {
-                                    updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
-                                }
-                                bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
-                                manage(bmp);
-                            } else {
-                                listener.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
-                                        + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
-                                        + ") is not a subscribable table."));
-                                return null;
-                            }
-
-                            log.info().append(myPrefix).append("processing initial subscription").endl();
-                            final BarrageMessageWrapper initial = preExportSubscriptions.remove();
-                            seqWatermark = initial.sequence();
-
-                            final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-                            final BitSet columns = hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
-
-                            isViewport = subscriptionRequest.viewportVector() != null;
-                            final Index viewport = isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
-
-                            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
-                                throw new IllegalStateException("listener is already a subscriber!");
-                            }
-
-                            for (final BarrageMessageWrapper request : preExportSubscriptions) {
-                                apply(request);
-                            }
-
-                            // we will now process requests as they are received
-                            preExportSubscriptions = null;
-                            return DoExchangeMarshaller.this;
-                        }
-                    });
         }
 
         public void onCancel() {
@@ -531,14 +523,18 @@ public class ArrowFlightUtil {
                 isClosed = true;
             }
 
-            if (subscriptionExport != null) {
-                subscriptionExport.cancel();
-                subscriptionExport = null;
+            if (onExportResolvedContinuation != null) {
+                onExportResolvedContinuation.cancel();
+                onExportResolvedContinuation = null;
             }
 
             if (bmp != null) {
                 bmp.removeSubscription(listener);
                 bmp = null;
+            }
+
+            if (preExportSubscriptions != null) {
+                preExportSubscriptions = null;
             }
             release();
         }
