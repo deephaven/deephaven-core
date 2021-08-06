@@ -10,7 +10,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Command(name = "get-tsv", mixinStandardHelpOptions = true,
     description = "Send a QST, get the results, and convert to a TSV", version = "0.1.0")
@@ -27,13 +26,11 @@ class GetTsv extends FlightExampleBase {
         try (final Flight flight = sessionAndFlight.flight();
             final Export export = sessionAndFlight.session().export(table);
             final FlightStream stream = flight.get(export)) {
-            stream.next();
-            stream.getRoot();
-            end = System.nanoTime();
-
             System.out.println(stream.getSchema());
-            System.out.println();
-            System.out.println(stream.getRoot().contentToTSVString());
+            while (stream.next()) {
+                System.out.println(stream.getRoot().contentToTSVString());
+            }
+            end = System.nanoTime();
         }
         System.out.printf("%s duration%n", Duration.ofNanos(end - start));
     }

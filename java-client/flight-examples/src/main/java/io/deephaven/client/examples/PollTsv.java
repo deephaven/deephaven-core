@@ -5,7 +5,6 @@ import io.deephaven.client.impl.Flight;
 import io.deephaven.client.impl.SessionAndFlight;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.vector.VectorSchemaRoot;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -34,19 +33,17 @@ class PollTsv extends FlightExampleBase {
         try (final Flight flight = sessionAndFlight.flight();
             final Export export = sessionAndFlight.session().export(table)) {
             for (long i = 0; i < times; ++i) {
-
                 long start = System.nanoTime();
                 try (final FlightStream stream = flight.get(export)) {
-                    stream.next();
                     if (i == 0) {
                         System.out.println(stream.getSchema());
                         System.out.println();
                     }
-                    VectorSchemaRoot root = stream.getRoot();
+                    while (stream.next()) {
+                        System.out.println(stream.getRoot().contentToTSVString());
+                    }
                     long end = System.nanoTime();
-                    System.out.println(root.contentToTSVString());
                     System.out.printf("%s duration%n%n", Duration.ofNanos(end - start));
-
                     if (i + 1 < times) {
                         Thread.sleep(interval.toMillis());
                     }
