@@ -40,8 +40,8 @@ public class ParquetFileReader {
     public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider, int pageSizeHint) throws IOException {
         this.channelsProvider = channelsProvider;
         this.codecFactory =  ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
-        rootPath = Paths.get(filePath);
-
+        // Root path should be this file if a single file, else the parent directory for a metadata file
+        rootPath = filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
         SeekableByteChannel f = channelsProvider.getReadChannel(filePath);
         long fileLen = f.size();
@@ -73,6 +73,13 @@ public class ParquetFileReader {
         type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
     }
 
+    /**
+     * @return The {@link SeekableChannelsProvider} used for this reader, appropriate to use for related file acccess
+     */
+    public SeekableChannelsProvider getChannelsProvider() {
+        return channelsProvider;
+    }
+
     private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
     /**
      * Get the name of all columns that we can know for certain
@@ -80,6 +87,7 @@ public class ParquetFileReader {
      *
      * @return A set of parquet column names that satisfies the required condition.
      */
+    @SuppressWarnings("unused")
     public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
             columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();

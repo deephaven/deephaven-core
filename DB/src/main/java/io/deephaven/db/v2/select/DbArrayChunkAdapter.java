@@ -26,11 +26,6 @@ public class DbArrayChunkAdapter<ATTR extends Attributes.Any> implements Default
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return underlying.getNativeType();
-    }
-
-    @Override
     public ChunkType getChunkType() {
         return underlying.getChunkType();
     }

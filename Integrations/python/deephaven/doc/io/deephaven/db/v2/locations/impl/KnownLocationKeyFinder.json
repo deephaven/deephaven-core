@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.locations.impl.KnownLocationKeyFinder",
+ "methods": {
+  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<KnownLocationKeyFinder.TLK>) - Per-key callback",
+  "getKnownKeys": ":return: (java.util.List<KnownLocationKeyFinder.TLK>) An unmodifiable list of recorded (immutable) keys"
+ },
+ "path": "io.deephaven.db.v2.locations.impl.KnownLocationKeyFinder",
+ "text": "Location finder that delivers a known set of keys.",
+ "typeName": "class"
+}

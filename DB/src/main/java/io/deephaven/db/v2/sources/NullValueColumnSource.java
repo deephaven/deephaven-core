@@ -38,7 +38,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     };
 
     private static final KeyedObjectHashMap<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> INSTANCES = new KeyedObjectHashMap<>(KEY_TYPE);
-    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE = new BooleanAsByteColumnSource(getInstance(boolean.class, null));
+    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE = new BooleanAsByteColumnSource(getInstance(Boolean.class, null));
 
     public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
         //noinspection unchecked,rawtypes

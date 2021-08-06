@@ -8,6 +8,6 @@
   "getPageContaining": ":param fillContext: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param row: long\n:return: (PageStore.PAGE) The page containing row, after applying PagingChunkSource.mask()."
  },
  "path": "io.deephaven.db.v2.sources.chunk.page.PageStore",
- "text": "PageStores are a collection of non-overlapping pages, which provides a single\n ChunkSource interface across all the pages.",
+ "text": "PageStores are a collection of non-overlapping pages, which provides a single ChunkSource interface across\n all the pages.",
  "typeName": "interface"
 }

@@ -137,11 +137,6 @@ public class ReinterpretedDateTimeCharacterCharacterColumnTupleSource extends Ab
     }
 
     @Override
-    public Class<LongCharCharTuple> getNativeType() {
-        return LongCharCharTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongCharCharTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

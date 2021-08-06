@@ -138,11 +138,6 @@ public class ShortReinterpretedDateTimeFloatColumnTupleSource extends AbstractTu
     }
 
     @Override
-    public Class<ShortLongFloatTuple> getNativeType() {
-        return ShortLongFloatTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortLongFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();

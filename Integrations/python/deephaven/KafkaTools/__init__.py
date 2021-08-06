@@ -203,23 +203,6 @@ def fieldNameMappingFromParallelArrays(fieldNames, columnNames):
 
 
 @_passThrough
-def genericAvroConsumeToTable(kafkaConsumerProperties, topic, partitionFilter, partitionToInitialOffset, keySchema, keyFieldNameMapping, valueSchema, valueFieldNameMapping):
-    """
-    :param kafkaConsumerProperties: java.util.Properties
-    :param topic: java.lang.String
-    :param partitionFilter: java.util.function.IntPredicate
-    :param partitionToInitialOffset: java.util.function.IntToLongFunction
-    :param keySchema: org.apache.avro.Schema
-    :param keyFieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
-    :param valueSchema: org.apache.avro.Schema
-    :param valueFieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
-    :return: io.deephaven.db.tables.Table
-    """
-    
-    return _java_type_.genericAvroConsumeToTable(kafkaConsumerProperties, topic, partitionFilter, partitionToInitialOffset, keySchema, keyFieldNameMapping, valueSchema, valueFieldNameMapping)
-
-
-@_passThrough
 def getAvroSchema(schemaServerUrl, resourceName, version):
     """
     :param schemaServerUrl: java.lang.String

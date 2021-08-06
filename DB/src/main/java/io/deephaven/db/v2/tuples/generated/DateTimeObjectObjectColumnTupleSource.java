@@ -134,11 +134,6 @@ public class DateTimeObjectObjectColumnTupleSource extends AbstractTupleSource<L
     }
 
     @Override
-    public Class<LongObjectObjectTuple> getNativeType() {
-        return LongObjectObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongObjectObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<DBDateTime, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

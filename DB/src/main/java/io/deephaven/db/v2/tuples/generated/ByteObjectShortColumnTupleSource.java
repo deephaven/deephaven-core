@@ -135,11 +135,6 @@ public class ByteObjectShortColumnTupleSource extends AbstractTupleSource<ByteOb
     }
 
     @Override
-    public Class<ByteObjectShortTuple> getNativeType() {
-        return ByteObjectShortTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteObjectShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

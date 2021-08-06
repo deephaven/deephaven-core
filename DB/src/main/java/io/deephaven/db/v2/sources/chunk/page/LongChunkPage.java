@@ -28,11 +28,6 @@ public class LongChunkPage<ATTR extends Attributes.Any> extends LongChunk<ATTR> 
     }
 
     @Override
-    public Class<Long> getNativeType() {
-        return long.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableLongChunk<? super ATTR> to = destination.asWritableLongChunk();
 

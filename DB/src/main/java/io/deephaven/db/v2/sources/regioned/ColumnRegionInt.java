@@ -4,8 +4,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,7 +26,7 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single int from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (int) index in the table's address space
      * @return The int value at the specified element (int) index
@@ -34,20 +36,22 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
     }
 
     @Override
-    default Class<?> getNativeType() {
-        return int.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Int;
     }
 
-    static <ATTR extends Any> ColumnRegionInt.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionInt<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionInt<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionInt.Null INSTANCE = new ColumnRegionInt.Null();
+        private static final ColumnRegionInt DEFAULT_INSTANCE = new ColumnRegionInt.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -56,11 +60,14 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionInt<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionInt<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final int value;
 
-        public Constant(final int value) {
+        public Constant(final long pageMask, final int value) {
+            super(pageMask);
             this.value = value;
         }
 
@@ -74,6 +81,25 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
             final int offset = destination.size();
             destination.asWritableIntChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionInt<ATTR>>
+            implements ColumnRegionInt<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionInt<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public int getInt(final long elementIndex) {
+            return lookupRegion(elementIndex).getInt(elementIndex);
+        }
+
+        @Override
+        public int getInt(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getInt(context, elementIndex);
         }
     }
 }

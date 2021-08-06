@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.type.ColumnTypeBase",
+ "methods": {
+  "castValue": ":param value: java.lang.Object\n:return: ColumnTypeBase.T"
+ },
+ "path": "io.deephaven.qst.type.ColumnTypeBase",
+ "typeName": "class"
+}

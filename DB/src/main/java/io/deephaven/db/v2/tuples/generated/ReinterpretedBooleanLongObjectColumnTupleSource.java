@@ -136,11 +136,6 @@ public class ReinterpretedBooleanLongObjectColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public Class<ByteLongObjectTuple> getNativeType() {
-        return ByteLongObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteLongObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

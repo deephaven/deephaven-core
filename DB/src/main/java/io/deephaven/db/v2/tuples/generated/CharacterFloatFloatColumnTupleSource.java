@@ -135,11 +135,6 @@ public class CharacterFloatFloatColumnTupleSource extends AbstractTupleSource<Ch
     }
 
     @Override
-    public Class<CharFloatFloatTuple> getNativeType() {
-        return CharFloatFloatTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<CharFloatFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         CharChunk<Attributes.Values> chunk1 = chunks[0].asCharChunk();

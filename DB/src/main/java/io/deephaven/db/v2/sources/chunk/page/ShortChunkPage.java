@@ -28,11 +28,6 @@ public class ShortChunkPage<ATTR extends Attributes.Any> extends ShortChunk<ATTR
     }
 
     @Override
-    public Class<Short> getNativeType() {
-        return short.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableShortChunk<? super ATTR> to = destination.asWritableShortChunk();
 

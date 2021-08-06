@@ -137,11 +137,6 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
     }
 
     @Override
-    public Class<IntByteLongTuple> getNativeType() {
-        return IntByteLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntByteLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

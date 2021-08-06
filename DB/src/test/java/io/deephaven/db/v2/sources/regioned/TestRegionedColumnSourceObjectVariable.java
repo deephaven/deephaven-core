@@ -71,7 +71,7 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        SUT = new RegionedColumnSourceObject.AsValues<>(String.class, VARIABLE);
+        SUT = new RegionedColumnSourceObject.AsValues<>(String.class);
         TestCase.assertEquals(String.class, SUT.getType());
     }
 

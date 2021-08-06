@@ -1097,7 +1097,7 @@ public class TableTools {
         Map<String, ColumnSource> columns = new LinkedHashMap<>();
         for (ColumnDefinition columnDefinition : definition.getColumnList()) {
             //noinspection unchecked
-            columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType()));
+            columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
         return new QueryTable(definition, Index.FACTORY.getEmptyIndex(), columns);
     }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.array.BooleanArray$Builder",
+ "methods": {
+  "add": "*Overload 1*  \n  :param item: byte\n  :return: io.deephaven.qst.array.BooleanArray.Builder\n  \n*Overload 2*  \n  :param items: byte...\n  :return: io.deephaven.qst.array.BooleanArray.Builder\n  \n*Overload 3*  \n  :param item: java.lang.Boolean\n  :return: io.deephaven.qst.array.BooleanArray.Builder\n  \n*Overload 4*  \n  :param items: java.lang.Boolean...\n  :return: io.deephaven.qst.array.BooleanArray.Builder\n  \n*Overload 5*  \n  :param items: java.lang.Iterable<java.lang.Boolean>\n  :return: io.deephaven.qst.array.BooleanArray.Builder",
+  "build": ":return: io.deephaven.qst.array.BooleanArray"
+ },
+ "path": "io.deephaven.qst.array.BooleanArray.Builder",
+ "typeName": "class"
+}

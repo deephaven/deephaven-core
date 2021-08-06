@@ -91,7 +91,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      * getDictionary returns null.
      * @apiNote null iff {@link #getDictionary()} is null.
      */
-    default ToPage<Attributes.DictionaryKeys, int[]> getDictionaryKeysToPage() {
+    default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
         return null;
     }
 
@@ -131,7 +131,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
         }
 
         @Override
-        public ToPage<Attributes.DictionaryKeys, int[]> getDictionaryKeysToPage() {
+        public ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
             return toPage.getDictionaryKeysToPage();
         }
 

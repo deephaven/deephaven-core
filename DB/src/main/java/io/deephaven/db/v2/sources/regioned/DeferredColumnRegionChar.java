@@ -13,8 +13,8 @@ public class DeferredColumnRegionChar<ATTR extends Attributes.Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionChar<ATTR>>
         implements ColumnRegionChar<ATTR> {
 
-    DeferredColumnRegionChar(@NotNull Supplier<ColumnRegionChar<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionChar(final long pageMask, @NotNull Supplier<ColumnRegionChar<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

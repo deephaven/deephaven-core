@@ -224,7 +224,7 @@ public class SortHelpers {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 }
             } else {
-                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource) {
+                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(indexToSort)) {
                     return doSymbolTableMapping(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);

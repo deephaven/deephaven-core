@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.LabeledTable",
+ "methods": {
+  "label": ":return: java.lang.String",
+  "of": ":param label: java.lang.String\n:param table: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.LabeledTable",
+  "table": ":return: io.deephaven.qst.table.TableSpec"
+ },
+ "path": "io.deephaven.qst.table.LabeledTable",
+ "text": "A labeled table is label and table pair.",
+ "typeName": "class"
+}

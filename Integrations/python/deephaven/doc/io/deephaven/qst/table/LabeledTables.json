@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.qst.table.LabeledTables",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.LabeledTables.Builder",
+  "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.table.LabeledTable>",
+  "getTable": ":param name: java.lang.String\n:return: io.deephaven.qst.table.TableSpec",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.table.LabeledTable>",
+  "of": ":param tables: io.deephaven.qst.table.LabeledTable...\n:return: io.deephaven.qst.table.LabeledTables",
+  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.table.LabeledTable>",
+  "stream": ":return: java.util.stream.Stream<io.deephaven.qst.table.LabeledTable>",
+  "tables": ":return: java.util.Collection<io.deephaven.qst.table.TableSpec>"
+ },
+ "path": "io.deephaven.qst.table.LabeledTables",
+ "text": "Labeled tables is a list of labeled tables. Each label will be distinct.",
+ "typeName": "class"
+}

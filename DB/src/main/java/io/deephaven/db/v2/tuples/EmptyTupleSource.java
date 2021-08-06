@@ -54,8 +54,8 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public Class getNativeType() {
-        return EmptyTuple.class;
+    public ChunkType getChunkType() {
+        return ChunkType.Object;
     }
 
     @Override

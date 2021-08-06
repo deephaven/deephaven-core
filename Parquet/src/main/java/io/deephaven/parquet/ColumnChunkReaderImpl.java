@@ -98,6 +98,28 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
+    public boolean usesDictionaryOnEveryPage() {
+        final ColumnMetaData columnMeta = columnChunk.getMeta_data();
+        if (columnMeta.encoding_stats == null) {
+            // We don't know, so we bail out to "false"
+            return false;
+        }
+        for (final PageEncodingStats encodingStat : columnMeta.encoding_stats) {
+            if (encodingStat.page_type != PageType.DATA_PAGE
+                    && encodingStat.page_type != PageType.DATA_PAGE_V2) {
+                // Not a data page, skip
+                continue;
+            }
+            // This is a data page
+            if (encodingStat.encoding != org.apache.parquet.format.Encoding.PLAIN_DICTIONARY
+                    && encodingStat.encoding != org.apache.parquet.format.Encoding.RLE_DICTIONARY) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
     public Dictionary getDictionary() throws IOException {
         if (dictionary != null) {
             return dictionary;

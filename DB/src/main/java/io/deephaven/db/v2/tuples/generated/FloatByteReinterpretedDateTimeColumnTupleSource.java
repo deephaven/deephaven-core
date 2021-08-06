@@ -138,11 +138,6 @@ public class FloatByteReinterpretedDateTimeColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public Class<FloatByteLongTuple> getNativeType() {
-        return FloatByteLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<FloatByteLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         FloatChunk<Attributes.Values> chunk1 = chunks[0].asFloatChunk();

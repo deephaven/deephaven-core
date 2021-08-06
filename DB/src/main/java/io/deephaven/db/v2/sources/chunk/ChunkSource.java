@@ -15,19 +15,12 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
     FillContext DEFAULT_FILL_INSTANCE = new FillContext() {
     };
 
-    Class<?> getNativeType();
-
     /**
-     * Get the most suitable {@link ChunkType} for use with this ColumnSource.
+     * Get the most suitable {@link ChunkType} for use with this ChunkSource.
      *
      * @return The ChunkType
      */
-    default ChunkType getChunkType() {
-        if (getNativeType() == boolean.class) {
-            return ChunkType.Object;
-        }
-        return ChunkType.fromElementType(getNativeType());
-    }
+    ChunkType getChunkType();
 
     /**
      * Returns a chunk of data corresponding to the keys from the given {@link OrderedKeys}.

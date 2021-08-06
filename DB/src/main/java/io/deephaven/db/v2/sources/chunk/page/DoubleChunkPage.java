@@ -28,11 +28,6 @@ public class DoubleChunkPage<ATTR extends Attributes.Any> extends DoubleChunk<AT
     }
 
     @Override
-    public Class<Double> getNativeType() {
-        return double.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableDoubleChunk<? super ATTR> to = destination.asWritableDoubleChunk();
 

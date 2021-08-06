@@ -6,32 +6,32 @@ import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.chunk.DefaultChunkSource;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This provides the {@link ChunkSource} interface to a contiguous block of data from
- * the range [{@link #firstRowOffset()},{@link #firstRowOffset()} + {@link #length()}).
+ * This provides the {@link ChunkSource} interface to a contiguous block of data beginning at {@link #firstRowOffset()}
+ * and continuing to some row less than or equal to {@link #firstRowOffset()} + {@link #maxRow(long)}.
  * <p>
  * Non overlapping pages can be collected together in a {@link PageStore}, which provides the {@link ChunkSource}
  * interface to the collection of all of its Pages.
  * <p>
- * There are two distinct use cases/types of pages.  The first use case are {@code Page}s which always have a
+ * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a
  * length() > 0.  These store length() values, which can be assessed via the {@link ChunkSource} methods.
  * Valid {@link OrderedKeys} passed to those methods will have their offset in the range
- * [firstRowOffset(), firstRowOffset() + length()).  Passing OrderKeys with offsets outside of this range will have
+ * [firstRowOffset(), firstRowOffset() + length()). Passing OrderKeys with offsets outside of this range will have
  * undefined results.
  * <p>
- * The second use case will always have length() == 0 and firstRowOffset() == 0.  These represent "Null" regions
+ * The second use case will always have length() == 0 and firstRowOffset() == 0. These represent "Null" regions
  * which return a fixed value, typically a null value, for every {@link OrderedKeys} passed into the
- * {@link ChunkSource} methods.   In order to have this use case, override {@code length} and override {@code lastRow}
+ * {@link ChunkSource} methods. In order to have this use case, override {@code length} and override {@code lastRow}
  * as {@code maxRow}.
  * <p>
  * Though the {@link ChunkSource} methods ignore the non-offset portion of the rows in the {@link OrderedKeys},
- * then can assume they are identical for all the passed in elements of the {@link OrderedKeys}.  For instance,
+ * they can assume they are identical for all the passed in elements of the {@link OrderedKeys}.  For instance,
  * they can use the simple difference between the complete row value to determine a length.
  */
-
 public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
 
     /**
@@ -46,28 +46,11 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
      */
     @FinalDefault
     default long firstRow(final long row) {
-        final long m = mask();
-        return (row & ~m) | firstRowOffset();
+        return (row & ~mask()) | firstRowOffset();
     }
 
     /**
-     * @param row Any row contained on this page.
-     * @return the last row of this page, located in the same way as row.
-     */
-    default long lastRow(final long row) {
-        long l = length();
-        long m = mask();
-
-        return (row & ~m) | (firstRowOffset() + l - 1);
-    }
-
-    /**
-     * @return the length of this page.
-     */
-    long length();
-
-    /**
-     * @return the offset for the given row in this page, between [0, {@link #length()}).
+     * @return the offset for the given row in this page, in [0, {@code maxRow(row)}].
      */
     @FinalDefault
     default long getRowOffset(long row) {
@@ -106,21 +89,9 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
 
         @Override
         @FinalDefault
-        default long length() {
-            return 0;
-        }
-
-        @Override
-        @FinalDefault
-        default long lastRow(final long row) {
-            return maxRow(row);
-        }
-
-        @Override
-        @FinalDefault
         default void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
             fillChunkAppend(context, destination, LongSizedDataStructure.intSize("fillChunkAppend",
-                    orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()))));
+                    orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1)));
         }
 
         @Override
@@ -134,5 +105,39 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
          * Appends the values repeating value {@code length} times to {@code destination}.
          */
         void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, int length);
+    }
+
+    /**
+     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * page.
+     *
+     * @param orderedKeysIterator The iterator to advance
+     */
+    @FinalDefault
+    default void advanceToNextPage(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+        orderedKeysIterator.advance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    }
+
+    /**
+     * Assuming {@code orderedKeysIterator} is position at its first index key on this page, consume all keys on this
+     * page and return the number of keys consumed.
+     *
+     * @param orderedKeysIterator The iterator to advance
+     */
+    @FinalDefault
+    default long advanceToNextPageAndGetPositionDistance(@NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+        return orderedKeysIterator.advanceAndGetPositionDistance(maxRow(orderedKeysIterator.peekNextKey()) + 1);
+    }
+
+    /**
+     * Assuming {@code searchIterator} is position at its first index key on this page, consume all keys on this
+     * page.
+     *
+     * @param searchIterator The iterator to advance
+     * @return The result of {@link io.deephaven.db.v2.utils.ReadOnlyIndex.SearchIterator#advance(long)}
+     */
+    @FinalDefault
+    default boolean advanceToNextPage(@NotNull final ReadOnlyIndex.SearchIterator searchIterator) {
+        return searchIterator.advance(maxRow(searchIterator.currentValue()) + 1);
     }
 }
