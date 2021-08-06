@@ -4,6 +4,7 @@ import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RawString;
 import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
@@ -33,6 +34,12 @@ import io.deephaven.api.agg.Var;
 import io.deephaven.api.agg.WAvg;
 import io.deephaven.api.agg.WSum;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterCondition.Operator;
+import io.deephaven.api.filter.FilterIsNotNull;
+import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.value.Value;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
@@ -40,13 +47,21 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate;
+import io.deephaven.proto.backplane.grpc.CompareCondition;
+import io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation;
+import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.NotCondition;
+import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -196,7 +211,8 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(NewTable newTable) {
-            throw new UnsupportedOperationException("TODO");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#992): TableService implementation of NewTable, https://github.com/deephaven/deephaven-core/issues/992");
         }
 
         @Override
@@ -205,8 +221,9 @@ class BatchTableRequestBuilder {
             timeTable.timeProvider().walk(new Visitor() {
                 @Override
                 public void visit(TimeProviderSystem system) {
-                    // OK
-                    // note: if other time providers are added, we need to throw an exception
+                    // Even though this is functionally a no-op at the moment, it's good practice to
+                    // include this visitor here since the number of TimeProvider implementations is
+                    // expected to expand in the future.
                 }
             });
 
@@ -282,23 +299,33 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(WhereTable whereTable) {
-            // todo: use structured one
-            UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest
-                .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
-            for (Filter filter : whereTable.filters()) {
-                builder.addFilters(Strings.of(filter));
+            if (whereTable.hasRawFilter()) {
+                UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest
+                    .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
+                for (Filter filter : whereTable.filters()) {
+                    builder.addFilters(Strings.of(filter));
+                }
+                out = op(Builder::setUnstructuredFilter, builder.build());
+            } else {
+                FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
+                    .setResultId(ticket).setSourceId(ref(whereTable.parent()));
+                for (Filter filter : whereTable.filters()) {
+                    builder.addFilters(FilterAdapter.of(filter));
+                }
+                out = op(Builder::setFilter, builder.build());
             }
-            out = op(Builder::setUnstructuredFilter, builder.build());
         }
 
         @Override
         public void visit(WhereInTable whereInTable) {
-            throw new UnsupportedOperationException("TODO");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
         }
 
         @Override
         public void visit(WhereNotInTable whereNotInTable) {
-            throw new UnsupportedOperationException("TODO");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
         }
 
         @Override
@@ -506,7 +533,8 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(Med med) {
             if (!med.averageMedian()) {
-                throw new UnsupportedOperationException("TODO: need to plumb through");
+                throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }
             out = of(AggType.MEDIAN, med.pair()).build();
         }
@@ -514,14 +542,16 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(Pct pct) {
             if (pct.averageMedian()) {
-                throw new UnsupportedOperationException("TODO: need to plumb through");
+                throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }
             out = of(AggType.PERCENTILE, pct.pair()).build();
         }
 
         @Override
         public void visit(WSum wSum) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -537,12 +567,14 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(CountDistinct countDistinct) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(Distinct distinct) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -557,17 +589,20 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(Unique unique) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(SortedFirst sortedFirst) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(SortedLast sortedLast) {
-            throw new UnsupportedOperationException("TODO: need to plumb through");
+            throw new UnsupportedOperationException(
+                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -577,6 +612,104 @@ class BatchTableRequestBuilder {
                 result.addAll(of(aggregation));
             }
             this.multi = result;
+        }
+    }
+
+    private static Reference reference(ColumnName columnName) {
+        return Reference.newBuilder().setColumnName(columnName.name()).build();
+    }
+
+    private static Literal literal(long x) {
+        return Literal.newBuilder().setLongValue(x).build();
+    }
+
+    static class ValueAdapter implements Value.Visitor {
+        static io.deephaven.proto.backplane.grpc.Value adapt(Value value) {
+            return value.walk(new ValueAdapter()).out();
+        }
+
+        private io.deephaven.proto.backplane.grpc.Value out;
+
+        public io.deephaven.proto.backplane.grpc.Value out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(ColumnName x) {
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x))
+                .build();
+        }
+
+        @Override
+        public void visit(long x) {
+            out =
+                io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        }
+    }
+
+    static class FilterAdapter implements Filter.Visitor {
+
+        static Condition of(Filter filter) {
+            return filter.walk(new FilterAdapter()).out();
+        }
+
+        private static CompareOperation adapt(Operator operator) {
+            switch (operator) {
+                case LESS_THAN:
+                    return CompareOperation.LESS_THAN;
+                case LESS_THAN_OR_EQUAL:
+                    return CompareOperation.LESS_THAN_OR_EQUAL;
+                case GREATER_THAN:
+                    return CompareOperation.GREATER_THAN;
+                case GREATER_THAN_OR_EQUAL:
+                    return CompareOperation.GREATER_THAN_OR_EQUAL;
+                case EQUALS:
+                    return CompareOperation.EQUALS;
+                case NOT_EQUALS:
+                    return CompareOperation.NOT_EQUALS;
+                default:
+                    throw new IllegalArgumentException("Unexpected operator " + operator);
+            }
+        }
+
+        private Condition out;
+
+        public Condition out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(FilterIsNull isNull) {
+            out = Condition.newBuilder()
+                .setIsNull(
+                    IsNullCondition.newBuilder().setReference(reference(isNull.column())).build())
+                .build();
+        }
+
+        @Override
+        public void visit(FilterIsNotNull isNotNull) {
+            out = of(FilterIsNull.of(isNotNull.column()).not());
+        }
+
+        @Override
+        public void visit(FilterCondition condition) {
+            FilterCondition preferred = condition.maybeTranspose();
+            out = Condition.newBuilder()
+                .setCompare(CompareCondition.newBuilder().setOperation(adapt(preferred.operator()))
+                    .setLhs(ValueAdapter.adapt(preferred.lhs()))
+                    .setRhs(ValueAdapter.adapt(preferred.rhs())).build())
+                .build();
+        }
+
+        @Override
+        public void visit(FilterNot not) {
+            out = Condition.newBuilder()
+                .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+        }
+
+        @Override
+        public void visit(RawString rawString) {
+            throw new IllegalStateException("Can't build Condition with raw string");
         }
     }
 }
