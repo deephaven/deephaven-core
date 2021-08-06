@@ -14,15 +14,15 @@ public class IndexSetTest {
     public void AddVerifyRemoveTest() throws Exception {
         indexSet = new IndexSet(5);
 
-        TestCase.assertEquals(-1, indexSet.current);
-        TestCase.assertEquals(5, indexSet.maxSize);
+        TestCase.assertEquals(0, indexSet.getSize());
+        TestCase.assertEquals(5, indexSet.getMaxSize());
 
         indexSet.add(135);
         indexSet.add(54);
         indexSet.add(100000);
 
         PrimitiveIterator.OfLong itr = indexSet.iterator();
-        TestCase.assertEquals(3, indexSet.size());
+        TestCase.assertEquals(3, indexSet.getSize());
         TestCase.assertEquals(135, (long) itr.next());
         TestCase.assertEquals(54, (long) itr.next());
         TestCase.assertEquals(100000, (long) itr.next());
