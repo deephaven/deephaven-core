@@ -3,48 +3,34 @@ package io.deephaven.integrations.learn;
 import org.jpy.PyObject;
 
 /**
- * This class provides an interface for converting Python deep learning output to Deephaven table columns.
- * Output objects are intended to be used as the input argument of an eval() function call.
+ * Provides an interface for getting data out of a Python object and into a table.
  */
-
 public class Output {
 
-    final String colNames;
-    final PyObject func;
-    final String type;
+    private final String colName;
+    private final PyObject func;
+    private final String type;
 
     /**
-     * Constructor for Output object.
+     * Creates a new Output.
      *
-     * @param colNames The array of column names from a Deephaven table.
-     * @param func     The function that determines how data from a Python object is scattered back to a Deephaven table.
-     * @param type     The datatype that the user wishes to return.
+     * @param colName  Name of new column to store results.
+     * @param func     Function that determines how results of Future.get() are scattered back to a table.
+     * @param type     Desired datatype of new column.
      */
-    public Output(String colNames, PyObject func, String type) {
+    public Output(String colName, PyObject func, String type) {
 
-        this.colNames = colNames;
+        this.colName = colName;
         this.func = func;
         this.type = type;
     }
 
-    /**
-     * Getter method for column names.
-     *
-     * @return String array of column names provided by the user
-     */
-    public String getColName() { return this.colNames; }
+    /** Returns this column name. */
+    public String getColName() { return this.colName; }
 
-    /**
-     * Getter method for Python function.
-     *
-     * @return Python function provided by the user.
-     */
+    /** Returns this function. */
     public PyObject getFunc() { return this.func; }
 
-    /**
-     * Getter method for type.
-     *
-     * @return String containing type provided by the user.
-     */
+    /** Returns this type. */
     public String getType() { return this.type; }
 }

@@ -7,58 +7,47 @@ import org.jpy.PyObject;
 import java.util.ArrayList;
 
 /**
- * The Scatterer is an interface for getting data out of Python objects and back into Deephaven tables via user-defined
- * functions. This will take in a Python object generated from a call to Future.get() as well as a Python function that
- * determines how data from that object should be arranged into the rows of a Deephaven column, and will return a Python
- * object that can then be cast to the desired type.
+ * Applies scatter functions to the result of Future.get() and feeds the scattered data back into a table.
  */
-
 public class Scatterer {
 
-    final Output[] outputs;
-    PyObject scattered;
+    private final Output[] outputs;
 
     /**
-     * Constructor for Scatterer.
+     * Creates a new Scatterer.
      *
-     * @param outputs
+     * @param outputs Array of Outputs that determine how data will be scattered back to the table.
      */
     public Scatterer(Output ... outputs) { this.outputs = outputs; }
 
     /**
-     * Getter method for Outputs.
+     * Applies the scatter function to a subset of result.
      *
-     * @return Array of Deephaven Output objects.
-     */
-    public Output[] getOutputs() { return this.outputs; }
-
-    /**
-     *
-     * @param result
-     * @param scatterFunc
-     * @param offset
-     * @return
+     * @param result Result of the call to Future.get() containing data to be scattered.
+     * @param scatterFunc Function that determines how result will be parsed and fed into the table.
+     * @param offset Offset from FutureOffset that gets correct row from result.
+     * @return Subset of result that can be put back into the table.
      */
     public PyObject scatter(PyObject result, PyObject scatterFunc, long offset) {
 
         PythonFunction<PyObject> scatterCaller = new PythonFunction<>(scatterFunc, PyObject.class);
-        this.scattered = scatterCaller.pyObjectApply(result, offset);
-        return this.scattered;
+        return scatterCaller.pyObjectApply(result, offset);
     }
 
     /**
-     * Uses user input via Output objects to create a list of Query strings that are used to produce new columns
-     * with the scattered result, specified by the user.
+     * Generates a query string for each of these Outputs.
      *
      * @return List of query strings to be used in .update() call
      */
     public String[] generateQueryStrings() {
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-        for (int i = 0 ; i < this.outputs.length ; i++) {
-            queryStrings.add(String.format("%s = scatterer.scatter(FutureOffset.getFuture().get(), scatterer.getOutputs()[%d].getFunc(), FutureOffset.getOffset())", this.outputs[i].getColName(), i));
+        for (int i = 0; i < this.outputs.length; i++) {
+            queryStrings.add(String.format("%s = (scatterer.scatter(FutureOffset.getFuture().get(), scatterer.getOutputs()[%d].getFunc(), FutureOffset.getOffset()))", this.outputs[i].getColName(), i));
         }
-
         return queryStrings.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     }
+
+    /** Returns these outputs. */
+    public Output[] getOutputs() { return this.outputs; }
 }

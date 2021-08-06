@@ -191,7 +191,7 @@ def _toJavaOut(output):
     :param output: the Python Output object to be converted to a series of Java Output objects
     """
     newOutputs = []
-    # for every column given, pull it out and create a new output object with the same scatter function and data type
+    # for every column given, pull it out and create an output object with the same scatter function, data type
     for column in output.colNames:
         newOutputs.append(_Output_(column, output.func, output.type))
 

@@ -5,22 +5,20 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import org.jpy.PyObject;
 
 /**
- * This class provides an interface for converting Deephaven tables to objects that Python deep learning libraries
- * are familiar with. Input objects are intended to be used as the input argument of an eval() function call,
- * and they provide methods for converting column names and tables directly into ColumnSources.
+ * Provides an interface for getting data directly out of a table and into a function.
  */
-
 public class Input {
 
-    final Table table;
-    final String[] colNames;
-    final PyObject func;
+    private final Table table;
+    private final String[] colNames;
+    private final PyObject func;
 
     /**
-     * Constructor for Input object. Initializes variables needed to create column sources from given inputs.
+     * Creates a new Input.
      *
-     * @param colNames The array of column names from a Deephaven table to be used in modelling.
-     * @param func The function that determines how data from a Deephaven table is collected.
+     * @param table Table that contains data to be used with this function.
+     * @param colNames Array of column names to be extracted from this table.
+     * @param func Function that determines how data from this table is collected.
      */
     public Input(Table table, String[] colNames, PyObject func) {
 
@@ -29,16 +27,19 @@ public class Input {
         this.func = func;
     }
 
-    /**
-     * Creates a list of Deephaven ColumnSources to be used by gather functions.
+    /** Creates an array of column sources specified by this table and given column names.
+     *
+     * @return Column sources with these column names from this table.
      */
     public ColumnSource<?>[] createColumnSource() {
 
-        ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
-        for (int i = 0 ; i < colNames.length ; i++) {
-            colSet[i] = this.table.getColumnSource(colNames[i]);
-        }
+        ColumnSource<?>[] colSet = new ColumnSource[this.colNames.length];
+        for (int i = 0 ; i < this.colNames.length ; i++) {
+            colSet[i] = this.table.getColumnSource(this.colNames[i]); }
 
         return colSet;
     }
+
+    /** Returns this function. */
+    public PyObject getFunc() { return this.func; }
 }

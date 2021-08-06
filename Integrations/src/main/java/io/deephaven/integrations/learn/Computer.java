@@ -1,40 +1,32 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.tables.Table;
 import org.jpy.PyObject;
 
 /**
- * This class creates and adds to this index set when indices are updated or added, and instantiates the Future needed
- * to perform computations on the data at those indices.
- *
- * This is the first layer of this design, as it directly interacts with the dataset to retrieve indices that have been
- * updated or added.
+ * Instantiates the objects needed for computation using the given indices.
  */
-
 public class Computer {
 
-    final PyObject func;
-    final int batchSize;
-    final Input[] inputs;
-    Future current;
-    int offset;
+    private final PyObject func;
+    private final int batchSize;
+    private final Input[] inputs;
+    private Future current;
+    private int offset;
 
     /**
-     * Constructor for Computer. Initializes fields that are needed to instantiate a Future.
+     * Creates a new Computer.
      *
-     * @param func Python function that the user wants to use on data from a Deephaven table.
-     * @param inputs Deephaven Input objects that determine which columns of data get passed to func.
-     * @param batchSize Maximum number of rows to perform computations on at once.
+     * @param func Function for performing a computation on these inputs.
+     * @param inputs Inputs to this function.
+     * @param batchSize Maximum number of rows for deferred computation.
      */
     public Computer(PyObject func, int batchSize, Input ... inputs) {
 
         if (batchSize <= 0) {
-            throw new IllegalArgumentException("Max size must be a strictly positive integer.");
-        }
+            throw new IllegalArgumentException("Max size must be a strictly positive integer."); }
 
         if (inputs.length == 0) {
-            throw new IllegalArgumentException("Cannot have an empty input list.");
-        }
+            throw new IllegalArgumentException("Cannot have an empty input list."); }
 
         this.func = func;
         this.batchSize = batchSize;
@@ -43,34 +35,27 @@ public class Computer {
         this.offset = -1;
     }
 
-    /**
-     * Resets this Future to null.
-     */
+    /** Resets this Future to null. */
     public boolean clear() {
 
         this.current = null;
-        return false;
+        return false; // note this only has a return value because functions called in query strings cannot be void
     }
 
     /**
-     * This method will instantiate a Future if there is not a currently existing one (first call to .compute), or if
-     * the current one has an index set that is full. Then, it will add indices for computation to this index set, and
-     * defer the actual computation to the .get method of the associated Future.
+     * Adds new indices to this future. Will instantiate a new future if needed.
      *
      * @param k Index to be added to this Future's index set.
-     * @return  A Future with the k index added to its index set.
+     * @return  A wrapper for this future with the new index.
      * @throws Exception Cannot add more indices than the maximum number allowed.
      */
     public FutureOffset compute(long k) throws Exception {
 
-        // if current has not been created or its index set is full, create a new one and append appropriate indices
-        // and return. Else, just append appropriate indices and return.
-        if (this.current == null || this.current.indexSet.isFull()) {
+        if (this.current == null || this.current.getIndexSet().isFull()) {
             this.current = new Future(this.func, this.batchSize, this.inputs);
-            this.offset = -1;
-        }
+            this.offset = -1; }
 
-        this.current.indexSet.add(k);
+        this.current.getIndexSet().add(k);
         this.offset += 1;
         return new FutureOffset(this.current, this.offset % this.batchSize);
     }
