@@ -1,6 +1,6 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.Flight;
+import io.deephaven.client.impl.FlightClientImpl;
 import io.deephaven.client.impl.SessionAndFlight;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -18,7 +18,7 @@ class ListTables extends FlightExampleBase {
 
     @Override
     protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
-        try (final Flight flight = sessionAndFlight.flight()) {
+        try (final FlightClientImpl flight = sessionAndFlight.flight()) {
             for (FlightInfo flightInfo : flight.list()) {
                 if (showSchema) {
                     StringBuilder sb = new StringBuilder(flightInfo.getDescriptor().toString())

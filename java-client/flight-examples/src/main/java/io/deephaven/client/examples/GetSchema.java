@@ -1,7 +1,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.Flight;
+import io.deephaven.client.impl.FlightClientImpl;
 import io.deephaven.client.impl.SessionAndFlight;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -10,7 +10,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Command(name = "get-schema", mixinStandardHelpOptions = true,
     description = "Get the schema of a QST", version = "0.1.0")
@@ -24,7 +23,7 @@ class GetSchema extends FlightExampleBase {
     protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
         final long start = System.nanoTime();
         final long end;
-        try (final Flight flight = sessionAndFlight.flight();
+        try (final FlightClientImpl flight = sessionAndFlight.flight();
             final Export export = sessionAndFlight.session().export(table)) {
             Schema schema = flight.getSchema(export);
             end = System.nanoTime();

@@ -7,7 +7,7 @@ import org.apache.arrow.memory.BufferAllocator;
 
 import java.util.concurrent.ScheduledExecutorService;
 
-@Component(modules = {FlightModule.class, FlightClientModule.class})
+@Component(modules = {FlightClientModule.class})
 public interface FlightComponent {
 
     SessionAndFlight sessionAndFlight();

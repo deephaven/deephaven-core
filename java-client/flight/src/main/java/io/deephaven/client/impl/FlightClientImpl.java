@@ -12,26 +12,23 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import javax.inject.Inject;
 import java.util.Objects;
 
-public final class FlightImpl implements Flight {
+public final class FlightClientImpl implements AutoCloseable {
     private final FlightClient client;
 
     @Inject
-    public FlightImpl(FlightClient client) {
+    public FlightClientImpl(FlightClient client) {
         this.client = Objects.requireNonNull(client);
     }
 
-    @Override
     public Schema getSchema(Export export) {
-        // todo async
+        // TODO(deephaven-core#988): Add more async support to org.apache.arrow.flight.FlightClient
         return client.getSchema(descriptor(export)).getSchema();
     }
 
-    @Override
-    public FlightStream get(Export export) {
+    public FlightStream getStream(Export export) {
         return client.getStream(new Ticket(export.ticket().getTicket().toByteArray()));
     }
 
-    @Override
     public Iterable<FlightInfo> list() {
         return client.listFlights(Criteria.ALL);
     }

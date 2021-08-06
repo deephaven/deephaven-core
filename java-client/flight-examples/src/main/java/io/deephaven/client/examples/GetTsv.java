@@ -1,7 +1,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.Flight;
+import io.deephaven.client.impl.FlightClientImpl;
 import io.deephaven.client.impl.SessionAndFlight;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
@@ -23,9 +23,9 @@ class GetTsv extends FlightExampleBase {
     protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
         final long start = System.nanoTime();
         final long end;
-        try (final Flight flight = sessionAndFlight.flight();
+        try (final FlightClientImpl flight = sessionAndFlight.flight();
             final Export export = sessionAndFlight.session().export(table);
-            final FlightStream stream = flight.get(export)) {
+            final FlightStream stream = flight.getStream(export)) {
             System.out.println(stream.getSchema());
             while (stream.next()) {
                 System.out.println(stream.getRoot().contentToTSVString());

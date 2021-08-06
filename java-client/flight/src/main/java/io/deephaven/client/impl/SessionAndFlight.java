@@ -4,5 +4,5 @@ public interface SessionAndFlight {
 
     Session session();
 
-    Flight flight();
+    FlightClientImpl flight();
 }

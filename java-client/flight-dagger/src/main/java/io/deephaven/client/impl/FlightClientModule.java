@@ -34,7 +34,7 @@ public class FlightClientModule {
     }
 
     @Provides
-    SessionAndFlight providesSessionAndFlight(Flight flight) {
+    SessionAndFlight providesSessionAndFlight(FlightClientImpl flight) {
         return new SessionAndFlight() {
             @Override
             public Session session() {
@@ -42,7 +42,7 @@ public class FlightClientModule {
             }
 
             @Override
-            public Flight flight() {
+            public FlightClientImpl flight() {
                 return flight;
             }
         };

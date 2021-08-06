@@ -1,7 +1,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.Flight;
+import io.deephaven.client.impl.FlightClientImpl;
 import io.deephaven.client.impl.SessionAndFlight;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
@@ -30,11 +30,11 @@ class PollTsv extends FlightExampleBase {
     protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
         long times = count == null ? Long.MAX_VALUE : count;
 
-        try (final Flight flight = sessionAndFlight.flight();
+        try (final FlightClientImpl flight = sessionAndFlight.flight();
             final Export export = sessionAndFlight.session().export(table)) {
             for (long i = 0; i < times; ++i) {
                 long start = System.nanoTime();
-                try (final FlightStream stream = flight.get(export)) {
+                try (final FlightStream stream = flight.getStream(export)) {
                     if (i == 0) {
                         System.out.println(stream.getSchema());
                         System.out.println();
