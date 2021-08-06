@@ -179,7 +179,7 @@ public class ParquetTableWriter {
                 cleanupPaths = new ArrayList<>(groupingColumns.length);
                 final Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 final Path destDirPath = Paths.get(destPathName).getParent();
-                for (int gci = 0; gci < auxiliaryTables.length; gci++) {
+                for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
                     final String groupingPath = groupingPathFactory.apply(groupingColumns[gci]);
                     cleanupPaths.add(groupingPath);
                     tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci], destDirPath.relativize(Paths.get(groupingPath)).toString()));
@@ -435,7 +435,7 @@ public class ParquetTableWriter {
                         //noinspection unchecked
                         final ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
                         final IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
-                        for (int vi = 0; vi < chunk.size(); vi++) {
+                        for (int vi = 0; vi < chunk.size(); ++vi) {
                             posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(vi), o -> {
                                 if (o == null) {
                                     hasNulls.setValue(true);
@@ -498,7 +498,7 @@ public class ParquetTableWriter {
                      final ChunkSource.GetContext lengthSourceContext = lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
                      final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
                     final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
-                    for (int step = 0; step < stepsCount; step++) {
+                    for (int step = 0; step < stepsCount; ++step) {
                         final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
                         transferObject.fetchData(ok);
                         transferObject.propagateChunkData();

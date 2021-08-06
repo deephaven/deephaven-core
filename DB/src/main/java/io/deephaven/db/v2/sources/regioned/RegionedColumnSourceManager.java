@@ -303,7 +303,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     throw new TableDataException("Location " + location + " is no longer available, data has been removed");
                 }
                 if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
-                    throw new IllegalStateException("Index keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
+                    //noinspection ThrowableNotThrown
+                    Assert.statementNeverExecuted("Index keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
                 }
                 if (indexAtLastUpdate.size() == updateIndex.size()) {
                     // Nothing to do

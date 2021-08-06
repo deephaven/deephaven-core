@@ -23,6 +23,7 @@ import io.deephaven.db.v2.locations.impl.*;
 import io.deephaven.db.v2.locations.local.FlatParquetLayout;
 import io.deephaven.db.v2.locations.local.KeyValuePartitionLayout;
 import io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout;
+import io.deephaven.db.v2.locations.local.SingleParquetFileLayout;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationFactory;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
@@ -68,6 +69,10 @@ public class ParquetTools {
      *
      * @param sourceFilePath The file or directory to examine
      * @return table
+     * @see SingleParquetFileLayout
+     * @see ParquetMetadataFileLayout
+     * @see KeyValuePartitionLayout
+     * @see FlatParquetLayout
      */
     public static Table readTable(@NotNull final String sourceFilePath) {
         return readTableInternal(new File(sourceFilePath), ParquetInstructions.EMPTY);
@@ -79,6 +84,10 @@ public class ParquetTools {
      * @param sourceFilePath   The file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
+     * @see SingleParquetFileLayout
+     * @see ParquetMetadataFileLayout
+     * @see KeyValuePartitionLayout
+     * @see FlatParquetLayout
      */
     public static Table readTable(
             @NotNull final String sourceFilePath,
@@ -91,6 +100,10 @@ public class ParquetTools {
      *
      * @param sourceFile The file or directory to examine
      * @return table
+     * @see SingleParquetFileLayout
+     * @see ParquetMetadataFileLayout
+     * @see KeyValuePartitionLayout
+     * @see FlatParquetLayout
      */
     public static Table readTable(@NotNull final File sourceFile) {
         return readTableInternal(sourceFile, ParquetInstructions.EMPTY);
@@ -102,6 +115,10 @@ public class ParquetTools {
      * @param sourceFile       The file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
+     * @see SingleParquetFileLayout
+     * @see ParquetMetadataFileLayout
+     * @see KeyValuePartitionLayout
+     * @see FlatParquetLayout
      */
     public static Table readTable(
             @NotNull final File sourceFile,

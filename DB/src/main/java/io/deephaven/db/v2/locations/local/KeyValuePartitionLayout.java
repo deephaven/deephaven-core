@@ -91,7 +91,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
                 public FileVisitResult preVisitDirectory(@NotNull final Path dir, @NotNull final BasicFileAttributes attrs) {
                     if (++columnCount > 0) {
                         // We're descending and past the root
-                        final String[] components = dir.getFileName().toString().split("=");
+                        final String[] components = dir.getFileName().toString().split("=", 2);
                         if (components.length != 2) {
                             throw new TableDataException("Unexpected directory name format (not key=value) at " + dir);
                         }

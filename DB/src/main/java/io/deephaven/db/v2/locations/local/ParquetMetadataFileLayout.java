@@ -35,7 +35,18 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * {@link TableLocationKeyFinder Location finder} that will examine a parquet metadata file to discover locations.
+ * <p>{@link TableLocationKeyFinder Location finder} that will examine a parquet metadata file to discover locations.
+ *
+ * <p>Note that we expect to find the following files:
+ * <ul>
+ *     <li>{@code _metadata} - A file containing Parquet metadata for all {@link RowGroup row groups} in all
+ *     {@code .parquet} files for the entire data set, including schema information non-partitioning columns and
+ *     key-value metadata</li>
+ *     <li>{@code _common_metadata} <i>(optional)</i> - A file containing Parquet metadata with schema information
+ *     that applies to the entire data set, including partitioning columns that are inferred from file paths rather than
+ *     explicitly written in {@link org.apache.parquet.format.ColumnChunk column chunks} within {@code .parquet}
+ *     files</li>
+ * </ul>
  */
 public class ParquetMetadataFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
@@ -136,7 +147,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     final String partitionKey;
                     final String partitionValueRaw;
                     if (useHiveStyle) {
-                        final String[] pathComponents = pathElement.split("=");
+                        final String[] pathComponents = pathElement.split("=", 2);
                         if (pathComponents.length != 2) {
                             throw new TableDataException("Unexpected path format found for hive-style partitioning from " + filePathString + " for " + metadataFile);
                         }
