@@ -1,6 +1,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
+import io.deephaven.grpc_api.util.OperationHelper;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -30,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.deephaven.client.impl.ProtoHelper.getSourceIds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -235,7 +235,7 @@ public class ExportStatesTest {
 
     private static boolean hasSourceId(Operation op, Ticket ticket) {
         final List<TableReference> references =
-            getSourceIds(op).limit(2).collect(Collectors.toList());
+            OperationHelper.getSourceIds(op).limit(2).collect(Collectors.toList());
         if (references.size() != 1) {
             return false;
         }

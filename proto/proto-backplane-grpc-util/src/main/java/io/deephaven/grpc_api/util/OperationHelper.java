@@ -1,13 +1,13 @@
-package io.deephaven.client.impl;
+package io.deephaven.grpc_api.util;
 
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
 import io.deephaven.proto.backplane.grpc.TableReference;
+
 import java.util.stream.Stream;
 
-class ProtoHelper {
-
-    static Stream<TableReference> getSourceIds(Operation op) {
+public class OperationHelper {
+    public static Stream<TableReference> getSourceIds(Operation op) {
         final OpCase opCase = op.getOpCase();
         if (opCase == null) {
             throw new IllegalArgumentException(
