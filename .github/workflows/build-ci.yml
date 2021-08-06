@@ -306,3 +306,54 @@ jobs:
 ### `docker`.
 ###
 ### See https://github.com/docker/buildx/blob/master/docs/reference/buildx_create.md#driver
+
+  examples:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3.3.0
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/examples
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.4') }},value=latest
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Examples
+            org.opencontainers.image.description=Deephaven Examples
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1.3.0
+
+      - name: Login to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1.9.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker build
+        uses: docker/build-push-action@v2.5.0
+        with:
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./samples/
+          push: ${{ github.event_name != 'pull_request' }}
