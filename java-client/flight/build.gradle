@@ -5,8 +5,8 @@ plugins {
 
 dependencies {
     api project(':java-client-session')
-    api 'org.apache.arrow:flight-core:4.0.0'
-    implementation 'org.apache.arrow:flight-grpc:4.0.0'
+    api 'org.apache.arrow:flight-core:5.0.0'
+    implementation 'org.apache.arrow:flight-grpc:5.0.0'
 
     implementation 'com.google.dagger:dagger:2.31.1'
     annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
