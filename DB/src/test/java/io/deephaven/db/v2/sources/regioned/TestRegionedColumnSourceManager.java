@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.db.v2.LiveTableTestCase;
@@ -482,7 +483,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (AssertionFailure expected) {
             maybePrintStackTrace(expected);
         }
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
