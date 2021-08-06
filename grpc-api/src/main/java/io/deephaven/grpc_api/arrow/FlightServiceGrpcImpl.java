@@ -52,6 +52,13 @@ public class FlightServiceGrpcImpl<Options, View> extends FlightServiceGrpc.Flig
     }
 
     @Override
+    public StreamObserver<Flight.HandshakeRequest> handshake(StreamObserver<Flight.HandshakeResponse> responseObserver) {
+        return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "See deephaven-core#997; support flight auth.");
+        });
+    }
+
+    @Override
     public void listFlights(final Flight.Criteria request, final StreamObserver<Flight.FlightInfo> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             ticketRouter.visitFlightInfo(sessionService.getOptionalSession(), responseObserver::onNext);

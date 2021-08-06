@@ -40,11 +40,11 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
     }
 
     public void openHandshakeCustom(final Flight.HandshakeRequest request, final StreamObserver<Flight.HandshakeResponse> responseObserver) {
-        throw new UnsupportedOperationException("TODO: open handshake");
+        throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "See deephaven-core#997; support flight auth.");
     }
 
     public void nextHandshakeCustom(final Flight.HandshakeRequest request, final StreamObserver<BrowserFlight.BrowserNextResponse> responseObserver) {
-        throw new UnsupportedOperationException("TODO: next handshake");
+        throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "See deephaven-core#997; support flight auth.");
     }
 
     public void openDoPutCustom(final InputStream request, final StreamObserver<Flight.PutResult> responseObserver) {
