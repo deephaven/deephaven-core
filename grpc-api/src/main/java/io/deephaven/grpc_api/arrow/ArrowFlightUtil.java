@@ -387,26 +387,8 @@ public class ArrowFlightUtil {
 
         // this is the entry point for browser streams; and client-streams delegate to this
         public void onMessageReceived(final MessageInfo message) {
-
+            queueRequest(message.app_metadata);
         }
-
-        private synchronized void oldOnNext(final Flight.FlightData subscriptionRequest) {
-            GrpcUtil.rpcWrapper(log, listener, () -> {
-                final BarrageMessageWrapper msg = BarrageMessageWrapper.getRootAsBarrageMessageWrapper(subscriptionRequest.getAppMetadata().asReadOnlyByteBuffer());
-
-                if (bmp == null) {
-                    synchronized (this) {
-                        if (bmp == null) {
-                            queueRequest(msg);
-                            return;
-                        }
-                    }
-                }
-
-                apply(msg);
-            });
-        }
-
 
         /**
          * Update the existing subscription to match the new request.
