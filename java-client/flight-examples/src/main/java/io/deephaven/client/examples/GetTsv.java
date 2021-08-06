@@ -1,8 +1,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.FlightClientImpl;
-import io.deephaven.client.impl.SessionAndFlight;
+import io.deephaven.client.impl.FlightSession;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
@@ -20,11 +19,10 @@ class GetTsv extends FlightExampleBase {
     TableSpec table;
 
     @Override
-    protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
+    protected void execute(FlightSession flight) throws Exception {
         final long start = System.nanoTime();
         final long end;
-        try (final FlightClientImpl flight = sessionAndFlight.flight();
-            final Export export = sessionAndFlight.session().export(table);
+        try (final Export export = flight.session().export(table);
             final FlightStream stream = flight.getStream(export)) {
             System.out.println(stream.getSchema());
             while (stream.next()) {

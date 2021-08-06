@@ -1,7 +1,6 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.FlightClientImpl;
-import io.deephaven.client.impl.SessionAndFlight;
+import io.deephaven.client.impl.FlightSession;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.vector.types.pojo.Field;
 import picocli.CommandLine;
@@ -17,19 +16,17 @@ class ListTables extends FlightExampleBase {
     boolean showSchema;
 
     @Override
-    protected void execute(SessionAndFlight sessionAndFlight) throws Exception {
-        try (final FlightClientImpl flight = sessionAndFlight.flight()) {
-            for (FlightInfo flightInfo : flight.list()) {
-                if (showSchema) {
-                    StringBuilder sb = new StringBuilder(flightInfo.getDescriptor().toString())
-                        .append(System.lineSeparator());
-                    for (Field field : flightInfo.getSchema().getFields()) {
-                        sb.append('\t').append(field).append(System.lineSeparator());
-                    }
-                    System.out.println(sb);
-                } else {
-                    System.out.printf("%s%n", flightInfo.getDescriptor());
+    protected void execute(FlightSession flight) throws Exception {
+        for (FlightInfo flightInfo : flight.list()) {
+            if (showSchema) {
+                StringBuilder sb = new StringBuilder(flightInfo.getDescriptor().toString())
+                    .append(System.lineSeparator());
+                for (Field field : flightInfo.getSchema().getFields()) {
+                    sb.append('\t').append(field).append(System.lineSeparator());
                 }
+                System.out.println(sb);
+            } else {
+                System.out.printf("%s%n", flightInfo.getDescriptor());
             }
         }
     }

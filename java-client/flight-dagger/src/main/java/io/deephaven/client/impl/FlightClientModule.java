@@ -1,5 +1,6 @@
 package io.deephaven.client.impl;
 
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.Reusable;
@@ -34,17 +35,7 @@ public class FlightClientModule {
     }
 
     @Provides
-    SessionAndFlight providesSessionAndFlight(FlightClientImpl flight) {
-        return new SessionAndFlight() {
-            @Override
-            public Session session() {
-                return session;
-            }
-
-            @Override
-            public FlightClientImpl flight() {
-                return flight;
-            }
-        };
+    Session providesSession() {
+        return session;
     }
 }

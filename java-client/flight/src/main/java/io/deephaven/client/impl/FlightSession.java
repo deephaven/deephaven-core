@@ -12,12 +12,18 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import javax.inject.Inject;
 import java.util.Objects;
 
-public final class FlightClientImpl implements AutoCloseable {
+public final class FlightSession implements AutoCloseable {
+    private final Session session;
     private final FlightClient client;
 
     @Inject
-    public FlightClientImpl(FlightClient client) {
+    public FlightSession(Session session, FlightClient client) {
+        this.session = Objects.requireNonNull(session);
         this.client = Objects.requireNonNull(client);
+    }
+
+    public Session session() {
+        return session;
     }
 
     public Schema getSchema(Export export) {

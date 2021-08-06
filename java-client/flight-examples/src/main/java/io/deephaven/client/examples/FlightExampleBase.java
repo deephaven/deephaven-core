@@ -4,7 +4,7 @@ import io.deephaven.client.DaggerSessionImplComponent;
 import io.deephaven.client.impl.DaggerFlightComponent;
 import io.deephaven.client.impl.FlightClientModule;
 import io.deephaven.client.impl.FlightComponent;
-import io.deephaven.client.impl.SessionAndFlight;
+import io.deephaven.client.impl.FlightSession;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.arrow.memory.BufferAllocator;
@@ -22,7 +22,7 @@ abstract class FlightExampleBase implements Callable<Void> {
         defaultValue = "localhost:10000")
     String target;
 
-    protected abstract void execute(SessionAndFlight sessionAndFlight) throws Exception;
+    protected abstract void execute(FlightSession flight) throws Exception;
 
     @Override
     public final Void call() throws Exception {
@@ -39,12 +39,16 @@ abstract class FlightExampleBase implements Callable<Void> {
             new FlightClientModule(
                 DaggerSessionImplComponent.factory().create(managedChannel, scheduler).session()),
             managedChannel, scheduler, bufferAllocator);
-        SessionAndFlight sessionAndFlight = factory.sessionAndFlight();
+        FlightSession flightSession = factory.flightSession();
 
         try {
-            execute(sessionAndFlight);
+            try {
+                execute(flightSession);
+            } finally {
+                flightSession.close();
+            }
         } finally {
-            sessionAndFlight.session().closeFuture().get(5, TimeUnit.SECONDS);
+            flightSession.session().closeFuture().get(5, TimeUnit.SECONDS);
         }
 
         scheduler.shutdownNow();

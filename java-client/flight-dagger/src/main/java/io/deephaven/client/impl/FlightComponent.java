@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 @Component(modules = {FlightClientModule.class})
 public interface FlightComponent {
 
-    SessionAndFlight sessionAndFlight();
+    FlightSession flightSession();
 
     @Component.Factory
     interface Factory {
