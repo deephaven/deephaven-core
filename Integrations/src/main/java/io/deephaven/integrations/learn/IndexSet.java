@@ -35,7 +35,7 @@ public class IndexSet implements Iterable<Long> {
     boolean isFull() { return this.getSize() >= this.idx.length; }
 
     /**
-     * Adds indices provided as arguments to this index set if allowed.
+     * Adds an index to this index set.
      *
      * @param k Index to be added to this index set.
      * @throws Exception Cannot add more indices to the index set than the maximum size allowed.
