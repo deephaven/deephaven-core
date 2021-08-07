@@ -61,6 +61,7 @@ public class KafkaTools {
     public static final String DOUBLE_DESERIALIZER = DoubleDeserializer.class.getName();
     public static final String BYTE_ARRAY_DESERIALIZER = ByteArrayDeserializer.class.getName();
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
+    public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
 
@@ -92,19 +93,22 @@ public class KafkaTools {
     private static void pushColumnTypesFromAvroField(
         final List<ColumnDefinition<?>> columnsOut,
         final Map<String, String> mappedOut,
+        final String prefix,
         final Schema.Field field,
         final Function<String, String> fieldNameMapping) {
             final Schema fieldSchema = field.schema();
             final String fieldName = field.name();
-            final String mappedName = fieldNameMapping.apply(fieldName);
+            final String mappedName = fieldNameMapping.apply(prefix + fieldName);
             final Schema.Type fieldType = fieldSchema.getType();
-            pushColumnTypesFromAvroField(columnsOut, mappedOut, field, fieldName, fieldSchema, mappedName, fieldType, fieldNameMapping);
+            pushColumnTypesFromAvroField(
+                    columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType, fieldNameMapping);
 
     }
 
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> mappedOut,
+            final String prefix,
             final Schema.Field field,
             final String fieldName,
             final Schema fieldSchema,
@@ -142,18 +146,24 @@ public class KafkaTools {
                 final Schema.Type unionType0 = unionTypes.get(0).getType();
                 final Schema.Type unionType1 = unionTypes.get(1).getType();
                 if (unionType1 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(columnsOut, mappedOut, field, fieldName, fieldSchema, mappedName, unionType0, fieldNameMapping);
+                    pushColumnTypesFromAvroField(
+                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType0, fieldNameMapping);
                     return;
                 }
                 else if (unionType0 == Schema.Type.NULL) {
-                    pushColumnTypesFromAvroField(columnsOut, mappedOut, field, fieldName, fieldSchema, mappedName, unionType1, fieldNameMapping);
+                    pushColumnTypesFromAvroField(
+                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType1, fieldNameMapping);
                     return;
                 }
                 throw new UnsupportedOperationException("Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
             case RECORD:
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : field.schema().getFields()) {
-                    pushColumnTypesFromAvroField(columnsOut, mappedOut, nestedField, fieldNameMapping);
+                    pushColumnTypesFromAvroField(
+                            columnsOut, mappedOut,
+                            prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,
+                            nestedField,
+                            fieldNameMapping);
                 }
                 return;
             case MAP:
@@ -182,7 +192,7 @@ public class KafkaTools {
         final List<Schema.Field> fields = schema.getFields();
         final ArrayList<ColumnDefinition<?>> columns = new ArrayList<>(fields.size());
         for (final Schema.Field field : fields) {
-            pushColumnTypesFromAvroField(columns, mappedOut, field, fieldNameMapping);
+            pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameMapping);
 
         }
         return columns.toArray(new ColumnDefinition<?>[columns.size()]);

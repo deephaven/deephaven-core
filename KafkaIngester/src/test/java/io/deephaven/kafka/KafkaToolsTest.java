@@ -4,6 +4,9 @@ import io.deephaven.db.tables.ColumnDefinition;
 import org.apache.avro.Schema;
 
 import org.junit.Test;
+
+import java.util.function.Function;
+
 import static org.junit.Assert.*;
 
 public class KafkaToolsTest {
@@ -60,9 +63,9 @@ public class KafkaToolsTest {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNesting);
         final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema);
         assertEquals(2, colDefs.length);
-        assertEquals("Symbol", colDefs[0].getName());
+        assertEquals("NestedField.Symbol", colDefs[0].getName());
         assertEquals(String.class, colDefs[0].getDataType());
-        assertEquals("Price", colDefs[1].getName());
+        assertEquals("NestedField.Price", colDefs[1].getName());
         assertEquals(double.class, colDefs[1].getDataType());
     }
 
@@ -101,6 +104,71 @@ public class KafkaToolsTest {
         assertEquals(double.class, colDefs[c++].getDataType());
         assertEquals("StringField", colDefs[c].getName());
         assertEquals(String.class, colDefs[c++].getDataType());
+        assertEquals(nCols, c);
+    }
+
+    private static final String schemaWithMoreNesting =
+            "  { "
+                    + "    \"type\": \"record\", "
+                    + "    \"name\": \"nested_schema\","
+                    + "    \"namespace\": \"io.deephaven.test\","
+                    + "    \"fields\" : ["
+                    + "          {\"name\": \"NestedFields1\","
+                    + "           \"type\": {"
+                    + "                \"type\": \"record\", "
+                    + "                \"name\": \"nested_record1\","
+                    + "                \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                \"fields\" : ["
+                    + "                      {\"name\": \"field1\", \"type\": \"int\"},"
+                    + "                      {\"name\": \"field2\", \"type\": \"float\"}"
+                    + "                  ]"
+                    + "             }"
+                    + "          },"
+                    + "          {\"name\": \"NestedFields2\","
+                    + "           \"type\": {"
+                    + "                \"type\": \"record\", "
+                    + "                \"name\": \"nested_record2\","
+                    + "                \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                \"fields\" : ["
+                    + "                      {\"name\": \"NestedFields3\","
+                    + "                       \"type\": {"
+                    + "                            \"type\": \"record\", "
+                    + "                            \"name\": \"nested_record3\","
+                    + "                            \"namespace\": \"io.deephaven.test.nested_schema\","
+                    + "                            \"fields\" : ["
+                    + "                                  {\"name\": \"field3\", \"type\": \"long\"},"
+                    + "                                  {\"name\": \"field4\", \"type\": \"double\"}"
+                    + "                              ]"
+                    + "                         }"
+                    + "                      }"
+                    + "                  ]"
+                    + "             }"
+                    + "          }"
+                    + "      ]"
+                    + "}"
+            ;
+
+    @Test
+    public void testAvroSchemaWithMoreNesting() {
+        final Schema avroSchema = new Schema.Parser().parse(schemaWithMoreNesting);
+        Function<String, String> mapping = (final String fieldName) -> {
+            if ("NestedFields2.NestedFields3.field4".equals(fieldName)) {
+                return "field4";
+            }
+            return fieldName;
+        };
+        final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema, mapping);
+        final int nCols = 4;
+        assertEquals(nCols, colDefs.length);
+        int c = 0;
+        assertEquals("NestedFields1.field1", colDefs[c].getName());
+        assertEquals(int.class, colDefs[c++].getDataType());
+        assertEquals("NestedFields1.field2", colDefs[c].getName());
+        assertEquals(float.class, colDefs[c++].getDataType());
+        assertEquals("NestedFields2.NestedFields3.field3", colDefs[c].getName());
+        assertEquals(long.class, colDefs[c++].getDataType());
+        assertEquals("field4", colDefs[c].getName());
+        assertEquals(double.class, colDefs[c++].getDataType());
         assertEquals(nCols, c);
     }
 }
