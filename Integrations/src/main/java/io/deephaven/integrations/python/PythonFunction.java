@@ -66,8 +66,8 @@ public class PythonFunction<T> implements Function<T, Object> {
     }
 
 
-    public PyObject pyObjectApply(Object ... objects) {
-        PyObject out = pyCallable.call("__call__", objects);
+    public PyObject pyObjectApply(Object ... args) {
+        PyObject out = pyCallable.call("__call__", args);
         return out;
     }
 
