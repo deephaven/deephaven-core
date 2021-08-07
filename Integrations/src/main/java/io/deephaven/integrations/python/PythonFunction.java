@@ -4,9 +4,6 @@
 
 package io.deephaven.integrations.python;
 
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.integrations.learn.IndexSet;
-
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 import java.util.function.Function;
