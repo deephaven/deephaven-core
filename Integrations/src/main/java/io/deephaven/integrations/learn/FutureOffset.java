@@ -1,7 +1,7 @@
 package io.deephaven.integrations.learn;
 
 /**
- * Wrapper for a Future together with an immutable offset for use in scattering functionality.
+ * FutureOffset pairs a Future with an offset, an index which indicates location the calculated result.
  */
 public class FutureOffset {
 
@@ -11,8 +11,8 @@ public class FutureOffset {
     /**
      * Creates a new FutureOffset.
      *
-     * @param future Future to hold with FutureOffset
-     * @param offset Offset to use in scattering
+     * @param future    deferred calculation.
+     * @param offset    location in the calculated result.
      */
     public FutureOffset(Future future, int offset) {
 
@@ -20,9 +20,16 @@ public class FutureOffset {
         this.offset = offset;
     }
 
-    /** Returns this offset. */
-    public int getOffset() { return this.offset; }
+    /**
+     * Getter method for offset.
+     *
+     * @return the offset, indicating where in the calculated result to find the result for a given row index.
+     */
+    public int getOffset() { return offset; }
 
-    /** Returns this future. */
-    public Future getFuture() { return this.future; }
+    /** Getter method for future.
+     *
+     * @return the current future.
+     */
+    public Future getFuture() { return future; }
 }

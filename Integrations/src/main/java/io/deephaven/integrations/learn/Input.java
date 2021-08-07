@@ -5,41 +5,42 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import org.jpy.PyObject;
 
 /**
- * Provides an interface for getting data directly out of a table and into a function.
+ * Input specifies how to gather data from a table into a Python object.
  */
 public class Input {
 
-    private final Table table;
     private final String[] colNames;
-    private final PyObject func;
+    private final PyObject gatherFunc;
 
     /**
      * Creates a new Input.
      *
-     * @param table Table that contains data to be used with this function.
-     * @param colNames Array of column names to be extracted from this table.
-     * @param func Function that determines how data from this table is collected.
+     * @param colNames      array of column names to be used as inputs.
+     * @param gatherFunc    function that gathers data into a Python object.
      */
-    public Input(Table table, String[] colNames, PyObject func) {
+    public Input(String[] colNames, PyObject gatherFunc) {
 
-        this.table = table;
         this.colNames = colNames;
-        this.func = func;
+        this.gatherFunc = gatherFunc;
     }
 
     /** Creates an array of column sources specified by this table and given column names.
      *
-     * @return Column sources with these column names from this table.
+     * @return column sources needed to generate the input.
      */
-    public ColumnSource<?>[] createColumnSource() {
+    public ColumnSource<?>[] createColumnSource(Table table) {
 
-        ColumnSource<?>[] colSet = new ColumnSource[this.colNames.length];
-        for (int i = 0 ; i < this.colNames.length ; i++) {
-            colSet[i] = this.table.getColumnSource(this.colNames[i]); }
+        ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
+        for (int i = 0 ; i < colNames.length ; i++) {
+            colSet[i] = table.getColumnSource(colNames[i]);
+        }
 
         return colSet;
     }
 
-    /** Returns this function. */
-    public PyObject getFunc() { return this.func; }
+    /** Getter method for gatherFunc.
+     *
+     * @return the gather function.
+     */
+    public PyObject getFunc() { return gatherFunc; }
 }

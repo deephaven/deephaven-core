@@ -3,34 +3,45 @@ package io.deephaven.integrations.learn;
 import org.jpy.PyObject;
 
 /**
- * Provides an interface for getting data out of a Python object and into a table.
+ * Output specifies how to scatter data from a Python object into a table column.
  */
 public class Output {
 
     private final String colName;
-    private final PyObject func;
+    private final PyObject scatterFunc;
     private final String type;
 
     /**
      * Creates a new Output.
      *
-     * @param colName  Name of new column to store results.
-     * @param func     Function that determines how results of Future.get() are scattered back to a table.
-     * @param type     Desired datatype of new column.
+     * @param colName       name of new column to store results.
+     * @param scatterFunc   function to scatter the results of a Python object into the table column.
+     * @param type          desired datatype of the new column.
      */
-    public Output(String colName, PyObject func, String type) {
+    public Output(String colName, PyObject scatterFunc, String type) {
 
         this.colName = colName;
-        this.func = func;
+        this.scatterFunc = scatterFunc;
         this.type = type;
     }
 
-    /** Returns this column name. */
-    public String getColName() { return this.colName; }
+    /**
+     * Getter method for colName.
+     *
+     * @return column name for this output.
+     */
+    public String getColName() { return colName; }
 
-    /** Returns this function. */
-    public PyObject getFunc() { return this.func; }
+    /** Getter method for scatterFunc.
+     *
+     * @return the scatter function.
+     */
+    public PyObject getFunc() { return scatterFunc; }
 
-    /** Returns this type. */
-    public String getType() { return this.type; }
+    /**
+     * Getter method for type
+     *
+     * @return the output column datatype.
+     */
+    public String getType() { return type; }
 }

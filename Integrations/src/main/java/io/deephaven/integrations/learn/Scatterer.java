@@ -16,17 +16,17 @@ public class Scatterer {
     /**
      * Creates a new Scatterer.
      *
-     * @param outputs Array of Outputs that determine how data will be scattered back to the table.
+     * @param outputs array of Outputs that determine how data will be scattered back to the table.
      */
     public Scatterer(Output ... outputs) { this.outputs = outputs; }
 
     /**
      * Applies the scatter function to a subset of result.
      *
-     * @param result Result of the call to Future.get() containing data to be scattered.
-     * @param scatterFunc Function that determines how result will be parsed and fed into the table.
-     * @param offset Offset from FutureOffset that gets correct row from result.
-     * @return Subset of result that can be put back into the table.
+     * @param result        result of the call to Future.get() containing data to be scattered.
+     * @param scatterFunc   function that determines how result will be parsed and fed into the table.
+     * @param offset        offset from FutureOffset that gets correct row from result.
+     * @return subset of result that can be put back into the table.
      */
     public PyObject scatter(PyObject result, PyObject scatterFunc, long offset) {
 
@@ -37,17 +37,21 @@ public class Scatterer {
     /**
      * Generates a query string for each of these Outputs.
      *
-     * @return List of query strings to be used in .update() call
+     * @return list of query strings to be used in .update() call
      */
     public String[] generateQueryStrings() {
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-        for (int i = 0; i < this.outputs.length; i++) {
-            queryStrings.add(String.format("%s = (scatterer.scatter(FutureOffset.getFuture().get(), scatterer.getOutputs()[%d].getFunc(), FutureOffset.getOffset()))", this.outputs[i].getColName(), i));
+        for (int i = 0; i < outputs.length; i++) {
+            queryStrings.add(String.format("%s = (scatterer.scatter(FutureOffset.getFuture().get(), scatterer.getOutputs()[%d].getFunc(), FutureOffset.getOffset()))", outputs[i].getColName(), i));
         }
         return queryStrings.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     }
 
-    /** Returns these outputs. */
-    public Output[] getOutputs() { return this.outputs; }
+    /**
+     * Getter method for outputs.
+     *
+     * @return the array of outputs.
+     */
+    public Output[] getOutputs() { return outputs; }
 }

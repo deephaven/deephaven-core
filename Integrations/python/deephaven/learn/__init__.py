@@ -178,7 +178,7 @@ def _toJavaIn(inputs, table):
     newInputs = []
     # for every input object, convert to Java Input object and append
     for input in inputs:
-        newInputs.append(_Input_(table, input.colNames, input.func))
+        newInputs.append(_Input_(input.colNames, input.func))
 
     return newInputs
 
@@ -220,7 +220,7 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     if outputs == None:
         outputs = Output(None, None, None)
 
-    computer = _Computer_(model_func, batch_size, *_toJavaIn(inputs, table))
+    computer = _Computer_(table, model_func, batch_size, *_toJavaIn(inputs, table))
     scatterer = _Scatterer_(*[jOutput for pyOutput in outputs for jOutput in _toJavaOut(pyOutput)])
 
     QueryScope.addParam("computer", computer)

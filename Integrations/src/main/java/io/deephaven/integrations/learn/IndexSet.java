@@ -9,44 +9,44 @@ import java.util.PrimitiveIterator;
 public class IndexSet implements Iterable<Long> {
 
     private int current;
-    private final int maxSize;
     private final long[] idx;
 
     /**
      * Creates a new IndexSet.
      *
-     * @param maxSize Maximum allowed size of this index set.
+     * @param maxSize maximum allowed size of this index set.
      */
     public IndexSet(int maxSize) {
 
         if (maxSize <= 0) {
-            throw new IllegalArgumentException("Max size must be a strictly positive integer."); }
+            throw new IllegalArgumentException("Max size must be a strictly positive integer.");
+        }
 
         this.current = -1;
-        this.maxSize = maxSize;
         this.idx = new long[maxSize];
     }
 
     /**
      * Determines whether this index set has reached its maximum allowable size.
      *
-     * @return  Whether this index set has been filled.
+     * @return whether this index set has been filled.
      */
-    boolean isFull() { return this.getSize() >= this.idx.length; }
+    boolean isFull() { return getSize() >= idx.length; }
 
     /**
      * Adds an index to this index set.
      *
-     * @param k Index to be added to this index set.
-     * @throws Exception Cannot add more indices to the index set than the maximum size allowed.
+     * @param k             index to be added to this index set.
+     * @throws Exception    cannot add more indices to the index set than the maximum size allowed.
      */
     void add(long k) throws Exception {
 
-        if (this.current == this.idx.length) {
-            throw new Exception("Adding more indices than can fit."); }
+        if (current == idx.length) {
+            throw new Exception("Adding more indices than can fit.");
+        }
 
-        this.current += 1;
-        this.idx[this.current] = k;
+        current += 1;
+        idx[current] = k;
     }
 
     @Override
@@ -54,6 +54,7 @@ public class IndexSet implements Iterable<Long> {
 
         return new PrimitiveIterator.OfLong() {
             int i = -1;
+
             @Override
             public long nextLong() {
 
@@ -71,9 +72,9 @@ public class IndexSet implements Iterable<Long> {
         };
     }
 
-    /** Returns this current size. */
-    public int getSize() { return this.current + 1; }
-
-    /** Returns this maximum size. */
-    public int getMaxSize() { return this.maxSize; }
+    /** Getter method for current.
+     *
+     * @return current size of this index set.
+     */
+    public int getSize() { return current + 1; }
 }

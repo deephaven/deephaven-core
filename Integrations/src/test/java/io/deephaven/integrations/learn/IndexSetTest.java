@@ -8,14 +8,11 @@ import java.util.PrimitiveIterator;
 
 public class IndexSetTest {
 
-    static IndexSet indexSet;
-
     @Test
-    public void AddVerifyRemoveTest() throws Exception {
-        indexSet = new IndexSet(5);
+    public void addVerifyRemoveTest() throws Exception {
+        IndexSet indexSet = new IndexSet(5);
 
         TestCase.assertEquals(0, indexSet.getSize());
-        TestCase.assertEquals(5, indexSet.getMaxSize());
 
         indexSet.add(135);
         indexSet.add(54);
@@ -29,8 +26,8 @@ public class IndexSetTest {
     }
 
     @Test(expected = Exception.class)
-    public void TooManyElementsTest() throws Exception {
-        indexSet = new IndexSet(5);
+    public void tooManyElementsTest() throws Exception {
+        IndexSet indexSet = new IndexSet(5);
 
         for (int i = 0 ; i < 6 ; i++) {
             indexSet.add(i);
@@ -38,8 +35,8 @@ public class IndexSetTest {
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void ParseTooFarTest() throws Exception {
-        indexSet = new IndexSet(5);
+    public void parseTooFarTest() throws Exception {
+        IndexSet indexSet = new IndexSet(5);
 
         indexSet.add(135);
         indexSet.add(54);
@@ -52,21 +49,23 @@ public class IndexSetTest {
     }
 
     @Test
-    public void RightSizeTest() throws Exception {
-        indexSet = new IndexSet(5);
+    public void rightSizeTest() throws Exception {
+        IndexSet indexSet = new IndexSet(5);
 
         indexSet.add(135);
+        TestCase.assertEquals(false, indexSet.isFull());
         indexSet.add(54);
+        TestCase.assertEquals(false, indexSet.isFull());
         indexSet.add(100000);
         TestCase.assertEquals(false, indexSet.isFull());
-
         indexSet.add(42);
+        TestCase.assertEquals(false, indexSet.isFull());
         indexSet.add(600);
         TestCase.assertEquals(true, indexSet.isFull());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void PositiveMaxSizeTest() {
-        indexSet = new IndexSet(0);
+    public void positiveMaxSizeTest() {
+        IndexSet indexSet = new IndexSet(0);
     }
 }

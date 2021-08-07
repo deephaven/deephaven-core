@@ -1,62 +1,78 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.db.tables.Table;
+import io.deephaven.db.v2.sources.ColumnSource;
 import org.jpy.PyObject;
 
 /**
- * Instantiates the objects needed for computation using the given indices.
+ * Passes indices to Future for deferred calculation.
  */
 public class Computer {
 
-    private final PyObject func;
+    private final PyObject modelFunc;
     private final int batchSize;
     private final Input[] inputs;
+    private final ColumnSource<?>[][] colSet;
     private Future current;
     private int offset;
 
     /**
      * Creates a new Computer.
      *
-     * @param func Function for performing a computation on these inputs.
-     * @param inputs Inputs to this function.
-     * @param batchSize Maximum number of rows for deferred computation.
+     * @param modelFunc     function to use for AI training / prediction on the given inputs.
+     * @param inputs        inputs to the model function.
+     * @param batchSize     maximum number of rows for deferred computation.
      */
-    public Computer(PyObject func, int batchSize, Input ... inputs) {
+    public Computer(Table table, PyObject modelFunc, int batchSize, Input ... inputs) {
 
         if (batchSize <= 0) {
-            throw new IllegalArgumentException("Max size must be a strictly positive integer."); }
+            throw new IllegalArgumentException("Max size must be a strictly positive integer.");
+        }
 
         if (inputs.length == 0) {
-            throw new IllegalArgumentException("Cannot have an empty input list."); }
+            throw new IllegalArgumentException("Cannot have an empty input list.");
+        }
 
-        this.func = func;
+        this.modelFunc = modelFunc;
         this.batchSize = batchSize;
         this.inputs = inputs;
+
+        this.colSet = new ColumnSource[this.inputs.length][];
+        for (int i = 0 ; i < this.inputs.length ; i++) {
+            this.colSet[i] = inputs[i].createColumnSource(table);
+        }
+
         this.current = null;
         this.offset = -1;
     }
 
-    /** Resets this Future to null. */
+    /**
+     * Resets the current future to clear memory for the next one.
+     *
+     * @return always false, because functions used in query strings cannot return nothing.
+     */
     public boolean clear() {
 
-        this.current = null;
-        return false; // note this only has a return value because functions called in query strings cannot be void
+        current = null;
+        return false;
     }
 
     /**
-     * Adds new indices to this future. Will instantiate a new future if needed.
+     * Adds new row indices to the calculation.
      *
-     * @param k Index to be added to this Future's index set.
-     * @return  A wrapper for this future with the new index.
+     * @param k     index to be added to this Future's index set.
+     * @return      future offset that combines this future with the relevant row index to access result.
      * @throws Exception Cannot add more indices than the maximum number allowed.
      */
     public FutureOffset compute(long k) throws Exception {
 
-        if (this.current == null || this.current.getIndexSet().isFull()) {
-            this.current = new Future(this.func, this.batchSize, this.inputs);
-            this.offset = -1; }
+        if (current == null || current.getIndexSet().isFull()) {
+            current = new Future(modelFunc, batchSize, inputs, colSet);
+            offset = -1;
+        }
 
-        this.current.getIndexSet().add(k);
-        this.offset += 1;
-        return new FutureOffset(this.current, this.offset % this.batchSize);
+        current.getIndexSet().add(k);
+        offset += 1;
+        return new FutureOffset(current, offset % batchSize);
     }
 }
