@@ -68,6 +68,18 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
+    public WritableChunk[] makeChunksForDefinition(int size) {
+        return makeChunksForDefinition(tableDefinition, size);
+    }
+
+    public ChunkType chunkTypeForIndex(int idx) {
+        return chunkTypeForColumn(tableDefinition.getColumns()[idx]);
+    }
+
+    public static WritableChunk[] makeChunksForDefinition(TableDefinition definition, int size) {
+        return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
+    }
+
     @NotNull
     private static ChunkColumnSource<?> [] makeChunkSources(TableDefinition tableDefinition) {
         final TLongArrayList offsets = new TLongArrayList();
@@ -82,6 +94,21 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         } else {
             return ChunkColumnSource.make(ChunkType.fromElementType(cd.getDataType()), cd.getDataType(), cd.getComponentType(), offsets);
         }
+    }
+
+    @NotNull
+    private static WritableChunk<?> makeChunk(io.deephaven.db.tables.ColumnDefinition<?> cd, int size) {
+        final ChunkType chunkType = chunkTypeForColumn(cd);
+        WritableChunk<Attributes.Any> returnValue = chunkType.makeWritableChunk(size);
+        returnValue.setSize(0);
+        return returnValue;
+    }
+
+    private static ChunkType chunkTypeForColumn(ColumnDefinition<?> cd) {
+        final Class<?> replacementType = replacementType(cd.getDataType());
+        final Class<?> useType = replacementType != null ? replacementType : cd.getDataType();
+        final ChunkType chunkType = ChunkType.fromElementType(useType);
+        return chunkType;
     }
 
     @NotNull

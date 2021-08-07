@@ -33,7 +33,7 @@ public class TestPojoAdapter {
 
     @Test
     public void testSimple() throws IOException {
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = new PojoConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> factory = new PojoConsumerRecordToTableWriterAdapter.Builder()
                 .valueClass(PojoTest1.class)
                 .addColumnToValueMethod("b", "getB")
                 .buildFactory();
@@ -44,7 +44,7 @@ public class TestPojoAdapter {
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
-        final ConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
+        final PojoConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<Object, PojoTest1> record = new ConsumerRecord<>("topic", 0, 0, null, new PojoTest1());
         pojoAdapter.consumeRecord(record);
 
@@ -56,7 +56,7 @@ public class TestPojoAdapter {
 
     @Test
     public void testSimple2() throws IOException {
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = new PojoConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> factory = new PojoConsumerRecordToTableWriterAdapter.Builder()
                 .keyClass(PojoTest1.class)
                 .addColumnToKeyMethod("b", "getB")
                 .addColumnToKeyField("c", "cf")
@@ -69,7 +69,7 @@ public class TestPojoAdapter {
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
-        final ConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
+        final PojoConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<PojoTest1, Object> record = new ConsumerRecord<>("topic", 0, 0, new PojoTest1(), null);
         pojoAdapter.consumeRecord(record);
 
@@ -85,7 +85,7 @@ public class TestPojoAdapter {
                 new PojoConsumerRecordToTableWriterAdapter.Builder()
                         .valueClass(PojoTest1.class)
                         .caseInsensitiveSearch(true);
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
+        final Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
 
         final String [] names = new String[]{"A", "B", "C", "AF", "Bf", "CF"};
         final Class [] types = new Class[]{String.class, String.class, int.class, String.class, String.class, int.class};
@@ -93,7 +93,7 @@ public class TestPojoAdapter {
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
-        final ConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
+        final PojoConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<Object, PojoTest1> record = new ConsumerRecord<>("topic", 0, 0, null, new PojoTest1());
         pojoAdapter.consumeRecord(record);
 
@@ -107,7 +107,7 @@ public class TestPojoAdapter {
     public void testUnmapped() {
         final PojoConsumerRecordToTableWriterAdapter.Builder builder = new PojoConsumerRecordToTableWriterAdapter.Builder();
         builder.valueClass(PojoTest1.class).addColumnToValueMethod("b", "getB");
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
+        final Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
 
         final String [] names = new String[]{"a", "b", "c", "af", "bf", "cf", "df"};
         final Class [] types = new Class[]{String.class, String.class, int.class, String.class, String.class, int.class, long.class};
@@ -125,7 +125,7 @@ public class TestPojoAdapter {
     public void testSpecialColumns() throws IOException {
         final PojoConsumerRecordToTableWriterAdapter.Builder builder = new PojoConsumerRecordToTableWriterAdapter.Builder();
         builder.valueClass(PojoTest1.class).keyClass(PojoTest2.class).kafkaPartitionColumnName("KP").offsetColumnName("Offset");
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
+        final Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> factory = builder.buildFactory();
 
         final String [] names = new String[]{"a", "b", "c", "df", "KP", "Offset"};
         final Class [] types = new Class[]{String.class, String.class, int.class, int.class, int.class, long.class};
@@ -134,7 +134,7 @@ public class TestPojoAdapter {
         final LiveQueryTable result = writer.getTable();
 
 
-        final ConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
+        final PojoConsumerRecordToTableWriterAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<PojoTest2, PojoTest1> record = new ConsumerRecord<>("topic", 1, 27, new PojoTest2(), new PojoTest1());
         pojoAdapter.consumeRecord(record);
 

@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Converter from a stream of Kafka records to a table writer.
@@ -18,5 +19,5 @@ public interface ConsumerRecordToTableWriterAdapter {
      * @param record the record received from {@link org.apache.kafka.clients.consumer.KafkaConsumer#poll(Duration)}.
      * @throws IOException if there was an error writing to the output table
      */
-    void consumeRecord(ConsumerRecord<?, ?> record) throws IOException;
+    void consumeRecords(List<? extends ConsumerRecord<?, ?>> record) throws IOException;
 }

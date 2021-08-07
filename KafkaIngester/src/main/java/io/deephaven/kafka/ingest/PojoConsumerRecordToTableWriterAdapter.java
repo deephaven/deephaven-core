@@ -578,7 +578,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
          *
          * @return the factory
          */
-        Function<TableWriter, ConsumerRecordToTableWriterAdapter> buildFactory() {
+        Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> buildFactory() {
             return (TableWriter tw) -> new PojoConsumerRecordToTableWriterAdapter<>(tw, kafkaPartitionColumnName, offsetColumnName,
                     timestampColumnName, keyClass, valueClass,
                     allowUnmapped, caseInsensitiveSearch, printClassBody, columnsUnmapped,
@@ -589,6 +589,12 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
     }
 
     @Override
+    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {
+        for (ConsumerRecord<?, ?> record : records) {
+            consumeRecord(record);
+        }
+    }
+
     public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
         if (kafkaPartitionColumnSetter != null) {
             kafkaPartitionColumnSetter.setInt(record.partition());
@@ -604,7 +610,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
             }
         }
 
-        compiledPojoAdapter.consumeRecord(record);
+        compiledPojoAdapter.consumeRecords(Collections.singletonList(record));
 
         writer.writeRow();
     }

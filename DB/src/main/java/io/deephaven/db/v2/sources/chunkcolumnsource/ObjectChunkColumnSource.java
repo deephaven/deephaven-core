@@ -149,6 +149,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
     }
 
     private void addChunk(@NotNull final WritableObjectChunk<T, ? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);

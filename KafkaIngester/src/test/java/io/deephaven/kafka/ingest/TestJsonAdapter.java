@@ -40,7 +40,7 @@ public class TestJsonAdapter {
 
     @Test
     public void testSimple() throws IOException {
-        final Function<TableWriter, ConsumerRecordToTableWriterAdapter> factory = new JsonConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, JsonConsumerRecordToTableWriterAdapter> factory = new JsonConsumerRecordToTableWriterAdapter.Builder()
                 .addColumnToValueField ("c", "Col1")
                 .autoValueMapping(true)
                 .buildFactory();
@@ -51,7 +51,7 @@ public class TestJsonAdapter {
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
-        final ConsumerRecordToTableWriterAdapter jsonAdapter = factory.apply(writer);
+        final JsonConsumerRecordToTableWriterAdapter jsonAdapter = factory.apply(writer);
         final ConsumerRecord<Object, String> record = new ConsumerRecord<>("topic", 0, 0, null, json);
         jsonAdapter.consumeRecord(record);
 

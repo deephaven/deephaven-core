@@ -341,7 +341,7 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
          *
          * @return the factory
          */
-        @NotNull Function<TableWriter, ConsumerRecordToTableWriterAdapter> buildFactory() {
+        @NotNull Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> buildFactory() {
             return (TableWriter tw) -> new GenericRecordConsumerRecordToTableWriterAdapter(tw,
                     kafkaPartitionColumnName, offsetColumnName, timestampColumnName,
                     rawKeyColumnName,
@@ -352,6 +352,12 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
     }
 
     @Override
+    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {
+        for (ConsumerRecord<?, ?> record : records) {
+            consumeRecord(record);
+        }
+    }
+
     public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
         if (kafkaPartitionColumnSetter != null) {
             kafkaPartitionColumnSetter.setInt(record.partition());

@@ -9,10 +9,7 @@ import org.apache.kafka.common.record.TimestampType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -209,7 +206,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          * @return the factory
          */
         @NotNull
-        Function<TableWriter, ConsumerRecordToTableWriterAdapter> buildFactory() {
+        Function<TableWriter, JsonConsumerRecordToTableWriterAdapter> buildFactory() {
             return (TableWriter tw) -> new JsonConsumerRecordToTableWriterAdapter(tw,
                     kafkaPartitionColumnName, offsetColumnName, timestampColumnName,
                     columnToValueFieldSetter, columnsUnmapped, allowMissingKeys,
@@ -218,6 +215,12 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
     }
 
     @Override
+    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {
+        for (ConsumerRecord<?, ?> record : records) {
+            consumeRecord(record);
+        }
+    }
+
     public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
         if (kafkaPartitionColumnSetter != null) {
             kafkaPartitionColumnSetter.setInt(record.partition());

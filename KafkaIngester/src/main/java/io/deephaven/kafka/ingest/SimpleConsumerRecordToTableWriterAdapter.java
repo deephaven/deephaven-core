@@ -1,64 +1,69 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.tablelogger.RowSetter;
-import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.utils.ChunkUnboxer;
+import io.deephaven.kafka.StreamPublisherImpl;
 import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.List;
 
 /**
  * An adapter that maps keys and values to single Deephaven columns.  Each Kafka record produces one Deephaven row.
  */
 public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
-    private final TableWriter<?> writer;
-    private final RowSetter<Integer> kafkaPartitionColumnSetter;
-    private final RowSetter<Long> offsetColumnSetter;
-    private final RowSetter<DBDateTime> timestampColumnSetter;
+    private final StreamPublisherImpl publisher;
+    private final int kafkaPartitionColumnIndex;
+    private final int offsetColumnIndex;
+    private final int timestampColumnIndex;
+    private final int keyColumnIndex;
+    private final int valueColumnIndex;
 
-    @SuppressWarnings("rawtypes")
-    private final RowSetter keyColumnSetter;
+    private final boolean keyIsObject;
+    private final boolean valueIsObject;
 
-    @SuppressWarnings("rawtypes")
-    @NotNull
-    private final RowSetter valueColumnSetter;
+    final ChunkUnboxer.UnboxerKernel keyUnboxer;
+    final ChunkUnboxer.UnboxerKernel valueUnboxer;
 
     private SimpleConsumerRecordToTableWriterAdapter(
-            final TableWriter<?> writer,
-            final String kafkaPartitionColumnName,
-            final String offsetColumnName,
-            final String timestampColumnName,
-            final String keyColumnName,
-            final @NotNull String valueColumnName) {
-        this.writer = writer;
-        if (kafkaPartitionColumnName != null) {
-            kafkaPartitionColumnSetter = writer.getSetter(kafkaPartitionColumnName, Integer.class);
-        } else {
-            kafkaPartitionColumnSetter = null;
+            final StreamPublisherImpl publisher,
+            final int kafkaPartitionColumnIndex,
+            final int offsetColumnIndex,
+            final int timestampColumnIndex,
+            final int keyColumnIndex,
+            final int valueColumnIndex) {
+        this.publisher = publisher;
+        this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
+        this.offsetColumnIndex = offsetColumnIndex;
+        this.timestampColumnIndex = timestampColumnIndex;
+        this.keyColumnIndex = keyColumnIndex;
+        this.valueColumnIndex = valueColumnIndex;
+        if (valueColumnIndex < 0) {
+            throw new IllegalArgumentException("Value column index must be non-negative: " + valueColumnIndex);
         }
-        if (offsetColumnName != null) {
-            offsetColumnSetter = writer.getSetter(offsetColumnName, Long.class);
+        final ChunkType keyChunkType = publisher.chunkType(keyColumnIndex);
+        final ChunkType valueChunkType = publisher.chunkType(valueColumnIndex);
+
+        keyIsObject = keyChunkType == ChunkType.Object;
+        if (!keyIsObject) {
+            keyUnboxer = ChunkUnboxer.getEmptyUnboxer(keyChunkType);
         } else {
-            offsetColumnSetter = null;
+            keyUnboxer = null;
         }
-        if (timestampColumnName != null) {
-            timestampColumnSetter = writer.getSetter(timestampColumnName, DBDateTime.class);
+
+        valueIsObject = valueChunkType == ChunkType.Object;
+        if (!valueIsObject) {
+            valueUnboxer = ChunkUnboxer.getEmptyUnboxer(valueChunkType);
         } else {
-            timestampColumnSetter = null;
+            valueUnboxer = null;
         }
-        if (keyColumnName != null) {
-            keyColumnSetter = writer.getSetter(keyColumnName);
-        } else {
-            keyColumnSetter = null;
-        }
-        valueColumnSetter = writer.getSetter(valueColumnName);
     }
 
-    /**
+    /*
      * Create a {@link ConsumerRecordToTableWriterAdapter} that maps simple keys and values to single columns in a
      * Deephaven table.  Each Kafka record becomes a row in the table's output.
      *
@@ -73,50 +78,140 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
      *
      * @return an adapter for the TableWriter
      */
-    public static Function<TableWriter<?>, ConsumerRecordToTableWriterAdapter> makeFactory(
-            final String kafkaPartitionColumnName,
-            final String offsetColumnName,
-            final String timestampColumnName,
-            final String keyColumnName,
-            @NotNull final String valueColumnName
-    ) {
-        return (TableWriter<?> tw) -> new SimpleConsumerRecordToTableWriterAdapter(
-                tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
-    }
+//    public static Function<TableWriter<?>, ConsumerRecordToTableWriterAdapter> makeFactory(
+//            final String kafkaPartitionColumnName,
+//            final String offsetColumnName,
+//            final String timestampColumnName,
+//            final String keyColumnName,
+//            @NotNull final String valueColumnName
+//    ) {
+//        return (TableWriter<?> tw) -> new SimpleConsumerRecordToTableWriterAdapter(
+//                tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
+//    }
 
     public static ConsumerRecordToTableWriterAdapter make(
-            final TableWriter tw,
-            final String kafkaPartitionColumnName,
-            final String offsetColumnName,
-            final String timestampColumnName,
-            final String keyColumnName,
-            @NotNull final String valueColumnName) {
+            final StreamPublisherImpl publisher,
+            final int kafkaPartitionColumnIndex,
+            final int offsetColumnIndex,
+            final int timestampColumnIndex,
+            final int keyColumnIndex,
+            final int valueColumnIndex) {
         return new SimpleConsumerRecordToTableWriterAdapter(
-                tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
+                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyColumnIndex, valueColumnIndex);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
-        if (kafkaPartitionColumnSetter != null) {
-            kafkaPartitionColumnSetter.setInt(record.partition());
-        }
-        if (offsetColumnSetter != null) {
-            offsetColumnSetter.setLong(record.offset());
-        }
-        if (timestampColumnSetter != null) {
-            final long timestamp = record.timestamp();
-            if (record.timestampType() == TimestampType.NO_TIMESTAMP_TYPE) {
-                timestampColumnSetter.set(null);
-            } else {
-                timestampColumnSetter.set(DBTimeUtils.millisToTime(timestamp));
-            }
-        }
-        if (keyColumnSetter != null) {
-            keyColumnSetter.set(record.key());
-        }
-        valueColumnSetter.set(record.value());
+    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {
+        WritableChunk [] chunks = publisher.getChunks();
+        int remaining = chunks[0].capacity() - chunks[0].size();
 
-        writer.writeRow();
+        final int chunkSize = Math.min(records.size(), chunks[0].capacity());
+
+        WritableObjectChunk<Object, Attributes.Values> keyChunk = null;
+        WritableObjectChunk<Object, Attributes.Values> valueChunk;
+
+        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsObject && keyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
+            final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = !valueIsObject ? WritableObjectChunk.makeWritableChunk(chunkSize) : null) {
+
+            if (keyChunkCloseable != null) {
+                keyChunkCloseable.setSize(0);
+                keyChunk = keyChunkCloseable;
+            } else if (keyIsObject) {
+                keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
+            }
+            if (valueChunkCloseable != null) {
+                valueChunkCloseable.setSize(0);
+                valueChunk = valueChunkCloseable;
+            } else {
+                valueChunk = chunks[valueColumnIndex].asWritableObjectChunk();
+            }
+
+            WritableIntChunk<Attributes.Values> partitionChunk = kafkaPartitionColumnIndex >= 0 ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk() : null;
+            WritableLongChunk<Attributes.Values> offsetChunk = offsetColumnIndex >= 0 ? chunks[offsetColumnIndex].asWritableLongChunk() : null;
+            WritableLongChunk<Attributes.Values> timestampChunk =  timestampColumnIndex >= 0 ? chunks[timestampColumnIndex].asWritableLongChunk() : null;
+
+            for (ConsumerRecord<?, ?> record : records) {
+                if (--remaining == 0) {
+                    if (keyChunk != null) {
+                        flushKeyChunk(keyChunk, chunks[keyColumnIndex]);
+                    }
+                    flushValueChunk(valueChunk, chunks[valueColumnIndex]);
+
+                    publisher.flush();
+
+                    chunks = publisher.getChunks();
+                    remaining = chunks[0].capacity() - chunks[0].size();
+                    Assert.gtZero(remaining, "remaining");
+
+                    if (kafkaPartitionColumnIndex > 0) {
+                        partitionChunk = chunks[kafkaPartitionColumnIndex].asWritableIntChunk();
+                    } else {
+                        partitionChunk = null;
+                    }
+                    if (offsetColumnIndex > 0) {
+                        offsetChunk = chunks[offsetColumnIndex].asWritableLongChunk();
+                    } else {
+                        offsetChunk = null;
+                    }
+                    if (timestampColumnIndex > 0) {
+                        timestampChunk = chunks[timestampColumnIndex].asWritableLongChunk();
+                    } else {
+                        timestampChunk = null;
+                    }
+                    if (keyIsObject) {
+                        keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
+                    }
+                    if (valueIsObject) {
+                        valueChunk = chunks[valueColumnIndex].asWritableObjectChunk();
+                    }
+                }
+
+
+                if (partitionChunk != null) {
+                    partitionChunk.add(record.partition());
+                }
+                if (offsetChunk != null) {
+                    offsetChunk.add(record.offset());
+                }
+                if (timestampChunk != null) {
+                    final long timestamp = record.timestamp();
+                    if (record.timestampType() == TimestampType.NO_TIMESTAMP_TYPE) {
+                        timestampChunk.add(QueryConstants.NULL_LONG);
+                    } else {
+                        timestampChunk.add(DBTimeUtils.millisToNanos(timestamp));
+                    }
+                }
+
+                if (keyChunk != null) {
+                    keyChunk.add(record.key());
+                }
+                valueChunk.add(record.value());
+            }
+            if (keyChunk != null) {
+                flushKeyChunk(keyChunk, chunks[keyColumnIndex]);
+            }
+            flushValueChunk(valueChunk, chunks[valueColumnIndex]);
+        }
+    }
+
+    void flushKeyChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> publisherChunk) {
+        if (keyIsObject) {
+            return;
+        }
+        final int existingSize = publisherChunk.size();
+        publisherChunk.setSize(existingSize + objectChunk.size());
+        keyUnboxer.unboxTo(objectChunk, publisherChunk, 0, existingSize);
+        objectChunk.setSize(0);
+    }
+
+    void flushValueChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> publisherChunk) {
+        if (valueIsObject) {
+            return;
+        }
+        final int existingSize = publisherChunk.size();
+        publisherChunk.setSize(existingSize + objectChunk.size());
+        valueUnboxer.unboxTo(objectChunk, publisherChunk, 0, existingSize);
+        objectChunk.setSize(0);
     }
 }

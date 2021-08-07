@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.utils.DynamicTableWriter;
 import io.deephaven.internal.log.LoggerFactory;
@@ -16,8 +17,10 @@ import io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter;
 import io.deephaven.kafka.ingest.GenericRecordConsumerRecordToTableWriterAdapter;
 import io.deephaven.kafka.ingest.KafkaIngester;
 import io.deephaven.kafka.ingest.SimpleConsumerRecordToTableWriterAdapter;
+import io.deephaven.stream.StreamToTableAdapter;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -38,9 +41,7 @@ import org.apache.http.impl.client.HttpClients;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.IntToLongFunction;
+import java.util.function.*;
 
 public class KafkaTools {
 
@@ -63,6 +64,8 @@ public class KafkaTools {
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
+
+    private static final int CHUNK_SIZE = 2048;
 
     public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
         String action = "setup http client";
@@ -243,9 +246,9 @@ public class KafkaTools {
                 kafkaConsumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (ConsumerRecord<?, ?> record) -> {
+                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
                     try {
-                        adapter.consumeRecord(record);
+                        adapter.consumeRecords(records);
                     } catch (IOException ex) {
                         throw new UncheckedDeephavenException(ex);
                     }
@@ -299,29 +302,35 @@ public class KafkaTools {
                 false);
         Assert.eq(nCols, "nCols", c, "c");
         final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
-        final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
-        final Function<ColumnDefinition<?>, String> orNull = (final ColumnDefinition<?> colDef) -> {
+
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+        final MutableInt colIdx = new MutableInt();
+        final ToIntFunction<ColumnDefinition<?>> orNull = (final ColumnDefinition<?> colDef) -> {
             if (colDef == null) {
-                return null;
+                return -1;
             }
-            return colDef.getName();
+            return colIdx.getAndAdd(1);
         };
         final ConsumerRecordToTableWriterAdapter adapter = SimpleConsumerRecordToTableWriterAdapter.make(
-                tableWriter,
-                orNull.apply(columns[0]),
-                orNull.apply(columns[1]),
-                orNull.apply(columns[2]),
-                orNull.apply(columns[3]),
-                orNull.apply(columns[4]));
+                streamPublisher,
+                orNull.applyAsInt(columns[0]),
+                orNull.applyAsInt(columns[1]),
+                orNull.applyAsInt(columns[2]),
+                orNull.applyAsInt(columns[3]),
+                orNull.applyAsInt(columns[4]));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 consumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (ConsumerRecord<?, ?> record) -> {
+                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
                     try {
-                        adapter.consumeRecord(record);
+                        adapter.consumeRecords(records);
                     } catch (IOException ex) {
                         throw new UncheckedDeephavenException(ex);
                     }
@@ -329,7 +338,8 @@ public class KafkaTools {
                 partitionToInitialOffset
         );
         ingester.start();
-        return tableWriter.getTable();
+
+        return streamToTableAdapter.table();
     }
 
     private static ColumnDefinition<?>[] withoutNulls(final ColumnDefinition<?>[] columns) {
