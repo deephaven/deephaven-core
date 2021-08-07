@@ -1,15 +1,48 @@
 #
 # Test driver to produce kafka messages using an avro schema.
 #
+# To run this script, you need confluent-kafka libraries installed.
+# To create a dedicated venv for it, you can do:
+#
+# $ mkdir confluent-kafka; cd confluent-kafka
+# $ python3 -m venv confluent-kafka
+# $ cd confluent-kafka
+# $ source bin/activate
+# $ pip3 install confluent-kafka
+#
+# Note: On a Mac you may need to install the librdkafka package.
+# You can use "brew install librdkafka" if the pip3 command fails
+# with an error like "librdkafka/rdkafka.h' file not found"
+# as found at confluentinc/confluent-kafka-python#166.
+#
+# Examples of use for DH testing together with web UI.
+#
+# == Common to all:
+#
+#  * Start the redpanda-apicurio compose: (cd redpanda-apicurio && docker-compose up --build)
+#  * From web UI do: > from deephaven import KafkaTools
+#
+# == Example (1)
+#
+# Load a schema into schema registry for share_price_record.
+# From the command line in the host (not on a docker image), run:
+# $ sh ../post-share-price-schema.sh
+#
+# The last command above should have loaded the avro schema in the file avro/share_price.json
+# to the apicurio registry. You can check it was loaded visiting on the host the URL:
+#   http://localhost:8081/ui/artifacts
+# That page should now list 'share_price_record' as an available schema.
+#
 # From the web IDE, run:
 # > from deephaven import KafkaTools
 # > s = getAvroSchema('http://registry:8080/api/ccompat', 'share_price_record', '1')
-# > t3 = genericAvroConsumeToTableOnlyValues({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', 'ALL_PARTITIONS', 'ALL_PARTITIONS_DONT_SEEK', s)
+# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_avro_schema=s)
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 #
-# Run this script to generate one row:
-# $ python ./produce-avro.py share_price str:Symbol:MSFT double:Price:274.82
+# Run this script on the host (not on a docker image) to generate one row:
+# $ python3 ./kafka-produce-avro.py share_price str:Symbol=MSFT double:Price=274.82
+#
 # You should see a new row show up in the web IDE with data matching the data sent above.
 #
 from confluent_kafka import avro
