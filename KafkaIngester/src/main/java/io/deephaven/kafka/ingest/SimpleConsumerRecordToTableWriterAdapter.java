@@ -1,5 +1,6 @@
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.ChunkUnboxer;
@@ -8,6 +9,7 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -19,8 +21,8 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
     private final int kafkaPartitionColumnIndex;
     private final int offsetColumnIndex;
     private final int timestampColumnIndex;
-    private final int keyColumnIndex;
-    private final int valueColumnIndex;
+    private final int simpleKeyColumnIndex;
+    private final int simpleValueColumnIndex;
 
     private final boolean keyIsSimpleObject;
     private final boolean valueIsSimpleObject;
@@ -33,32 +35,27 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
-            final int keyColumnIndex,
-            final int valueColumnIndex) {
+            final KeyOrValueProcessor keyProcessor,
+            final KeyOrValueProcessor valueProcessor,
+            final int simpleKeyColumnIndex,
+            final int simpleValueColumnIndex) {
         this.publisher = publisher;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
         this.offsetColumnIndex = offsetColumnIndex;
         this.timestampColumnIndex = timestampColumnIndex;
-        this.keyColumnIndex = keyColumnIndex;
-        this.valueColumnIndex = valueColumnIndex;
-        if (valueColumnIndex < 0) {
-            throw new IllegalArgumentException("Value column index must be non-negative: " + valueColumnIndex);
-        }
-        final ChunkType keyChunkType = publisher.chunkType(keyColumnIndex);
-        final ChunkType valueChunkType = publisher.chunkType(valueColumnIndex);
+        this.simpleKeyColumnIndex = simpleKeyColumnIndex;
+        this.simpleValueColumnIndex = simpleValueColumnIndex;
+        this.keyProcessor = keyProcessor;
+        this.valueProcessor = valueProcessor;
 
-        keyIsSimpleObject = keyChunkType == ChunkType.Object;
-        if (!keyIsSimpleObject) {
-            keyProcessor = new SimpleKeyOrValueProcessor(keyColumnIndex, ChunkUnboxer.getEmptyUnboxer(keyChunkType));
-        } else {
-            keyProcessor = null;
+        keyIsSimpleObject = this.simpleKeyColumnIndex >= 0;
+        if (keyIsSimpleObject && keyProcessor != null) {
+            throw new IllegalArgumentException("Simple Key Column Index can not be set when a keyProcessor is set");
         }
 
-        valueIsSimpleObject = valueChunkType == ChunkType.Object;
-        if (!valueIsSimpleObject) {
-            valueProcessor = new SimpleKeyOrValueProcessor(valueColumnIndex, ChunkUnboxer.getEmptyUnboxer(valueChunkType));
-        } else {
-            valueProcessor = null;
+        valueIsSimpleObject = this.simpleValueColumnIndex >= 0;
+        if (valueIsSimpleObject && valueProcessor != null) {
+            throw new IllegalArgumentException("Simple Value Column Index can not be set when a valueProcessor is set");
         }
     }
 
@@ -95,8 +92,33 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             final int timestampColumnIndex,
             final int keyColumnIndex,
             final int valueColumnIndex) {
+
+        if (valueColumnIndex < 0) {
+            throw new IllegalArgumentException("Value column index must be non-negative: " + valueColumnIndex);
+        }
+        final ChunkType keyChunkType = publisher.chunkType(keyColumnIndex);
+        final ChunkType valueChunkType = publisher.chunkType(valueColumnIndex);
+
+        final Pair<KeyOrValueProcessor, Integer> keyPair = getProcessorAndSimpleIndex(keyColumnIndex, keyChunkType);
+        final Pair<KeyOrValueProcessor, Integer> valuePair = getProcessorAndSimpleIndex(valueColumnIndex, valueChunkType);
+
         return new SimpleConsumerRecordToTableWriterAdapter(
-                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyColumnIndex, valueColumnIndex);
+                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyPair.first, valuePair.first, keyPair.second, valuePair.second);
+    }
+
+    @NotNull
+    private static Pair<KeyOrValueProcessor, Integer> getProcessorAndSimpleIndex(int columnIndex, ChunkType chunkType) {
+        final boolean isSimpleObject = chunkType == ChunkType.Object;
+        final int simpleIndex;
+        final KeyOrValueProcessor processor;
+        if (!isSimpleObject) {
+            processor = new SimpleKeyOrValueProcessor(columnIndex, ChunkUnboxer.getEmptyUnboxer(chunkType));
+            simpleIndex = -1;
+        } else {
+            processor = null;
+            simpleIndex = columnIndex;
+        }
+        return new Pair<>(processor, simpleIndex);
     }
 
     @SuppressWarnings("unchecked")
@@ -110,20 +132,20 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         WritableObjectChunk<Object, Attributes.Values> keyChunk = null;
         WritableObjectChunk<Object, Attributes.Values> valueChunk;
 
-        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsSimpleObject && keyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
+        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsSimpleObject && simpleKeyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
              final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = !valueIsSimpleObject ? WritableObjectChunk.makeWritableChunk(chunkSize) : null) {
 
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
             } else if (keyIsSimpleObject) {
-                keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
+                keyChunk = chunks[simpleKeyColumnIndex].asWritableObjectChunk();
             }
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
             } else {
-                valueChunk = chunks[valueColumnIndex].asWritableObjectChunk();
+                valueChunk = chunks[simpleValueColumnIndex].asWritableObjectChunk();
             }
 
             WritableIntChunk<Attributes.Values> partitionChunk = kafkaPartitionColumnIndex >= 0 ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk() : null;
@@ -159,10 +181,10 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
                         timestampChunk = null;
                     }
                     if (keyIsSimpleObject) {
-                        keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
+                        keyChunk = chunks[simpleKeyColumnIndex].asWritableObjectChunk();
                     }
                     if (valueIsSimpleObject) {
-                        valueChunk = chunks[valueColumnIndex].asWritableObjectChunk();
+                        valueChunk = chunks[simpleValueColumnIndex].asWritableObjectChunk();
                     }
                 }
 
@@ -192,18 +214,6 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             }
             flushValueChunk(valueChunk, chunks);
         }
-    }
-
-    interface KeyOrValueProcessor {
-        /**
-         * After consuming a set of generic records for a batch that are not raw objects, we pass the keys or values to
-         * an appropriate handler.  The handler must know it's data types and offsets within the publisher chunks, and
-         * "copy" the data from the inputChunk to the appropriate chunks for the stream publisher.
-         *
-         * @param inputChunk      the chunk containing the keys or values as Kafka deserialized them from the consumer record
-         * @param publisherChunks the output chunks for this table that must be appended to.
-         */
-        void handleChunk(WritableObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> [] publisherChunks);
     }
 
     static class SimpleKeyOrValueProcessor implements KeyOrValueProcessor {
