@@ -24,7 +24,7 @@ public class Future {
      * @param inputs        inputs to the Future computation.
      * @param batchSize     maximum number of rows for deferred computation.
      */
-    public Future(PyObject func, int batchSize, Input[] inputs, ColumnSource<?>[][] colSet) {
+    Future(PyObject func, int batchSize, Input[] inputs, ColumnSource<?>[][] colSet) {
 
         this.func = func;
         this.inputs = inputs;
@@ -62,5 +62,5 @@ public class Future {
      *
      * @return the current index set.
      */
-    public IndexSet getIndexSet() { return indexSet; }
+    IndexSet getIndexSet() { return indexSet; }
 }

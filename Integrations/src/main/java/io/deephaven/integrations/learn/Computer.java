@@ -25,6 +25,10 @@ public class Computer {
      */
     public Computer(Table table, PyObject modelFunc, int batchSize, Input ... inputs) {
 
+        if (modelFunc == null) {
+            throw new IllegalArgumentException("Model function cannot be null.");
+        }
+
         if (batchSize <= 0) {
             throw new IllegalArgumentException("Max size must be a strictly positive integer.");
         }
@@ -62,9 +66,8 @@ public class Computer {
      *
      * @param k     index to be added to this Future's index set.
      * @return      future offset that combines this future with the relevant row index to access result.
-     * @throws Exception Cannot add more indices than the maximum number allowed.
      */
-    public FutureOffset compute(long k) throws Exception {
+    public FutureOffset compute(long k) {
 
         if (current == null || current.getIndexSet().isFull()) {
             current = new Future(modelFunc, batchSize, inputs, colSet);

@@ -22,13 +22,14 @@ public class Input {
 
         this.colNames = colNames;
         this.gatherFunc = gatherFunc;
+
     }
 
     /** Creates an array of column sources specified by this table and given column names.
      *
      * @return column sources needed to generate the input.
      */
-    public ColumnSource<?>[] createColumnSource(Table table) {
+    ColumnSource<?>[] createColumnSource(Table table) {
 
         ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
         for (int i = 0 ; i < colNames.length ; i++) {
@@ -42,5 +43,5 @@ public class Input {
      *
      * @return the gather function.
      */
-    public PyObject getFunc() { return gatherFunc; }
+    PyObject getFunc() { return gatherFunc; }
 }

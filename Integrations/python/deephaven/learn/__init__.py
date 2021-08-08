@@ -134,6 +134,7 @@ def _parseInput(inputs, table):
         else:
             if not all(isinstance(col, str) for col in inputs[0].colNames):
                 raise TypeError('Input column lists may only contain strings.')
+
             return new_inputs
 
     else:
@@ -145,6 +146,7 @@ def _parseInput(inputs, table):
             raise ValueError('Target input cannot be empty.')
 
         else:
+
             target = inputs[0].colNames
 
             if not isinstance(target[0], str):
@@ -216,14 +218,13 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
             raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
         batch_size = table.size()
 
-    # set output to be an empty output object if none
-    if outputs == None:
-        outputs = Output(None, None, None)
-
     computer = _Computer_(table, model_func, batch_size, *_toJavaIn(inputs, table))
-    scatterer = _Scatterer_(*[jOutput for pyOutput in outputs for jOutput in _toJavaOut(pyOutput)])
-
     QueryScope.addParam("computer", computer)
-    QueryScope.addParam("scatterer", scatterer)
 
-    return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("FutureOffset","Clean")
+    if not outputs == None:
+        scatterer = _Scatterer_(*[jOutput for pyOutput in outputs for jOutput in _toJavaOut(pyOutput)])
+        QueryScope.addParam("scatterer", scatterer)
+
+        return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("FutureOffset","Clean")
+
+    return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getFuture().get()").dropColumns("FutureOffset","Clean","Result")
