@@ -137,11 +137,6 @@ public class LongFloatReinterpretedBooleanColumnTupleSource extends AbstractTupl
     }
 
     @Override
-    public Class<LongFloatByteTuple> getNativeType() {
-        return LongFloatByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongFloatByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

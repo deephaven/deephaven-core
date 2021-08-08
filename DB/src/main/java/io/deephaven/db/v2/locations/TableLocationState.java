@@ -1,10 +1,9 @@
 package io.deephaven.db.v2.locations;
 
+import io.deephaven.db.v2.sources.regioned.RegionedColumnSource;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.DataOutput;
-import java.io.IOException;
 
 /**
  * Interface for the mutable fields of a table location.  Supports multi-value copy methods, so that applications
@@ -18,19 +17,30 @@ public interface TableLocationState {
     /**
      * @return The Object that accessors should synchronize on if they want to invoke multiple getters with consistent results.
      */
-    @NotNull Object getStateLock();
+    @NotNull
+    Object getStateLock();
+
+    /**
+     * @return The (possibly-empty) {@link ReadOnlyIndex index} of a table location, or {@code null} if index information
+     * is unknown or does not exist for this table location.
+     * @implNote This index must not have any key larger than
+     * {@link RegionedColumnSource#ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK the region mask}.
+     * @apiNote The returned index will be a "clone", meaning the caller must {@link ReadOnlyIndex#close()} it when
+     * finished.
+     */
+    ReadOnlyIndex getIndex();
 
     /**
      * @return The size of a table location:
-     *         <br>NULL_SIZE : Size information is unknown or does not exist for this table location
-     *         <br>     >= 0 : The table location exists and has (possibly empty) data
+     * <br>{@link #NULL_SIZE NULL_SIZE}: Size information is unknown or does not exist for this location
+     * <br>                {@code >= 0}: The table location exists and has (possibly empty) data
      */
     long getSize();
 
     /**
      * @return The last modified time for a table location, in milliseconds from the epoch:
-     *         <br>NULL_TIME : Modification time information is unknown or does not exist for this table location
-     *         <br>    >= 0L : The time this table was last modified, in milliseconds from the UTC epoch
+     * <br> {@link #NULL_TIME NULL_TIME}: Modification time information is unknown or does not exist for this location
+     * <br>                 {@code >= 0}: The time this table was last modified, in milliseconds from the UTC epoch
      */
     long getLastModifiedTimeMillis();
 
@@ -43,20 +53,7 @@ public interface TableLocationState {
     @FinalDefault
     default boolean copyStateValuesTo(@NotNull TableLocationStateHolder destinationHolder) {
         synchronized (getStateLock()) {
-            return destinationHolder.setValues(getSize(), getLastModifiedTimeMillis());
-        }
-    }
-
-    /**
-     * Write all state values from this to the supplied output.
-     *
-     * @param output The output for output
-     */
-    @FinalDefault
-    default void writeStateValuesTo(@NotNull DataOutput output) throws IOException {
-        synchronized (getStateLock()) {
-            output.writeLong(getSize());
-            output.writeLong(getLastModifiedTimeMillis());
+            return destinationHolder.setValues(getIndex(), getLastModifiedTimeMillis());
         }
     }
 }

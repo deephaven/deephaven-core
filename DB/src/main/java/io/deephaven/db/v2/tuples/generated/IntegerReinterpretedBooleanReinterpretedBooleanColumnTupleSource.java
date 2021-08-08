@@ -136,11 +136,6 @@ public class IntegerReinterpretedBooleanReinterpretedBooleanColumnTupleSource ex
     }
 
     @Override
-    public Class<IntByteByteTuple> getNativeType() {
-        return IntByteByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntByteByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

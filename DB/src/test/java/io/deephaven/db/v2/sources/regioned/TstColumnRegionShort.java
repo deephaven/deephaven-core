@@ -28,13 +28,13 @@ public class TstColumnRegionShort {
     static class Identity implements ColumnRegionShort<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
-        public short getShort(long elementIndex) {
-            return (short) elementIndex;
+        public long mask() {
+            return Long.MAX_VALUE;
         }
 
         @Override
-        public long length() {
-            throw new UnsupportedOperationException();
+        public short getShort(long elementIndex) {
+            return (short) elementIndex;
         }
 
         @Override
@@ -59,7 +59,7 @@ public class TstColumnRegionShort {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionShort.createNull();
+            SUT = ColumnRegionShort.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -83,7 +83,7 @@ public class TstColumnRegionShort {
                 oneOf(regionSupplier).get();
                 will(returnValue(new Identity()));
             }});
-            SUT = new DeferredColumnRegionShort<>(regionSupplier);
+            SUT = new DeferredColumnRegionShort<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

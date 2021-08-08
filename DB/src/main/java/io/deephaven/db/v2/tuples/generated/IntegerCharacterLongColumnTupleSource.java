@@ -136,11 +136,6 @@ public class IntegerCharacterLongColumnTupleSource extends AbstractTupleSource<I
     }
 
     @Override
-    public Class<IntCharLongTuple> getNativeType() {
-        return IntCharLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntCharLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

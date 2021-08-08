@@ -21,7 +21,7 @@ public class ToStringPage<ATTR extends Attributes.Any> implements ToPage<ATTR, S
                     : new ToPageWithDictionary<>(
                             String.class,
                             new Dictionary<>(
-                                    i -> dictionary.decodeToBinary(i).toStringUsingUTF8(),
+                                    dictionaryKey -> dictionary.decodeToBinary(dictionaryKey).toStringUsingUTF8(),
                                     dictionary.getMaxId() + 1),
                             INSTANCE::convertResult);
         }

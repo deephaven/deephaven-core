@@ -136,11 +136,6 @@ public class ShortDoubleByteColumnTupleSource extends AbstractTupleSource<ShortD
     }
 
     @Override
-    public Class<ShortDoubleByteTuple> getNativeType() {
-        return ShortDoubleByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortDoubleByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();

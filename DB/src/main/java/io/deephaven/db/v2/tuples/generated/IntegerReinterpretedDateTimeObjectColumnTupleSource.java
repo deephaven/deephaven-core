@@ -137,11 +137,6 @@ public class IntegerReinterpretedDateTimeObjectColumnTupleSource extends Abstrac
     }
 
     @Override
-    public Class<IntLongObjectTuple> getNativeType() {
-        return IntLongObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntLongObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

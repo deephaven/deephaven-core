@@ -136,11 +136,6 @@ public class BooleanShortLongColumnTupleSource extends AbstractTupleSource<ByteS
     }
 
     @Override
-    public Class<ByteShortLongTuple> getNativeType() {
-        return ByteShortLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteShortLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

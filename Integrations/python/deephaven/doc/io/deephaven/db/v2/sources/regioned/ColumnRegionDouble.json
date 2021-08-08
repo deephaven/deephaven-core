@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionDouble",
  "methods": {
-  "createNull": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:return: io.deephaven.db.v2.sources.regioned.ColumnRegionDouble.Null<ATTR>",
-  "getDouble": "Get a single double from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (double) index in the table's address space\n  :return: (double) The double value at the specified element (double) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A ColumnRegionFillContext to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (double) index in the table's address space\n  :return: (double) The double value at the specified element (double) index",
-  "getNativeType": ":return: java.lang.Class<?>"
+  "createNull": "Note: Java generics information - <ATTR extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param pageMask: long\n:return: io.deephaven.db.v2.sources.regioned.ColumnRegionDouble<ATTR>",
+  "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.db.v2.sources.chunk.ChunkType) The ChunkType",
+  "getDouble": "Get a single double from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (double) index in the table's address space\n  :return: (double) The double value at the specified element (double) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (double) index in the table's address space\n  :return: (double) The double value at the specified element (double) index"
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionDouble",
  "text": "Column region interface for regions that support fetching primitive doubles.",

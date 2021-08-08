@@ -9,6 +9,11 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.QueryTable;
+import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
+import io.deephaven.db.v2.parquet.metadata.CodecInfo;
+import io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo;
+import io.deephaven.db.v2.parquet.metadata.GroupingColumnInfo;
+import io.deephaven.db.v2.parquet.metadata.TableInfo;
 import io.deephaven.db.v2.select.FormulaColumn;
 import io.deephaven.db.v2.select.NullSelectColumn;
 import io.deephaven.db.v2.select.SelectColumn;
@@ -27,9 +32,9 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.parquet.ColumnWriter;
 import io.deephaven.parquet.ParquetFileWriter;
 import io.deephaven.parquet.RowGroupWriter;
-import io.deephaven.parquet.utils.LocalFSChannelProvider;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -41,6 +46,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -52,18 +60,15 @@ public class ParquetTableWriter {
 
     private static final int PAGE_SIZE = 1 << 20;
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
-    public static final String GROUPING = "grouping";
-    public static final String CODEC_NAME_PREFIX = "dh_codec_name:";
-    public static final String CODEC_ARGS_PREFIX = "dh_codec_args:";
-    public static final String CODEC_DATA_TYPE_PREFIX = "dh_codec_data_type:";
-    public static final String CODEC_COMPONENT_TYPE_PREFIX = "dh_codec_comp_type:";
-    public static final String SPECIAL_TYPE_NAME_PREFIX = "dh_special_type:";
-    public static final String STRING_SET_SPECIAL_TYPE = "StringSet";
-    public static final String DBARRAY_SPECIAL_TYPE = "Vector";
+
+    public static final String METADATA_KEY = "deephaven";
+
     private static final int LOCAL_CHUNK_SIZE = 1024;
+
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
+
     public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
     private static String minusParquetSuffix(final String s) {
@@ -151,7 +156,7 @@ public class ParquetTableWriter {
      * @param t                    The table to write
      * @param definition           Table definition
      * @param writeInstructions    Write instructions for customizations while writing
-     * @param path                 The destination path
+     * @param destPathName                 The destination path
      * @param incomingMeta         A map of metadata values to be stores in the file footer
      * @param groupingPathFactory
      * @param groupingColumns     List of columns the tables are grouped by (the write operation will store the grouping info)
@@ -162,26 +167,26 @@ public class ParquetTableWriter {
             final Table t,
             final TableDefinition definition,
             final ParquetInstructions writeInstructions,
-            final String path,
+            final String destPathName,
             final Map<String, String> incomingMeta,
             final Function<String, String> groupingPathFactory,
             final String... groupingColumns
     ) throws SchemaMappingException, IOException {
+        final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         ArrayList<String> cleanupPaths = null;
         try {
-            Map<String, String> tableMeta = Collections.emptyMap();
             if (groupingColumns.length > 0) {
                 cleanupPaths = new ArrayList<>(groupingColumns.length);
-                tableMeta = new HashMap<>(incomingMeta);
-                tableMeta.put(GROUPING, String.join(",", groupingColumns));
                 final Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
-                for (int i = 0; i < auxiliaryTables.length; i++) {
-                    final String groupingPath = groupingPathFactory.apply(groupingColumns[i]);
+                final Path destDirPath = Paths.get(destPathName).getParent();
+                for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
+                    final String groupingPath = groupingPathFactory.apply(groupingColumns[gci]);
                     cleanupPaths.add(groupingPath);
-                    write(auxiliaryTables[i], auxiliaryTables[i].getDefinition(), writeInstructions, groupingPath, Collections.emptyMap());
+                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci], destDirPath.relativize(Paths.get(groupingPath)).toString()));
+                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath, Collections.emptyMap());
                 }
             }
-            write(t, definition, writeInstructions, path, tableMeta);
+            write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
         }
         catch (Exception e) {
             if (cleanupPaths != null) {
@@ -212,6 +217,7 @@ public class ParquetTableWriter {
      * @param writeInstructions  Write instructions for customizations while writing
      * @param path               The destination path
      * @param tableMeta          A map of metadata values to be stores in the file footer
+     * @param tableInfoBuilder   A partially-constructed builder for the metadata object
      * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
      * @throws IOException            For file writing related errors
      */
@@ -220,11 +226,12 @@ public class ParquetTableWriter {
             final TableDefinition definition,
             final ParquetInstructions writeInstructions,
             final String path,
-            final Map<String, String> tableMeta
+            final Map<String, String> tableMeta,
+            final TableInfo.Builder tableInfoBuilder
     ) throws SchemaMappingException, IOException {
 
         final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, compressionCodecName);
+        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, tableInfoBuilder, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
         final long nrows = t.size();
@@ -276,33 +283,45 @@ public class ParquetTableWriter {
             final String path,
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
+            final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName
     ) throws IOException {
         final MappedSchema mappedSchema = MappedSchema.create(definition, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
-            Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column, writeInstructions);
+            final ColumnTypeInfo.Builder columnInfoBuilder = ColumnTypeInfo.builder()
+                    .columnName(writeInstructions.getParquetColumnNameFromColumnNameOrDefault(colName));
+            boolean usedColumnInfo = false;
+            final Pair<String, String> codecData = TypeInfos.getCodecAndArgs(column, writeInstructions);
             if (codecData != null) {
-                extraMetaData.put(CODEC_NAME_PREFIX + colName, codecData.getLeft());
-                final String codecArgs = codecData.getRight();
-                if (codecArgs != null) {
-                    extraMetaData.put(CODEC_ARGS_PREFIX + colName, codecArgs);
+                final CodecInfo.Builder codecInfoBuilder = CodecInfo.builder();
+                codecInfoBuilder.codecName(codecData.getLeft());
+                final String codecArg = codecData.getRight();
+                if (codecArg != null) {
+                    codecInfoBuilder.codecArg(codecArg);
                 }
-                extraMetaData.put(CODEC_DATA_TYPE_PREFIX + colName, column.getDataType().getName());
+                codecInfoBuilder.dataType(column.getDataType().getName());
                 final Class<?> componentType = column.getComponentType();
                 if (componentType != null) {
-                    extraMetaData.put(CODEC_COMPONENT_TYPE_PREFIX + colName, column.getComponentType().getName());
+                    codecInfoBuilder.componentType(componentType.getName());
                 }
+                columnInfoBuilder.codec(codecInfoBuilder.build());
+                usedColumnInfo = true;
             }
             if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX + colName, STRING_SET_SPECIAL_TYPE);
+                columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.StringSet);
+                usedColumnInfo = true;
+            } else if (DbArrayBase.class.isAssignableFrom(column.getDataType())) {
+                columnInfoBuilder.specialType(ColumnTypeInfo.SpecialType.Vector);
+                usedColumnInfo = true;
             }
-            if (DbArrayBase.class.isAssignableFrom(column.getDataType())) {
-                extraMetaData.put(SPECIAL_TYPE_NAME_PREFIX + colName, DBARRAY_SPECIAL_TYPE);
+            if (usedColumnInfo) {
+                tableInfoBuilder.addColumnTypes(columnInfoBuilder.build());
             }
         }
-        return new ParquetFileWriter(path, new LocalFSChannelProvider(), PAGE_SIZE,
+        extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
+        return new ParquetFileWriter(path, TrackedSeekableChannelsProvider.getInstance(), PAGE_SIZE,
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(), codecName, extraMetaData);
     }
 
@@ -396,81 +415,95 @@ public class ParquetTableWriter {
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
-        if (supportsDictionary(columnSource) && columnDefinition.hasSymbolTable()) {
-            List<IntBuffer> buffersPerPage = new ArrayList<>();
-            Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
-            Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
-            final Object[][] keys = {keyArrayBuilder.apply(INITIAL_DICTIONARY_SIZE)};
-            Map<Object, Integer> keyToPos = new HashMap<>();
-            final MutableInt keyCount = new MutableInt(0);
-            final MutableBoolean hasNulls = new MutableBoolean(false);
-            try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
-                 final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
-                for (int step = 0; step < stepsCount; step++) {
-                    OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
-                    ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
-                    IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
-                    for (int i = 0; i < chunk.size(); i++) {
-                        posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(i), o -> {
-                            if (o == null) {
-                                hasNulls.setValue(true);
-                                return Integer.MIN_VALUE;
-                            }
-                            if (keyCount.intValue() == keys[0].length) {
-                                keys[0] = Arrays.copyOf(keys[0], keys[0].length * 2);
-                            }
-                            keys[0][keyCount.intValue()] = toParquetPrimitive.apply(o);
-                            Integer result = keyCount.getValue();
-                            keyCount.increment();
-                            return result;
-                        }));
+        boolean usedDictionary = false;
+        if (supportsDictionary(columnSource.getType())) {
+            final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
+            final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
+            final class DictionarySizeExceededException extends RuntimeException {}
+            try {
+                final List<IntBuffer> buffersPerPage = new ArrayList<>();
+                final Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
+                final Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
+                final MutableObject<Object[]> keys = new MutableObject<>(keyArrayBuilder.apply(Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)));
+                final Map<Object, Integer> keyToPos = new HashMap<>();
+                final MutableInt keyCount = new MutableInt(0);
+                final MutableBoolean hasNulls = new MutableBoolean(false);
+                try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
+                     final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                    for (int step = 0; step < stepsCount; step++) {
+                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
+                        //noinspection unchecked
+                        final ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
+                        final IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
+                        for (int vi = 0; vi < chunk.size(); ++vi) {
+                            posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(vi), o -> {
+                                if (o == null) {
+                                    hasNulls.setValue(true);
+                                    return Integer.MIN_VALUE;
+                                }
+                                if (keyCount.intValue() == keys.getValue().length) {
+                                    if (keyCount.intValue() == maxKeys) {
+                                        throw new DictionarySizeExceededException();
+                                    }
+                                    keys.setValue(Arrays.copyOf(keys.getValue(), (int) Math.min(keyCount.intValue() * 2L, maxKeys)));
+                                }
+                                keys.getValue()[keyCount.intValue()] = toParquetPrimitive.apply(o);
+                                Integer result = keyCount.getValue();
+                                keyCount.increment();
+                                return result;
+                            }));
 
-                    }
-                    buffersPerPage.add(posInDictionary);
-                }
-            }
-            List<IntBuffer> repeatCount = null;
-            if (lengthSource != null) {
-                repeatCount = new ArrayList<>();
-                try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
-                     final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
-                    while (it.hasMore()) {
-                        OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
-                        IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
-                        IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
-                        chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
-                        newBuffer.limit(chunk.size());
-                        repeatCount.add(newBuffer);
+                        }
+                        buffersPerPage.add(posInDictionary);
                     }
                 }
-            }
-            columnWriter.addDictionaryPage(keys[0], keyCount.intValue());
-            Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();
-            for (IntBuffer intBuffer : buffersPerPage) {
-                intBuffer.flip();
+                List<IntBuffer> repeatCount = null;
                 if (lengthSource != null) {
-                    columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(), Integer.MIN_VALUE);
-                } else if (hasNulls.getValue()) {
-                    columnWriter.addPage(intBuffer, Integer.MIN_VALUE, intBuffer.remaining());
-                } else {
-                    columnWriter.addPageNoNulls(intBuffer, intBuffer.remaining());
+                    repeatCount = new ArrayList<>();
+                    try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
+                         final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
+                        while (it.hasMore()) {
+                            final OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
+                            final IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
+                            final IntBuffer newBuffer = IntBuffer.allocate(chunk.size());
+                            chunk.copyToTypedBuffer(0, newBuffer, 0, chunk.size());
+                            newBuffer.limit(chunk.size());
+                            repeatCount.add(newBuffer);
+                        }
+                    }
                 }
+                columnWriter.addDictionaryPage(keys.getValue(), keyCount.intValue());
+                final Iterator<IntBuffer> repeatCountIt = repeatCount == null ? null : repeatCount.iterator();
+                for (final IntBuffer intBuffer : buffersPerPage) {
+                    intBuffer.flip();
+                    if (lengthSource != null) {
+                        columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(), Integer.MIN_VALUE);
+                    } else if (hasNulls.getValue()) {
+                        columnWriter.addPage(intBuffer, Integer.MIN_VALUE, intBuffer.remaining());
+                    } else {
+                        columnWriter.addPageNoNulls(intBuffer, intBuffer.remaining());
+                    }
+                }
+                usedDictionary = true;
+            } catch (DictionarySizeExceededException ignored) {
             }
-        } else {
+        }
+        if (!usedDictionary) {
+            //noinspection unchecked
             try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
-                boolean supportNulls = supportNulls(columnType);
-                Object bufferToWrite = transferObject.getBuffer();
-                Object nullValue = getNullValue(columnType);
+                final boolean supportNulls = supportNulls(columnType);
+                final Object bufferToWrite = transferObject.getBuffer();
+                final Object nullValue = getNullValue(columnType);
                 try (final OrderedKeys.Iterator lengthIndexIt = lengthIndex != null ? lengthIndex.getOrderedKeysIterator() : null;
                      final ChunkSource.GetContext lengthSourceContext = lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
                      final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
-                    IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
-                    for (int step = 0; step < stepsCount; step++) {
-                        OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
+                    final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
+                    for (int step = 0; step < stepsCount; ++step) {
+                        final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
                         transferObject.fetchData(ok);
                         transferObject.propagateChunkData();
                         if (lengthIndexIt != null) {
-                            IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext, lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
+                            final IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext, lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
                             lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                             repeatCount.limit(lenChunk.size());
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), nullValue);
@@ -502,10 +535,9 @@ public class ParquetTableWriter {
         throw new UnsupportedOperationException("Dictionary storage not supported for " + type);
     }
 
-    private static boolean supportsDictionary(ColumnSource columnSource) {
-        return columnSource.getType() == String.class;
+    private static boolean supportsDictionary(Class<?> dataType) {
+        return dataType == String.class;
     }
-
 
     private static Object getNullValue(Class columnType) {
         if (columnType == Boolean.class) {

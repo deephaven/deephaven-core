@@ -66,8 +66,8 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
 
             return new ChunkSource<ATTR>() {
                 @Override
-                public Class<?> getNativeType() {
-                    return chunkSource.getNativeType();
+                public ChunkType getChunkType() {
+                    return chunkSource.getChunkType();
                 }
 
                 @Override

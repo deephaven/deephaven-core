@@ -6,10 +6,9 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * PageStores are a collection of non-overlapping pages, which provides a single
- * {@link ChunkSource} interface across all the pages.
+ * PageStores are a collection of non-overlapping pages, which provides a single {@link ChunkSource} interface across
+ * all the pages.
  */
-
 public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR, PAGE extends Page<INNER_ATTR>>
         extends PagingChunkSource<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
@@ -20,20 +19,20 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
     PAGE getPageContaining(FillContext fillContext, long row);
 
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
         if (orderedKeys.size() == 0) {
             return getChunkType().getEmptyChunk();
         }
 
-        long firstKey = orderedKeys.firstKey();
-        FillContext fillContext = DefaultGetContext.getFillContext(context);
-        PAGE page = getPageContaining(fillContext, firstKey);
-        long pageMaxRow = page.maxRow(firstKey);
+        final long firstKey = orderedKeys.firstKey();
+        final FillContext fillContext = DefaultGetContext.getFillContext(context);
+        final PAGE page = getPageContaining(fillContext, firstKey);
+        final long pageMaxRow = page.maxRow(firstKey);
 
         if (orderedKeys.lastKey() <= pageMaxRow) {
             return page.getChunk(context, orderedKeys);
         } else {
-            WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
+            final WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
             doFillChunkAppend(fillContext, destination, orderedKeys, page);
             return destination;
         }
@@ -41,16 +40,16 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
 
     @Override
     @NotNull
-    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey, long lastKey) {
-        FillContext fillContext = DefaultGetContext.getFillContext(context);
-        PAGE page = getPageContaining(fillContext, firstKey);
-        long pageMaxRow = page.maxRow(firstKey);
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey, final long lastKey) {
+        final FillContext fillContext = DefaultGetContext.getFillContext(context);
+        final PAGE page = getPageContaining(fillContext, firstKey);
+        final long pageMaxRow = page.maxRow(firstKey);
 
         if (lastKey <= pageMaxRow) {
             return page.getChunk(context, firstKey, lastKey);
         } else {
-            try (OrderedKeys orderedKeys = OrderedKeys.forRange(firstKey, lastKey)) {
-                WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
+            try (final OrderedKeys orderedKeys = OrderedKeys.forRange(firstKey, lastKey)) {
+                final WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
                 doFillChunkAppend(fillContext, destination, orderedKeys, page);
                 return destination;
             }
@@ -58,14 +57,15 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
     }
 
     @Override
-    default void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+    default void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
+                           @NotNull final OrderedKeys orderedKeys) {
         if (orderedKeys.size() == 0) {
             return;
         }
 
-        long firstKey = orderedKeys.firstKey();
-        PAGE page = getPageContaining(context, firstKey);
-        long pageMaxRow = page.maxRow(firstKey);
+        final long firstKey = orderedKeys.firstKey();
+        final PAGE page = getPageContaining(context, firstKey);
+        final long pageMaxRow = page.maxRow(firstKey);
 
         if (orderedKeys.lastKey() <= pageMaxRow) {
             page.fillChunk(context, destination, orderedKeys);
@@ -74,14 +74,14 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
         }
     }
 
-
     @Override
-    default void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys.Iterator orderedKeysIterator) {
+    default void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
+                                 @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
         long firstKey = orderedKeysIterator.peekNextKey();
-        long pageStoreMaxKey = maxRow(firstKey);
+        final long pageStoreMaxKey = maxRow(firstKey);
 
         do {
-            PAGE page = getPageContaining(context, firstKey);
+            final PAGE page = getPageContaining(context, firstKey);
             page.fillChunkAppend(context, destination, orderedKeysIterator);
         } while (orderedKeysIterator.hasMore() &&
                 (firstKey = orderedKeysIterator.peekNextKey()) <= pageStoreMaxKey);
@@ -94,9 +94,10 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
      */
     // Should be private
     @FinalDefault
-    default void doFillChunkAppend(final @NotNull FillContext context, final @NotNull WritableChunk<? super ATTR> destination, OrderedKeys orderedKeys, @NotNull Page<INNER_ATTR> page) {
+    default void doFillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
+                                   @NotNull final OrderedKeys orderedKeys, @NotNull final Page<INNER_ATTR> page) {
         destination.setSize(0);
-        try (OrderedKeys.Iterator orderedKeysIterator = orderedKeys.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator orderedKeysIterator = orderedKeys.getOrderedKeysIterator()) {
             page.fillChunkAppend(context, destination, orderedKeysIterator);
             fillChunkAppend(context, destination, orderedKeysIterator);
         }

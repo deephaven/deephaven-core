@@ -135,11 +135,6 @@ public class DoubleCharacterObjectColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    public Class<DoubleCharObjectTuple> getNativeType() {
-        return DoubleCharObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<DoubleCharObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();

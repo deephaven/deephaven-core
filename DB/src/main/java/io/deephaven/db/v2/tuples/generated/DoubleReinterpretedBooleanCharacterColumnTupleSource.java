@@ -137,11 +137,6 @@ public class DoubleReinterpretedBooleanCharacterColumnTupleSource extends Abstra
     }
 
     @Override
-    public Class<DoubleByteCharTuple> getNativeType() {
-        return DoubleByteCharTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<DoubleByteCharTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();

@@ -82,4 +82,9 @@ public class RowGroupReaderImpl implements RowGroupReader {
     public long numRows() {
         return rowGroup.num_rows;
     }
+
+    @Override
+    public RowGroup getRowGroup() {
+        return rowGroup;
+    }
 }

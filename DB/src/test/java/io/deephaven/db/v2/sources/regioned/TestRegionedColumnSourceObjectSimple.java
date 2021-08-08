@@ -4,7 +4,6 @@
 
 package io.deephaven.db.v2.sources.regioned;
 
-import io.deephaven.db.v2.sources.regioned.decoder.SimpleStringDecoder;
 import junit.framework.TestCase;
 
 import java.io.ByteArrayOutputStream;
@@ -45,7 +44,7 @@ public class TestRegionedColumnSourceObjectSimple extends TstRegionedColumnSourc
     public void setUp() throws Exception {
         super.setUp();
         //noinspection unchecked
-        SUT = new RegionedColumnSourceObject.AsValues<>(String.class, new SimpleStringDecoder(String.class));
+        SUT = new RegionedColumnSourceObject.AsValues<>(String.class);
         TestCase.assertEquals(String.class, SUT.getType());
     }
 

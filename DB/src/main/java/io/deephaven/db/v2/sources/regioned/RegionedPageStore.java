@@ -2,7 +2,6 @@ package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.SharedContext;
 import io.deephaven.db.v2.sources.chunk.page.Page;
@@ -10,29 +9,38 @@ import io.deephaven.db.v2.sources.chunk.page.PageStore;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
-
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
-        extends PageStore<ATTR, INNER_ATTR, REGION_TYPE>, LongSizedDataStructure {
-
-    long REGION_MASK = ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
-    long REGION_MASK_NUM_BITS = Helper.getNumBitsOfMask();
+        extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
     /**
-     * @return The total number of rows across all regions.
-     * @implNote We intentionally do not derive from Page and implement Page.length() because our index is not
-     * contiguous.
+     * @return The parameters object that describes this regioned page store
      */
-    default long size() {
-        long size = 0;
-        int regionCount = getRegionCount();
+    Parameters parameters();
 
-        for (int i = 0; i < regionCount; i++) {
-            REGION_TYPE region = getRegion(i);
-            size += region.length();
-        }
+    /**
+     * @inheritDoc Note that this represent this regioned page store's mask as a {@link Page}.
+     */
+    @Override
+    @FinalDefault
+    default long mask() {
+        return parameters().pageMask;
+    }
 
-        return size;
+    /**
+     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when
+     * calculating their address within a region
+     */
+    @FinalDefault
+    default long regionMask() {
+        return parameters().regionMask;
+    }
+
+    /**
+     * @return The number of bits masked by {@link #regionMask()}
+     */
+    @FinalDefault
+    default int regionMaskNumBits() {
+        return parameters().regionMaskNumBits;
     }
 
     /**
@@ -40,35 +48,9 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      *
      * @return The region index for an element index.
      */
-    static int getRegionIndex(final long elementIndex) {
-        return (int) (elementIndex >> REGION_MASK_NUM_BITS);
-    }
-
-    /**
-     * Get the first element index.
-     *
-     * @return the first element index for a region index.
-     */
-    static long getFirstElementIndex(final int regionIndex) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS;
-    }
-
-    /**
-     * Get the last element index.
-     *
-     * @return the last element index for a region index.
-     */
-    static long getLastElementIndex(final int regionIndex) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS | REGION_MASK;
-    }
-
-    /**
-     * Get the element index.
-     *
-     * @return the element index for a particular region offset of a region index.
-     */
-    static long getElementIndex(final int regionIndex, final long regionOffset) {
-        return (long) regionIndex << REGION_MASK_NUM_BITS | regionOffset;
+    @FinalDefault
+    default int getRegionIndex(final long elementIndex) {
+        return (int) ((mask() & elementIndex) >> regionMaskNumBits());
     }
 
     /**
@@ -84,7 +66,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      * @param regionIndex The region index
      * @return The region for the supplied region index
      */
-    REGION_TYPE getRegion(final int regionIndex);
+    REGION_TYPE getRegion(int regionIndex);
 
     /**
      * Perform region lookup for an element index.
@@ -104,22 +86,82 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
         return lookupRegion(row);
     }
 
-    @FinalDefault
-    default long mask() {
-        // This PageStore is a concatenation of regions which cover the entire positive address space of {@OrderKeys}.
-        return Long.MAX_VALUE;
-    }
-
     @Override
     default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new ColumnRegionFillContext();
+        return new RegionContextHolder();
     }
 
-    class Helper {
-        static long getNumBitsOfMask() {
-            final long numBits = MathUtil.ceilLog2(REGION_MASK);
-            Require.eq(REGION_MASK + 1, "MAX_REGION_SIZE", 1L << numBits, "1 << RIGHT_SHIFT");
-            return numBits;
+    /**
+     * Class to calculate and encapsulate the parameters of a RegionedPageStore.
+     */
+    final class Parameters {
+
+        public final long pageMask;
+        public final int maximumRegionCount;
+        public final long maximumRegionSize;
+        public final long regionMask;
+        public final int regionMaskNumBits;
+
+        public Parameters(final long pageMask, final int maximumRegionCount, final long maximumRegionSize) {
+            this.pageMask = validateMask(pageMask, "page");
+            this.maximumRegionCount = Require.geqZero(maximumRegionCount, "maximum region count");
+            this.maximumRegionSize = Require.geqZero(maximumRegionSize, "maximum region size");
+
+            final int regionNumBits = maximumRegionCount == 0 ? 0 : MathUtil.ceilLog2(maximumRegionCount);
+            regionMask = validateMask(pageMask >>> regionNumBits, "region");
+            regionMaskNumBits = MathUtil.ceilLog2(regionMask);
+            final long maxRegionSizeNumBits = maximumRegionSize == 0 ? 0 : MathUtil.ceilLog2(maximumRegionSize);
+            if (maxRegionSizeNumBits > regionMaskNumBits) {
+                throw new IllegalArgumentException(String.format(
+                        "Maximum region size %,d is too large to access with page mask %#016X and maximum region count %,d",
+                        maximumRegionSize, pageMask, maximumRegionCount));
+            }
+        }
+
+        private static long validateMask(final long mask, final String name) {
+            if (mask < 0 || (Long.SIZE - Long.numberOfLeadingZeros(mask)) != Long.bitCount(mask)) {
+                throw new IllegalArgumentException(String.format("Invalid %s mask %#016X", name, mask));
+            }
+            return mask;
+        }
+    }
+
+    /**
+     * A regioned page store for use when the full set of regions and their sizes are known.
+     */
+    abstract class Static<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
+            implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
+
+        private final Parameters parameters;
+        private final REGION_TYPE[] regions;
+
+        /**
+         * @param parameters Mask and shift parameters
+         * @param regions    Array of all regions in this page store. Array becomes property of the page store.
+         */
+        public Static(@NotNull final Parameters parameters,
+                      @NotNull final REGION_TYPE[] regions) {
+            this.parameters = parameters;
+            this.regions = Require.elementsNeqNull(regions, "regions");
+            Require.leq(regions.length, "regions.length", parameters.maximumRegionCount, "parameters.maximumRegionCount");
+            for (final REGION_TYPE region : regions) {
+                Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
+            }
+        }
+
+        @Override
+        public final Parameters parameters() {
+            return parameters;
+        }
+
+        @Override
+        public final int getRegionCount() {
+            return regions.length;
+        }
+
+        @Override
+        public final REGION_TYPE getRegion(final int regionIndex) {
+            return regions[regionIndex];
         }
     }
 }

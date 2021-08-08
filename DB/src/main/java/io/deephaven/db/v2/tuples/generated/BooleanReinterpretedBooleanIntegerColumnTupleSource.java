@@ -136,11 +136,6 @@ public class BooleanReinterpretedBooleanIntegerColumnTupleSource extends Abstrac
     }
 
     @Override
-    public Class<ByteByteIntTuple> getNativeType() {
-        return ByteByteIntTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteByteIntTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

@@ -13,7 +13,8 @@ import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 /**
  * Regioned column source implementation for columns of Booleans.
  */
-final class RegionedColumnSourceBoolean extends RegionedColumnSourceReferencing<Boolean, Attributes.Values, Byte, ColumnRegionByte<Attributes.Values>>
+final class RegionedColumnSourceBoolean
+        extends RegionedColumnSourceReferencing<Boolean, Attributes.Values, Byte, ColumnRegionByte<Attributes.Values>>
         implements ColumnSourceGetDefaults.ForBoolean {
 
     public RegionedColumnSourceBoolean() {
@@ -44,7 +45,9 @@ final class RegionedColumnSourceBoolean extends RegionedColumnSourceReferencing<
     static final class NullColumnRegionBooleanAsByte extends ColumnRegion.Null<Attributes.Values> implements ColumnRegionByte<Attributes.Values> {
         private static final NullColumnRegionBooleanAsByte INSTANCE = new NullColumnRegionBooleanAsByte();
 
-        private NullColumnRegionBooleanAsByte() {}
+        private NullColumnRegionBooleanAsByte() {
+            super(PARAMETERS.regionMask);
+        }
 
         @Override
         public byte getByte(long elementIndex) {

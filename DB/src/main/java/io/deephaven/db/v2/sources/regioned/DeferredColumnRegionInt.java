@@ -16,8 +16,8 @@ public class DeferredColumnRegionInt<ATTR extends Attributes.Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionInt<ATTR>>
         implements ColumnRegionInt<ATTR> {
 
-    DeferredColumnRegionInt(@NotNull Supplier<ColumnRegionInt<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionInt(final long pageMask, @NotNull Supplier<ColumnRegionInt<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

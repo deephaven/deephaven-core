@@ -132,7 +132,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
 
     public DeltaAwareColumnSource(Class<T> type) {
         super(type);
-        final SparseArrayColumnSource<T> sparseBaseline = SparseArrayColumnSource.getSparseMemoryColumnSource(type, null);
+        final SparseArrayColumnSource<T> sparseBaseline = SparseArrayColumnSource.getSparseMemoryColumnSource(getType(), null);
         baseline = sparseBaseline;
         delta = baseline;
 
@@ -143,7 +143,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
 
         deltaCapacity = 0;
         deltaRows = null;
-        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(type, baseline, delta));
+        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
         updateCommitter = null;
     }
 
@@ -557,7 +557,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
             throw new UnsupportedOperationException("Can't call startTrackingPrevValues() twice");
         }
         deltaCapacity = INITIAL_DELTA_CAPACITY;
-        final ArrayBackedColumnSource<T> delta = ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, type, null);
+        final ArrayBackedColumnSource<T> delta = ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, getType(), null);
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;
 
@@ -572,7 +572,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
          * twice during the lifetime of a given DeltaAwareColumnSource: once at construction and once at the time of
          * startTrackingPrevValues().
          */
-        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(type, baseline, delta));
+        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
         updateCommitter = new UpdateCommitter<>(this, DeltaAwareColumnSource::commitValues);
     }
 

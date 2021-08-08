@@ -137,11 +137,6 @@ public class DoubleDoubleReinterpretedDateTimeColumnTupleSource extends Abstract
     }
 
     @Override
-    public Class<DoubleDoubleLongTuple> getNativeType() {
-        return DoubleDoubleLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<DoubleDoubleLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();

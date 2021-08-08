@@ -137,11 +137,6 @@ public class ShortDoubleDateTimeColumnTupleSource extends AbstractTupleSource<Sh
     }
 
     @Override
-    public Class<ShortDoubleLongTuple> getNativeType() {
-        return ShortDoubleLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortDoubleLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();
