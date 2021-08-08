@@ -32,8 +32,8 @@ docker {
     images = [ "${project.property('grpc-api-docker.imageName')}" ]
     baseImage = project.property('grpc-api-docker.baseImage')
     maintainer = 'Devin Smith "devinsmith@deephaven.io"'
-    // ports = [ 8080 ]
-    ports = [ 8080, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
+    ports = [ 8080 ]
+    //ports = [ 8080, 5005 ]  // Add for debugging: change 5005 to match the port set below in the '-agentlib...' line.
     jvmArgs = [
         '-server',
         '-XX:+UseG1GC',

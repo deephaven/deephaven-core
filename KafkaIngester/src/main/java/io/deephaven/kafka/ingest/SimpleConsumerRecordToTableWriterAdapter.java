@@ -9,7 +9,6 @@ import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -23,11 +22,11 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
     private final int keyColumnIndex;
     private final int valueColumnIndex;
 
-    private final boolean keyIsObject;
-    private final boolean valueIsObject;
+    private final boolean keyIsSimpleObject;
+    private final boolean valueIsSimpleObject;
 
-    final ChunkUnboxer.UnboxerKernel keyUnboxer;
-    final ChunkUnboxer.UnboxerKernel valueUnboxer;
+    final KeyOrValueProcessor keyProcessor;
+    final KeyOrValueProcessor valueProcessor;
 
     private SimpleConsumerRecordToTableWriterAdapter(
             final StreamPublisherImpl publisher,
@@ -48,18 +47,18 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         final ChunkType keyChunkType = publisher.chunkType(keyColumnIndex);
         final ChunkType valueChunkType = publisher.chunkType(valueColumnIndex);
 
-        keyIsObject = keyChunkType == ChunkType.Object;
-        if (!keyIsObject) {
-            keyUnboxer = ChunkUnboxer.getEmptyUnboxer(keyChunkType);
+        keyIsSimpleObject = keyChunkType == ChunkType.Object;
+        if (!keyIsSimpleObject) {
+            keyProcessor = new SimpleKeyOrValueProcessor(keyColumnIndex, ChunkUnboxer.getEmptyUnboxer(keyChunkType));
         } else {
-            keyUnboxer = null;
+            keyProcessor = null;
         }
 
-        valueIsObject = valueChunkType == ChunkType.Object;
-        if (!valueIsObject) {
-            valueUnboxer = ChunkUnboxer.getEmptyUnboxer(valueChunkType);
+        valueIsSimpleObject = valueChunkType == ChunkType.Object;
+        if (!valueIsSimpleObject) {
+            valueProcessor = new SimpleKeyOrValueProcessor(valueColumnIndex, ChunkUnboxer.getEmptyUnboxer(valueChunkType));
         } else {
-            valueUnboxer = null;
+            valueProcessor = null;
         }
     }
 
@@ -102,7 +101,7 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
 
     @SuppressWarnings("unchecked")
     @Override
-    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {
+    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk [] chunks = publisher.getChunks();
         int remaining = chunks[0].capacity() - chunks[0].size();
 
@@ -111,13 +110,13 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         WritableObjectChunk<Object, Attributes.Values> keyChunk = null;
         WritableObjectChunk<Object, Attributes.Values> valueChunk;
 
-        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsObject && keyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
-            final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = !valueIsObject ? WritableObjectChunk.makeWritableChunk(chunkSize) : null) {
+        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsSimpleObject && keyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
+             final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = !valueIsSimpleObject ? WritableObjectChunk.makeWritableChunk(chunkSize) : null) {
 
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
-            } else if (keyIsObject) {
+            } else if (keyIsSimpleObject) {
                 keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
             }
             if (valueChunkCloseable != null) {
@@ -134,9 +133,9 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             for (ConsumerRecord<?, ?> record : records) {
                 if (--remaining == 0) {
                     if (keyChunk != null) {
-                        flushKeyChunk(keyChunk, chunks[keyColumnIndex]);
+                        flushKeyChunk(keyChunk, chunks);
                     }
-                    flushValueChunk(valueChunk, chunks[valueColumnIndex]);
+                    flushValueChunk(valueChunk, chunks);
 
                     publisher.flush();
 
@@ -159,10 +158,10 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
                     } else {
                         timestampChunk = null;
                     }
-                    if (keyIsObject) {
+                    if (keyIsSimpleObject) {
                         keyChunk = chunks[keyColumnIndex].asWritableObjectChunk();
                     }
-                    if (valueIsObject) {
+                    if (valueIsSimpleObject) {
                         valueChunk = chunks[valueColumnIndex].asWritableObjectChunk();
                     }
                 }
@@ -189,29 +188,54 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
                 valueChunk.add(record.value());
             }
             if (keyChunk != null) {
-                flushKeyChunk(keyChunk, chunks[keyColumnIndex]);
+                flushKeyChunk(keyChunk, chunks);
             }
-            flushValueChunk(valueChunk, chunks[valueColumnIndex]);
+            flushValueChunk(valueChunk, chunks);
         }
     }
 
-    void flushKeyChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> publisherChunk) {
-        if (keyIsObject) {
-            return;
-        }
-        final int existingSize = publisherChunk.size();
-        publisherChunk.setSize(existingSize + objectChunk.size());
-        keyUnboxer.unboxTo(objectChunk, publisherChunk, 0, existingSize);
-        objectChunk.setSize(0);
+    interface KeyOrValueProcessor {
+        /**
+         * After consuming a set of generic records for a batch that are not raw objects, we pass the keys or values to
+         * an appropriate handler.  The handler must know it's data types and offsets within the publisher chunks, and
+         * "copy" the data from the inputChunk to the appropriate chunks for the stream publisher.
+         *
+         * @param inputChunk      the chunk containing the keys or values as Kafka deserialized them from the consumer record
+         * @param publisherChunks the output chunks for this table that must be appended to.
+         */
+        void handleChunk(WritableObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> [] publisherChunks);
     }
 
-    void flushValueChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> publisherChunk) {
-        if (valueIsObject) {
+    static class SimpleKeyOrValueProcessor implements KeyOrValueProcessor {
+        final int offset;
+        final ChunkUnboxer.UnboxerKernel unboxer;
+
+        SimpleKeyOrValueProcessor(int offset, ChunkUnboxer.UnboxerKernel unboxer) {
+            this.offset = offset;
+            this.unboxer = unboxer;
+        }
+
+        @Override
+        public void handleChunk(WritableObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
+            final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[offset];
+            final int existingSize = publisherChunk.size();
+            publisherChunk.setSize(existingSize + inputChunk.size());
+            unboxer.unboxTo(inputChunk, publisherChunk, 0, existingSize);
+            inputChunk.setSize(0);
+        }
+    }
+
+    void flushKeyChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
+        if (keyIsSimpleObject) {
             return;
         }
-        final int existingSize = publisherChunk.size();
-        publisherChunk.setSize(existingSize + objectChunk.size());
-        valueUnboxer.unboxTo(objectChunk, publisherChunk, 0, existingSize);
-        objectChunk.setSize(0);
+        keyProcessor.handleChunk(objectChunk, publisherChunks);
+    }
+
+    void flushValueChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
+        if (valueIsSimpleObject) {
+            return;
+        }
+        valueProcessor.handleChunk(objectChunk, publisherChunks);
     }
 }
