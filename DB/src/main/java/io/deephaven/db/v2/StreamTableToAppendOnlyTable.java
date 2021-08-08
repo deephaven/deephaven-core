@@ -7,16 +7,26 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.ChunkUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
-import io.deephaven.db.v2.utils.OrderedKeys;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Converts a Stream Table to an in-memory append only table.
+ *
+ * Note, this table will grow without bound as new stream values are encountered.
+ */
 public class StreamTableToAppendOnlyTable {
+    /**
+     * Convert a Stream Table to an in-memory append only table.
+     *
+     * @param streamTable the input stream table
+     * @return an append-only in-memory table representing all data encountered in the stream
+     */
     public static Table streamToAppendOnlyTable(Table streamTable) {
         return QueryPerformanceRecorder.withNugget("streamToAppendOnlyTable", () -> {
             Object streamAttribute = streamTable.getAttribute(Table.STREAM_TABLE_ATTRIBUTE);
-            if (streamAttribute == null || !(streamAttribute instanceof Boolean) || !(Boolean)streamAttribute) {
+            if (!(streamAttribute instanceof Boolean) || !(Boolean) streamAttribute) {
                 throw new IllegalArgumentException("Input is not a stream table!");
             }
 
@@ -54,9 +64,7 @@ public class StreamTableToAppendOnlyTable {
 
                     final Index newRange = Index.FACTORY.getIndexByRange(currentSize, currentSize + newRows - 1);
 
-                    for (int cc = 0; cc < columnCount; ++cc) {
-                        ChunkUtils.copyData(sourceColumns[cc], upstream.added, destColumns[cc], newRange, false);
-                    }
+                    ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
                     index.insertRange(currentSize, currentSize + newRows - 1);
 
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
