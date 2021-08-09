@@ -14,8 +14,6 @@ public class TableSnapshot implements Serializable {
 
     private SnapshotType snapshotType;
 
-    private long deltaSequence;
-
     private ColumnData[] dataColumns;
     private RangeSet includedRows;
 
@@ -35,18 +33,6 @@ public class TableSnapshot implements Serializable {
 
     public SnapshotType getSnapshotType() {
         return snapshotType;
-    }
-
-    public void setSnapshotType(SnapshotType snapshotType) {
-        this.snapshotType = snapshotType;
-    }
-
-    public long getDeltaSequence() {
-        return deltaSequence;
-    }
-
-    public void setDeltaSequence(long deltaSequence) {
-        this.deltaSequence = deltaSequence;
     }
 
     public ColumnData[] getDataColumns() {

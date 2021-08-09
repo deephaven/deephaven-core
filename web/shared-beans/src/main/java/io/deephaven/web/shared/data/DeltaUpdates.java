@@ -36,15 +36,13 @@ public class DeltaUpdates implements Serializable {
     public static class ColumnModifications implements Serializable {
         private int columnIndex;
         private RangeSet rowsIncluded;
-        private RangeSet rowsModified;
         public ColumnData values;
 
         public ColumnModifications() {
         }
 
-        public ColumnModifications(int columnIndex, RangeSet modifiedRows, RangeSet includedModifications, ColumnData columnData) {
+        public ColumnModifications(int columnIndex, RangeSet includedModifications, ColumnData columnData) {
             setColumnIndex(columnIndex);
-            setRowsModified(modifiedRows);
             setRowsIncluded(includedModifications);
             setValues(columnData);
         }
@@ -63,14 +61,6 @@ public class DeltaUpdates implements Serializable {
 
         public void setRowsIncluded(final RangeSet rowsIncluded) {
             this.rowsIncluded = rowsIncluded;
-        }
-
-        public RangeSet getRowsModified() {
-            return rowsModified;
-        }
-
-        public void setRowsModified(final RangeSet rowsModified) {
-            this.rowsModified = rowsModified;
         }
 
         public ColumnData getValues() {
