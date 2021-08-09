@@ -1,9 +1,12 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
+
+import io.deephaven.base.verify.Require;
 
 /**
  * Input specifies how to gather data from a table into a Python object.
@@ -21,6 +24,11 @@ public class Input {
      */
     public Input(String colName, PyObject gatherFunc) {
 
+        Require.neqNull(colName, "colName");
+        Require.neqNull(gatherFunc, "gatherFunc");
+
+        NameValidator.validateColumnName(colName);
+
         this.colNames = new String[] {colName};
         this.gatherCaller = new PythonFunctionCaller(gatherFunc);
     }
@@ -32,6 +40,9 @@ public class Input {
      * @param gatherFunc    function that gathers data into a Python object.
      */
     public Input(String[] colNames, PyObject gatherFunc) {
+
+        Require.neqNull(colNames, "colNames");
+        Require.neqNull(gatherFunc, "gatherFunc");
 
         this.colNames = colNames;
         this.gatherCaller = new PythonFunctionCaller(gatherFunc);

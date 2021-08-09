@@ -1,5 +1,6 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.base.verify.Require;
 import org.jpy.PyObject;
 
 /**
@@ -17,6 +18,11 @@ public class FutureOffset {
      * @param offset    location in the calculated result.
      */
     public FutureOffset(Future future, int offset) {
+
+        Require.neqNull(future, "future");
+        Require.neqNull(offset, "offset");
+
+        Require.geqZero(offset, "offset");
 
         this.future = future;
         this.offset = offset;

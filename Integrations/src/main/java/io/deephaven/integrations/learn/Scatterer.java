@@ -1,5 +1,6 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import org.jpy.PyObject;
 
@@ -17,7 +18,12 @@ public class Scatterer {
      *
      * @param outputs array of Outputs that determine how data will be scattered back to the table.
      */
-    public Scatterer(Output[] outputs) { this.outputs = outputs; }
+    public Scatterer(Output[] outputs) {
+
+        Require.neqNull(outputs, "outputs");
+
+        this.outputs = outputs;
+    }
 
     /**
      * Applies the scatter function of a particular output to the result of the deferred calculation.

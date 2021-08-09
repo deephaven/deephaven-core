@@ -1,5 +1,6 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
 import org.jpy.PyObject;
@@ -25,9 +26,12 @@ public class Computer {
      */
     public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
 
-        if (modelFunc == null) {
-            throw new IllegalArgumentException("Model function cannot be null.");
-        }
+        Require.neqNull(table, "table");
+        Require.neqNull(modelFunc, "modelFunc");
+        Require.neqNull(inputs, "inputs");
+        Require.neqNull(batchSize, "batchSize");
+
+        Require.gtZero(batchSize, "batchSize");
 
         if (batchSize <= 0) {
             throw new IllegalArgumentException("Max size must be a strictly positive integer.");
