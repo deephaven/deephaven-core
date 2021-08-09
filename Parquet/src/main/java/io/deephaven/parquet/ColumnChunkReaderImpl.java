@@ -148,15 +148,15 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         file.position(dictionaryPageOffset);
         InputStream inputStream = Channels.newInputStream(file);
         PageHeader pageHeader = Util.readPageHeader(inputStream);
-        DictionaryPageHeader dicHeader = pageHeader.getDictionary_page_header();
+        DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
 
         BytesInput payload = BytesInput.from(readFully(file, pageHeader.compressed_page_size));
         if (decompressor != null) {
             payload = decompressor.get().decompress(payload, pageHeader.uncompressed_page_size);
         }
 
-        DictionaryPage dictionaryPage = new DictionaryPage(payload, dicHeader.getNum_values(),
-                Encoding.valueOf(dicHeader.getEncoding().name()));
+        DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(),
+                Encoding.valueOf(dictHeader.getEncoding().name()));
 
         return dictionaryPage.getEncoding().initDictionary(path, dictionaryPage);
     }
@@ -190,11 +190,17 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 throw new RuntimeException("No next element");
             }
             try {
+                final long headerOffset = currentOffset;
                 file.position(currentOffset);
-                PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(file));
+                final PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(file));
                 currentOffset = file.position() + pageHeader.getCompressed_page_size();
-                remainingValues -= pageHeader.isSetData_page_header() ? pageHeader.getData_page_header().num_values :
-                        pageHeader.getData_page_header_v2().getNum_values();
+                if (!pageHeader.isSetData_page_header() && !pageHeader.isSetData_page_header_v2()) {
+                    throw new IllegalStateException("Expected data page, but neither v1 nor v2 data page header is set in file "
+                            + file + " at offset " + headerOffset);
+                }
+                remainingValues -= pageHeader.isSetData_page_header()
+                        ? pageHeader.getData_page_header().num_values
+                        : pageHeader.getData_page_header_v2().getNum_values();
                 final org.apache.parquet.format.Encoding encoding;
                 switch (pageHeader.type) {
                     case DATA_PAGE:

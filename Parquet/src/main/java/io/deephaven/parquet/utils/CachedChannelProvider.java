@@ -173,6 +173,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         }
 
         @Override
+        public String toString() {
+            return pathKey;
+        }
+
+        @Override
         public boolean isOpen() {
             return isOpen;
         }

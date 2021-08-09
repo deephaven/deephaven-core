@@ -86,11 +86,16 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
 
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(metadataFileMetadata, inputInstructions);
+        final Pair<List<ColumnDefinition>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(
+                metadataFileReader.getSchema(),
+                metadataFileMetadata.getFileMetaData().getKeyValueMetaData(),
+                inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
+            final ParquetFileReader commonMetadataFileReader = ParquetTools.getParquetFileReader(commonMetadataFile);
             final Pair<List<ColumnDefinition>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
-                    convertMetadata(commonMetadataFile, ParquetTools.getParquetFileReader(commonMetadataFile), converter),
+                    commonMetadataFileReader.getSchema(),
+                    convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData().getKeyValueMetaData(),
                     leafSchemaInfo.getSecond());
             final List<ColumnDefinition> adjustedColumnDefinitions = new ArrayList<>();
             final Map<String, ColumnDefinition> leafDefinitionsMap = leafSchemaInfo.getFirst().stream().collect(toMap(ColumnDefinition::getName, Function.identity()));

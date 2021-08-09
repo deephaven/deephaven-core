@@ -230,7 +230,6 @@ public class ParquetFileReader {
                 LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
                 LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType() && getLogicalTypeAnnotation(schemaElement.logicalType) != null ? getLogicalTypeAnnotation(schemaElement.logicalType) : null;
                 if (!originalType.equals(newOriginalType)) {
-
                     ((org.apache.parquet.schema.Types.Builder)childBuilder).as(originalType);
                 }
             }
