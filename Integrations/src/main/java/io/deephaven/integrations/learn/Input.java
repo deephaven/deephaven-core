@@ -39,7 +39,8 @@ public class Input {
         return colSet;
     }
 
-    /** Getter method for gatherFunc.
+    /**
+     * Get the gather function.
      *
      * @return the gather function.
      */
