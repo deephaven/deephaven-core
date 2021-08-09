@@ -137,12 +137,28 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
-        for (ColumnDescriptor column : schema.getColumns()) {
+        final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
+        for (final ColumnDescriptor column : schema.getColumns()) {
+            if (column.getMaxRepetitionLevel() > 1) {
+                // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
+                throw new UnsupportedOperationException("Unsupported maximum repetition level "
+                        + column.getMaxRepetitionLevel() + " in column " + String.join("/", column.getPath()));
+            }
+
             colDef.reset();
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
             final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
+
             final String parquetColumnName = column.getPath()[0];
+            parquetColumnNameToFirstPath.compute(parquetColumnName, (final String pcn, final String[] oldPath) -> {
+                if (oldPath != null) {
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
+                    throw new UnsupportedOperationException("Encountered unsupported multi-column field "
+                            + parquetColumnName + ": found columns " + String.join("/", oldPath) + " and " + String.join("/", column.getPath()));
+                }
+                return column.getPath();
+            });
             final String colName;
             final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
             if (mappedName != null) {
