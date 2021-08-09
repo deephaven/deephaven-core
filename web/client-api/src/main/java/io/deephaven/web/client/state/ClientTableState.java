@@ -1011,9 +1011,9 @@ public final class ClientTableState extends TableConfig {
             cols[i].setName(f.name().asString());
             cols[i].setColumnIndex(i);
             cols[i].setType(fieldMetadata.get("deephaven:type"));
-            cols[i].setStyleColumn(fieldMetadata.get("deephaven:isStyle").equals("true"));
-            cols[i].setFormatColumn(fieldMetadata.get("deephaven:isDateFormat").equals("true") || fieldMetadata.get("deephaven:isNumberFormat").equals("true"));
-            cols[i].setForRow(fieldMetadata.get("deephaven:isRowStyle").equals("true"));
+            cols[i].setStyleColumn("true".equals(fieldMetadata.get("deephaven:isStyle")));
+            cols[i].setFormatColumn("true".equals(fieldMetadata.get("deephaven:isDateFormat")) || "true".equals(fieldMetadata.get("deephaven:isNumberFormat")));
+            cols[i].setForRow("true".equals(fieldMetadata.get("deephaven:isRowStyle")));
 
             String formatColumnName = fieldMetadata.get("deephaven:dateFormatColumn");
             if (formatColumnName == null) {

@@ -182,6 +182,8 @@ public class BarrageUtils {
                 includedAdditions = deltaUpdates.getAdded();
             }
             deltaUpdates.setIncludedAdditions(includedAdditions);
+            deltaUpdates.setSerializedAdditions(new DeltaUpdates.ColumnAdditions[0]);
+            deltaUpdates.setSerializedModifications(new DeltaUpdates.ColumnModifications[0]);
         }
 
         /**

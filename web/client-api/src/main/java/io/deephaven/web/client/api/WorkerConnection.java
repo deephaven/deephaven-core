@@ -709,7 +709,9 @@ public class WorkerConnection {
             doPutResponseStream.onEnd(status -> {
                 if (status.getCode() == Code.OK) {
                     ExportedTableCreationResponse syntheticResponse = new ExportedTableCreationResponse();
-                    syntheticResponse.setSchemaHeader(schemaMessagePayload);
+                    Uint8Array schemaPlusHeader = new Uint8Array(schemaMessagePayload.length + 8);
+                    schemaPlusHeader.set(schemaMessagePayload, 8);
+                    syntheticResponse.setSchemaHeader(schemaPlusHeader);
                     syntheticResponse.setSize(data[0].length + "");
                     syntheticResponse.setIsStatic(true);
                     syntheticResponse.setSuccess(true);
