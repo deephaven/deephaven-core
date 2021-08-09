@@ -37,6 +37,16 @@ public class FilterHasRaw implements Filter.Visitor {
     }
 
     @Override
+    public void visit(FilterOr ors) {
+        hasRaw = ors.filters().stream().anyMatch(FilterHasRaw::of);
+    }
+
+    @Override
+    public void visit(FilterAnd ands) {
+        hasRaw = ands.filters().stream().anyMatch(FilterHasRaw::of);
+    }
+
+    @Override
     public void visit(RawString rawString) {
         hasRaw = true;
     }

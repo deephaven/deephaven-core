@@ -3,13 +3,16 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
 import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A set of static helpers to turn strongly-typed api arguments into their {@link String}
@@ -57,6 +60,16 @@ public class Strings {
 
     public static String of(FilterIsNotNull isNotNull) {
         return String.format("!isNull(%s)", of(isNotNull.column()));
+    }
+
+    public static String of(FilterOr filterOr) {
+        return filterOr.filters().stream().map(Strings::of)
+            .collect(Collectors.joining(") || (", "(", ")"));
+    }
+
+    public static String of(FilterAnd filterAnd) {
+        return filterAnd.filters().stream().map(Strings::of)
+            .collect(Collectors.joining(") && (", "(", ")"));
     }
 
     public static String of(Pair pair) {
@@ -142,6 +155,16 @@ public class Strings {
         @Override
         public void visit(FilterNot not) {
             out = of(not);
+        }
+
+        @Override
+        public void visit(FilterOr ors) {
+            out = of(ors);
+        }
+
+        @Override
+        public void visit(FilterAnd ands) {
+            out = of(ands);
         }
 
         @Override
