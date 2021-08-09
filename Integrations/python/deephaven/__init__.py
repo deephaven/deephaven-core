@@ -82,10 +82,6 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
     convertToJavaHashMap, getJavaClassObject
 
 
-class QueryScope(object):
-    pass
-
-
 from . import Calendars as cals, \
     ComboAggregateFactory as caf, \
     DBTimeUtils as dbtu, \

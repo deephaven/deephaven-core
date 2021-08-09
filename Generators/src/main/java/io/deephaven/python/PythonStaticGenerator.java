@@ -23,7 +23,6 @@ public class PythonStaticGenerator {
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
             "io.deephaven.db.tables.utils.TableTools,display",
-//            "io.deephaven.db.tables.select.QueryScope,addObjectFields",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimDateTimeQuiet",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuiet",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFast",
