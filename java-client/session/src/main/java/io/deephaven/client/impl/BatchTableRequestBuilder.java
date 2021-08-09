@@ -34,12 +34,15 @@ import io.deephaven.api.agg.Var;
 import io.deephaven.api.agg.WAvg;
 import io.deephaven.api.agg.WSum;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
 import io.deephaven.api.filter.FilterCondition.Operator;
 import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
+import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
@@ -61,6 +64,7 @@ import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
+import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -705,6 +709,24 @@ class BatchTableRequestBuilder {
         public void visit(FilterNot not) {
             out = Condition.newBuilder()
                 .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+        }
+
+        @Override
+        public void visit(FilterOr ors) {
+            OrCondition.Builder builder = OrCondition.newBuilder();
+            for (Filter filter : ors) {
+                builder.addFilters(of(filter));
+            }
+            out = Condition.newBuilder().setOr(builder.build()).build();
+        }
+
+        @Override
+        public void visit(FilterAnd ands) {
+            AndCondition.Builder builder = AndCondition.newBuilder();
+            for (Filter filter : ands) {
+                builder.addFilters(of(filter));
+            }
+            out = Condition.newBuilder().setAnd(builder.build()).build();
         }
 
         @Override
