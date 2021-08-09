@@ -7,7 +7,8 @@ require("BrowserFlight_pb")
 var sessionService = require("deephaven/proto/session_pb_service");
 var tableService = require("deephaven/proto/table_pb_service");
 var consoleService = require("deephaven/proto/console_pb_service");
-var flightService = require("BrowserFlight_pb_service");
+var browserFlightService = require("BrowserFlight_pb_service");
+var flightService = require("Flight_pb_service");
 
 var browserHeaders = require("browser-headers");
 
@@ -41,9 +42,10 @@ var arrow = { flight: {
         Schema_generated: schema,
     },
     protocol: {
-            flight_pb: proto.arrow.flight.protocol,
-            browserFlight_pb: proto.arrow.flight.protocol,
-            browserFlight_pb_service: flightService
+            Flight_pb: proto.arrow.flight.protocol,
+            Flight_pb_service: flightService,
+            BrowserFlight_pb: proto.arrow.flight.protocol,
+            BrowserFlight_pb_service: browserFlightService
     }
 }};
 var dhinternal = {
