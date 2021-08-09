@@ -112,8 +112,10 @@ public class StreamFirstByChunkedOperator extends StreamFirstOrLastByChunkedOper
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
                                  @NotNull final ReadOnlyIndex newDestinations) {
-        Assert.assertion(downstream.modified.empty() && downstream.removed.empty() && downstream.shifted.empty(),
-                "downstream.modified.empty() && downstream.removed.empty() && downstream.shifted.empty()");
+        // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
+        //     result set.
+        Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
+                "downstream.removed.empty() && downstream.shifted.empty()");
         copyStreamToResult(downstream.added);
         redirections = null;
         if (downstream.added.nonempty()) {
