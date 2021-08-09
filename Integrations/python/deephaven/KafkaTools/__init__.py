@@ -116,16 +116,21 @@ def _commonKafkaArgs(args):
 
 
 @_passThrough
-def _custom_consumeToTable(*args):
+def consumeToTable(*args, **kwargs):
     r = _commonKafkaArgs(args)
-    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
-
-
-@_passThrough
-def genericAvroConsumeToTableOnlyValues(*args):
-    r = _commonKafkaArgs(args[0:4])
+    if 'key_avro_schema' in kwargs:
+        key_avro_schema = kwargs['key_avro_schema']
+    else:
+        key_avro_schema = None
+    if 'value_avro_schema' in kwargs:
+        value_avro_schema = kwargs['value_avro_schema']
+    else:
+        value_avro_schema = None
+    if (key_avro_schema == None and value_avro_schema == None):
+        return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
     mapping = getattr(_java_type_, 'DIRECT_MAPPING')
-    return _java_type_.genericAvroConsumeToTable(r[0], r[1], r[2], r[3], None, None, args[4], mapping)
+    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3], key_avro_schema, mapping, value_avro_schema, mapping)
+
 
 # Define all of our functionality, if currently possible
 try:
@@ -152,43 +157,7 @@ def avroSchemaToColumnDefinitions(*args):
       :return: io.deephaven.db.tables.ColumnDefinition<?>[]
     """
     
-    return _custom_avroSchemaToColumnDefinitions(*args)
-
-
-@_passThrough
-def consumeToTable(*args):
-    """
-    Consume a number of partitions from a single, simple type key and single type value Kafka topic to a single table,
-     with table partitions matching Kafka partitions.
-    
-     The types of key and value are either specified in the properties as "key.type" and "value.type",
-     or deduced from the serializer classes for key and value in the provided Properties object.
-     The names for the key and value columns can be provided in the properties as "key.column.name" and "value.column.name",
-     and otherwise default to "key" and "value".
-     object for the Kafka Consumer initialization; if the Properties object provided does not contain
-     keys for key deserializer or value deserializer, they are assumed to be of String type and the corresponding
-     property for the respective deserializer are added.
-    
-    *Overload 1*  
-      :param consumerProperties: (java.util.Properties) - Properties to configure this table and also to be passed to create the KafkaConsumer.
-      :param topic: (java.lang.String) - Kafka topic name.
-      :param partitionFilter: (java.util.function.IntPredicate) - A predicate returning true for the partitions to consume.
-      :param partitionToInitialOffset: (java.util.function.IntToLongFunction) - A function specifying the desired initial offset for each partition consumed.
-      :return: (io.deephaven.db.tables.Table) The resulting live table.
-      
-    *Overload 2*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :param partitionFilter: java.util.function.IntPredicate
-      :return: io.deephaven.db.tables.Table
-      
-    *Overload 3*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :return: io.deephaven.db.tables.Table
-    """
-    
-    return _custom_consumeToTable(*args)
+    return _java_type_.avroSchemaToColumnDefinitions(*args)
 
 
 @_passThrough

@@ -1,4 +1,6 @@
 #
+# Test driver to produce kafka messages using single type serializers for key and value.
+#
 # To run this script, you need confluent-kafka libraries installed.
 # To create a dedicated venv for it, you can do:
 #

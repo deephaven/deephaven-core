@@ -114,16 +114,21 @@ def _commonKafkaArgs(args):
 
 
 @_passThrough
-def _custom_consumeToTable(*args):
+def consumeToTable(*args, **kwargs):
     r = _commonKafkaArgs(args)
-    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
-
-
-@_passThrough
-def genericAvroConsumeToTableOnlyValues(*args):
-    r = _commonKafkaArgs(args[0:4])
+    if 'key_avro_schema' in kwargs:
+        key_avro_schema = kwargs['key_avro_schema']
+    else:
+        key_avro_schema = None
+    if 'value_avro_schema' in kwargs:
+        value_avro_schema = kwargs['value_avro_schema']
+    else:
+        value_avro_schema = None
+    if (key_avro_schema == None and value_avro_schema == None):
+        return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
     mapping = getattr(_java_type_, 'DIRECT_MAPPING')
-    return _java_type_.genericAvroConsumeToTable(r[0], r[1], r[2], r[3], None, None, args[4], mapping)
+    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3], key_avro_schema, mapping, value_avro_schema, mapping)
+
 
 # Define all of our functionality, if currently possible
 try:
