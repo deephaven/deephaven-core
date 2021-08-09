@@ -26,6 +26,8 @@ import java.util.Set;
 
 final class ExportStates {
 
+    private static final Logger log = LoggerFactory.getLogger(ExportStates.class);
+
     private final SessionServiceStub sessionStub;
     private final TableServiceStub tableStub;
 
@@ -69,6 +71,7 @@ final class ExportStates {
         if (!newSpecs.isEmpty()) {
             final BatchTableRequest request =
                 BatchTableRequestBuilder.build(this::lookupTicket, newSpecs);
+            log.debug("Sending batch: {}", request);
             tableStub.batch(request, new BatchHandler(newStates));
         }
 
