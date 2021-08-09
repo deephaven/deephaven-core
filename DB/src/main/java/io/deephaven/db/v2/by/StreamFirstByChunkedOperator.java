@@ -30,15 +30,55 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
 
     private static final int COPY_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
+    /**
+     * The number of result columns. This is the size of {@link #resultColumns} and the length of {@link #inputColumns}
+     * and {@link #outputColumns}.
+     */
     private final int numResultColumns;
-    private final ColumnSource<?>[] inputColumns;
-    private final WritableSource<?>[] outputColumns;
 
+    /**
+     * Result columns, parallel to {@link #inputColumns} and {@link #outputColumns}.
+     */
     private final Map<String, ArrayBackedColumnSource<?>> resultColumns;
 
-    private long previousTableSize;
+    /**
+     * <p>Input columns, parallel to {@link #outputColumns} and {@link #resultColumns}.
+     * <p>These are the source columns from the upstream table, reinterpreted to primitives where applicable.
+     */
+    private final ColumnSource<?>[] inputColumns;
+
+    /**
+     * <p>Output columns, parallel to {@link #inputColumns} and {@link #resultColumns}.
+     * <p>These are the result columns, reinterpreted to primitives where applicable.
+     */
+    private final WritableSource<?>[] outputColumns;
+
+    /**
+     * Cached pointer to the most-recently allocated {@link #redirections}.
+     */
     private SoftReference<LongArraySource> cachedRedirections;
+
+    /**
+     * Map from destination slot to first key. Only used during a step to keep track of the appropriate rows to copy into
+     * the output columns.
+     */
     private LongArraySource redirections;
+
+    /**
+     * <p>The next destination slot that we expect to be used.
+     * <p>Any destination less than this one can safely be ignored while processing adds since the first row can never
+     * change once a destination has been created given that we ignore removes.
+     */
+    private long nextDestination;
+
+    /**
+     * <p>The first destination that we used on the current step (if we used any). At the very beginning of a step, this
+     * is equivalent to {@link #nextDestination} and also the result table's size.
+     * <p>We use this as an offset shift for {@code redirections}, so that {@code redirections} only needs to hold first
+     * source keys for newly-added destinations, rather than the entire space.
+     * <p>At the end of a step, this is updated to prepare for the next step.
+     */
+    private long firstDestinationThisStep;
 
     StreamFirstByChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
         numResultColumns = resultPairs.length;
@@ -60,7 +100,7 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public void ensureCapacity(final long tableSize) {
-        redirections.ensureCapacity(tableSize - previousTableSize);
+        redirections.ensureCapacity(tableSize - firstDestinationThisStep);
     }
 
     @Override
@@ -101,8 +141,9 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            redirections.set(destination - previousTableSize, inputIndices.get(startPosition));
-            stateModified.set(ii, true);
+            if (maybeAssignFirst(destination, inputIndices.get(startPosition))) {
+                stateModified.set(ii, true);
+            }
         }
     }
 
@@ -115,8 +156,7 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
         if (chunkSize == 0) {
             return false;
         }
-        redirections.set(destination - previousTableSize, inputIndices.get(0));
-        return true;
+        return maybeAssignFirst(destination, inputIndices.get(0));
     }
 
     @Override
@@ -126,7 +166,20 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
         if (index.isEmpty()) {
             return false;
         }
-        redirections.set(destination - previousTableSize, index.firstKey());
+        return maybeAssignFirst(destination, index.firstKey());
+    }
+
+    private boolean maybeAssignFirst(final long destination, final long sourceIndexKey) {
+        if (destination < nextDestination) {
+            // Skip anything that's not new, it cannot change the first key
+            return false;
+        }
+        if (destination == nextDestination) {
+            redirections.set(nextDestination++ - firstDestinationThisStep, sourceIndexKey);
+        } else {
+            //noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted("Destination " + destination + " greater than next destination " + nextDestination);
+        }
         return true;
     }
 
@@ -134,7 +187,8 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
         copyStreamToResult(resultTable.getIndex());
         redirections = null;
-        previousTableSize = resultTable.size();
+        Assert.eq(resultTable.size(), "resultTable.size()", nextDestination, "nextDestination");
+        firstDestinationThisStep = nextDestination;
     }
 
     @Override
@@ -144,7 +198,10 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
                 "downstream.modified.empty() && downstream.removed.empty() && downstream.shifted.empty()");
         copyStreamToResult(downstream.added);
         redirections = null;
-        previousTableSize = downstream.added.lastKey() + 1;
+        if (downstream.added.nonempty()) {
+            Assert.eq(downstream.added.lastKey() + 1, "downstream.added.lastKey() + 1", nextDestination, "nextDestination");
+            firstDestinationThisStep = nextDestination;
+        }
     }
 
     /**
@@ -178,7 +235,7 @@ public class StreamFirstByChunkedOperator implements IterativeChunkedAggregation
 
             while (destinationsIterator.hasMore()) {
                 final OrderedKeys sliceDestinations = destinationsIterator.getNextOrderedKeysWithLength(COPY_CHUNK_SIZE);
-                shiftedSliceDestinations.reset(sliceDestinations, -previousTableSize);
+                shiftedSliceDestinations.reset(sliceDestinations, -firstDestinationThisStep);
                 final LongChunk<OrderedKeyIndices> sourceIndices = Chunk.<Values, OrderedKeyIndices>downcast(redirections.getChunk(redirectionsContext, shiftedSliceDestinations)).asLongChunk();
 
                 try (final OrderedKeys sliceSources = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(sourceIndices)) {
