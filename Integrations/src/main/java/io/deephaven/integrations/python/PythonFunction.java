@@ -65,17 +65,6 @@ public class PythonFunction<T> implements Function<T, Object> {
         }
     }
 
-    /**
-     * Calls the function defined in pyCallable with the given args
-     *
-     * @param args arguments to pass to the Python function
-     * @return the result of the function call
-     */
-    public PyObject pyObjectApply(Object ... args) {
-        PyObject out = pyCallable.call("__call__", args);
-        return out;
-    }
-
     @Override
     public Object apply(T t) {
         PyObject out = pyCallable.call("__call__", t);

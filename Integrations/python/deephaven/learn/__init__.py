@@ -76,128 +76,25 @@ def _passThrough(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+@_passThrough
 class Input:
     """
     Provides an interface for getting data from Deephaven tables to Python objects that popular deep learning libraries
     know how to use. Avoids many inefficencies of Python and allows for seamless integration of Deephaven's real-time
     capabilities with modern AI frameworks.
     """
-    def __init__(self, colNames, func):
-        self.colNames = colNames
-        self.func = func
+    def __init__(self, colNames, gatherFunc):
+        self.input = _Input_(colNames, gatherFunc)
 
 
+@_passThrough
 class Output:
     """
     Provides an interface for getting data from Python objects like Tensorflow Tensors into Deephaven tables. Enables
     simple but powerful user-configurability via the scatter function, and works with Deephaven's native real-time capabilities.
     """
-    def __init__(self, colNames, func, type):
-        self.colNames = colNames
-        self.func = func
-        self.type = type
-
-
-def _parseInput(inputs, table):
-    """
-    Converts the list of user inputs into a new list of inputs with the following rules:
-
-        inputs = [Input([], gather)]
-        will be transformed into a list containing a new Input object, with every column in the table as an element in
-        Input.columns. This allows users to not have to type all column names to use all features.
-
-        inputs = [Input(["target"], gather), Input([], gather)]
-        will be transformed into a list containing two Input objects; the first will be unchanged and represent the
-        target variable, the second will be transformed to an Input object containing all column names in the dataset
-        except for the target. This allows users to not have to type all column names to use all features.
-
-        If inputs is of length 2 or greater, we assume that the first Input object is the target variable and insist
-        that it be non-empty.
-
-    :param inputs: the list of Input objects that gets passed to eval()
-    :param table: the Deephaven table that gets passed to eval()
-    """
-    new_inputs = inputs
-
-    if len(inputs) == 0:
-        raise ValueError('The input list cannot have length 0.')
-
-    elif len(inputs) == 1:
-
-        if not isinstance(inputs[0], Input):
-            raise TypeError('Please use the Input class provided with learn to pass input.')
-
-        if len(inputs[0].colNames) == 0:
-            new_inputs[0].colNames = list(table.getMeta().getColumn("Name").getDirect())
-            return new_inputs
-
-        else:
-            if not all(isinstance(col, str) for col in inputs[0].colNames):
-                raise TypeError('Input column lists may only contain strings.')
-
-            return new_inputs
-
-    else:
-
-        if not all(isinstance(input, Input) for input in inputs):
-            raise TypeError('Please use the Input class provided with learn to pass input.')
-
-        if len(inputs[0].colNames) == 0:
-            raise ValueError('Target input cannot be empty.')
-
-        else:
-
-            target = inputs[0].colNames
-
-            if not isinstance(target[0], str):
-                raise TypeError('Target must be a string.')
-
-            for i in range(1,len(inputs)):
-
-                if len(inputs[i].colNames) == 0:
-                    new_inputs[i].colNames = list(table.dropColumns(target).getMeta().getColumn("Name").getDirect())
-
-                else:
-                    if target[0] in inputs[i].colNames:
-                        raise ValueError('Target column cannot be present in any other input.')
-
-                    if not all(isinstance(col, str) for col in inputs[i].colNames):
-                        raise TypeError('Input column lists may only contain strings.')
-
-                    pass
-
-            return new_inputs
-
-
-@_passThrough
-def _toJavaIn(inputs, table):
-    """
-    Converts a list of Python Input objects, each with possibly multiple entries, to a list of Java Input objects.
-
-    :param output: the list of Python Input objects to be converted to Java Input objects
-    """
-    inputs = _parseInput(inputs, table)
-    newInputs = []
-    # for every input object, convert to Java Input object and append
-    for input in inputs:
-        newInputs.append(_Input_(input.colNames, input.func))
-
-    return newInputs
-
-
-@_passThrough
-def _toJavaOut(output):
-    """
-    Converts a Python Output object with multiple columns to a list of Java Output objects with singular columns.
-
-    :param output: the Python Output object to be converted to a series of Java Output objects
-    """
-    newOutputs = []
-    # for every column given, pull it out and create an output object with the same scatter function, data type
-    for column in output.colNames:
-        newOutputs.append(_Output_(column, output.func, output.type))
-
-    return newOutputs
+    def __init__(self, colName, scatterFunc, type):
+        self.output = _Output_(colName, scatterFunc, type)
 
 
 @_passThrough
@@ -212,19 +109,19 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     :param inputs: the list of Input objects that determine which columns get extracted from the Deephaven table
     :param outputs: the list of Output objects that determine how to store output from model_func into the Deephaven table
     """
-    # set batch to be number of rows in whole table if batch size is not provided
+
     if batch_size == None:
         if table.isLive():
             raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
         batch_size = table.size()
 
-    computer = _Computer_(table, model_func, batch_size, *_toJavaIn(inputs, table))
+    computer = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
     QueryScope.addParam("computer", computer)
 
     if not outputs == None:
-        scatterer = _Scatterer_(*[jOutput for pyOutput in outputs for jOutput in _toJavaOut(pyOutput)])
+        scatterer = _Scatterer_([output.output for output in outputs])
         QueryScope.addParam("scatterer", scatterer)
 
         return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("FutureOffset","Clean")
 
-    return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getFuture().get()").dropColumns("FutureOffset","Clean","Result")
+    return table.update(["FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getFutureGet()"]).dropColumns("FutureOffset","Clean","Result")

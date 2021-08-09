@@ -4,7 +4,7 @@ import java.util.NoSuchElementException;
 import java.util.PrimitiveIterator;
 
 /**
- * Stores indices from a table and provides an iterator over those indices.
+ * IndexSet stores indices from a table and provides an iterator over those indices.
  */
 class IndexSet implements Iterable<Long> {
 
@@ -71,9 +71,9 @@ class IndexSet implements Iterable<Long> {
         };
     }
 
-    /** Getter method for current.
+    /** Gets the number of elements in the index set.
      *
-     * @return current size of this index set.
+     * @return number of elements in the index set.
      */
     public int getSize() { return current + 1; }
 }

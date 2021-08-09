@@ -1,5 +1,6 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
 /**
@@ -8,7 +9,7 @@ import org.jpy.PyObject;
 public class Output {
 
     private final String colName;
-    private final PyObject scatterFunc;
+    private final PythonFunctionCaller scatterCaller;
     private final String type;
 
     /**
@@ -21,25 +22,25 @@ public class Output {
     public Output(String colName, PyObject scatterFunc, String type) {
 
         this.colName = colName;
-        this.scatterFunc = scatterFunc;
+        this.scatterCaller = new PythonFunctionCaller(scatterFunc);
         this.type = type;
     }
 
     /**
-     * Getter method for colName.
+     * Gets the output column name.
      *
-     * @return column name for this output.
+     * @return the output column name.
      */
     public String getColName() { return colName; }
 
-    /** Getter method for scatterFunc.
+    /** Gets the scatter function caller.
      *
-     * @return the scatter function.
+     * @return the scatter function caller.
      */
-    public PyObject getFunc() { return scatterFunc; }
+    public PythonFunctionCaller getScatterCaller() { return scatterCaller; }
 
     /**
-     * Getter method for type
+     * Gets the type of the output column.
      *
      * @return the output column datatype.
      */

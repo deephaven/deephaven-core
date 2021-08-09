@@ -2,6 +2,7 @@ package io.deephaven.integrations.learn;
 
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
 /**
@@ -10,7 +11,19 @@ import org.jpy.PyObject;
 public class Input {
 
     private final String[] colNames;
-    private final PyObject gatherFunc;
+    private final PythonFunctionCaller gatherCaller;
+
+    /**
+     * Creates a new Input.
+     *
+     * @param colName       column name to be used as input.
+     * @param gatherFunc    function that gathers data into a Python object.
+     */
+    public Input(String colName, PyObject gatherFunc) {
+
+        this.colNames = new String[] {colName};
+        this.gatherCaller = new PythonFunctionCaller(gatherFunc);
+    }
 
     /**
      * Creates a new Input.
@@ -21,8 +34,7 @@ public class Input {
     public Input(String[] colNames, PyObject gatherFunc) {
 
         this.colNames = colNames;
-        this.gatherFunc = gatherFunc;
-
+        this.gatherCaller = new PythonFunctionCaller(gatherFunc);
     }
 
     /** Creates an array of column sources specified by this table and given column names.
@@ -32,6 +44,7 @@ public class Input {
     ColumnSource<?>[] createColumnSource(Table table) {
 
         ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
+
         for (int i = 0 ; i < colNames.length ; i++) {
             colSet[i] = table.getColumnSource(colNames[i]);
         }
@@ -40,9 +53,9 @@ public class Input {
     }
 
     /**
-     * Get the gather function.
+     * Gets the caller for the given gather function.
      *
-     * @return the gather function.
+     * @return caller for the gather function.
      */
-    PyObject getFunc() { return gatherFunc; }
+    PythonFunctionCaller getGatherCaller() { return gatherCaller; }
 }

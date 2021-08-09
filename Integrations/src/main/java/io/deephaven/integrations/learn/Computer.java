@@ -5,7 +5,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import org.jpy.PyObject;
 
 /**
- * Passes indices to Future for deferred calculation.
+ * Computer adds new updated/modified row indices to the index set, to be used in the deferred calculation.
  */
 public class Computer {
 
@@ -19,11 +19,11 @@ public class Computer {
     /**
      * Creates a new Computer.
      *
-     * @param modelFunc     function to use for AI training / prediction on the given inputs.
+     * @param modelFunc     python function to call on the given inputs from a table.
      * @param inputs        inputs to the model function.
-     * @param batchSize     maximum number of rows for deferred computation.
+     * @param batchSize     maximum number of rows for each deferred computation.
      */
-    public Computer(Table table, PyObject modelFunc, int batchSize, Input ... inputs) {
+    public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
 
         if (modelFunc == null) {
             throw new IllegalArgumentException("Model function cannot be null.");
@@ -42,6 +42,7 @@ public class Computer {
         this.inputs = inputs;
 
         this.colSet = new ColumnSource[this.inputs.length][];
+
         for (int i = 0 ; i < this.inputs.length ; i++) {
             this.colSet[i] = inputs[i].createColumnSource(table);
         }
@@ -51,7 +52,7 @@ public class Computer {
     }
 
     /**
-     * Resets the current future to clear memory for the next one.
+     * Resets the current future after each set of calculations.
      *
      * @return always false, because functions used in query strings cannot return nothing.
      */
@@ -62,10 +63,10 @@ public class Computer {
     }
 
     /**
-     * Adds new row indices to the calculation.
+     * Adds new row indices to be used in the deferred calculation.
      *
-     * @param k     index to be added to this Future's index set.
-     * @return      future offset that combines this future with the relevant row index to access result.
+     * @param k     index to be added to the current index set.
+     * @return      future offset that combines a future with the relevant row index to access result.
      */
     public FutureOffset compute(long k) {
 

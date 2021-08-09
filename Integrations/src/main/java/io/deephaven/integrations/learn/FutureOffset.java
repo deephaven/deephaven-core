@@ -1,5 +1,7 @@
 package io.deephaven.integrations.learn;
 
+import org.jpy.PyObject;
+
 /**
  * FutureOffset pairs a deferred calculation with an offset, an index that indicates the location in the calculated result.
  */
@@ -21,15 +23,15 @@ public class FutureOffset {
     }
 
     /**
-     * Getter method for offset.
+     * Gets the offset.
      *
      * @return the offset, indicating where in the calculated result to find the result for a given row index.
      */
     public int getOffset() { return offset; }
 
-    /** Getter method for future.
+    /** Gets the result of the deferred calculation.
      *
-     * @return the current future.
+     * @return the result of deferred calculation.
      */
-    public Future getFuture() { return future; }
+    public PyObject getFutureGet() { return future.get(); }
 }
