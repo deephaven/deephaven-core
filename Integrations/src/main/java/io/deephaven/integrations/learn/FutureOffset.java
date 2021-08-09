@@ -1,7 +1,7 @@
 package io.deephaven.integrations.learn;
 
 /**
- * FutureOffset pairs a Future with an offset, an index which indicates location the calculated result.
+ * FutureOffset pairs a deferred calculation with an offset, an index that indicates the location in the calculated result.
  */
 public class FutureOffset {
 
