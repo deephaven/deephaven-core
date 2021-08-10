@@ -7,6 +7,7 @@ import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.sort.permute.PermuteKernel;
 import io.deephaven.db.v2.sort.timsort.LongIntTimsortKernel;
+import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.WritableChunkSink;
 import io.deephaven.db.v2.sources.WritableSource;
 import io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths;
@@ -20,6 +21,8 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 
 /**
  * A lastBy aggregation operator for stream tables.
@@ -61,6 +64,11 @@ public class StreamLastByChunkedOperator extends StreamFirstOrLastByChunkedOpera
             redirections.set(destination, inputIndices.get(startPosition + runLength - 1));
             stateModified.set(ii, true);
         }
+    }
+
+    @Override
+    public final void startTrackingPrevValues() {
+        Arrays.stream(outputColumns).forEach(ColumnSource::startTrackingPrevValues);
     }
 
     @Override

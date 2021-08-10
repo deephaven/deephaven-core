@@ -9,7 +9,6 @@ import io.deephaven.db.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -72,11 +71,6 @@ public abstract class StreamFirstOrLastByChunkedOperator implements IterativeChu
     @Override
     public final Map<String, ? extends ColumnSource<?>> getResultColumns() {
         return resultColumns;
-    }
-
-    @Override
-    public final void startTrackingPrevValues() {
-        Arrays.stream(outputColumns).forEach(ColumnSource::startTrackingPrevValues);
     }
 
     @Override

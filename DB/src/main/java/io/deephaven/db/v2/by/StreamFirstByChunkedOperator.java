@@ -44,6 +44,12 @@ public class StreamFirstByChunkedOperator extends StreamFirstOrLastByChunkedOper
     }
 
     @Override
+    public final void startTrackingPrevValues() {
+        // We never change the value at any key in outputColumns since there are no removes; consequently there's no
+        // need to enable previous value tracking.
+    }
+
+    @Override
     public void ensureCapacity(final long tableSize) {
         redirections.ensureCapacity(tableSize - firstDestinationThisStep);
     }
