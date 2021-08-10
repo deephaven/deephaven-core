@@ -1,12 +1,16 @@
+#
+#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+#
+
 import unittest
 import warnings, os
 
-from deephaven import Session
+from pydeephaven import Session
 from tests.gen_test_data import make_random_csv
 
 
 class BaseTestCase(unittest.TestCase):
-    csv_file = 'test_csv_file'
+    csv_file = 'test.csv'
 
     @classmethod
     def setUpClass(cls) -> None:
