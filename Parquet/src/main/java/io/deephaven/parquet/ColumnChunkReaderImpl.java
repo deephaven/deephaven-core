@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static io.deephaven.parquet.utils.Helpers.readFully;
+import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
+import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
 public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
@@ -52,7 +54,6 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.fieldTypes = fieldTypes;
     }
 
-
     @Override
     public int getPageFixedSize() {
         return -1;
@@ -75,10 +76,9 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public ColumnPageReaderIterator getPageIterator() throws IOException {
-
-        SeekableByteChannel readChannel = channelsProvider.getReadChannel(getPath());
-        long dataPageOffset = columnChunk.meta_data.getData_page_offset();
-        Dictionary dictionary = getDictionary(readChannel);
+        final SeekableByteChannel readChannel = channelsProvider.getReadChannel(getPath());
+        final long dataPageOffset = columnChunk.meta_data.getData_page_offset();
+        final Dictionary dictionary = getDictionary(readChannel);
         if (offsetIndex == null) {
             return new ColumnPageReaderIteratorImpl(readChannel,
                     dataPageOffset, columnChunk.getMeta_data().getNum_values(), path,
@@ -111,8 +111,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 continue;
             }
             // This is a data page
-            if (encodingStat.encoding != org.apache.parquet.format.Encoding.PLAIN_DICTIONARY
-                    && encodingStat.encoding != org.apache.parquet.format.Encoding.RLE_DICTIONARY) {
+            if (encodingStat.encoding != PLAIN_DICTIONARY
+                    && encodingStat.encoding != RLE_DICTIONARY) {
                 return false;
             }
         }
@@ -134,10 +134,19 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         if (dictionary != null) {
             return dictionary;
         }
-        dictionary = columnChunk.getMeta_data().isSetDictionary_page_offset() ? readDictionary(readChannel, columnChunk.getMeta_data().getDictionary_page_offset()) : null;
-        return dictionary;
+        final long dictionaryPageOffset;
+        final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
+        if (chunkMeta.isSetDictionary_page_offset()) {
+            dictionaryPageOffset = chunkMeta.getDictionary_page_offset();
+        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream().anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY || pes.getEncoding() == RLE_DICTIONARY)))
+                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream().anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
+            // Fallback, inspired by https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+            dictionaryPageOffset = chunkMeta.getData_page_offset();
+        } else {
+            return null;
+        }
+        return dictionary = readDictionary(readChannel, dictionaryPageOffset);
     }
-
 
     @Override
     public PrimitiveType getType() {
@@ -146,17 +155,21 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private Dictionary readDictionary(SeekableByteChannel file, long dictionaryPageOffset) throws IOException {
         file.position(dictionaryPageOffset);
-        InputStream inputStream = Channels.newInputStream(file);
-        PageHeader pageHeader = Util.readPageHeader(inputStream);
-        DictionaryPageHeader dicHeader = pageHeader.getDictionary_page_header();
+        final InputStream inputStream = Channels.newInputStream(file);
+        final PageHeader pageHeader = Util.readPageHeader(inputStream);
+        if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
+            // In case our fallback in getDictionary was too optimistic...
+            return null;
+        }
+        final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
 
         BytesInput payload = BytesInput.from(readFully(file, pageHeader.compressed_page_size));
         if (decompressor != null) {
             payload = decompressor.get().decompress(payload, pageHeader.uncompressed_page_size);
         }
 
-        DictionaryPage dictionaryPage = new DictionaryPage(payload, dicHeader.getNum_values(),
-                Encoding.valueOf(dicHeader.getEncoding().name()));
+        final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(),
+                Encoding.valueOf(dictHeader.getEncoding().name()));
 
         return dictionaryPage.getEncoding().initDictionary(path, dictionaryPage);
     }
@@ -190,11 +203,21 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                 throw new RuntimeException("No next element");
             }
             try {
+                final long headerOffset = currentOffset;
                 file.position(currentOffset);
-                PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(file));
+                final PageHeader pageHeader = Util.readPageHeader(Channels.newInputStream(file));
                 currentOffset = file.position() + pageHeader.getCompressed_page_size();
-                remainingValues -= pageHeader.isSetData_page_header() ? pageHeader.getData_page_header().num_values :
-                        pageHeader.getData_page_header_v2().getNum_values();
+                if (pageHeader.isSetDictionary_page_header()) {
+                    // Dictionary page; skip it
+                    return next();
+                }
+                if (!pageHeader.isSetData_page_header() && !pageHeader.isSetData_page_header_v2()) {
+                    throw new IllegalStateException("Expected data page, but neither v1 nor v2 data page header is set in file "
+                            + file + " at offset " + headerOffset);
+                }
+                remainingValues -= pageHeader.isSetData_page_header()
+                        ? pageHeader.getData_page_header().getNum_values()
+                        : pageHeader.getData_page_header_v2().getNum_values();
                 final org.apache.parquet.format.Encoding encoding;
                 switch (pageHeader.type) {
                     case DATA_PAGE:
@@ -207,8 +230,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                         throw new UncheckedDeephavenException("Unknown parquet data page header type " + pageHeader.type);
                 }
                 final Dictionary pageDictionary =
-                        (encoding == org.apache.parquet.format.Encoding.PLAIN_DICTIONARY
-                                || encoding == org.apache.parquet.format.Encoding.RLE_DICTIONARY)
+                        (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
                         ? dictionary
                         : null
                         ;

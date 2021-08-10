@@ -88,7 +88,7 @@ public class ParquetSchemaReader {
     ) throws IOException {
         final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReader(new File(filePath));
         final ParquetMetadata parquetMetadata = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
-        return readParquetSchema(parquetMetadata, readInstructions, consumer, legalizeColumnNameFunc);
+        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(), readInstructions, consumer, legalizeColumnNameFunc);
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {
@@ -106,7 +106,9 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param parquetMetadata  Parquet metadata object
+     * @param schema           Parquet schema.
+     *                         DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE {@link ParquetFileReader}!
+     * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
      *                         Note a new read instructions based on this one may be returned by this method to provide necessary
      *                         transformations, eg, replacing unsupported characters like ' ' (space) in column names.
@@ -115,16 +117,15 @@ public class ParquetSchemaReader {
      * transformations added.
      */
     public static ParquetInstructions readParquetSchema(
-            @NotNull final ParquetMetadata parquetMetadata,
+            @NotNull final MessageType schema,
+            @NotNull final Map<String, String> keyValueMetadata,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
     ) {
-        final MessageType schema = parquetMetadata.getFileMetaData().getSchema();
-        final Map<String, String> keyValueMetaData = parquetMetadata.getFileMetaData().getKeyValueMetaData();
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
-        final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetaData);
+        final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetadata);
         final Set<String> groupingColumnNames = tableInfo.map(TableInfo::groupingColumnNames).orElse(Collections.emptySet());
         final Map<String, ColumnTypeInfo> nonDefaultTypeColumns = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(nonDefaultTypeColumns, errorString, currentColumn);

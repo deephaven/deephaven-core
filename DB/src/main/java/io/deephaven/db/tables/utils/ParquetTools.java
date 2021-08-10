@@ -36,10 +36,12 @@ import io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.ParquetFileReader;
+import io.deephaven.parquet.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.utils.CachedChannelProvider;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -375,7 +377,10 @@ public class ParquetTools {
         if (sourceAttr.isRegularFile()) {
             if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
                 final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
-                final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(tableLocationKey.getMetadata(), instructions);
+                final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+                        tableLocationKey.getFileReader().getSchema(),
+                        tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                        instructions);
                 return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(), new TableDefinition(schemaInfo.getFirst()));
             }
             if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
@@ -483,7 +488,10 @@ public class ParquetTools {
         }
         // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple parquet files
         final ParquetTableLocationKey firstKey = foundKeys.get(0);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(firstKey.getMetadata(), readInstructions);
+        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+                firstKey.getFileReader().getSchema(),
+                firstKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                readInstructions);
         final List<ColumnDefinition> allColumns = new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
         for (final String partitionKey : firstKey.getPartitionKeys()) {
             final Comparable<?> partitionValue = firstKey.getPartitionValue(partitionKey);
@@ -597,7 +605,10 @@ public class ParquetTools {
     public static Table readParquetSchemaAndTable(
             @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn, MutableObject<ParquetInstructions> instructionsOut) {
         final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
-        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(tableLocationKey.getMetadata(), readInstructionsIn);
+        final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
+                tableLocationKey.getFileReader().getSchema(),
+                tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                readInstructionsIn);
         final TableDefinition def = new TableDefinition(schemaInfo.getFirst());
         if (instructionsOut != null) {
             instructionsOut.setValue(schemaInfo.getSecond());
@@ -608,18 +619,22 @@ public class ParquetTools {
     /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
-     * @param parquetMetadata    The {@link ParquetMetadata} to convert
+     * @param schema             Parquet schema.
+     *                           DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE {@link ParquetFileReader}!
+     * @param keyValueMetadata   Parquet key-value metadata map
      * @param readInstructionsIn Input conversion {@link ParquetInstructions}
      * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}
      */
     public static Pair<List<ColumnDefinition>, ParquetInstructions> convertSchema(
-            @NotNull final ParquetMetadata parquetMetadata,
+            @NotNull final MessageType schema,
+            @NotNull final Map<String, String> keyValueMetadata,
             @NotNull final ParquetInstructions readInstructionsIn) {
         // noinspection rawtypes
         final ArrayList<ColumnDefinition> cols = new ArrayList<>();
         final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
         return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(
-                parquetMetadata,
+                schema,
+                keyValueMetadata,
                 readInstructionsIn,
                 colConsumer,
                 (final String colName, final Set<String> takenNames) ->
