@@ -136,11 +136,6 @@ public class CharacterIntegerBooleanColumnTupleSource extends AbstractTupleSourc
     }
 
     @Override
-    public Class<CharIntByteTuple> getNativeType() {
-        return CharIntByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<CharIntByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         CharChunk<Attributes.Values> chunk1 = chunks[0].asCharChunk();

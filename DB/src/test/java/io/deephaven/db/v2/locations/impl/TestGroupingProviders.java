@@ -136,7 +136,7 @@ public class TestGroupingProviders {
         }
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed by by()/ungroup() above, restore it here.
 
-        final Table actual = ParquetTools.readMultiFileTable(
+        final Table actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition

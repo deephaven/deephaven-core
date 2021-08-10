@@ -13,8 +13,8 @@ public class DeferredColumnRegionReferencing<ATTR extends Attributes.Any, REFERE
         extends DeferredColumnRegionBase<ATTR, ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>>
         implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION> {
 
-    DeferredColumnRegionReferencing(@NotNull Supplier<ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionReferencing(final long pageMask, @NotNull Supplier<ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @NotNull

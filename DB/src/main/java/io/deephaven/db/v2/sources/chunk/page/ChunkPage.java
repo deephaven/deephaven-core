@@ -13,32 +13,34 @@ public interface ChunkPage<ATTR extends Attributes.Any> extends Page.WithDefault
     @Override
     ChunkType getChunkType();
 
-    @FinalDefault
-    @Override
-    default long length() {
-        return size();
+    /**
+     * @param row Any row contained on this page.
+     * @return the last row of this page, located in the same way as row.
+     */
+    default long lastRow(final long row) {
+        return (row & ~mask()) | (firstRowOffset() + size() - 1);
     }
 
-    @FinalDefault
     @Override
-    default long maxRow(long row) {
+    @FinalDefault
+    default long maxRow(final long row) {
         return lastRow(row);
     }
 
     /**
      * @return The offset into the chunk for this row.
      * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have
-     *          to cast to an int.
+     * to cast to an int.
      * @implNote This page is known to be a chunk, so {@link #size()} is an int, and so is the offset.
      */
     @FinalDefault
-    default int getChunkOffset(long row) {
+    default int getChunkOffset(final long row) {
         return (int) getRowOffset(row);
     }
 
     @FinalDefault
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey, final long lastKey) {
         return slice(getChunkOffset(firstKey), Math.toIntExact(lastKey - firstKey + 1));
     }
 }

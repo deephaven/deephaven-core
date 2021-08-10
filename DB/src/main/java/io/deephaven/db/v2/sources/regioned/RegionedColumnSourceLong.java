@@ -11,8 +11,6 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
-
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
@@ -47,7 +45,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionLong.createNull(), DeferredColumnRegionLong::new);
+            super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
         }
     }
 
@@ -80,8 +78,8 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
 
         Partitioning() {
-            super(ColumnRegionLong.createNull(),
-                    Supplier::get // No need to interpose a deferred region in this case
+            super(ColumnRegionLong.createNull(PARAMETERS.regionMask),
+                    (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
@@ -95,7 +93,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
             }
-            return new ColumnRegionLong.Constant<>(unbox((Long) partitioningColumnValue));
+            return new ColumnRegionLong.Constant<>(regionMask(), unbox((Long) partitioningColumnValue));
         }
     }
 }

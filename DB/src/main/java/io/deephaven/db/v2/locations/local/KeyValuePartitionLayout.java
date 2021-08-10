@@ -42,7 +42,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
         return new KeyValuePartitionLayout<>(
                 tableRootDirectory,
                 path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
-                (path, partitions) -> new ParquetTableLocationKey(path.toFile(), partitions),
+                (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels
         );
     }
@@ -69,6 +69,10 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
     }
 
+    public String toString() {
+        return KeyValuePartitionLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
+    }
+
     @Override
     public void findKeys(@NotNull final Consumer<TLK> locationKeyObserver) {
         final StringBuilder csvBuilder = new StringBuilder();
@@ -87,7 +91,7 @@ public final class KeyValuePartitionLayout<TLK extends TableLocationKey> impleme
                 public FileVisitResult preVisitDirectory(@NotNull final Path dir, @NotNull final BasicFileAttributes attrs) {
                     if (++columnCount > 0) {
                         // We're descending and past the root
-                        final String[] components = dir.getFileName().toString().split("=");
+                        final String[] components = dir.getFileName().toString().split("=", 2);
                         if (components.length != 2) {
                             throw new TableDataException("Unexpected directory name format (not key=value) at " + dir);
                         }

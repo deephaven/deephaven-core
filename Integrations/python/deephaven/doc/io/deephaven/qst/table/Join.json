@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.Join",
+ "methods": {
+  "additions": ":return: java.util.List<io.deephaven.api.JoinAddition>",
+  "left": ":return: io.deephaven.qst.table.TableSpec",
+  "matches": ":return: java.util.List<io.deephaven.api.JoinMatch>",
+  "right": ":return: io.deephaven.qst.table.TableSpec"
+ },
+ "path": "io.deephaven.qst.table.Join",
+ "typeName": "interface"
+}

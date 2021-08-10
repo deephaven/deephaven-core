@@ -4,8 +4,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,7 +26,7 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single long from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (long) index in the table's address space
      * @return The long value at the specified element (long) index
@@ -34,20 +36,22 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
     }
 
     @Override
-    default Class<?> getNativeType() {
-        return long.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Long;
     }
 
-    static <ATTR extends Any> ColumnRegionLong.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionLong<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionLong<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionLong.Null INSTANCE = new ColumnRegionLong.Null();
+        private static final ColumnRegionLong DEFAULT_INSTANCE = new ColumnRegionLong.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -56,11 +60,14 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionLong<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionLong<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final long value;
 
-        public Constant(final long value) {
+        public Constant(final long pageMask, final long value) {
+            super(pageMask);
             this.value = value;
         }
 
@@ -74,6 +81,25 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
             final int offset = destination.size();
             destination.asWritableLongChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionLong<ATTR>>
+            implements ColumnRegionLong<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionLong<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public long getLong(final long elementIndex) {
+            return lookupRegion(elementIndex).getLong(elementIndex);
+        }
+
+        @Override
+        public long getLong(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getLong(context, elementIndex);
         }
     }
 }

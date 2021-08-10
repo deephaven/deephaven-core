@@ -137,11 +137,6 @@ public class LongCharacterReinterpretedDateTimeColumnTupleSource extends Abstrac
     }
 
     @Override
-    public Class<LongCharLongTuple> getNativeType() {
-        return LongCharLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongCharLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

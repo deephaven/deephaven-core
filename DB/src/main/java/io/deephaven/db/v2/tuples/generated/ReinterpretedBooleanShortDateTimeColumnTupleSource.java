@@ -138,11 +138,6 @@ public class ReinterpretedBooleanShortDateTimeColumnTupleSource extends Abstract
     }
 
     @Override
-    public Class<ByteShortLongTuple> getNativeType() {
-        return ByteShortLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteShortLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

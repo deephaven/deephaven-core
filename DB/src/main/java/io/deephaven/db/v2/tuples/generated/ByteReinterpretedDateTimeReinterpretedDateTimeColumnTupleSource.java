@@ -137,11 +137,6 @@ public class ByteReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ext
     }
 
     @Override
-    public Class<ByteLongLongTuple> getNativeType() {
-        return ByteLongLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteLongLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

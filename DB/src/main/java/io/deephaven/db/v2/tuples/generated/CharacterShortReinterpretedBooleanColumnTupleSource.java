@@ -137,11 +137,6 @@ public class CharacterShortReinterpretedBooleanColumnTupleSource extends Abstrac
     }
 
     @Override
-    public Class<CharShortByteTuple> getNativeType() {
-        return CharShortByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<CharShortByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         CharChunk<Attributes.Values> chunk1 = chunks[0].asCharChunk();

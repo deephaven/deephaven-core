@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.qst.table.NewTable",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.NewTable.Builder",
+  "empty": ":param header: io.deephaven.qst.table.TableHeader\n:return: io.deephaven.qst.table.NewTable",
+  "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.column.Column<?>>",
+  "getArray": ":param name: java.lang.String\n:return: io.deephaven.qst.array.Array<?>",
+  "header": ":return: io.deephaven.qst.table.TableHeader",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.Column<?>>",
+  "numColumns": ":return: int",
+  "of": "*Overload 1*  \n  :param columns: io.deephaven.qst.column.Column<?>...\n  :return: io.deephaven.qst.table.NewTable\n  \n*Overload 2*  \n  :param columns: java.lang.Iterable<io.deephaven.qst.column.Column<?>>\n  :return: io.deephaven.qst.table.NewTable",
+  "size": ":return: int",
+  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.column.Column<?>>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V",
+  "with": ":param column: io.deephaven.qst.column.Column<?>\n:return: io.deephaven.qst.table.NewTable"
+ },
+ "path": "io.deephaven.qst.table.NewTable",
+ "text": "A new table is a list of columns of equal size. Each column will have a distinct\n name.",
+ "typeName": "class"
+}

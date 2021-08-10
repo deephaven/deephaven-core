@@ -135,11 +135,6 @@ public class BooleanObjectDoubleColumnTupleSource extends AbstractTupleSource<By
     }
 
     @Override
-    public Class<ByteObjectDoubleTuple> getNativeType() {
-        return ByteObjectDoubleTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteObjectDoubleTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

@@ -1,8 +1,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,7 +23,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single char from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (char) index in the table's address space
      * @return The char value at the specified element (char) index
@@ -31,20 +33,22 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
     }
 
     @Override
-    default Class<?> getNativeType() {
-        return char.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Char;
     }
 
-    static <ATTR extends Any> ColumnRegionChar.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionChar<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionChar<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionChar.Null INSTANCE = new ColumnRegionChar.Null();
+        private static final ColumnRegionChar DEFAULT_INSTANCE = new ColumnRegionChar.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -53,11 +57,14 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionChar<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionChar<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final char value;
 
-        public Constant(final char value) {
+        public Constant(final long pageMask, final char value) {
+            super(pageMask);
             this.value = value;
         }
 
@@ -71,6 +78,25 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
             final int offset = destination.size();
             destination.asWritableCharChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionChar<ATTR>>
+            implements ColumnRegionChar<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionChar<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public char getChar(final long elementIndex) {
+            return lookupRegion(elementIndex).getChar(elementIndex);
+        }
+
+        @Override
+        public char getChar(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getChar(context, elementIndex);
         }
     }
 }

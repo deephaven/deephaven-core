@@ -16,8 +16,8 @@ public class DeferredColumnRegionLong<ATTR extends Attributes.Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionLong<ATTR>>
         implements ColumnRegionLong<ATTR> {
 
-    DeferredColumnRegionLong(@NotNull Supplier<ColumnRegionLong<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionLong(final long pageMask, @NotNull Supplier<ColumnRegionLong<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

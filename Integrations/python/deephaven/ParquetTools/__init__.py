@@ -128,6 +128,19 @@ except Exception as e:
     pass
 
 @_passThrough
+def convertSchema(parquetMetadata, readInstructionsIn):
+    """
+    Convert schema information from a ParquetMetadata into ColumnDefinitions.
+    
+    :param parquetMetadata: (org.apache.parquet.hadoop.metadata.ParquetMetadata) - The ParquetMetadata to convert
+    :param readInstructionsIn: (io.deephaven.db.v2.parquet.ParquetInstructions) - Input conversion ParquetInstructions
+    :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.db.tables.ColumnDefinition>,io.deephaven.db.v2.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
+    """
+    
+    return _java_type_.convertSchema(parquetMetadata, readInstructionsIn)
+
+
+@_passThrough
 def deleteTable(path):
     """
     Deletes a table on disk.
@@ -139,26 +152,15 @@ def deleteTable(path):
 
 
 @_passThrough
-def readMultiFileTable(*args):
+def getParquetFileReader(parquetFile):
     """
-    **Incompatible overloads text - text from the first overload:**
+    Make a ParquetFileReader for the supplied File.
     
-    Reads in a table from files discovered with locationKeyFinder using a definition built from the
-     first location found, which must have non-null partition values for all partition keys.
-    
-    *Overload 1*  
-      :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
-      :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The table's definition
-      :return: (io.deephaven.db.tables.Table) The table
-      
-    *Overload 2*  
-      :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
-      :return: (io.deephaven.db.tables.Table) The table
+    :param parquetFile: (java.io.File) - The File to read
+    :return: (io.deephaven.parquet.ParquetFileReader) The new ParquetFileReader
     """
     
-    return _java_type_.readMultiFileTable(*args)
+    return _java_type_.getParquetFileReader(parquetFile)
 
 
 @_passThrough
@@ -174,50 +176,81 @@ def readParquetSchemaAndTable(source, readInstructionsIn, instructionsOut):
 
 
 @_passThrough
+def readPartitionedTable(locationKeyFinder, readInstructions, tableDefinition):
+    """
+    Reads in a table from files discovered with locationKeyFinder using the provided table definition.
+    
+    :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The table's definition
+    :return: (io.deephaven.db.tables.Table) The table
+    """
+    
+    return _java_type_.readPartitionedTable(locationKeyFinder, readInstructions, tableDefinition)
+
+
+@_passThrough
+def readPartitionedTableInferSchema(locationKeyFinder, readInstructions):
+    """
+    Reads in a table from files discovered with locationKeyFinder using a definition built from the
+     first location found, which must have non-null partition values for all partition keys.
+    
+    :param locationKeyFinder: (io.deephaven.db.v2.locations.impl.TableLocationKeyFinder<io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :return: (io.deephaven.db.tables.Table) The table
+    """
+    
+    return _java_type_.readPartitionedTableInferSchema(locationKeyFinder, readInstructions)
+
+
+@_passThrough
+def readPartitionedTableWithMetadata(directory, readInstructions):
+    """
+    Reads in a table using metadata files found in the supplied directory.
+    
+    :param directory: (java.io.File) - The source of location keys to include
+    :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :return: (io.deephaven.db.tables.Table) The table
+    """
+    
+    return _java_type_.readPartitionedTableWithMetadata(directory, readInstructions)
+
+
+@_passThrough
+def readSingleFileTable(tableLocationKey, readInstructions, tableDefinition):
+    """
+    Reads in a table from a single parquet file using the provided table definition.
+    
+    :param tableLocationKey: (io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey) - The location keys to include
+    :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The table's definition
+    :return: (io.deephaven.db.tables.Table) The table
+    """
+    
+    return _java_type_.readSingleFileTable(tableLocationKey, readInstructions, tableDefinition)
+
+
+@_passThrough
 def readTable(*args):
     """
-    **Incompatible overloads text - text from the first overload:**
-    
-    Reads in a table from a file using the provided table definition.
+    Reads in a table from a single parquet, metadata file, or directory with recognized layout.
     
     *Overload 1*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
+      :param sourceFilePath: (java.lang.String) - The file or directory to examine
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 2*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
+      :param sourceFilePath: (java.lang.String) - The file or directory to examine
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 3*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
+      :param sourceFile: (java.io.File) - The file or directory to examine
       :return: (io.deephaven.db.tables.Table) table
       
     *Overload 4*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
-      :return: (io.deephaven.db.tables.Table) table
-      
-    *Overload 5*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
-      :return: (io.deephaven.db.tables.Table) table
-      
-    *Overload 6*  
-      :param sourceFilePath: (java.lang.String) - table location; the file should exist and end in ".parquet" extension
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
-      :return: (io.deephaven.db.tables.Table) table
-      
-    *Overload 7*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
-      :return: (io.deephaven.db.tables.Table) table
-      
-    *Overload 8*  
-      :param sourceFile: (java.io.File) - table location; the file should exist and end in ".parquet" extension
-      :param definition: (io.deephaven.db.tables.TableDefinition) - table definition
-      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while reading
+      :param sourceFile: (java.io.File) - The file or directory to examine
+      :param readInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
       :return: (io.deephaven.db.tables.Table) table
     """
     
@@ -244,8 +277,8 @@ def writeParquetTables(sources, tableDefinition, writeInstructions, destinations
     :param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The common schema for all the tables to write
     :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - Write instructions for customizations while writing
     :param destinations: (java.io.File[]) - The destinations paths.    Any non existing directories in the paths provided are created.
-                            If there is an error any intermediate directories previously created are removed;
-                            note this makes this method unsafe for concurrent use
+                              If there is an error any intermediate directories previously created are removed;
+                              note this makes this method unsafe for concurrent use
     :param groupingColumns: (java.lang.String[]) - List of columns the tables are grouped by (the write operation will store the grouping info)
     """
     
@@ -260,42 +293,42 @@ def writeTable(*args):
     *Overload 1*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destPath: (java.lang.String) - destination file path; the file name should end in ".parquet" extension
-                       If the path includes non-existing directories they are created
-                       If there is an error any intermediate directories previously created are removed;
-                       note this makes this method unsafe for concurrent use
+                          If the path includes non-existing directories they are created
+                          If there is an error any intermediate directories previously created are removed;
+                          note this makes this method unsafe for concurrent use
       
     *Overload 2*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destFile: (java.io.File) - destination file; the file name should end in ".parquet" extension
-                   If the path includes non-existing directories they are created
+                          If the path includes non-existing directories they are created
       
     *Overload 3*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-                       If there is an error any intermediate directories previously created are removed;
-                       note this makes this method unsafe for concurrent use
+                          If there is an error any intermediate directories previously created are removed;
+                          note this makes this method unsafe for concurrent use
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       
     *Overload 4*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-                       If there is an error any intermediate directories previously created are removed;
-                       note this makes this method unsafe for concurrent use
+                                If there is an error any intermediate directories previously created are removed;
+                                note this makes this method unsafe for concurrent use
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 5*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destPath: (java.lang.String) - destination path; it must end in ".parquet".  Any non existing directories in the path are created
-                           If there is an error any intermediate directories previously created are removed;
-                           note this makes this method unsafe for concurrent use
+                                If there is an error any intermediate directories previously created are removed;
+                                note this makes this method unsafe for concurrent use
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 6*  
       :param sourceTable: (io.deephaven.db.tables.Table) - source table
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-                       If there is an error any intermediate directories previously created are removed;
-                       note this makes this method unsafe for concurrent use
+                                If there is an error any intermediate directories previously created are removed;
+                                note this makes this method unsafe for concurrent use
       :param definition: (io.deephaven.db.tables.TableDefinition) - table definition to use (instead of the one implied by the table itself)
       :param writeInstructions: (io.deephaven.db.v2.parquet.ParquetInstructions) - instructions for customizations while writing
     """

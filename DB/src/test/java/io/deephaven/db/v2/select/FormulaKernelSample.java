@@ -109,8 +109,8 @@ public class FormulaKernelSample implements io.deephaven.db.v2.select.formula.Fo
     private long applyFormulaPerItem(long II, long ii, int I, int i) {
         try {
             return plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)));
-        } catch (java.lang.Exception e) {
-            throw new io.deephaven.db.v2.select.FormulaEvaluationException("In formula: " + "plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)))", e);
+        } catch (java.lang.Exception __e) {
+            throw new io.deephaven.db.v2.select.FormulaEvaluationException("In formula: " + "plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)))", __e);
         }
     }
 

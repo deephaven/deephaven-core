@@ -28,11 +28,6 @@ public class BooleanChunkPage<ATTR extends Attributes.Any> extends BooleanChunk<
     }
 
     @Override
-    public Class<Boolean> getNativeType() {
-        return boolean.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableBooleanChunk<? super ATTR> to = destination.asWritableBooleanChunk();
 

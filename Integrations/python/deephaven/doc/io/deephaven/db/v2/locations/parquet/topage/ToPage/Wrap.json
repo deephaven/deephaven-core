@@ -3,7 +3,7 @@
  "methods": {
   "convertResult": ":param object: java.lang.Object\n:return: (ToPage.Wrap.OUTER_RESULT) Produce the array of values from the result",
   "getDictionary": ":return: (io.deephaven.db.v2.sources.chunk.Chunk<ToPage.Wrap.ATTR>) the dictionary stored for this column, if one exists, otherwise null.",
-  "getDictionaryKeysToPage": ":return: (io.deephaven.db.v2.locations.parquet.topage.ToPage<io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys,int[]>) an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary\n for this column (as opposed to the values, which this object's toChunk will return.).  This will return null iff\n getDictionary returns null.",
+  "getDictionaryKeysToPage": ":return: (io.deephaven.db.v2.locations.parquet.topage.ToPage<io.deephaven.db.v2.sources.chunk.Attributes.DictionaryKeys,long[]>) an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary\n for this column (as opposed to the values, which this object's toChunk will return.).  This will return null iff\n getDictionary returns null.",
   "getResult": ":param columnPageReader: io.deephaven.parquet.ColumnPageReader\n:return: (java.lang.Object) Gets the result from the columnPageReader.",
   "getReversibleLookup": ":return: (io.deephaven.db.v2.sources.StringSetImpl.ReversibleLookup) an reverse lookup map of the dictionary.",
   "nullValue": ":return: (java.lang.Object) The null value stored in the elements of the arrays produced by thus object."

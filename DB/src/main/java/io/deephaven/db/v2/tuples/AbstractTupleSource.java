@@ -26,6 +26,11 @@ public abstract class AbstractTupleSource<TUPLE_TYPE> implements TupleSource<TUP
     }
 
     @Override
+    public final ChunkType getChunkType() {
+        return ChunkType.Object;
+    }
+
+    @Override
     public final FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
         return new TupleFillContext(chunkCapacity, sharedContext);
     }

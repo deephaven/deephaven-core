@@ -322,8 +322,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "private [[RETURN_TYPE]] applyFormulaPerItem([[ARGS]])", CodeGenerator.block(
                         "try", CodeGenerator.block(
                                 "return [[FORMULA_STRING]];"
-                        ), CodeGenerator.samelineBlock("catch (java.lang.Exception e)",
-                                "throw new [[EXCEPTION_TYPE]](\"In formula: [[COLUMN_NAME]] = \" + [[JOINED_FORMULA_STRING]], e);"
+                        ), CodeGenerator.samelineBlock("catch (java.lang.Exception __e)",
+                                "throw new [[EXCEPTION_TYPE]](\"In formula: [[COLUMN_NAME]] = \" + [[JOINED_FORMULA_STRING]], __e);"
                         )
                 )
         );

@@ -137,11 +137,6 @@ public class ReinterpretedDateTimeReinterpretedDateTimeIntegerColumnTupleSource 
     }
 
     @Override
-    public Class<LongLongIntTuple> getNativeType() {
-        return LongLongIntTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongLongIntTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

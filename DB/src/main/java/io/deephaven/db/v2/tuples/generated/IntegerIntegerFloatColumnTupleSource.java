@@ -135,11 +135,6 @@ public class IntegerIntegerFloatColumnTupleSource extends AbstractTupleSource<In
     }
 
     @Override
-    public Class<IntIntFloatTuple> getNativeType() {
-        return IntIntFloatTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntIntFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

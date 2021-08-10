@@ -370,7 +370,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
 
     private Object readPageV2(DataPageV2 page, Object nullValue) throws IOException {
-        throw new UnsupportedOperationException("Parquet V2 not supported");
+        throw new UnsupportedOperationException("Parquet V2 data pages are not supported");
     }
 
     private void readKeysWithNulls(IntBuffer keysBuffer, int nullPlaceholder, int numValues, RunLenghBitPackingHybridBufferDecoder dlDecoder, ValuesReader dataReader) throws IOException {

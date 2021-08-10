@@ -1068,15 +1068,20 @@ def monthOfYearNy(dateTime):
 
 
 @_passThrough
-def nanos(dateTime):
+def nanos(*args):
     """
     Returns nanoseconds since Epoch for a DBDateTime value.
     
-    :param dateTime: (io.deephaven.db.tables.utils.DBDateTime) - The DBDateTime for which the nanoseconds offset should be returned.
-    :return: (long) A long value of nanoseconds since Epoch, or a NULL_LONG value if the DBDateTime is null.
+    *Overload 1*  
+      :param dateTime: (io.deephaven.db.tables.utils.DBDateTime) - The DBDateTime for which the nanoseconds offset should be returned.
+      :return: (long) A long value of nanoseconds since Epoch, or a NULL_LONG value if the DBDateTime is null.
+      
+    *Overload 2*  
+      :param instant: java.time.Instant
+      :return: long
     """
     
-    return _java_type_.nanos(dateTime)
+    return _java_type_.nanos(*args)
 
 
 @_passThrough

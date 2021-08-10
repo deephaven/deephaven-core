@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Value.Style(visibility = ImplementationVisibility.PACKAGE,
     defaults = @Value.Immutable(builder = false, copy = false), strictBuilder = true,
-    weakInterning = true)
+    weakInterning = true, jdkOnly = true)
 public @interface SimpleStyle {
     // Note: this produces ImmutableX.of() methods for the implementation classes
 }

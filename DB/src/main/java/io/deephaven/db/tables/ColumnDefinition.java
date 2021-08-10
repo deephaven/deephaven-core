@@ -322,32 +322,27 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public ColumnDefinition<TYPE> withPartitioning() {
-        ColumnDefinition clone = clone();
+        final ColumnDefinition<TYPE> clone = safeClone();
         clone.setColumnType(COLUMNTYPE_PARTITIONING);
         return clone;
     }
 
     public ColumnDefinition<TYPE> withGrouping() {
-        ColumnDefinition clone = clone();
+        final ColumnDefinition<TYPE> clone = safeClone();
         clone.setColumnType(COLUMNTYPE_GROUPING);
         return clone;
     }
 
     public ColumnDefinition<TYPE> withNormal() {
-        ColumnDefinition clone = clone();
+        final ColumnDefinition<TYPE> clone = safeClone();
         clone.setColumnType(COLUMNTYPE_NORMAL);
         return clone;
     }
 
     public <Other> ColumnDefinition<Other> withDataType(Class<Other> dataType) {
-        ColumnDefinition clone = clone();
+        final ColumnDefinition clone = safeClone();
         clone.setDataType(dataType);
-        return clone;
-    }
-
-    public ColumnDefinition<TYPE> withSymbolTable() {
-        ColumnDefinition clone = clone();
-        clone.hasSymbolTable(true);
+        //noinspection unchecked
         return clone;
     }
 
@@ -409,9 +404,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         if (!dataType.equals(other.dataType)) {
             differences.add(prefix + lhs + " dataType '" + dataType + "' does not match " + rhs + " dataType '" + other.dataType + "'");
         } else {
-            if (hasSymbolTable() != other.hasSymbolTable()) {
-                differences.add(prefix + lhs + " hasSymbolTable '" + hasSymbolTable() + "' does not match " + rhs + " hasSymbolTable '" + other.hasSymbolTable() + "'");
-            }
             if (!Objects.equals(componentType, other.componentType)) {
                 differences.add(prefix + lhs + " componentType '" + componentType + "' does not match " + rhs + " componentType '" + other.componentType + "'");
             }
@@ -428,7 +420,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         final ColumnDefinition otherCD = (ColumnDefinition)other;
         return name.equals(otherCD.name)
                 && dataType.equals(otherCD.dataType)
-                && hasSymbolTable() == otherCD.hasSymbolTable()
                 && Objects.equals(componentType, otherCD.componentType)
                 && columnType == otherCD.columnType
                 ;
@@ -472,12 +463,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return columnType;
     }
 
-    private boolean hasSymbolTable = false;
-    public boolean hasSymbolTable() { return hasSymbolTable; }
-    void hasSymbolTable(final boolean v) {
-        hasSymbolTable = v;
-    }
-
     void setColumnType(int columnType) {
         this.columnType=columnType;
     }
@@ -492,13 +477,12 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("ColumnDefinition : ");
+        final StringBuilder builder = new StringBuilder("ColumnDefinition : ");
 
         builder.append("name=").append(name);
         builder.append("|dataType=").append(dataType);
         builder.append("|componentType=").append(componentType);
         builder.append("|columnType=").append(columnType);
-        builder.append("|hasSymbolTable=").append(hasSymbolTable);
 
         return builder.toString();
     }
@@ -511,7 +495,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         logOutput.append("|dataType=").append(String.valueOf(dataType));
         logOutput.append("|componentType=").append(String.valueOf(componentType));
         logOutput.append("|columnType=").append(columnType);
-        logOutput.append("|hasSymbolTable=").append(hasSymbolTable);
 
         return logOutput;
     }
@@ -521,7 +504,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     @Override
-    public ColumnDefinition safeClone() {
+    public ColumnDefinition<TYPE> safeClone() {
+        //noinspection unchecked
         return clone();
     }
 
@@ -530,7 +514,6 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         dataType = (Class)in.readObject();
         componentType = (Class)in.readObject();
         columnType = in.readInt();
-        hasSymbolTable = in.readBoolean();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -538,6 +521,5 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         out.writeObject(dataType);
         out.writeObject(componentType);
         out.writeInt(columnType);
-        out.writeBoolean(hasSymbolTable);
     }
 }

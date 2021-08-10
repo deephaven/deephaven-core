@@ -138,11 +138,6 @@ public class BooleanIntegerReinterpretedDateTimeColumnTupleSource extends Abstra
     }
 
     @Override
-    public Class<ByteIntLongTuple> getNativeType() {
-        return ByteIntLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteIntLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

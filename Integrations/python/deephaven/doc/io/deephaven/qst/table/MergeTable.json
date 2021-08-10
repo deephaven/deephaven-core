@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.MergeTable",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.MergeTable.Builder",
+  "of": "*Overload 1*  \n  :param tables: io.deephaven.qst.table.TableSpec...\n  :return: io.deephaven.qst.table.MergeTable\n  \n*Overload 2*  \n  :param tables: java.lang.Iterable<? extendsio.deephaven.qst.table.TableSpec>\n  :return: io.deephaven.qst.table.MergeTable",
+  "tables": ":return: java.util.List<io.deephaven.qst.table.TableSpec>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.MergeTable",
+ "text": "Concatenates multiple tables into a single table.\n\n \n The resultant table will have rows from the same table together, in the order they are specified\n as inputs.\n\n \n When ticking tables grow, they may run out of the 'pre-allocated' space for newly added rows.\n When more key- space is needed, tables in higher key-space are shifted to yet higher key-space to\n make room for new rows. Shifts are handled efficiently, but some downstream operations generate a\n linear O(n) amount of work per shifted row. When possible, one should favor ordering the\n constituent tables first by static/non-ticking sources followed by tables that are expected to\n grow at slower rates, and finally by tables that grow without bound.",
+ "typeName": "class"
+}

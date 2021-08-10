@@ -4,6 +4,7 @@ import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.locations.TableKey;
 import io.deephaven.db.v2.locations.TableLocation;
 import io.deephaven.db.v2.locations.TableLocationKey;
+import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -15,6 +16,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
 
     public NonexistentTableLocation(@NotNull final TableKey tableKey, @NotNull final TableLocationKey tableLocationKey) {
         super(tableKey, tableLocationKey, false);
+        handleUpdate(Index.CURRENT_FACTORY.getEmptyIndex(), NULL_TIME);
     }
 
     @Override
