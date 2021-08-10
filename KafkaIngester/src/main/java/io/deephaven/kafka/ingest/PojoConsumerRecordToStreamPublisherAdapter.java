@@ -47,20 +47,20 @@ import java.util.stream.Collectors;
  *
  */
 @SuppressWarnings("unused")
-public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRecordToTableWriterAdapter {
+public class PojoConsumerRecordToStreamPublisherAdapter<K, V> implements ConsumerRecordToStreamPublisherAdapter {
     private final TableWriter writer;
     private final RowSetter<Integer> kafkaPartitionColumnSetter;
     private final RowSetter<Long> offsetColumnSetter;
     private final RowSetter<DBDateTime> timestampColumnSetter;
-    private final ConsumerRecordToTableWriterAdapter compiledPojoAdapter;
+    private final ConsumerRecordToStreamPublisherAdapter compiledPojoAdapter;
 
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private PojoConsumerRecordToTableWriterAdapter(TableWriter<?> writer, String kafkaPartitionColumnName, String offsetColumnName, String timestampColumnName,
-                                                   Class<K> keyClass, Class<V> valueClass,
-                                                   boolean allowUnmapped, boolean caseInsensitiveSearch, boolean printClassBody, Set<String> columnsUnmapped,
-                                                   Map<String, String> columnToKeyField, Map<String, String> columnToValueField,
-                                                   Map<String, String> columnToKeyMethod, Map<String, String> columnToValueMethod,
-                                                   Map<String, String> columnToSetter) {
+    private PojoConsumerRecordToStreamPublisherAdapter(TableWriter<?> writer, String kafkaPartitionColumnName, String offsetColumnName, String timestampColumnName,
+                                                       Class<K> keyClass, Class<V> valueClass,
+                                                       boolean allowUnmapped, boolean caseInsensitiveSearch, boolean printClassBody, Set<String> columnsUnmapped,
+                                                       Map<String, String> columnToKeyField, Map<String, String> columnToValueField,
+                                                       Map<String, String> columnToKeyMethod, Map<String, String> columnToValueMethod,
+                                                       Map<String, String> columnToSetter) {
         final String [] columnNames = writer.getColumnNames();
         final Class [] columnTypes = writer.getColumnTypes();
 
@@ -152,7 +152,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
         final StringBuilder classBuilder = new StringBuilder();
         final Indenter indenter = new Indenter();
 
-        classBuilder.append("import " + ConsumerRecordToTableWriterAdapter.class.getCanonicalName() + ";\n");
+        classBuilder.append("import " + ConsumerRecordToStreamPublisherAdapter.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + RowSetter.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + TableWriter.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + ConsumerRecord.class.getCanonicalName() + ";\n");
@@ -169,7 +169,7 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
 
         classBuilder.append("\n");
 
-        classBuilder.append("public class " + className + " implements " + ConsumerRecordToTableWriterAdapter.class.getCanonicalName() + "{\n");
+        classBuilder.append("public class " + className + " implements " + ConsumerRecordToStreamPublisherAdapter.class.getCanonicalName() + "{\n");
         classBuilder.append(indenter.increaseLevel()).append("// setter fields\n");
 
         for (final String column : writer.getColumnNames()) {
@@ -209,13 +209,13 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
         }
 
         final Class<?> uncastedClass = CompilerTools.compile(className, classBody, packageName);
-        if (!ConsumerRecordToTableWriterAdapter.class.isAssignableFrom(uncastedClass)) {
-            throw new IllegalStateException("Compiled class is not a " + ConsumerRecordToTableWriterAdapter.class);
+        if (!ConsumerRecordToStreamPublisherAdapter.class.isAssignableFrom(uncastedClass)) {
+            throw new IllegalStateException("Compiled class is not a " + ConsumerRecordToStreamPublisherAdapter.class);
         }
         // noinspection unchecked
-        final Class<ConsumerRecordToTableWriterAdapter> compiledClass = (Class<ConsumerRecordToTableWriterAdapter>)uncastedClass;
+        final Class<ConsumerRecordToStreamPublisherAdapter> compiledClass = (Class<ConsumerRecordToStreamPublisherAdapter>)uncastedClass;
         try {
-            final Constructor<ConsumerRecordToTableWriterAdapter> constructor = compiledClass.getConstructor(TableWriter.class);
+            final Constructor<ConsumerRecordToStreamPublisherAdapter> constructor = compiledClass.getConstructor(TableWriter.class);
             compiledPojoAdapter = constructor.newInstance(writer);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("Compiled class does not have a TableWriter constructor " + compiledClass);
@@ -578,8 +578,8 @@ public class PojoConsumerRecordToTableWriterAdapter<K, V> implements ConsumerRec
          *
          * @return the factory
          */
-        Function<TableWriter, PojoConsumerRecordToTableWriterAdapter> buildFactory() {
-            return (TableWriter tw) -> new PojoConsumerRecordToTableWriterAdapter<>(tw, kafkaPartitionColumnName, offsetColumnName,
+        Function<TableWriter, PojoConsumerRecordToStreamPublisherAdapter> buildFactory() {
+            return (TableWriter tw) -> new PojoConsumerRecordToStreamPublisherAdapter<>(tw, kafkaPartitionColumnName, offsetColumnName,
                     timestampColumnName, keyClass, valueClass,
                     allowUnmapped, caseInsensitiveSearch, printClassBody, columnsUnmapped,
                     columnToKeyFieldSetter, columnToValueFieldSetter,

@@ -48,7 +48,7 @@ public class TestGenericRecordAdapter {
     @SuppressWarnings("rawtypes")
     @Test
     public void testSimple() throws IOException {
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .buildFactory();
 
@@ -65,7 +65,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, null, genericRecord);
         consumer.consumeRecord(record);
 
@@ -78,7 +78,7 @@ public class TestGenericRecordAdapter {
     @SuppressWarnings("rawtypes")
     @Test
     public void testStringKeyIgnored() throws IOException {
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .buildFactory();
 
@@ -95,7 +95,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, "KeyString", genericRecord);
         consumer.consumeRecord(record);
 
@@ -108,7 +108,7 @@ public class TestGenericRecordAdapter {
     @SuppressWarnings("rawtypes")
     @Test
     public void testStringKey() throws IOException {
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .addColumnToKey("key")
                 .buildFactory();
@@ -126,7 +126,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, "KeyString", genericRecord);
         consumer.consumeRecord(record);
 
@@ -139,7 +139,7 @@ public class TestGenericRecordAdapter {
     @SuppressWarnings("rawtypes")
     @Test
     public void testLongKey() throws IOException {
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .addColumnToKey("key")
                 .buildFactory();
@@ -157,7 +157,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, 42L, genericRecord);
         consumer.consumeRecord(record);
 
@@ -170,7 +170,7 @@ public class TestGenericRecordAdapter {
     @SuppressWarnings("rawtypes")
     @Test
     public void testSimpleFunction() throws IOException {
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .addColumnToValueFunction("name", (genericRecord -> genericRecord.get("userid") + " " + genericRecord.get("pageid")))
                 .buildFactory();
@@ -188,7 +188,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, null, genericRecord);
         consumer.consumeRecord(record);
 
@@ -205,7 +205,7 @@ public class TestGenericRecordAdapter {
         final long nanoEpoch = timePoint.getNanos();
         final long milliEpoch = timePoint.getMillis();
 
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .addColumnToValueFunction("viewtime", (genericRecord -> {
                     final Long viewtime = (Long) genericRecord.get("viewtime");
@@ -229,7 +229,7 @@ public class TestGenericRecordAdapter {
         genericRecord.put("userid", "chuck");
         genericRecord.put("pageid", "mcgill");
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer = factory.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer = factory.apply(writer);
         final ConsumerRecord<Object, GenericRecord> record = new ConsumerRecord<>("topic", 0, 0, null, genericRecord);
         consumer.consumeRecord(record);
 
@@ -238,7 +238,7 @@ public class TestGenericRecordAdapter {
         final Table expected = newTable(col("viewtime", timePoint), col("userid", "chuck"), col("pageid", "mcgill"));
         assertTableEquals(expected, result);
 
-        final Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> factory2 = new GenericRecordConsumerRecordToTableWriterAdapter.Builder()
+        final Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> factory2 = new GenericRecordConsumerRecordToStreamPublisherAdapter.Builder()
                 .autoValueMapping(true)
                 .addColumnToValueFunction("viewtime", (gr) -> {
                     final Long viewtime = (Long) gr.get("viewtime");
@@ -249,7 +249,7 @@ public class TestGenericRecordAdapter {
                 })
                 .buildFactory();
 
-        final GenericRecordConsumerRecordToTableWriterAdapter consumer2 = factory2.apply(writer);
+        final GenericRecordConsumerRecordToStreamPublisherAdapter consumer2 = factory2.apply(writer);
         genericRecord.put("viewtime", milliEpoch);
         final ConsumerRecord<Object, GenericRecord> record2 = new ConsumerRecord<>("topic", 0, 0, null, genericRecord);
         consumer2.consumeRecord(record2);

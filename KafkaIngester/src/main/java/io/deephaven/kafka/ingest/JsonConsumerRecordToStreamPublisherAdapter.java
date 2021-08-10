@@ -18,7 +18,7 @@ import java.util.function.Function;
  * <p></p>After processing explicit mappings for fields; the JSON record is searched for exact matches of the key.
  */
 @SuppressWarnings("unused")
-public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
+public class JsonConsumerRecordToStreamPublisherAdapter implements ConsumerRecordToStreamPublisherAdapter {
     private final TableWriter<?> writer;
     private final Map<String, String> valueColumns;
     private final RowSetter<Integer> kafkaPartitionColumnSetter;
@@ -29,9 +29,9 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
     private final Map<String, JsonRecordSetter> columnNameToSetter;
 
 
-    private JsonConsumerRecordToTableWriterAdapter(TableWriter<?> writer, String kafkaPartitionColumn, String offsetColumnName,
-                                                   String timestampColumnName, Map<String, String> valueColumns, Set<String> unusedColumns,
-                                                   boolean allowMissingKeys, boolean allowNullValues, boolean autoValueMapping) {
+    private JsonConsumerRecordToStreamPublisherAdapter(TableWriter<?> writer, String kafkaPartitionColumn, String offsetColumnName,
+                                                       String timestampColumnName, Map<String, String> valueColumns, Set<String> unusedColumns,
+                                                       boolean allowMissingKeys, boolean allowNullValues, boolean autoValueMapping) {
         this.writer = writer;
         this.valueColumns = valueColumns;
         this.allowMissingKeys = allowMissingKeys;
@@ -94,7 +94,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          * @return this builder
          */
         @NotNull
-        public JsonConsumerRecordToTableWriterAdapter.Builder kafkaPartitionColumnName(@NotNull String kafkaPartitionColumnName) {
+        public JsonConsumerRecordToStreamPublisherAdapter.Builder kafkaPartitionColumnName(@NotNull String kafkaPartitionColumnName) {
             this.kafkaPartitionColumnName = kafkaPartitionColumnName;
             return this;
         }
@@ -106,7 +106,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        public JsonConsumerRecordToTableWriterAdapter.Builder offsetColumnName(@NotNull String offsetColumnName) {
+        public JsonConsumerRecordToStreamPublisherAdapter.Builder offsetColumnName(@NotNull String offsetColumnName) {
             this.offsetColumnName = offsetColumnName;
             return this;
         }
@@ -118,7 +118,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder timestampColumnName(@NotNull String timestampColumnName) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder timestampColumnName(@NotNull String timestampColumnName) {
             this.timestampColumnName = timestampColumnName;
             return this;
         }
@@ -132,7 +132,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder allowUnmapped(@NotNull String allowUnmapped) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder allowUnmapped(@NotNull String allowUnmapped) {
             if (isDefined(allowUnmapped)) {
                 throw new RuntimeException("Column " + allowUnmapped + " is already defined!");
             }
@@ -148,7 +148,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder addColumnToValueField(@NotNull String column, @NotNull String field) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder addColumnToValueField(@NotNull String column, @NotNull String field) {
             if (isDefined(column)) {
                 throw new RuntimeException("Column " + column + " is already defined!");
             }
@@ -164,7 +164,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder allowMissingKeys(boolean allowMissingKeys) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder allowMissingKeys(boolean allowMissingKeys) {
             this.allowMissingKeys = allowMissingKeys;
             return this;
         }
@@ -179,7 +179,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder allowNullValues(boolean allowNullValues) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder allowNullValues(boolean allowNullValues) {
             this.allowNullValues = allowNullValues;
             return this;
         }
@@ -191,7 +191,7 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          *
          * @return this builder
          */
-        @NotNull public JsonConsumerRecordToTableWriterAdapter.Builder autoValueMapping(boolean autoValueMapping) {
+        @NotNull public JsonConsumerRecordToStreamPublisherAdapter.Builder autoValueMapping(boolean autoValueMapping) {
             this.autoValueMapping = autoValueMapping;
             return this;
         }
@@ -206,8 +206,8 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
          * @return the factory
          */
         @NotNull
-        Function<TableWriter, JsonConsumerRecordToTableWriterAdapter> buildFactory() {
-            return (TableWriter tw) -> new JsonConsumerRecordToTableWriterAdapter(tw,
+        Function<TableWriter, JsonConsumerRecordToStreamPublisherAdapter> buildFactory() {
+            return (TableWriter tw) -> new JsonConsumerRecordToStreamPublisherAdapter(tw,
                     kafkaPartitionColumnName, offsetColumnName, timestampColumnName,
                     columnToValueFieldSetter, columnsUnmapped, allowMissingKeys,
                     allowNullValues, autoValueMapping);

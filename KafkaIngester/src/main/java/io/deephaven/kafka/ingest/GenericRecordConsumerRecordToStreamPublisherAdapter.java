@@ -23,7 +23,7 @@ import java.util.function.Function;
  *  Each GenericRecord produces a single row of output, according to the maps of Table column names to Avro field names
  *  for the keys and values.
  */
-public class GenericRecordConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
+public class GenericRecordConsumerRecordToStreamPublisherAdapter implements ConsumerRecordToStreamPublisherAdapter {
     private final TableWriter<?> writer;
     private final Map<String, String> keyColumns;
     private final Map<String, String> valueColumns;
@@ -37,7 +37,7 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
     private final boolean allowNullKeys;
     private final boolean allowNullValues;
 
-    private GenericRecordConsumerRecordToTableWriterAdapter(
+    private GenericRecordConsumerRecordToStreamPublisherAdapter(
             final TableWriter<?> writer,
             final String kafkaPartitionColumn,
             final String offsetColumnName,
@@ -104,7 +104,7 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
         }
     }
 
-    public static GenericRecordConsumerRecordToTableWriterAdapter make(
+    public static GenericRecordConsumerRecordToStreamPublisherAdapter make(
             final TableWriter<?> writer,
             final String kafkaPartitionColumn,
             final String offsetColumnName,
@@ -112,7 +112,7 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
             String rawKeyColumnName,
             final Map<String, String> keyColumns,
             final Map<String, String> valueColumns) {
-        return new GenericRecordConsumerRecordToTableWriterAdapter(
+        return new GenericRecordConsumerRecordToStreamPublisherAdapter(
                 writer,
                 kafkaPartitionColumn,
                 offsetColumnName,
@@ -341,8 +341,8 @@ public class GenericRecordConsumerRecordToTableWriterAdapter implements Consumer
          *
          * @return the factory
          */
-        @NotNull Function<TableWriter, GenericRecordConsumerRecordToTableWriterAdapter> buildFactory() {
-            return (TableWriter tw) -> new GenericRecordConsumerRecordToTableWriterAdapter(tw,
+        @NotNull Function<TableWriter, GenericRecordConsumerRecordToStreamPublisherAdapter> buildFactory() {
+            return (TableWriter tw) -> new GenericRecordConsumerRecordToStreamPublisherAdapter(tw,
                     kafkaPartitionColumnName, offsetColumnName, timestampColumnName,
                     rawKeyColumnName,
                     columnToKeyFieldSetter, columnToValueFieldSetter,

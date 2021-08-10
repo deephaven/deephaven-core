@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * An adapter that maps keys and values to single Deephaven columns.  Each Kafka record produces one Deephaven row.
  */
-public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordToTableWriterAdapter {
+public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRecordToStreamPublisherAdapter {
     private final StreamPublisherImpl publisher;
     private final int kafkaPartitionColumnIndex;
     private final int offsetColumnIndex;
@@ -30,7 +30,7 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
     final KeyOrValueProcessor keyProcessor;
     final KeyOrValueProcessor valueProcessor;
 
-    private SimpleConsumerRecordToTableWriterAdapter(
+    private SimpleConsumerRecordToStreamPublisherAdapter(
             final StreamPublisherImpl publisher,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
@@ -59,33 +59,7 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         }
     }
 
-    /*
-     * Create a {@link ConsumerRecordToTableWriterAdapter} that maps simple keys and values to single columns in a
-     * Deephaven table.  Each Kafka record becomes a row in the table's output.
-     *
-     * @param kafkaPartitionColumnName  the name of the Integer column representing the Kafka partition, if null the partition
-     *                                  is not mapped to a Deephaven column
-     * @param offsetColumnName          the name of the Long column representing the Kafka offset, if null the offset is not
-     *                                  mapped to a Deephaven column
-     * @param timestampColumnName       the name of the DateTime column representing the Kafka partition, if null the
-     *                                  partition is not mapped to a Deephaven column
-     * @param keyColumnName             the name of the Deephaven column for the record's key
-     * @param valueColumnName           the name of the Deephaven column for the record's value
-     *
-     * @return an adapter for the TableWriter
-     */
-//    public static Function<TableWriter<?>, ConsumerRecordToTableWriterAdapter> makeFactory(
-//            final String kafkaPartitionColumnName,
-//            final String offsetColumnName,
-//            final String timestampColumnName,
-//            final String keyColumnName,
-//            @NotNull final String valueColumnName
-//    ) {
-//        return (TableWriter<?> tw) -> new SimpleConsumerRecordToTableWriterAdapter(
-//                tw, kafkaPartitionColumnName, offsetColumnName, timestampColumnName, keyColumnName, valueColumnName);
-//    }
-
-    public static ConsumerRecordToTableWriterAdapter make(
+    public static ConsumerRecordToStreamPublisherAdapter make(
             final StreamPublisherImpl publisher,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
@@ -102,8 +76,26 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         final Pair<KeyOrValueProcessor, Integer> keyPair = getProcessorAndSimpleIndex(keyColumnIndex, keyChunkType);
         final Pair<KeyOrValueProcessor, Integer> valuePair = getProcessorAndSimpleIndex(valueColumnIndex, valueChunkType);
 
-        return new SimpleConsumerRecordToTableWriterAdapter(
+        return new SimpleConsumerRecordToStreamPublisherAdapter(
                 publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyPair.first, valuePair.first, keyPair.second, valuePair.second);
+    }
+
+    public static ConsumerRecordToStreamPublisherAdapter make(
+            final StreamPublisherImpl publisher,
+            final int kafkaPartitionColumnIndex,
+            final int offsetColumnIndex,
+            final int timestampColumnIndex,
+            final KeyOrValueProcessor keyProcessor,
+            final KeyOrValueProcessor valueProcessor,
+            final int simpleKeyColumnIndex,
+            final int simpleValueColumnIndex
+            ) {
+        if (valueProcessor == null) {
+            throw new IllegalArgumentException("Value processor is required!");
+        }
+
+        return new SimpleConsumerRecordToStreamPublisherAdapter(
+                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyProcessor, valueProcessor, simpleKeyColumnIndex, simpleValueColumnIndex);
     }
 
     @NotNull
@@ -226,12 +218,11 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
         }
 
         @Override
-        public void handleChunk(WritableObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
+        public void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
             final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[offset];
             final int existingSize = publisherChunk.size();
             publisherChunk.setSize(existingSize + inputChunk.size());
             unboxer.unboxTo(inputChunk, publisherChunk, 0, existingSize);
-            inputChunk.setSize(0);
         }
     }
 
@@ -240,6 +231,7 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             return;
         }
         keyProcessor.handleChunk(objectChunk, publisherChunks);
+        objectChunk.setSize(0);
     }
 
     void flushValueChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk, WritableChunk<Attributes.Values> [] publisherChunks) {
@@ -247,5 +239,6 @@ public class SimpleConsumerRecordToTableWriterAdapter implements ConsumerRecordT
             return;
         }
         valueProcessor.handleChunk(objectChunk, publisherChunks);
+        objectChunk.setSize(0);
     }
 }
