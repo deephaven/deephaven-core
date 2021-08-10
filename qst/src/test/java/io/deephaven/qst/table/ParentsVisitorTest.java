@@ -6,13 +6,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
+import static io.deephaven.qst.table.ParentsVisitor.getParents;
+import static io.deephaven.qst.table.ParentsVisitor.postOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ParentsVisitorTest {
-
 
     private static final TableSpec S1 = TableSpec.empty(42);
 
@@ -22,70 +27,165 @@ public class ParentsVisitorTest {
 
     private static final TableSpec S4 = S3.view("I=i");
 
-    private void checkDepth(TableSpec table, List<TableSpec> depthFirst) {
-        assertThat(new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table))))
-            .isEqualTo(depthFirst);
-    }
-
-    private void checkDepth(TableSpec table, List<TableSpec> depthFirst, int maxDepth) {
-        assertThat(
-            new ArrayList<>(ParentsVisitor.postOrder(Collections.singleton(table), maxDepth)))
-                .isEqualTo(depthFirst);
+    @Test
+    void exactlyOnePostOrderChain() {
+        canonicalOrder(S1, S1);
+        canonicalOrder(S2, S1, S2);
+        canonicalOrder(S3, S1, S2, S3);
+        canonicalOrder(S4, S1, S2, S3, S4);
     }
 
     @Test
-    void checkDepth() {
-        checkDepth(S1, Collections.singletonList(S1));
-        checkDepth(S2, Arrays.asList(S1, S2));
-        checkDepth(S3, Arrays.asList(S1, S2, S3));
-        checkDepth(S4, Arrays.asList(S1, S2, S3, S4));
+    void exactlyOnePostOrderBranch1() {
+        TableSpec t1 = TableSpec.empty(1);
+        TableSpec t2 = t1.head(2);
+        TableSpec t3 = TableSpec.merge(Arrays.asList(t1, t2));
+        canonicalOrder(t3, t1, t2, t3);
     }
 
     @Test
-    void checkDepth0() {
-        checkDepth(S1, Collections.singletonList(S1), 0);
-        checkDepth(S2, Collections.singletonList(S2), 0);
-        checkDepth(S3, Collections.singletonList(S3), 0);
-        checkDepth(S4, Collections.singletonList(S4), 0);
+    void exactlyOnePostOrderBranch2() {
+        TableSpec t1 = TableSpec.empty(1);
+        TableSpec t2 = t1.head(2);
+        TableSpec t3 = TableSpec.merge(t2, t1);
+        canonicalOrder(t3, t1, t2, t3);
     }
 
     @Test
-    void checkDepth1() {
-        checkDepth(S1, Collections.singletonList(S1), 1);
-        checkDepth(S2, Arrays.asList(S1, S2), 1);
-        checkDepth(S3, Arrays.asList(S2, S3), 1);
-        checkDepth(S4, Arrays.asList(S3, S4), 1);
+    void exactlyOnePostOrderBranch3() {
+        TableSpec t1 = TableSpec.empty(1);
+        TableSpec t2 = t1.head(1);
+        TableSpec t3 = TableSpec.merge(t1, t2);
+        TableSpec t4 = TableSpec.merge(t1, t2, t3);
+        TableSpec t5 = TableSpec.merge(t1, t2, t3, t4);
+        TableSpec t6 = TableSpec.merge(t1, t2, t3, t4, t5);
+        canonicalOrder(t6, t1, t2, t3, t4, t5, t6);
     }
 
     @Test
-    void checkDepth2() {
-        checkDepth(S1, Collections.singletonList(S1), 2);
-        checkDepth(S2, Arrays.asList(S1, S2), 2);
-        checkDepth(S3, Arrays.asList(S1, S2, S3), 2);
-        checkDepth(S4, Arrays.asList(S2, S3, S4), 2);
+    void exactlyOnePostOrderBranch4() {
+        TableSpec t1 = TableSpec.empty(1);
+        TableSpec t2 = t1.head(1);
+        TableSpec t3 = TableSpec.merge(t2, t1);
+        TableSpec t4 = TableSpec.merge(t3, t2, t1);
+        TableSpec t5 = TableSpec.merge(t4, t3, t2, t1);
+        TableSpec t6 = TableSpec.merge(t5, t4, t3, t2, t1);
+        canonicalOrder(t6, t1, t2, t3, t4, t5, t6);
     }
 
     @Test
-    void checkDepth3() {
-        checkDepth(S1, Collections.singletonList(S1), 3);
-        checkDepth(S2, Arrays.asList(S1, S2), 3);
-        checkDepth(S3, Arrays.asList(S1, S2, S3), 3);
-        checkDepth(S4, Arrays.asList(S1, S2, S3, S4), 3);
+    void duplicatedInputs() {
+        canonicalOrder(Arrays.asList(S4, S4), Arrays.asList(S1, S2, S3, S4));
     }
 
     @Test
-    void checkDepth4() {
-        checkDepth(S1, Collections.singletonList(S1), 4);
-        checkDepth(S2, Arrays.asList(S1, S2), 4);
-        checkDepth(S3, Arrays.asList(S1, S2, S3), 4);
-        checkDepth(S4, Arrays.asList(S1, S2, S3, S4), 4);
+    void multipleInputsSameChain1() {
+        canonicalOrder(Arrays.asList(S4, S3, S2, S1), Arrays.asList(S1, S2, S3, S4));
     }
 
+    @Test
+    void multipleInputsSameChain2() {
+        canonicalOrder(Arrays.asList(S3, S4, S2, S1), Arrays.asList(S1, S2, S3, S4));
+    }
 
     /**
-     * This is a table that branches at every level except the leaf. It is meant to exercise the
-     * depth-first implementation. Naive implementations may need to search every single path
-     * through the DAG; but that is not feasible (2^64 paths).
+     * This is specifically designed to break recursive implementations with a very deep QST.
+     */
+    @Test
+    void deepWalk() {
+        List<TableSpec> expected = createDeepWalk(8192);
+        TableSpec table = expected.get(expected.size() - 1);
+        // recursive implementations are very likely to throw StackOverflowError
+        canonicalOrder(table, expected);
+    }
+
+    @Test
+    void deepWalkAllProvided() {
+        List<TableSpec> expected = createDeepWalk(8192);
+        canonicalOrder(expected, expected);
+    }
+
+    @Test
+    void deepWalkAllReversed() {
+        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> reversed = new ArrayList<>(expected);
+        Collections.reverse(reversed);
+        canonicalOrder(reversed, expected);
+    }
+
+    @Test
+    void deepWalkAllShuffled() {
+        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> shuffled = new ArrayList<>(expected);
+        for (int i = 0; i < 10; ++i) {
+            Collections.shuffle(shuffled);
+            canonicalOrder(shuffled, expected);
+        }
+    }
+
+    /**
+     * This is specifically designed to break implementations that don't have already-visited
+     * checks.
+     */
+    @Test
+    void heavilyBranchedWalk() {
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+            assertThat(postOrder(Collections.singleton(heavilyBranchedTable()))).hasSize(65);
+        });
+    }
+
+    @Test
+    void validPostOrderings() {
+        for (TableSpec table : tables()) {
+            checkValidPostOrder(postOrder(Collections.singleton(table)));
+        }
+    }
+
+    @Test
+    void validPostOrderingsAllAtOnce() {
+        checkValidPostOrder(postOrder(tables()));
+    }
+
+    @Test
+    void multiplePostOrderings() {
+        TableSpec t1 = TableSpec.empty(1);
+        TableSpec t2 = t1.head(1);
+        TableSpec t3 = t1.tail(1);
+        TableSpec t4 = TableSpec.merge(t2, t3);
+
+        // Both are valid post-orderings:
+        // t1, t2, t3, t4
+        // t1, t3, t2, t4
+
+        try {
+            checkIsCanonicalOrder(Collections.singleton(t4));
+            failBecauseExceptionWasNotThrown(AssertionError.class);
+        } catch (AssertionError e) {
+            // expected
+        }
+    }
+
+    private static Iterable<TableSpec> tables() {
+        List<TableSpec> deepWalk = createDeepWalk(8192);
+        TableSpec deepWalkTable = deepWalk.get(deepWalk.size() - 1);
+
+        return () -> Stream.concat(Stream.of(S4, heavilyBranchedTable(), deepWalkTable),
+            TableCreationImplTest.createTables().stream()).iterator();
+    }
+
+    private static void checkValidPostOrder(Iterable<TableSpec> items) {
+        Set<TableSpec> visited = new HashSet<>();
+        for (TableSpec item : items) {
+            boolean allDependenciesSatisfied = getParents(item).allMatch(visited::contains);
+            assertThat(allDependenciesSatisfied).withFailMessage("items are not in post-order")
+                .isTrue();
+            assertThat(visited.add(item)).withFailMessage("items are not de-duplicated").isTrue();
+        }
+    }
+
+    /**
+     * This is a table that branches at every level except the leaf. Naive implementations may need
+     * to search every single path through the DAG; but that is not feasible (2^64 paths).
      */
     private static TableSpec heavilyBranchedTable() {
         TableSpec current = TableSpec.empty(1);
@@ -95,13 +195,48 @@ public class ParentsVisitorTest {
         return current;
     }
 
-    @Test
-    void heavilyBranchedTableDepthFirstWalk() {
-        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
-            int[] count = {0};
-            ParentsVisitor.postOrderWalk(Collections.singleton(heavilyBranchedTable()),
-                table -> count[0]++);
-            assertThat(count[0]).isEqualTo(65);
-        });
+    private static List<TableSpec> createDeepWalk(int size) {
+        List<TableSpec> expected = new ArrayList<>();
+        TableSpec table = TableSpec.empty(size);
+        expected.add(table);
+        for (int i = 0; i < size; ++i) {
+            table = table.head(i);
+            expected.add(table);
+        }
+        return expected;
+    }
+
+    private void canonicalOrder(TableSpec input, TableSpec... expectedOutputs) {
+        canonicalOrder(Collections.singleton(input), Arrays.asList(expectedOutputs));
+    }
+
+    private void canonicalOrder(TableSpec input, Iterable<TableSpec> expectedOutputs) {
+        canonicalOrder(Collections.singleton(input), expectedOutputs);
+    }
+
+    private void canonicalOrder(Iterable<TableSpec> inputs, Iterable<TableSpec> expectedOutputs) {
+        checkValidPostOrder(expectedOutputs);
+        checkIsCanonicalOrder(expectedOutputs);
+        assertThat(postOrder(inputs)).containsExactlyElementsOf(expectedOutputs);
+    }
+
+    /**
+     * In general, a set of tables will have multiple valid post-orders. To check against a specific
+     * order, we should ensure that there is one canonical ordering.
+     *
+     * <p>
+     * This is a check against adding an overly-specific test that depends on a specific
+     * post-ordering, which we should not do.
+     */
+    private static void checkIsCanonicalOrder(Iterable<TableSpec> items) {
+        TableSpec prev = null;
+        for (TableSpec current : items) {
+            if (prev == null) {
+                assertThat(getParents(current)).isEmpty();
+            } else {
+                assertThat(getParents(current)).contains(prev);
+            }
+            prev = current;
+        }
     }
 }
