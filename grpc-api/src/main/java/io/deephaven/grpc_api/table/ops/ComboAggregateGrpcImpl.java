@@ -1,5 +1,6 @@
 package io.deephaven.grpc_api.table.ops;
 
+import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.DataColumn;
@@ -9,8 +10,10 @@ import io.deephaven.db.v2.by.ComboAggregateFactory;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
+import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
+import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,6 +32,59 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
     }
 
     @Override
+    public void validateRequest(ComboAggregateRequest request) throws StatusRuntimeException {
+        if (request.getAggregatesCount() == 0) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "ComboAggregateRequest incorrectly has zero aggregates provided");
+        }
+        if (isSimpleAggregation(request)) {
+            // this is a simple aggregation, make sure the user didn't mistakenly set extra properties
+            // which would suggest they meant to set force_combo=true
+            ComboAggregateRequest.Aggregate aggregate = request.getAggregates(0);
+            if (aggregate.getMatchPairsCount() != 0) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but match_pairs is specified");
+            }
+            if (aggregate.getPercentile() != 0) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but percentile is specified");
+            }
+            if (aggregate.getAvgMedian()) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but avg_median is specified");
+            }
+            if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
+                if (!aggregate.getColumnName().isEmpty()) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "force_combo is false and only one aggregate provided, but column_name is specified for type other than COUNT or WEIGHTED_AVG");
+                }
+            }
+        } else {
+            for (ComboAggregateRequest.Aggregate aggregate : request.getAggregatesList()) {
+                if (aggregate.getType() != ComboAggregateRequest.AggType.PERCENTILE) {
+                    if (aggregate.getPercentile() != 0) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "percentile is specified for type " + aggregate.getType());
+                    }
+                    if (aggregate.getAvgMedian()) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "avg_median is specified for type " + aggregate.getType());
+                    }
+                }
+                if (aggregate.getType() == ComboAggregateRequest.AggType.COUNT) {
+                    if (aggregate.getMatchPairsCount() != 0) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "match_pairs is specified for type COUNT");
+                    }
+                }
+                if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
+                    if (!aggregate.getColumnName().isEmpty()) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "column_name is specified for type " + aggregate.getType());
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isSimpleAggregation(ComboAggregateRequest request) {
+        return !request.getForceCombo() && request.getAggregatesCount() == 1 && request.getAggregates(0).getColumnName().isEmpty()
+                && request.getAggregates(0).getType() != ComboAggregateRequest.AggType.PERCENTILE
+                && request.getAggregates(0).getMatchPairsCount() == 0;
+    }
+
+    @Override
     public Table create(final ComboAggregateRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
@@ -38,9 +94,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         ColumnExpressionValidator.validateColumnExpressions(groupByColumns, groupBySpecs, parent);
 
         final Table result;
-        if (!request.getForceCombo() && request.getAggregatesCount() == 1
-                && request.getAggregates(0).getType() != ComboAggregateRequest.AggType.PERCENTILE
-                && request.getAggregates(0).getMatchPairsCount() == 0) {
+        if (isSimpleAggregation(request)) {
             // This is a special case with a special operator that can be invoked right off of the table api.
             result = singleAggregateHelper(parent, groupByColumns, request.getAggregates(0));
         } else {
