@@ -81,13 +81,13 @@ from .python_to_java import dataFrameToTable, createTableFromData
 from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJavaArrayList, convertToJavaHashSet, \
     convertToJavaHashMap, getJavaClassObject
 
+
 from . import Calendars as cals, \
     ComboAggregateFactory as caf, \
     DBTimeUtils as dbtu, \
     MovingAverages as mavg, \
     npy, \
     Plot as plt, \
-    QueryScope as qs, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers
@@ -109,7 +109,6 @@ def initialize():
     mavg._defineSymbols()
     plt._defineSymbols()
     figw._defineSymbols()
-    qs._defineSymbols()
     pt._defineSymbols()
     ttools._defineSymbols()
     tloggers._defineSymbols()
