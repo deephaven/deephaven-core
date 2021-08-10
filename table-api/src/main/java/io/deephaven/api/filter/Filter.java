@@ -40,6 +40,10 @@ public interface Filter extends Serializable {
 
         void visit(FilterNot not);
 
+        void visit(FilterOr ors);
+
+        void visit(FilterAnd ands);
+
         void visit(RawString rawString);
     }
 }

@@ -85,8 +85,8 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public Class getNativeType() {
-        return ArrayTuple.class;
+    public ChunkType getChunkType() {
+        return ChunkType.Object;
     }
 
     @Override

@@ -18,23 +18,22 @@ import org.jetbrains.annotations.NotNull;
  * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} is
  * added, which supports doing a fillChunk incrementally across a series of pages.
  */
-
 public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
 
     /**
      * This mask is applied to {@link OrderedKeys} which are passed into
      * {@link #getChunk(ChunkSource.GetContext, OrderedKeys)} and
      * {@link #fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys)}. This allows the
-     * {@link PagingChunkSource}s to be cached, and reused even if they are properly relocated in key space.
+     * {@link PagingChunkSource PagingChunkSources} to be cached, and reused even if they are properly relocated in key
+     * space.
      *
      * @return the mask for this page, which must be a bitmask representing the some number of lower order bits of a
      * long.
      */
-
     long mask();
 
     /**
-     * <p>The {@code maxRow} is the greatest possible row which may reference this ChunkSource.  This method is
+     * <p>The {@code maxRow} is the greatest possible row which may reference this ChunkSource. This method is
      * used by {@link #fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} to determine which of its
      * {@code OrderedKeys} are referencing this {@code PagingChunkSource}.</p>
      *
@@ -42,14 +41,14 @@ public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSou
      * That is, there is only one {@code PagingChunkSource} for {@code OrderedKey}s with the same bits outside of
      * {@link #mask()}.</p>
      *
-     * <p>It is also possible to pack multiple, non-overlapping {@code PagingChunkSource}s into the same page reference.
+     * <p>It is also possible to pack multiple, non-overlapping {@code PagingChunkSources} into the same page reference.
      * In this case, one typically will want to override {@code maxRow}.  An example such implementation is
      * {@link ChunkPage}.
      *
      * @param row Any row contained on this page.
      * @return the maximum last row of this page, located in the same way as row.
      */
-    default long maxRow(long row) {
+    default long maxRow(final long row) {
         return row | mask();
     }
 

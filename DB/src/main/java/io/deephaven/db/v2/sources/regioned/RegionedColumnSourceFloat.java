@@ -11,8 +11,6 @@ import io.deephaven.db.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Supplier;
-
 import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
@@ -47,7 +45,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
 
     static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
         AsValues() {
-            super(ColumnRegionFloat.createNull(), DeferredColumnRegionFloat::new);
+            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
         }
     }
 
@@ -80,8 +78,8 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     static final class Partitioning extends RegionedColumnSourceFloat<Values> {
 
         Partitioning() {
-            super(ColumnRegionFloat.createNull(),
-                    Supplier::get // No need to interpose a deferred region in this case
+            super(ColumnRegionFloat.createNull(PARAMETERS.regionMask),
+                    (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
@@ -95,7 +93,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
                 throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
                         + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
             }
-            return new ColumnRegionFloat.Constant<>(unbox((Float) partitioningColumnValue));
+            return new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
         }
     }
 }

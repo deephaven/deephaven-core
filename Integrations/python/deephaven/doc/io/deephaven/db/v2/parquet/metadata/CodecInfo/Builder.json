@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.v2.parquet.metadata.CodecInfo$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.db.v2.parquet.metadata.CodecInfo",
+  "codecArg": ":param codecArg: java.lang.String\n:return: io.deephaven.db.v2.parquet.metadata.CodecInfo.Builder",
+  "codecName": ":param codecName: java.lang.String\n:return: io.deephaven.db.v2.parquet.metadata.CodecInfo.Builder",
+  "componentType": ":param componentType: java.lang.String\n:return: io.deephaven.db.v2.parquet.metadata.CodecInfo.Builder",
+  "dataType": ":param dataType: java.lang.String\n:return: io.deephaven.db.v2.parquet.metadata.CodecInfo.Builder"
+ },
+ "path": "io.deephaven.db.v2.parquet.metadata.CodecInfo.Builder",
+ "typeName": "interface"
+}

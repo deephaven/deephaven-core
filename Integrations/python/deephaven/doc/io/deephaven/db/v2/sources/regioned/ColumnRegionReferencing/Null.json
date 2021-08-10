@@ -1,7 +1,6 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing$Null",
  "methods": {
-  "getNativeType": ":return: java.lang.Class<?>",
   "getReferencedRegion": ":return: ColumnRegionReferencing.Null.REFERENCED_COLUMN_REGION"
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing.Null",

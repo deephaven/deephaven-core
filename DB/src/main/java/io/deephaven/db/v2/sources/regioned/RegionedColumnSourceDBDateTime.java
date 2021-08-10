@@ -11,11 +11,12 @@ import static io.deephaven.db.v2.utils.ReadOnlyIndex.NULL_KEY;
 /**
  * Regioned column source implementation for columns of {@link DBDateTime}s.
  */
-final class RegionedColumnSourceDBDateTime extends RegionedColumnSourceReferencing<DBDateTime, Attributes.Values, Long, ColumnRegionLong<Attributes.Values>>
+final class RegionedColumnSourceDBDateTime
+        extends RegionedColumnSourceReferencing<DBDateTime, Attributes.Values, Long, ColumnRegionLong<Attributes.Values>>
         implements ColumnSourceGetDefaults.ForObject<DBDateTime> {
 
     public RegionedColumnSourceDBDateTime() {
-        super(ColumnRegionLong.createNull(), DBDateTime.class, RegionedColumnSourceLong.NativeType.AsValues::new);
+        super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DBDateTime.class, RegionedColumnSourceLong.NativeType.AsValues::new);
     }
 
     @Override

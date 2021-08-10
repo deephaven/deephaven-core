@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.table.MergeTable$Builder",
+ "methods": {
+  "addAllTables": ":param elements: java.lang.Iterable<? extendsio.deephaven.qst.table.TableSpec>\n:return: io.deephaven.qst.table.MergeTable.Builder",
+  "addTables": "*Overload 1*  \n  :param element: io.deephaven.qst.table.TableSpec\n  :return: io.deephaven.qst.table.MergeTable.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.qst.table.TableSpec...\n  :return: io.deephaven.qst.table.MergeTable.Builder",
+  "build": ":return: io.deephaven.qst.table.MergeTable"
+ },
+ "path": "io.deephaven.qst.table.MergeTable.Builder",
+ "typeName": "interface"
+}

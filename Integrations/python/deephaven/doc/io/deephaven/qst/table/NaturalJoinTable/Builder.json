@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.qst.table.NaturalJoinTable$Builder",
+ "methods": {},
+ "path": "io.deephaven.qst.table.NaturalJoinTable.Builder",
+ "typeName": "interface"
+}

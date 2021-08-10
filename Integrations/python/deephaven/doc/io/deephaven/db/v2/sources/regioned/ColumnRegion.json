@@ -1,8 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.ColumnRegion",
  "methods": {
-  "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n page.",
-  "mask": "This mask is applied to OrderedKeys which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, OrderedKeys) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys). This allows the\n PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n long."
+  "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n page."
  },
  "path": "io.deephaven.db.v2.sources.regioned.ColumnRegion",
  "typeName": "interface"

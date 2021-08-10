@@ -136,11 +136,6 @@ public class FloatFloatDateTimeColumnTupleSource extends AbstractTupleSource<Flo
     }
 
     @Override
-    public Class<FloatFloatLongTuple> getNativeType() {
-        return FloatFloatLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<FloatFloatLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         FloatChunk<Attributes.Values> chunk1 = chunks[0].asFloatChunk();

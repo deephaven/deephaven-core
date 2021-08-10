@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.type.PrimitiveType",
+ "methods": {
+  "primitiveClass": ":return: java.lang.Class<PrimitiveType.T>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.PrimitiveType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.PrimitiveType",
+ "text": "A primitive type.",
+ "typeName": "interface"
+}

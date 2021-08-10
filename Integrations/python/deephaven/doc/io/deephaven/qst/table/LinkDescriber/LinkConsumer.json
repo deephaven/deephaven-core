@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.LinkDescriber$LinkConsumer",
+ "methods": {
+  "link": "*Overload 1*  \n  :param table: io.deephaven.qst.table.TableSpec\n  \n*Overload 2*  \n  :param table: io.deephaven.qst.table.TableSpec\n  :param linkIndex: int\n  \n*Overload 3*  \n  :param table: io.deephaven.qst.table.TableSpec\n  :param linkLabel: java.lang.String"
+ },
+ "path": "io.deephaven.qst.table.LinkDescriber.LinkConsumer",
+ "typeName": "interface"
+}

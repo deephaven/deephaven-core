@@ -65,8 +65,8 @@ class SingleColumnTupleSource<TUPLE_TYPE> implements TupleSource<TUPLE_TYPE>, De
     }
 
     @Override
-    public Class<TUPLE_TYPE> getNativeType() {
-        return columnSource.getNativeType();
+    public ChunkType getChunkType() {
+        return columnSource.getChunkType();
     }
 
     @Override

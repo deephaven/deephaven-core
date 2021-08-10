@@ -19,7 +19,7 @@ public class PythonStaticGenerator {
     private static final List<String> customTableTools = Arrays.asList("col", "byteCol", "shortCol", "intCol", "longCol",
             "floatCol", "doubleCol", "charCol", "newTable", "colSource", "objColSource");
     private static final List<String> customParquetTools = Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
-    private static final List<String> customKafkaTools = Arrays.asList("consumeToTable", "avroSchemaToColumnDefinitions");
+    private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
             "io.deephaven.db.tables.utils.TableTools,display",
@@ -32,7 +32,7 @@ public class PythonStaticGenerator {
             "io.deephaven.db.tables.utils.DBTimeUtils,yearDiff",
             "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
             "io.deephaven.db.plot.colors.ColorMaps,closureMap",
-            "io.deephaven.kafka.KafkaTools,genericAvroConsumeToTable"
+            "io.deephaven.kafka.KafkaTools,consumeToTable"
             );
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());

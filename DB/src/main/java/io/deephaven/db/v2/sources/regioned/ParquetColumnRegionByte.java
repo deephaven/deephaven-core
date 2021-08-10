@@ -10,14 +10,14 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionByte} implementation for regions that support fetching primitive bytes from a
- * {@link ColumnChunkPageStore}.
+ * {@link ColumnRegionByte} implementation for regions that support fetching primitive bytes from
+ * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionByte<ATTR> {
 
     public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     public byte[] getBytes(
@@ -30,26 +30,12 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
         try (OrderedKeys orderedKeys = OrderedKeys.forRange(firstElementIndex, firstElementIndex + length - 1)) {
             fillChunk(DEFAULT_FILL_INSTANCE, byteChunk, orderedKeys);
         }
-
         return destination;
     }
 
     @Override
     public byte getByte(final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
-        try {
-            return page.asByteChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving byte at table byte index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public byte getByte(@NotNull final FillContext context, final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asByteChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {

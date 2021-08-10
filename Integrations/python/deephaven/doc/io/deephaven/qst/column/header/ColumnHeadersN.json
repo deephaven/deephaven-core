@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.column.header.ColumnHeadersN",
+ "methods": {
+  "header": ":param header: io.deephaven.qst.column.header.ColumnHeader<?>\n:return: io.deephaven.qst.column.header.ColumnHeadersN<ColumnHeadersN.T1,ColumnHeadersN.T2,ColumnHeadersN.T3,ColumnHeadersN.T4,ColumnHeadersN.T5,ColumnHeadersN.T6,ColumnHeadersN.T7,ColumnHeadersN.T8,ColumnHeadersN.T9>",
+  "headers": ":return: java.util.List<io.deephaven.qst.column.header.ColumnHeader<?>>",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.header.ColumnHeader<?>>",
+  "others": ":return: io.deephaven.qst.column.header.ColumnHeaders9<ColumnHeadersN.T1,ColumnHeadersN.T2,ColumnHeadersN.T3,ColumnHeadersN.T4,ColumnHeadersN.T5,ColumnHeadersN.T6,ColumnHeadersN.T7,ColumnHeadersN.T8,ColumnHeadersN.T9>",
+  "row": ":param a: ColumnHeadersN.T1\n:param b: ColumnHeadersN.T2\n:param c: ColumnHeadersN.T3\n:param d: ColumnHeadersN.T4\n:param e: ColumnHeadersN.T5\n:param f: ColumnHeadersN.T6\n:param g: ColumnHeadersN.T7\n:param h: ColumnHeadersN.T8\n:param i: ColumnHeadersN.T9\n:param remaining: java.lang.Object...\n:return: io.deephaven.qst.column.header.ColumnHeadersN.Rows",
+  "start": ":param initialCapacity: int\n:return: io.deephaven.qst.column.header.ColumnHeadersN.Rows"
+ },
+ "path": "io.deephaven.qst.column.header.ColumnHeadersN",
+ "typeName": "class"
+}

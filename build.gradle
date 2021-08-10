@@ -203,42 +203,6 @@ configure modsRegular,
         new File("$rootDir/tmp/workspace".toString()).mkdirs()
         new File("$rootDir/tmp/logs".toString()).mkdirs()
 
-        ignoreFailures = TestTools.allowFailure project
-        if (ignoreFailures) {
-            // begin dirty trick to ensure you can re-run failed tests.
-            // Note that this workaround is only needed because of the ignoreTestFailures=true "footgun" above.
-            File cacheBust = new File(p.buildDir, "testState/${path.replaceAll(":", "_")}".toString())
-            if (!cacheBust.exists()) {
-                cacheBust.parentFile.mkdirs()
-                cacheBust.createNewFile()
-            }
-            if (cacheBust.text != 'passed') {
-                // If the cacheBust file exists and it did not pass on last run, fill it w/ a unique value to force the task to rerun
-                cacheBust.text = "rerun-${UUID.randomUUID()}"
-            }
-            outputs.file(cacheBust)
-            // outputs.file(cacheBust) tells gradle "we have an output file which we'll use to store some state about the test task."
-            // when the cacheBust file changes, gradle will forcibly rerun the task.  This is needed when iterating on
-            // a failed test; when ignoreFailures=true and a test fails, it won't naturally be rerun w/out this hackery
-
-            def failed = 0
-            t.afterTest {
-                TestDescriptor descriptor, TestResult result ->
-                    if (result.resultType == TestResult.ResultType.FAILURE) {
-                        failed++
-                    }
-            }
-            doLast {
-                // After the test task completes, update the cacheBust file with our task state. This allows rerunning failed tests when ignoreFailures=true
-                cacheBust.text = "${state.executed ? failed ? 'failed' : 'passed' : 'skipped'}"
-                if (failed) {
-                    gradle.buildFinished {
-                        logger.error "\n$path $failed tests failed;\nsee ${t.reports.html.entryPoint.toURI()}"
-                    }
-                }
-            }
-        }
-
         // pass -PforceTest=true to run test again after they've passed once,
         // and input source has not changed (i.e. invalidate caching)
         if (findProperty('forceTest') == 'true') {
@@ -362,7 +326,7 @@ tasks.register 'allJavadoc', Javadoc, {
 
         //add to as javadoc gets completed
         String [] exportedProjects = [
-                ':DataStructures', ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api', ':qst'
+                ':DataStructures', ':DB', ':Util', ':ModelFarm', ':Numerics', ':Plot', ':KafkaIngester', ':grpc-api', ':qst', ':table-api'
         ]
         jdoc.source = exportedProjects.collect { Java.sourceSet(project(it)).allJava }
         jdoc.classpath = files(exportedProjects.collect { project(it).sourceSets.main.compileClasspath })

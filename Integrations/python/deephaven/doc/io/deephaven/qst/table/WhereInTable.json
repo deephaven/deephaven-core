@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.WhereInTable",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.WhereInTable.Builder",
+  "left": ":return: io.deephaven.qst.table.TableSpec",
+  "matches": ":return: java.util.List<io.deephaven.api.JoinMatch>",
+  "right": ":return: io.deephaven.qst.table.TableSpec",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.WhereInTable",
+ "typeName": "class"
+}

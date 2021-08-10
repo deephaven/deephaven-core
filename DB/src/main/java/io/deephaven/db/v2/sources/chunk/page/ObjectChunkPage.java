@@ -25,11 +25,6 @@ public class ObjectChunkPage<T, ATTR extends Attributes.Any> extends ObjectChunk
     }
 
     @Override
-    public Class<Object> getNativeType() {
-        return Object.class;
-    }
-
-    @Override
     public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableObjectChunk<T, ? super ATTR>  to = destination.asWritableObjectChunk();
 

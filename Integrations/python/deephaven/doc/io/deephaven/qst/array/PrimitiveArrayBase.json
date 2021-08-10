@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.array.PrimitiveArrayBase",
+ "methods": {
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.Array.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.PrimitiveArrayBase",
+ "typeName": "class"
+}

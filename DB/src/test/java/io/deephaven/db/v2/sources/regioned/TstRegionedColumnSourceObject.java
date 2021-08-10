@@ -56,21 +56,21 @@ public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegion
         fillRegions();
 
         assertLookup(0L, 0, values[0], false);
-        assertLookup(RegionedPageStore.getLastElementIndex(0), 0, values[1], false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, values[1], false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, values[2], false);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, values[3], false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, values[2], false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, values[3], false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, values[4], false);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, values[5], false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, values[4], false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, values[5], false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, values[6], false);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, values[7], false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, values[6], false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, values[7], false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, values[8], false);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, values[9], false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, values[8], false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, values[9], false);
 
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 3, 9, NULL_VALUE, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 3, 9, NULL_VALUE, false);
     }
 
     @Test
@@ -78,20 +78,20 @@ public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegion
         fillRegions();
 
         assertLookup(0L, 0, values[0], true);
-        assertLookup(RegionedPageStore.getLastElementIndex(0), 0, values[1], true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, values[1], true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, values[2], true);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, values[3], true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, values[2], true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, values[3], true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, values[4], true);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, values[5], true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, values[4], true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, values[5], true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, values[6], true);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, values[7], true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, values[6], true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, values[7], true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, values[8], true);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, values[9], true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, values[8], true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, values[9], true);
 
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 3, 9, NULL_VALUE, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 3, 9, NULL_VALUE, true);
     }
 }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.array.DoubleArray$Builder",
+ "methods": {
+  "add": "*Overload 1*  \n  :param item: double\n  :return: io.deephaven.qst.array.DoubleArray.Builder\n  \n*Overload 2*  \n  :param items: double...\n  :return: io.deephaven.qst.array.DoubleArray.Builder\n  \n*Overload 3*  \n  :param item: java.lang.Double\n  :return: io.deephaven.qst.array.DoubleArray.Builder\n  \n*Overload 4*  \n  :param items: java.lang.Double...\n  :return: io.deephaven.qst.array.DoubleArray.Builder\n  \n*Overload 5*  \n  :param items: java.lang.Iterable<java.lang.Double>\n  :return: io.deephaven.qst.array.DoubleArray.Builder",
+  "build": ":return: io.deephaven.qst.array.DoubleArray"
+ },
+ "path": "io.deephaven.qst.array.DoubleArray.Builder",
+ "typeName": "class"
+}

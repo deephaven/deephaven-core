@@ -135,11 +135,6 @@ public class ByteDoubleObjectColumnTupleSource extends AbstractTupleSource<ByteD
     }
 
     @Override
-    public Class<ByteDoubleObjectTuple> getNativeType() {
-        return ByteDoubleObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteDoubleObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

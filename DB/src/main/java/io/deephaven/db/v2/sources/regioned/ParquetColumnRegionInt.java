@@ -10,32 +10,19 @@ import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionInt} implementation for regions that support fetching primitive ints from a
- * {@link ColumnChunkPageStore}.
+ * {@link ColumnRegionInt} implementation for regions that support fetching primitive ints from
+ * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-    implements ColumnRegionInt<ATTR>, ParquetColumnRegion<ATTR> {
+        implements ColumnRegionInt<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionInt(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     @Override
     public int getInt(final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
-        try {
-            return page.asIntChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving int at table int index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public int getInt(@NotNull final FillContext context, final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asIntChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
