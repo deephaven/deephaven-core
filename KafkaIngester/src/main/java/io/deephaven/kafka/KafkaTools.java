@@ -256,7 +256,8 @@ public class KafkaTools {
                 2,
                 keyProcessor, valueProcessor,
                 -1, // TODO A RAW STRING WOULD GO HERE
-                -1 // TODO A RAW STRING WOUDL GO HERE);
+                -1 // TODO A RAW STRING WOUDL GO HERE
+                );
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
