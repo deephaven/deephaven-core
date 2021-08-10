@@ -3,14 +3,17 @@ package io.deephaven.integrations.learn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
+
+import java.util.function.Function;
 
 /**
  * Computer adds new updated/modified row indices to the index set, to be used in the deferred calculation.
  */
 public class Computer {
 
-    private final PyObject modelFunc;
+    private final Function<Object[], Object> modelFunc;
     private final int batchSize;
     private final Input[] inputs;
     private final ColumnSource<?>[][] colSet;
@@ -25,6 +28,9 @@ public class Computer {
      * @param batchSize     maximum number of rows for each deferred computation.
      */
     public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
+        this(table, new PythonFunctionCaller(modelFunc), inputs, batchSize);
+    }
+    private Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
 
         Require.neqNull(table, "table");
         Require.neqNull(modelFunc, "modelFunc");

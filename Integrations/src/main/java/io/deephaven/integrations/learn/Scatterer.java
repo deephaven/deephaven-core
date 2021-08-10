@@ -33,7 +33,7 @@ public class Scatterer {
      *              that calculation.
      * @return subset of result that can be put back into the table.
      */
-    public PyObject scatter(int idx, FutureOffset fo) {
+    public Object scatter(int idx, FutureOffset fo) {
         return outputs[idx].getScatterCaller().apply(fo.getFutureGet(), fo.getOffset());
     }
 

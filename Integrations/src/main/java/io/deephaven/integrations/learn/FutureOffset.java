@@ -39,5 +39,5 @@ public class FutureOffset {
      *
      * @return the result of deferred calculation.
      */
-    public PyObject getFutureGet() { return future.get(); }
+    public Object getFutureGet() { return future.get(); }
 }

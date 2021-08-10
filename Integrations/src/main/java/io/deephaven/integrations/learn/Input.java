@@ -8,13 +8,15 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
+import java.util.function.Function;
+
 /**
  * Input specifies how to gather data from a table into a Python object.
  */
 public class Input {
 
     private final String[] colNames;
-    private final PythonFunctionCaller gatherCaller;
+    private final Function<Object[], Object> gatherCaller;
 
     /**
      * Creates a new Input.
@@ -48,6 +50,15 @@ public class Input {
         this.gatherCaller = new PythonFunctionCaller(gatherFunc);
     }
 
+    private Input(String[] colNames, Function<Object[], Object> gather) {
+        this.colNames = colNames;
+        this.gatherCaller = gather;
+    }
+
+    protected static Input createJavaInput(String[] colNames, Function<Object[], Object> gather) {
+        return new Input(colNames, gather);
+    }
+
     /** Creates an array of column sources specified by this table and given column names.
      *
      * @return column sources needed to generate the input.
@@ -68,5 +79,5 @@ public class Input {
      *
      * @return caller for the gather function.
      */
-    PythonFunctionCaller getGatherCaller() { return gatherCaller; }
+    Function<Object[], Object> getGatherCaller() { return gatherCaller; }
 }
