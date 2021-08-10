@@ -26,7 +26,11 @@ public interface GenericRecordFieldCopier {
             case Double:
                 return new DoubleFieldCopier(fieldName);
             case Object:
-                return new ObjectFieldCopier(fieldName);
+                if (dataType == String.class) {
+                    return new StringFieldCopier(fieldName);
+                } else {
+                    return new ObjectFieldCopier(fieldName);
+                }
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }

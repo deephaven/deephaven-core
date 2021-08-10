@@ -11,7 +11,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * An adapter that maps keys and values to single Deephaven columns.  Each Kafka record produces one Deephaven row.
@@ -205,6 +207,12 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
                 flushKeyChunk(keyChunk, chunks);
             }
             flushValueChunk(valueChunk, chunks);
+
+            for (int cc = 1; cc < chunks.length; ++cc) {
+                if (chunks[cc].size() != chunks[0].size()) {
+                    throw new IllegalStateException("Publisher chunks have size mismatch: " + Arrays.stream(chunks).map(c -> Integer.toString(c.size())).collect(Collectors.joining(", ")));
+                }
+            }
         }
     }
 

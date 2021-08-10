@@ -51,7 +51,7 @@ public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
             }
 
             chunkOffsets[col] = deephavenColumnIndex;
-            fieldCopiers[col] = GenericRecordFieldCopier.make(avroDeephavenNamePair.getKey(), chunkTypeForIndex.apply(deephavenColumnIndex), columnTypes[deephavenColumnIndex]);
+            fieldCopiers[col++] = GenericRecordFieldCopier.make(avroDeephavenNamePair.getKey(), chunkTypeForIndex.apply(deephavenColumnIndex), columnTypes[deephavenColumnIndex]);
         }
     }
 

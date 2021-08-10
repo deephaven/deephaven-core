@@ -188,6 +188,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             doRefresh();
         } catch (Exception e) {
             table.notifyListenersOnError(e, null);
+            liveTableRegistrar.removeTable(this);
         }
     }
 

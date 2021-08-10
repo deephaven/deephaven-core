@@ -269,13 +269,13 @@ public class KafkaTools {
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-                columnDefinitions.add(ColumnDefinition.ofString("Key"));
+//                columnDefinitions.add(ColumnDefinition.ofString("Key"));
             }
         } else if (keySchema != null) {
             columnDefinitions.addAll(Arrays.asList(keyColumns));
         } else {
             if (kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
-                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "Key"));
+//                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "Key"));
             }
         }
 
@@ -287,13 +287,13 @@ public class KafkaTools {
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-                columnDefinitions.add(ColumnDefinition.ofString("Value"));
+//                columnDefinitions.add(ColumnDefinition.ofString("Value"));
             }
         } else if (valueSchema != null) {
             columnDefinitions.addAll(Arrays.asList(valueColumns));
         } else {
             if (kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
-                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "Value"));
+//                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "Value"));
             }
         }
 
