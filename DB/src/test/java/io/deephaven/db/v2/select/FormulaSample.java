@@ -193,8 +193,8 @@ public class FormulaSample extends io.deephaven.db.v2.select.Formula {
     private long applyFormulaPerItem(int i, long ii, long II, int I) {
         try {
             return plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)));
-        } catch (java.lang.Exception e) {
-            throw new io.deephaven.db.v2.select.FormulaEvaluationException("In formula: Value = " + "plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)))", e);
+        } catch (java.lang.Exception __e) {
+            throw new io.deephaven.db.v2.select.FormulaEvaluationException("In formula: Value = " + "plus(plus(times(I, II), times(q.intValue(), ii)), II_.get(minus(i, 1)))", __e);
         }
     }
 
