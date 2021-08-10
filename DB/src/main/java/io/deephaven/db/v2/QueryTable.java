@@ -579,7 +579,7 @@ public class QueryTable extends BaseTable {
             }
             else if (isMinMax) {
                 final boolean isMin = ((MinMaxByStateFactoryImpl)inputAggregationStateFactory).isMinimum();
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isAddOnly())), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())), this, groupByColumns);
             }
             else if (isPercentile) {
                 final double percentile = ((PercentileByStateFactoryImpl)inputAggregationStateFactory).getPercentile();

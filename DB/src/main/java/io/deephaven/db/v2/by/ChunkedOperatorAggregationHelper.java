@@ -165,7 +165,6 @@ public class ChunkedOperatorAggregationHelper {
                 @ReferentialIntegrity
                 final ShiftAwareSwapListener swapListenerHardReference = swapListener;
 
-                // TODO-RWC: Can we skip this for streams?
                 final ModifiedColumnSet keysUpstreamModifiedColumnSet = withView.newModifiedColumnSet(keyNames);
                 final ModifiedColumnSet[] operatorInputModifiedColumnSets = ac.getInputModifiedColumnSets(withView);
                 final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories = ac.initializeRefreshing(result, this);

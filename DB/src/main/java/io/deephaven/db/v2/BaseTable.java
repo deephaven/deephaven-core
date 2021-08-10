@@ -513,7 +513,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         if (!isStream()) {
             return this;
         }
-        final Table result = copy(); // TODO-RWC: This is a crap implementation, because we naively memoize copy.
+        final Table result = copy();
         result.setAttribute(STREAM_TABLE_ATTRIBUTE, false);
         return result;
     }
