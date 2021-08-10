@@ -162,9 +162,9 @@ def pyFunctionalTest = runInDocker('py-functional-test', ['/bin/bash', 'run-func
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('test').dependsOn(pyTest)
+tasks.getByName('check').dependsOn(pyTest)
 
 pyFunctionalTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('test').dependsOn(pyFunctionalTest)
+tasks.getByName('check').dependsOn(pyFunctionalTest)
