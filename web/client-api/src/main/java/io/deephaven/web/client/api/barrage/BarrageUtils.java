@@ -133,7 +133,6 @@ public class BarrageUtils {
         final RangeSet includedAdditions;
         if (barrageUpdate == null) {
             includedAdditions = RangeSet.ofRange(0, (long) (header.length().toFloat64() - 1));
-            added = includedAdditions;
         } else {
             added = new CompressedRangeSetReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray()));
             if (isViewport) {
@@ -152,7 +151,7 @@ public class BarrageUtils {
             columnData[columnIndex] = readArrowBuffer(body, nodes, buffers, (int) includedAdditions.size(), columnTypes[columnIndex]);
         }
 
-        return new TableSnapshot(added, includedAdditions, columnData);
+        return new TableSnapshot(includedAdditions, columnData, (long) header.length().toFloat64());//note that this truncates precision if we have more than around 2^52 rows
     }
 
     public static DeltaUpdatesBuilder deltaUpdates(BarrageUpdateMetadata barrageUpdate, boolean isViewport, String[] columnTypes) {

@@ -1011,7 +1011,7 @@ public class WorkerConnection {
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
                 String[] columnTypes = Arrays.stream(state.getAllColumns())
-                        .filter(c -> includedColumns.get(c.getIndex()))
+//                        .filter(c -> includedColumns.get(c.getIndex()))
                         .map(Column::getType)
                         .toArray(String[]::new);
 
@@ -1081,7 +1081,7 @@ public class WorkerConnection {
                             // for now we always expect snapshots to arrive in a single payload
                             initialSnapshot(state.getHandle(), snapshot);
                         } else {
-                            nextDeltaUpdates = BarrageUtils.deltaUpdates(barrageUpdate, isViewport, columnTypes);
+                            nextDeltaUpdates = deltaUpdates(barrageUpdate, isViewport, columnTypes);
                             appendAndMaybeFlush(header, body);
                         }
                     }

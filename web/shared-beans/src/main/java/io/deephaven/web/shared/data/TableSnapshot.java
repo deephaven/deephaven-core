@@ -22,13 +22,13 @@ public class TableSnapshot implements Serializable {
     public TableSnapshot() {
     }
 
-    public TableSnapshot(RangeSet added, RangeSet includedAdditions, ColumnData[] dataColumns) {
+    public TableSnapshot(RangeSet includedAdditions, ColumnData[] dataColumns, long tableSize) {
         this.snapshotType = SnapshotType.INITIAL_SNAPSHOT;
 
         this.dataColumns = dataColumns;
         this.includedRows = includedAdditions;
 
-        this.tableSize = added.size();
+        this.tableSize = tableSize;
     }
 
     public SnapshotType getSnapshotType() {
