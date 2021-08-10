@@ -56,7 +56,7 @@ public abstract class StreamFirstOrLastByChunkedOperator implements IterativeChu
         final Map<String, ArrayBackedColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
-            final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.left());
+            final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.right());
             final ArrayBackedColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0, streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.left(), resultSource);
             inputColumns[ci] = ReinterpretUtilities.maybeConvertToPrimitive(streamSource);

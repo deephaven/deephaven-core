@@ -1528,7 +1528,7 @@ public class ChunkedOperatorAggregationHelper {
                             doNoKeyAddition(upstream.added, ac, opContexts, allColumns, false, modifiedOperators);
                         }
 
-                        final int newResultSize = table.size() == 0 ? 0 : 1;
+                        final int newResultSize = (!isStream || lastSize == 0) && table.size() == 0 ? 0 : 1;
                         final Update downstream = new Update();
                         downstream.shifted = IndexShiftData.EMPTY;
                         if ((lastSize == 0 && newResultSize == 1)) {
