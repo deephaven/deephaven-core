@@ -38,7 +38,6 @@ public class Input {
         this(colNames, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
-    // should be private, made public for testing
     public Input(String[] colNames, Function<Object[], Object> gatherFunc) {
 
         Require.neqNull(colNames, "colNames");
