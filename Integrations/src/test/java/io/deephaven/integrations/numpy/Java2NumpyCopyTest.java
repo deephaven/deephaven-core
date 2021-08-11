@@ -128,6 +128,7 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
         final long tSize = 56789;
         final long[] idx = Java2NumpyCopy.randRows(nRow, tSize, true);
         assertEquals(nRow, idx.length);
+        
         for (long l : idx) {
             assertTrue(l >= 0 && l < tSize);
         }
