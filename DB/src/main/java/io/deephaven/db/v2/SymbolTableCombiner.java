@@ -481,7 +481,10 @@ class SymbolTableCombiner
         // region build start
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             final WritableIntChunk<Attributes.KeyIndices> sourceResultIdentifiers = WritableIntChunk.makeWritableChunk((int)Math.min(CHUNK_SIZE, buildIndex.size()));
             // endregion build initialization

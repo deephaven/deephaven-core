@@ -105,8 +105,8 @@ public class ReplicateHashTable {
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedOperatorAggregationStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
 
         // Incremental NJ -> Incremental By -> Static By
-        doReplicate(IncrementalChunkedByAggregationStateManager.class, StaticChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
+        doReplicate(IncrementalChunkedByAggregationStateManager.class, StaticChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
     }
 
     private static class RegionedFile {

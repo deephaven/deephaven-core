@@ -540,7 +540,10 @@ class StaticChunkedAsOfJoinStateManager
         buildCookieSource.ensureCapacity(tableSize);
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // endregion build initialization
 

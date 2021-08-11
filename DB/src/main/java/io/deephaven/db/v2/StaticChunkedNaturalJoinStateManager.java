@@ -378,7 +378,10 @@ class StaticChunkedNaturalJoinStateManager
         final boolean isLeftSide = resultSource != null;
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // the chunk of right indices that are parallel to the sourceChunks
             final WritableLongChunk<OrderedKeyIndices> rightSourceIndexKeys;
