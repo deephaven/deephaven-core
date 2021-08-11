@@ -38,7 +38,8 @@ public class Input {
         this(colNames, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
-    private Input(String[] colNames, Function<Object[], Object> gatherFunc) {
+    // should be private, made public for testing
+    public Input(String[] colNames, Function<Object[], Object> gatherFunc) {
 
         Require.neqNull(colNames, "colNames");
         Require.neqNull(gatherFunc, "gatherFunc");
@@ -63,12 +64,13 @@ public class Input {
         for (int i = 0 ; i < colNames.length ; i++) {
             colSet[i] = table.getColumnSource(colNames[i]);
         }
+        table.select(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         return colSet;
     }
 
     /**
-     * Gets the gather function passed to Input.
+     * Gets the gather function.
      *
      * @return the gather function.
      */

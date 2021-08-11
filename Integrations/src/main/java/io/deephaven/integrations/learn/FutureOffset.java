@@ -33,9 +33,9 @@ public class FutureOffset {
     public int getOffset() { return offset; }
 
     /**
-     * Gets the result of the deferred calculation.
+     * Gets the deferred calculation.
      *
-     * @return the result of deferred calculation.
+     * @return the deferred calculation.
      */
     public Future getFuture() { return future; }
 }

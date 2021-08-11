@@ -40,7 +40,7 @@ class IndexSet implements Iterable<Long> {
      */
     void add(long k) {
 
-        if (current == idx.length) {
+        if (isFull()) {
             throw new IndexOutOfBoundsException("Adding more indices than can fit.");
         }
 

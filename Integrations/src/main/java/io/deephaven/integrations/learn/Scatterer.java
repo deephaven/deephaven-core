@@ -39,11 +39,21 @@ public class Scatterer {
      *
      * @return list of query strings to be used in .update() call.
      */
-    public String[] generateQueryStrings() {
+    public String[] generateQueryStrings(String futureOffsetColName) {
         String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
-            queryStrings[i] = String.format("%s = scatterer.scatter(%d, FutureOffset)", outputs[i].getColName(), i);
+
+            //TODO: TICKET #1026: Replace entire for loop body with the following once ticket #1009 is resolved:
+
+            // if (outputs[i].getType() != null) {
+            //     queryStrings[i] = String.format("%s = (%s) (scatterer.scatter(%d, %s))", outputs[i].getColName(), outputs[i].getType(), i, futureOffsetColName);
+            // }
+            // else {
+            //     queryStrings[i] = String.format("%s = scatterer.scatter(%d, %s)", outputs[i].getColName(), i, futureOffsetColName);
+            // }
+
+            queryStrings[i] = String.format("%s = scatterer.scatter(%d, %s)", outputs[i].getColName(), i, futureOffsetColName);
         }
 
         return queryStrings;

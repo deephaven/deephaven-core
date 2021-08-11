@@ -93,7 +93,7 @@ class Output:
     Provides an interface for getting data from Python objects like Tensorflow Tensors into Deephaven tables. Enables
     simple but powerful user-configurability via the scatter function, and works with Deephaven's native real-time capabilities.
     """
-    def __init__(self, colName, scatterFunc, type):
+    def __init__(self, colName, scatterFunc, type=None):
         self.output = _Output_(colName, scatterFunc, type)
 
 

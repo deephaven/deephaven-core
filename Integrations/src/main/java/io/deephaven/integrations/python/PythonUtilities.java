@@ -36,4 +36,29 @@ class PythonUtilities {
                     "class instance with an onUpdate method");
         }
     }
+
+    /**
+     * Creates a callable PyObject, either using method.apply() or __call__(), if the pyObjectIn has such methods available.
+     *
+     * @param pyObjectIn the python object providing the function - must either be callable or have an `apply` attribute
+     *                   which is callable.
+     * @return pyCallable that can be called directly with arguments using pyCallable.call(...).
+     */
+    static PyObject pyCallableGenerator(PyObject pyObjectIn) {
+        PyObject pyCallable;
+        if(pyObjectIn.hasAttribute("apply")){
+            pyCallable = pyObjectIn.getAttribute("apply");
+            if (!pyCallable.hasAttribute("__call__")){
+                throw new IllegalArgumentException("The Python object provided has an apply attribute " +
+                        "which is not callable");
+            }
+        }else if (pyObjectIn.hasAttribute("__call__")){
+            pyCallable = pyObjectIn;
+        }else{
+            throw new IllegalArgumentException("The Python object specified should either be callable, or a " +
+                    "class instance with an apply method");
+        }
+
+        return pyCallable;
+    }
 }
