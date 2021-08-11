@@ -67,10 +67,10 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         table = new QueryTable(index, visibleSources) {
             {
                 setFlat();
+                setRefreshing(true);
+                setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
             }
         };
-        table.setRefreshing(true);
-        table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
     /**
