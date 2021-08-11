@@ -42,10 +42,4 @@ public class ToDoublePage<ATTR extends Attributes.Any> implements ToPage<ATTR, d
     public final Object nullValue() {
         return NULL_DOUBLE_BOXED;
     }
-
-    @Override
-    public double[] convertResult(Object result) {
-        //noinspection unchecked
-        throw new IllegalStateException("failed!");
-    }
 }
