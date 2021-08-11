@@ -137,6 +137,8 @@ from .start_jvm import start_jvm
 Figure = None  # variable for initialization
 PlottingConvenience = None  # variable for initialization
 
+if jpy.has_jvm():
+    DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 def verifyPicklingCompatibility(otherPythonVersion):
     """
@@ -228,9 +230,6 @@ def PythonFunction(func, classString):
 
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonFunction')
     return jtype(func, getJavaClassObject(classString))
-
-def DynamicTableWriter():
-    return jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 class TableListenerHandle:
     """
