@@ -10,6 +10,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
+import org.immutables.value.Value.Derived;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -418,6 +419,13 @@ public abstract class TableBase implements TableSpec {
         Collection<? extends Aggregation> aggregations) {
         return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
             .addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final String toString() {
+        // the auto-generated toString methods aren't very useful; and being recursive, they can
+        // cause stack overflow exceptions that hide other errors in unit tests
+        return super.toString();
     }
 
     private static Collection<String> split(String string) {

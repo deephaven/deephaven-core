@@ -26,6 +26,8 @@ public class ParentsVisitorTest {
     private static final TableSpec S3 = S2.tail(4);
 
     private static final TableSpec S4 = S3.view("I=i");
+    public static final int HEAVILY_BRANCHED_SIZE = 128;
+    public static final int DEEPWALK_SIZE = 12;
 
     @Test
     void exactlyOnePostOrderChain() {
@@ -93,7 +95,7 @@ public class ParentsVisitorTest {
      */
     @Test
     void deepWalk() {
-        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> expected = createDeepWalk(DEEPWALK_SIZE);
         TableSpec table = expected.get(expected.size() - 1);
         // recursive implementations are very likely to throw StackOverflowError
         canonicalOrder(table, expected);
@@ -101,13 +103,13 @@ public class ParentsVisitorTest {
 
     @Test
     void deepWalkAllProvided() {
-        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> expected = createDeepWalk(DEEPWALK_SIZE);
         canonicalOrder(expected, expected);
     }
 
     @Test
     void deepWalkAllReversed() {
-        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> expected = createDeepWalk(DEEPWALK_SIZE);
         List<TableSpec> reversed = new ArrayList<>(expected);
         Collections.reverse(reversed);
         canonicalOrder(reversed, expected);
@@ -115,7 +117,7 @@ public class ParentsVisitorTest {
 
     @Test
     void deepWalkAllShuffled() {
-        List<TableSpec> expected = createDeepWalk(8192);
+        List<TableSpec> expected = createDeepWalk(DEEPWALK_SIZE);
         List<TableSpec> shuffled = new ArrayList<>(expected);
         for (int i = 0; i < 10; ++i) {
             Collections.shuffle(shuffled);
@@ -129,9 +131,41 @@ public class ParentsVisitorTest {
      */
     @Test
     void heavilyBranchedWalk() {
+        List<TableSpec> expected = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
-            assertThat(postOrder(Collections.singleton(heavilyBranchedTable()))).hasSize(65);
+            canonicalOrder(expected.get(expected.size() - 1), expected);
         });
+    }
+
+    @Test
+    void heavilyBranchedWalkAllProvided() {
+        List<TableSpec> expected = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+            canonicalOrder(expected, expected);
+        });
+    }
+
+    @Test
+    void heavilyBranchedWalkAllReversed() {
+        List<TableSpec> expected = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
+        List<TableSpec> reversed = new ArrayList<>(expected);
+        Collections.reverse(reversed);
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+            canonicalOrder(reversed, expected);
+        });
+    }
+
+    @Test
+    void heavilyBranchedWalkAllShuffled() {
+        List<TableSpec> expected = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
+        List<TableSpec> shuffled = new ArrayList<>(expected);
+
+        for (int i = 0; i < 10; ++i) {
+            assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+                Collections.shuffle(shuffled);
+                canonicalOrder(shuffled, expected);
+            });
+        }
     }
 
     @Test
@@ -166,11 +200,15 @@ public class ParentsVisitorTest {
     }
 
     private static Iterable<TableSpec> tables() {
-        List<TableSpec> deepWalk = createDeepWalk(8192);
-        TableSpec deepWalkTable = deepWalk.get(deepWalk.size() - 1);
+        List<TableSpec> deepWalk = createDeepWalk(DEEPWALK_SIZE);
+        List<TableSpec> heavilyBranchedTable = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
 
-        return () -> Stream.concat(Stream.of(S4, heavilyBranchedTable(), deepWalkTable),
-            TableCreationImplTest.createTables().stream()).iterator();
+        return () -> Stream
+            .concat(
+                Stream.of(S4, heavilyBranchedTable.get(heavilyBranchedTable.size() - 1),
+                    deepWalk.get(deepWalk.size() - 1)),
+                TableCreationImplTest.createTables().stream())
+            .iterator();
     }
 
     private static void checkValidPostOrder(Iterable<TableSpec> items) {
@@ -187,12 +225,15 @@ public class ParentsVisitorTest {
      * This is a table that branches at every level except the leaf. Naive implementations may need
      * to search every single path through the DAG; but that is not feasible (2^64 paths).
      */
-    private static TableSpec heavilyBranchedTable() {
+    private static List<TableSpec> createHeavilyBranchedTable(int size) {
+        List<TableSpec> out = new ArrayList<>(size + 1);
         TableSpec current = TableSpec.empty(1);
-        for (int i = 0; i < 64; ++i) {
+        out.add(current);
+        for (int i = 0; i < size; ++i) {
             current = TableSpec.merge(current, current);
+            out.add(current);
         }
-        return current;
+        return out;
     }
 
     private static List<TableSpec> createDeepWalk(int size) {

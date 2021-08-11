@@ -2,13 +2,13 @@ package io.deephaven.qst.table;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -39,66 +39,42 @@ public class ParentsVisitor implements TableSpec.Visitor {
      * @return the post-order set
      */
     public static Set<TableSpec> postOrder(Iterable<TableSpec> tables) {
-        return postOrderImpl(tables);
+        return new LinkedHashSet<>(postOrderList(tables));
     }
 
     /**
-     * Note: this implementation suffers when the full
+     * Create a de-duplicated, post-order list from {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the
+     * table itself. There may be multiple valid post-orderings; callers should not rely on a
+     * specific post-ordering.
+     *
+     * @param tables the tables
+     * @return the de-duplicated, post-order list
      */
-    private static Set<TableSpec> postOrderImpl(Iterable<TableSpec> initialInputs) {
-
-        // Tables that have been visited, post order
-        final Set<TableSpec> postOrderVisited = new LinkedHashSet<>();
-
-        // Tables that have outstanding dependencies
-        final Set<TableSpec> preOrderStack = new LinkedHashSet<>();
-
-        // Tables that we'll try to visit
-        final Set<TableSpec> inputQueue = new LinkedHashSet<>();
-
-        for (TableSpec initialInput : initialInputs) {
-            if (postOrderVisited.contains(initialInput) || preOrderStack.contains(initialInput)) {
-                continue;
-            }
-            inputQueue.add(initialInput);
-
-            while (!inputQueue.isEmpty()) {
-                final TableSpec table = removeFirst(inputQueue);
-                final Iterator<TableSpec> it = getParents(table).iterator();
-                boolean hasRemainingDependencies = false;
-                while (it.hasNext()) {
-                    final TableSpec dependency = it.next();
-                    if (!postOrderVisited.contains(dependency)) {
-                        inputQueue.add(dependency);
-                        hasRemainingDependencies = true;
-                    }
-                }
-                if (hasRemainingDependencies) {
-                    // move table to the end of the stack
-                    preOrderStack.remove(table);
-                    preOrderStack.add(table);
-                } else {
-                    // table has no remaining dependencies, we can visit it!
-                    postOrderVisited.add(table);
-                    preOrderStack.remove(table);
-                }
-            }
-        }
-
-        // stack push was in pre-order
-        // stack pop will be in post-order
-        final List<TableSpec> reversed = new ArrayList<>(preOrderStack);
-        Collections.reverse(reversed);
-        postOrderVisited.addAll(reversed);
-
-        return postOrderVisited;
+    public static List<TableSpec> postOrderList(Iterable<TableSpec> tables) {
+        List<TableSpec> postOrder = new ArrayList<>(anyOrder(tables));
+        postOrder.sort(Comparator.comparingInt(TableSpec::depth));
+        return postOrder;
     }
 
-    private static <T> T removeFirst(Iterable<T> iterable) {
-        final Iterator<T> it = iterable.iterator();
-        final T item = it.next();
-        it.remove();
-        return item;
+    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : initialInputs) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (output.add(table)) {
+                    final Iterator<TableSpec> it = ParentsVisitor.getParents(table).iterator();
+                    while (it.hasNext()) {
+                        toProcess.add(it.next());
+                    }
+                }
+            } while (!toProcess.isEmpty());
+        }
+        return output;
     }
 
     private Stream<TableSpec> out;
