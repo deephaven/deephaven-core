@@ -167,17 +167,17 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
                     remaining = chunks[0].capacity() - chunks[0].size();
                     Assert.gtZero(remaining, "remaining");
 
-                    if (kafkaPartitionColumnIndex > 0) {
+                    if (kafkaPartitionColumnIndex >= 0) {
                         partitionChunk = chunks[kafkaPartitionColumnIndex].asWritableIntChunk();
                     } else {
                         partitionChunk = null;
                     }
-                    if (offsetColumnIndex > 0) {
+                    if (offsetColumnIndex >= 0) {
                         offsetChunk = chunks[offsetColumnIndex].asWritableLongChunk();
                     } else {
                         offsetChunk = null;
                     }
-                    if (timestampColumnIndex > 0) {
+                    if (timestampColumnIndex >= 0) {
                         timestampChunk = chunks[timestampColumnIndex].asWritableLongChunk();
                     } else {
                         timestampChunk = null;
