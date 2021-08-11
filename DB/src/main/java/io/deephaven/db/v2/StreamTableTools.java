@@ -63,6 +63,7 @@ public class StreamTableTools {
                 result.setRefreshing(true);
                 result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
                 result.setFlat();
+                result.addParentReference(swapListener);
                 resultHolder.setValue(result);
 
                 if (usePrev) {
