@@ -93,7 +93,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     final long existingRight = rightIndexSource.getLong(tableLocation);
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new RuntimeException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftIndex.get(offset + ii)));
+                        throw new IllegalStateException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftIndex.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);
                 }
