@@ -269,11 +269,6 @@ def setDefaultCompressionCodecName(compressionCodecName):
 
 
 @_passThrough
-def throwIllegalStateExceptionPlease():
-    return _java_type_.throwIllegalStateExceptionPlease()
-
-
-@_passThrough
 def writeParquetTables(sources, tableDefinition, writeInstructions, destinations, groupingColumns):
     """
     Writes tables to disk in parquet format to a supplied set of destinations.  If you specify grouping columns, there

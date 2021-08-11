@@ -353,6 +353,14 @@ public class KafkaTools {
                 columnNameOrNull(columns[2]),
                 columnNameToJsonField);
 
+        if (!consumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        if (!consumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 consumerProperties,

@@ -1140,6 +1140,16 @@ def timeTable(*args):
 
 
 @_passThrough
+def typeFromName(dataTypeStr):
+    """
+    :param dataTypeStr: java.lang.String
+    :return: java.lang.Class<?>
+    """
+    
+    return _java_type_.typeFromName(dataTypeStr)
+
+
+@_passThrough
 def writeCsv(*args):
     """
     Writes a DB table out as a CSV.
