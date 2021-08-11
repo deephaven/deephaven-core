@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.deephaven.qst.table.ParentsVisitor.getParents;
-import static io.deephaven.qst.table.ParentsVisitor.postOrder;
+import static io.deephaven.qst.table.ParentsVisitor.postOrderList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -173,13 +173,13 @@ public class ParentsVisitorTest {
     @Test
     void validPostOrderings() {
         for (TableSpec table : tables()) {
-            checkValidPostOrder(postOrder(Collections.singleton(table)));
+            checkValidPostOrder(postOrderList(Collections.singleton(table)));
         }
     }
 
     @Test
     void validPostOrderingsAllAtOnce() {
-        checkValidPostOrder(postOrder(tables()));
+        checkValidPostOrder(postOrderList(tables()));
     }
 
     @Test
@@ -260,7 +260,7 @@ public class ParentsVisitorTest {
     private void canonicalOrder(Iterable<TableSpec> inputs, Iterable<TableSpec> expectedOutputs) {
         checkValidPostOrder(expectedOutputs);
         checkIsCanonicalOrder(expectedOutputs);
-        assertThat(postOrder(inputs)).containsExactlyElementsOf(expectedOutputs);
+        assertThat(postOrderList(inputs)).containsExactlyElementsOf(expectedOutputs);
     }
 
     /**
