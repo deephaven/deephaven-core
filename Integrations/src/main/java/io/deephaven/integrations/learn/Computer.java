@@ -28,7 +28,7 @@ public class Computer {
      * @param batchSize     maximum number of rows for each deferred computation.
      */
     public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
-        this(table, new PythonFunctionCaller(modelFunc), inputs, batchSize);
+        this(table, new PythonFunctionCaller(Require.neqNull(modelFunc, "modelFunc")), inputs, batchSize);
     }
 
     private Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
@@ -79,9 +79,11 @@ public class Computer {
 
         current.getIndexSet().add(k);
         offset += 1;
+
         if (offset == batchSize) {
             offset = 0;
         }
+
         return new FutureOffset(current, offset);
     }
 }

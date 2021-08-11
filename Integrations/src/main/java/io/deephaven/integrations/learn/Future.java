@@ -6,10 +6,10 @@ import java.util.function.Function;
 /**
  * Future performs a deferred computation on a portion of a table.
  */
-class Future {
+public class Future {
 
     private final Function<Object[], Object> func;
-    private final ColumnSource<?>[][] colSet;
+    private final ColumnSource<?>[][] colSets;
     private final Input[] inputs;
     private IndexSet indexSet;
     private boolean called;
@@ -22,12 +22,12 @@ class Future {
      * @param inputs        inputs to the Future computation.
      * @param batchSize     maximum number of rows for deferred computation.
      */
-    Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSet, int batchSize) {
+    Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSets, int batchSize) {
 
         this.func = func;
         this.inputs = inputs;
         this.indexSet = new IndexSet(batchSize);
-        this.colSet = colSet;
+        this.colSets = colSets;
         this.called = false;
         this.result = null;
     }
@@ -37,13 +37,13 @@ class Future {
      *
      * @return result of the deferred calculation.
      */
-    Object get() {
+    public Object get() {
 
         if (!called) {
             Object[] gathered = new Object[inputs.length];
 
             for (int i = 0; i < inputs.length ; i++) {
-                gathered[i] = gather(inputs[i], colSet[i]);
+                gathered[i] = gather(inputs[i], colSets[i]);
             }
 
             result = func.apply(gathered);
@@ -62,7 +62,7 @@ class Future {
      * @return gathered data
      */
     private Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherCaller().apply(new Object[]{this.indexSet, colSet});
+        return input.getGatherFunc().apply(new Object[]{this.indexSet, colSet});
     }
 
     /**

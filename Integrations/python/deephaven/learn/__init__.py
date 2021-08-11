@@ -110,6 +110,8 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     :param outputs: the list of Output objects that determine how to store output from model_func into the Deephaven table
     """
 
+    # reminder to do error checking on the set of inputs and the set of outputs
+
     if batch_size == None:
         if table.isLive():
             raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
@@ -124,4 +126,4 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
 
         return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("FutureOffset","Clean")
 
-    return table.update(["FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getDeferredCalculation()"]).dropColumns("FutureOffset","Clean","Result")
+    return table.update(["FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getFuture().get()"]).dropColumns("FutureOffset","Clean","Result")

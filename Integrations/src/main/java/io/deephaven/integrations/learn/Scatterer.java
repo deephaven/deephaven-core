@@ -23,7 +23,7 @@ public class Scatterer {
     }
 
     /**
-     * Applies the scatter function of each output to the result of a deferred calculation to get it back into a table.
+     * Applies the scatter function of each output to the result of a deferred calculation to get the result into a column.
      *
      * @param idx   index of the particular output in the list of outputs to use for scattering.
      * @param fo    FutureOffset that contains the results of the deferred calculation as well as the index of the row.
@@ -31,7 +31,7 @@ public class Scatterer {
      * @return result of the deferred calculation to be stored into a column.
      */
     public Object scatter(int idx, FutureOffset fo) {
-        return outputs[idx].getScatterCaller().apply(new Object[]{fo.getDeferredCalculation(), fo.getOffset()});
+        return outputs[idx].getScatterFunc().apply(new Object[]{fo.getFuture().get(), fo.getOffset()});
     }
 
     /**

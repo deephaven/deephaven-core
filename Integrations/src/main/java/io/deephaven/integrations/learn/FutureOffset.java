@@ -37,5 +37,5 @@ public class FutureOffset {
      *
      * @return the result of deferred calculation.
      */
-    public Object getDeferredCalculation() { return future.get(); }
+    public Future getFuture() { return future; }
 }

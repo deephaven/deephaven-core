@@ -16,7 +16,7 @@ import java.util.function.Function;
 public class Input {
 
     private final String[] colNames;
-    private final Function<Object[], Object> gatherCaller;
+    private final Function<Object[], Object> gatherFunc;
 
     /**
      * Creates a new Input.
@@ -25,7 +25,7 @@ public class Input {
      * @param gatherFunc    function that gathers data into a Python object.
      */
     public Input(String colName, PyObject gatherFunc) {
-        this(new String[]{colName}, new PythonFunctionCaller(gatherFunc));
+        this(new String[]{colName}, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
     /**
@@ -35,7 +35,7 @@ public class Input {
      * @param gatherFunc    function that gathers data into a Python object.
      */
     public Input(String[] colNames, PyObject gatherFunc) {
-        this(colNames, new PythonFunctionCaller(gatherFunc));
+        this(colNames, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
     private Input(String[] colNames, Function<Object[], Object> gatherFunc) {
@@ -48,10 +48,11 @@ public class Input {
         }
 
         this.colNames = colNames;
-        this.gatherCaller = gatherFunc;
+        this.gatherFunc = gatherFunc;
     }
 
-    /** Creates an array of column sources specified by this table and given column names.
+    /**
+     * Creates an array of column sources specified by this table and given column names.
      *
      * @return column sources needed to generate the input.
      */
@@ -67,9 +68,9 @@ public class Input {
     }
 
     /**
-     * Gets the caller for the given gather function.
+     * Gets the gather function passed to Input.
      *
-     * @return caller for the gather function.
+     * @return the gather function.
      */
-    Function<Object[], Object> getGatherCaller() { return gatherCaller; }
+    Function<Object[], Object> getGatherFunc() { return gatherFunc; }
 }

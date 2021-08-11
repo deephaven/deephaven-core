@@ -14,7 +14,7 @@ import java.util.function.Function;
 public class Output {
 
     private final String colName;
-    private final Function<Object[], Object> scatterCaller;
+    private final Function<Object[], Object> scatterFunc;
     private final String type;
 
     /**
@@ -25,7 +25,7 @@ public class Output {
      * @param type          desired datatype of the new column.
      */
     public Output(String colName, PyObject scatterFunc, String type) {
-        this(colName, new PythonFunctionCaller(scatterFunc), type);
+        this(colName, new PythonFunctionCaller(Require.neqNull(scatterFunc, "scatterFunc")), type);
     }
 
     private Output(String colName, Function<Object[], Object> scatterFunc, String type) {
@@ -36,7 +36,7 @@ public class Output {
         NameValidator.validateColumnName(colName);
 
         this.colName = colName;
-        this.scatterCaller = scatterFunc;
+        this.scatterFunc = scatterFunc;
         this.type = type;
     }
 
@@ -48,11 +48,11 @@ public class Output {
     public String getColName() { return colName; }
 
     /**
-     * Gets the scatter function caller.
+     * Gets the scatter function.
      *
-     * @return the scatter function caller.
+     * @return the scatter function.
      */
-    public Function<Object[], Object> getScatterCaller() { return scatterCaller; }
+    public Function<Object[], Object> getScatterFunc() { return scatterFunc; }
 
     /**
      * Gets the type of the output column.
