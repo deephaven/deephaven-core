@@ -74,7 +74,11 @@ public class TicketRouter {
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final Ticket ticket) {
-        return resolve(session, ticket.getTicket().asReadOnlyByteBuffer());
+        final ByteBuffer bb = ticket.getTicket().asReadOnlyByteBuffer();
+        if (bb == null) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "ticket not provided");
+        }
+        return resolve(session, bb);
     }
 
     /**
