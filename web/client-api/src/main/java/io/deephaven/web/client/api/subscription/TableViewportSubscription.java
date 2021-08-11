@@ -235,7 +235,7 @@ public class TableViewportSubscription extends HasEventHandling {
 
     @JsMethod
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
-        //TODO slice and drop columns
+        //TODO #1039 slice rows and drop columns
         return copy.then(table -> {
             final ClientTableState state = table.state();
             String[] columnTypes = Arrays.stream(state.getAllColumns())

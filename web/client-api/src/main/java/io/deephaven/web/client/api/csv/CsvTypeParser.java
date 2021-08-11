@@ -69,24 +69,8 @@ public class CsvTypeParser {
 
             @Override
             public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-                int nullCount = 0;
-                BitSet nulls = new BitSet(strings.length);
-                Float64Array payload = new Float64Array(strings.length);//64 bits, already aligned
-                for (int i = 0; i < strings.length; i++) {
-                    if (strings[i] == null || strings[i].trim().isEmpty()) {
-                        payload.setAt(i, QueryConstants.NULL_DOUBLE);
-                        nullCount++;
-                    } else {
-                        payload.setAt(i, Double.parseDouble(strings[i].trim().replaceAll(",", "")));
-                        nulls.set(i);
-                    }
-                }
-
-                // validity, then payload
-                addBuffer.apply(makeValidityBuffer(nullCount, nulls));
-                addBuffer.apply(new Uint8Array(payload.buffer));
-
-                addNode.apply(new Node(strings.length, nullCount));
+                // TODO #1041 this type is expected to work
+                throw new IllegalArgumentException("Can't serialize DateTime for CSV");
             }
         },
         INTEGER(Type.Int, "int") {
@@ -133,8 +117,7 @@ public class CsvTypeParser {
             public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
                 int nullCount = 0;
                 BitSet nulls = new BitSet(strings.length);
-                // TODO Int8Array instead?
-                Float64Array payload = new Float64Array(strings.length);// using float because we can convert longs to doubles, possibly not cheaply though...
+                Float64Array payload = new Float64Array(strings.length);// using float because we can convert longs to doubles, though not cheaply
                 for (int i = 0; i < strings.length; i++) {
                     long value;
                     if (strings[i] == null || strings[i].trim().isEmpty()) {
@@ -232,6 +215,12 @@ public class CsvTypeParser {
             public double writeType(Builder builder) {
                 return FixedSizeBinary.createFixedSizeBinary(builder, 7);
             }
+
+            @Override
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+                // TODO #1041 this type is expected to work
+                throw new IllegalArgumentException("Can't serialize DateTime for CSV");
+            }
         },
 
         LIST(Type.List) {
@@ -284,8 +273,6 @@ public class CsvTypeParser {
             return typeType;
         }
 
-
-
         @Override
         public abstract double writeType(Builder builder);
         @Override
@@ -333,6 +320,7 @@ public class CsvTypeParser {
 
         void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer);
     }
+
     public static CsvColumn getColumn(String columnType) {
         switch (columnType) {
             case "string":
@@ -387,80 +375,7 @@ public class CsvTypeParser {
         }
     }
 
-    public static ColumnHolder createColumnHolder(String name, String type, String[] data, String userTimeZone) {
-
-        try {
-            switch (type) {
-                case INTEGER:
-                    final int[] ints = new int[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            ints[i] = QueryConstants.NULL_INT;
-                        } else {
-                            ints[i] = Integer.parseInt(data[i].trim().replaceAll(",", ""));
-                        }
-                    }
-                    return new ColumnHolder(name, INTEGER, new IntArrayColumnData(ints));
-                case LONG:
-                    final long[] longs = new long[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            longs[i] = QueryConstants.NULL_LONG;
-                        } else {
-                            longs[i] = Long.parseLong(data[i].trim().replaceAll(",", ""));
-                        }
-                    }
-                    return new ColumnHolder(name, LONG, new LongArrayColumnData(longs));
-                case DOUBLE:
-                    final double[] doubles = new double[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            doubles[i] = QueryConstants.NULL_DOUBLE;
-                        } else {
-                            doubles[i] = Double.parseDouble(data[i].trim().replaceAll(",", ""));
-                        }
-                    }
-                    return new ColumnHolder(name, DOUBLE, new DoubleArrayColumnData(doubles));
-                case BOOLEAN:
-                    final byte[] bytes = new byte[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            bytes[i] = QueryConstants.NULL_BOOLEAN_AS_BYTE;
-                        } else {
-                            bytes[i] = Boolean.parseBoolean(data[i].trim()) ? QueryConstants.TRUE_BOOLEAN_AS_BYTE : QueryConstants.FALSE_BOOLEAN_AS_BYTE;
-                        }
-                    }
-                    return new ColumnHolder(name, Boolean.class.getCanonicalName(), new ByteArrayColumnData(bytes));
-                case DATE_TIME:
-                    final long[] datetimes = new long[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            datetimes[i] = QueryConstants.NULL_LONG;
-                        } else {
-                            datetimes[i] = parseDateTime(data[i], userTimeZone);
-                        }
-                    }
-                    return new ColumnHolder(name, DATE_TIME_TYPE, new LongArrayColumnData(datetimes));
-                case LOCAL_TIME:
-                    final LocalTime[] localtimes = new LocalTime[data.length];
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] == null || data[i].trim().isEmpty()) {
-                            localtimes[i] = null;
-                        } else {
-                            localtimes[i] = parseLocalTime(data[i]);
-                        }
-                    }
-                    return new ColumnHolder(name, LOCAL_TIME_TYPE, new LocalTimeArrayColumnData(localtimes));
-                default:
-                    final StringArrayColumnData columnData = new StringArrayColumnData();
-                    JsArrays.setArray(data, columnData::setData);
-                    return new ColumnHolder(name, String.class.getCanonicalName(), columnData);
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error parsing data for type " + type + "\n" + e.getMessage());
-        }
-    }
-
+    @SuppressWarnings("unused")//TODO #1041
     private static long parseDateTime(String str, String userTimeZone) {
         final String s = ensureSeparator(str);
         final int spaceIndex = s.indexOf(' ');
@@ -508,6 +423,7 @@ public class CsvTypeParser {
         return s;
     }
 
+    @SuppressWarnings("unused")//TODO #1041
     private static LocalTime parseLocalTime(String s) {
         long dayNanos = 0;
         long subsecondNanos = 0;
