@@ -39,6 +39,9 @@ public class ParentsVisitor implements TableSpec.Visitor {
      * @return the post-order set
      */
     public static Set<TableSpec> postOrder(Iterable<TableSpec> tables) {
+        // Note: we *can't* use TreeSet and anyOrder here because the comparator is an an auxiliary
+        // attribute of TableSpec, and doesn't mesh with equals(). And even if we could, we might
+        // not want to since it's an iterative approach to sorting instead of an upfront approach.
         return new LinkedHashSet<>(postOrderList(tables));
     }
 
@@ -67,10 +70,7 @@ public class ParentsVisitor implements TableSpec.Visitor {
             do {
                 final TableSpec table = toProcess.remove();
                 if (output.add(table)) {
-                    final Iterator<TableSpec> it = ParentsVisitor.getParents(table).iterator();
-                    while (it.hasNext()) {
-                        toProcess.add(it.next());
-                    }
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
                 }
             } while (!toProcess.isEmpty());
         }
