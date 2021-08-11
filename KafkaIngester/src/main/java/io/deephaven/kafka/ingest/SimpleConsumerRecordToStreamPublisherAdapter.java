@@ -3,7 +3,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.utils.ChunkUnboxer;
+import io.deephaven.db.v2.utils.unboxer.ChunkUnboxer;
 import io.deephaven.kafka.StreamPublisherImpl;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.util.QueryConstants;
