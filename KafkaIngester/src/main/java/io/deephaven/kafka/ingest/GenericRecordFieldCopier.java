@@ -3,7 +3,18 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.*;
 
+/**
+ * A field copier that handles generic records.
+ */
 public interface GenericRecordFieldCopier extends FieldCopier {
+    /**
+     * Create a field copier from a GenericRecord to the given chunk and data type
+     *
+     * @param fieldName the name of the field in the generic record
+     * @param chunkType the type of chunk in the publisher
+     * @param dataType  the dataType in the output definition
+     * @return a GenericRecordField copier for the given field and destination type
+     */
     static GenericRecordFieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType) {
         switch (chunkType) {
             case Char:

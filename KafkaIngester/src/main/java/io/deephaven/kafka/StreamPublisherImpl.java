@@ -5,6 +5,7 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import org.jetbrains.annotations.NotNull;
+import scala.tools.nsc.Global;
 
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -40,10 +41,28 @@ public class StreamPublisherImpl implements StreamPublisher {
     }
 
     @Override
-    public void flush() {
+    public synchronized void flush() {
         if (chunks != null) {
             streamConsumer.accept(chunks);
             chunks = null;
         }
+    }
+
+    /**
+     * Run the provided supplier under our lock, preventing flush from taking our chunks while filling them.
+     *
+     * @param supplier the supplier to call
+     */
+    public synchronized <T> T computeLocked(Supplier<T> supplier) {
+        return supplier.get();
+    }
+
+    /**
+     * Run the provided Runnable under our lock, preventing flush from taking our chunks while filling them.
+     *
+     * @param runnable the runnable to run
+     */
+    public synchronized void doLocked(Runnable runnable) {
+        runnable.run();
     }
 }

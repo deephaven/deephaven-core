@@ -72,14 +72,33 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
+    /**
+     * Create an array of chunks suitable for passing to our accept method.
+     *
+     * @param size the size of the chunks
+     * @return an array of writable chunks
+     */
     public WritableChunk[] makeChunksForDefinition(int size) {
         return makeChunksForDefinition(tableDefinition, size);
     }
 
+    /**
+     * Return the ChunkType for a given column index.
+     *
+     * @param idx the column index to get the ChunkType for
+     * @return the ChunkType for the specified column
+     */
     public ChunkType chunkTypeForIndex(int idx) {
         return chunkTypeForColumn(tableDefinition.getColumns()[idx]);
     }
 
+    /**
+     * Make output chunks for the specified table definition.
+     *
+     * @param definition the definition to make chunks for
+     * @param size       the size of the returned chunks
+     * @return an array of writable chunks
+     */
     public static WritableChunk[] makeChunksForDefinition(TableDefinition definition, int size) {
         return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
     }
@@ -177,6 +196,11 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         }
     }
 
+    /**
+     * Return the stream table that this adapter is producing.
+     *
+     * @return the resultant stream table
+     */
     public DynamicTable table() {
         return table;
     }

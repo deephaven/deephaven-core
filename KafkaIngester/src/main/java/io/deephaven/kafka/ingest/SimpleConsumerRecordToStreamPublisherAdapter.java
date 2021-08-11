@@ -115,9 +115,13 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
         return new Pair<>(processor, simpleIndex);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
+        publisher.doLocked(() -> doConsumeRecords(records));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk [] chunks = publisher.getChunks();
         int remaining = chunks[0].capacity() - chunks[0].size();
 
