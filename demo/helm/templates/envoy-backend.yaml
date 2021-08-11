@@ -8,9 +8,10 @@ spec:
     affinityType: "GENERATED_COOKIE"
     affinityCookieTtlSec: {{ .Values.dh.cookieTtlSeconds }}
   healthCheck:
-    port: {{ .Values.dh.portGrpcApiInternal }}
-    requestPath: /healthz
+    requestPath: /health
+    port: {{ .Values.dh.portControl }}
     type: HTTP
+    #type: HTTP2
     checkIntervalSec: 10
     timeoutSec: 5
     healthyThreshold: 1

@@ -4,67 +4,89 @@ metadata:
   name: {{ .Values.dh.ingressName }}
   annotations:
     kubernetes.io/ingress.global-static-ip-name: {{ .Values.dh.ipAddrName }}
-    networking.gke.io/managed-certificates: {{ .Values.dh.certName  }}
+    #networking.gke.io/pre-shared-certificates: {{ .Values.dh.presharedCertName  }}
+    networking.gke.io/managed-certificates: {{ .Values.dh.managedCertName  }}
     kubernetes.io/ingress.class: "gce"
     networking.gke.io/v1beta1.FrontendConfig: {{ .Values.dh.frontendConfigName }}
 spec:
   # defaultBackend is /*, left open to grpc
   defaultBackend:
     service:
-      name: {{ .Values.dh.svcNameGrpc }}
+      name: {{ .Values.dh.svcNameEnvoy }}
       port:
-        number: {{ .Values.dh.portGrpcApiInternal }}
-  rules:
-    - http:
-        # deephaven web ide requires the following paths:
-        paths:
-          - path: /ide
-            pathType: Exact
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameWeb }}
-                port:
-                  number: {{ .Values.dh.portWebInternal }}
-          - path: /ide/*
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameWeb }}
-                port:
-                  number: {{ .Values.dh.portWebInternal }}
-          - path: /jsapi/*
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameWeb }}
-                port:
-                  number: {{ .Values.dh.portWebInternal }}
-          - path: /notebooks/*
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameWeb }}
-                port:
-                  number: {{ .Values.dh.portWebInternal }}
-          #- path: /io.deephaven.proto.backplane.grpc.SessionService/*
-          #  pathType: Prefix
-          #  backend:
-          #    service:
-          #      name: {{ .Values.dh.svcNameEnvoy }}
-          #      port:
-          #        number: {{ .Values.dh.portEnvoyInternal }}
-          # web server will redirect to /ide/
-          - path: /
-            pathType: Exact
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameWeb }}
-                port:
-                  number: {{ .Values.dh.portWebInternal }}
-          - path: /*
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Values.dh.svcNameGrpc }}
-                port:
-                  number: {{ .Values.dh.portGrpcApiInternal }}
+        number: {{ .Values.dh.portEnvoyInternal }}
+#  defaultBackend:
+#    service:
+#      name: {{ .Values.dh.svcNameGrpc }}
+#      port:
+#        number: {{ .Values.dh.portGrpcApiInternal }}
+#  rules:
+#    #- host: demo.deephavencommunity.com
+#    - http:
+#        # deephaven web ide requires the following paths:
+#        paths:
+#          - path: /health
+#            pathType: ImplementationSpecific
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameControl }}
+#                port:
+#                  number: {{ .Values.dh.portControlInternal }}
+#          - path: /ide
+#            pathType: ImplementationSpecific
+#            # google stopped supporting this over the weekend :-/
+#            #pathType: Exact
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameWeb }}
+#                port:
+#                  number: {{ .Values.dh.portWebInternal }}
+#          - path: /ide/*
+#            pathType: ImplementationSpecific
+#            #pathType: Prefix
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameWeb }}
+#                port:
+#                  number: {{ .Values.dh.portWebInternal }}
+#          - path: /jsapi/*
+#            pathType: ImplementationSpecific
+#            #pathType: Prefix
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameWeb }}
+#                port:
+#                  number: {{ .Values.dh.portWebInternal }}
+#          - path: /notebooks/*
+#            pathType: ImplementationSpecific
+#            #pathType: Prefix
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameWeb }}
+#                port:
+#                  number: {{ .Values.dh.portWebInternal }}
+#          #- path: /io.deephaven.proto.backplane.grpc.SessionService/*
+#          #  pathType: ImplementationSpecific
+#          #  #pathType: Prefix
+#          #  backend:
+#          #    service:
+#          #      name: {{ .Values.dh.svcNameEnvoy }}
+#          #      port:
+#          #        number: {{ .Values.dh.portEnvoyInternal }}
+#          # web server will redirect to /ide/
+#          - path: /
+#            pathType: ImplementationSpecific
+#            #pathType: Exact
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameWeb }}
+#                port:
+#                  number: {{ .Values.dh.portWebInternal }}
+#          - path: /*
+#            pathType: ImplementationSpecific
+#            #pathType: Prefix
+#            backend:
+#              service:
+#                name: {{ .Values.dh.svcNameGrpc }}
+#                port:
+#                  number: {{ .Values.dh.portGrpcApiInternal }}

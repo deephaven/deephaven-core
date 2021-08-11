@@ -79,16 +79,23 @@ gcloud artifacts repositories create deephaven \
 gcloud auth configure-docker ${ZONE}-docker.pkg.dev
 
 
+enable artifact registry:
+https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=deephaven-oss
+
 docker tag deephaven/grpc-proxy:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION
 docker tag deephaven/grpc-api:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION
 docker tag deephaven/web:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION
 
-enable artifact registry:
-https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=deephaven-oss
-
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION &
+
+
+
+# OPTIONAL: add a grpcurl container, to debug grpc:
+
+docker pull fullstorydev/grpcurl:v1.8.2
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/fullstorydev/grpcurl:v1.8.2 &
 
 
 gcloud container clusters get-credentials "${CLUSTER_NAME}" \
@@ -209,3 +216,150 @@ expose web and grpc-api as separate services over separate protocols
 web will be https, grpc-api as http/2, http redirects to https
 grpc-api will need a sidecar to handle healthchecks (health check goes to the port of the container, not targetPort)
 ditch envoy. ditch grpc-proxy. just web + grpc-api
+
+
+
+grpc certs:
+
+openssl genrsa -out server.key 2048
+openssl req -new -x509 -sha256 -key server.key \
+-out server.crt -days 3650
+
+# from https://stackoverflow.com/questions/47099664/grpc-java-ssl-server-side-authentication-certificate-generation
+openssl pkcs8 -topk8 -nocrypt -in server.key -out server.key2
+
+
+
+# maybe optional
+openssl req -new -sha256 -key server.key -out server.csr
+openssl x509 -req -sha256 -in server.csr -signkey server.key \
+-out server.crt -days 3650
+
+
+
+# alternative:
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+
+
+
+CERT_ROOT=/tmp/certs
+
+CERT_ROOT=/dh/ws0/deephaven-core/demo/certs
+
+mkdir -p $CERT_ROOT
+openssl req -x509 -nodes -newkey rsa:4096 \
+    -keyout "$CERT_ROOT/tls.key" \
+    -out "$CERT_ROOT/tls.crt" \
+    -days 36500 \
+    -subj '/CN=cluster.local/O=Company' \
+    -addext 'extendedKeyUsage=serverAuth,clientAuth' \
+    -addext "subjectAltName=DNS:cluster.local,DNS:${DOMAINS_CSV:-demo.deephavencommunity.com},IP:127.0.0.1"
+
+kubectl create secret tls dh-grpc-sercret \
+--cert="$CERT_ROOT/tls.crt" \
+--key="$CERT_ROOT/tls.key"
+
+
+
+
+
+
+# check if the gateway is done (will fail if no address exposed yet)
+kubectl get gateway dh-gateway -o=jsonpath="{.status.addresses[0].value}"
+
+
+curl -s -L https://github.com/fullstorydev/grpcurl/releases/download/v1.8.2/grpcurl_1.8.2_linux_x86_64.tar.gz | tar -xvzf - -C /tmp
+
+WS=/dh/ws0/deephaven-core
+PROTOS="$WS/proto/proto-backplane-grpc/src/main/proto"
+curl_args="-cacert $WS/demo/certs/tls.crt  -import-path $PROTOS -proto $PROTOS/grpc/health/v1/health.proto"
+./grpcurl $curl_args demo.deephavencommunity.com:8888 grpc.health.v1.Health/Check
+
+
+PROTOS=/deployments/proto
+curl_args="-cacert /etc/ssl/dh/ca.crt -import-path $PROTOS -proto $PROTOS/grpc/health/v1/health.proto"
+grpcurl $curl_args 127.0.0.1:8888 grpc.health.v1.Health/Check
+
+
+
+kubectl patch gateway/dh-gateway \
+--type json \
+--patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
+
+
+
+
+
+
+## Cluster setup
+#1) Enable IAM
+https://console.cloud.google.com/apis/api/iamcredentials.googleapis.com/overview
+
+# 2) Set vars
+CLUSTER_NAME="${CLUSTER_NAME:-dh-demo}"
+PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
+ZONE="${ZONE:-us-central1}"
+K8NS="${K8NS:-dh}"
+K8_SRV_ACT="${K8_SRV_ACT:-dhadmin}"
+GCE_SRV_ACT="${GCE_SRV_ACT:-dhadmin}"
+
+# 3) Prepare environment
+gcloud config set compute/region "$ZONE"
+gcloud config set project "$PROJECT_ID"
+gcloud components update
+
+# 4a) Create cluster
+gcloud container clusters create "$CLUSTER_NAME" \
+    --workload-pool="${PROJECT_ID}.svc.id.goog" \
+    --zone "$ZONE"
+# OR: 4b) Update cluster
+gcloud container clusters update "$CLUSTER_NAME" \
+    --workload-pool="${PROJECT_ID}.svc.id.goog" \
+    --zone "$ZONE"
+
+kubectl create namespace "${K8NS}"
+kubectl create serviceaccount --namespace "$K8NS" "$K8_SRV_ACT"
+gcloud iam service-accounts create "$GCE_SRV_ACT"
+
+
+
+gcloud iam service-accounts add-iam-policy-binding \
+    --role roles/iam.workloadIdentityUser \
+    --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$K8NS/$K8_SRV_ACT]" \
+    "${GCE_SRV_ACT}@${PROJECT_ID}.iam.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --role "roles/compute.securityAdmin" \
+    --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$K8NS/$K8_SRV_ACT]"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --role "roles/compute.networkAdmin" \
+    --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$K8NS/$K8_SRV_ACT]"
+
+
+
+kubectl annotate serviceaccount \
+    --namespace "$K8NS" \
+    "$K8_SRV_ACT" \
+    "iam.gke.io/gcp-service-account=${GCE_SRV_ACT}@${PROJECT_ID}.iam.gserviceaccount.com"
+
+
+
+# CREATE A CLUSTER
+CLUSTER_NAME="${CLUSTER_NAME:-dh-demo}"
+gcloud container  clusters create "$CLUSTER_NAME" \
+    --machine-type "n1-standard-4" \
+    --region us-central1  --num-nodes 2 --enable-ip-alias  \
+    --cluster-version "1.20"  -q
+
+# INSTALL GATEWAY API INTO CLUSTER:
+kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.3.0" \
+| kubectl apply -f -
+
+
+PERMISSSIONS:
+iam.serviceAccounts.create
+container.clusters.get
+container.clusters.update
+RBAC needed:
+https://v1-19.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#-strong-write-operations-serviceaccount-v1-core-strong-

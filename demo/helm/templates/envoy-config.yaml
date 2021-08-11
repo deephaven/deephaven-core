@@ -55,6 +55,12 @@ data:
                             - match: # Notebook file storage at this path
                                 prefix: "/notebooks"
                               route: { cluster: web }
+                            - match: # The controller serves /health url
+                                prefix: "/health"
+                              route: { cluster: control }
+                            - match: # The controller serves /health url
+                                prefix: "/healthz"
+                              route: { cluster: control }
                             - match: # Any GRPC call is assumed to be forwarded to the real service
                                 prefix: "/"
                               route:
@@ -82,9 +88,9 @@ data:
                   alpn_protocols: ["h2"]
                   tls_certificates:
                     - certificate_chain:
-                        filename: /etc/ssl/tls.crt
+                        filename: /etc/ssl/dh/tls.crt
                       private_key:
-                        filename: /etc/ssl/tls.key
+                        filename: /etc/ssl/dh/tls.key
       clusters:
         - name: grpc-api
           connect_timeout: 10s
@@ -107,6 +113,14 @@ data:
         #        unhealthy_threshold: 2
         #        healthy_threshold: 2
         #        grpc_health_check: { }
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              common_tls_context:
+                validation_context:
+                  trusted_ca:
+                    filename: /etc/ssl/dh/ca.crt
         - name: web
           connect_timeout: 10s
           type: LOGICAL_DNS
@@ -123,3 +137,19 @@ data:
                           # address: web
                           address: 127.0.0.1
                           port_value: 8080
+        - name: control
+          connect_timeout: 10s
+          type: LOGICAL_DNS
+          lb_policy: ROUND_ROBIN
+          http_protocol_options: {}
+          load_assignment:
+            cluster_name: control
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      hostname: control
+                      address:
+                        socket_address:
+                          # address: web
+                          address: 127.0.0.1
+                          port_value: 7117

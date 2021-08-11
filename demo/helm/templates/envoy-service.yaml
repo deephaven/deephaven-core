@@ -5,10 +5,11 @@ metadata:
   labels:
     {{- include "dhdemo.labels" . | nindent 4 }}
   annotations:
-    cloud.google.com/app-protocols: '{"envoy":"HTTP2"}'
-    cloud.google.com/neg: '{"ingress": true, "exposed_ports": {"{{ .Values.dh.portEnvoyInternal }}":{}}}'
+    cloud.google.com/app-protocols: '{"envoy-client":"HTTP2"}'
+    #cloud.google.com/neg: '{"ingress": true, "exposed_ports": {"{{ .Values.dh.portEnvoyInternal }}":{}}}'
+    cloud.google.com/neg: '{"ingress": true}'
     beta.cloud.google.com/backend-config: '{"ports": {
-    "envoy":"dh-backend-envoy"
+    "envoy-client":"dh-backend-envoy"
     }}'
 spec:
   type: {{ .Values.service.type }}

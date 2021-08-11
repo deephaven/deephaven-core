@@ -1,3 +1,14 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id "${quarkusPluginId}" version "${quarkusPluginVersion}"
+    }
+}
+
 plugins {
     id 'com.gradle.enterprise' version '3.5.2'
 }
@@ -12,7 +23,7 @@ String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
         'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
-        'Kafka', 'grpc-api', 'grpc-api-client', 'table-api', 'qst']
+        'Kafka', 'grpc-api', 'grpc-api-client', 'table-api', 'qst', 'demo']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.

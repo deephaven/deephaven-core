@@ -2,6 +2,8 @@ plugins {
     id 'java'
 }
 
+def boringSslVersion = '2.0.34.Final'
+
 configurations {
     compile.extendsFrom dhDb
     testCompile.extendsFrom dhDbTest
@@ -52,6 +54,7 @@ dependencies {
 
     runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
 
+    runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 

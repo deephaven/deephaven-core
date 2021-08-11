@@ -26,11 +26,11 @@ String GRPC_HEALTH_PROBE_VERSION = 'v0.3.1'
 TaskProvider<Task> downloadHealthProbe = tasks.register('downloadGrpcHealthProbe') {
   Task dl ->
     String dlUrl = "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64"
-    Provider<RegularFile> outputFile = layout.buildDirectory.file('healthProbe/grpc_health_probe').forUseAtConfigurationTime()
-    File file = outputFile.get().asFile
-    dl.outputs.file(file)
+    Provider<RegularFile> outputFile = layout.buildDirectory.file('healthProbe/grpc_health_probe')
+    dl.outputs.file(outputFile)
     dl.inputs.property("healthProbeVersion", GRPC_HEALTH_PROBE_VERSION)
     dl.doFirst {
+      File file = outputFile.get().asFile
       file.withOutputStream { OutputStream output ->
         new URL(dlUrl).withInputStream { InputStream input ->
           output << input
@@ -81,6 +81,10 @@ docker {
     from(dockerLicenses.outputs) {
       into 'licenses'
     }
+
+    from("$rootDir/demo/certs/".toString()) {
+      into 'certs'
+    }
     from(downloadHealthProbe.get().outputs.files) {
       into 'health_probe'
     }
@@ -99,7 +103,8 @@ docker {
 
     user("1000")
 
-    copyFile('licenses/', '/')
+    copyFile("certs/", '/etc/ssl/grpc')
+    copyFile("licenses/", '/')
     copyFile('health_probe/', '/health')
 
     volume("/data")
@@ -132,6 +137,8 @@ dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
 // If we change how our build works in the future (so that gradle is responsible for pushing the
 // image), we can remove this extra dependency.
 dockerCreateDockerfile.dependsOn grpcApiBase
-
+// only use this when testing locally (requires demo.deephavencommunity.com /etc/hosts hacks when used outside of kubernetes)
+//dockerCreateDockerfile.environmentVariable("DH_TLS_CHAIN", "/etc/ssl/grpc/tls.crt")
+//dockerCreateDockerfile.environmentVariable("DH_TLS_KEY", "/etc/ssl/grpc/tls.key")
 assemble.dependsOn dockerBuildImage
 dockerBuildImage.outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }

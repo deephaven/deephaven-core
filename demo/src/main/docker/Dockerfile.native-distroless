@@ -1,0 +1,24 @@
+####
+# This Dockerfile is used in order to build a distroless container that runs the Quarkus application in native (no JVM) mode
+#
+# Before building the container image run:
+#
+# ./gradlew build -Dquarkus.package.type=native
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.native-distroless -t quarkus/demo-server .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 7117:7117 quarkus/demo-server
+#
+###
+FROM quay.io/quarkus/quarkus-distroless-image:1.0
+COPY build/*-runner /application
+COPY --chown=1001 build/protoSync /deployments/proto/
+
+EXPOSE 7117
+USER nonroot
+RUN echo "mode=native-distroless" > /server-mode
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

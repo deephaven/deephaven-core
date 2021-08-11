@@ -1,7 +1,7 @@
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:
-  name: {{ .Values.dh.certName }}
+  name: {{ .Values.dh.managedCertName }}
 spec:
   domains:
-    - demo.deephavencommunity.com
+    - {{ .Values.dh.dnsName }}

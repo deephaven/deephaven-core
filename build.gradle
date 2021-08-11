@@ -78,6 +78,7 @@ idea {
 
 ext.versionSource = versionSource
 ext.globalVersion = "0.5.0"
+>>>>>>> Nasty giant commit of all the dirty hacks done to get demo site up on heml/gke
 
 // To set fishlibVersion, go to project-local gradle.properties file
 // (or, use the gradle.properties in $USER_HOME/.gradle for a global override)

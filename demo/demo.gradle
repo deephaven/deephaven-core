@@ -1,0 +1,120 @@
+import org.gradle.internal.jvm.Jvm
+static boolean getCanQuarkus() { Jvm.current().javaVersion.isJava11Compatible() }
+
+plugins {
+    id 'java'
+    id 'application'
+    id 'io.quarkus' apply false
+}
+if (canQuarkus) {
+    plugins.apply 'io.quarkus'
+}
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+application {
+    mainClassName = 'io.deephaven.demo.DhDemoServer'
+}
+
+// we use withType(JavaExec) to catch intellij-created run configurations
+tasks.withType(JavaExec).configureEach {
+    JavaExec exe ->
+        // see https://vertx.io/docs/vertx-web/java/
+        // setting this here ensures local gradle runs won't cache things,
+        // but running in a production container (not a gradle JavaExec), we let it cache
+        exe.systemProperty("vertxweb.environment", "dev")
+}
+
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    if (canQuarkus) {
+
+        String quarkusGroup = findProperty('quarkusPlatformGroupId')
+        String quarkusArtifact = findProperty('quarkusPlatformArtifactId')
+        String quarkusVersion = findProperty('quarkusPlatformVersion')
+        implementation enforcedPlatform("${quarkusGroup}:${quarkusArtifact}:${quarkusVersion}")
+        implementation enforcedPlatform("${quarkusGroup}:quarkus-google-cloud-services-bom:${quarkusVersion}")
+
+        // The tools we will use to build our controller
+        implementation 'io.quarkus:quarkus-vertx'
+        implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
+        implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-web-client'
+
+        runtime "io.netty:netty-transport-native-epoll:$quarkusVersion:linux-x86_64"
+        runtime "io.netty:netty-transport-native-kqueue:$quarkusVersion:osx-x86_64"
+
+        implementation 'io.quarkus:quarkus-kubernetes-client'
+        implementation 'io.quarkus:quarkus-minikube'
+
+        // not using yet... starts a grpc server
+//        implementation 'io.quarkus:quarkus-grpc'
+
+        // likely need this for image building
+        implementation 'io.quarkus:quarkus-container-image-docker'
+
+        // don't really need these yet, we maintain our own helm chart
+    //
+    //    implementation 'io.quarkus:quarkus-kubernetes-service-binding'
+    //    implementation 'io.quarkus:quarkus-kubernetes-config'
+    //    implementation 'io.quarkus:quarkus-kubernetes'
+
+        // try this out once using quarkus docker image
+        implementation 'io.quarkiverse.googlecloudservices:quarkus-google-cloud-secret-manager'
+
+        // extras that looked interesting
+    //
+    //    implementation 'io.quarkus:quarkus-arc'
+    //    implementation 'io.quarkus:quarkus-jgit'
+    //    implementation 'io.quarkus:quarkus-kafka-client'
+    //    implementation 'io.quarkus:quarkus-kafka-streams'
+
+        testImplementation 'io.quarkus:quarkus-junit5'
+        testImplementation 'io.rest-assured:rest-assured'
+    } else {
+        // java version < 11 == no quarkus, use raw dependencies (not io.quarkus: group)
+        // (quarkus is an expensive one-time download that doesn't work on java 8,
+        // but it can compile most of the java app to statically linked native code):
+        implementation 'io.vertx:vertx-web:4.1.1'
+        implementation 'io.kubernetes:client-java:10.0.0'
+    }
+    // dependencies added w/o adequate replacements in quarkus (afaik)
+    implementation 'io.kubernetes:client-java-extended:10.0.0'
+}
+
+String protoSyncName = 'protoSync'
+tasks.register(protoSyncName, Sync).configure{
+    Sync t ->
+        File protoOut = new File(buildDir, protoSyncName)
+        t.destinationDir(protoOut)
+        gradle.rootProject.allprojects*.projectDir.forEach {
+            File f ->
+                File protos = new File(f, 'src/main/proto')
+                protos.directory && t.from(protos)
+        }
+}
+gradle.projectsEvaluated {
+    println tasks.names
+}
+// TODO: forcibly test that a few toolchains can compile + run our code...
+
+if (canQuarkus) {
+
+    quarkusBuild {
+        // don't realize the task just to put this dependsOn in place
+        dependsOn "$project.path:$protoSyncName"
+        nativeArgs {
+            containerBuild = true
+            buildImage = "quay.io/quarkus/ubi-quarkus-native-image:21.1.0-java11"
+        }
+    }
+}

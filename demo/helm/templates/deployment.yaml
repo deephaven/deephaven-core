@@ -27,7 +27,87 @@ spec:
       serviceAccountName: {{ include "dhdemo.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: gen-keys
+          image: "{{ .Values.dh.repo}}/demo-server:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          args:
+            - ensure-certs
+          env:
+              # .Values.envVars includes MY_POD_IP env var, which the CertFactory class uses to detect "local cert mode"
+          {{- toYaml .Values.envVars | nindent 12 }}
+            - name: AUTH_DIR
+              value: /etc/ssl/dh
+          volumeMounts:
+            - name: gen-secret
+              mountPath: /etc/ssl/dh
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
       containers:
+
+        # demo-server is our quarkus (vert.x) kubernetes controller and health checker.
+        - name: demo-server
+          image: "{{ .Values.dh.repo}}/demo-server:{{ .Values.dh.version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+          {{- toYaml .Values.envVars | nindent 12 }}
+            #command:
+            #- "/bin/grpc_health_proxy"
+            #- "-http-listen-addr"
+            #- "localhost:8082"
+            #- "--http-listen-path=/healthz"
+            #- "-grpcaddr"
+            #- "localhost:8888"
+            #- "-grpctls"
+            #- "-grpc-tls-no-verify"
+            #- "-service-name"
+            #- "io.deephaven.proto.backplane.grpc.SessionService"
+            ##- "grpc.health.v1.Health.Check"
+            ##- "--https-listen-key=/etc/ssl/grpc-secret/tls.key"
+            ##- "--https-listen-cert=/etc/ssl/grpc-secret/tls.crt"
+            ##- "--grpc-ca-cert=/etc/ssl/grpc-secret/tls.crt"
+            ##- "--grpc-client-key=/etc/ssl/tls.key"
+            ##- "--grpc-client-cert=/etc/ssl/tls.crt"
+            ##- "--grpc-sni-server-name={{ .Values.dh.dnsName }}"
+            #- "--logtostderr=1"
+            #- "-v=10"
+          ports:
+            - name: health-check
+              containerPort: {{ .Values.dh.portControl }}
+              protocol: TCP
+          volumeMounts:
+            - name: grpc-secret
+              mountPath: /etc/ssl/grpc-secret
+              readOnly: true
+            - name: gen-secret
+              mountPath: /etc/ssl/dh
+              readOnly: true
+          livenessProbe:
+            failureThreshold: 4
+            initialDelaySeconds: 5
+            timeoutSeconds: 3
+            periodSeconds: 10
+            httpGet:
+              port: "health-check"
+              path: /health
+          readinessProbe:
+            failureThreshold: 4
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+            periodSeconds: 10
+            httpGet:
+              port: "health-check"
+              path: /health
+
         #
         # grpc-api container.  Where all the stateful brains live
         #
@@ -43,39 +123,39 @@ spec:
           # TODO: copy the readinessProbe / livenessProbe from dh-prod.yaml
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          terminationMessagePath: /tmp/termination.log
+          terminationMessagePolicy: File
           env:
             {{- toYaml .Values.envVars | nindent 12 }}
-            #- name: DH_TLS_CHAIN
-            #  value: /etc/ssl/tls.crt
-            #- name: DH_TLS_KEY
-            #  value: /etc/ssl/tls.key
+            - name: DH_TLS_CHAIN
+              value: /etc/ssl/dh/tls.crt
+            - name: DH_TLS_KEY
+              value: /etc/ssl/dh/tls.key.pk8
+            - name: GRPC_VERBOSITY
+              value: DEBUG
+            - name: GRPC_TRACE
+              value: http2_stream_state,http,http1,transport_security
           volumeMounts:
-            - name: envoy-secrets
-              mountPath: /etc/ssl
+            - name: grpc-secret
+              mountPath: /etc/ssl/grpc-secret
               readOnly: true
-          # readinessProbe:
-          #   httpGet:
-          #     port: 8080
-          #   initialDelaySeconds: 2
-          #   periodSeconds: 1
-          #   failureThreshold: 28
-          # livenessProbe:
-          #   httpGet:
-          #     port: 8080
-          #   initialDelaySeconds: 2
-          #   periodSeconds: 1
-          #   failureThreshold: 28
-          # readinessProbe:
-          #   exec:
-          #     command: [ "/health/grpc_health_probe", "-addr=:8080" ]
-          #   initialDelaySeconds: 2
-          #   periodSeconds: 1
-          #   failureThreshold: 28
-          # livenessProbe:
-          #   exec:
-          #     command: [ "/health/grpc_health_probe", "-addr=:8080" ]
-          #   initialDelaySeconds: 10
-          #   periodSeconds: 8
+            - name: gen-secret
+              mountPath: /etc/ssl/dh
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8888", "-tls", "-tls-no-verify" ]
+            initialDelaySeconds: 4
+            periodSeconds: 10
+            failureThreshold: 12
+            timeoutSeconds: 10
+          livenessProbe:
+            exec:
+              command: [ "/health/grpc_health_probe", "-addr=:8888", "-tls", "-tls-no-verify" ]
+            initialDelaySeconds: 10
+            periodSeconds: 8
+            timeoutSeconds: 10
+
          # grpc-proxy container.  Converts http 1.1 to http2 for grpc
         #
         - name: grpc-proxy
@@ -87,13 +167,22 @@ spec:
             - name: http
               containerPort: 8008
               protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
           # TODO: copy the readinessProbe / livenessProbe from dh-prod.yaml
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: BACKEND_ADDR
               value: localhost:8888
+            - name: TLS_DIR
+              value: /etc/ssl/dh
             {{- toYaml .Values.envVars | nindent 12 }}
+          volumeMounts:
+            - name: gen-secret
+              mountPath: /etc/ssl/dh
+              readOnly: true
 
         #
         # web container.  Serves our js static web resources
@@ -113,26 +202,23 @@ spec:
             {{- toYaml .Values.envVars | nindent 12 }}
           readinessProbe:
             httpGet:
+              path: /ide/
               port: 8080
             initialDelaySeconds: 2
             periodSeconds: 1
             failureThreshold: 28
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
+              path: /ide/
               port: 8080
             initialDelaySeconds: 2
             periodSeconds: 1
             failureThreshold: 28
-        # Ugh, need to build a better image that has sh (can't attach to this from scratch)
-        # - name: grpccurl
-        #   image: fullstorydev/grpcurl:v1.8.2
-        #   imagePullPolicy: IfNotPresent
-        #   args: [ "localhost:8888", "grpc.health.v1.Health/Check" ]
+            timeoutSeconds: 3
 
-        #
         # The envoy container. All ingress to the pod flows through envoy,
         # who then routes it to grpc-api or web as appropriate
-        #
         - name: envoy
           image: envoyproxy/envoy:v1.18.3
           imagePullPolicy: IfNotPresent
@@ -140,9 +226,7 @@ spec:
             privileged: false
           ports:
             - name: https
-              containerPort: 8443
-            - name: http
-              containerPort: 8181
+              containerPort: {{ .Values.dh.portEnvoy }}
               protocol: TCP
           resources:
           {{- toYaml .Values.resources | nindent 12 }}
@@ -151,21 +235,23 @@ spec:
           volumeMounts:
             - name: envoy-conf
               mountPath: /etc/envoy
-            - name: envoy-secrets
-              mountPath: /etc/ssl
+            - name: gen-secret
+              mountPath: /etc/ssl/dh
               readOnly: true
-          readinessProbe:
-            httpGet:
-              port: 10000
-            initialDelaySeconds: 2
-            periodSeconds: 1
-            failureThreshold: 28
-          livenessProbe:
-            httpGet:
-              port: 10000
-            initialDelaySeconds: 2
-            periodSeconds: 1
-            failureThreshold: 28
+          #readinessProbe:
+          #  httpGet:
+          #    port: 10000
+          #    path: /ide/
+          #  initialDelaySeconds: 2
+          #  periodSeconds: 10
+          #  failureThreshold: 12
+          #livenessProbe:
+          #  httpGet:
+          #    port: 10000
+          #    path: /ide/
+          #  initialDelaySeconds: 2
+          #  periodSeconds: 10
+          #  failureThreshold: 12
 
       volumes:
         - name: envoy-conf
@@ -176,6 +262,12 @@ spec:
         - name: envoy-secrets
           secret:
             secretName: secret-envoy
+        - name: grpc-secret
+          secret:
+            secretName: {{ .Values.dh.secretCertName }}
+        - name: gen-secret
+          emptyDir: {}
+            #medium: Memory
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

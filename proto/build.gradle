@@ -1,5 +1,5 @@
 // keep this in sync w/ shadowed/proto/shadow-proto.gradle
-def grpcVersion = '1.38.0'
+def grpcVersion = '1.39.0'
 def protobufVersion = '3.17.3'
 def protocVersion = protobufVersion
 def boringSslVersion = '2.0.34.Final'
