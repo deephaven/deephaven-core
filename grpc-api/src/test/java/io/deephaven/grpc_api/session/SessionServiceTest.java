@@ -1,7 +1,6 @@
 package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.grpc_api.util.TestUtil;
@@ -52,7 +51,7 @@ public class SessionServiceTest {
         sessionService.closeSession(session);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eqNull(session.getExpiration(), "session.getExpiration()");
-        TestUtil.assertThrows(StatusRuntimeException.class, () -> sessionService.getSessionForToken(expiration.token));
+        Assert.eqNull(sessionService.getSessionForToken(expiration.token), "sessionService.getSessionForToken(expiration.token)");
     }
 
     @Test
@@ -122,13 +121,13 @@ public class SessionServiceTest {
 
         // expire original token; current token should be valid
         scheduler.runThrough(initialToken.deadline);
-        TestUtil.assertThrows(StatusRuntimeException.class, () -> sessionService.getSessionForToken(initialToken.token));
+        Assert.eqNull(sessionService.getSessionForToken(initialToken.token), "sessionService.getSessionForToken(initialToken.token)");
         Assert.eq(sessionService.getSessionForToken(newToken.token), "sessionService.getSessionForToken(newToken.token)", session, "session");
 
         // let's expire the new token
         scheduler.runThrough(session.getExpiration().deadline);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
-        TestUtil.assertThrows(StatusRuntimeException.class, () -> sessionService.getSessionForToken(newToken.token));
+        Assert.eqNull(sessionService.getSessionForToken(newToken.token), "sessionService.getSessionForToken(newToken.token)");
     }
 
     @Test
@@ -148,10 +147,10 @@ public class SessionServiceTest {
         // first session is live
         Assert.eqFalse(session1.isExpired(), "session2.isExpired()");
         Assert.eq(sessionService.getSessionForToken(expiration1.token), "sessionService.getSessionForToken(expiration1.token)", session1, "session1");
-        TestUtil.assertThrows(StatusRuntimeException.class, () -> sessionService.getSessionForToken(expiration2.token));
+        Assert.eqNull(sessionService.getSessionForToken(expiration2.token), "sessionService.getSessionForToken(initialToken.token)");
 
         // second session has expired
         Assert.eqTrue(session2.isExpired(), "session2.isExpired()");
-        TestUtil.assertThrows(StatusRuntimeException.class, () -> sessionService.getSessionForToken(expiration2.token));
+        Assert.eqNull(sessionService.getSessionForToken(expiration2.token), "sessionService.getSessionForToken(initialToken.token)");
     }
 }

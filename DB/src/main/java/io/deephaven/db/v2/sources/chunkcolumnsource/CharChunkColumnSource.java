@@ -146,6 +146,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     }
 
     private void addChunk(@NotNull final WritableCharChunk<? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);
