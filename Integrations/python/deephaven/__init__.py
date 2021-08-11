@@ -100,7 +100,6 @@ def initialize():
     __initializer__(jpy.get_type("io.deephaven.db.util.PickledResult"), PickledResult)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter"), PythonListenerAdapter)
     __initializer__(jpy.get_type("io.deephaven.integrations.python.PythonFunction"), PythonFunction)
-    # __initializer__(jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter"), DynamicTableWriter)
 
     # ensure that all the symbols are called and reimport the broken symbols
     cals._defineSymbols()
