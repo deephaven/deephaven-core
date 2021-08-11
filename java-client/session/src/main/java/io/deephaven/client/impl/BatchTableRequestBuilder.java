@@ -136,7 +136,7 @@ class BatchTableRequestBuilder {
 
         // this is a post-order without duplicates, ensuring we create the dependencies
         // in the preferred/resolvable order
-        final Set<TableSpec> dependents = ParentsVisitor.postOrder(newExports);
+        final List<TableSpec> dependents = ParentsVisitor.postOrderList(newExports);
 
         final Map<TableSpec, Integer> indices = new HashMap<>(dependents.size());
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
