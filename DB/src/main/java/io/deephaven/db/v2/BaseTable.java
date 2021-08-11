@@ -413,6 +413,21 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.ByExternal
         ));
 
+        tempMap.put(STREAM_TABLE_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Coalesce,
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.Sort,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.Preview,
+                CopyAttributeOperation.View,       // and Select, if added
+                CopyAttributeOperation.UpdateView, // and Update, if added
+                CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.Join,
+                CopyAttributeOperation.WouldMatch
+        ));
+
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 
@@ -477,11 +492,28 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         if (!isLive()) {
             return true;
         }
-        final Object addOnlyAttribute = getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE);
-        if (addOnlyAttribute == null) {
-            return false;
+        return Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+    }
+
+    /**
+     * Returns true if this table is a stream table.
+     *
+     * @return Whether this table is a stream table
+     * @see #STREAM_TABLE_ATTRIBUTE
+     */
+    public boolean isStream() {
+        return StreamTableTools.isStream(this);
+    }
+
+
+    @Override
+    public Table dropStream() {
+        if (!isStream()) {
+            return this;
         }
-        return (Boolean)addOnlyAttribute;
+        final Table result = copy();
+        result.setAttribute(STREAM_TABLE_ATTRIBUTE, false);
+        return result;
     }
 
     //------------------------------------------------------------------------------------------------------------------

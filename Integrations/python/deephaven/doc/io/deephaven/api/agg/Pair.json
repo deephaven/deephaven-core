@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.Pair",
+ "methods": {
+  "input": "The input column.\n\n:return: (io.deephaven.api.ColumnName) the input column",
+  "of": ":param input: io.deephaven.api.ColumnName\n:param output: io.deephaven.api.ColumnName\n:return: io.deephaven.api.agg.Pair",
+  "output": "The output column.\n\n:return: (io.deephaven.api.ColumnName) the output column",
+  "parse": ":param x: java.lang.String\n:return: io.deephaven.api.agg.Pair"
+ },
+ "path": "io.deephaven.api.agg.Pair",
+ "text": "An aggregation pair represents a input and output column for\n some aggregations. Aggregations that don't have a one-to-one input/output\n mapping will not need an agg pair.",
+ "typeName": "interface"
+}

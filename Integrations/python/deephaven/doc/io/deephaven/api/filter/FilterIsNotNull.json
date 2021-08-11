@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.filter.FilterIsNotNull",
+ "methods": {
+  "column": "The column name.\n\n:return: (io.deephaven.api.ColumnName) the column name",
+  "of": ":param column: io.deephaven.api.ColumnName\n:return: io.deephaven.api.filter.FilterIsNotNull",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.filter.FilterIsNotNull",
+ "text": "Evaluates to true when the given column value is not null.",
+ "typeName": "class"
+}

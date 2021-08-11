@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.WAvg",
+ "methods": {
+  "of": ":param weight: io.deephaven.api.ColumnName\n:param addition: io.deephaven.api.agg.Pair\n:return: io.deephaven.api.agg.WAvg",
+  "pair": ":return: io.deephaven.api.agg.Pair",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V",
+  "weight": ":return: io.deephaven.api.ColumnName"
+ },
+ "path": "io.deephaven.api.agg.WAvg",
+ "typeName": "class"
+}

@@ -48,8 +48,8 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isAddOnly, String name) {
-        if (!isAddOnly) {
+    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isStreamOrAddOnly, String name) {
+        if (!isStreamOrAddOnly) {
             return new SsmChunkedMinMaxOperator(type, minimum, name);
         } else {
             if (type == Byte.class || type == byte.class) {

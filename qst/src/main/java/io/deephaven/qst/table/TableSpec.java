@@ -4,6 +4,7 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreation;
 import io.deephaven.qst.TableCreation.OperationsToTable;
 import io.deephaven.qst.TableCreation.TableToOperations;
+import org.immutables.value.Value.Derived;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -67,6 +68,17 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
             ObjectInputStream oIn = new ObjectInputStream(buf)) {
             return (TableSpec) oIn.readObject();
         }
+    }
+
+    /**
+     * The depth of the table is the maximum depth of its dependencies plus one. A table with no
+     * dependencies has a depth of zero.
+     *
+     * @return the depth
+     */
+    @Derived
+    default int depth() {
+        return ParentsVisitor.getParents(this).mapToInt(TableSpec::depth).max().orElse(-1) + 1;
     }
 
     <V extends Visitor> V walk(V visitor);
