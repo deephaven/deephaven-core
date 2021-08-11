@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Setup gradle properties
         run: |
@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Setup gradle properties
         run: |
@@ -141,7 +141,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Setup gradle properties
         run: |
@@ -200,7 +200,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Setup gradle properties
         run: |
