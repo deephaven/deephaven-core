@@ -17,17 +17,18 @@ public class Scatterer {
     public Scatterer(Output[] outputs) {
 
         Require.neqNull(outputs, "outputs");
+        Require.elementsNeqNull(outputs, "outputs");
 
         this.outputs = outputs;
     }
 
     /**
-     * Applies the scatter function of a particular output to the result of the deferred calculation.
+     * Applies the scatter function of each output to the result of a deferred calculation to get it back into a table.
      *
-     * @param idx   index of the output to scatter back into the table.
-     * @param fo    FutureOffset that contains the results of the deferred calculation as well as the index to access
-     *              that calculation.
-     * @return subset of result that can be put back into the table.
+     * @param idx   index of the particular output in the list of outputs to use for scattering.
+     * @param fo    FutureOffset that contains the results of the deferred calculation as well as the index of the row.
+     *              that calculation belongs to.
+     * @return result of the deferred calculation to be stored into a column.
      */
     public Object scatter(int idx, FutureOffset fo) {
         return outputs[idx].getScatterCaller().apply(new Object[]{fo.getDeferredCalculation(), fo.getOffset()});
@@ -36,7 +37,7 @@ public class Scatterer {
     /**
      * Generates query strings to create a new column for each Output.
      *
-     * @return list of query strings to be used in .update() call
+     * @return list of query strings to be used in .update() call.
      */
     public String[] generateQueryStrings() {
         String[] queryStrings = new String[outputs.length];

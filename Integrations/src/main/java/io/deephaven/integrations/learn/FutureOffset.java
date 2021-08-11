@@ -19,7 +19,6 @@ public class FutureOffset {
     FutureOffset(Future future, int offset) {
 
         Require.neqNull(future, "future");
-
         Require.geqZero(offset, "offset");
 
         this.future = future;

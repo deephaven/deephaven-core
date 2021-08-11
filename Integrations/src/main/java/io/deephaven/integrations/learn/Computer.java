@@ -36,12 +36,8 @@ public class Computer {
         Require.neqNull(table, "table");
         Require.neqNull(modelFunc, "modelFunc");
         Require.neqNull(inputs, "inputs");
-
+        Require.elementsNeqNull(inputs, "inputs");
         Require.gtZero(batchSize, "batchSize");
-
-        if (inputs.length == 0) {
-            throw new IllegalArgumentException("Cannot have an empty input list.");
-        }
 
         this.modelFunc = modelFunc;
         this.batchSize = batchSize;
