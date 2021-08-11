@@ -64,7 +64,6 @@ public class Input {
         for (int i = 0 ; i < colNames.length ; i++) {
             colSet[i] = table.getColumnSource(colNames[i]);
         }
-        table.select(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         return colSet;
     }
