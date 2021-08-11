@@ -100,4 +100,3 @@ Docker.registerDockerTask(project, 'regenerateGwtBindings') {
         includeEmptyDirs = false
     }
 }
->>>>>>> bb3244b5a7 (RGB update to handle new barrage, new flight)
