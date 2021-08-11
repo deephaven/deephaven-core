@@ -12,6 +12,7 @@ import io.deephaven.db.v2.ModifiedColumnSet;
 import io.deephaven.db.v2.SimpleShiftAwareListener;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.utils.ChunkUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.util.BooleanUtils;
@@ -22,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 
@@ -328,6 +330,80 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
     }
+
+    @Test
+    public void testBig() {
+        final TableDefinition tableDefinition = new TableDefinition(Collections.singletonList(long.class), Arrays.asList("L"));
+        final DynamicTable empty = TableTools.newTable(tableDefinition);
+
+        final StreamPublisher streamPublisher = new DummyStreamPublisher();
+
+        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final DynamicTable result = adapter.table();
+        TstUtils.assertTableEquals(empty, result);
+
+        final SimpleShiftAwareListener listener = new SimpleShiftAwareListener(result);
+        result.listenForUpdates(listener);
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(0, listener.getCount());
+
+        final long [] exVals = new long[4048];
+        int pos = 0;
+
+        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[1];
+        WritableLongChunk<Attributes.Values> wlc;
+        chunks[0] = wlc = WritableLongChunk.makeWritableChunk(2048);
+        wlc.setSize(2048);
+        for (int ii = 0; ii < wlc.size(); ++ii) {
+            exVals[pos++] = ii;
+            wlc.set(ii, ii);
+        }
+        adapter.accept(chunks);
+
+        chunks[0] = wlc = WritableLongChunk.makeWritableChunk(2000);
+        wlc.setSize(2000);
+        for (int ii = 0; ii < wlc.size(); ++ii) {
+            wlc.set(ii, 10000 + ii);
+            exVals[pos++] = 10000 + ii;
+        }
+        adapter.accept(chunks);
+
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(0, listener.getCount());
+
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(4048), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        final Table expect1 = TableTools.newTable(longCol("L", exVals));
+        TstUtils.assertTableEquals(expect1, result);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+
+        TstUtils.assertTableEquals(empty, result);
+        TestCase.assertEquals(1, listener.getCount());
+        TestCase.assertEquals(Index.FACTORY.getFlatIndex(4048), listener.getUpdate().removed);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().added);
+        TestCase.assertEquals(Index.FACTORY.getEmptyIndex(), listener.getUpdate().modified);
+        TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(0, listener.getCount());
+
+        listener.reset();
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
+        TestCase.assertEquals(0, listener.getCount());
+    }
+
 
     private static class DummyStreamPublisher implements StreamPublisher {
         @Override

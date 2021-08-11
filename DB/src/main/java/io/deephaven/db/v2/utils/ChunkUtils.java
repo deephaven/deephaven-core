@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.exceptions.SizeException;
 import io.deephaven.db.v2.sources.chunk.ChunkSource;
 import io.deephaven.db.v2.sources.WritableChunkSink;
@@ -13,11 +14,14 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Objects;
 
 public class ChunkUtils {
+    private static final int COPY_DATA_CHUNK_SIZE = 16384;
+
     /**
      * Generates a {@link LongChunk<OrderedKeyRanges>} from {@link LongChunk<OrderedKeyIndices>} chunk.
      * @param chunk  the chunk to convert
@@ -340,7 +344,7 @@ public class ChunkUtils {
             }
             final char charValue = chunk.get(ii);
             //noinspection UnnecessaryBoxing
-            builder.append(" '").append(charValue).append("' ").append(String.format("%6d", Integer.valueOf((int) charValue)));
+            builder.append(" '").append(charValue).append("' ").append(String.format("%6d", Integer.valueOf(charValue)));
         }
         return builder.append("\n").toString();
     }
@@ -458,7 +462,7 @@ public class ChunkUtils {
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final Object value = chunk.get(ii);
-            builder.append(String.format(" %20s", Objects.toString(value))).append(" ");
+            builder.append(String.format(" %20s", value)).append(" ");
         }
         return builder.append("\n").toString();
     }
@@ -534,8 +538,6 @@ public class ChunkUtils {
         return false;
     }
 
-    private static final int chunkSize = 16384;
-
     /**
      * @param src The source of the data.
      * @param srcAllKeys The source keys.
@@ -553,7 +555,7 @@ public class ChunkUtils {
                     srcAllKeys.size(), destAllKeys.size());
             throw new IllegalArgumentException(msg);
         }
-        final int minSize = Math.min(srcAllKeys.intSize(), chunkSize);
+        final int minSize = Math.min(srcAllKeys.intSize(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
@@ -563,10 +565,10 @@ public class ChunkUtils {
              final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
              final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator()) {
             while (srcIter.hasMore()) {
-                assert(destIter.hasMore());
+                Assert.assertion(destIter.hasMore(), "destIter.hasMore()");
                 final OrderedKeys srcNextKeys = srcIter.getNextOrderedKeysWithLength(minSize);
                 final OrderedKeys destNextKeys = destIter.getNextOrderedKeysWithLength(minSize);
-                assert(srcNextKeys.size() == destNextKeys.size());
+                Assert.eq(srcNextKeys.size(), "srcNextKeys.size()", destNextKeys.size(), "destNextKeys.size()");
 
                 final Chunk<? extends Attributes.Values> chunk = usePrev ? src.getPrevChunk(srcContext, srcNextKeys) : src.getChunk(srcContext, srcNextKeys);
                 dest.fillFromChunk(destContext, chunk, destNextKeys);
@@ -574,8 +576,70 @@ public class ChunkUtils {
         }
     }
 
+    /**
+     * Copy data from sources to destinations for the provided source and destination keys.
+     *
+     * Sources and destinations must not overlap.
+     *
+     * @param sources      The sources of the data, parallel with destinations
+     * @param srcAllKeys   The source keys.
+     * @param destinations The destinations, parallel with sources, of the data (dest != src).
+     * @param destAllKeys  The destination keys. It is ok for srcAllKeys == destAllKeys.
+     * @param usePrev      Should we read previous values from src
+     */
+    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> [] sources, OrderedKeys srcAllKeys, WritableSource [] destinations,
+            OrderedKeys destAllKeys, boolean usePrev) {
+        if (srcAllKeys.size() != destAllKeys.size()) {
+            final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
+                    srcAllKeys.size(), destAllKeys.size());
+            throw new IllegalArgumentException(msg);
+        }
+        final int minSize = Math.min(srcAllKeys.intSize(), COPY_DATA_CHUNK_SIZE);
+        if (minSize == 0) {
+            return;
+        }
+        if (sources.length != destinations.length) {
+            throw new IllegalArgumentException("Expected sources and destinations to be parallel arrays: sources length=" + sources.length + ", destinations length=" + destinations.length);
+        }
+
+        final ChunkSource.GetContext [] sourceContexts = new ChunkSource.GetContext[sources.length];
+        final WritableChunkSink.FillFromContext [] destContexts = new WritableChunkSink.FillFromContext[sources.length];
+
+        try (final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
+             final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator();
+             final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
+             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(destContexts)
+             ) {
+
+            for (int ss = 0; ss < sources.length; ++ss) {
+                for (int dd = 0; dd < destinations.length; ++dd) {
+                    if (sources[ss] == destinations[dd]) {
+                        throw new IllegalArgumentException("Source must not equal destination!");
+                    }
+                }
+                destinations[ss].ensureCapacity(destAllKeys.lastKey() + 1);
+                sourceContexts[ss] = sources[ss].makeGetContext(minSize, sharedContext);
+                destContexts[ss] = destinations[ss].makeFillFromContext(minSize);
+            }
+
+            while (srcIter.hasMore()) {
+                Assert.assertion(destIter.hasMore(), "destIter.hasMore()");
+                final OrderedKeys srcNextKeys = srcIter.getNextOrderedKeysWithLength(minSize);
+                final OrderedKeys destNextKeys = destIter.getNextOrderedKeysWithLength(minSize);
+                Assert.eq(srcNextKeys.size(), "srcNextKeys.size()", destNextKeys.size(), "destNextKeys.size()");
+
+                sharedContext.reset();
+                for (int cc = 0; cc < sources.length; ++cc) {
+                    final Chunk<? extends Attributes.Values> chunk = usePrev ? sources[cc].getPrevChunk(sourceContexts[cc], srcNextKeys) : sources[cc].getChunk(sourceContexts[cc], srcNextKeys);
+                    destinations[cc].fillFromChunk(destContexts[cc], chunk, destNextKeys);
+                }
+            }
+        }
+    }
+
     public static <T extends Attributes.Values> void fillWithNullValue(WritableChunkSink<T> dest, OrderedKeys allKeys) {
-        final int minSize = Math.min(allKeys.intSize(), chunkSize);
+        final int minSize = Math.min(allKeys.intSize(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
@@ -584,7 +648,7 @@ public class ChunkUtils {
              final OrderedKeys.Iterator iter = allKeys.getOrderedKeysIterator()) {
             chunk.fillWithNullValue(0, minSize);
             while (iter.hasMore()) {
-                try (final OrderedKeys nextKeys = iter.getNextOrderedKeysWithLength(chunkSize)) {
+                try (final OrderedKeys nextKeys = iter.getNextOrderedKeysWithLength(COPY_DATA_CHUNK_SIZE)) {
                     dest.fillFromChunk(destContext, chunk, nextKeys);
                 }
             }

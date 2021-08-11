@@ -42,3 +42,14 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 }
+
+def createMainExecTask = {
+    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        task.workingDir "$rootDir"
+        task.classpath = sourceSets.main.runtimeClasspath
+        task.main = mainClass
+        return
+    })
+}
+
+createMainExecTask('replicateKafka', 'io.deephaven.kafka.ingest.ReplicateKafka')
