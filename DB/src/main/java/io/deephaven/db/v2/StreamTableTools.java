@@ -14,20 +14,20 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Converts a Stream Table to an in-memory append only table.
- *
- * Note, this table will grow without bound as new stream values are encountered.
+ * Tools for manipulating tables.
  */
-public class StreamTableToAppendOnlyTable {
+public class StreamTableTools {
     /**
      * Convert a Stream Table to an in-memory append only table.
+     *
+     * Note, this table will grow without bound as new stream values are encountered.
      *
      * @param streamTable the input stream table
      * @return an append-only in-memory table representing all data encountered in the stream
      */
     public static Table streamToAppendOnlyTable(Table streamTable) {
         return QueryPerformanceRecorder.withNugget("streamToAppendOnlyTable", () -> {
-            if (!BaseTable.isStream(streamTable)) {
+            if (!isStream(streamTable)) {
                 throw new IllegalArgumentException("Input is not a stream table!");
             }
 
@@ -66,15 +66,15 @@ public class StreamTableToAppendOnlyTable {
                     final long currentSize = index.size();
                     columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
-                    final Index newRange = Index.FACTORY.getIndexByRange(currentSize, currentSize + newRows - 1);
+                    final Index newRange = Index.CURRENT_FACTORY.getIndexByRange(currentSize, currentSize + newRows - 1);
 
                     ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
                     index.insertRange(currentSize, currentSize + newRows - 1);
 
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
                     downstream.added = newRange;
-                    downstream.modified = Index.FACTORY.getEmptyIndex();
-                    downstream.removed = Index.FACTORY.getEmptyIndex();
+                    downstream.modified = Index.CURRENT_FACTORY.getEmptyIndex();
+                    downstream.removed = Index.CURRENT_FACTORY.getEmptyIndex();
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                     downstream.shifted = IndexShiftData.EMPTY;
                     result.notifyListeners(downstream);
@@ -82,5 +82,19 @@ public class StreamTableToAppendOnlyTable {
             });
             return result;
         });
+    }
+
+    /**
+     * Returns true if table is a stream table.
+     *
+     * @param table the table to check for stream behavior
+     * @return Whether this table is a stream table
+     * @see Table#STREAM_TABLE_ATTRIBUTE
+     */
+    public static boolean isStream(Table table) {
+        if (!table.isLive()) {
+            return false;
+        }
+        return Boolean.TRUE.equals(table.getAttribute(Table.STREAM_TABLE_ATTRIBUTE));
     }
 }

@@ -260,7 +260,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             index.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new ShiftAwareListener.Update(Index.FACTORY.getFlatIndex(newSize), Index.FACTORY.getFlatIndex(oldSize), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        table.notifyListeners(new ShiftAwareListener.Update(Index.CURRENT_FACTORY.getFlatIndex(newSize), Index.CURRENT_FACTORY.getFlatIndex(oldSize), Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 
     @SafeVarargs

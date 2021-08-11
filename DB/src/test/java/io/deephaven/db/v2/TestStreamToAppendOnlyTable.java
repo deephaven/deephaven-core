@@ -31,7 +31,7 @@ public class TestStreamToAppendOnlyTable {
         final QueryTable streamTable = TstUtils.testRefreshingTable(i(), intCol("I"), doubleCol("D"), dateTimeCol("DT"), col("B", new Boolean[0]));
         streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
-        final Table appendOnly = StreamTableToAppendOnlyTable.streamToAppendOnlyTable(streamTable);
+        final Table appendOnly = StreamTableTools.streamToAppendOnlyTable(streamTable);
 
         assertTableEquals(streamTable, appendOnly);
         TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
