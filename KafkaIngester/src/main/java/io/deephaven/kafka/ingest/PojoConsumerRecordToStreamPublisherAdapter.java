@@ -603,7 +603,7 @@ public class PojoConsumerRecordToStreamPublisherAdapter<K, V> implements Consume
         }
     }
 
-    public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
+    private void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {
         if (kafkaPartitionColumnSetter != null) {
             kafkaPartitionColumnSetter.setInt(record.partition());
         }

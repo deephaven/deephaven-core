@@ -14,16 +14,16 @@ import java.util.*;
 import java.util.function.IntFunction;
 
 /**
- *  Convert an Avro {@link GenericRecord} to Deephaven rows.
- *
- *  Each GenericRecord produces a single row of output, according to the maps of Table column names to Avro field names
- *  for the keys and values.
+ * Convert an Avro {@link GenericRecord} to Deephaven rows.
+ * <p>
+ * Each GenericRecord produces a single row of output, according to the maps of Table column names to Avro field names
+ * for the keys and values.
  */
 public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
     private final boolean allowNulls;
 
-    final int [] chunkOffsets;
-    final GenericRecordFieldCopier [] fieldCopiers;
+    private final int[] chunkOffsets;
+    private final GenericRecordFieldCopier[] fieldCopiers;
 
     private GenericRecordChunkAdapter(
             final TableDefinition definition,
@@ -32,8 +32,8 @@ public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
             final boolean allowNulls) {
         this.allowNulls = allowNulls;
 
-        final String [] columnNames = definition.getColumnNamesArray();
-        final Class<?> [] columnTypes = definition.getColumnTypesArray();
+        final String[] columnNames = definition.getColumnNamesArray();
+        final Class<?>[] columnTypes = definition.getColumnTypesArray();
 
         final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>();
         for (int ii = 0; ii < columnNames.length; ++ii) {
@@ -55,6 +55,15 @@ public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
         }
     }
 
+    /**
+     * Create a GenericRecordChunkAdapter.
+     *
+     * @param definition        the definition of the output table
+     * @param chunkTypeForIndex a function from column index to chunk type
+     * @param columns           a map from Avro field names to Deephaven column names
+     * @param allowNulls        true if null records should be allowed, if false then an ISE is thrown
+     * @return a GenericRecordChunkAdapter for the given definition and column mapping
+     */
     public static GenericRecordChunkAdapter make(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
