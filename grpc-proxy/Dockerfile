@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.13
+FROM docker.io/library/alpine:3.12
 
 COPY contents/ .
 
@@ -6,6 +6,7 @@ ENV GRPCWEBPROXY_VERSION=v0.13.0
 
 # Note(deephaven-core#599): Consider moving grpcwebproxy DL into gradle
 RUN set -eux; \
+    mkdir /app; \
     apk add --no-cache tini; \
     wget -q "https://github.com/improbable-eng/grpc-web/releases/download/${GRPCWEBPROXY_VERSION}/grpcwebproxy-${GRPCWEBPROXY_VERSION}-linux-x86_64.zip"; \
     sha256sum -c checksums.txt; \
