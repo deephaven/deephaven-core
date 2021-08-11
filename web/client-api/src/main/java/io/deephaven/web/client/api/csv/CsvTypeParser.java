@@ -388,6 +388,7 @@ public class CsvTypeParser {
     }
 
     public static ColumnHolder createColumnHolder(String name, String type, String[] data, String userTimeZone) {
+
         try {
             switch (type) {
                 case INTEGER:
@@ -399,7 +400,7 @@ public class CsvTypeParser {
                             ints[i] = Integer.parseInt(data[i].trim().replaceAll(",", ""));
                         }
                     }
-                    return new ColumnHolder(name, INTEGER, new IntArrayColumnData(ints), false);
+                    return new ColumnHolder(name, INTEGER, new IntArrayColumnData(ints));
                 case LONG:
                     final long[] longs = new long[data.length];
                     for (int i = 0; i < data.length; i++) {
@@ -409,7 +410,7 @@ public class CsvTypeParser {
                             longs[i] = Long.parseLong(data[i].trim().replaceAll(",", ""));
                         }
                     }
-                    return new ColumnHolder(name, LONG, new LongArrayColumnData(longs), false);
+                    return new ColumnHolder(name, LONG, new LongArrayColumnData(longs));
                 case DOUBLE:
                     final double[] doubles = new double[data.length];
                     for (int i = 0; i < data.length; i++) {
@@ -419,7 +420,7 @@ public class CsvTypeParser {
                             doubles[i] = Double.parseDouble(data[i].trim().replaceAll(",", ""));
                         }
                     }
-                    return new ColumnHolder(name, DOUBLE, new DoubleArrayColumnData(doubles), false);
+                    return new ColumnHolder(name, DOUBLE, new DoubleArrayColumnData(doubles));
                 case BOOLEAN:
                     final byte[] bytes = new byte[data.length];
                     for (int i = 0; i < data.length; i++) {
@@ -429,7 +430,7 @@ public class CsvTypeParser {
                             bytes[i] = Boolean.parseBoolean(data[i].trim()) ? QueryConstants.TRUE_BOOLEAN_AS_BYTE : QueryConstants.FALSE_BOOLEAN_AS_BYTE;
                         }
                     }
-                    return new ColumnHolder(name, Boolean.class.getCanonicalName(), new ByteArrayColumnData(bytes), false);
+                    return new ColumnHolder(name, Boolean.class.getCanonicalName(), new ByteArrayColumnData(bytes));
                 case DATE_TIME:
                     final long[] datetimes = new long[data.length];
                     for (int i = 0; i < data.length; i++) {
@@ -439,7 +440,7 @@ public class CsvTypeParser {
                             datetimes[i] = parseDateTime(data[i], userTimeZone);
                         }
                     }
-                    return new ColumnHolder(name, DATE_TIME_TYPE, new LongArrayColumnData(datetimes), false);
+                    return new ColumnHolder(name, DATE_TIME_TYPE, new LongArrayColumnData(datetimes));
                 case LOCAL_TIME:
                     final LocalTime[] localtimes = new LocalTime[data.length];
                     for (int i = 0; i < data.length; i++) {
@@ -449,11 +450,11 @@ public class CsvTypeParser {
                             localtimes[i] = parseLocalTime(data[i]);
                         }
                     }
-                    return new ColumnHolder(name, LOCAL_TIME_TYPE, new LocalTimeArrayColumnData(localtimes), false);
+                    return new ColumnHolder(name, LOCAL_TIME_TYPE, new LocalTimeArrayColumnData(localtimes));
                 default:
                     final StringArrayColumnData columnData = new StringArrayColumnData();
                     JsArrays.setArray(data, columnData::setData);
-                    return new ColumnHolder(name, String.class.getCanonicalName(), columnData, false);
+                    return new ColumnHolder(name, String.class.getCanonicalName(), columnData);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Error parsing data for type " + type + "\n" + e.getMessage());
