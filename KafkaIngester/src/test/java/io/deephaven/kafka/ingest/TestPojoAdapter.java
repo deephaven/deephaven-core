@@ -14,6 +14,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.function.Function;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
@@ -46,7 +47,7 @@ public class TestPojoAdapter {
 
         final PojoConsumerRecordToStreamPublisherAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<Object, PojoTest1> record = new ConsumerRecord<>("topic", 0, 0, null, new PojoTest1());
-        pojoAdapter.consumeRecord(record);
+        pojoAdapter.consumeRecords(Collections.singletonList(record));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
@@ -71,7 +72,7 @@ public class TestPojoAdapter {
 
         final PojoConsumerRecordToStreamPublisherAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<PojoTest1, Object> record = new ConsumerRecord<>("topic", 0, 0, new PojoTest1(), null);
-        pojoAdapter.consumeRecord(record);
+        pojoAdapter.consumeRecords(Collections.singletonList(record));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
@@ -95,7 +96,7 @@ public class TestPojoAdapter {
 
         final PojoConsumerRecordToStreamPublisherAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<Object, PojoTest1> record = new ConsumerRecord<>("topic", 0, 0, null, new PojoTest1());
-        pojoAdapter.consumeRecord(record);
+        pojoAdapter.consumeRecords(Collections.singletonList(record));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
@@ -136,7 +137,7 @@ public class TestPojoAdapter {
 
         final PojoConsumerRecordToStreamPublisherAdapter pojoAdapter = factory.apply(writer);
         final ConsumerRecord<PojoTest2, PojoTest1> record = new ConsumerRecord<>("topic", 1, 27, new PojoTest2(), new PojoTest1());
-        pojoAdapter.consumeRecord(record);
+        pojoAdapter.consumeRecords(Collections.singletonList(record));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 

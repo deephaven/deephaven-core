@@ -65,6 +65,11 @@ public class KafkaTools {
 
     private static final int CHUNK_SIZE = 2048;
 
+    // offsets in the consumeToTable output
+    private static final int KAFKA_PARTITION_COLUMN_INDEX = 0;
+    private static final int OFFSET_COLUMN_INDEX = 1;
+    private static final int TIMESTAMP_COLUMN_INDEX = 2;
+
     public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
         String action = "setup http client";
         try (final CloseableHttpClient client = HttpClients.custom().build()) {
@@ -269,14 +274,9 @@ public class KafkaTools {
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-//                columnDefinitions.add(ColumnDefinition.ofString("Key"));
             }
         } else if (keySchema != null) {
             columnDefinitions.addAll(Arrays.asList(keyColumns));
-        } else {
-            if (kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
-//                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "Key"));
-            }
         }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
@@ -287,14 +287,9 @@ public class KafkaTools {
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-//                columnDefinitions.add(ColumnDefinition.ofString("Value"));
             }
         } else if (valueSchema != null) {
             columnDefinitions.addAll(Arrays.asList(valueColumns));
-        } else {
-            if (kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
-//                columnDefinitions.add(columnDefinitionFromDeserializer(kafkaConsumerProperties, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "Value"));
-            }
         }
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
@@ -305,24 +300,24 @@ public class KafkaTools {
 
 
         if (keySchema == null) {
-            keyProcessor = null; // TODO: if we have a primitive type, it goes here
+            keyProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
         } else {
             keyProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, keyColumnsMap, true);
         }
 
         if (valueSchema == null) {
-            valueProcessor = null; // TODO: if we have a primitive type, it goes here
+            valueProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
         } else {
             valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
         }
 
         final ConsumerRecordToStreamPublisherAdapter adapter = SimpleConsumerRecordToStreamPublisherAdapter.make(streamPublisher,
-                0,
-                1,
-                2,
+                KAFKA_PARTITION_COLUMN_INDEX,
+                OFFSET_COLUMN_INDEX,
+                TIMESTAMP_COLUMN_INDEX,
                 keyProcessor, valueProcessor,
-                -1, // TODO A RAW STRING WOULD GO HERE
-                -1 // TODO A RAW STRING WOUDL GO HERE
+                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 );
 
         final KafkaIngester ingester = new KafkaIngester(
@@ -398,7 +393,7 @@ public class KafkaTools {
             if (colDef == null) {
                 return -1;
             }
-            return colIdx.getAndAdd(1);
+            return colIdx.getAndIncrement();
         };
         final ConsumerRecordToStreamPublisherAdapter adapter = SimpleConsumerRecordToStreamPublisherAdapter.make(
                 streamPublisher,
