@@ -128,16 +128,18 @@ except Exception as e:
     pass
 
 @_passThrough
-def convertSchema(parquetMetadata, readInstructionsIn):
+def convertSchema(schema, keyValueMetadata, readInstructionsIn):
     """
     Convert schema information from a ParquetMetadata into ColumnDefinitions.
     
-    :param parquetMetadata: (org.apache.parquet.hadoop.metadata.ParquetMetadata) - The ParquetMetadata to convert
+    :param schema: (org.apache.parquet.schema.MessageType) - Parquet schema.
+                               DO NOT RELY ON ParquetMetadataConverter FOR THIS! USE ParquetFileReader!
+    :param keyValueMetadata: (java.util.Map<java.lang.String,java.lang.String>) - Parquet key-value metadata map
     :param readInstructionsIn: (io.deephaven.db.v2.parquet.ParquetInstructions) - Input conversion ParquetInstructions
     :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.db.tables.ColumnDefinition>,io.deephaven.db.v2.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
     """
     
-    return _java_type_.convertSchema(parquetMetadata, readInstructionsIn)
+    return _java_type_.convertSchema(schema, keyValueMetadata, readInstructionsIn)
 
 
 @_passThrough
