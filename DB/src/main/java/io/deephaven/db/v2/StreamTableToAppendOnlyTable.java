@@ -35,7 +35,7 @@ public class StreamTableToAppendOnlyTable {
             final Map<String, ? extends ColumnSource> columnSourceMap = streamTable.getColumnSourceMap();
             final int columnCount = columnSourceMap.size();
             final ColumnSource [] sourceColumns = new ColumnSource[columnCount];
-            final WritableSource[] destColumns = new ArrayBackedColumnSource[columnCount];
+            final WritableSource[] destColumns = new WritableSource[columnCount];
             int colIdx = 0;
             for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap.entrySet()) {
                 final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
