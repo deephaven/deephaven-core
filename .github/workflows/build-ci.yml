@@ -15,8 +15,9 @@ jobs:
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
         id: setup-java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2.2.0
         with:
+          distribution: 'zulu'
           java-version: '8.0.292'
 
       - name: Get Semver
@@ -90,8 +91,9 @@ jobs:
 
       - name: Setup JDK
         id: setup-java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2.2.0
         with:
+          distribution: 'zulu'
           java-version: '8.0.292'
 
       - name: Get Semver
@@ -161,8 +163,9 @@ jobs:
 
       - name: Setup JDK
         id: setup-java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2.2.0
         with:
+          distribution: 'zulu'
           java-version: '8.0.292'
 
       - name: Get Semver
@@ -257,8 +260,9 @@ jobs:
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
         id: setup-java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2.2.0
         with:
+          distribution: 'zulu'
           java-version: '8.0.292'
 
       - name: Set up Docker Buildx
