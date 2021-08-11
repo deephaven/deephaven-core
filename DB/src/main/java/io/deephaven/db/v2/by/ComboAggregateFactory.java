@@ -969,6 +969,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                 }
                 else if (comboBy instanceof ComboByImpl) {
                     final AggregationStateFactory inputAggregationStateFactory = comboBy.getUnderlyingStateFactory();
+                    final boolean isStream = ((BaseTable) table).isStream();
                     final boolean isAddOnly = ((BaseTable) table).isAddOnly();
 
                     final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
@@ -1208,7 +1209,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                         operators.add(ssmChunkedMinMaxOperator.makeSecondaryOperator(isMinimum, resultName));
                                         hasSource = false;
                                     } else {
-                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum, isAddOnly, resultName));
+                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum, isStream || isAddOnly, resultName));
                                         hasSource = true;
                                     }
                                 } else if (isPercentile) {
@@ -1242,7 +1243,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             }
 
                             if (table.isLive()) {
-                                if (isAddOnly) {
+                                if (isStream) {
+                                    operators.add(isFirst ? new StreamFirstByChunkedOperator(comboMatchPairs, table) : new StreamLastByChunkedOperator(comboMatchPairs, table));
+                                } else if (isAddOnly) {
                                     operators.add(new AddOnlyFirstOrLastChunkedOperator(isFirst, comboMatchPairs, table, exposeRedirectionAs));
                                 } else {
                                     if (trackedFirstOrLastIndex >= 0) {
