@@ -99,7 +99,6 @@ class PythonUtilities {
             }
 
             return pyCallable;
-
         } else if (pyObject.hasAttribute("__call__")){
             return pyObject;
         } else {
