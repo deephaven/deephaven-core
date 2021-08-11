@@ -10,7 +10,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
-import org.immutables.value.Value.Derived;
 
 import java.util.Arrays;
 import java.util.Collection;
