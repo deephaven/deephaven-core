@@ -19,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ParentsVisitorTest {
 
+    private static final int HEAVILY_BRANCHED_SIZE = 128;
+
+    private static final int DEEPWALK_SIZE = 8192;
+
     private static final TableSpec S1 = TableSpec.empty(42);
 
     private static final TableSpec S2 = S1.head(6);
@@ -26,8 +30,6 @@ public class ParentsVisitorTest {
     private static final TableSpec S3 = S2.tail(4);
 
     private static final TableSpec S4 = S3.view("I=i");
-    public static final int HEAVILY_BRANCHED_SIZE = 128;
-    public static final int DEEPWALK_SIZE = 12;
 
     @Test
     void exactlyOnePostOrderChain() {
