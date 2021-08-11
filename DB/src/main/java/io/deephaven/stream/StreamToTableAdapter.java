@@ -63,7 +63,11 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
         index = Index.FACTORY.getEmptyIndex();
 
-        table = new QueryTable(index, visibleSources);
+        table = new QueryTable(index, visibleSources) {
+            {
+                setFlat();
+            }
+        };
         table.setRefreshing(true);
         table.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
@@ -87,7 +91,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
-    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, io.deephaven.db.tables.ColumnDefinition<?> cd) {
+    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
             return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);
@@ -97,7 +101,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @NotNull
-    private static WritableChunk<?> makeChunk(io.deephaven.db.tables.ColumnDefinition<?> cd, int size) {
+    private static WritableChunk<?> makeChunk(ColumnDefinition<?> cd, int size) {
         final ChunkType chunkType = chunkTypeForColumn(cd);
         WritableChunk<Attributes.Any> returnValue = chunkType.makeWritableChunk(size);
         returnValue.setSize(0);
@@ -116,7 +120,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         return tableDefinition.getColumnStream().map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition).toArray(NullValueColumnSource<?>[]::new);
     }
 
-    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(io.deephaven.db.tables.ColumnDefinition<?> cd) {
+    private static NullValueColumnSource<?> makeNullValueColumnSourceFromDefinition(ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         if (replacementType != null) {
             return NullValueColumnSource.getInstance(replacementType, null);

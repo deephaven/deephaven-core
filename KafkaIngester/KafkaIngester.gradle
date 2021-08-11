@@ -43,28 +43,6 @@ dependencies {
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 }
 
-def createDeephavenTestExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        new File("$rootDir/tmp/workspace").mkdirs()
-        new File("$rootDir/tmp/logs").mkdirs()
-
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.test.runtimeClasspath
-        task.main = mainClass
-
-        task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
-                    "-Ddevroot=$rootDir",
-                    "-Dworkspace=$rootDir/tmp/workspace",
-		    "-Dtest.output.dir=$rootDir/tmp/logs",
-                    '-Dlog4j.configuration=log4j.teamcity.xml',
-                    '-Ddisable.pdsport.rotate=true',
-                    '-Dconfiguration.quiet=true',
-                    '-Djava.awt.headless=true'
-
-        return
-    })
-}
-
 def createMainExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
         task.workingDir "$rootDir"
@@ -74,4 +52,4 @@ def createMainExecTask = {
     })
 }
 
-createDeephavenTestExecTask('replicateKafka', 'io.deephaven.kafka.ingest.ReplicateKafka')
+createMainExecTask('replicateKafka', 'io.deephaven.kafka.ingest.ReplicateKafka')

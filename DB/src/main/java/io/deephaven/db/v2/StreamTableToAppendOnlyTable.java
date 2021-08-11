@@ -4,6 +4,8 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.ReinterpretUtilities;
+import io.deephaven.db.v2.sources.WritableSource;
 import io.deephaven.db.v2.utils.ChunkUtils;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
@@ -25,22 +27,24 @@ public class StreamTableToAppendOnlyTable {
      */
     public static Table streamToAppendOnlyTable(Table streamTable) {
         return QueryPerformanceRecorder.withNugget("streamToAppendOnlyTable", () -> {
-            Object streamAttribute = streamTable.getAttribute(Table.STREAM_TABLE_ATTRIBUTE);
-            if (!(streamAttribute instanceof Boolean) || !(Boolean) streamAttribute) {
+            if (!BaseTable.isStream(streamTable)) {
                 throw new IllegalArgumentException("Input is not a stream table!");
             }
 
             final Map<String, ArrayBackedColumnSource> columns = new LinkedHashMap<>();
-            final int columnCount = streamTable.getColumnSourceMap().size();
+            final Map<String, ? extends ColumnSource> columnSourceMap = streamTable.getColumnSourceMap();
+            final int columnCount = columnSourceMap.size();
             final ColumnSource [] sourceColumns = new ColumnSource[columnCount];
-            final ArrayBackedColumnSource [] destColumns = new ArrayBackedColumnSource[columnCount];
+            final WritableSource[] destColumns = new ArrayBackedColumnSource[columnCount];
             int colIdx = 0;
-            for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : streamTable.getColumnSourceMap().entrySet()) {
+            for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap.entrySet()) {
                 final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
                 final ArrayBackedColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, existingColumn.getType(), existingColumn.getComponentType());
                 columns.put(nameColumnSourceEntry.getKey(), newColumn);
-                sourceColumns[colIdx] = existingColumn;
-                destColumns[colIdx++] = newColumn;
+                // for the source columns, we would like to read primitives instead of objects in cases where it is possible
+                sourceColumns[colIdx] = ReinterpretUtilities.maybeConvertToPrimitive(existingColumn);
+                // for the destination sources, we know they are array backed sources that will actually store primitives and we can fill efficiently
+                destColumns[colIdx++] = (WritableSource)ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
             }
 
             Index index = Index.FACTORY.getEmptyIndex();
@@ -68,11 +72,11 @@ public class StreamTableToAppendOnlyTable {
                     index.insertRange(currentSize, currentSize + newRows - 1);
 
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
-                    downstream.shifted = IndexShiftData.EMPTY;
+                    downstream.added = newRange;
                     downstream.modified = Index.FACTORY.getEmptyIndex();
                     downstream.removed = Index.FACTORY.getEmptyIndex();
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                    downstream.added = newRange;
+                    downstream.shifted = IndexShiftData.EMPTY;
                     result.notifyListeners(downstream);
                 }
             });

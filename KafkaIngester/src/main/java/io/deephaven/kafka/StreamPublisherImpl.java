@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 public class StreamPublisherImpl implements StreamPublisher {
     private StreamConsumer streamConsumer;
     private WritableChunk[] chunks;
-    private java.util.function.Supplier<WritableChunk[]> chunkFactory;
+    private Supplier<WritableChunk[]> chunkFactory;
     private IntFunction<ChunkType> chunkTypeIntFunction;
 
     public ChunkType chunkType(int index) {
