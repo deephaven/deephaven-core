@@ -31,6 +31,7 @@ import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 /**
@@ -181,6 +182,22 @@ public class BarrageClientSubscription implements LogOutputAppendable {
             throw new IllegalStateException("Cannot set viewport on a full subscription.");
         }
 
+        call.sendMessage(Flight.FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns)))
+                .build());
+    }
+
+    @Override
+    public LogOutput append(final LogOutput logOutput) {
+        return logOutput.append("Barrage/").append("/ClientSubscription/").append(logName).append("/")
+                .append(System.identityHashCode(this)).append("/");
+    }
+
+    public static BarrageSubscriptionRequest makeRequest(final Index viewport, final BitSet columns) {
+        return BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(makeRequestInternal(viewport, columns));
+    }
+
+    private static ByteBuffer makeRequestInternal(final Index viewport, final BitSet columns) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
@@ -202,14 +219,6 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         BarrageMessageWrapper.addMsgType(metadata, BarrageMessageType.BarrageSubscriptionRequest);
         BarrageMessageWrapper.addMsgPayload(metadata, subscription);
         metadata.finish(BarrageMessageWrapper.endBarrageMessageWrapper(metadata));
-        call.sendMessage(Flight.FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(metadata.dataBuffer()))
-                .build());
-    }
-
-    @Override
-    public LogOutput append(final LogOutput logOutput) {
-        return logOutput.append("Barrage/").append("/ClientSubscription/").append(logName).append("/")
-                .append(System.identityHashCode(this)).append("/");
+        return metadata.dataBuffer();
     }
 }

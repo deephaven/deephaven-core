@@ -120,7 +120,8 @@ public class ExportTicketHelper {
      * @return the export id that the Ticket wraps
      */
     public static Ticket exportIdToTicket(final ByteBuffer ticket) {
-        final ByteBuffer lebb = ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticket : ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer lebb = ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticket
+            : ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(lebb)).build();
     }
 

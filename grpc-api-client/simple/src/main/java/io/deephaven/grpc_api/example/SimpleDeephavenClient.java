@@ -12,11 +12,13 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.v2.InstrumentedShiftAwareListener;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
+import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api_client.table.BarrageTable;
+import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -209,51 +211,8 @@ public class SimpleDeephavenClient {
 
         resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, SubscriptionRequest.newBuilder()
-                .setTicket(exportTable)
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .setUseDeephavenNulls(true)
-                .build(), reader, resultTable);
-    }
-
-    private void onSchemaResultNoLocalLTM(final Flight.SchemaResult schemaResult) {
-        final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
-        final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
-
-        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive non-existing-bitset and an empty bitset.
-        final BitSet columns = new BitSet();
-        columns.set(0, definition.getColumns().length);
-
-        BarrageTable dummy = BarrageTable.make(definition, false);
-
-        resultSub = new BarrageClientSubscription(
-                ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, SubscriptionRequest.newBuilder()
-                .setTicket(exportTable)
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .setUseDeephavenNulls(true)
-                .build(), reader,
-                dummy.getWireChunkTypes(),
-                dummy.getWireTypes(),
-                dummy.getWireComponentTypes(),
-                new WeakReference<>(new BarrageMessage.Listener() {
-                    @Override
-                    public void handleBarrageMessage(final BarrageMessage update) {
-                        final Index mods = Index.CURRENT_FACTORY.getEmptyIndex();
-                        for (int ci = 0; ci < update.modColumnData.length; ++ci) {
-                            mods.insert(update.modColumnData[ci].rowsModified);
-                        }
-                        final ShiftAwareListener.Update up = new ShiftAwareListener.Update(
-                                update.rowsAdded, update.rowsRemoved, mods, update.shifted, ModifiedColumnSet.ALL);
-
-                        log.info().append("recv update: ").append(up).endl();
-                    }
-
-                    @Override
-                    public void handleBarrageError(Throwable t) {
-                        log.error().append("upstream client failed: " + t.getMessage());
-                    }
-                }));
+                serverChannel, BarrageClientSubscription.makeRequest(null, columns),
+                new BarrageStreamReader(), resultTable);
     }
 
     private void onScriptComplete() {
