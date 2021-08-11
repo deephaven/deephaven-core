@@ -13,16 +13,24 @@ public class IndexSetTest {
         IndexSet indexSet = new IndexSet(5);
 
         TestCase.assertEquals(0, indexSet.getSize());
-
         indexSet.add(135);
+        TestCase.assertEquals(1, indexSet.getSize());
         indexSet.add(54);
+        TestCase.assertEquals(2, indexSet.getSize());
         indexSet.add(100000);
+        TestCase.assertEquals(3, indexSet.getSize());
 
         PrimitiveIterator.OfLong itr = indexSet.iterator();
         TestCase.assertEquals(3, indexSet.getSize());
         TestCase.assertEquals(135, (long) itr.next());
         TestCase.assertEquals(54, (long) itr.next());
         TestCase.assertEquals(100000, (long) itr.next());
+
+        PrimitiveIterator.OfLong itr2 = indexSet.iterator();
+        TestCase.assertEquals(3, indexSet.getSize());
+        TestCase.assertEquals(135, itr2.nextLong());
+        TestCase.assertEquals(54, itr2.nextLong());
+        TestCase.assertEquals(100000, itr2.nextLong());
     }
 
     @Test(expected = Exception.class)

@@ -6,13 +6,15 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
+import java.util.function.Function;
+
 /**
  * Output specifies how to scatter data from a Python object into a table column.
  */
 public class Output {
 
     private final String colName;
-    private final PythonFunctionCaller scatterCaller;
+    private final Function<Object[], Object> scatterCaller;
     private final String type;
 
     /**
@@ -23,17 +25,18 @@ public class Output {
      * @param type          desired datatype of the new column.
      */
     public Output(String colName, PyObject scatterFunc, String type) {
+        this(colName, new PythonFunctionCaller(scatterFunc), type);
+    }
+
+    private Output(String colName, Function<Object[], Object> scatterFunc, String type) {
 
         Require.neqNull(colName, "colName");
         Require.neqNull(scatterFunc, "scatterFunc");
-        if (type == null) {
-            type = "Java.lang.Object";
-        }
 
         NameValidator.validateColumnName(colName);
 
         this.colName = colName;
-        this.scatterCaller = new PythonFunctionCaller(scatterFunc);
+        this.scatterCaller = scatterFunc;
         this.type = type;
     }
 
@@ -44,11 +47,12 @@ public class Output {
      */
     public String getColName() { return colName; }
 
-    /** Gets the scatter function caller.
+    /**
+     * Gets the scatter function caller.
      *
      * @return the scatter function caller.
      */
-    public PythonFunctionCaller getScatterCaller() { return scatterCaller; }
+    public Function<Object[], Object> getScatterCaller() { return scatterCaller; }
 
     /**
      * Gets the type of the output column.

@@ -3,17 +3,20 @@ package io.deephaven.integrations.learn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
+import java.util.function.Function;
+
 /**
- * Computer adds new updated/modified row indices to the index set, to be used in the deferred calculation.
+ * Computer creates a new deferred calculation plus an offset (FutureOffset) every time computer is called.
  */
 public class Computer {
 
-    private final PyObject modelFunc;
+    private final Function<Object[], Object> modelFunc;
+    private final ColumnSource<?>[][] colSets;
     private final int batchSize;
     private final Input[] inputs;
-    private final ColumnSource<?>[][] colSet;
     private Future current;
     private int offset;
 
@@ -25,17 +28,16 @@ public class Computer {
      * @param batchSize     maximum number of rows for each deferred computation.
      */
     public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
+        this(table, new PythonFunctionCaller(modelFunc), inputs, batchSize);
+    }
+
+    private Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
 
         Require.neqNull(table, "table");
         Require.neqNull(modelFunc, "modelFunc");
         Require.neqNull(inputs, "inputs");
-        Require.neqNull(batchSize, "batchSize");
 
         Require.gtZero(batchSize, "batchSize");
-
-        if (batchSize <= 0) {
-            throw new IllegalArgumentException("Max size must be a strictly positive integer.");
-        }
 
         if (inputs.length == 0) {
             throw new IllegalArgumentException("Cannot have an empty input list.");
@@ -45,10 +47,10 @@ public class Computer {
         this.batchSize = batchSize;
         this.inputs = inputs;
 
-        this.colSet = new ColumnSource[this.inputs.length][];
+        this.colSets = new ColumnSource[this.inputs.length][];
 
         for (int i = 0 ; i < this.inputs.length ; i++) {
-            this.colSet[i] = inputs[i].createColumnSource(table);
+            this.colSets[i] = inputs[i].createColumnSource(table);
         }
 
         this.current = null;
@@ -75,12 +77,15 @@ public class Computer {
     public FutureOffset compute(long k) {
 
         if (current == null || current.getIndexSet().isFull()) {
-            current = new Future(modelFunc, batchSize, inputs, colSet);
+            current = new Future(modelFunc, inputs, colSets, batchSize);
             offset = -1;
         }
 
         current.getIndexSet().add(k);
         offset += 1;
-        return new FutureOffset(current, offset % batchSize);
+        if (offset == batchSize) {
+            offset = 0;
+        }
+        return new FutureOffset(current, offset);
     }
 }

@@ -1,20 +1,19 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.integrations.python.PythonFunctionCaller;
-import org.jpy.PyObject;
+import java.util.function.Function;
 
 /**
  * Future performs a deferred computation on a portion of a table.
  */
 class Future {
 
-    private final PyObject func;
+    private final Function<Object[], Object> func;
+    private final ColumnSource<?>[][] colSet;
     private final Input[] inputs;
     private IndexSet indexSet;
-    private final ColumnSource<?>[][] colSet;
     private boolean called;
-    private PyObject result;
+    private Object result;
 
     /**
      * Creates a new Future.
@@ -23,7 +22,7 @@ class Future {
      * @param inputs        inputs to the Future computation.
      * @param batchSize     maximum number of rows for deferred computation.
      */
-    Future(PyObject func, int batchSize, Input[] inputs, ColumnSource<?>[][] colSet) {
+    Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSet, int batchSize) {
 
         this.func = func;
         this.inputs = inputs;
@@ -38,16 +37,16 @@ class Future {
      *
      * @return result of the deferred calculation.
      */
-    PyObject get() {
+    Object get() {
 
         if (!called) {
+            Object[] gathered = new Object[inputs.length];
 
-            PyObject[] gathered = new PyObject[inputs.length];
             for (int i = 0; i < inputs.length ; i++) {
-                gathered[i] = gather(inputs[i], indexSet, colSet[i]);
+                gathered[i] = gather(inputs[i], colSet[i]);
             }
 
-            result = new PythonFunctionCaller(func).apply(gathered);
+            result = func.apply(gathered);
             indexSet = null;
             called = true;
         }
@@ -59,12 +58,11 @@ class Future {
      * Computes the result of applying the gather function to the given input.
      *
      * @param input     input that contains the gather function and the column names to gather.
-     * @param indexSet  gives the indices for which we want to gather data.
      * @param colSet    set of column sources from which to extract data.
      * @return gathered data
      */
-    PyObject gather(Input input, IndexSet indexSet, ColumnSource<?>[] colSet) {
-        return input.getGatherCaller().apply(indexSet, colSet);
+    private Object gather(Input input, ColumnSource<?>[] colSet) {
+        return input.getGatherCaller().apply(new Object[]{this.indexSet, colSet});
     }
 
     /**

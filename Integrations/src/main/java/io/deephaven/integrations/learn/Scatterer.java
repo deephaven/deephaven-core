@@ -1,13 +1,9 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
-import org.jpy.PyObject;
-
-import java.util.ArrayList;
 
 /**
- * Scatterer applies scatter functions to the result of a deferred calculation and feeds the scattered data back into a table.
+ * Scatterer applies scatter functions to the result of a deferred calculation so that the results can be scattered into new table columns.
  */
 public class Scatterer {
 
@@ -33,22 +29,22 @@ public class Scatterer {
      *              that calculation.
      * @return subset of result that can be put back into the table.
      */
-    public PyObject scatter(int idx, FutureOffset fo) {
-        return outputs[idx].getScatterCaller().apply(fo.getFutureGet(), fo.getOffset());
+    public Object scatter(int idx, FutureOffset fo) {
+        return outputs[idx].getScatterCaller().apply(new Object[]{fo.getDeferredCalculation(), fo.getOffset()});
     }
 
     /**
-     * Generates a query string for each of these Outputs.
+     * Generates query strings to create a new column for each Output.
      *
      * @return list of query strings to be used in .update() call
      */
     public String[] generateQueryStrings() {
-        ArrayList<String> queryStrings = new ArrayList<>();
+        String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
-            queryStrings.add(String.format("%s = scatterer.scatter(%d, FutureOffset)", outputs[i].getColName(), i));
+            queryStrings[i] = String.format("%s = scatterer.scatter(%d, FutureOffset)", outputs[i].getColName(), i);
         }
 
-        return queryStrings.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return queryStrings;
     }
 }

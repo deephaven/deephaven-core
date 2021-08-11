@@ -1,7 +1,6 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Require;
-import org.jpy.PyObject;
 
 /**
  * FutureOffset pairs a deferred calculation with an offset, an index that indicates the location in the calculated result.
@@ -17,10 +16,9 @@ public class FutureOffset {
      * @param future    deferred calculation.
      * @param offset    location in the calculated result.
      */
-    public FutureOffset(Future future, int offset) {
+    FutureOffset(Future future, int offset) {
 
         Require.neqNull(future, "future");
-        Require.neqNull(offset, "offset");
 
         Require.geqZero(offset, "offset");
 
@@ -35,9 +33,10 @@ public class FutureOffset {
      */
     public int getOffset() { return offset; }
 
-    /** Gets the result of the deferred calculation.
+    /**
+     * Gets the result of the deferred calculation.
      *
      * @return the result of deferred calculation.
      */
-    public PyObject getFutureGet() { return future.get(); }
+    public Object getDeferredCalculation() { return future.get(); }
 }

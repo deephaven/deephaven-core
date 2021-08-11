@@ -8,13 +8,15 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
+import java.util.function.Function;
+
 /**
  * Input specifies how to gather data from a table into a Python object.
  */
 public class Input {
 
     private final String[] colNames;
-    private final PythonFunctionCaller gatherCaller;
+    private final Function<Object[], Object> gatherCaller;
 
     /**
      * Creates a new Input.
@@ -23,14 +25,7 @@ public class Input {
      * @param gatherFunc    function that gathers data into a Python object.
      */
     public Input(String colName, PyObject gatherFunc) {
-
-        Require.neqNull(colName, "colName");
-        Require.neqNull(gatherFunc, "gatherFunc");
-
-        NameValidator.validateColumnName(colName);
-
-        this.colNames = new String[] {colName};
-        this.gatherCaller = new PythonFunctionCaller(gatherFunc);
+        this(new String[]{colName}, new PythonFunctionCaller(gatherFunc));
     }
 
     /**
@@ -40,12 +35,18 @@ public class Input {
      * @param gatherFunc    function that gathers data into a Python object.
      */
     public Input(String[] colNames, PyObject gatherFunc) {
+        this(colNames, new PythonFunctionCaller(gatherFunc));
+    }
+
+    private Input(String[] colNames, Function<Object[], Object> gatherFunc) {
 
         Require.neqNull(colNames, "colNames");
         Require.neqNull(gatherFunc, "gatherFunc");
 
+        //NameValidator.validateColumnName(colNames[i]);
+
         this.colNames = colNames;
-        this.gatherCaller = new PythonFunctionCaller(gatherFunc);
+        this.gatherCaller = gatherFunc;
     }
 
     /** Creates an array of column sources specified by this table and given column names.
@@ -68,5 +69,5 @@ public class Input {
      *
      * @return caller for the gather function.
      */
-    PythonFunctionCaller getGatherCaller() { return gatherCaller; }
+    Function<Object[], Object> getGatherCaller() { return gatherCaller; }
 }

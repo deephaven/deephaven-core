@@ -12,7 +12,7 @@ import java.util.function.Function;
  * A class which calls a Python callable.
  */
 @ScriptApi
-public class PythonFunctionCaller {
+public class PythonFunctionCaller implements Function<Object[], Object> {
     private final PyObject pyCallable;
 
     /**
@@ -42,7 +42,8 @@ public class PythonFunctionCaller {
      * @param args arguments to pass to the Python function
      * @return the result of the function call
      */
-    public PyObject apply(Object ... args) {
+    @Override
+    public Object apply(Object ... args) {
         PyObject out = pyCallable.call("__call__", args);
         return out;
     }
