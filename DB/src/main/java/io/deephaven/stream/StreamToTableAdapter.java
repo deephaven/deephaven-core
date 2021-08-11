@@ -1,6 +1,7 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -277,6 +278,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 throw new IllegalStateException("StreamConsumer data length = " + data.length + " chunks, expected " + bufferChunkSources.length);
             }
             for (int ii = 0; ii < data.length; ++ii) {
+                Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
                 bufferChunkSources[ii].addChunk(data[ii]);
             }
         }

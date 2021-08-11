@@ -123,6 +123,7 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
     @SuppressWarnings("unchecked")
     private void doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk [] chunks = publisher.getChunks();
+        checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
 
         final int chunkSize = Math.min(records.size(), chunks[0].capacity());
@@ -157,9 +158,12 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
                     }
                     flushValueChunk(valueChunk, chunks);
 
+                    checkChunkSizes(chunks);
                     publisher.flush();
 
                     chunks = publisher.getChunks();
+                    checkChunkSizes(chunks);
+
                     remaining = chunks[0].capacity() - chunks[0].size();
                     Assert.gtZero(remaining, "remaining");
 
@@ -212,10 +216,14 @@ public class SimpleConsumerRecordToStreamPublisherAdapter implements ConsumerRec
             }
             flushValueChunk(valueChunk, chunks);
 
-            for (int cc = 1; cc < chunks.length; ++cc) {
-                if (chunks[cc].size() != chunks[0].size()) {
-                    throw new IllegalStateException("Publisher chunks have size mismatch: " + Arrays.stream(chunks).map(c -> Integer.toString(c.size())).collect(Collectors.joining(", ")));
-                }
+            checkChunkSizes(chunks);
+        }
+    }
+
+    private void checkChunkSizes(WritableChunk[] chunks) {
+        for (int cc = 1; cc < chunks.length; ++cc) {
+            if (chunks[cc].size() != chunks[0].size()) {
+                throw new IllegalStateException("Publisher chunks have size mismatch: " + Arrays.stream(chunks).map(c -> Integer.toString(c.size())).collect(Collectors.joining(", ")));
             }
         }
     }
