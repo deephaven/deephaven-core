@@ -74,6 +74,6 @@ public class IndexSetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void positiveMaxSizeTest() {
-        IndexSet indexSet = new IndexSet(0);
+        new IndexSet(0);
     }
 }
