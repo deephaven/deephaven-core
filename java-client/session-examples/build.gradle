@@ -52,8 +52,22 @@ task createPublishTablesScripts(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createWriteQstsScripts(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.WriteExampleQsts'
+    applicationName = 'write-qsts'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication',
+            '-Xss16M' ]
+}
+
 applicationDistribution.into('bin') {
     from(createHammerSessionsScripts)
     from(createPublishTablesScripts)
+    from(createWriteQstsScripts)
     fileMode = 0755
 }
