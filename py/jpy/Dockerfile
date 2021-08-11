@@ -1,4 +1,4 @@
-FROM docker.io/azul/zulu-openjdk-debian:8u292 as runtime_reqs
+FROM docker.io/azul/zulu-openjdk-debian:8u302 as runtime_reqs
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \

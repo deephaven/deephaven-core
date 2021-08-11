@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Get Semver
         id: semver
@@ -94,7 +94,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Get Semver
         id: semver
@@ -166,7 +166,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Get Semver
         id: semver
@@ -263,7 +263,7 @@ jobs:
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.292'
+          java-version: '8.0.302'
 
       - name: Set up Docker Buildx
         id: buildx
