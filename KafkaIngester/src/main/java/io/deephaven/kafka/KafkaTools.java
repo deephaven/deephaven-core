@@ -386,7 +386,7 @@ public class KafkaTools {
         streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
 
         final KeyOrValueProcessor keyProcessor = null; // TODO: Support key as both json or generic.
-        final KeyOrValueProcessor valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
+        final KeyOrValueProcessor valueProcessor = JsonNodeChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
 
         final ConsumerRecordToStreamPublisherAdapter adapter = ConsumerRecordToStreamPublisherAdapterImpl.make(streamPublisher,
                 commonColsIndices[0],
