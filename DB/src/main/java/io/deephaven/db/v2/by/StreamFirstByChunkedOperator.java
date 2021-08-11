@@ -169,6 +169,7 @@ public class StreamFirstByChunkedOperator extends StreamFirstOrLastByChunkedOper
                         final Chunk<? extends Values> inputChunk = inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
                         outputColumns[ci].fillFromChunk(outputContexts[ci], inputChunk, sliceDestinations);
                     }
+                    inputSharedContext.reset();
                 }
             }
         }

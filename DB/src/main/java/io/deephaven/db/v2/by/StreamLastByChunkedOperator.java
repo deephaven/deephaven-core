@@ -160,6 +160,7 @@ public class StreamLastByChunkedOperator extends StreamFirstOrLastByChunkedOpera
                         permuteKernels[ci].permute(inputChunk, sourceIndicesOrder, outputChunks[ci]);
                         outputColumns[ci].fillFromChunk(outputContexts[ci], outputChunks[ci], sliceDestinations);
                     }
+                    inputSharedContext.reset();
                 }
             }
         }
