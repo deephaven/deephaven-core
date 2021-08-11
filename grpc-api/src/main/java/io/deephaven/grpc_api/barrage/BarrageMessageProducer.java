@@ -305,7 +305,6 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private long numFullSubscriptions = 0;
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
-    private final Object subscriptionLock = new Object();
 
     private final Runnable onGetSnapshot;
 
@@ -425,7 +424,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                    final Options options,
                                    final BitSet columnsToSubscribe,
                                    final @Nullable Index initialViewport) {
-        synchronized (subscriptionLock) {
+        synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
             if (hasSubscription) {
@@ -470,7 +469,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             return false;
         };
 
-        synchronized (subscriptionLock) {
+        synchronized (this) {
             return findAndUpdate.apply(activeSubscriptions) || findAndUpdate.apply(pendingSubscriptions);
         }
     }
