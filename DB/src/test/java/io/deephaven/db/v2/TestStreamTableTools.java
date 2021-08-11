@@ -14,7 +14,7 @@ import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 import static io.deephaven.db.v2.TstUtils.i;
 
-public class TestStreamToAppendOnlyTable {
+public class TestStreamTableTools {
     @Before
     public void setUp() throws Exception {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
@@ -27,8 +27,12 @@ public class TestStreamToAppendOnlyTable {
     }
 
     @Test
-    public void testSimple() {
-        final QueryTable streamTable = TstUtils.testRefreshingTable(i(), intCol("I"), doubleCol("D"), dateTimeCol("DT"), col("B", new Boolean[0]));
+    public void testStreamToAppendOnlyTable() {
+        final DBDateTime dt1 = DBTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
+        final DBDateTime dt2 = DBTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
+        final DBDateTime dt3 = DBTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
+
+        final QueryTable streamTable = TstUtils.testRefreshingTable(i(1), intCol("I", 7), doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));
         streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
         final Table appendOnly = StreamTableTools.streamToAppendOnlyTable(streamTable);
@@ -37,21 +41,18 @@ public class TestStreamToAppendOnlyTable {
         TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
         TestCase.assertTrue(appendOnly.isFlat());
 
-        final DBDateTime dt1 = DBTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
-        final DBDateTime dt2 = DBTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
-
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(streamTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt1), col("B", true));
+            TstUtils.addToTable(streamTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt2), col("B", true));
             streamTable.notifyListeners(i(7), i(), i());
         });
 
-        assertTableEquals(TableTools.newTable(intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt1), col("B", true)), appendOnly);
+        assertTableEquals(TableTools.newTable(intCol("I", 7, 1), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI), dateTimeCol("DT", dt1, dt2), col("B", true, true)), appendOnly);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(streamTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt2), col("B", false));
+            TstUtils.addToTable(streamTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt3), col("B", false));
             streamTable.notifyListeners(i(7), i(), i());
         });
-        assertTableEquals(TableTools.newTable(intCol("I", 1, 2), doubleCol("D", Math.PI, Math.E), dateTimeCol("DT", dt1, dt2), col("B", true, false)), appendOnly);
+        assertTableEquals(TableTools.newTable(intCol("I", 7, 1, 2), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI, Math.E), dateTimeCol("DT", dt1, dt2, dt3), col("B", true, true, false)), appendOnly);
 
     }
 
