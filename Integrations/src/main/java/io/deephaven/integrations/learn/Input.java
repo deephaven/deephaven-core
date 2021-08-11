@@ -49,6 +49,15 @@ public class Input {
         this.gatherCaller = gatherFunc;
     }
 
+    private Input(String[] colNames, Function<Object[], Object> gather) {
+        this.colNames = colNames;
+        this.gatherCaller = gather;
+    }
+
+    protected static Input createJavaInput(String[] colNames, Function<Object[], Object> gather) {
+        return new Input(colNames, gather);
+    }
+
     /** Creates an array of column sources specified by this table and given column names.
      *
      * @return column sources needed to generate the input.
