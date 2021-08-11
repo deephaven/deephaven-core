@@ -58,23 +58,23 @@ public class StreamTableTools {
                 }
 
 
-                Index index = Index.FACTORY.getEmptyIndex();
+                final Index index;
+                if (usePrev) {
+                    try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
+                        index = Index.FACTORY.getFlatIndex(useIndex.size());
+                        ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, usePrev);
+                    }
+                } else {
+                    index = Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
+                    ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, usePrev);
+                }
+
                 final QueryTable result = new QueryTable(index, columns);
                 result.setRefreshing(true);
                 result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
                 result.setFlat();
                 result.addParentReference(swapListener);
                 resultHolder.setValue(result);
-
-                if (usePrev) {
-                    try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
-                        index.insert(Index.FACTORY.getFlatIndex(useIndex.size()));
-                        ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, usePrev);
-                    }
-                } else {
-                    index.insert(Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size()));
-                    ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, usePrev);
-                }
 
                 swapListener.setListenerAndResult(new BaseTable.ShiftAwareListenerImpl("streamToAppendOnly", (DynamicTable) streamTable, result) {
                     @Override
