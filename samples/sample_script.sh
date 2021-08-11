@@ -29,7 +29,7 @@ function fail_out()
 function ensure_enlistment()
 {
   if [ ! -d $target_path/.git ]; then
-     printf "no examples collection at %s; dowloading ..." $target_path >&2
+     printf "no examples collection at %s; downloading ..." $target_path >&2
      do_download
   fi
 }
