@@ -4,7 +4,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableCharChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class CharFieldCopier implements GenericRecordFieldCopier {
@@ -20,7 +20,7 @@ public class CharFieldCopier implements GenericRecordFieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
             final Character value = genericRecord == null ? null : (Character) genericRecord.get(fieldName);
-            output.set(ii + destOffset, value == null ? QueryConstants.NULL_CHAR : value);
+            output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }
 }

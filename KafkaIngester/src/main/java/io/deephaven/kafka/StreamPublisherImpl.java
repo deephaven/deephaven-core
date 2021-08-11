@@ -15,13 +15,13 @@ public class StreamPublisherImpl implements StreamPublisher {
     private Supplier<WritableChunk[]> chunkFactory;
     private IntFunction<ChunkType> chunkTypeIntFunction;
 
-    public ChunkType chunkType(int index) {
-        return chunkTypeIntFunction.apply(index);
-    }
-
     public void setChunkFactory(Supplier<WritableChunk[]> chunkFactory, IntFunction<ChunkType> chunkTypeIntFunction) {
         this.chunkFactory = chunkFactory;
         this.chunkTypeIntFunction = chunkTypeIntFunction;
+    }
+
+    public ChunkType chunkType(int index) {
+        return chunkTypeIntFunction.apply(index);
     }
 
     public synchronized WritableChunk [] getChunks() {

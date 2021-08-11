@@ -7,7 +7,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableShortChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class ShortFieldCopier implements GenericRecordFieldCopier {
@@ -21,9 +21,9 @@ public class ShortFieldCopier implements GenericRecordFieldCopier {
     public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
         final WritableShortChunk<Attributes.Values> output = publisherChunk.asWritableShortChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
             final Short value = genericRecord == null ? null : (Short) genericRecord.get(fieldName);
-            output.set(ii + destOffset, value == null ? QueryConstants.NULL_SHORT : value);
+            output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }
 }
