@@ -470,7 +470,8 @@ public class Java2NumpyCopy {
                     continue;
                 }
             }
-        }
+        } else {
+            // reservoir sampling without replacement
         /////////////////////////////////////////////////
 
         // reservoir sampling without replacement
