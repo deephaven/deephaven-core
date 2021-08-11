@@ -124,4 +124,4 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
 
         return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings()).dropColumns("FutureOffset","Clean")
 
-    return table.update(["FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getFutureGet()"]).dropColumns("FutureOffset","Clean","Result")
+    return table.update(["FutureOffset = computer.compute(k)", "Clean = computer.clear()", "Result = FutureOffset.getDeferredCalculation()"]).dropColumns("FutureOffset","Clean","Result")
