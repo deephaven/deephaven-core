@@ -22,8 +22,7 @@ public class GrpcUtil {
             lambda.run();
         } catch (final StatusRuntimeException err) {
             if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
-                // most of the time we do not want to log this
-                log.debug().append("ignoring unauthenticated request").endl();
+                log.debug().append("ignoring unauthenticated request: ").append(err).endl();
             } else {
                 log.error().append(err).endl();
             }
