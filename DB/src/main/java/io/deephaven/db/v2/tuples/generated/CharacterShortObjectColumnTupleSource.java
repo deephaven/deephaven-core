@@ -135,11 +135,6 @@ public class CharacterShortObjectColumnTupleSource extends AbstractTupleSource<C
     }
 
     @Override
-    public Class<CharShortObjectTuple> getNativeType() {
-        return CharShortObjectTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<CharShortObjectTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         CharChunk<Attributes.Values> chunk1 = chunks[0].asCharChunk();

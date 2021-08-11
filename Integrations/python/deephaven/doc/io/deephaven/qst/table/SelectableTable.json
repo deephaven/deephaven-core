@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.SelectableTable",
+ "methods": {
+  "columns": ":return: java.util.List<io.deephaven.api.Selectable>"
+ },
+ "path": "io.deephaven.qst.table.SelectableTable",
+ "typeName": "interface"
+}

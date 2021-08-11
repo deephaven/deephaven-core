@@ -744,7 +744,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     // This merge should work out nicely, we'll end up collapsing it into a single broad merge.
     @Test
-    @Category(OutOfBandTest.class)
     public void testMergeRecursive() {
         Table result = null;
 
@@ -1147,7 +1146,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testMergeIndexShiftingPerformance() {
         final QueryTable testRefreshingTable = TstUtils.testRefreshingTable(i(0), intCol("IntCol", 0), charCol("CharCol", 'a'));
 

@@ -225,7 +225,6 @@ public class TableMapTest extends LiveTableTestCase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testTransformTableMapThenMerge() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 

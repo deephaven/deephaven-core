@@ -136,11 +136,6 @@ public class LongCharacterBooleanColumnTupleSource extends AbstractTupleSource<L
     }
 
     @Override
-    public Class<LongCharByteTuple> getNativeType() {
-        return LongCharByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongCharByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

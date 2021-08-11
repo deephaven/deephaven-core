@@ -130,7 +130,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testStaticByWithChunksAndAggressiveOverflow() {
         final AggregationControl control = new AggregationControl() {
             @Override
@@ -227,7 +226,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testIncrementalByDownstreamFromMerge() {
         final long mergeChunkMultiple = UnionRedirection.CHUNK_MULTIPLE;
 
@@ -657,7 +655,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testFirstByLastByIncremental() {
         final Random random = new Random(0);
 
@@ -1190,7 +1187,6 @@ public class QueryTableAggregationTest {
 
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSumByStatic() {
         final int[] sizes = {10, 100, 1000};
         for (final int size : sizes) {
@@ -1319,7 +1315,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testAvgByStatic() {
         final int[] sizes = {10, 100, 1000};
         for (final int size : sizes) {
@@ -1472,7 +1467,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testSumByIncremental() {
         final int[] sizes = {10, 100, 4000, 10000};
         for (final int size : sizes) {
@@ -2017,7 +2011,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testWeightedSumByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {
@@ -2100,7 +2093,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testMinMaxByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (final int size : sizes) {

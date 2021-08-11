@@ -48,7 +48,6 @@ public class TestWindowCheck {
      * is correct.  A prev checker is added to ensure that getPrev works on the new table.
      */
     @Test
-    @Category(OutOfBandTest.class)
     public void testWindowCheckIterative() {
         final Random random = new Random(0);
         final Random combinedRandom = new Random(0);

@@ -23,7 +23,6 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
        super(1);
    }
 
-    @Category(OutOfBandTest.class)
     public void testIncrementalWithKeyColumnsShallow() {
         final int size = 10;
 

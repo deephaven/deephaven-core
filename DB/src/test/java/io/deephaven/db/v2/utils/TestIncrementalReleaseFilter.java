@@ -75,7 +75,6 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         return retVal;
     }
 
-    @Category(OutOfBandTest.class)
     public void testAutoTune() {
         final int cycles50 = testAutoTuneCycle(50);
         final int cycles100 = testAutoTuneCycle(100);

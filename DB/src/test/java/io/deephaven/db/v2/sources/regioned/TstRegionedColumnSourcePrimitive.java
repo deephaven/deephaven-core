@@ -18,6 +18,8 @@ import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.getFirstElementIndex;
+import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.getLastElementIndex;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -91,31 +93,31 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends A
 
         // Add the 0th region.
         SUT.addRegionForUnitTests(cr[0]);
-        TestCase.assertEquals(cr[0], SUT.lookupRegion(regionIndexToFirstElementIndex(0)));
-        TestCase.assertEquals(cr[0], SUT.lookupRegion(regionIndexToLastElementIndex(0)));
+        TestCase.assertEquals(cr[0], SUT.lookupRegion(getFirstElementIndex(0)));
+        TestCase.assertEquals(cr[0], SUT.lookupRegion(getLastElementIndex(0)));
 
         // Add the 1st region.
         SUT.addRegionForUnitTests(cr[1]);
-        TestCase.assertEquals(cr[1], SUT.lookupRegion(regionIndexToFirstElementIndex(1)));
-        TestCase.assertEquals(cr[1], SUT.lookupRegion(regionIndexToLastElementIndex(1)));
+        TestCase.assertEquals(cr[1], SUT.lookupRegion(getFirstElementIndex(1)));
+        TestCase.assertEquals(cr[1], SUT.lookupRegion(getLastElementIndex(1)));
 
         // Prove that the 2nd region is missing.
         try {
-            TestCase.assertNull(SUT.lookupRegion(regionIndexToFirstElementIndex(2)));
+            TestCase.assertNull(SUT.lookupRegion(getFirstElementIndex(2)));
         } catch (ArrayIndexOutOfBoundsException expected) {
         }
         try {
-            TestCase.assertNull(SUT.lookupRegion(regionIndexToLastElementIndex(2)));
+            TestCase.assertNull(SUT.lookupRegion(getLastElementIndex(2)));
         } catch (ArrayIndexOutOfBoundsException expected) {
         }
 
         // Prove that 9th region is missing.
         try {
-            TestCase.assertNull(SUT.lookupRegion(regionIndexToFirstElementIndex(9)));
+            TestCase.assertNull(SUT.lookupRegion(getFirstElementIndex(9)));
         } catch (ArrayIndexOutOfBoundsException expected) {
         }
         try {
-            TestCase.assertNull(SUT.lookupRegion(regionIndexToLastElementIndex(9)));
+            TestCase.assertNull(SUT.lookupRegion(getLastElementIndex(9)));
         } catch (ArrayIndexOutOfBoundsException expected) {
         }
     }
@@ -316,14 +318,4 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends A
         } catch (UnsupportedOperationException expected) {
         }
     }
-
-    private static long regionIndexToFirstElementIndex(int i) {
-        return ((long) i) << RegionedPageStore.REGION_MASK_NUM_BITS;
-    }
-
-    private static long regionIndexToLastElementIndex(int i) {
-        return ((i + 1L) << RegionedPageStore.REGION_MASK_NUM_BITS) - 1;
-    }
-//    @Test
-//    public abstract void testFillChunk();
 }

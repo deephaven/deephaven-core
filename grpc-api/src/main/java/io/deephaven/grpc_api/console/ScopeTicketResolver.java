@@ -8,6 +8,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
@@ -15,6 +16,7 @@ import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
@@ -41,18 +43,29 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public Flight.FlightInfo flightInfoFor(final Flight.FlightDescriptor descriptor) {
-        final String varName = nameForDescriptor(descriptor);
-        final Object varObj = globalSessionProvider.getGlobalSession().getVariable(varName);
-        if (varObj instanceof Table) {
-            return TicketRouter.getFlightInfo((Table) varObj, descriptor, ticketForName(varName));
-        } else {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not compute flight info: variable '" + varName + "' is not a flight");
-        }
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
+        // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
+        final String scopeName = nameForDescriptor(descriptor);
+
+        final Flight.FlightInfo flightInfo = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
+            final ScriptSession gss = globalSessionProvider.getGlobalSession();
+            Object scopeVar = gss.getVariable(scopeName);
+            if (scopeVar == null) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+            }
+            if (scopeVar instanceof Table) {
+                return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, ticketForName(scopeName));
+            }
+
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+        });
+
+        return SessionState.wrapAsExport(flightInfo);
     }
 
     @Override
-    public void forAllFlightInfo(final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+    public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         globalSessionProvider.getGlobalSession().getVariables().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
                 visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
@@ -61,27 +74,31 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(final SessionState session, final ByteBuffer ticket) {
+    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final ByteBuffer ticket) {
         return resolve(session, nameForTicket(ticket));
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
         return resolve(session, nameForDescriptor(descriptor));
     }
 
-    private <T> SessionState.ExportObject<T> resolve(final SessionState session, final String scopeName) {
-        return session.<T>nonExport()
-                .requiresSerialQueue()
-                .submit(() -> {
-                    final ScriptSession gss = globalSessionProvider.getGlobalSession();
-                    //noinspection unchecked
-                    T scopeVar = (T) gss.getVariable(scopeName);
-                    if (scopeVar == null) {
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeVar + "'");
-                    }
-                    return scopeVar;
-                });
+    private <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final String scopeName) {
+        // if we are not attached to a session, check the scope for a variable right now
+        final T export = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
+            final ScriptSession gss = globalSessionProvider.getGlobalSession();
+            //noinspection unchecked
+            T scopeVar = (T) gss.getVariable(scopeName);
+            if (scopeVar == null) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+            }
+            return scopeVar;
+        });
+
+        if (export == null) {
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+        }
+        return SessionState.wrapAsExport(export);
     }
 
     @Override
@@ -201,6 +218,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @param descriptor the descriptor to convert
      * @return a flight ticket that represents the descriptor
      */
+    //TODO #412 use this or remove it (above is unused too?)
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
         return ticketForName(nameForDescriptor(descriptor));
     }

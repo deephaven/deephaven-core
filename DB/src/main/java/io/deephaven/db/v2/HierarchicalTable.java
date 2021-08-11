@@ -323,7 +323,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
+    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
         return throwUnsupported("snapshot()");
     }
 

@@ -45,7 +45,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected1 = ArrayGenerator.randomBooleans(rng, 1)[0];
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(Boolean.class);
         source.ensureCapacity(10);
 
         source.set(key1, expected1);
@@ -66,7 +66,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected0_1 = values[1];
         final byte expected1 = values[2];
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(Boolean.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -111,7 +111,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final HashMap<Long, Byte> expectedPrev = new HashMap<>();
         final HashMap<Long, Byte> expectedCurrent = new HashMap<>();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
+        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(Boolean.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
             final byte value = valuesPhase1[(int)ii];

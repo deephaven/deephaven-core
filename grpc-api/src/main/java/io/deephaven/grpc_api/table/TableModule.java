@@ -5,7 +5,6 @@ import dagger.MapKey;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
-import io.deephaven.grpc_api.table.ops.AsOfJoinTablesGrpcImpl;
 import io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl;
@@ -82,8 +81,17 @@ public interface TableModule {
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE)
     GrpcTableOperation<?> bindOperationComboAgg(ComboAggregateGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.JOIN)
-    GrpcTableOperation<?> bindOperationJoinTables(JoinTablesGrpcImpl op);
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.CROSS_JOIN)
+    GrpcTableOperation<?> bindOperationCrossJoin(JoinTablesGrpcImpl.CrossJoinTablesGrpcImpl op);
+
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.EXACT_JOIN)
+    GrpcTableOperation<?> bindOperationExactJoin(JoinTablesGrpcImpl.ExactJoinTablesGrpcImpl op);
+
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.LEFT_JOIN)
+    GrpcTableOperation<?> bindOperationLeftJoin(JoinTablesGrpcImpl.LeftJoinTablesGrpcImpl op);
+
+    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.NATURAL_JOIN)
+    GrpcTableOperation<?> bindOperationNaturalJoin(JoinTablesGrpcImpl.NaturalJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.FILTER)
     GrpcTableOperation<?> bindOperationFilterTable(FilterTableGrpcImpl op);
@@ -104,7 +112,7 @@ public interface TableModule {
     GrpcTableOperation<?> bindOperationFlatten(FlattenTableGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
-    GrpcTableOperation<?> bindOperationAsOfJoin(AsOfJoinTablesGrpcImpl op);
+    GrpcTableOperation<?> bindOperationAsOfJoin(JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl op);
 
     @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
     GrpcTableOperation<?> bindOperationRunChartDownsample(RunChartDownsampleGrpcImpl op);

@@ -8,10 +8,12 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
 import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 import io.deephaven.api.value.Value.Visitor;
 import io.deephaven.db.tables.Table;
@@ -36,8 +38,16 @@ public interface SelectFilter {
         return filter.walk(new Adapter(false)).getOut();
     }
 
+    static SelectFilter ofInverted(Filter filter) {
+        return filter.walk(new Adapter(true)).getOut();
+    }
+
     static SelectFilter[] from(Collection<? extends Filter> filters) {
         return filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new);
+    }
+
+    static SelectFilter[] fromInverted(Collection<? extends Filter> filters) {
+        return filters.stream().map(SelectFilter::ofInverted).toArray(SelectFilter[]::new);
     }
 
     /**
@@ -222,6 +232,28 @@ public interface SelectFilter {
                 out = isNull(isNotNull.column());
             } else {
                 out = isNotNull(isNotNull.column());
+            }
+        }
+
+        @Override
+        public void visit(FilterOr ors) {
+            if (inverted) {
+                // !A && !B && ... && !Z
+                out = ConjunctiveFilter.makeConjunctiveFilter(fromInverted(ors.filters()));
+            } else {
+                // A || B || ... || Z
+                out = DisjunctiveFilter.makeDisjunctiveFilter(from(ors.filters()));
+            }
+        }
+
+        @Override
+        public void visit(FilterAnd ands) {
+            if (inverted) {
+                // !A || !B || ... || !Z
+                out = DisjunctiveFilter.makeDisjunctiveFilter(fromInverted(ands.filters()));
+            } else {
+                // A && B && ... && Z
+                out = ConjunctiveFilter.makeConjunctiveFilter(from(ands.filters()));
             }
         }
 

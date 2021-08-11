@@ -7,15 +7,16 @@ package io.deephaven.db.tables.utils;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.StringSetWrapper;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.TstUtils;
+import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.local.KeyValuePartitionLayout;
 import io.deephaven.db.v2.parquet.ParquetInstructions;
 import junit.framework.TestCase;
@@ -37,7 +38,6 @@ import java.util.List;
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link ParquetTools}.
@@ -49,7 +49,6 @@ public class TestParquetTools {
     private static Table table1;
     private static Table emptyTable;
     private static Table brokenTable;
-
 
     @BeforeClass
     public static void setUpFirst() {
@@ -179,14 +178,29 @@ public class TestParquetTools {
         test2.close();
     }
 
-
     @Test
     public void testWriteTableEmpty() {
-        final File dest =  new File(testRoot + File.separator + "Empty.parquet");
+        final File dest = new File(testRoot + File.separator + "Empty.parquet");
         ParquetTools.writeTable(emptyTable, dest);
         Table result = ParquetTools.readTable(dest);
         TestTableTools.tableRangesAreEqual(emptyTable, result, 0, 0, emptyTable.size());
         result.close();
+    }
+
+    @Test
+    public void testWriteTableNoColumns() {
+        final Table source = TableTools.emptyTable(100);
+        final File dest = new File(testRoot + File.separator + "NoColumns.parquet");
+        try {
+            ParquetTools.writeTable(source, dest);
+            TestCase.fail("Expected exception");
+        } catch (TableDataException expected) {
+        }
+        try {
+            ParquetTools.writeTables(new Table[]{source}, source.getDefinition(), new File[]{dest});
+            TestCase.fail("Expected exception");
+        } catch (TableDataException expected) {
+        }
     }
 
     @Test
@@ -283,45 +297,13 @@ public class TestParquetTools {
         String path = testRoot + File.separator + "testWriteAggregatedTable.parquet";
         final Table table = getAggregatedResultTable();
         final TableDefinition def = table.getDefinition();
-        ParquetTools.writeTable(table, def, new File(path));
+        ParquetTools.writeTable(table, new File(path), def);
         Table readBackTable = ParquetTools.readTable(new File(path));
         TableTools.show(readBackTable);
         TableTools.show(table);
         final long sz = table.size();
         TestTableTools.tableRangesAreEqual(table, readBackTable,0, 0, sz);
         readBackTable.close();
-    }
-
-    public void compressionCodecTestHelper(final String codec) {
-        ParquetInstructions.setDefaultCompressionCodecName(codec);
-        String path = testRoot + File.separator + "Table1.parquet";
-        ParquetTools.writeTable(table1, path);
-        assertTrue(new File(path).length() > 0);
-    }
-
-    @Test
-    public void testParquetLzoCompressionCodec() {
-        compressionCodecTestHelper("LZO");
-    }
-
-    @Test
-    public void testParquetLz4CompressionCodec() {
-        compressionCodecTestHelper("LZ4");
-    }
-
-    @Test
-    public void testParquetBrotliCompressionCodec() {
-        compressionCodecTestHelper("BROTLI");
-    }
-
-    @Test
-    public void testParquetZstdCompressionCodec() {
-        compressionCodecTestHelper("ZSTD");
-    }
-
-    @Test
-    public void testParquetGzipCompressionCodec() {
-        compressionCodecTestHelper("GZIP");
     }
 
     @Test
@@ -336,7 +318,7 @@ public class TestParquetTools {
         allColumns.addAll(table1.getDefinition().getColumnList());
         final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 
-        final Table result = ParquetTools.readMultiFileTable(KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
+        final Table result = ParquetTools.readPartitionedTableInferSchema(KeyValuePartitionLayout.forParquet(testRootFile, 2), ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),

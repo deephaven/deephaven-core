@@ -20,7 +20,7 @@ package io.deephaven.parquet.tempfix;
 
 /*
 NOTE this only exists for this line, inside addRowGroup
-Without it the page ofset is not being saved properly
+Without it the page offset is not being saved properly
             if (columnMetaData.getDictionaryPageOffset() >= 0) {
                 columnChunk.meta_data.setDictionary_page_offset(columnMetaData.getDictionaryPageOffset());
             }
@@ -1306,10 +1306,10 @@ public class ParquetMetadataConverter {
                 OriginalType newOriginalType = (schemaElement.isSetLogicalType() && getLogicalTypeAnnotation(schemaElement.logicalType) != null) ?
                         getLogicalTypeAnnotation(schemaElement.logicalType).toOriginalType() : null;
                 if (!originalType.equals(newOriginalType)) {
-          if (newOriginalType != null) {
-                    LOG.warn("Converted type and logical type metadata mismatch (convertedType: {}, logical type: {}). Using value in converted type.",
-                            schemaElement.converted_type, schemaElement.logicalType);
-          }
+                    if (newOriginalType != null) {
+                        LOG.warn("Converted type and logical type metadata mismatch (convertedType: {}, logical type: {}). Using value in converted type.",
+                                schemaElement.converted_type, schemaElement.logicalType);
+                    }
                     childBuilder.as(originalType);
                 }
             }

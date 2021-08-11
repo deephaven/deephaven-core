@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.ingest.KafkaIngester",
+ "methods": {
+  "start": "Starts a consumer thread which replicates the consumed Kafka messages to Deephaven.\n \n This method must not be called more than once on an ingester instance.",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.kafka.ingest.KafkaIngester",
+ "text": "An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.\n\n Each KafkaIngester is assigned a topic and a subset of Kafka partitions.  Each Kafka\n partition is mapped to a Deephaven internal partition.  The column partition can be set through the constructor,\n or defaults to DBTimeUtils.currentDateNy().\nAutomatic partition assignment and rebalancing are not supported. Each Kafka ingester instance must uniquely control its\n checkpoint record, which is incompatible with rebalancing.",
+ "typeName": "class"
+}

@@ -1,5 +1,6 @@
 package io.deephaven.api;
 
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterNot;

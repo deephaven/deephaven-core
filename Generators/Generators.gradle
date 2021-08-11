@@ -13,8 +13,9 @@ dependencies {
 
     compile project(':DB'),
             project(':Plot')
+            project(':KafkaIngester')
 
-    runtime project(path: ':configs'), project(path: ':test-configs')
+    runtime project(path: ':configs'), project(path: ':test-configs'), project(':KafkaIngester')
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
@@ -214,8 +215,6 @@ def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                'io.deephaven.db.tables.utils.DBTimeUtils',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/DBTimeUtilsPreamble.txt',
                                     '/Integrations/python/deephaven/DBTimeUtils/__init__.py',
-                               'io.deephaven.db.tables.select.QueryScope',
-                                    '/Integrations/python/deephaven/QueryScope/__init__.py',
                                'io.deephaven.db.tables.utils.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
                                     '/Integrations/python/deephaven/ParquetTools/__init__.py',
@@ -231,7 +230,10 @@ def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                'io.deephaven.db.v2.utils.TableLoggers',
                                     '/Integrations/python/deephaven/TableLoggers/__init__.py',
                                'io.deephaven.db.v2.utils.PerformanceQueries',
-                                    '/Integrations/python/deephaven/PerformanceQueries/__init__.py']
+                                    '/Integrations/python/deephaven/PerformanceQueries/__init__.py',
+                               'io.deephaven.kafka.KafkaTools',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/KafkaToolsPreamble.txt',
+                                    '/Integrations/python/deephaven/KafkaTools/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonIntegrationStaticMethods'

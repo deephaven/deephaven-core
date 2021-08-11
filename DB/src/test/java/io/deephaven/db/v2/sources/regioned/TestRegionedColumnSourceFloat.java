@@ -52,19 +52,19 @@ public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimit
         fillRegions();
 
         assertLookup(0L, 0, TEST_FLOATS[0], false, true);
-        assertLookup(RegionedPageStore.getFirstElementIndex(0), 0, TEST_FLOATS[1], false, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(0), 0, TEST_FLOATS[1], false, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], false, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], false, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], false, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], false, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], false, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], false, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], false, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], false, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], false, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], false, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], false, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], false, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], false, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], false, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], false, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], false, true);
     }
 
     @Override
@@ -72,19 +72,19 @@ public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimit
         fillRegions();
 
         assertLookup(0L, 0, TEST_FLOATS[0], true, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(0), 0, TEST_FLOATS[1], true, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_FLOATS[1], true, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], true, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], true, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], true, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], true, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], true, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], true, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], true, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], true, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], true, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], true, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], true, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], true, true);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], true, true);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], true, true);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], true, true);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], true, true);
     }
 
     @Override
@@ -92,19 +92,19 @@ public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimit
         fillRegions();
 
         assertLookup(0L, 0, TEST_FLOATS[0], false, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(0), 0, TEST_FLOATS[1], false, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_FLOATS[1], false, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], false, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], false, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], false, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], false, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], false, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], false, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], false, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], false, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], false, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], false, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], false, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], false, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], false, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], false, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], false, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], false, false);
     }
 
     @Override
@@ -112,18 +112,18 @@ public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimit
         fillRegions();
 
         assertLookup(0L, 0, TEST_FLOATS[0], true, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(0), 0, TEST_FLOATS[1], true, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_FLOATS[1], true, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], true, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], true, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_FLOATS[2], true, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_FLOATS[3], true, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], true, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], true, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_FLOATS[4], true, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_FLOATS[5], true, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], true, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], true, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_FLOATS[6], true, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_FLOATS[7], true, false);
 
-        assertLookup(RegionedPageStore.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], true, false);
-        assertLookup(RegionedPageStore.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], true, false);
+        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_FLOATS[8], true, false);
+        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_FLOATS[9], true, false);
     }
 }

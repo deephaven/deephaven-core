@@ -22,7 +22,6 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 
-    @Category(OutOfBandTest.class)
     public void testRedirectionIndex() throws InterruptedException {
         final RedirectionIndexLockFreeImpl index = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
         index.startTrackingPrevValues();

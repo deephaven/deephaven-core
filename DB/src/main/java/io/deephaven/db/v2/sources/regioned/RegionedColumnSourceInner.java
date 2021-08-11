@@ -53,4 +53,3 @@ abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Valu
         return outerColumnSource;
     }
 }
-

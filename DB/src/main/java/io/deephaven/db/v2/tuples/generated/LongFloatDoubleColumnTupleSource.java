@@ -136,11 +136,6 @@ public class LongFloatDoubleColumnTupleSource extends AbstractTupleSource<LongFl
     }
 
     @Override
-    public Class<LongFloatDoubleTuple> getNativeType() {
-        return LongFloatDoubleTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongFloatDoubleTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

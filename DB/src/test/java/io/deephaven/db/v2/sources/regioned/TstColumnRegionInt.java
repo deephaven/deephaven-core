@@ -28,13 +28,13 @@ public class TstColumnRegionInt {
     static class Identity implements ColumnRegionInt<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
-        public int getInt(long elementIndex) {
-            return (int) elementIndex;
+        public long mask() {
+            return Long.MAX_VALUE;
         }
 
         @Override
-        public long length() {
-            throw new UnsupportedOperationException();
+        public int getInt(long elementIndex) {
+            return (int) elementIndex;
         }
 
         @Override
@@ -59,7 +59,7 @@ public class TstColumnRegionInt {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionInt.createNull();
+            SUT = ColumnRegionInt.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -83,7 +83,7 @@ public class TstColumnRegionInt {
                 oneOf(regionSupplier).get();
                 will(returnValue(new Identity()));
             }});
-            SUT = new DeferredColumnRegionInt<>(regionSupplier);
+            SUT = new DeferredColumnRegionInt<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

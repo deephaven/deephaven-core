@@ -67,4 +67,9 @@ public abstract class FileHandleAccessor {
         }
         return fileHandle;
     }
+
+    @Override
+    public final String toString() {
+        return file.toString();
+    }
 }

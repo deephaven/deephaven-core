@@ -10,7 +10,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import static io.deephaven.libs.primitives.SpecialPrimitives.*;
 
 public class TestSpecialPrimitives extends BaseArrayTestCase {
-    final int n = 1000;
+    final int n = 4000;
 
     public void testRandom() {
         final double[] vals = new double[n];

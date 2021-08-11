@@ -4,7 +4,7 @@
 
 package io.deephaven.db.v2.sources;
 
-import io.deephaven.db.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.utils.OrderedKeys;
@@ -18,18 +18,18 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
 
     private final ColumnSource<Boolean> alternateColumnSource;
 
-    public BooleanAsByteColumnSource(ColumnSource<Boolean> alternateColumnSource) {
+    public BooleanAsByteColumnSource(@NotNull final ColumnSource<Boolean> alternateColumnSource) {
         super(byte.class);
         this.alternateColumnSource = alternateColumnSource;
     }
 
     @Override
-    public byte getByte(long index) {
+    public byte getByte(final long index) {
         return BooleanUtils.booleanAsByte(alternateColumnSource.get(index));
     }
 
     @Override
-    public byte getPrevByte(long index) {
+    public byte getPrevByte(final long index) {
         return BooleanUtils.booleanAsByte(alternateColumnSource.getPrev(index));
     }
 
@@ -50,18 +50,15 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
     }
 
     private class UnboxedFillContext implements FillContext {
-        final FillContext alternateFillContext;
-        final WritableObjectChunk<Boolean, Values> booleanObjectChunk;
+        final GetContext alternateGetContext;
 
         private UnboxedFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-            alternateFillContext = alternateColumnSource.makeFillContext(chunkCapacity, sharedContext);
-            booleanObjectChunk = WritableObjectChunk.makeWritableChunk(chunkCapacity);
+            alternateGetContext = alternateColumnSource.makeGetContext(chunkCapacity, sharedContext);
         }
 
         @Override
         public void close() {
-            alternateFillContext.close();
-            booleanObjectChunk.close();
+            alternateGetContext.close();
         }
     }
 
@@ -71,22 +68,20 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final UnboxedFillContext unboxedFillContext = (UnboxedFillContext) context;
-        final WritableObjectChunk<Boolean, Values> booleanObjectChunk = unboxedFillContext.booleanObjectChunk;
-        alternateColumnSource.fillChunk(unboxedFillContext.alternateFillContext, booleanObjectChunk, orderedKeys);
+        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getChunk(unboxedFillContext.alternateGetContext, orderedKeys).asObjectChunk();
         convertToByte(destination, booleanObjectChunk);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         final UnboxedFillContext unboxedFillContext = (UnboxedFillContext) context;
-        final WritableObjectChunk<Boolean, Values> booleanObjectChunk = unboxedFillContext.booleanObjectChunk;
-        alternateColumnSource.fillPrevChunk(unboxedFillContext.alternateFillContext, booleanObjectChunk, orderedKeys);
+        final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk = alternateColumnSource.getPrevChunk(unboxedFillContext.alternateGetContext, orderedKeys).asObjectChunk();
         convertToByte(destination, booleanObjectChunk);
     }
 
-    private static void convertToByte(@NotNull WritableChunk<? super Values> destination, ObjectChunk<Boolean, Values> booleanObjectChunk) {
+    private static void convertToByte(@NotNull final WritableChunk<? super Values> destination, @NotNull final ObjectChunk<Boolean, ? extends Values> booleanObjectChunk) {
         final WritableByteChunk<? super Values> byteDestination = destination.asWritableByteChunk();
         for (int ii = 0; ii < booleanObjectChunk.size(); ++ii) {
             byteDestination.set(ii, BooleanUtils.booleanAsByte(booleanObjectChunk.get(ii)));

@@ -57,6 +57,7 @@ dependencies {
             project(':open-api-lang-api'),
             project(':Container'),
             project(':table-api'),
+            project(':qst'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
@@ -75,6 +76,9 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+
+    annotationProcessor 'org.immutables:value:2.8.1'
+    compileOnly 'org.immutables:value-annotations:2.8.1'
 }
 
 task jmhRun(type: JavaExec)  {

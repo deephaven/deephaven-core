@@ -10,18 +10,58 @@ import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
-import io.deephaven.db.v2.sources.chunk.*;
-import io.deephaven.db.v2.sources.immutable.*;
+import io.deephaven.db.v2.sources.chunk.ByteChunk;
+import io.deephaven.db.v2.sources.chunk.CharChunk;
+import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.DefaultGetContext;
+import io.deephaven.db.v2.sources.chunk.DoubleChunk;
+import io.deephaven.db.v2.sources.chunk.FloatChunk;
+import io.deephaven.db.v2.sources.chunk.IntChunk;
+import io.deephaven.db.v2.sources.chunk.LongChunk;
+import io.deephaven.db.v2.sources.chunk.ObjectChunk;
+import io.deephaven.db.v2.sources.chunk.ResettableWritableChunk;
+import io.deephaven.db.v2.sources.chunk.ShortChunk;
+import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.db.v2.sources.immutable.ImmutableBooleanArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableByteArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableCharArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableDoubleArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableFloatArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableLongArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableObjectArraySource;
+import io.deephaven.db.v2.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ShiftData;
+import io.deephaven.qst.array.Array;
+import io.deephaven.qst.array.BooleanArray;
+import io.deephaven.qst.array.ByteArray;
+import io.deephaven.qst.array.CharArray;
+import io.deephaven.qst.array.DoubleArray;
+import io.deephaven.qst.array.FloatArray;
+import io.deephaven.qst.array.GenericArray;
+import io.deephaven.qst.array.IntArray;
+import io.deephaven.qst.array.LongArray;
+import io.deephaven.qst.array.PrimitiveArray;
+import io.deephaven.qst.array.ShortArray;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.GenericType.Visitor;
+import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.StringType;
 import io.deephaven.util.SoftRecycler;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.
@@ -85,6 +125,18 @@ public abstract class ArrayBackedColumnSource<T>
     static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[IN_USE_BLOCK_SIZE],
             block -> Arrays.fill(block, 0));
+
+    public static ArrayBackedColumnSource<?> from(Array<?> array) {
+        return array.walk(new ArrayAdapter<>()).getOut();
+    }
+
+    public static <T> ArrayBackedColumnSource<T> from(PrimitiveArray<T> array) {
+        ArrayAdapter<T> adapter = new ArrayAdapter<>();
+        array.walk((PrimitiveArray.Visitor) adapter);
+        //noinspection unchecked
+        return (ArrayBackedColumnSource<T>) adapter.getOut();
+    }
+
 
     /**
      * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
@@ -191,6 +243,23 @@ public abstract class ArrayBackedColumnSource<T>
         try (final FillFromContext context = result.makeFillFromContext(data.length);
              final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
+        }
+        return result;
+    }
+
+    /**
+     * Produces an BooleanArraySource with the given data.
+     *
+     * @param data an array containing the data to insert into the ColumnSource.
+     * @return an in-memory column source with the requested data
+     */
+    public static ArrayBackedColumnSource<Boolean> getBooleanMemoryColumnSource(@NotNull final byte[] data) {
+        final ArrayBackedColumnSource<Boolean> result = new BooleanArraySource();
+        final WritableSource<Byte> dest = (WritableSource<Byte>)result.reinterpret(byte.class);
+        result.ensureCapacity(data.length);
+        try (final FillFromContext context = dest.makeFillFromContext(data.length);
+             final OrderedKeys range = OrderedKeys.forRange(0, data.length - 1)) {
+            dest.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
     }
@@ -614,5 +683,91 @@ public abstract class ArrayBackedColumnSource<T>
         }
 
         return getChunkByFilling(context, orderedKeys);
+    }
+
+    private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {
+        private ArrayBackedColumnSource<?> out;
+
+        public ArrayBackedColumnSource<?> getOut() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(PrimitiveArray<?> primitive) {
+            primitive.walk((PrimitiveArray.Visitor) this);
+        }
+
+        @Override
+        public void visit(ByteArray byteArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(byteArray.values());
+        }
+
+        @Override
+        public void visit(BooleanArray booleanArray) {
+            out = ArrayBackedColumnSource.getBooleanMemoryColumnSource(booleanArray.values());
+        }
+
+        @Override
+        public void visit(CharArray charArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(charArray.values());
+        }
+
+        @Override
+        public void visit(ShortArray shortArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(shortArray.values());
+        }
+
+        @Override
+        public void visit(IntArray intArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(intArray.values());
+        }
+
+        @Override
+        public void visit(LongArray longArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(longArray.values());
+        }
+
+        @Override
+        public void visit(FloatArray floatArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(floatArray.values());
+        }
+
+        @Override
+        public void visit(DoubleArray doubleArray) {
+            out = ArrayBackedColumnSource.getMemoryColumnSource(doubleArray.values());
+        }
+
+        @Override
+        public void visit(GenericArray<?> generic) {
+            generic.type().walk(new Visitor() {
+                @Override
+                public void visit(StringType stringType) {
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(stringType).values(), String.class, null);
+                }
+
+                @Override
+                public void visit(InstantType instantType) {
+                    DateTimeArraySource source = new DateTimeArraySource();
+                    source.ensureCapacity(generic.size());
+                    int ix = 0;
+                    for (Instant value : generic.cast(instantType).values()) {
+                        if (value == null) {
+                            source.set(ix++, NULL_LONG);
+                        } else {
+                            long nanos = Math.addExact(TimeUnit.SECONDS.toNanos(value.getEpochSecond()), value.getNano());
+                            source.set(ix++, nanos);
+                        }
+                    }
+                    out = source;
+                }
+
+                @Override
+                public void visit(CustomType<?> customType) {
+                    //noinspection unchecked
+                    CustomType<T> tType = (CustomType<T>)customType;
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(), null);
+                }
+            });
+        }
     }
 }

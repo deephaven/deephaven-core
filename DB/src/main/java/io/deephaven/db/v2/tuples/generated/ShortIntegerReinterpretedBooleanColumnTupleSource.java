@@ -137,11 +137,6 @@ public class ShortIntegerReinterpretedBooleanColumnTupleSource extends AbstractT
     }
 
     @Override
-    public Class<ShortIntByteTuple> getNativeType() {
-        return ShortIntByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortIntByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();

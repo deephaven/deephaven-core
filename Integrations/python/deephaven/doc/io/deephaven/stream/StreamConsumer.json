@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.stream.StreamConsumer",
+ "methods": {
+  "accept": "Accept a batch of rows splayed across per-column chunks of values.\n\n Ownership of data passes to the consumer, which must be sure to\n close each chunk when it's no longer\n needed.\n\n Implementations will generally have a mechanism for determining the expected number and type of input\n chunks, but this is not dictated at the interface level.\n\n:param data: (io.deephaven.db.v2.sources.chunk.WritableChunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>...) - Per-column chunks of values.\n             Must all have the same size."
+ },
+ "path": "io.deephaven.stream.StreamConsumer",
+ "text": "Chunk-oriented consumer for streams of data.",
+ "typeName": "interface"
+}

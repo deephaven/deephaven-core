@@ -8,7 +8,7 @@ project(':deephaven-jpy') {
   }
 
   dependencies {
-    testCompile 'junit:junit:4.12' // but we still want tests to compile
+    testCompile 'junit:junit:4.13.2' // but we still want tests to compile
   }
 
   /**

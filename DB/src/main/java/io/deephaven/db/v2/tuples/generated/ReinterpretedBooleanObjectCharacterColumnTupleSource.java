@@ -136,11 +136,6 @@ public class ReinterpretedBooleanObjectCharacterColumnTupleSource extends Abstra
     }
 
     @Override
-    public Class<ByteObjectCharTuple> getNativeType() {
-        return ByteObjectCharTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteObjectCharTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

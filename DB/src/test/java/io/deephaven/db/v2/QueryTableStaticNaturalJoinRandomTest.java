@@ -206,7 +206,6 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         QueryScope.addParam("rightMap", null);
     }
 
-    @Category(OutOfBandTest.class)
     public void testNaturalJoinRandomStatic() {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10; rightSize <= 100_000; rightSize *= 10) {
@@ -237,7 +236,6 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     }
 
     // let's force some collisions by making our table small
-    @Category(OutOfBandTest.class)
     public void testNaturalJoinRandomStaticOverflow() {
         for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {

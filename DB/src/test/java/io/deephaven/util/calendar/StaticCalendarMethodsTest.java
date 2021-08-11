@@ -229,7 +229,6 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase{
         assertEquals(calendar.getBusinessSchedule(LocalDate.now()), StaticCalendarMethods.getBusinessSchedule(LocalDate.now()));
     }
 
-    @Category(OutOfBandTest.class)
     public void testBusinessCalendarMethodsTable() {
 
         if(!QueryLibrary.getStaticImports().contains(StaticCalendarMethods.class)) {

@@ -25,11 +25,6 @@ public class CharChunkPage<ATTR extends Attributes.Any> extends CharChunk<ATTR> 
     }
 
     @Override
-    public Class<Character> getNativeType() {
-        return char.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableCharChunk<? super ATTR> to = destination.asWritableCharChunk();
 

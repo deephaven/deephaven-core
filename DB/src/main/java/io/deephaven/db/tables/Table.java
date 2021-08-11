@@ -7,6 +7,7 @@ package io.deephaven.db.tables;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.Array;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
@@ -20,6 +21,7 @@ import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.*;
+import io.deephaven.db.v2.by.AggregationFormulaStateFactory;
 import io.deephaven.db.v2.by.AggregationIndexStateFactory;
 import io.deephaven.db.v2.by.AggregationStateFactory;
 import io.deephaven.db.v2.by.ComboAggregateFactory;
@@ -30,6 +32,7 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,6 +46,10 @@ import java.util.stream.Stream;
 public interface Table extends LongSizedDataStructure, LivenessNode, TableOperations<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
+    static Table of(TableSpec table) {
+        return TableCreationImpl.create(table);
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -107,6 +114,28 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     String COLUMN_RENDERERS_ATTRIBUTE = "ColumnRenderers";
     String COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    /**
+     * <p>If this attribute is present with value {@code true}, this Table is a "stream table".
+     * <p>A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle
+     * after the stream table is refreshed the rows are removed. Note that this means any particular row of data (not
+     * to be confused with an index key) never exists for more than one cycle.
+     * <p>Most operations are supported as normal on stream tables, but aggregation operations are treated specially,
+     * producing aggregate results that are valid over the entire observed stream from the time the operation is
+     * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
+     * <ol>
+     *     <li>{@code by} as an index-aggregation is unsupported. This means any of the overloads for
+     *     {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
+     *     {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
+     *     {@link io.deephaven.db.v2.by.ComboAggregateFactory#AggArray(java.lang.String...)}, and
+     *     {@link ComboAggregateFactory#AggFormula(java.lang.String, java.lang.String, java.lang.String...)} are also
+     *     unsupported.
+     *     <li>{@link #rollup(ComboAggregateFactory, boolean, SelectColumn...)} is unsupported if
+     *     {@code includeConstituents == true}</li>
+     *     <li>{@link #treeTable(String, String)} is unsupported</li>
+     * </ol>
+     * <p>To disable these semantics, a {@link #dropStream()} method is offered.
+     */
+    String STREAM_TABLE_ATTRIBUTE = "StreamTable";
     /**
      * The query engine may set or read this attribute to determine if a table is sorted by a particular column.
      */
@@ -2006,6 +2035,15 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return countBy(countColumnName, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
     }
 
+    /**
+     * If this table is a stream table, i.e. it has {@link #STREAM_TABLE_ATTRIBUTE} set to {@code true}, return a child
+     * without the attribute, restoring standard semantics for aggregation operations.
+     *
+     * @return A non-stream child table, or this table if it is not a stream table
+     */
+    @AsyncMethod
+    Table dropStream();
+
     // -----------------------------------------------------------------------------------------------------------------
     // Disaggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -2284,10 +2322,10 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
+    Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns);
 
-    default Table snapshot(Table rightTable, String... stampColumns) {
-        return snapshot(rightTable, false, stampColumns);
+    default Table snapshot(Table baseTable, String... stampColumns) {
+        return snapshot(baseTable, true, stampColumns);
     }
 
     Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
@@ -2299,8 +2337,8 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table snapshotHistory(final Table rightTable);
 
     @Override
-    default Table snapshot(Table rightTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(rightTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
+    default Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
+        return snapshot(baseTable, doInitialSnapshot, stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -2440,9 +2478,4 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
 
     @Deprecated
     void addColumnGrouping(String columnName);
-
-    @Override
-    default Table toTable() {
-        return this;
-    }
 }

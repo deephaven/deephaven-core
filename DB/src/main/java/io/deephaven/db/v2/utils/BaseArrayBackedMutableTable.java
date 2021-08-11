@@ -213,7 +213,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private Table doSnap(Table newData) {
             Table addTable;
             if (newData.isLive()) {
-                addTable = TableTools.emptyTable(1).snapshot(newData, true);
+                addTable = TableTools.emptyTable(1).snapshot(newData);
             } else {
                 addTable = newData.select();
             }

@@ -2273,7 +2273,6 @@ public class SortedRangesTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testRemoveSinglesTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
@@ -2521,7 +2520,6 @@ public class SortedRangesTest {
     }
 
     @Test
-    @Category(OutOfBandTest.class)
     public void testGetOrderedKeysByKeyRange() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
@@ -3275,5 +3273,56 @@ public class SortedRangesTest {
         sr0 = sr0.appendRange(last + 1, last + 3);
         sr0.validate();
         assertTrue(sr0.contains(last + 2));
+    }
+
+    @Test
+    public void testSearchIteratorAdvaceRegression0() {
+        SortedRanges sr = vs2sar(new long[] { 10, -20, 30, -40, 1000, -1002 });
+        try (ReadOnlyIndex.SearchIterator it = sr.getSearchIterator()) {
+            boolean more = it.advance(30);
+            assertTrue(more);
+            assertTrue(it.hasNext());
+            assertEquals(30, it.currentValue());
+            more = it.advance(1001);
+            assertTrue(more);
+            assertTrue(it.hasNext());
+            more = it.advance(2000);
+            assertFalse(more);
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
+    public void testRangeIteratorAdvaceRegression0() {
+        SortedRanges sr = vs2sar(new long[]{10, -20, 30, -40, 1000, -1002});
+        try (ReadOnlyIndex.RangeIterator it = sr.getRangeIterator()) {
+            boolean more = it.advance(30);
+            assertTrue(more);
+            assertTrue(it.hasNext());
+            assertEquals(30, it.currentRangeStart());
+            more = it.advance(1001);
+            assertTrue(more);
+            assertFalse(it.hasNext());
+            more = it.advance(2000);
+            assertFalse(more);
+            assertFalse(it.hasNext());
+        }
+    }
+
+    @Test
+    public void testReverseRangeIteratorAdvanceRegression0() {
+        SortedRanges sr = vs2sar(new long[]{10, -20, 30, -40, 1000, -1002});
+        try (ReadOnlyIndex.SearchIterator it = sr.getReverseIterator()) {
+            boolean more = it.advance(30);
+            assertTrue(more);
+            assertTrue(it.hasNext());
+            assertEquals(30, it.currentValue());
+            more = it.advance(11);
+            assertTrue(more);
+            assertTrue(it.hasNext());
+            more = it.advance(5);
+            assertFalse(more);
+            assertFalse(it.hasNext());
+        }
     }
 }

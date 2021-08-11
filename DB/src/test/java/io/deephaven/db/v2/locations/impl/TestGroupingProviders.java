@@ -100,10 +100,22 @@ public class TestGroupingProviders {
 
         final String tableName = "TestTable";
 
-        ParquetTools.writeTable(partitions[0], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableName + File.separator + PARQUET_FILE_NAME));
-        ParquetTools.writeTable(partitions[1], partitionedDataDefinition, new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableName + File.separator + PARQUET_FILE_NAME));
-        ParquetTools.writeTable(partitions[2], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableName + File.separator + PARQUET_FILE_NAME));
-        ParquetTools.writeTable(partitions[3], partitionedMissingDataDefinition, new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableName + File.separator + PARQUET_FILE_NAME));
+        ParquetTools.writeTable(
+                partitions[0],
+                new File(dataDirectory, "IP" + File.separator + "0000" + File.separator + tableName + File.separator + PARQUET_FILE_NAME),
+                partitionedDataDefinition);
+        ParquetTools.writeTable(
+                partitions[1],
+                new File(dataDirectory, "IP" + File.separator + "0001" + File.separator + tableName + File.separator + PARQUET_FILE_NAME),
+                partitionedDataDefinition);
+        ParquetTools.writeTable(
+                partitions[2],
+                new File(dataDirectory, "IP" + File.separator + "0002" + File.separator + tableName + File.separator + PARQUET_FILE_NAME),
+                partitionedMissingDataDefinition);
+        ParquetTools.writeTable(
+                partitions[3],
+                new File(dataDirectory, "IP" + File.separator + "0003" + File.separator + tableName + File.separator + PARQUET_FILE_NAME),
+                partitionedMissingDataDefinition);
         ParquetTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
                 partitionedDataDefinition,
@@ -112,8 +124,10 @@ public class TestGroupingProviders {
                         .toArray(File[]::new)
         );
         // TODO (deephaven/deephaven-core/issues/321): Re-add this part of the test when the parquet bug is fixed
-        ParquetTools.writeTable(TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"), partitionedDataDefinition,
-                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableName + File.separator + PARQUET_FILE_NAME));
+        ParquetTools.writeTable(
+                TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"),
+                new File(dataDirectory, "IP" + File.separator + "XXXX" + File.separator + tableName + File.separator + PARQUET_FILE_NAME),
+                partitionedDataDefinition);
 
         if (!missingGroups) {
             // Put Sym back on for the partitions that dropped it.
@@ -122,7 +136,7 @@ public class TestGroupingProviders {
         }
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed by by()/ungroup() above, restore it here.
 
-        final Table actual = ParquetTools.readMultiFileTable(
+        final Table actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition

@@ -143,13 +143,17 @@
 
   };
 
+  var connection;
+  var ide;
   var table;
   var oldTableHandlerCleanup;
   var simplePagingTable = document.getElementById('simplePagingTable');
   var topMenu = document.getElementById('topMenu');
 
   (async () => {
-      ide = await dh.Ide.getExistingSession(window.location.protocol + "//" + window.location.host, "", null, "groovy");
+      connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
+      ide = await connection.startSession("groovy");
 
       await ide.runCode('remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")')
 

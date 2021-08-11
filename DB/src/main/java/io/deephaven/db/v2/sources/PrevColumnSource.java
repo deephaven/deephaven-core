@@ -129,11 +129,6 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final Class<T> getNativeType() {
-        return originalSource.getNativeType();
-    }
-
-    @Override
     public final ChunkType getChunkType() {
         return originalSource.getChunkType();
     }

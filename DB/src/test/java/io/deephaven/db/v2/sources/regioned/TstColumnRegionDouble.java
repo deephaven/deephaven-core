@@ -28,13 +28,13 @@ public class TstColumnRegionDouble {
     static class Identity implements ColumnRegionDouble<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
-        public double getDouble(long elementIndex) {
-            return (double) elementIndex;
+        public long mask() {
+            return Long.MAX_VALUE;
         }
 
         @Override
-        public long length() {
-            throw new UnsupportedOperationException();
+        public double getDouble(long elementIndex) {
+            return (double) elementIndex;
         }
 
         @Override
@@ -59,7 +59,7 @@ public class TstColumnRegionDouble {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionDouble.createNull();
+            SUT = ColumnRegionDouble.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -83,7 +83,7 @@ public class TstColumnRegionDouble {
                 oneOf(regionSupplier).get();
                 will(returnValue(new Identity()));
             }});
-            SUT = new DeferredColumnRegionDouble<>(regionSupplier);
+            SUT = new DeferredColumnRegionDouble<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

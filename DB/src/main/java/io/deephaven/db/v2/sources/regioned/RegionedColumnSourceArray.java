@@ -16,11 +16,12 @@ import java.util.function.Supplier;
  * Base class for all {@link RegionedColumnSource} implementations with column regions stored in an array.
  */
 abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
-        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> implements MakeRegion<ATTR, REGION_TYPE> {
+        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE>
+        implements MakeRegion<ATTR, REGION_TYPE> {
 
     @FunctionalInterface
     interface MakeDeferred<ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> {
-        REGION_TYPE make(Supplier<REGION_TYPE> supplier);
+        REGION_TYPE make(final long pageMask, Supplier<REGION_TYPE> supplier);
     }
 
     private final REGION_TYPE nullRegion;
@@ -75,7 +76,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
                                       @NotNull final ColumnLocation columnLocation) {
         maybeExtendRegions();
         final int regionIndex = regionCount;
-        regions[regionIndex] = makeDeferred.make(() ->
+        regions[regionIndex] = makeDeferred.make(PARAMETERS.regionMask, () ->
                 updateRegion(regionIndex, makeRegion(columnDefinition, columnLocation, regionIndex)));
         return regionCount++;
     }

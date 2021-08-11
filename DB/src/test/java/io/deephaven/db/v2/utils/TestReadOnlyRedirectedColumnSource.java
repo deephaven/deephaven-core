@@ -192,7 +192,7 @@ public class TestReadOnlyRedirectedColumnSource {
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c, true));
+        final Table captured = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
         TableTools.showWithIndex(captured);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();

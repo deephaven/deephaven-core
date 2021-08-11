@@ -19,11 +19,10 @@ public class PythonStaticGenerator {
     private static final List<String> customTableTools = Arrays.asList("col", "byteCol", "shortCol", "intCol", "longCol",
             "floatCol", "doubleCol", "charCol", "newTable", "colSource", "objColSource");
     private static final List<String> customParquetTools = Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
-    private static final List<String> customTableInputHandler = Arrays.asList("c", "cKey", "getRestrictedColumnNames");
+    private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
             "io.deephaven.db.tables.utils.TableTools,display",
-            "io.deephaven.db.tables.select.QueryScope,addObjectFields",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimDateTimeQuiet",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuiet",
             "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFast",
@@ -31,7 +30,8 @@ public class PythonStaticGenerator {
             "io.deephaven.db.tables.utils.DBTimeUtils,diff",
             "io.deephaven.db.tables.utils.DBTimeUtils,yearDiff",
             "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
-            "io.deephaven.db.plot.colors.ColorMaps,closureMap"
+            "io.deephaven.db.plot.colors.ColorMaps,closureMap",
+            "io.deephaven.kafka.KafkaTools,consumeToTable"
             );
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
@@ -99,10 +99,12 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
+        if ((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
                 (javaClass.equals("io.deephaven.db.tables.utils.TableTools")
-                        && customTableTools.contains(methodName))) {
+                        && customTableTools.contains(methodName)) ||
+                (javaClass.equals("io.deephaven.kafka.KafkaTools")
+                        && customKafkaTools.contains(methodName))) {
             endMethod = "    return _custom_" + methodName + "(" + paramString + ")\n";
         }else if((rClass != null) && (rClass.isArray())) {
             endMethod = "    return list(_java_type_." + methodName + "(" + paramString + "))\n";

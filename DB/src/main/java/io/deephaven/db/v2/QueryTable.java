@@ -340,6 +340,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
+        if (isStream() && includeConstituents) {
+            throw new UnsupportedOperationException("Stream tables do not support rollup with included constituents");
+        }
         return memoizeResult(MemoizedOperationKey.rollup(comboAggregateFactory, columns, includeConstituents), () -> {
             final ComboAggregateFactory withRollup = comboAggregateFactory.forRollup(includeConstituents);
             ComboAggregateFactory aggregationStateFactory = withRollup;
@@ -382,6 +385,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
+        if (isStream()) {
+            throw new UnsupportedOperationException("Stream tables do not support treeTable");
+        }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
             final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false, (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal), Collections.singletonList(null), parentColumn);
             final QueryTable rootTable = (QueryTable)byExternalResult.get(null);
@@ -545,12 +551,18 @@ public class QueryTable extends BaseTable {
             final boolean isCombo = inputAggregationStateFactory instanceof ComboAggregateFactory;
 
             if (isBy) {
+                if (isStream()) {
+                    throw new UnsupportedOperationException("Stream tables do not support by");
+                }
                 if (USE_OLDER_CHUNKED_BY) {
                     return AggregationHelper.by(this, groupByColumns);
                 }
                 return ByAggregationFactory.by(this, groupByColumns);
             }
             else if (isApplyToAllBy) {
+                if (isStream()) {
+                    throw new UnsupportedOperationException("Stream tables do not support applyToAllBy");
+                }
                 final String formula = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getFormula();
                 final String columnParamName = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
                 return FormulaAggregationFactory.applyToAllBy(this, formula, columnParamName, groupByColumns);
@@ -567,7 +579,7 @@ public class QueryTable extends BaseTable {
             }
             else if (isMinMax) {
                 final boolean isMin = ((MinMaxByStateFactoryImpl)inputAggregationStateFactory).isMinimum();
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isAddOnly())), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())), this, groupByColumns);
             }
             else if (isPercentile) {
                 final double percentile = ((PercentileByStateFactoryImpl)inputAggregationStateFactory).getPercentile();
@@ -1800,15 +1812,15 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table snapshot(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshot(rightTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", rightTable.sizeForInstrumentation(), () -> {
+    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
+        return QueryPerformanceRecorder.withNugget("snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", baseTable.sizeForInstrumentation(), () -> {
 
             // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty, we get
             // a view containing all of the columns (in that case, basically we get this table back).
             QueryTable viewTable = (QueryTable) view(stampColumns);
             // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
             // Whatever viewTable came back from the above, we do the snapshot
-            return viewTable.snapshotInternal(rightTable, doInitialSnapshot, viewTable.getDefinition().getColumnNamesArray());
+            return viewTable.snapshotInternal(baseTable, doInitialSnapshot, viewTable.getDefinition().getColumnNamesArray());
         });
     }
 

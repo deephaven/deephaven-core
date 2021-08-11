@@ -28,11 +28,6 @@ public class IntChunkPage<ATTR extends Attributes.Any> extends IntChunk<ATTR> im
     }
 
     @Override
-    public Class<Integer> getNativeType() {
-        return int.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableIntChunk<? super ATTR> to = destination.asWritableIntChunk();
 

@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 apply plugin: 'base'
 apply plugin: 'java'
 
@@ -20,8 +24,18 @@ configurations {
 }
 
 dependencies {
+    api('org.apache.httpcomponents:httpclient:4.5.13')
+
+    // Alternative to confluent; requires source code changes for
+    // different avro serializer class names.
+    //   api('io.apicurio:apicurio-registry-utils-serde:1.3.2.Final')
+
+    // Using io.confluent dependencies requires code in the toplevel build.gradle
+    // to add their maven repository.
+    api('io.confluent:kafka-avro-serializer:6.2.0')
+
     compile project(':DB')
-    testCompile 'junit:junit:4.12'
+    testCompile 'junit:junit:4.13.2'
     testCompile project(path: ':DB', configuration: 'testOutput')
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 

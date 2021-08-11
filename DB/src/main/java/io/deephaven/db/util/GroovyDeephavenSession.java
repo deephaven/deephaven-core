@@ -705,6 +705,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
             return new RunScripts(paths);
         }
 
+        public static RunScripts none() {
+            return new RunScripts(Collections.emptyList());
+        }
+
         public static RunScripts serviceLoader() {
             return of(ServiceLoader.load(InitScript.class));
         }

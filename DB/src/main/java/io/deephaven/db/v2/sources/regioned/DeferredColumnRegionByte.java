@@ -12,8 +12,8 @@ import java.util.function.Supplier;
 class DeferredColumnRegionByte<ATTR extends Attributes.Any> extends DeferredColumnRegionBase<ATTR, ColumnRegionByte<ATTR>>
         implements ColumnRegionByte<ATTR> {
 
-    DeferredColumnRegionByte(@NotNull Supplier<ColumnRegionByte<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionByte(final long pageMask, @NotNull Supplier<ColumnRegionByte<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

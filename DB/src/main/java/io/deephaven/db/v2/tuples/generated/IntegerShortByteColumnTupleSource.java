@@ -136,11 +136,6 @@ public class IntegerShortByteColumnTupleSource extends AbstractTupleSource<IntSh
     }
 
     @Override
-    public Class<IntShortByteTuple> getNativeType() {
-        return IntShortByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntShortByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

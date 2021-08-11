@@ -4,28 +4,17 @@
 
 package io.deephaven.grpc_api.session;
 
-import io.deephaven.io.logger.Logger;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.auth.AuthContextProvider;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.util.auth.AuthContext;
-import io.grpc.Context;
-import io.grpc.Contexts;
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
+import io.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -123,7 +112,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void release(final Flight.Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
+    public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExportIfExists(request);
             final ExportNotification.State currState = export != null ? export.getState() : ExportNotification.State.UNKNOWN;

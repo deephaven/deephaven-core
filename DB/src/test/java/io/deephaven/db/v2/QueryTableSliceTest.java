@@ -345,7 +345,6 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
-    @Category(OutOfBandTest.class)
     public void testTailWithGrowth() {
         final long steps = 4096;
 

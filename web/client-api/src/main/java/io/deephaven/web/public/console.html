@@ -13,19 +13,26 @@
     <textarea id="command" placeholder="waiting for connection..." rows="1" cols="80" autofocus="autofocus" disabled="disabled" style="resize:vertical"></textarea><button id="run">Run</button>
 </div>
 <script type="text/javascript">
+    var connection;
     var ide;
     var table;
     (async () => {
+        // create a connection to the server
+        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
         // check if a language was specified
         var url = new URL(window.location);
         var language = url.searchParams.get("language");
         if (typeof language !== 'string') {
-            url.searchParams.set("language", "groovy");
+            // Language was not specified, query the server to get the supported languages and use the first one
+            var consoleTypes = await connection.getConsoleTypes();
+            language = consoleTypes[0];
+            url.searchParams.set("language", language);
             location.assign(url.toString());
         }
 
-        // create a connection to the server using that language
-        ide = await dh.Ide.getExistingSession(window.location.protocol + "//" + window.location.host, "", null, language);
+        // start a session using the language derived
+        ide = await connection.startSession(language);
 
         // set up log stream
         ide.onLogMessage(log => {

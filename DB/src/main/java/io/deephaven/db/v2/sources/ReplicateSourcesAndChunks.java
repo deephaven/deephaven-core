@@ -4,6 +4,7 @@
 
 package io.deephaven.db.v2.sources;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.db.tables.dbarrays.DbArrayBase;
@@ -16,9 +17,11 @@ import io.deephaven.db.v2.sources.chunk.sized.SizedCharChunk;
 import io.deephaven.db.v2.sources.chunk.util.factories.CharChunkFactory;
 import io.deephaven.db.v2.sources.chunk.util.chunkfillers.CharChunkFiller;
 import io.deephaven.db.v2.sources.chunk.util.pools.CharChunkPool;
+import io.deephaven.db.v2.sources.chunkcolumnsource.CharChunkColumnSource;
 import io.deephaven.db.v2.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.db.v2.sources.sparse.CharOneOrN;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +66,8 @@ public class ReplicateSourcesAndChunks {
         replicateChunkFillers();
 
         ReplicatePrimitiveCode.charToAll(CharChunkPage.class, ReplicatePrimitiveCode.MAIN_SRC);
+
+        replicateChunkColumnSource();
     }
 
     private static void replicateSingleValues() throws IOException {
@@ -94,6 +99,40 @@ public class ReplicateSourcesAndChunks {
                 "        current = null;",
                 "        prev = null;",
                 "    }"));
+        FileUtils.writeLines(classFile, lines);
+    }
+
+    private static void replicateChunkColumnSource() throws IOException {
+        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        replicateObjectChunkColumnSource();
+    }
+
+    private static void replicateObjectChunkColumnSource() throws IOException {
+        final String className = ReplicatePrimitiveCode.charToObject(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final File classFile = new File(className);
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "class ObjectChunkColumnSource", "class ObjectChunkColumnSource<T>",
+                "<Object>", "<T>",
+                "ForObject", "ForObject<T>",
+                "Object getObject", "T get",
+                "Object current", "T current",
+                "ObjectChunk<\\? extends Attributes.Values>", "ObjectChunk<T, ? extends Attributes.Values>",
+                "QueryConstants.NULL_OBJECT", "null"
+        );
+
+        lines = ReplicateUtilities.replaceRegion(lines, "constructor", Arrays.asList(
+        "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
+                "        this(type, componentType, new TLongArrayList());",
+                "    }",
+                "",
+        "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {",
+                "        super(type, componentType);",
+                "        this.firstOffsetForData = firstOffsetForData;",
+                "    }"
+
+        ));
+
         FileUtils.writeLines(classFile, lines);
     }
 

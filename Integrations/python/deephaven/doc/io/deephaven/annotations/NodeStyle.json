@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.annotations.NodeStyle",
+ "methods": {},
+ "path": "io.deephaven.annotations.NodeStyle",
+ "text": "The node style is suitable for nested / recursive structures. As such, it is prehashed and\n interned.",
+ "typeName": "class"
+}

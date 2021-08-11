@@ -136,11 +136,6 @@ public class ReinterpretedBooleanReinterpretedBooleanFloatColumnTupleSource exte
     }
 
     @Override
-    public Class<ByteByteFloatTuple> getNativeType() {
-        return ByteByteFloatTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteByteFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

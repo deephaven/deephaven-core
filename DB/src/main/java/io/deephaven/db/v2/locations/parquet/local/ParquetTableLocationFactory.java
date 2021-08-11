@@ -30,7 +30,7 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
                                       @Nullable final TableDataRefreshService refreshService) {
         final File parquetFile = locationKey.getFile();
         if (Utils.fileExistsPrivileged(parquetFile)) {
-            return new ParquetTableLocation(tableKey, locationKey, parquetFile, readInstructions);
+            return new ParquetTableLocation(tableKey, locationKey, readInstructions);
         } else {
             return new NonexistentTableLocation(tableKey, locationKey);
         }

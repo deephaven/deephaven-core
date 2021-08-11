@@ -1,27 +1,26 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
-import javax.annotation.OverridingMethodsMustInvokeSuper;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.SharedContext;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.function.Supplier;
 
 /**
  * Base deferred region implementation.
  */
-public class DeferredColumnRegionBase<ATTR extends Attributes.Any,
-        REGION_TYPE extends ColumnRegion<ATTR>> implements DeferredColumnRegion<ATTR, REGION_TYPE> {
+public abstract class DeferredColumnRegionBase<ATTR extends Attributes.Any, REGION_TYPE extends ColumnRegion<ATTR>>
+        extends GenericColumnRegionBase<ATTR>
+        implements DeferredColumnRegion<ATTR, REGION_TYPE> {
 
     private Supplier<REGION_TYPE> resultRegionFactory;
 
     private volatile REGION_TYPE resultRegion;
 
-    DeferredColumnRegionBase(@NotNull final Supplier<REGION_TYPE> resultRegionFactory) {
+    DeferredColumnRegionBase(final long pageMask, @NotNull final Supplier<REGION_TYPE> resultRegionFactory) {
+        super(pageMask);
         this.resultRegionFactory = Require.neqNull(resultRegionFactory, "resultRegionFactory");
     }
 
@@ -47,7 +46,8 @@ public class DeferredColumnRegionBase<ATTR extends Attributes.Any,
         return resultRegion;
     }
 
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
         DeferredColumnRegion.super.releaseCachedResources();
         final REGION_TYPE localResultRegion = getResultRegionIfSupplied();
@@ -57,13 +57,8 @@ public class DeferredColumnRegionBase<ATTR extends Attributes.Any,
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return getResultRegion().getNativeType();
-    }
-
-    @Override
-    public long length() {
-        return getResultRegion().length();
+    public ChunkType getChunkType() {
+        return getResultRegion().getChunkType();
     }
 
     @Override
