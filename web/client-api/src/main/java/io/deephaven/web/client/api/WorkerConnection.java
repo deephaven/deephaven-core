@@ -1011,7 +1011,6 @@ public class WorkerConnection {
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
                 String[] columnTypes = Arrays.stream(state.getAllColumns())
-//                        .filter(c -> includedColumns.get(c.getIndex()))
                         .map(Column::getType)
                         .toArray(String[]::new);
 

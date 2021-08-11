@@ -6,8 +6,6 @@ package io.deephaven.grpc_api_client.util;
 
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.common.io.LittleEndianDataOutputStream;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedInputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
@@ -15,33 +13,12 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.BitSet;
 
 public class BarrageProtoUtil {
-    public static ByteString toByteString(final BitSet bitset) {
-        return ByteStringAccess.wrap(bitset.toByteArray());
-    }
-
-    public static BitSet toBitSet(final ByteString string) {
-        return BitSet.valueOf(string.toByteArray());
-    }
-
-    public static ByteString toByteString(final Index index) {
-        //noinspection UnstableApiUsage
-        try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-             final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-            ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, index);
-            oos.flush();
-            return ByteStringAccess.wrap(baos.peekBuffer(), 0, baos.size());
-        } catch (final IOException e) {
-            throw new UncheckedDeephavenException("Unexpected exception during serialization: ", e);
-        }
-    }
 
     public static ByteBuffer toByteBuffer(final Index index) {
         //noinspection UnstableApiUsage
@@ -52,16 +29,6 @@ public class BarrageProtoUtil {
             return ByteBuffer.wrap(baos.peekBuffer(), 0, baos.size());
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Unexpected exception during serialization: ", e);
-        }
-    }
-
-    public static Index toIndex(final ByteString string) {
-        //noinspection UnstableApiUsage
-        try (final ByteArrayInputStream bais = new ByteArrayInputStream(string.toByteArray());
-             final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
-            return ExternalizableIndexUtils.readExternalCompressedDelta(ois);
-        } catch (final IOException e) {
-            throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
         }
     }
 

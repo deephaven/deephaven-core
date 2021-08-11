@@ -114,7 +114,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     });
                 }
                 // TODO (core#513): BigDecimal, BigInteger
-                // TODO: (core#936): support column conversion modes
+                // TODO (core#936): support column conversion modes
 
                 return new VarBinaryChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), (out, item) -> {
                     out.write(item.toString().getBytes(Charsets.UTF_8));
