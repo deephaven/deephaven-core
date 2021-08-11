@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.SortColumn",
+ "methods": {
+  "asc": "Create an SortColumn.Order.ASCENDING sort column.\n\n:param columnName: (io.deephaven.api.ColumnName) - the column name\n:return: (io.deephaven.api.SortColumn) the ascending sort column",
+  "column": "The column name.\n\n:return: (io.deephaven.api.ColumnName) the column name",
+  "desc": "Create a SortColumn.Order.DESCENDING sort column.\n\n:param columnName: (io.deephaven.api.ColumnName) - the column name\n:return: (io.deephaven.api.SortColumn) the descending sort column",
+  "order": "The order.\n\n:return: (io.deephaven.api.SortColumn.Order) the order"
+ },
+ "path": "io.deephaven.api.SortColumn",
+ "text": "Represents a column and order pair.",
+ "typeName": "class"
+}

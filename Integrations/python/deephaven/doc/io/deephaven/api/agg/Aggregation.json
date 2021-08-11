@@ -1,0 +1,29 @@
+{
+ "className": "io.deephaven.api.agg.Aggregation",
+ "methods": {
+  "AggAbsSum": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.AbsSum\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.AbsSum>",
+  "AggArray": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Array\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Array>",
+  "AggAvg": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Avg\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Avg>",
+  "AggCount": ":param resultColumn: java.lang.String\n:return: io.deephaven.api.agg.Count",
+  "AggCountDistinct": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.CountDistinct\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.CountDistinct>",
+  "AggDistinct": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Distinct\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Distinct>",
+  "AggFirst": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.First\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.First>",
+  "AggLast": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Last\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Last>",
+  "AggMax": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Max\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Max>",
+  "AggMed": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Med\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Med>",
+  "AggMin": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Min\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Min>",
+  "AggPct": "*Overload 1*  \n  :param percentile: double\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Pct\n  \n*Overload 2*  \n  :param percentile: double\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Pct>",
+  "AggSortedFirst": "*Overload 1*  \n  :param sortedColumn: java.lang.String\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.SortedFirst\n  \n*Overload 2*  \n  :param sortedColumn: java.lang.String\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.SortedFirst>",
+  "AggSortedLast": "*Overload 1*  \n  :param sortedColumn: java.lang.String\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.SortedLast\n  \n*Overload 2*  \n  :param sortedColumn: java.lang.String\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.SortedLast>",
+  "AggStd": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Std\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Std>",
+  "AggSum": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Sum\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Sum>",
+  "AggUnique": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Unique\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Unique>",
+  "AggVar": "*Overload 1*  \n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.Var\n  \n*Overload 2*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.Var>",
+  "AggWAvg": "*Overload 1*  \n  :param weightColumn: java.lang.String\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.WAvg\n  \n*Overload 2*  \n  :param weightColumn: java.lang.String\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.WAvg>",
+  "AggWSum": "*Overload 1*  \n  :param weightColumn: java.lang.String\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.WSum\n  \n*Overload 2*  \n  :param weightColumn: java.lang.String\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<io.deephaven.api.agg.WSum>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.Aggregation",
+ "text": "Represents an aggregation that can be applied to a table.",
+ "typeName": "interface"
+}

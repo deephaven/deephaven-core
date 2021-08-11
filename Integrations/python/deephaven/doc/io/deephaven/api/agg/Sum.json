@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.Sum",
+ "methods": {
+  "abs": ":return: io.deephaven.api.agg.AbsSum",
+  "of": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.Sum\n  \n*Overload 2*  \n  :param x: java.lang.String\n  :return: io.deephaven.api.agg.Sum",
+  "pair": ":return: io.deephaven.api.agg.Pair",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.Sum",
+ "typeName": "class"
+}

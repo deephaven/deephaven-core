@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.filter.FilterBase",
+ "methods": {
+  "not": ":return: io.deephaven.api.filter.FilterNot"
+ },
+ "path": "io.deephaven.api.filter.FilterBase",
+ "typeName": "class"
+}
