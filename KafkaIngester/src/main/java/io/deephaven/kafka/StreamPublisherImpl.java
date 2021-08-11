@@ -15,9 +15,26 @@ public class StreamPublisherImpl implements StreamPublisher {
     private Supplier<WritableChunk[]> chunkFactory;
     private IntFunction<ChunkType> chunkTypeIntFunction;
 
+    /**
+     * You must set the chunk factory and consumer before allowing other threads or objects to interact with the StreamPublisherImpl.
+     *
+     * @param chunkFactory         a supplier of WritableChunks that is acceptable to our consumer
+     * @param chunkTypeIntFunction a function from column index to ChunkType
+     */
     public void setChunkFactory(Supplier<WritableChunk[]> chunkFactory, IntFunction<ChunkType> chunkTypeIntFunction) {
+        if (this.chunkFactory != null) {
+            throw new IllegalStateException("Can not reset the chunkFactory for a StreamPublisherImpl");
+        }
         this.chunkFactory = chunkFactory;
         this.chunkTypeIntFunction = chunkTypeIntFunction;
+    }
+
+    @Override
+    public void register(@NotNull StreamConsumer consumer) {
+        if (streamConsumer != null) {
+            throw new IllegalStateException("Can not register multiple StreamConsumers.");
+        }
+        streamConsumer = consumer;
     }
 
     public ChunkType chunkType(int index) {
@@ -31,13 +48,6 @@ public class StreamPublisherImpl implements StreamPublisher {
         return chunks;
     }
 
-    @Override
-    public void register(@NotNull StreamConsumer consumer) {
-        if (streamConsumer != null) {
-            throw new IllegalStateException("Can not register multiple StreamConsumers.");
-        }
-        streamConsumer = consumer;
-    }
 
     @Override
     public synchronized void flush() {
