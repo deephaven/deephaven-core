@@ -43,17 +43,11 @@ public class Scatterer {
         String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
+            //TODO: TICKET #1026: Replace typeString with the following once ticket #1009 is resolved:
+            // final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
 
-            //TODO: TICKET #1026: Replace entire for loop body with the following once ticket #1009 is resolved:
-
-            // if (outputs[i].getType() != null) {
-            //     queryStrings[i] = String.format("%s = (%s) (scatterer.scatter(%d, %s))", outputs[i].getColName(), outputs[i].getType(), i, futureOffsetColName);
-            // }
-            // else {
-            //     queryStrings[i] = String.format("%s = scatterer.scatter(%d, %s)", outputs[i].getColName(), i, futureOffsetColName);
-            // }
-
-            queryStrings[i] = String.format("%s = scatterer.scatter(%d, %s)", outputs[i].getColName(), i, futureOffsetColName);
+            final String typeString = "";
+           queryStrings[i] = String.format("%s = %s (scatterer.scatter(%d, %s))", outputs[i].getColName(), typeString, i, futureOffsetColName);
         }
 
         return queryStrings;
