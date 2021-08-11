@@ -51,12 +51,10 @@ class PythonUtilities {
             pyCallable = pyObject.getAttribute(pyAttribute);
 
             if (!pyCallable.hasAttribute("__call__")){
-                throw new IllegalArgumentException(String.format("The Python object provided has an %s attribute " +
-                        "which is not callable", pyAttribute));
+                throw new IllegalArgumentException("The Python object provided has a \"" + pyAttribute + "\" attribute which is not callable");
             }
 
             return pyCallable;
-
         } else if (pyObject.hasAttribute("__call__")){
             return pyObject;
         } else {
