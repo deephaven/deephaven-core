@@ -9,7 +9,7 @@ import org.jpy.PyObject;
 import java.util.function.Function;
 import io.deephaven.util.QueryConstants;
 
-import static io.deephaven.integrations.python.PythonUtilities.pyCallableGenerator;
+import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
 
 /**
  * A {@link Function} implementation which calls a Python callable.
@@ -32,7 +32,7 @@ public class PythonFunction<T> implements Function<T, Object> {
      */
     public PythonFunction(final PyObject pyObjectIn, final Class classOut){
 
-        pyCallable = pyCallableGenerator(pyObjectIn);
+        pyCallable = pyApplyFunc(pyObjectIn);
 
         // Note: Potentially important types omitted -simply because handling from python is not super clear:
         //       Character/char, BigInteger, BigDecimal

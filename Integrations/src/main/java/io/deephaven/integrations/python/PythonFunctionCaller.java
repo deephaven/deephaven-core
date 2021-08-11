@@ -8,7 +8,7 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 import java.util.function.Function;
 
-import static io.deephaven.integrations.python.PythonUtilities.pyCallableGenerator;
+import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
 
 /**
  * A class which calls a Python callable.
@@ -25,7 +25,7 @@ public class PythonFunctionCaller implements Function<Object[], Object> {
      */
     public PythonFunctionCaller(final PyObject pyObjectIn){
 
-        pyCallable = pyCallableGenerator(pyObjectIn);
+        pyCallable = pyApplyFunc(pyObjectIn);
     }
 
     @Override
