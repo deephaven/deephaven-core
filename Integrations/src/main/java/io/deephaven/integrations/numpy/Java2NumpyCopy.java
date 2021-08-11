@@ -454,7 +454,7 @@ public class Java2NumpyCopy {
         // I don't care for this code at all but it works for now. Need to find a way to use w/o going through numpy
         // reservoir sampling with replacement
         if (replace) {
-
+            // reservoir sampling with replacement
             // loop through reservoir
             for (int i = 0; i < tSize; i++) {
                 final double p = (double) 1 / (double) (i + 1);
