@@ -3,9 +3,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.*;
 
-public interface GenericRecordFieldCopier {
-    void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk);
-
+public interface GenericRecordFieldCopier extends FieldCopier {
     static GenericRecordFieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType) {
         switch (chunkType) {
             case Char:

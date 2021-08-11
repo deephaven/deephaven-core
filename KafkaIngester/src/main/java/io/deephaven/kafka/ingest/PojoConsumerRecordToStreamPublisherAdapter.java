@@ -152,6 +152,7 @@ public class PojoConsumerRecordToStreamPublisherAdapter<K, V> implements Consume
         final StringBuilder classBuilder = new StringBuilder();
         final Indenter indenter = new Indenter();
 
+        classBuilder.append("import " + java.util.List.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + ConsumerRecordToStreamPublisherAdapter.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + RowSetter.class.getCanonicalName() + ";\n");
         classBuilder.append("import " + TableWriter.class.getCanonicalName() + ";\n");
@@ -193,7 +194,14 @@ public class PojoConsumerRecordToStreamPublisherAdapter<K, V> implements Consume
 
         classBuilder.append("\n");
         classBuilder.append(indenter).append("@Override\n");
-        classBuilder.append(indenter).append("public void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {\n");
+        classBuilder.append(indenter).append("public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException {\n");
+        classBuilder.append(indenter.increaseLevel()).append("for (ConsumerRecord<?, ?> record : records) {\n");
+        classBuilder.append(indenter.increaseLevel()).append("consumeRecord(record);\n");
+        classBuilder.append(indenter.decreaseLevel()).append("}\n");
+        classBuilder.append(indenter.decreaseLevel()).append("}\n");
+        classBuilder.append("\n");
+
+        classBuilder.append(indenter).append("private void consumeRecord(ConsumerRecord<?, ?> record) throws IOException {\n");
 
         classBuilder.append(indenter.increaseLevel()).append("// method body\n");
 
