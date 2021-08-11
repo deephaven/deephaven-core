@@ -12,10 +12,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.utils.DynamicTableWriter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter;
-import io.deephaven.kafka.ingest.GenericRecordConsumerRecordToTableWriterAdapter;
-import io.deephaven.kafka.ingest.KafkaIngester;
-import io.deephaven.kafka.ingest.SimpleConsumerRecordToTableWriterAdapter;
+import io.deephaven.kafka.ingest.*;
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.Header;
@@ -257,13 +254,7 @@ public class KafkaTools {
                 ((valueSchema != null) ? valueColumns.length : 0);
         final ColumnDefinition<?>[] allColumns = new ColumnDefinition<?>[nCols];
         int c = 0;
-        final ColumnDefinition<?> partitionColumn = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME_DEFAULT);
-        allColumns[c++] = (partitionFilter == ALL_PARTITIONS)
-                ? partitionColumn
-                : partitionColumn.withPartitioning()
-                ;
-        allColumns[c++] = ColumnDefinition.ofLong(OFFSET_COLUMN_NAME_DEFAULT);
-        allColumns[c++] = ColumnDefinition.fromGenericType(TIMESTAMP_COLUMN_NAME_DEFAULT, DBDateTime.class);
+        c += getCommonCols(allColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
         if (keySchema != null) {
             System.arraycopy(keyColumns, 0, allColumns, c, keyColumns.length);
             c += keyColumns.length;
@@ -273,13 +264,13 @@ public class KafkaTools {
             c += valueColumns.length;
         }
         Assert.eq(nCols, "nCols", c, "c");
-        final TableDefinition tableDefinition = new TableDefinition(allColumns);
+        final TableDefinition tableDefinition = new TableDefinition(withoutNulls(allColumns));
         final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
         final GenericRecordConsumerRecordToTableWriterAdapter adapter = GenericRecordConsumerRecordToTableWriterAdapter.make(
                 tableWriter,
-                KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                OFFSET_COLUMN_NAME_DEFAULT,
-                TIMESTAMP_COLUMN_NAME_DEFAULT,
+                columnNameOrNull(allColumns[0]),
+                columnNameOrNull(allColumns[1]),
+                columnNameOrNull(allColumns[2]),
                 null,
                 keyColumnsMap,
                 valueColumnsMap);
@@ -320,6 +311,71 @@ public class KafkaTools {
         );
         ingester.start();
         return tableWriter.getTable();
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns) {
+        return consumeJsonToTable(consumerProperties, topic, partitionFilter, partitionToInitialOffset, valueColumns, null);
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns,
+            final Map<String, String> columnNameToJsonFieldArg) {
+        final int nCols = 3 + valueColumns.length;
+        final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
+        int c = 0;
+        c += getCommonCols(columns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
+        System.arraycopy(valueColumns, 0, columns, c, valueColumns.length);
+        final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
+        final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
+        final Map<String, String> columnNameToJsonField;
+        if (columnNameToJsonFieldArg != null) {
+            columnNameToJsonField = columnNameToJsonFieldArg;
+        } else {
+            columnNameToJsonField = new HashMap<>(valueColumns.length);
+            for (final ColumnDefinition<?> colDef : valueColumns) {
+                final String colName = colDef.getName();
+                columnNameToJsonField.put(colName, colName);
+            }
+        }
+        final JsonConsumerRecordToTableWriterAdapter adapter = JsonConsumerRecordToTableWriterAdapter.make(
+                tableWriter,
+                columnNameOrNull(columns[0]),
+                columnNameOrNull(columns[1]),
+                columnNameOrNull(columns[2]),
+                columnNameToJsonField);
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                consumerProperties,
+                topic,
+                partitionFilter,
+                (int partition) -> (ConsumerRecord<?, ?> record) -> {
+                    try {
+                        adapter.consumeRecord(record);
+                    } catch (IOException ex) {
+                        throw new UncheckedDeephavenException(ex);
+                    }
+                },
+                partitionToInitialOffset
+        );
+        ingester.start();
+        return tableWriter.getTable();
+    }
+
+    private static String columnNameOrNull(final ColumnDefinition<?> colDef) {
+        if (colDef == null) {
+            return null;
+        }
+        return colDef.getName();
     }
 
     /**
@@ -366,19 +422,13 @@ public class KafkaTools {
         Assert.eq(nCols, "nCols", c, "c");
         final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
         final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
-        final Function<ColumnDefinition<?>, String> orNull = (final ColumnDefinition<?> colDef) -> {
-            if (colDef == null) {
-                return null;
-            }
-            return colDef.getName();
-        };
         final ConsumerRecordToTableWriterAdapter adapter = SimpleConsumerRecordToTableWriterAdapter.make(
                 tableWriter,
-                orNull.apply(columns[0]),
-                orNull.apply(columns[1]),
-                orNull.apply(columns[2]),
-                orNull.apply(columns[3]),
-                orNull.apply(columns[4]));
+                columnNameOrNull(columns[0]),
+                columnNameOrNull(columns[1]),
+                columnNameOrNull(columns[2]),
+                columnNameOrNull(columns[3]),
+                columnNameOrNull(columns[4]));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,

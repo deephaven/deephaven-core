@@ -9,10 +9,7 @@ import org.apache.kafka.common.record.TimestampType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -74,6 +71,17 @@ public class JsonConsumerRecordToTableWriterAdapter implements ConsumerRecordToT
             throw new RuntimeException("No mapping defined for columns " + columnNameToSetter.keySet());
         }
 
+    }
+
+    public static JsonConsumerRecordToTableWriterAdapter make(
+            final TableWriter<?> writer,
+            final String kafkaPartitionColumn,
+            final String offsetColumnName,
+            final String timestampColumnName,
+            final Map<String, String> valueColumns) {
+        return new JsonConsumerRecordToTableWriterAdapter(
+                writer, kafkaPartitionColumn, offsetColumnName, timestampColumnName,
+                valueColumns, Collections.emptySet(), false, true, true);
     }
 
     /**
