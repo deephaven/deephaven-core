@@ -18,12 +18,12 @@ public class FloatFieldCopier implements GenericRecordFieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk) {
+    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
         final WritableFloatChunk<Attributes.Values> output = publisherChunk.asWritableFloatChunk();
-        for (int ii = 0; ii < inputChunk.size(); ++ii) {
-            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii);
-            final Float value = (Float)genericRecord.get(fieldName);
-            output.set(ii, value == null ? QueryConstants.NULL_FLOAT : value);
+        for (int ii = 0; ii < length; ++ii) {
+            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final Float value = genericRecord == null ? null : (Float) genericRecord.get(fieldName);
+            output.set(ii + destOffset, value == null ? QueryConstants.NULL_FLOAT : value);
         }
     }
 }

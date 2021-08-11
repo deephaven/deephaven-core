@@ -18,12 +18,12 @@ public class IntFieldCopier implements GenericRecordFieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk) {
+    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
         final WritableIntChunk<Attributes.Values> output = publisherChunk.asWritableIntChunk();
-        for (int ii = 0; ii < inputChunk.size(); ++ii) {
-            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii);
-            final Integer value = (Integer)genericRecord.get(fieldName);
-            output.set(ii, value == null ? QueryConstants.NULL_INT : value);
+        for (int ii = 0; ii < length; ++ii) {
+            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final Integer value = genericRecord == null ? null : (Integer) genericRecord.get(fieldName);
+            output.set(ii + destOffset, value == null ? QueryConstants.NULL_INT : value);
         }
     }
 }

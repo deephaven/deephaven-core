@@ -15,12 +15,12 @@ public class CharFieldCopier implements GenericRecordFieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk) {
+    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
         final WritableCharChunk<Attributes.Values> output = publisherChunk.asWritableCharChunk();
-        for (int ii = 0; ii < inputChunk.size(); ++ii) {
-            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii);
-            final Character value = (Character)genericRecord.get(fieldName);
-            output.set(ii, value == null ? QueryConstants.NULL_CHAR : value);
+        for (int ii = 0; ii < length; ++ii) {
+            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final Character value = genericRecord == null ? null : (Character) genericRecord.get(fieldName);
+            output.set(ii + destOffset, value == null ? QueryConstants.NULL_CHAR : value);
         }
     }
 }

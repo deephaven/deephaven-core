@@ -66,26 +66,18 @@ public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
 
     @Override
     public void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values>[] publisherChunks) {
-        for (int ii = 0; ii < inputChunk.size(); ++ii) {
-            final GenericRecord record = (GenericRecord) inputChunk.get(ii);
-            if (record == null) {
-                if (!allowNulls) {
+        if (!allowNulls) {
+            for (int ii = 0; ii < inputChunk.size(); ++ii) {
+                if (inputChunk.get(ii) == null) {
                     throw new KafkaIngesterException("Null records are not permitted");
                 }
-                for (int cc = 0; cc < chunkOffsets.length; ++cc) {
-                    final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
-                    final int existingSize = publisherChunk.size();
-                    publisherChunk.setSize(existingSize + inputChunk.size());
-                    publisherChunk.fillWithNullValue(existingSize, inputChunk.size());
-                }
-            } else {
-                for (int cc = 0; cc < chunkOffsets.length; ++cc) {
-                    final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
-                    final int existingSize = publisherChunk.size();
-                    publisherChunk.setSize(existingSize + inputChunk.size());
-                    fieldCopiers[cc].copyField(inputChunk, publisherChunk);
-                }
             }
+        }
+        for (int cc = 0; cc < chunkOffsets.length; ++cc) {
+            final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
+            final int existingSize = publisherChunk.size();
+            publisherChunk.setSize(existingSize + inputChunk.size());
+            fieldCopiers[cc].copyField(inputChunk, publisherChunk, 0, existingSize, inputChunk.size());
         }
     }
 }

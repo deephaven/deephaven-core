@@ -18,12 +18,12 @@ public class ShortFieldCopier implements GenericRecordFieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk) {
+    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
         final WritableShortChunk<Attributes.Values> output = publisherChunk.asWritableShortChunk();
-        for (int ii = 0; ii < inputChunk.size(); ++ii) {
-            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii);
-            final Short value = (Short)genericRecord.get(fieldName);
-            output.set(ii, value == null ? QueryConstants.NULL_SHORT : value);
+        for (int ii = 0; ii < length; ++ii) {
+            final GenericRecord genericRecord =  (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final Short value = genericRecord == null ? null : (Short) genericRecord.get(fieldName);
+            output.set(ii + destOffset, value == null ? QueryConstants.NULL_SHORT : value);
         }
     }
 }
