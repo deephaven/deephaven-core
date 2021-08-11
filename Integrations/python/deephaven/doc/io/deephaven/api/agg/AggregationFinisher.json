@@ -1,0 +1,27 @@
+{
+ "className": "io.deephaven.api.agg.AggregationFinisher",
+ "methods": {
+  "absSum": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.AbsSum>",
+  "array": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Array>",
+  "avg": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Avg>",
+  "countDistinct": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.CountDistinct>",
+  "distinct": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Distinct>",
+  "first": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.First>",
+  "function": ":return: java.util.function.Function<io.deephaven.api.agg.Pair,AggregationFinisher.AGG>",
+  "last": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Last>",
+  "max": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Max>",
+  "med": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Med>",
+  "min": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Min>",
+  "of": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: AggregationFinisher.AGG\n  \n*Overload 2*  \n  :param pairs: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.Multi<AggregationFinisher.AGG>\n  \n*Overload 3*  \n  :param arg: java.lang.String\n  :return: AggregationFinisher.AGG\n  \n*Overload 4*  \n  :param arguments: java.lang.String...\n  :return: io.deephaven.api.agg.Multi<AggregationFinisher.AGG>",
+  "pct": ":param percentile: double\n:return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Pct>",
+  "std": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Std>",
+  "sum": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Sum>",
+  "unique": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Unique>",
+  "var": ":return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.Var>",
+  "wAvg": ":param weightColumn: io.deephaven.api.ColumnName\n:return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.WAvg>",
+  "wSum": ":param weightColumn: io.deephaven.api.ColumnName\n:return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.WSum>"
+ },
+ "path": "io.deephaven.api.agg.AggregationFinisher",
+ "text": "The aggregation finisher is a helper to aid in building aggregations whose construction can be\n finished by a Pair. A vararg overload is provided to build a Multi,\n of(Pair...), which can be useful to reduce the syntax required to build multiple\n aggregations of the same basic type. Helpers are provided that translate the string-equivalents\n via Pair.parse(String).\n\n \n Not all aggregations may be suitable for construction in this style.",
+ "typeName": "class"
+}

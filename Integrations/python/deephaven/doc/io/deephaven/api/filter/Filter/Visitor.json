@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.filter.Filter$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param isNull: io.deephaven.api.filter.FilterIsNull\n  \n*Overload 2*  \n  :param isNotNull: io.deephaven.api.filter.FilterIsNotNull\n  \n*Overload 3*  \n  :param condition: io.deephaven.api.filter.FilterCondition\n  \n*Overload 4*  \n  :param not: io.deephaven.api.filter.FilterNot\n  \n*Overload 5*  \n  :param rawString: io.deephaven.api.RawString"
+ },
+ "path": "io.deephaven.api.filter.Filter.Visitor",
+ "typeName": "interface"
+}

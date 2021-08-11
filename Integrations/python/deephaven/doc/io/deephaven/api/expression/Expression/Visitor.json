@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.expression.Expression$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param value: io.deephaven.api.value.Value\n  \n*Overload 2*  \n  :param rawString: io.deephaven.api.RawString"
+ },
+ "path": "io.deephaven.api.expression.Expression.Visitor",
+ "typeName": "interface"
+}
