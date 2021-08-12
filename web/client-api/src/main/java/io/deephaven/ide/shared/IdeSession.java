@@ -101,7 +101,7 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
         BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
-        bindRequest.setConsoleId(table.getHandle().makeTicket());
+        bindRequest.setTableId(table.getHandle().makeTicket());
         bindRequest.setVariableName(name);
         return Callbacks.grpcUnaryPromise(c ->
                 connection.consoleServiceClient().bindTableToVariable(bindRequest, connection.metadata(), c::apply))
