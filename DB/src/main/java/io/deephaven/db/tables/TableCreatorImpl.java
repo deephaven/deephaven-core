@@ -14,6 +14,9 @@ import io.deephaven.qst.table.TimeTable;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
@@ -41,7 +44,57 @@ enum TableCreatorImpl implements TableCreator<Table> {
     }
 
     @Override
-    public final Table merge(Collection<Table> tables) {
+    public final Table merge(Iterable<Table> tables) {
+        return TableTools.merge(StreamSupport.stream(tables.spliterator(), false).toArray(Table[]::new));
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2) {
+        return TableTools.merge(t1, t2);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3) {
+        return TableTools.merge(t1, t2, t3);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4) {
+        return TableTools.merge(t1, t2, t3, t4);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5) {
+        return TableTools.merge(t1, t2, t3, t4, t5);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6) {
+        return TableTools.merge(t1, t2, t3, t4, t5, t6);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7) {
+        return TableTools.merge(t1, t2, t3, t4, t5, t6, t7);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8) {
+        return TableTools.merge(t1, t2, t3, t4, t5, t6, t7, t8);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8, Table t9) {
+        return TableTools.merge(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+    }
+
+    @Override
+    public final Table merge(Table t1, Table t2, Table t3, Table t4, Table t5, Table t6, Table t7, Table t8, Table t9, Table... remaining) {
+        return TableTools.merge(Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining)).toArray(Table[]::new));
+    }
+
+    @Override
+    public final Table merge(Table[] tables) {
         return TableTools.merge(tables);
     }
 
