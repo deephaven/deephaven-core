@@ -1,6 +1,7 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 
@@ -17,4 +18,8 @@ public interface FieldCopier {
      * @param length
      */
     void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length);
+
+    interface Factory {
+        FieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType);
+    }
 }

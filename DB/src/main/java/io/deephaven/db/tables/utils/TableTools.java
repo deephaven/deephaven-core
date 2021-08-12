@@ -4,6 +4,7 @@
 
 package io.deephaven.db.tables.utils;
 
+import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -1643,5 +1644,49 @@ public class TableTools {
             return "NULL_BYTE";
         }
         return "(" + dataType.getName() + ")" + " null";
+    }
+
+    public static TableDefinition tableDef(final ColumnDefinition<?>[] cols) {
+        return new TableDefinition(cols);
+    }
+
+    private static Class<?> typeFromShortName(final String dataTypeStr) {
+        switch (dataTypeStr) {
+            case "String":
+            case "string":
+                return String.class;
+            case "BigDecimal":
+            case "bigdecimal":
+                return java.math.BigDecimal.class;
+            case "StringSet":
+            case "stringset":
+                return io.deephaven.db.tables.libs.StringSet.class;
+            default:
+                return null;
+        }
+    }
+
+    public static Class<?> typeFromName(final String dataTypeStr) {
+        final Class<?> shortNameType = typeFromShortName(dataTypeStr);
+        if (shortNameType != null) {
+            return shortNameType;
+        }
+        final Class<?> dataType;
+        try {
+            dataType = ClassUtil.lookupClass(dataTypeStr);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Type " + dataTypeStr + " not known", e);
+        }
+        return dataType;
+    }
+
+    public static ColumnDefinition<?> colDef(
+            final String columnName, final String dataTypeStr) {
+        return ColumnDefinition.fromGenericType(columnName, typeFromName(dataTypeStr));
+    }
+
+    public static ColumnDefinition<?> colDef(
+            final String columnName, final String dataTypeStr, final String componentTypeStr) {
+        return ColumnDefinition.fromGenericType(columnName, typeFromName(dataTypeStr), typeFromName(componentTypeStr));
     }
 }
