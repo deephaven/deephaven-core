@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 public class BarrageUtils {
     private static final int MAGIC = 0x6E687064;
 
-    //TODO another wrapper that makes something which looks like a stream and manages rpcTicket internally
+    //TODO #1049 another wrapper that makes something which looks like a stream and manages rpcTicket internally
     public static Uint8Array barrageMessage(Builder innerBuilder, int messageType, Uint8Array rpcTicket, int sequence, boolean halfCloseAfterMessage) {
         Builder outerBuilder = new Builder(1024);
         //noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is deprecated

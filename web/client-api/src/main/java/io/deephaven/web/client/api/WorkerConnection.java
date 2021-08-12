@@ -702,8 +702,6 @@ public class WorkerConnection {
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
             // table's creation, which can race this
-            DomGlobal.console.log(schemaMessage.toObject());
-            DomGlobal.console.log(schemaMessage.serializeBinary());
             ResponseStreamWrapper<PutResult> doPutResponseStream = ResponseStreamWrapper.of(browserFlightServiceClient.openDoPut(schemaMessage, metadata()));
 
             doPutResponseStream.onEnd(status -> {
