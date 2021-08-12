@@ -1,13 +1,16 @@
 {
   "dependencies": {
-    "@deephaven/barrage": "^0.1.2",
+    "@deephaven/barrage": "0.2.0",
     "@improbable-eng/grpc-web": "^0.14.0",
+    "apache-arrow": "5.0.0",
     "flatbuffers": "^1.12.0",
     "google-protobuf": "^3.17.3"
   },
   "devDependencies": {
     "webpack": "^5.38.1",
-    "webpack-cli": "^3.3.12"
+    "webpack-cli": "^3.3.12",
+    "ts-loader": "^6.0.1",
+    "typescript": "3.5.1"
   },
   "engines": {
     "node": "14.x"

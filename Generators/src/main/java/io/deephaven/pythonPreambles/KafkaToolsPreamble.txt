@@ -134,10 +134,10 @@ def consumeToTable(*args, **kwargs):
         streaming_table = _java_type_.consumeJsonToTable(r[0], r[1], r[2], r[3], value_json)
     else:
         raise Exception('Unknown keyword arguments: ' + kwargs)
-    table_type = kwargs.pop('table_type')
-    if table_type == None or table_type == 'append':
+    table_type = kwargs.pop('table_type', None)
+    if table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
-    elif table_type == 'streaming':
+    elif table_type == None or table_type == 'streaming':
         return streaming_table
     else:
         raise Exception('unknown table_type=' + table_type)
