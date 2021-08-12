@@ -135,7 +135,7 @@ def consumeToTable(*args, **kwargs):
     else:
         raise Exception('Unknown keyword arguments: ' + kwargs)
     table_type = kwargs.pop('table_type')
-    if table_type == None or table_type == 'append_only':
+    if table_type == None or table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
     elif table_type == 'streaming':
         return streaming_table
