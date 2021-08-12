@@ -315,4 +315,5 @@ check.dependsOn groovyStaticImportGeneratorAssert,
         generateAxesPlotMethodsAssert,
         generateMultiSeriesAssert,
         generateFigureImmutableAssert,
-        generatePlottingConvenienceAssert
+        generatePlottingConvenienceAssert,
+        generateAllPythonAssert

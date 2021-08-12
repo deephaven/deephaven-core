@@ -23,6 +23,9 @@ Docker.registerDockerTask(project, 'webpackSources') {
         from ('webpack.config.js') {
             into 'raw-js-openapi/'
         }
+        from ('tsconfig.json') {
+            into 'raw-js-openapi/'
+        }
         from ('Dockerfile')
         from ('../package.json')
         from ('../package-lock.json')

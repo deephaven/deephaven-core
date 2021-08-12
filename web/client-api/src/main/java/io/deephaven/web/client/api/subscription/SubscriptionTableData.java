@@ -237,9 +237,6 @@ public class SubscriptionTableData {
             int j = 0;
             while (modifiedIndexes.hasNext()) {
                 long origIndex = modifiedIndexes.nextLong();
-                // this assertion will fail if we use this class for viewports, since all instances will be included,
-                // and in that case we should use this for invalidation of cached data
-                assert modifiedColumn.getRowsModified().contains(origIndex);
                 arrayCopy.copyTo(data[modifiedColumn.getColumnIndex()], redirectedIndexes.get(origIndex), modifiedColumn.getValues().getData(), j++);
             }
         }

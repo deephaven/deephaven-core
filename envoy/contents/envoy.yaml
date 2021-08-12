@@ -41,6 +41,9 @@ static_resources:
                         - match: # Notebook file storage at this path
                             prefix: "/notebooks"
                           route: { cluster: web }
+                        - match: # Application mode layout storage at this path
+                            prefix: "/layouts"
+                          route: { cluster: web }
                         - match: # Any GRPC call is assumed to be forwarded to the real service
                             prefix: "/"
                             grpc: {}

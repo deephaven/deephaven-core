@@ -207,8 +207,7 @@ public class SessionStateTest {
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
         final MutableBoolean submitted = new MutableBoolean();
-        final SessionState.ExportObject<Object> submitObj = session.newExport(nextExportId++).submit(submitted::setTrue);
-        Assert.eq(submitObj, "submitObj", exportObj, "exportObj");
+        expectException(StatusRuntimeException.class, () -> session.newExport(nextExportId++).submit(submitted::setTrue));
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);

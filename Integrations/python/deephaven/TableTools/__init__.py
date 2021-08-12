@@ -430,6 +430,24 @@ def col(name, *data):
 
 
 @_passThrough
+def colDef(*args):
+    """
+    *Overload 1*  
+      :param columnName: java.lang.String
+      :param dataTypeStr: java.lang.String
+      :return: io.deephaven.db.tables.ColumnDefinition<?>
+      
+    *Overload 2*  
+      :param columnName: java.lang.String
+      :param dataTypeStr: java.lang.String
+      :param componentTypeStr: java.lang.String
+      :return: io.deephaven.db.tables.ColumnDefinition<?>
+    """
+    
+    return _java_type_.colDef(*args)
+
+
+@_passThrough
 def colSource(*args):
     """
     Creates a column of appropriate type, used for creating in-memory tables.
@@ -1032,6 +1050,16 @@ def stringCol(name, *data):
     """
     
     return _java_type_.stringCol(name, *data)
+
+
+@_passThrough
+def tableDef(cols):
+    """
+    :param cols: io.deephaven.db.tables.ColumnDefinition<?>[]
+    :return: io.deephaven.db.tables.TableDefinition
+    """
+    
+    return _java_type_.tableDef(cols)
 
 
 @_passThrough
