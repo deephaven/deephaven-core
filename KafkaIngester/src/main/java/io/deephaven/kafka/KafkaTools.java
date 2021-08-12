@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
@@ -14,6 +18,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.stream.StreamToTableAdapter;
+
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -64,11 +69,6 @@ public class KafkaTools {
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
 
     private static final int CHUNK_SIZE = 2048;
-
-    // offsets in the consumeToTable output
-    private static final int KAFKA_PARTITION_COLUMN_INDEX = 0;
-    private static final int OFFSET_COLUMN_INDEX = 1;
-    private static final int TIMESTAMP_COLUMN_INDEX = 2;
 
     public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
         String action = "setup http client";
@@ -257,14 +257,19 @@ public class KafkaTools {
             valueColumns = null;
         }
 
-        final KeyOrValueProcessor keyProcessor;
-        final KeyOrValueProcessor valueProcessor;
-
+        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
+        getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
         final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
-        final ColumnDefinition<?> partitionColumn = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME_DEFAULT);
-        columnDefinitions.add(partitionFilter == ALL_PARTITIONS ? partitionColumn : partitionColumn.withPartitioning());
-        columnDefinitions.add(ColumnDefinition.ofLong(OFFSET_COLUMN_NAME_DEFAULT));
-        columnDefinitions.add(ColumnDefinition.fromGenericType(TIMESTAMP_COLUMN_NAME_DEFAULT, DBDateTime.class));
+        int[] commonColumnIndices = new int[3];
+        int nextColumnIndex = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (commonColumns[i] != null) {
+                commonColumnIndices[i] = nextColumnIndex++;
+                columnDefinitions.add(commonColumns[0]);
+            } else {
+                commonColumnIndices[i] = -1;
+            }
+        }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
             if (keySchema != null) {
@@ -299,23 +304,27 @@ public class KafkaTools {
         streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
 
 
+        final KeyOrValueProcessor keyProcessor;
         if (keySchema == null) {
             keyProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
         } else {
             keyProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, keyColumnsMap, true);
         }
 
+        final KeyOrValueProcessor valueProcessor;
         if (valueSchema == null) {
             valueProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
         } else {
             valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
         }
 
-        final ConsumerRecordToStreamPublisherAdapter adapter = SimpleConsumerRecordToStreamPublisherAdapter.make(streamPublisher,
-                KAFKA_PARTITION_COLUMN_INDEX,
-                OFFSET_COLUMN_INDEX,
-                TIMESTAMP_COLUMN_INDEX,
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
+                commonColumnIndices[0],
+                commonColumnIndices[1],
+                commonColumnIndices[2],
                 keyProcessor, valueProcessor,
+                Function.identity(),
+                Function.identity(),
                 -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 );
@@ -337,6 +346,101 @@ public class KafkaTools {
         ingester.start();
 
         return streamToTableAdapter.table();
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns) {
+        return consumeJsonToTable(consumerProperties, topic, partitionFilter, partitionToInitialOffset, valueColumns, null);
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns,
+            final Map<String, String> columnNameToJsonField) {
+        final int nCols = 3 + valueColumns.length;
+        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition[nCols];
+        int c = 0;
+        c += getCommonCols(commonColumns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
+        final int[] commonColsIndices = new int[3];
+        int nextColumnIndex = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (commonColumns[i] != null) {
+                commonColsIndices[i] = nextColumnIndex++;
+            } else {
+                commonColsIndices[i] = -1;
+            }
+        }
+        System.arraycopy(valueColumns, 0, commonColumns, c, valueColumns.length);
+        final Map<String, String> valueColumnsMap = new HashMap<>(valueColumns.length);
+        for (final ColumnDefinition<?> colDef : valueColumns) {
+            final String colName = colDef.getName();
+            final String fieldName = (columnNameToJsonField == null) ? colName : columnNameToJsonField.getOrDefault(colName, colName);
+            valueColumnsMap.put(colName, fieldName);
+        }
+
+        final TableDefinition tableDefinition = new TableDefinition(commonColumns);
+
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+        final KeyOrValueProcessor keyProcessor = null; // TODO: Support key as both json or generic.
+        final KeyOrValueProcessor valueProcessor = JsonNodeChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
+
+        final Function<Object, Object> toObjectChunkMapper = (final Object in) -> {
+            final String json;
+            try {
+                json = (String) in;
+            } catch (ClassCastException ex) {
+                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
+            }
+            return JsonNodeUtil.makeJsonNode(json);
+        };
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                streamPublisher,
+                commonColsIndices[0],
+                commonColsIndices[1],
+                commonColsIndices[2],
+                keyProcessor, valueProcessor,
+                toObjectChunkMapper,
+                toObjectChunkMapper,
+                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+        );
+
+        if (!consumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        if (!consumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                consumerProperties,
+                topic,
+                partitionFilter,
+                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
+                    try {
+                        adapter.consumeRecords(records);
+                    } catch (IOException ex) {
+                        throw new UncheckedDeephavenException(ex);
+                    }
+                },
+                partitionToInitialOffset
+        );
+        ingester.start();
+
+        return streamToTableAdapter.table();
+
     }
 
     /**
@@ -382,7 +486,6 @@ public class KafkaTools {
                 false);
         Assert.eq(nCols, "nCols", c, "c");
         final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
-
         final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
 
         final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
@@ -395,8 +498,10 @@ public class KafkaTools {
             }
             return colIdx.getAndIncrement();
         };
-        final ConsumerRecordToStreamPublisherAdapter adapter = SimpleConsumerRecordToStreamPublisherAdapter.make(
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                 streamPublisher,
+                Function.identity(),
+                Function.identity(),
                 orNull.applyAsInt(columns[0]),
                 orNull.applyAsInt(columns[1]),
                 orNull.applyAsInt(columns[2]),

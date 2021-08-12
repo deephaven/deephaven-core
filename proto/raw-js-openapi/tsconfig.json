@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "./build/js-out/typings",
+    "target": "es5",
+    "outDir": "dist",
+    "noEmitOnError": true
+  },
+  "include": [
+    "src"
+  ]
+}

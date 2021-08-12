@@ -1092,6 +1092,15 @@ public class SessionState {
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                switch (this.export.getState()) {
+                    case UNKNOWN:
+                        return;
+                    case RELEASED:
+                    case CANCELLED:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "export already released/cancelled id: " + exportId);
+                    default:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "cannot re-export to existing exportId: " + exportId);
+                }
             }
         }
 

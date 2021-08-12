@@ -6,7 +6,14 @@ import elemental2.dom.DomGlobal;
 import elemental2.dom.Event;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.TableSnapshot;
@@ -14,6 +21,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 
+import java.util.Arrays;
 import java.util.BitSet;
 
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
@@ -227,12 +235,34 @@ public class TableViewportSubscription extends HasEventHandling {
 
     @JsMethod
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
+        //TODO #1039 slice rows and drop columns
         return copy.then(table -> {
             final ClientTableState state = table.state();
+            String[] columnTypes = Arrays.stream(state.getAllColumns())
+                    .map(Column::getType)
+                    .toArray(String[]::new);
+
             final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);
             return Callbacks.<TableSnapshot, String>promise(this, c -> {
-//                table.getConnection().getServer().constructSnapshotQuery(state.getHandle(), rows.getRange(), columnBitset, c);
-                throw new UnsupportedOperationException("constructSnapshotQuery");
+                ResponseStreamWrapper<FlightData> stream = ResponseStreamWrapper.of(table.getConnection().flightServiceClient().doGet(Js.uncheckedCast(state.getHandle().makeTicket()), table.getConnection().metadata()));
+                stream.onData(flightData -> {
+
+                    Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
+                    if (message.headerType() == MessageHeader.Schema) {
+                        // ignore for now, we'll handle this later
+                        return;
+                    }
+                    assert message.headerType() == MessageHeader.RecordBatch;
+                    RecordBatch header = message.header(new RecordBatch());
+                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header, BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), null, true, columnTypes);
+
+                    c.onSuccess(snapshot);
+                });
+                stream.onStatus(status -> {
+                    if (status.getCode() != Code.OK) {
+                        c.onFailure(status.getDetails());
+                    }
+                });
             }).then(defer()).then(snapshot -> {
                 SubscriptionTableData pretendSubscription = new SubscriptionTableData(Js.uncheckedCast(columns), state.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN : state.getRowFormatColumn().getIndex(), null);
                 TableData data = pretendSubscription.handleSnapshot(snapshot);
@@ -241,6 +271,10 @@ public class TableViewportSubscription extends HasEventHandling {
         });
     }
 
+    /**
+     * Instead of a micro-task between chained promises, insert a regular task so that
+     * control is returned to the browser long enough to prevent the UI hanging.
+     */
     private <T> IThenable.ThenOnFulfilledCallbackFn<T, T> defer() {
         return val -> new Promise<>((resolve, reject) -> {
             DomGlobal.setTimeout(ignoreArgs -> resolve.onInvoke(val), 0);

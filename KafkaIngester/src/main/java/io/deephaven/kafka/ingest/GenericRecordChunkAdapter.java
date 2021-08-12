@@ -4,9 +4,8 @@
 
 package io.deephaven.kafka.ingest;
 
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.*;
 import org.apache.avro.generic.GenericRecord;
 
@@ -19,42 +18,14 @@ import java.util.function.IntFunction;
  * Each GenericRecord produces a single row of output, according to the maps of Table column names to Avro field names
  * for the keys and values.
  */
-public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
-    private final boolean allowNulls;
-
-    private final int[] chunkOffsets;
-    private final GenericRecordFieldCopier[] fieldCopiers;
-
+public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
     private GenericRecordChunkAdapter(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
             final Map<String, String> columns,
             final boolean allowNulls) {
-        this.allowNulls = allowNulls;
-
-        final String[] columnNames = definition.getColumnNamesArray();
-        final Class<?>[] columnTypes = definition.getColumnTypesArray();
-
-        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>();
-        for (int ii = 0; ii < columnNames.length; ++ii) {
-            deephavenColumnNameToIndex.put(columnNames[ii], ii);
-        }
-
-        chunkOffsets = new int[columns.size()];
-        fieldCopiers = new GenericRecordFieldCopier[columns.size()];
-
-        int col = 0;
-        for (Map.Entry<String, String> avroDeephavenNamePair : columns.entrySet()) {
-            final int deephavenColumnIndex = deephavenColumnNameToIndex.get(avroDeephavenNamePair.getValue());
-            if (deephavenColumnIndex == deephavenColumnNameToIndex.getNoEntryValue()) {
-                throw new IllegalArgumentException("Column not found in Deephaven table: " + deephavenColumnIndex);
-            }
-
-            chunkOffsets[col] = deephavenColumnIndex;
-            fieldCopiers[col++] = GenericRecordFieldCopier.make(avroDeephavenNamePair.getKey(), chunkTypeForIndex.apply(deephavenColumnIndex), columnTypes[deephavenColumnIndex]);
-        }
+        super(definition, chunkTypeForIndex, columns, allowNulls, GenericRecordChunkAdapter::makeFieldCopier);
     }
-
     /**
      * Create a GenericRecordChunkAdapter.
      *
@@ -73,20 +44,32 @@ public class GenericRecordChunkAdapter implements KeyOrValueProcessor {
                 definition, chunkTypeForIndex, columns, allowNulls);
     }
 
-    @Override
-    public void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values>[] publisherChunks) {
-        if (!allowNulls) {
-            for (int ii = 0; ii < inputChunk.size(); ++ii) {
-                if (inputChunk.get(ii) == null) {
-                    throw new KafkaIngesterException("Null records are not permitted");
+    private static FieldCopier makeFieldCopier(String fieldName, ChunkType chunkType, Class<?> dataType) {
+        switch (chunkType) {
+            case Char:
+                return new GenericRecordCharFieldCopier(fieldName);
+            case Byte:
+                return new GenericRecordByteFieldCopier(fieldName);
+            case Short:
+                return new GenericRecordShortFieldCopier(fieldName);
+            case Int:
+                return new GenericRecordIntFieldCopier(fieldName);
+            case Long:
+                if (dataType == DBDateTime.class) {
+                    throw new UnsupportedOperationException();
                 }
-            }
+                return new GenericRecordLongFieldCopier(fieldName);
+            case Float:
+                return new GenericRecordFloatFieldCopier(fieldName);
+            case Double:
+                return new GenericRecordDoubleFieldCopier(fieldName);
+            case Object:
+                if (dataType == String.class) {
+                    return new GenericRecordStringFieldCopier(fieldName);
+                } else {
+                    return new GenericRecordObjectFieldCopier(fieldName);
+                }
         }
-        for (int cc = 0; cc < chunkOffsets.length; ++cc) {
-            final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
-            final int existingSize = publisherChunk.size();
-            publisherChunk.setSize(existingSize + inputChunk.size());
-            fieldCopiers[cc].copyField(inputChunk, publisherChunk, 0, existingSize, inputChunk.size());
-        }
+        throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }
 }

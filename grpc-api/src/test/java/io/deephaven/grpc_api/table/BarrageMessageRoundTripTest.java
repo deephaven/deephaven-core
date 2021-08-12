@@ -31,16 +31,16 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.grpc_api.arrow.ArrowModule;
+import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
-import io.deephaven.grpc_api.barrage.BarrageModule;
-import io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -56,7 +56,6 @@ import org.junit.experimental.categories.Category;
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
@@ -79,8 +78,6 @@ import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
-    private final BarrageStreamReader STREAM_READER_INSTANCE = new BarrageStreamReader();
-
     private Logger log;
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
@@ -91,7 +88,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     @Singleton
     @Component(modules = {
-            BarrageModule.class
+            ArrowModule.class
     })
     public interface TestComponent {
         BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> getStreamGeneratorFactory();
@@ -167,7 +164,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         private final String name;
 
-        private final BarrageSourcedTable barrageTable;
+        private final BarrageTable barrageTable;
         @ReferentialIntegrity
         private final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer;
 
@@ -196,7 +193,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
-            this.barrageTable = BarrageSourcedTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT, barrageMessageProducer.getTableDefinition(), viewport != null);
+            this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT, barrageMessageProducer.getTableDefinition(), viewport != null);
 
             final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
                     .setIsViewport(viewport != null)
@@ -204,7 +201,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     .build();
             final BarrageMarshaller marshaller = new BarrageMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(), STREAM_READER_INSTANCE);
+                    barrageTable.getWireComponentTypes(), new BarrageStreamReader());
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {
@@ -1146,14 +1143,20 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         @Override
         public void onNext(final BarrageStreamGenerator.View messageView) {
-            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                 final InputStream is = messageView.getInputStream()) {
-                ((Drainable) is).drainTo(baos);
-                final BarrageMessage message = marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                // we skip schema messages, but can't suppress without propagating something...
-                if (message != null) {
-                    receivedCommands.add(message);
-                }
+            try {
+                messageView.forEachStream(inputStream -> {
+                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+                        ((Drainable) inputStream).drainTo(baos);
+                        inputStream.close();
+                        final BarrageMessage message = marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                        // we skip schema messages, but can't suppress without propagating something...
+                        if (message != null) {
+                            receivedCommands.add(message);
+                        }
+                    } catch (final IOException e) {
+                        throw new IllegalStateException("Failed to parse barrage message: ", e);
+                    }
+                });
             } catch (final IOException e) {
                 throw new IllegalStateException("Failed to parse barrage message: ", e);
             }
@@ -1170,7 +1173,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         }
     }
 
-    private static class BarrageMarshaller extends BarrageServiceGrpcBinding.BarrageDataMarshaller<ChunkInputStreamGenerator.Options> {
+    private static class BarrageMarshaller extends FlightServiceGrpcBinding.BarrageDataMarshaller<ChunkInputStreamGenerator.Options> {
         public BarrageMarshaller(final ChunkInputStreamGenerator.Options options,
                                  final ChunkType[] columnChunkTypes,
                                  final Class<?>[] columnTypes,

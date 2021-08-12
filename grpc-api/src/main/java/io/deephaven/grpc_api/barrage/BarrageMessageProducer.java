@@ -126,6 +126,15 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         BarrageMessage getMessage();
 
         /**
+         * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+         *
+         * @param options serialization options for this specific view
+         * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
+         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+         */
+        MessageView getSubView(Options options, boolean isInitialSnapshot);
+
+        /**
          * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
          *
          * @param options serialization options for this specific view
@@ -1170,8 +1179,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 downstream.modColumnData[ci] = modifications;
 
                 if (modColumnSet.get(ci)) {
-                    modifications.rowsModified = firstDelta.update.modified.clone();
-                    modifications.rowsIncluded = firstDelta.recordedMods.clone();
+                    modifications.rowsModified = firstDelta.recordedMods.clone();
 
                     final int chunkCapacity = localModified.intSize("serializeItems");
                     final WritableChunk<Attributes.Values> chunk = deltaColumn.getChunkType().makeWritableChunk(chunkCapacity);
@@ -1181,7 +1189,6 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     modifications.data = chunk;
                 } else {
                     modifications.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
-                    modifications.rowsIncluded = Index.CURRENT_FACTORY.getEmptyIndex();
                     modifications.data = deltaColumn.getChunkType().getEmptyChunk();
                 }
 
@@ -1369,8 +1376,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 if (modColumnSet.get(i)) {
                     final ColumnInfo info = getColumnInfo.apply(i);
-                    modifications.rowsModified = info.modified.clone();
-                    modifications.rowsIncluded = info.recordedMods.clone();
+                    modifications.rowsModified = info.recordedMods.clone();
 
                     final WritableChunk<Attributes.Values> chunk = sourceColumn.getChunkType().makeWritableChunk(info.modifiedMapping.length);
                     try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(info.modifiedMapping.length)) {
@@ -1380,7 +1386,6 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     modifications.data = chunk;
                 } else {
                     modifications.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
-                    modifications.rowsIncluded = Index.CURRENT_FACTORY.getEmptyIndex();
                     modifications.data = sourceColumn.getChunkType().getEmptyChunk();
                 }
 

@@ -1,7 +1,6 @@
 {
  "className": "io.deephaven.kafka.ingest.GenericRecordChunkAdapter",
  "methods": {
-  "handleChunk": "After consuming a set of generic records for a batch that are not raw objects, we pass the keys or values to\n an appropriate handler.  The handler must know its data types and offsets within the publisher chunks, and\n \"copy\" the data from the inputChunk to the appropriate chunks for the stream publisher.\n\n:param inputChunk: (io.deephaven.db.v2.sources.chunk.ObjectChunk<java.lang.Object,io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the chunk containing the keys or values as Kafka deserialized them from the consumer record\n:param publisherChunks: (io.deephaven.db.v2.sources.chunk.WritableChunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>[]) - the output chunks for this table that must be appended to.",
   "make": "Create a GenericRecordChunkAdapter.\n\n:param definition: (io.deephaven.db.tables.TableDefinition) - the definition of the output table\n:param chunkTypeForIndex: (java.util.function.IntFunction<io.deephaven.db.v2.sources.chunk.ChunkType>) - a function from column index to chunk type\n:param columns: (java.util.Map<java.lang.String,java.lang.String>) - a map from Avro field names to Deephaven column names\n:param allowNulls: (boolean) - true if null records should be allowed, if false then an ISE is thrown\n:return: (io.deephaven.kafka.ingest.GenericRecordChunkAdapter) a GenericRecordChunkAdapter for the given definition and column mapping"
  },
  "path": "io.deephaven.kafka.ingest.GenericRecordChunkAdapter",
