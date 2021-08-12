@@ -491,7 +491,7 @@ public class QueryTable extends BaseTable {
             if (isRefreshing()) {
                 return by(new MinMaxByStateFactoryImpl(true), selectColumns);
             } else {
-                return by(new AppendMinMaxByStateFactoryImpl(true), selectColumns);
+                return by(new AddOnlyMinMaxByStateFactoryImpl(true), selectColumns);
             }
         });
     }
@@ -502,7 +502,7 @@ public class QueryTable extends BaseTable {
             if (isRefreshing()) {
                 return by(new MinMaxByStateFactoryImpl(false), selectColumns);
             } else {
-                return by(new AppendMinMaxByStateFactoryImpl(false), selectColumns);
+                return by(new AddOnlyMinMaxByStateFactoryImpl(false), selectColumns);
             }
         });
     }

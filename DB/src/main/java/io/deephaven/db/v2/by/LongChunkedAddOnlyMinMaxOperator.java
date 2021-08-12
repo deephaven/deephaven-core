@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAppendOnlyMinMaxOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAddOnlyMinMaxOperator and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
@@ -8,8 +8,8 @@
 package io.deephaven.db.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.DhShortComparisons;
-import io.deephaven.db.v2.sources.ShortArraySource;
+import io.deephaven.db.util.DhLongComparisons;
+import io.deephaven.db.v2.sources.LongArraySource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.*;
@@ -21,31 +21,32 @@ import java.util.Map;
 /**
  * Iterative average operator.
  */
-class ShortChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
-    private final ShortArraySource resultColumn;
+class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
+    private final LongArraySource resultColumn;
     private final boolean minimum;
     private final String name;
 
-    ShortChunkedAppendOnlyMinMaxOperator(
+    LongChunkedAddOnlyMinMaxOperator(
             // region extra constructor params
+            Class<?> type,
             // endregion extra constructor params
             boolean minimum, String name) {
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        this.resultColumn = new ShortArraySource();
+        this.resultColumn = new LongArraySource();
         // endregion resultColumn initialization
     }
 
-    private short min(ShortChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private long min(LongChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull = 0;
-        short value = QueryConstants.NULL_SHORT;
+        long value = QueryConstants.NULL_LONG;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
-            final short candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_SHORT) {
+            final long candidate = values.get(ii);
+            if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhShortComparisons.lt(candidate, value)) {
+                } else if (DhLongComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -54,15 +55,15 @@ class ShortChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         return value;
     }
 
-    private short max(ShortChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private long max(LongChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull =0;
-        short value = QueryConstants.NULL_SHORT;
+        long value = QueryConstants.NULL_LONG;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
-            final short candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_SHORT) {
+            final long candidate = values.get(ii);
+            if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhShortComparisons.gt(candidate, value)) {
+                } else if (DhLongComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -71,21 +72,21 @@ class ShortChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         return value;
     }
 
-    private short min(short a, short b) {
-        return DhShortComparisons.lt(a, b) ? a : b;
+    private long min(long a, long b) {
+        return DhLongComparisons.lt(a, b) ? a : b;
     }
 
-    private short max(short a, short b) {
-        return DhShortComparisons.gt(a, b) ? a : b;
+    private long max(long a, long b) {
+        return DhLongComparisons.gt(a, b) ? a : b;
     }
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final ShortChunk<? extends Values> asShortChunk = values.asShortChunk();
+        final LongChunk<? extends Values> asLongChunk = values.asLongChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(asShortChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii, addChunk(asLongChunk, destination, startPosition, length.get(ii)));
         }
     }
 
@@ -101,7 +102,7 @@ class ShortChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
-        return addChunk(values.asShortChunk(), destination, 0, values.size());
+        return addChunk(values.asLongChunk(), destination, 0, values.size());
     }
 
     @Override
@@ -114,27 +115,27 @@ class ShortChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         throw new UnsupportedOperationException();
     }
 
-    private boolean addChunk(ShortChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean addChunk(LongChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         if (chunkSize == 0) {
             return false;
         }
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
-        final short chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd) : max(values, chunkNonNull, chunkStart, chunkEnd);
+        final long chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd) : max(values, chunkNonNull, chunkStart, chunkEnd);
         if (chunkNonNull.intValue() == 0) {
             return false;
         }
 
-        final short result;
-        final short oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == QueryConstants.NULL_SHORT) {
+        final long result;
+        final long oldValue = resultColumn.getUnsafe(destination);
+        if (oldValue == QueryConstants.NULL_LONG) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhShortComparisons.eq(result, oldValue)) {
+        if (!DhLongComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {
