@@ -15,7 +15,7 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
-    public final Class<Character> primitiveClass() {
+    public final Class<Character> clazz() {
         return char.class;
     }
 

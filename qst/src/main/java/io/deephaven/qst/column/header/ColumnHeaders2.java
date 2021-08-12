@@ -51,7 +51,7 @@ public abstract class ColumnHeaders2<T1, T2> implements TableHeader.Buildable {
 
         Rows(int initialCapacity) {
             others = header1().start(initialCapacity);
-            builder = Array.builder(header2().type(), initialCapacity);
+            builder = Array.builder(header2().componentType(), initialCapacity);
         }
 
         public final Rows row(T1 a, T2 b) {

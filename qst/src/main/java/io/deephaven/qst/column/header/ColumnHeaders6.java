@@ -53,7 +53,7 @@ public abstract class ColumnHeaders6<T1, T2, T3, T4, T5, T6> implements TableHea
 
         Rows(int initialCapacity) {
             others = others().start(initialCapacity);
-            builder = Array.builder(header6().type(), initialCapacity);
+            builder = Array.builder(header6().componentType(), initialCapacity);
         }
 
         public final Rows row(T1 a, T2 b, T3 c, T4 d, T5 e, T6 f) {

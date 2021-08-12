@@ -1,6 +1,7 @@
 package io.deephaven.qst.type;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A type.
@@ -12,19 +13,29 @@ import java.util.List;
 public interface Type<T> {
 
     /**
-     * Finds the {@link #knownTypes() known type}, or else creates a {@link CustomType custom type}.
+     * Finds the {@link #knownTypes() known type}, or else creates the relevant
+     * {@link NativeArrayType native array type} or {@link CustomType custom type}.
      *
      * @param clazz the class
      * @param <T> the generic type of {@code clazz}
      * @return the type
      */
     static <T> Type<T> find(Class<T> clazz) {
-        return TypeHelper.findStatic(clazz).orElseGet(() -> CustomType.of(clazz));
+        Optional<Type<T>> found = TypeHelper.findStatic(clazz);
+        if (found.isPresent()) {
+            return found.get();
+        }
+        if (clazz.isArray()) {
+            return NativeArrayType.of(clazz, find(clazz.getComponentType()));
+        }
+        return found.orElseGet(() -> CustomType.of(clazz));
     }
 
     /**
-     * The list of known types. Includes the universe of all {@link PrimitiveType primitive types}
-     * and {@link GenericType generic types}, except for {@link CustomType custom types}.
+     * The list of known types. Includes the universe of {@link PrimitiveType primitive types} and
+     * {@link GenericType generic types} minus {@link CustomType custom types} and {@link ArrayType
+     * array types}. and non {@linkplain ArrayType array-type} / non-{@linkplain CustomType}
+     * {@link GenericType generic types}, except for {@link CustomType custom types}.
      *
      * @return the list of known types
      */
@@ -133,9 +144,21 @@ public interface Type<T> {
         return CustomType.of(clazz);
     }
 
-    <V extends Visitor> V walk(V visitor);
+    /**
+     * The class representing {@code this} type.
+     *
+     * @return the class
+     */
+    Class<T> clazz();
 
-    T castValue(Object value);
+    /**
+     * Create a {@link NativeArrayType native array type} with {@code this} as the component type.
+     *
+     * @return the native array type
+     */
+    NativeArrayType<?, T> arrayType();
+
+    <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
         void visit(PrimitiveType<?> primitiveType);

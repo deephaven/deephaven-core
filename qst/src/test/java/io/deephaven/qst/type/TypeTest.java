@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static io.deephaven.qst.type.Type.booleanType;
 import static io.deephaven.qst.type.Type.byteType;
@@ -20,7 +19,6 @@ import static io.deephaven.qst.type.Type.ofCustom;
 import static io.deephaven.qst.type.Type.shortType;
 import static io.deephaven.qst.type.Type.stringType;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class TypeTest {
 
@@ -95,6 +93,85 @@ public class TypeTest {
     }
 
     @Test
+    void booleanArrayType() {
+        assertThat(find(boolean[].class)).isEqualTo(NativeArrayType.booleanArrayType());
+    }
+
+    @Test
+    void byteArrayType() {
+        assertThat(find(byte[].class)).isEqualTo(NativeArrayType.byteArrayType());
+    }
+
+    @Test
+    void charArrayType() {
+        assertThat(find(char[].class)).isEqualTo(NativeArrayType.charArrayType());
+    }
+
+    @Test
+    void shortArrayType() {
+        assertThat(find(short[].class)).isEqualTo(NativeArrayType.shortArrayType());
+    }
+
+    @Test
+    void intArrayType() {
+        assertThat(find(int[].class)).isEqualTo(NativeArrayType.intArrayType());
+    }
+
+    @Test
+    void longArrayType() {
+        assertThat(find(long[].class)).isEqualTo(NativeArrayType.longArrayType());
+    }
+
+    @Test
+    void floatArrayType() {
+        assertThat(find(float[].class)).isEqualTo(NativeArrayType.floatArrayType());
+    }
+
+    @Test
+    void doubleArrayType() {
+        assertThat(find(double[].class)).isEqualTo(NativeArrayType.doubleArrayType());
+    }
+
+    @Test
+    void nestedPrimitive2x() {
+        assertThat(find(int[][].class)).isEqualTo(
+            NativeArrayType.of(int[][].class, NativeArrayType.of(int[].class, IntType.instance())));
+    }
+
+    @Test
+    void nestedPrimitive3x() {
+        assertThat(find(int[][][].class))
+            .isEqualTo(NativeArrayType.of(int[][][].class, NativeArrayType.of(int[][].class,
+                NativeArrayType.of(int[].class, IntType.instance()))));
+    }
+
+    @Test
+    void nestedStatic2x() {
+        assertThat(find(String[][].class)).isEqualTo(NativeArrayType.of(String[][].class,
+            NativeArrayType.of(String[].class, StringType.instance())));
+    }
+
+    @Test
+    void nestedStatic3x() {
+        assertThat(find(String[][][].class))
+            .isEqualTo(NativeArrayType.of(String[][][].class, NativeArrayType.of(String[][].class,
+                NativeArrayType.of(String[].class, StringType.instance()))));
+    }
+
+    @Test
+    void nestedCustom2x() {
+        assertThat(find(Custom[][].class)).isEqualTo(NativeArrayType.of(Custom[][].class,
+            NativeArrayType.of(Custom[].class, CustomType.of(Custom.class))));
+    }
+
+    @Test
+    void nestedCustom3x() {
+        assertThat(find(Custom[][][].class))
+            .isEqualTo(NativeArrayType.of(Custom[][][].class, NativeArrayType.of(Custom[][].class,
+                NativeArrayType.of(Custom[].class, CustomType.of(Custom.class)))));
+    }
+
+    @Test
     void nonEqualityCheck() {
         final List<Type<?>> staticTypes = knownTypes();
         final int L = staticTypes.size();
@@ -103,16 +180,6 @@ public class TypeTest {
                 assertThat(staticTypes.get(i)).isNotEqualTo(staticTypes.get(j));
                 assertThat(staticTypes.get(j)).isNotEqualTo(staticTypes.get(i));
             }
-        }
-    }
-
-    @Test
-    void castThrowsExceptionOnInvalidAssignment() {
-        try {
-            String s = StringType.instance().castValue(1L);
-            failBecauseExceptionWasNotThrown(ClassCastException.class);
-        } catch (ClassCastException e) {
-            // expected
         }
     }
 

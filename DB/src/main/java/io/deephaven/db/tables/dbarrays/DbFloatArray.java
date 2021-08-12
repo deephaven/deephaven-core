@@ -8,10 +8,12 @@
 package io.deephaven.db.tables.dbarrays;
 
 import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.FloatChunk;
 import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.FloatChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.libs.primitives.FloatPrimitives;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
+import io.deephaven.qst.type.FloatType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +23,10 @@ import java.util.Arrays;
 public interface DbFloatArray extends DbArrayBase<DbFloatArray> {
 
     long serialVersionUID = -1889118072737983807L;
+
+    static DbPrimitiveArrayType<DbFloatArray, Float> type() {
+        return DbPrimitiveArrayType.of(DbFloatArray.class, FloatType.instance());
+    }
 
     float get(long i);
 

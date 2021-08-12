@@ -8,6 +8,8 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +19,11 @@ import java.util.Objects;
 
 @Deprecated
 public interface DbBooleanArray extends DbArrayBase {
+
+    static DbPrimitiveArrayType<DbBooleanArray, Boolean> type() {
+        return DbPrimitiveArrayType.of(DbBooleanArray.class, BooleanType.instance());
+    }
+
     Boolean get(long i);
     DbBooleanArray subArray(long fromIndex, long toIndex);
     DbBooleanArray subArrayByPositions(long [] positions);

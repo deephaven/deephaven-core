@@ -15,7 +15,7 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
-    public final Class<Byte> primitiveClass() {
+    public final Class<Byte> clazz() {
         return byte.class;
     }
 

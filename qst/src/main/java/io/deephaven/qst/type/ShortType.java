@@ -15,7 +15,7 @@ public abstract class ShortType extends PrimitiveTypeBase<Short> {
     }
 
     @Override
-    public final Class<Short> primitiveClass() {
+    public final Class<Short> clazz() {
         return short.class;
     }
 

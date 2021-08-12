@@ -15,7 +15,7 @@ public abstract class FloatType extends PrimitiveTypeBase<Float> {
     }
 
     @Override
-    public final Class<Float> primitiveClass() {
+    public final Class<Float> clazz() {
         return float.class;
     }
 

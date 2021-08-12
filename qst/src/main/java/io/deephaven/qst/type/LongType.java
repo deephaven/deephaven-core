@@ -15,7 +15,7 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
-    public final Class<Long> primitiveClass() {
+    public final Class<Long> clazz() {
         return long.class;
     }
 

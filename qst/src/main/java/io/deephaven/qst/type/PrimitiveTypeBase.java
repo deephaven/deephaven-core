@@ -7,4 +7,9 @@ public abstract class PrimitiveTypeBase<T> extends ColumnTypeBase<T> implements 
         visitor.visit(this);
         return visitor;
     }
+
+    @Override
+    public final NativeArrayType<?, T> arrayType() {
+        return NativeArrayType.toArrayType(this);
+    }
 }
