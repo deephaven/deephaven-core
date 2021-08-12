@@ -6,8 +6,6 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.Objects;
-
 public class JsonNodeStringFieldCopier implements FieldCopier {
     private final String fieldName;
 

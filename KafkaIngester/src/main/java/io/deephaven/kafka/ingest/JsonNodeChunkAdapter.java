@@ -43,6 +43,9 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
             case Char:
                 return new JsonNodeCharFieldCopier(fieldName);
             case Byte:
+                if (dataType == Boolean.class) {
+                    return new JsonNodeBooleanFieldCopier(fieldName);
+                }
                 return new JsonNodeByteFieldCopier(fieldName);
             case Short:
                 return new JsonNodeShortFieldCopier(fieldName);
