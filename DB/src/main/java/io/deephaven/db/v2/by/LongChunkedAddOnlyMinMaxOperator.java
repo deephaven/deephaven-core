@@ -7,9 +7,13 @@
 
 package io.deephaven.db.v2.by;
 
+import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.v2.sources.DateTimeArraySource;
+import io.deephaven.db.v2.sources.LongArraySource;
+
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.util.DhLongComparisons;
-import io.deephaven.db.v2.sources.LongArraySource;
+import io.deephaven.db.v2.sources.AbstractLongArraySource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.*;
@@ -22,7 +26,7 @@ import java.util.Map;
  * Iterative average operator.
  */
 class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
-    private final LongArraySource resultColumn;
+    private final AbstractLongArraySource resultColumn;
     private final boolean minimum;
     private final String name;
 
@@ -34,7 +38,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        this.resultColumn = new LongArraySource();
+        resultColumn = type == DBDateTime.class ? new DateTimeArraySource() : new LongArraySource();
         // endregion resultColumn initialization
     }
 
