@@ -11,7 +11,10 @@ import io.deephaven.db.v2.sources.chunk.util.LongChunkIterator;
 import org.jetbrains.annotations.NotNull;
 
 public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
-    // how many entries in redirections are actually valid
+
+    /**
+     * {@link Index} used to map from outer key (position in the index) to inner key.
+     */
     private final Index wrappedIndex;
 
     public WrappedIndexRedirectionIndexImpl(final Index wrappedIndex) {
