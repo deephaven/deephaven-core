@@ -454,8 +454,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             final Table cj = left.naturalJoin(right, "Symbol");
             TableTools.showWithIndex(cj);
             fail("Expected exception.");
-        } catch (RuntimeException rte) {
-            assertEquals("More than one right side mapping for A", rte.getMessage());
+        } catch (IllegalStateException e) {
+            assertEquals("More than one right side mapping for A", e.getMessage());
         }
 
         // build from left
@@ -465,10 +465,75 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             final Table cj2 = left2.naturalJoin(right2, "Symbol");
             TableTools.showWithIndex(cj2);
             fail("Expected exception");
-        } catch (RuntimeException rte) {
-            assertEquals("More than one right side mapping for A", rte.getMessage());
+        } catch (IllegalStateException e) {
+            assertEquals("More than one right side mapping for A", e.getMessage());
         }
     }
+
+    public void testNaturalJoinDuplicateRightsRefreshingRight() {
+        // initial case
+        final Table left = testTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
+        final Table right = testRefreshingTable(c("Symbol", "A", "A"), c("RightSentinel", 10, 11));
+
+        try {
+            final Table cj = left.naturalJoin(right, "Symbol");
+            TableTools.showWithIndex(cj);
+            fail("Expected exception.");
+        } catch (IllegalStateException rte) {
+            assertEquals("Duplicate right key for A", rte.getMessage());
+        }
+
+        // bad right key added
+        final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
+        final Table cj2 = left.naturalJoin(right2, "Symbol");
+        assertTableEquals(newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)), cj2);
+
+        final ErrorListener listener = new ErrorListener((DynamicTable)cj2);
+        ((DynamicTable) cj2).listenForUpdates(listener);
+
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(right2, i(3), c("Symbol", "A"), intCol("RightSentinel", 10));
+                right2.notifyListeners(i(3), i(), i());
+            });
+        }
+
+        assertNotNull(listener.originalException);
+        assertEquals("Duplicate right key for A", listener.originalException.getMessage());
+    }
+
+    public void testNaturalJoinDuplicateRightsRefreshingBoth() {
+        // build from right
+        final Table left = testRefreshingTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
+        final Table right = testRefreshingTable(c("Symbol", "A", "A"), c("RightSentinel", 10, 11));
+
+        try {
+            final Table cj = left.naturalJoin(right, "Symbol");
+            TableTools.showWithIndex(cj);
+            fail("Expected exception.");
+        } catch (IllegalStateException rte) {
+            assertEquals("Duplicate right key for A", rte.getMessage());
+        }
+
+        // bad right key added
+        final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
+        final Table cj2 = left.naturalJoin(right2, "Symbol");
+        assertTableEquals(newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)), cj2);
+
+        final ErrorListener listener = new ErrorListener((DynamicTable)cj2);
+        ((DynamicTable) cj2).listenForUpdates(listener);
+
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(right2, i(3), c("Symbol", "A"), intCol("RightSentinel", 10));
+                right2.notifyListeners(i(3), i(), i());
+            });
+        }
+
+        assertNotNull(listener.originalException);
+        assertEquals("Duplicate right key for A", listener.originalException.getMessage());
+    }
+
 
     public void testNaturalJoinReinterprets() {
         final Table left = testTable(c("JBool", true, false, null, true), c("LeftSentinel", 1, 2, 3, 4));

@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2.by;
 
 import io.deephaven.base.verify.Require;
@@ -466,7 +469,10 @@ class StaticChunkedByAggregationStateManager
         // region build start
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // Index keys extracted from the input index, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedKeyIndices> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
