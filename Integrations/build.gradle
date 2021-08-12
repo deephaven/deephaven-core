@@ -35,9 +35,7 @@ sourceSets {
         resources.srcDirs = ['src/main/resources']
     }
     test {
-        java.srcDirs = []
-        // TODO: test doesn't compile
-        //java.srcDirs = ['src/test/java']
+        java.srcDirs = ['src/test/java']
         resources.srcDirs = ['test_python', 'src/test/resources']
     }
 }
