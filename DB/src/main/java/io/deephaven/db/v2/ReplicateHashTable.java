@@ -244,8 +244,18 @@ public class ReplicateHashTable {
 
         final String sourcePackage = sourceClass.getPackage().getName();
         final String destinationPackage = destinationClass.getPackage().getName();
-        final String rewritePackage = rewrittenLines.get(0).replace(sourcePackage, destinationPackage);
-        rewrittenLines.set(0, rewritePackage);
+
+        int packageLine;
+        for (packageLine = 0; packageLine < 10; ++packageLine) {
+            if (rewrittenLines.get(packageLine).startsWith("package")) {
+                final String rewritePackage = rewrittenLines.get(packageLine).replace(sourcePackage, destinationPackage);
+                rewrittenLines.set(packageLine, rewritePackage);
+                break;
+            }
+        }
+        if (packageLine == 10) {
+            throw new RuntimeException("Could not find package line to rewrite for " + destinationClass);
+        }
 
         FileUtils.writeLines(destinationFile, rewrittenLines);
         System.out.println("Wrote: " + destinationPath);

@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
