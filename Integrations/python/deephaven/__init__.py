@@ -135,7 +135,8 @@ from .start_jvm import start_jvm
 Figure = None  # variable for initialization
 PlottingConvenience = None  # variable for initialization
 
-DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
+if jpy.has_jvm():
+    DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 def verifyPicklingCompatibility(otherPythonVersion):
     """
