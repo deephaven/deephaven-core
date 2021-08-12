@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter",
+ "methods": {
+  "consumeRecords": "Consume a List of Kafka records, producing zero or more rows in the output.\n\n:param extend: java.util.List<?"
+ },
+ "path": "io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter",
+ "text": "Converter from a stream of Kafka records to a Deephaven StreamPublisher.",
+ "typeName": "interface"
+}

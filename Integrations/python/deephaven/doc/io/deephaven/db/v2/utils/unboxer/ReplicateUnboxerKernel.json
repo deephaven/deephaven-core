@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.v2.utils.unboxer.ReplicateUnboxerKernel",
+ "methods": {
+  "main": ":param args: java.lang.String[]"
+ },
+ "path": "io.deephaven.db.v2.utils.unboxer.ReplicateUnboxerKernel",
+ "typeName": "class"
+}
