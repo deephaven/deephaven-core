@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.qst.table.TableSpec",
  "methods": {
+  "depth": "The depth of the table is the maximum depth of its dependencies plus one. A table with no\n dependencies has a depth of zero.\n\n:return: (int) the depth",
   "empty": ":param size: long\n:return: io.deephaven.qst.table.EmptyTable",
   "file": "Create a table via java deserialization.\n\n \n Note: stability of the format is not guaranteed.\n\n:param path: (java.nio.file.Path) - the path to the file\n:return: (io.deephaven.qst.table.TableSpec) the table",
   "merge": "*Overload 1*  \n  :param tables: io.deephaven.qst.table.TableSpec...\n  :return: io.deephaven.qst.table.TableSpec\n  \n*Overload 2*  \n  :param tables: java.util.Collection<? extendsio.deephaven.qst.table.TableSpec>\n  :return: io.deephaven.qst.table.TableSpec",
