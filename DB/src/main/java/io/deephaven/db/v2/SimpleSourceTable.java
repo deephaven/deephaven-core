@@ -19,7 +19,7 @@ import java.util.Set;
 public class SimpleSourceTable extends SourceTable {
 
     /**
-     * @param tableDefinition    A TableDefinition
+     * @param tableDefinition     A TableDefinition
      * @param description        A human-readable description for this table
      * @param componentFactory   A component factory for creating column source managers
      * @param locationProvider   A TableLocationProvider, for use in discovering the locations that compose this table

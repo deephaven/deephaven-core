@@ -4,8 +4,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,7 +26,7 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
     /**
      * Get a single float from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (float) index in the table's address space
      * @return The float value at the specified element (float) index
@@ -34,20 +36,22 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
     }
 
     @Override
-    default Class<?> getNativeType() {
-        return float.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Float;
     }
 
-    static <ATTR extends Any> ColumnRegionFloat.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionFloat<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionFloat<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionFloat.Null INSTANCE = new ColumnRegionFloat.Null();
+        private static final ColumnRegionFloat DEFAULT_INSTANCE = new ColumnRegionFloat.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -56,11 +60,14 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionFloat<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionFloat<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final float value;
 
-        public Constant(final float value) {
+        public Constant(final long pageMask, final float value) {
+            super(pageMask);
             this.value = value;
         }
 
@@ -74,6 +81,25 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
             final int offset = destination.size();
             destination.asWritableFloatChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionFloat<ATTR>>
+            implements ColumnRegionFloat<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionFloat<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public float getFloat(final long elementIndex) {
+            return lookupRegion(elementIndex).getFloat(elementIndex);
+        }
+
+        @Override
+        public float getFloat(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getFloat(context, elementIndex);
         }
     }
 }

@@ -420,6 +420,13 @@ public abstract class TableBase implements TableSpec {
             .addAllAggregations(aggregations).build();
     }
 
+    @Override
+    public final String toString() {
+        // the auto-generated toString methods aren't very useful; and being recursive, they can
+        // cause stack overflow exceptions that hide other errors in unit tests
+        return super.toString();
+    }
+
     private static Collection<String> split(String string) {
         return string.trim().isEmpty() ? Collections.emptyList()
             : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())

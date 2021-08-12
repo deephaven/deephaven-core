@@ -156,7 +156,7 @@ public interface Chunk<ATTR extends Any> {
      *          upper bound wildcard.
      */
 
-    static <ATTR extends Any, ATTR_DERIV extends ATTR> Chunk<ATTR_DERIV> downcast(Chunk<ATTR> self) {
+    static <ATTR extends Any, ATTR_DERIV extends ATTR> Chunk<ATTR_DERIV> downcast(Chunk<? extends ATTR> self) {
         //noinspection unchecked
         return (Chunk<ATTR_DERIV>) self;
     }

@@ -1100,6 +1100,12 @@ def timeTable(*args):
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.db.v2.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.db.tables.Table) time table
+      
+    *Overload 13*  
+      :param timeProvider: (io.deephaven.db.v2.utils.TimeProvider) - the time provider
+      :param startTime: (io.deephaven.db.tables.utils.DBDateTime) - start time for adding new rows
+      :param periodNanos: (long) - time interval between new row additions in nanoseconds.
+      :return: (io.deephaven.db.tables.Table) time table
     """
     
     return _java_type_.timeTable(*args)

@@ -18,7 +18,6 @@ from ..conversion_utils import _isJavaType, _isStr
 
 _java_type_ = None  # None until the first _defineSymbols() call
 
-
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
@@ -51,6 +50,7 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+
 @_passThrough
 def dictToProperties(dict):
     JProps = jpy.get_type("java.util.Properties")
@@ -59,8 +59,25 @@ def dictToProperties(dict):
         r.setProperty(key, value)
     return r
 
+
 @_passThrough
-def _custom_simpleConsumeToTable(*args):
+def _custom_avroSchemaToColumnDefinitions(*args):
+    if len(args) == 0:
+        raise Exception('not enough arguments')
+    if len(args) == 1:
+        return _java_type_.avroSchemaToColumnDefinitions(args[0])
+    if len(args) == 2:
+        schema = args[0]
+        dict = args[1];
+        fieldNamesArray = jpy.array('java.lang.String', dict.keys())
+        columnNamesArray = jpy.array('java.lang.String', dict.values())
+        mapping = _java_type_.fieldNameMappingFromParallelArrays(fieldNamesArray, columnNamesArray)
+        return _java_type_.avroSchemaToColumnDefinitions(schema, mapping)
+    raise Exception('too many arguments: ' + len(args))
+
+
+@_passThrough
+def _commonKafkaArgs(args):
     if len(args) < 2:
         raise Exception('not enough arguments')
     kafkaConsumerPropertiesDict = args[0]
@@ -90,11 +107,29 @@ def _custom_simpleConsumeToTable(*args):
     else:
         partitionToInitialOffset = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
 
-    return _java_type_.simpleConsumeToTable(
+    return [
         dictToProperties(kafkaConsumerPropertiesDict),
         topicName,
         partitionFilter,
-        partitionToInitialOffset)
+        partitionToInitialOffset
+    ]
+
+
+@_passThrough
+def consumeToTable(*args, **kwargs):
+    r = _commonKafkaArgs(args)
+    if 'key_avro_schema' in kwargs:
+        key_avro_schema = kwargs['key_avro_schema']
+    else:
+        key_avro_schema = None
+    if 'value_avro_schema' in kwargs:
+        value_avro_schema = kwargs['value_avro_schema']
+    else:
+        value_avro_schema = None
+    if (key_avro_schema == None and value_avro_schema == None):
+        return _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
+    mapping = getattr(_java_type_, 'DIRECT_MAPPING')
+    return _java_type_.consumeToTable(r[0], r[1], r[2], r[3], key_avro_schema, mapping, value_avro_schema, mapping)
 
 
 # Define all of our functionality, if currently possible
@@ -102,6 +137,51 @@ try:
     _defineSymbols()
 except Exception as e:
     pass
+
+@_passThrough
+def avroSchemaToColumnDefinitions(*args):
+    """
+    *Overload 1*  
+      :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
+      :param schema: org.apache.avro.Schema
+      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+      
+    *Overload 2*  
+      :param schema: org.apache.avro.Schema
+      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+      
+    *Overload 3*  
+      :param schema: org.apache.avro.Schema
+      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
+    """
+    
+    return _java_type_.avroSchemaToColumnDefinitions(*args)
+
+
+@_passThrough
+def fieldNameMappingFromParallelArrays(fieldNames, columnNames):
+    """
+    :param fieldNames: java.lang.String[]
+    :param columnNames: java.lang.String[]
+    :return: java.util.function.Function<java.lang.String,java.lang.String>
+    """
+    
+    return _java_type_.fieldNameMappingFromParallelArrays(fieldNames, columnNames)
+
+
+@_passThrough
+def getAvroSchema(schemaServerUrl, resourceName, version):
+    """
+    :param schemaServerUrl: java.lang.String
+    :param resourceName: java.lang.String
+    :param version: java.lang.String
+    :return: org.apache.avro.Schema
+    """
+    
+    return _java_type_.getAvroSchema(schemaServerUrl, resourceName, version)
+
 
 @_passThrough
 def partitionFilterFromArray(partitions):
@@ -122,28 +202,3 @@ def partitionToOffsetFromParallelArrays(partitions, offsets):
     """
     
     return _java_type_.partitionToOffsetFromParallelArrays(partitions, offsets)
-
-
-@_passThrough
-def simpleConsumeToTable(*args):
-    """
-    *Overload 1*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :param partitionFilter: java.util.function.IntPredicate
-      :param partitionToInitialOffset: java.util.function.IntToLongFunction
-      :return: io.deephaven.db.tables.Table
-      
-    *Overload 2*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :param partitionFilter: java.util.function.IntPredicate
-      :return: io.deephaven.db.tables.Table
-      
-    *Overload 3*  
-      :param kafkaConsumerProperties: java.util.Properties
-      :param topic: java.lang.String
-      :return: io.deephaven.db.tables.Table
-    """
-    
-    return _custom_simpleConsumeToTable(*args)

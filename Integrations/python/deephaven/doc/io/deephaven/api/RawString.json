@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.RawString",
+ "methods": {
+  "not": ":return: io.deephaven.api.filter.FilterNot",
+  "of": ":param x: java.lang.String\n:return: io.deephaven.api.RawString",
+  "value": ":return: java.lang.String",
+  "walk": "*Overload 1*  \n  Note: Java generics information - <V extends io.deephaven.api.expression.Expression.Visitor>\n  \n  :param visitor: V\n  :return: V\n  \n*Overload 2*  \n  Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n  \n  :param visitor: V\n  :return: V"
+ },
+ "path": "io.deephaven.api.RawString",
+ "text": "An un-parsed string; used for cases where the server has string-parsing that hasn't been\n structurally represented at the api layer yet.",
+ "typeName": "class"
+}

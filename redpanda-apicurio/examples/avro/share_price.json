@@ -1,0 +1,8 @@
+{ "type" : "record",
+  "namespace" : "io.deephaven.examples",
+  "name" : "share_price",
+  "fields" : [
+    { "name" : "Symbol", "type" : "string" },
+    { "name" : "Price",  "type" : "double" }
+  ]
+}

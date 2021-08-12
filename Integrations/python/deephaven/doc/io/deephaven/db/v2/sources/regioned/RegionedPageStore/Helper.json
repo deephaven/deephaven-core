@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.RegionedPageStore$Helper",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.regioned.RegionedPageStore.Helper",
- "typeName": "class"
-}

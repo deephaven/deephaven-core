@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.table.SnapshotTable",
+ "methods": {
+  "base": ":return: io.deephaven.qst.table.TableSpec",
+  "builder": ":return: io.deephaven.qst.table.SnapshotTable.Builder",
+  "doInitialSnapshot": ":return: boolean",
+  "stampColumns": ":return: java.util.List<io.deephaven.api.ColumnName>",
+  "trigger": ":return: io.deephaven.qst.table.TableSpec",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.SnapshotTable",
+ "typeName": "class"
+}

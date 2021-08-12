@@ -2,7 +2,6 @@ package io.deephaven.db.v2.locations.local;
 
 import io.deephaven.db.v2.locations.TableDataException;
 import io.deephaven.db.v2.locations.impl.TableLocationKeyFinder;
-import io.deephaven.db.v2.locations.local.PrivilegedFileAccessUtil;
 import io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,12 +28,16 @@ public final class FlatParquetLayout implements TableLocationKeyFinder<ParquetTa
         this.tableRootDirectory = tableRootDirectory;
     }
 
+    public String toString() {
+        return FlatParquetLayout.class.getSimpleName() + '[' + tableRootDirectory + ']';
+    }
+
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         PrivilegedFileAccessUtil.doFilesystemAction(() -> {
             try (final DirectoryStream<Path> parquetFileStream = Files.newDirectoryStream(tableRootDirectory.toPath(), "*" + PARQUET_FILE_EXTENSION)) {
                 for (final Path parquetFilePath : parquetFileStream) {
-                    locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), null));
+                    locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), 0, null));
                 }
             } catch (final IOException e) {
                 throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);

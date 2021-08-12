@@ -1,11 +1,9 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.stream.StreamConsumer;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -39,12 +37,11 @@ public class KafkaIngester {
     private static final long MAX_ERRS = Configuration.getInstance().getLongForClassWithDefault(
             KafkaIngester.class, "maxErrs", 500);
     private final KafkaConsumer<?, ?> consumer;
-    private StreamConsumer streamConsumer;
     @NotNull
     private final Logger log;
     private final String topic;
     private final String partitionDescription;
-    private final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer;
+    private final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer;
     private final String logPrefix;
     private long messagesProcessed = 0;
     private long messagesWithErr = 0;
@@ -162,7 +159,7 @@ public class KafkaIngester {
     public KafkaIngester(final Logger log,
                          final Properties props,
                          final String topic,
-                         final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer,
+                         final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer,
                          final IntToLongFunction partitionToInitialSeekOffset) {
         this(log, props, topic, ALL_PARTITIONS, partitionToConsumer, partitionToInitialSeekOffset);
     }
@@ -183,11 +180,11 @@ public class KafkaIngester {
      *                                      if seek to beginning is intended.
      */
     @SuppressWarnings("rawtypes")
-    public KafkaIngester(final Logger log,
+    public KafkaIngester(@NotNull final Logger log,
                          final Properties props,
                          final String topic,
                          final IntPredicate partitionFilter,
-                         final IntFunction<Consumer<ConsumerRecord<?, ?>>> partitionToConsumer,
+                         final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer,
                          final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
@@ -300,11 +297,15 @@ public class KafkaIngester {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex).append(", aborting.");
             return false;
         }
-        for (final ConsumerRecord<?, ?> record : records) {
-            final int partition = record.partition();
-            final Consumer<ConsumerRecord<?, ?>> consumer = partitionToConsumer.apply(partition);
+
+        for (final TopicPartition topicPartition : records.partitions()) {
+            final int partition = topicPartition.partition();
+            final Consumer<List<? extends ConsumerRecord<?, ?>>> consumer = partitionToConsumer.apply(partition);
+
+            final List<? extends ConsumerRecord<?, ?>> partitionRecords = records.records(topicPartition);
+
             try {
-                consumer.accept(record);
+                consumer.accept(partitionRecords);
             } catch (Exception ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex);
@@ -314,7 +315,7 @@ public class KafkaIngester {
                 }
                 continue;
             }
-            ++messagesProcessed;
+            messagesProcessed += partitionRecords.size();
         }
         return false;
     }

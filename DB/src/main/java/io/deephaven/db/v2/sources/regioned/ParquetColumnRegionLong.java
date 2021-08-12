@@ -10,32 +10,19 @@ import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link ColumnRegionLong} implementation for regions that support fetching primitive longs from a
- * {@link ColumnChunkPageStore}.
+ * {@link ColumnRegionLong} implementation for regions that support fetching primitive longs from
+ * {@link ColumnChunkPageStore column chunk page stores}.
  */
 public final class ParquetColumnRegionLong<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
-    implements ColumnRegionLong<ATTR>, ParquetColumnRegion<ATTR> {
+        implements ColumnRegionLong<ATTR>, ParquetColumnRegion<ATTR> {
 
     public ParquetColumnRegionLong(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore);
+        super(columnChunkPageStore.mask(), columnChunkPageStore);
     }
 
     @Override
     public long getLong(final long elementIndex) {
         final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
-        try {
-            return page.asLongChunk().get(page.getChunkOffset(elementIndex));
-        } catch (Exception e) {
-            throw new TableDataException("Error retrieving long at table long index " + elementIndex
-                    + ", from a parquet table", e);
-        }
-    }
-
-    @Override
-    public long getLong(@NotNull final FillContext context, final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
-
         try {
             return page.asLongChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.NewTable$Builder",
+ "methods": {
+  "addAllColumns": ":param columns: java.lang.Iterable<io.deephaven.qst.column.Column<?>>\n:return: io.deephaven.qst.table.NewTable.Builder",
+  "addColumns": "*Overload 1*  \n  :param column: io.deephaven.qst.column.Column<?>\n  :return: io.deephaven.qst.table.NewTable.Builder\n  \n*Overload 2*  \n  :param columns: io.deephaven.qst.column.Column<?>...\n  :return: io.deephaven.qst.table.NewTable.Builder",
+  "build": ":return: io.deephaven.qst.table.NewTable",
+  "putColumns": ":param name: java.lang.String\n:param value: io.deephaven.qst.array.Array<?>\n:return: io.deephaven.qst.table.NewTable.Builder",
+  "size": ":param size: int\n:return: io.deephaven.qst.table.NewTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.NewTable.Builder",
+ "typeName": "interface"
+}

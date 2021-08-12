@@ -21,8 +21,8 @@ public class ToObjectPage<T, ATTR extends Attributes.Any> implements ToPage<ATTR
                     new ToPageWithDictionary<>(
                             nativeType,
                             new Dictionary<>(
-                                i -> {
-                                    byte[] bytes = dictionary.decodeToBinary(i).getBytes();
+                                dictionaryKey -> {
+                                    final byte[] bytes = dictionary.decodeToBinary(dictionaryKey).getBytes();
                                     return codec.decode(bytes, 0, bytes.length);
                                 },
                                 dictionary.getMaxId() + 1),

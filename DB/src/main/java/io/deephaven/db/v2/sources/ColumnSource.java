@@ -10,6 +10,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.tuples.TupleSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -31,8 +32,14 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
 
     Class<?> getComponentType();
 
-    @Override
-    Class<T> getNativeType();
+    @FinalDefault
+    default ChunkType getChunkType() {
+        final Class<T> dataType = getType();
+        if (dataType == Boolean.class) {
+            return ChunkType.Object;
+        }
+        return ChunkType.fromElementType(dataType);
+    }
 
     Index match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, Index mapper, final Object... keys);
 

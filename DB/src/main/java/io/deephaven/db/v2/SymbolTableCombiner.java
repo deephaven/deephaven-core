@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
@@ -481,7 +484,10 @@ class SymbolTableCombiner
         // region build start
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             final WritableIntChunk<Attributes.KeyIndices> sourceResultIdentifiers = WritableIntChunk.makeWritableChunk((int)Math.min(CHUNK_SIZE, buildIndex.size()));
             // endregion build initialization

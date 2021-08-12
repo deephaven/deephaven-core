@@ -17,9 +17,10 @@ jobs:
       # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
       - name: Setup JDK
         id: setup-java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2.2.0
         with:
-          java-version: '8.0.292'
+          distribution: 'zulu'
+          java-version: '8.0.302'
 
       - name: Setup gradle properties
         run: |

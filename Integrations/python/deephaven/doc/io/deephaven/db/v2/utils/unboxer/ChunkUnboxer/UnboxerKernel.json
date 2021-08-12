@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.utils.unboxer.ChunkUnboxer$UnboxerKernel",
+ "methods": {
+  "unbox": "Convert all boxed primitives to real primitives.\n\n:param boxedPrimitives: (io.deephaven.db.v2.sources.chunk.ObjectChunk<?,? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the boxed primitives to convert\n:return: (io.deephaven.db.v2.sources.chunk.Chunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>) a chunk containing primitives",
+  "unboxTo": ":param boxedPrimitives: io.deephaven.db.v2.sources.chunk.ObjectChunk<?,? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param primitives: io.deephaven.db.v2.sources.chunk.WritableChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param sourceOffset: int\n:param destOffset: int"
+ },
+ "path": "io.deephaven.db.v2.utils.unboxer.ChunkUnboxer.UnboxerKernel",
+ "text": "Return a chunk that contains boxed Objects representing the primitive values in primitives.",
+ "typeName": "interface"
+}

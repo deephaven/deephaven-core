@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.agg.Multi$Builder",
+ "methods": {
+  "addAggregations": "*Overload 1*  \n  :param element: Multi.Builder.AGG\n  :return: io.deephaven.api.agg.Multi.Builder<Multi.Builder.AGG>\n  \n*Overload 2*  \n  :param elements: Multi.Builder.AGG...\n  :return: io.deephaven.api.agg.Multi.Builder<Multi.Builder.AGG>",
+  "addAllAggregations": ":param elements: java.lang.Iterable<? extendsMulti.Builder.AGG>\n:return: io.deephaven.api.agg.Multi.Builder<Multi.Builder.AGG>",
+  "build": ":return: io.deephaven.api.agg.Multi<Multi.Builder.AGG>"
+ },
+ "path": "io.deephaven.api.agg.Multi.Builder",
+ "typeName": "interface"
+}

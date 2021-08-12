@@ -39,6 +39,11 @@ public interface ColumnChunkReader {
     ColumnPageReaderIterator getPageIterator() throws IOException;
 
     /**
+     * @return Whether this column chunk uses a dictionary-based encoding on every page
+     */
+    boolean usesDictionaryOnEveryPage();
+
+    /**
      * @return Reference to the parquet dictionary for that page if available
      * @throws IOException if problem encountered with underlying storage
      */

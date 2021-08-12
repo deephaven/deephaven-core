@@ -9,14 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
 
-    long REGION_MASK = RegionedPageStore.REGION_MASK;
-
-    @Override
-    @FinalDefault
-    default long mask() {
-        return REGION_MASK;
-    }
-
     @Override
     @FinalDefault
     default long firstRowOffset() {
@@ -24,9 +16,11 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
     }
 
     abstract class Null<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        Null() {
+        Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override

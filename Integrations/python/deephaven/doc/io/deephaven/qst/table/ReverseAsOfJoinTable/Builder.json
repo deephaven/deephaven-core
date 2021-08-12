@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.ReverseAsOfJoinTable$Builder",
+ "methods": {
+  "rule": ":param rule: io.deephaven.api.ReverseAsOfJoinRule\n:return: io.deephaven.qst.table.ReverseAsOfJoinTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.ReverseAsOfJoinTable.Builder",
+ "typeName": "interface"
+}

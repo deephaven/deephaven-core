@@ -13,6 +13,7 @@ import io.deephaven.db.v2.locations.ColumnLocation;
 import io.deephaven.db.v2.locations.KeyRangeGroupingProvider;
 import io.deephaven.db.v2.utils.CurrentOnlyIndex;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;
@@ -209,7 +210,15 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
     private final List<Source<DATA_TYPE, ?>> sources = new ArrayList<>();
 
     @Override
-    public void addSource(@NotNull final ColumnLocation columnLocation, final long firstKey, final long lastKey) {
+    public void addSource(@NotNull final ColumnLocation columnLocation, @NotNull final ReadOnlyIndex locationIndexInTable) {
+        final long firstKey = locationIndexInTable.firstKey();
+        final long lastKey = locationIndexInTable.lastKey();
+        if (lastKey - firstKey + 1 != locationIndexInTable.size()) {
+            /* TODO (https://github.com/deephaven/deephaven-core/issues/816):
+             *     This constraint is valid for all existing formats that support grouping. Address when we integrate
+             *     grouping/index tables. */
+            throw new IllegalArgumentException(ParallelDeferredGroupingProvider.class + " only supports a single range per location");
+        }
         sources.add(new Source<>(columnLocation, firstKey, lastKey));
     }
 

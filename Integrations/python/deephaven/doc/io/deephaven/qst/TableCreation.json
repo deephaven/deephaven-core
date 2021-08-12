@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.TableCreation",
+ "methods": {
+  "create": "\"Replay\" the table against the given interfaces.\n\nNote: Java generics information - <TOPS extends io.deephaven.api.TableOperations<TOPS,\nTABLE>,\nTABLE>\n\n:param creation: (io.deephaven.qst.TableCreation<TABLE>) - the table creation\n:param toOps: (io.deephaven.qst.TableCreation.TableToOperations<TOPS,TABLE>) - the table to operations\n:param toTable: (io.deephaven.qst.TableCreation.OperationsToTable<TOPS,TABLE>) - the operations to table\n:param table: (io.deephaven.qst.table.TableSpec) - the table specification\n:return: (TABLE) the output table",
+  "merge": "Merges the given tables.\n\n:param tables: (java.util.Collection<TableCreation.TABLE>) - the tables\n:return: (TableCreation.TABLE) the merged results",
+  "of": "**Incompatible overloads text - text from the first overload:**\n\nCreates a new table.\n\n*Overload 1*  \n  :param newTable: (io.deephaven.qst.table.NewTable) - the new table specification\n  :return: (TableCreation.TABLE) the new table\n  \n*Overload 2*  \n  :param emptyTable: (io.deephaven.qst.table.EmptyTable) - the empty table specification\n  :return: (TableCreation.TABLE) the empty table\n  \n*Overload 3*  \n  :param timeTable: (io.deephaven.qst.table.TimeTable) - the time table specifications\n  :return: (TableCreation.TABLE) the time table"
+ },
+ "path": "io.deephaven.qst.TableCreation",
+ "text": "Provides methods for building source tables.",
+ "typeName": "interface"
+}

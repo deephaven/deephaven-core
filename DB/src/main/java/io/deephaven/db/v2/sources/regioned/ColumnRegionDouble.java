@@ -4,8 +4,10 @@
 package io.deephaven.db.v2.sources.regioned;
 
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
+import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,7 +26,7 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     /**
      * Get a single double from this region.
      *
-     * @param context      A {@link ColumnRegionFillContext} to enable resource caching where suitable, with current
+     * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
      *                     region index pointing to this region
      * @param elementIndex Element (double) index in the table's address space
      * @return The double value at the specified element (double) index
@@ -34,20 +36,22 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     }
 
     @Override
-    default Class<?> getNativeType() {
-        return double.class;
+    @FinalDefault
+    default ChunkType getChunkType() {
+        return ChunkType.Double;
     }
 
-    static <ATTR extends Any> ColumnRegionDouble.Null<ATTR> createNull() {
+    static <ATTR extends Any> ColumnRegionDouble<ATTR> createNull(final long pageMask) {
         //noinspection unchecked
-        return Null.INSTANCE;
+        return pageMask == Null.DEFAULT_INSTANCE.mask() ? Null.DEFAULT_INSTANCE : new Null<ATTR>(pageMask);
     }
 
     final class Null<ATTR extends Any> extends ColumnRegion.Null<ATTR> implements ColumnRegionDouble<ATTR> {
         @SuppressWarnings("rawtypes")
-        private static final ColumnRegionDouble.Null INSTANCE = new ColumnRegionDouble.Null();
+        private static final ColumnRegionDouble DEFAULT_INSTANCE = new ColumnRegionDouble.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null() {
+        private Null(final long pageMask) {
+            super(pageMask);
         }
 
         @Override
@@ -56,11 +60,14 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
     }
 
-    final class Constant<ATTR extends Any> implements ColumnRegionDouble<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+    final class Constant<ATTR extends Any>
+            extends GenericColumnRegionBase<ATTR>
+            implements ColumnRegionDouble<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         private final double value;
 
-        public Constant(final double value) {
+        public Constant(final long pageMask, final double value) {
+            super(pageMask);
             this.value = value;
         }
 
@@ -74,6 +81,25 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
             final int offset = destination.size();
             destination.asWritableDoubleChunk().fillWithValue(offset, length, value);
             destination.setSize(offset + length);
+        }
+    }
+
+    final class StaticPageStore<ATTR extends Any>
+            extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionDouble<ATTR>>
+            implements ColumnRegionDouble<ATTR> {
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionDouble<ATTR>[] regions) {
+            super(parameters, regions);
+        }
+
+        @Override
+        public double getDouble(final long elementIndex) {
+            return lookupRegion(elementIndex).getDouble(elementIndex);
+        }
+
+        @Override
+        public double getDouble(@NotNull final FillContext context, final long elementIndex) {
+            return lookupRegion(elementIndex).getDouble(context, elementIndex);
         }
     }
 }

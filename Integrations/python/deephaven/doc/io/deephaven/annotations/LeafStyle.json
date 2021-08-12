@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.annotations.LeafStyle",
+ "methods": {},
+ "path": "io.deephaven.annotations.LeafStyle",
+ "text": "A leaf node style is suitable for leaf nodes.",
+ "typeName": "class"
+}

@@ -134,11 +134,6 @@ public class ObjectObjectShortColumnTupleSource extends AbstractTupleSource<Obje
     }
 
     @Override
-    public Class<ObjectObjectShortTuple> getNativeType() {
-        return ObjectObjectShortTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ObjectObjectShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Object, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

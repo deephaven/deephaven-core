@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.sources.regioned;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.v2.ColumnToCodecMappings;
 import io.deephaven.db.v2.LiveTableTestCase;
@@ -156,6 +157,13 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                     return lastSizes[li];
                 }
             });
+            allowing(tl).getIndex();
+            will(new CustomAction("Return last size") {
+                @Override
+                public Object invoke(Invocation invocation) {
+                    return Index.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
+                }
+            });
         }});
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
             final ColumnLocation cl = columnLocations[li][ci];
@@ -283,12 +291,12 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                             }}));
                 }
                 newExpectedIndex.insertRange(
-                        RegionedPageStore.getFirstElementIndex(regionIndex),
-                        RegionedPageStore.getFirstElementIndex(regionIndex) + size - 1
+                        RegionedColumnSource.getFirstElementIndex(regionIndex),
+                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
                 );
                 expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> Index.FACTORY.getEmptyIndex()).insertRange(
-                        RegionedPageStore.getFirstElementIndex(regionIndex),
-                        RegionedPageStore.getFirstElementIndex(regionIndex) + size - 1
+                        RegionedColumnSource.getFirstElementIndex(regionIndex),
+                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
                 );
             }
         });
@@ -475,7 +483,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         try {
             checkIndexes(SUT.refresh());
             fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (AssertionFailure expected) {
             maybePrintStackTrace(expected);
         }
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());

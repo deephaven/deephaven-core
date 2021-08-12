@@ -137,11 +137,6 @@ public class BooleanDateTimeCharacterColumnTupleSource extends AbstractTupleSour
     }
 
     @Override
-    public Class<ByteLongCharTuple> getNativeType() {
-        return ByteLongCharTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteLongCharTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

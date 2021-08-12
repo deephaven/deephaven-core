@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore$CreatorResult",
+ "methods": {},
+ "path": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore.CreatorResult",
+ "typeName": "class"
+}

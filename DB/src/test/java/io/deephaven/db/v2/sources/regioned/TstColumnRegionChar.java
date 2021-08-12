@@ -25,13 +25,13 @@ public class TstColumnRegionChar {
     static class Identity implements ColumnRegionChar<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
-        public char getChar(long elementIndex) {
-            return (char) elementIndex;
+        public long mask() {
+            return Long.MAX_VALUE;
         }
 
         @Override
-        public long length() {
-            throw new UnsupportedOperationException();
+        public char getChar(long elementIndex) {
+            return (char) elementIndex;
         }
 
         @Override
@@ -56,7 +56,7 @@ public class TstColumnRegionChar {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionChar.createNull();
+            SUT = ColumnRegionChar.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -80,7 +80,7 @@ public class TstColumnRegionChar {
                 oneOf(regionSupplier).get();
                 will(returnValue(new Identity()));
             }});
-            SUT = new DeferredColumnRegionChar<>(regionSupplier);
+            SUT = new DeferredColumnRegionChar<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

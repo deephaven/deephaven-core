@@ -5,3 +5,6 @@ set -o nounset
 
 mkdir -p /data/notebooks
 chown nginx /data/notebooks
+
+mkdir -p /data/layouts
+chown nginx /data/layouts
