@@ -16,6 +16,9 @@ import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
+/**
+ * Chunked aggregation operator for sorted first/last-by using a float sort-column on add-only tables.
+ */
 public class FloatAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
 
     private final FloatArraySource sortColumnValues;
