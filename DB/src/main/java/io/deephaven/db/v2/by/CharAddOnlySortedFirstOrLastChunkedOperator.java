@@ -86,16 +86,14 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
             final long index = indices.get(start + ii);
             final char value = values.get(start + ii);
             final int comparison = DhCharComparisons.compare(value, bestValue);
-            if (isFirst) {
-                if (comparison < 0 || (comparison == 0 && index < bestIndex)) {
-                    bestIndex = index;
-                    bestValue = value;
-                }
-            } else {
-                if (comparison > 0 || (comparison == 0 && index > bestIndex)) {
-                    bestIndex = index;
-                    bestValue = value;
-                }
+            // @formatter:off
+            final boolean better =
+                    ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||
+                    (!isFirst && (comparison > 0 || (comparison == 0 && index > bestIndex)))  ;
+            // @formatter:on
+            if (better) {
+                bestIndex = index;
+                bestValue = value;
             }
         }
         if (bestIndex == initialIndex) {
