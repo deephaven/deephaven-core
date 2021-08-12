@@ -15,6 +15,7 @@ import io.deephaven.db.v2.sources.chunk.IntChunk;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
@@ -86,7 +87,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
                                  @NotNull final ReadOnlyIndex newDestinations) {
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
-        try (final ReadOnlyIndex changedDestinations = downstream.modified.union(downstream.added)) {
+        try (final OrderedKeys changedDestinations = downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

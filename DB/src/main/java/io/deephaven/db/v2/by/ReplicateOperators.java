@@ -36,7 +36,8 @@ public class ReplicateOperators {
         replicateObjectAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
         ReplicatePrimitiveCode.charToAllButBoolean(CharAddOnlySortedFirstOrLastChunkedOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        replicateObjectAddOnlySortedFirstLast();
+        ReplicatePrimitiveCode.charToAllButBoolean(CharStreamSortedFirstOrLastChunkedOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
+        replicateObjectAddOnlyAndStreamSortedFirstLast();
     }
 
     private static void replicateObjectAddOnlyMinMax() throws IOException {
@@ -61,11 +62,13 @@ public class ReplicateOperators {
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 
-    private static void replicateObjectAddOnlySortedFirstLast() throws IOException {
-        final String objectClassName = ReplicatePrimitiveCode.charToObject(CharAddOnlySortedFirstOrLastChunkedOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final File objectClassFile = new File(objectClassName);
-        List<String> lines = ReplicateUtilities.fixupChunkAttributes(FileUtils.readLines(objectClassFile, Charset.defaultCharset()));
-        lines = ReplicateUtilities.replaceRegion(lines, "sortColumnValues initialization", Collections.singletonList("        sortColumnValues = new ObjectArraySource<>(Object.class);"));
-        FileUtils.writeLines(objectClassFile, lines);
+    private static void replicateObjectAddOnlyAndStreamSortedFirstLast() throws IOException {
+        for (final Class charClass : Arrays.asList(CharAddOnlySortedFirstOrLastChunkedOperator.class, CharStreamSortedFirstOrLastChunkedOperator.class)) {
+            final String objectClassName = ReplicatePrimitiveCode.charToObject(charClass, ReplicatePrimitiveCode.MAIN_SRC);
+            final File objectClassFile = new File(objectClassName);
+            List<String> lines = ReplicateUtilities.fixupChunkAttributes(FileUtils.readLines(objectClassFile, Charset.defaultCharset()));
+            lines = ReplicateUtilities.replaceRegion(lines, "sortColumnValues initialization", Collections.singletonList("        sortColumnValues = new ObjectArraySource<>(Object.class);"));
+            FileUtils.writeLines(objectClassFile, lines);
+        }
     }
 }

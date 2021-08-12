@@ -572,7 +572,8 @@ public class QueryTable extends BaseTable {
             }
             else if (isSortedFirstOrLast) {
                 final boolean isSortedFirst = ((SortedFirstOrLastByFactoryImpl)inputAggregationStateFactory).isSortedFirst();
-                return ChunkedOperatorAggregationHelper.aggregation(new SortedFirstOrLastByAggregationFactory(isSortedFirst, ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new SortedFirstOrLastByAggregationFactory(isSortedFirst, false,
+                        ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()), this, groupByColumns);
             }
             else if (isFirst || isLast) {
                 return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this, groupByColumns);

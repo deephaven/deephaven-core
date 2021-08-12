@@ -1014,7 +1014,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             } else {
                                 updatedMatchPairs = comboMatchPairs;
                             }
-                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, updatedMatchPairs);
+                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, true, updatedMatchPairs);
                             Assert.eq(sflac.operators.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputColumns.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputNames.length, "sflac.operators.length", 1);

@@ -228,7 +228,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
 
     @Override
     Object getBlock(int blockIndex) {
-        return blocks[blockIndex];
+        try {
+            return blocks[blockIndex];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw e;
+        }
     }
 
     @Override

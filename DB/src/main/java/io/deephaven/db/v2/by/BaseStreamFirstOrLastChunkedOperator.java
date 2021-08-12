@@ -8,6 +8,7 @@ import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.SoftReference;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -80,7 +81,8 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
     }
 
     @Override
-    public final void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
+    @OverridingMethodsMustInvokeSuper
+    public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
         }

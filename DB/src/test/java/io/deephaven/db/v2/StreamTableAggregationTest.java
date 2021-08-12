@@ -94,6 +94,7 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
         final Table expected = operator.apply(normal);
         final Table addOnlyExpected = operator.apply(addOnly);
         final Table streamExpected = operator.apply(stream);
+        TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, streamExpected);
         TestCase.assertFalse(((BaseTable) streamExpected).isStream()); // Aggregation results are never stream tables
 
