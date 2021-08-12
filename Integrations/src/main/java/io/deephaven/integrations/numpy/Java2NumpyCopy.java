@@ -6,7 +6,6 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.util.type.TypeUtils;
-import org.apache.commons.math3.exception.NotStrictlyPositiveException;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import java.util.Arrays;
@@ -231,22 +230,6 @@ public class Java2NumpyCopy {
         copySlice(t, rowStart, nRow, nCol, long.class, "(long)", (cs, k, idx) -> data[idx] = cs.getLong(k));
     }
 
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-     */
-    public static void copySlice(final Table t, final long rowStart, final boolean[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySlice(t, rowStart, nRow, nCol, long.class, "(long)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
-    }
-
     //this is commented out so the byte[] method will be called. Both are 8 bit data structures, the boolean cast will
     //throw an error
 //    /**
@@ -264,149 +247,6 @@ public class Java2NumpyCopy {
 //        assert data != null;
 //        copySlice(t, rowStart, nRow, nCol, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
 //    }
-
-
-// #####################################################################################################################
-// # Here, I am going to start working on methods to do what copySlice does, but with column sources and indices
-// #####################################################################################################################
-/*
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-     * @param type     type of output data
-     * @param cast     string used to cast to the output type
-     * @param setter   setter used to assign data
-
-    private static void copySubset(final Table t, final long rowStart, final int nRow, final int nCol, final Class type, final String cast, final CopySetter setter) {
-        final Table tt = t.view(Arrays.stream(t.getColumns()).map(c -> c.getType() == type ? c.getName() : c.getName() + " = " + cast + " " + c.getName()).toArray(String[]::new));
-        // obviously tt != t, so the resulting Index and ColumnSources are not going to be the same. So, I need to know
-        // how they're different if I want to try to pass Index and ColSource directly. May be a completely different thing
-        final Index index = tt.getIndex().subindexByPos(rowStart, rowStart + nRow);
-
-        for (int i = 0; i < nCol; i++) { // for each index 0...nCol
-            final DataColumn c = tt.getColumn(i); // get column by index from tt and call it c
-            final ColumnSource cs = tt.getColumnSource(c.getName()); // use column c from tt to get column source
-
-            int j = 0;
-
-            for (Index.Iterator it = index.iterator(); it.hasNext(); ) { // index object has iterator and next
-                final long k = it.nextLong(); // next step in iterator???
-                final int idx = j * nCol + i; // what??
-                setter.set(cs, k, idx); // ?????
-                j++;
-            }
-        }
-    }
-
-    // the question is, how much of this stuff do I already have in feeding this function DH Index and ColSource objects?
-
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final double[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, double.class, "(double)", (cs, k, idx) -> data[idx] = cs.getDouble(k));
-    }
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final float[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, float.class, "(float)", (cs, k, idx) -> data[idx] = cs.getFloat(k));
-    }
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final byte[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, byte.class, "(byte)", (cs, k, idx) -> data[idx] = cs.getByte(k));
-    }
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final short[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, short.class, "(short)", (cs, k, idx) -> data[idx] = cs.getShort(k));
-    }
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final int[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, int.class, "(int)", (cs, k, idx) -> data[idx] = cs.getInt(k));
-    }
-
-    /**
-     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t        table to copy data from
-     * @param rowStart first row of data to copy
-     * @param data     array to copy data into
-     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-
-    public static void copySubset(final Table t, final long rowStart, final long[] data, final int nRow, final int nCol) {
-        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-        assert data != null;
-        copySubset(t, rowStart, nRow, nCol, long.class, "(long)", (cs, k, idx) -> data[idx] = cs.getLong(k));
-    }
-*/
-// #####################################################################################################################
-// # End the new stuff
-// #####################################################################################################################
-
-
 
     private static class Slice {
         final long[] data;
@@ -430,65 +270,35 @@ public class Java2NumpyCopy {
 
     /**
      * Randomly fills the slice with vaules in the range <code>[0,tSize-1]</code> using a
-     * reservoir sampling algorithm.  No rows will be repeated unless replace=True is specified.
+     * reservoir sampling algorithm.  No rows will be repeated.
      * The slice must be smaller than <code>tSize</code>
      *
      * @param slice slice to fill.
      * @param tSize table size.
-     * @param replace sample with or without replacement.
      */
-    private static void reservoirSample(final Slice slice, final long tSize, boolean replace) {
+    private static void reservoirSample(final Slice slice, final long tSize) {
         // https://en.wikipedia.org/wiki/Reservoir_sampling
         // A-Chao algorithm
 
-        // Updated sampling with replacement algorithm given here (2.2): https://epubs.siam.org/doi/pdf/10.1137/1.9781611972740.53
+        final int k = slice.size();
 
-        final int m = slice.size();
-
-        if (m > tSize) {
+        if (k > tSize) {
             throw new IllegalArgumentException("Requesting more items than are available.  slice.size()=" + slice.size() + " tSize=" + tSize);
         }
 
         final RandomDataGenerator rnd = new RandomDataGenerator();
 
-        // I don't care for this code at all but it works for now. Need to find a way to use w/o going through numpy
-        // reservoir sampling with replacement
-        if (replace) {
-            // reservoir sampling with replacement
-            // loop through reservoir
-            for (int i = 0; i < tSize; i++) {
-                final double p = (double) 1 / (double) (i + 1);
-                final int k = rnd.nextBinomial(m, p);
+        // fill the reservoir array
+        for (int i = 0; i < k; i++) {
+            slice.set(i, i);
+        }
 
-                try {
-                    // replace s elements in slice with i
-                    for (int j : rnd.nextPermutation(m, k)) {
-                        slice.set(j, i);
-                    }
-                }
-                catch (NotStrictlyPositiveException e) {
-                    continue;
-                }
-            }
-        } else {
-            // reservoir sampling without replacement
-        /////////////////////////////////////////////////
+        for (long i = k; i < tSize; i++) {
+            final double p = (double) (k) / (double) (i + 1);
+            final double j = rnd.nextUniform(0, 1);
 
-        // reservoir sampling without replacement
-        else {
-
-            // fill the reservoir array
-            for (int i = 0; i < m; i++) {
-                slice.set(i, i);
-            }
-
-            for (long i = m; i < tSize; i++) {
-                final double p = (double) (m) / (double) (i + 1);
-                final double j = rnd.nextUniform(0, 1);
-
-                if (j <= p) {
-                    slice.set(rnd.nextInt(0, m - 1), i);
-                }
+            if (j <= p) {
+                slice.set(rnd.nextInt(0, k - 1), i);
             }
         }
     }
@@ -500,7 +310,7 @@ public class Java2NumpyCopy {
      * @param tSize table size.
      * @return indices of random table rows.
      */
-    public static long[] randRows(final int nRow, final long tSize, final boolean replace) {
+    public static long[] randRows(final int nRow, final long tSize) {
 
         final long[] R = new long[nRow];
 
@@ -512,7 +322,7 @@ public class Java2NumpyCopy {
             }
 
             final Slice s = new Slice(R, start, (int) size);
-            reservoirSample(s, tSize, replace);
+            reservoirSample(s, tSize);
         }
 
         return R;
@@ -568,10 +378,7 @@ public class Java2NumpyCopy {
     public static void copyRand(final Table t, final int nRow, final int nCol, final long[] rows, final Class type, final String cast, final CopySetter setter) {
 
         final long s = t.size();
-        // the following line should not ask if rows are null, should simply be passed rows
-        //final long[] tidxs = rows == null ? randRows(nRow, s, replace) : rows;
-        //here is replacement
-        final long[] tidxs = rows;
+        final long[] tidxs = rows == null ? randRows(nRow, s) : rows;
         final Table tt = t.view(Arrays.stream(t.getColumns()).map(c -> c.getType() == type ? c.getName() : c.getName() + " = " + cast + " " + c.getName()).toArray(String[]::new));
         final Index index = tt.getIndex();
 
@@ -692,21 +499,21 @@ public class Java2NumpyCopy {
 
     //this is commented out so the byte[] method will be called. Both are 8 bit data structures the boolean cast will
     //throw an error
-    /**
-     * Casts data to the desired type and copies a random selection of rows into a flattened 2D array.
-     * This is useful for copying table data directly into numpy arrays.
-     *
-     * @param t    table to copy data from
-     * @param data array to copy data into
-     * @param nRow number of rows to copy; also the number of rows in <code>data</code>.
-     * @param nCol number of table columns; also the number of columns in <code>data</code>.
-     * @param rows indices of rows to copy.  Null causes rows to be randomly generated.
-     */
-    public static void copyRand(final Table t, final boolean[] data, final int nRow, final int nCol, final long[] rows) {
-        assertCopyRandArgs(t, data == null ? -1 : data.length, nRow, nCol, rows);
-        assert data != null;
-        copyRand(t, nRow, nCol, rows, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
-    }
+//    /**
+//     * Casts data to the desired type and copies a random selection of rows into a flattened 2D array.
+//     * This is useful for copying table data directly into numpy arrays.
+//     *
+//     * @param t    table to copy data from
+//     * @param data array to copy data into
+//     * @param nRow number of rows to copy; also the number of rows in <code>data</code>.
+//     * @param nCol number of table columns; also the number of columns in <code>data</code>.
+//     * @param rows indices of rows to copy.  Null causes rows to be randomly generated.
+//     */
+//    public static void copyRand(final Table t, final boolean[] data, final int nRow, final int nCol, final long[] rows) {
+//        assertCopyRandArgs(t, data == null ? -1 : data.length, nRow, nCol, rows);
+//        assert data != null;
+//        copyRand(t, nRow, nCol, rows, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
+//    }
 
     private static void assertCopyImageSliceArgs(final Table t, final long rowStart, final int dataLength, final int nRow, final int width, final int height, final boolean color) {
         if (t == null) {
@@ -1006,10 +813,8 @@ public class Java2NumpyCopy {
     public static void copyImageRand(final Table t, final int nRow, final int width, final int height, final boolean resize, final boolean color, final long[] rows, final IntValSetter setter) {
 
         final long s = t.size();
-        // this should not ask null
-        //final long[] tidxs = rows == null ? randRows(nRow, s, replace) : rows;
-        // here is replacement
-        final long[] tidxs = rows;
+        final long[] tidxs = rows == null ? randRows(nRow, s) : rows;
+
         final DataColumn c = t.getColumn(0);
         final ColumnSource cs = t.getColumnSource(c.getName());
         final Index index = t.getIndex();

@@ -61,6 +61,5 @@ class PythonUtilities {
             throw new IllegalArgumentException("The Python object specified should either be callable, or a " +
                     "class instance with an apply method");
         }
-
     }
 }

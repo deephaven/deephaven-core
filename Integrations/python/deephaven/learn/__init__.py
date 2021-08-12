@@ -28,7 +28,6 @@ import jpy
 import wrapt
 from deephaven import npy
 from deephaven import listen
-from deephaven import QueryScope
 import numpy as np
 import torch
 import tensorflow as tf
@@ -117,12 +116,12 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
             raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
         batch_size = table.size()
 
-    computer = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
-    QueryScope.addParam("computer", computer)
+    #computer = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
+    globals()["computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
 
     if not outputs == None:
-        scatterer = _Scatterer_([output.output for output in outputs])
-        QueryScope.addParam("scatterer", scatterer)
+        #scatterer = _Scatterer_([output.output for output in outputs])
+        globals()["scatterer"] = _Scatterer_([output.output for output in outputs])
 
         return table.update("FutureOffset = computer.compute(k)", "Clean = computer.clear()").update(scatterer.generateQueryStrings("FutureOffset")).dropColumns("FutureOffset","Clean")
 

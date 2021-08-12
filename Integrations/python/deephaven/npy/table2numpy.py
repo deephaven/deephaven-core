@@ -279,7 +279,7 @@ def numpy_slice(t, rowStart, nRow, dtype=np.float64, imageWidth=None, imageHeigh
 
 
 @_passThrough
-def numpy_sample(t, nRow=None, rows=None, replace=False, dtype=np.float64, imageWidth=None, imageHeight=None, imageResize=True, imageColor=None):
+def numpy_sample(t, nRow, dtype=np.float64, rows=None, imageWidth=None, imageHeight=None, imageResize=True, imageColor=None):
     """Randomly sample rows from a a table or tables into numpy arrays.
 
     :param t: table or list of tables
@@ -292,13 +292,6 @@ def numpy_sample(t, nRow=None, rows=None, replace=False, dtype=np.float64, image
     :param imageColor: True to return color images; False to return gray-scale images.
     :return: numpy data sampled from the input tables.  Scalar if one input table or tuple if input table list.
     """
-    # this requires that one of nRow or rows are provided, but not both.
-    if ((nRow is None) and (rows is None)) or ((nRow is not None) and (rows is not None)):
-        raise ValueError("Please provide exactly one of nRow or rows.")
-
-    # this requires that you not attempt to sample more rows than are available when replace is false
-    if (((nRow is not None) and (nRow > t.size())) or ((rows is not None) and (len(rows) > t.size()))) and (replace is False):
-        raise ValueError("Cannot select more rows than the size of table when replace is False.")
 
     dt = _validateSize(t, dtype, 'dtype')
     iw = _validateSize(t, imageWidth, 'imageWidth')
@@ -316,14 +309,13 @@ def numpy_sample(t, nRow=None, rows=None, replace=False, dtype=np.float64, image
             elif s != tt.size():
                 raise ValueError("Tables are different sizes ({} != {})".format(s, tt.size()))
 
-            rst.append(numpy_sample(tt, nRow=nRow, dtype=dti, rows=rows,
+            rst.append(numpy_sample(tt, nRow, dtype=dti, rows=rows,
                                     imageWidth=iwi, imageHeight=ihi, imageResize=iri, imageColor=ici))
         return tuple(rst)
 
     tt = _Java2NumpyCopy_.tableType(t)
     stt = str(tt)
-
-    rows = _Java2NumpyCopy_.randRows(nRow, t.size(), replace) if rows == None else rows
+    rows = _Java2NumpyCopy_.randRows(nRow, t.size())
 
     if stt == "NUMBER":
         return _numpyRandNumber(t, rows, dt)

@@ -31,7 +31,7 @@ public class PythonFunction<T> implements Function<T, Object> {
      *                 usable inside Java.
      */
     public PythonFunction(final PyObject pyObjectIn, final Class classOut){
-
+        
         pyCallable = pyApplyFunc(pyObjectIn);
 
         // Note: Potentially important types omitted -simply because handling from python is not super clear:
