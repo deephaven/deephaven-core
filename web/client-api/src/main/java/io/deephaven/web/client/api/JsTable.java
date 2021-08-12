@@ -2,7 +2,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
 import elemental2.core.JsArray;
-import elemental2.core.JsObject;
 import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -543,7 +542,11 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         // by just creating a new, fresh state.  This should be an optional flatten()/copy() step instead.
         String[] columnNames = Arrays.stream(columns).map(Column::getName).toArray(String[]::new);
         final ClientTableState distinct = workerConnection.newState((c, cts, metadata) -> {
-                    workerConnection.tableServiceClient().selectDistinct(new SelectDistinctRequest(), metadata, c::apply);
+                    SelectDistinctRequest request = new SelectDistinctRequest();
+                    request.setSourceId(state.getHandle().makeTableReference());
+                    request.setResultId(cts.getHandle().makeTicket());
+                    request.setColumnNamesList(columnNames);
+                    workerConnection.tableServiceClient().selectDistinct(request, metadata, c::apply);
                 },
                 "selectDistinct " + Arrays.toString(columnNames)
         );

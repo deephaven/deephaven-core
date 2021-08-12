@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.StreamTableTools",
+ "methods": {
+  "isStream": "Returns true if table is a stream table.\n\n:param table: (io.deephaven.db.tables.Table) - the table to check for stream behavior\n:return: (boolean) Whether this table is a stream table",
+  "streamToAppendOnlyTable": "Convert a Stream Table to an in-memory append only table.\n\n Note, this table will grow without bound as new stream values are encountered.\n\n:param streamTable: (io.deephaven.db.tables.Table) - the input stream table\n:return: (io.deephaven.db.tables.Table) an append-only in-memory table representing all data encountered in the stream"
+ },
+ "path": "io.deephaven.db.v2.StreamTableTools",
+ "text": "Tools for manipulating tables.",
+ "typeName": "class"
+}
