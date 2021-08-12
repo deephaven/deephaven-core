@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharFieldCopier and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit JsonNodeCharFieldCopier and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.kafka.ingest;
 

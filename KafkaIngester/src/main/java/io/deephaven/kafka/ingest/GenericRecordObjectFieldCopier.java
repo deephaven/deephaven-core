@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -14,10 +18,15 @@ public class GenericRecordObjectFieldCopier implements FieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+    public void copyField(
+            final ObjectChunk<Object, Attributes.Values> inputChunk,
+            final WritableChunk<Attributes.Values> publisherChunk,
+            final int sourceOffset,
+            final int destOffset,
+            final int length) {
         final WritableObjectChunk<Object, Attributes.Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = genericRecord == null ? null : genericRecord.get(fieldName);
             output.set(ii + destOffset, value);
         }

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
@@ -60,7 +61,7 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
                 if (dataType == String.class) {
                     return new JsonNodeStringFieldCopier(fieldName);
                 } else {
-                    return new JsonNodeObjectFieldCopier(fieldName);
+                    throw new UncheckedDeephavenException("Raw objects not supported for JSON");
                 }
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);

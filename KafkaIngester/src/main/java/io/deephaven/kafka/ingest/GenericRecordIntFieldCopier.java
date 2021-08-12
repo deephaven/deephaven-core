@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharFieldCopier and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit GenericRecordCharFieldCopier and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.kafka.ingest;
 
@@ -18,10 +18,15 @@ public class GenericRecordIntFieldCopier implements FieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+    public void copyField(
+            final ObjectChunk<Object, Attributes.Values> inputChunk,
+            final WritableChunk<Attributes.Values> publisherChunk,
+            final int sourceOffset,
+            final int destOffset,
+            final int length) {
         final WritableIntChunk<Attributes.Values> output = publisherChunk.asWritableIntChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Integer value = genericRecord == null ? null : (Integer) genericRecord.get(fieldName);
             output.set(ii + destOffset, TypeUtils.unbox(value));
         }
