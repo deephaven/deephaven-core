@@ -226,9 +226,9 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 }
 
                 if (keyChunk != null) {
-                    keyChunk.add(record.key());
+                    keyChunk.add(keyToChunkObjectMapper.apply(record.key()));
                 }
-                valueChunk.add(record.value());
+                valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
             }
             if (keyChunk != null) {
                 flushKeyChunk(keyChunk, chunks);
