@@ -48,7 +48,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
     static Table of(TableSpec table) {
-        return TableCreationImpl.create(table);
+        return TableCreatorImpl.create(table);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

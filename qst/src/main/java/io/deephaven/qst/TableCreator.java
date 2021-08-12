@@ -13,7 +13,7 @@ import java.util.Collection;
  *
  * @param <TABLE> the table type
  */
-public interface TableCreation<TABLE> {
+public interface TableCreator<TABLE> {
 
     /**
      * "Replay" the {@code table} against the given interfaces.
@@ -27,7 +27,7 @@ public interface TableCreation<TABLE> {
      * @return the output table
      */
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE create(
-        TableCreation<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
+        TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
         OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return TableAdapterImpl.toTable(creation, toOps, toTable, table);
     }
@@ -70,7 +70,7 @@ public interface TableCreation<TABLE> {
      *
      * @param <TOPS> the table operations type
      * @param <TABLE> the output table type
-     * @see #create(TableCreation, TableToOperations, OperationsToTable, TableSpec)
+     * @see #create(TableCreator, TableToOperations, OperationsToTable, TableSpec)
      */
     @FunctionalInterface
     interface OperationsToTable<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
@@ -83,7 +83,7 @@ public interface TableCreation<TABLE> {
      *
      * @param <TOPS> the table operations type
      * @param <TABLE> the output table type
-     * @see #create(TableCreation, TableToOperations, OperationsToTable, TableSpec)
+     * @see #create(TableCreator, TableToOperations, OperationsToTable, TableSpec)
      */
     @FunctionalInterface
     interface TableToOperations<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {

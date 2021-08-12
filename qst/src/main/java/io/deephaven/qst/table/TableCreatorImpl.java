@@ -1,20 +1,20 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
-import io.deephaven.qst.TableCreation;
+import io.deephaven.qst.TableCreator;
 
 import java.util.Collection;
 
 /**
- * A "no-op" table creation impl, based on the QST structure itself. Mainly useful for testing the
+ * A "no-op" table creator impl, based on the QST structure itself. Mainly useful for testing the
  * equivalence for the {@link TableOperations} of {@link TableSpec}; but publicly available for
  * functional completeness.
  */
-public enum TableCreationImpl implements TableCreation<TableSpec> {
+public enum TableCreatorImpl implements TableCreator<TableSpec> {
     INSTANCE;
 
     static TableSpec toTable(TableSpec table) {
-        return TableCreation.create(INSTANCE, TableToOperationsImpl.INSTANCE,
+        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE,
             OperationsToTableImpl.INSTANCE, table);
     }
 

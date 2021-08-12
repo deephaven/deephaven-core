@@ -209,7 +209,7 @@ public class ParentsVisitorTest {
             .concat(
                 Stream.of(S4, heavilyBranchedTable.get(heavilyBranchedTable.size() - 1),
                     deepWalk.get(deepWalk.size() - 1)),
-                TableCreationImplTest.createTables().stream())
+                TableCreatorImplTest.createTables().stream())
             .iterator();
     }
 

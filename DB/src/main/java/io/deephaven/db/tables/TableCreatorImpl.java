@@ -4,7 +4,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.qst.TableCreation;
+import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
@@ -15,11 +15,11 @@ import io.deephaven.qst.table.TimeTable;
 import java.util.Collection;
 import java.util.Objects;
 
-enum TableCreationImpl implements TableCreation<Table> {
+enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
 
     public static Table create(TableSpec table) {
-        return TableCreation.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
+        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
     }
 
     @Override
