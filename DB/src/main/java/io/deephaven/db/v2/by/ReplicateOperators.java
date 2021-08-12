@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,6 +35,8 @@ public class ReplicateOperators {
         ReplicatePrimitiveCode.charToAllButBoolean(CharToDoubleCast.class, ReplicatePrimitiveCode.MAIN_SRC);
         replicateObjectAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
+        ReplicatePrimitiveCode.charToAllButBoolean(CharAddOnlySortedFirstOrLastChunkedOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
+        replicateObjectAddOnlySortedFirstLast();
     }
 
     private static void replicateObjectAddOnlyMinMax() throws IOException {
@@ -56,5 +59,13 @@ public class ReplicateOperators {
         lines = ReplicateUtilities.replaceRegion(lines, "resultColumn initialization", Collections.singletonList("        resultColumn = type == DBDateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
         lines = ReplicateUtilities.addImport(lines, DBDateTime.class, DateTimeArraySource.class, LongArraySource.class);
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
+    }
+
+    private static void replicateObjectAddOnlySortedFirstLast() throws IOException {
+        final String objectClassName = ReplicatePrimitiveCode.charToObject(CharAddOnlySortedFirstOrLastChunkedOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final File objectClassFile = new File(objectClassName);
+        List<String> lines = ReplicateUtilities.fixupChunkAttributes(FileUtils.readLines(objectClassFile, Charset.defaultCharset()));
+        lines = ReplicateUtilities.replaceRegion(lines, "sortColumnValues initialization", Collections.singletonList("        sortColumnValues = new ObjectArraySource<>(Object.class);"));
+        FileUtils.writeLines(objectClassFile, lines);
     }
 }
