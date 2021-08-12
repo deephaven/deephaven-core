@@ -8,6 +8,7 @@ GwtTools.gwtLib project
 Classpaths.inheritJsInterop project
 Classpaths.inheritJsInterop project, 'jsinterop-annotations'
 Classpaths.inheritElemental project
+<<<<<<< HEAD
 Classpaths.inheritElemental project, 'elemental2-promise'
 
 /**
@@ -100,3 +101,6 @@ Docker.registerDockerTask(project, 'regenerateGwtBindings') {
         includeEmptyDirs = false
     }
 }
+=======
+Classpaths.inheritElemental project, 'elemental2-promise'
+>>>>>>> parent of e964eea677 (RGB update to handle new barrage, new flight)

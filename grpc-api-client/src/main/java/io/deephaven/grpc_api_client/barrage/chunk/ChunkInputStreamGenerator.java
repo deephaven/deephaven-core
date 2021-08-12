@@ -6,6 +6,7 @@ package io.deephaven.grpc_api_client.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.barrage.flatbuf.BarrageSerializationOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.db.util.LongSizedDataStructure;
 import io.deephaven.db.v2.sources.chunk.Attributes;
@@ -32,6 +33,15 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         public final boolean isViewport;
         public final boolean useDeephavenNulls;
         public final ColumnConversionMode columnConversionMode;
+
+        public static Options of(final BarrageSerializationOptions options) {
+            final byte mode = options.columnConversionMode();
+            return new Builder()
+                    .setIsViewport(false)
+                    .setUseDeephavenNulls(options.useDeephavenNulls())
+                    .setColumnConversionMode(convertColumnConversionMode(mode))
+                    .build();
+        }
 
         public static Options of(final BarrageSubscriptionRequest subscriptionRequest) {
             final byte mode = subscriptionRequest.serializationOptions().columnConversionMode();

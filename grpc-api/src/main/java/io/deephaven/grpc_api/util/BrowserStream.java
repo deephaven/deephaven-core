@@ -73,19 +73,19 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     public void onMessageReceived(T message) {
         synchronized (this) {
             if (halfClosedSeq != -1 && message.sequence > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, logIdentity + "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
             }
 
             if (message.isHalfClosed) {
                 if (halfClosedSeq != -1) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, logIdentity + "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
                 }
                 halfClosedSeq = message.sequence;
             }
 
             if (mode == Mode.IN_ORDER) {
                 if (message.sequence < nextSeq) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, logIdentity + "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
                 }
                 boolean queueMsg = false;
                 if (processingMessage) {
@@ -94,7 +94,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
                             .append(" recv seq=").append(message.sequence).endl();
                 } else if (message.sequence != nextSeq) {
                     queueMsg = true;
-                    log.info().append(logIdentity).append("queueing; waiting seq=").append(nextSeq)
+                    log.debug().append(logIdentity).append("queueing; waiting seq=").append(nextSeq)
                             .append(" recv seq=").append(message.sequence).endl();
                 }
                 if (queueMsg) {

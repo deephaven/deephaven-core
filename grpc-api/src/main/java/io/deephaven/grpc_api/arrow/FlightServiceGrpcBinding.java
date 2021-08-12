@@ -25,12 +25,6 @@ import java.io.InputStream;
 @Singleton
 public class FlightServiceGrpcBinding implements BindableService {
 
-    // Arrow Flight related overrides:
-    private static final String FLIGHT_SERVICE = FlightServiceGrpc.SERVICE_NAME;
-    private static final String DO_GET = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoGet");
-    private static final String DO_PUT = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoPut");
-    private static final String DO_EXCHANGE = MethodDescriptor.generateFullMethodName(FLIGHT_SERVICE, "DoExchange");
-
     private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
 
     @Inject
@@ -40,14 +34,14 @@ public class FlightServiceGrpcBinding implements BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService())
-                .onOpenOverride(delegate::doGetCustom, DO_GET, FlightServiceGrpc.getDoGetMethod(),
+        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), FlightServiceGrpc.SERVICE_NAME)
+                .onOpenOverride(delegate::doGetCustom, "DoGet", FlightServiceGrpc.getDoGetMethod(),
                         ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
                         PassthroughInputStreamMarshaller.INSTANCE)
-                .onBidiOverride(delegate::doPutCustom, DO_PUT, FlightServiceGrpc.getDoPutMethod(),
+                .onBidiOverride(delegate::doPutCustom, "DoPut", FlightServiceGrpc.getDoPutMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
                         ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
-                .onBidiOverride(delegate::doExchangeCustom, DO_EXCHANGE, FlightServiceGrpc.getDoExchangeMethod(),
+                .onBidiOverride(delegate::doExchangeCustom, "DoExchange", FlightServiceGrpc.getDoExchangeMethod(),
                         PassthroughInputStreamMarshaller.INSTANCE,
                         PassthroughInputStreamMarshaller.INSTANCE)
                 .build();
@@ -71,7 +65,7 @@ public class FlightServiceGrpcBinding implements BindableService {
             final Class<?>[] componentTypes,
             final BarrageMessageConsumer.StreamReader<Options> streamReader) {
         return GrpcServiceOverrideBuilder.descriptorFor(
-                MethodDescriptor.MethodType.BIDI_STREAMING, DO_EXCHANGE,
+                MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
                 ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
                 new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
                 FlightServiceGrpc.getDoExchangeMethod());

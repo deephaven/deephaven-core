@@ -214,11 +214,16 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
         final int subscription = BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata);
 
-        BarrageMessageWrapper.startBarrageMessageWrapper(metadata);
-        BarrageMessageWrapper.addMagic(metadata, BarrageStreamGenerator.FLATBUFFER_MAGIC);
-        BarrageMessageWrapper.addMsgType(metadata, BarrageMessageType.BarrageSubscriptionRequest);
-        BarrageMessageWrapper.addMsgPayload(metadata, subscription);
-        metadata.finish(BarrageMessageWrapper.endBarrageMessageWrapper(metadata));
+        final int wrapper = BarrageMessageWrapper.createBarrageMessageWrapper(
+                metadata,
+                BarrageStreamGenerator.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSubscriptionRequest,
+                subscription,
+                0, // no ticket
+                0, // no sequence
+                false // don't half-close
+        );
+        metadata.finish(wrapper);
         return metadata.dataBuffer();
     }
 }

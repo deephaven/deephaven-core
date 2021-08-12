@@ -12,6 +12,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSerializationOptions;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -56,6 +57,7 @@ import java.util.Iterator;
 import java.util.Queue;
 
 public class ArrowFlightUtil {
+    public static final ChunkInputStreamGenerator.Options DEFAULT_SER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
     public static final int DEFAULT_UPDATE_INTERVAL_MS = Configuration.getInstance().getIntegerWithDefault("barrage.updateInterval", 1000);
 
     private static final int TAG_TYPE_BITS = 3;
@@ -148,6 +150,8 @@ public class ArrowFlightUtil {
         private Class<?>[] columnTypes;
         private Class<?>[] componentTypes;
 
+        private ChunkInputStreamGenerator.Options options = DEFAULT_SER_OPTIONS;
+
         public DoPutObserver(
                 final SessionState session,
                 final TicketRouter ticketRouter,
@@ -180,6 +184,10 @@ public class ArrowFlightUtil {
                         .<Table>publish(session, mi.descriptor)
                         .onError(observer::onError);
                 manage(resultExportBuilder.getExport());
+            }
+
+            if (mi.app_metadata != null && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
+                options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions.getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
             }
 
             if (mi.header == null) {
@@ -227,9 +235,7 @@ public class ArrowFlightUtil {
                 msg.addColumnData[ci] = acd;
 
                 try {
-                    // TODO #412 NATE NOCOMMIT allow doput to override serialization options
-                    final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
-                    acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(DEFAULT_DESER_OPTIONS, columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
+                    acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
                 } catch (final IOException unexpected) {
                     throw new UncheckedDeephavenException(unexpected);
                 }
@@ -294,9 +300,7 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecute(observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyExecute(() -> {
-                    observer.onError(GrpcUtil.statusRuntimeException(Code.INTERNAL, "Do put could not be sealed"));
-                }));
+                }), () -> GrpcUtil.safelyError(observer, Code.INTERNAL, "Do put could not be sealed"));
             });
         }
 
@@ -304,7 +308,7 @@ public class ArrowFlightUtil {
         public void close() {
             // close() is intended to be invoked only though session expiration
             release();
-            GrpcUtil.safelyExecute(() -> observer.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Session expired")));
+            GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
         }
 
         private void parseSchema(final Schema header) {
@@ -357,7 +361,7 @@ public class ArrowFlightUtil {
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
 
-            this.myPrefix = "SubscriptionObserver{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
+            this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.operationFactory = operationFactory;
             this.optionsAdapter = optionsAdapter;
@@ -386,7 +390,7 @@ public class ArrowFlightUtil {
         public synchronized void onMessageReceived(final MessageInfo message) {
             if (message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
                     || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-                log.warn().append("DoExchangeMarshaller received a message without app_metadata").endl();
+                log.warn().append(myPrefix).append("received a message without app_metadata").endl();
                 return;
             }
             final BarrageSubscriptionRequest subscriptionRequest =
@@ -408,7 +412,7 @@ public class ArrowFlightUtil {
             }
 
             if (subscriptionRequest.ticketVector() == null) {
-                listener.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Ticket not specified."));
+                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
                 return;
             }
 
@@ -443,9 +447,9 @@ public class ArrowFlightUtil {
                 bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
                 manage(bmp);
             } else {
-                listener.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                         + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
-                        + ") is not a subscribable table."));
+                        + ") is not a subscribable table.");
                 return;
             }
 

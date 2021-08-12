@@ -4,6 +4,7 @@
 
 package io.deephaven.grpc_api.arrow;
 
+import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.UnaryInputStreamMarshaller;
@@ -23,14 +24,6 @@ import javax.inject.Singleton;
 public class BrowserFlightServiceGrpcBinding implements BindableService {
 
     // Our BrowserFlight related overrides:
-    private static final String BROWSER_SERVICE = BrowserFlightServiceGrpc.SERVICE_NAME;
-    private static final String OPEN_HANDSHAKE = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "OpenHandshake");
-    private static final String NEXT_HANDSHAKE = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "NextHandshake");
-    private static final String OPEN_DO_PUT = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "OpenDoPut");
-    private static final String NEXT_DO_PUT = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "NextDoPut");
-    private static final String OPEN_DO_EXCHANGE = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "OpenDoExchange");
-    private static final String NEXT_DO_EXCHANGE = MethodDescriptor.generateFullMethodName(BROWSER_SERVICE, "NextDoExchange");
-
     private final BrowserFlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
 
     @Inject
@@ -40,21 +33,21 @@ public class BrowserFlightServiceGrpcBinding implements BindableService {
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService())
-                .onOpenOverride(delegate::openHandshakeCustom, OPEN_HANDSHAKE, BrowserFlightServiceGrpc.getOpenHandshakeMethod(),
+        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), BrowserFlightServiceGrpc.SERVICE_NAME)
+                .onOpenOverride(delegate::openHandshakeCustom, "OpenHandshake", BrowserFlightServiceGrpc.getOpenHandshakeMethod(),
                         ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()),
                         ProtoUtils.marshaller(Flight.HandshakeResponse.getDefaultInstance()))
-                .onNextOverride(delegate::nextHandshakeCustom, NEXT_HANDSHAKE, BrowserFlightServiceGrpc.getNextHandshakeMethod(),
+                .onNextOverride(delegate::nextHandshakeCustom, "NextHandshake", BrowserFlightServiceGrpc.getNextHandshakeMethod(),
                         ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()))
-                .onOpenOverride(delegate::openDoPutCustom, OPEN_DO_PUT, BrowserFlightServiceGrpc.getOpenDoPutMethod(),
+                .onOpenOverride(delegate::openDoPutCustom, "OpenDoPut", BrowserFlightServiceGrpc.getOpenDoPutMethod(),
                         UnaryInputStreamMarshaller.INSTANCE,
                         ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
-                .onNextOverride(delegate::nextDoPutCustom, NEXT_DO_PUT, BrowserFlightServiceGrpc.getNextDoPutMethod(),
+                .onNextOverride(delegate::nextDoPutCustom, "NextDoPut", BrowserFlightServiceGrpc.getNextDoPutMethod(),
                         UnaryInputStreamMarshaller.INSTANCE)
-                .onOpenOverride(delegate::openDoExchangeCustom, OPEN_DO_EXCHANGE, BrowserFlightServiceGrpc.getOpenDoExchangeMethod(),
+                .onOpenOverride(delegate::openDoExchangeCustom, "OpenDoExchange", BrowserFlightServiceGrpc.getOpenDoExchangeMethod(),
                         UnaryInputStreamMarshaller.INSTANCE,
                         PassthroughInputStreamMarshaller.INSTANCE)
-                .onNextOverride(delegate::nextDoExchangeCustom, NEXT_DO_EXCHANGE, BrowserFlightServiceGrpc.getNextDoExchangeMethod(),
+                .onNextOverride(delegate::nextDoExchangeCustom, "NextDoExchange", BrowserFlightServiceGrpc.getNextDoExchangeMethod(),
                         UnaryInputStreamMarshaller.INSTANCE)
                 .build();
     }

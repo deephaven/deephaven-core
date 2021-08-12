@@ -21,11 +21,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GrpcServiceOverrideBuilder {
-    private static class Override<ReqT, RespT> {
+    private static class GrpcOverrride<ReqT, RespT> {
         private final MethodDescriptor<ReqT, RespT> method;
         private final ServerCallHandler<ReqT, RespT> handler;
 
-        private Override(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
+        private GrpcOverrride(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
             this.method = method;
             this.handler = handler;
         }
@@ -36,48 +36,50 @@ public class GrpcServiceOverrideBuilder {
     }
 
     private final ServerServiceDefinition baseDefinition;
-    private final List<Override<?, ?>> overrides = new ArrayList<>();
+    private final List<GrpcOverrride<?, ?>> overrides = new ArrayList<>();
+    private final String serviceName;
 
-    private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition) {
+    private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition, String serviceName) {
         this.baseDefinition = baseDefinition;
+        this.serviceName = serviceName;
     }
 
-    public static GrpcServiceOverrideBuilder newBuilder(ServerServiceDefinition baseDefinition) {
-        return new GrpcServiceOverrideBuilder(baseDefinition);
+    public static GrpcServiceOverrideBuilder newBuilder(ServerServiceDefinition baseDefinition, String serviceName) {
+        return new GrpcServiceOverrideBuilder(baseDefinition, serviceName);
     }
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.BIDI_STREAMING);
-        overrides.add(new GrpcServiceOverrideBuilder.Override<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
+        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
         return this;
     }
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.SERVER_STREAMING);
-        overrides.add(new GrpcServiceOverrideBuilder.Override<>(method, ServerCalls.asyncServerStreamingCall(handler)));
+        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
         return this;
     }
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ClientStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.CLIENT_STREAMING);
-        overrides.add(new GrpcServiceOverrideBuilder.Override<>(method, ServerCalls.asyncClientStreamingCall(handler)));
+        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncClientStreamingCall(handler)));
         return this;
     }
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.UNARY);
-        overrides.add(new GrpcServiceOverrideBuilder.Override<>(method, ServerCalls.asyncUnaryCall(handler)));
+        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncUnaryCall(handler)));
         return this;
     }
 
     public <ReqT> GrpcServiceOverrideBuilder onNextOverride(
             final Delegate<ReqT, BrowserFlight.BrowserNextResponse> delegate,
-            final String fullMethodName,
+            final String methodName,
             final MethodDescriptor<?, ?> descriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller) {
         return override(MethodDescriptor.<ReqT, BrowserFlight.BrowserNextResponse>newBuilder()
                 .setType(MethodDescriptor.MethodType.UNARY)
-                .setFullMethodName(fullMethodName)
+                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(ProtoUtils.marshaller(BrowserFlight.BrowserNextResponse.getDefaultInstance()))
@@ -87,13 +89,13 @@ public class GrpcServiceOverrideBuilder {
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder onOpenOverride(
             final Delegate<ReqT, RespT> delegate,
-            final String fullMethodName,
+            final String methodName,
             final MethodDescriptor<?, ?> descriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
         return override(MethodDescriptor.<ReqT, RespT>newBuilder()
                 .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
-                .setFullMethodName(fullMethodName)
+                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(responseMarshaller)
@@ -103,13 +105,13 @@ public class GrpcServiceOverrideBuilder {
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder onBidiOverride(
             final BidiDelegate<ReqT, RespT> delegate,
-            final String fullMethodName,
+            final String methodName,
             final MethodDescriptor<?, ?> descriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
         return override(MethodDescriptor.<ReqT, RespT>newBuilder()
                 .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
-                .setFullMethodName(fullMethodName)
+                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(responseMarshaller)
@@ -152,14 +154,15 @@ public class GrpcServiceOverrideBuilder {
 
     public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
             final MethodDescriptor.MethodType methodType,
-            final String fullMethodName,
+            final String serviceName,
+            final String methodName,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller,
             final MethodDescriptor<?, ?> descriptor) {
 
         return MethodDescriptor.<ReqT, RespT>newBuilder()
                 .setType(methodType)
-                .setFullMethodName(fullMethodName)
+                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(responseMarshaller)
@@ -180,7 +183,7 @@ public class GrpcServiceOverrideBuilder {
             this.delegate = delegate;
         }
 
-        @java.lang.Override
+        @Override
         public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
             final ServerCallStreamObserver<RespT> serverCall = (ServerCallStreamObserver<RespT>) responseObserver;
             serverCall.disableAutoInboundFlowControl();
@@ -197,7 +200,7 @@ public class GrpcServiceOverrideBuilder {
             this.delegate = delegate;
         }
 
-        @java.lang.Override
+        @Override
         public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
             delegate.doInvoke(request, responseObserver);
         }
@@ -215,7 +218,7 @@ public class GrpcServiceOverrideBuilder {
             this.delegate = delegate;
         }
 
-        @java.lang.Override
+        @Override
         public StreamObserver<ReqT> invoke(final StreamObserver<RespT> responseObserver) {
             final ServerCallStreamObserver<RespT> serverCall = (ServerCallStreamObserver<RespT>) responseObserver;
             serverCall.disableAutoInboundFlowControl();

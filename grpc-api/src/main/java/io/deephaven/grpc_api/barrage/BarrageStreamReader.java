@@ -66,7 +66,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                     final int size = decoder.readRawVarint32();
                     final ByteBuffer msgAsBB = ByteBuffer.wrap(decoder.readRawBytes(size));
                     final BarrageMessageWrapper wrapper = BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
-                    if (wrapper.magic() == BarrageStreamGenerator.FLATBUFFER_MAGIC && wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
+                    if (wrapper.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC) {
+                        log.warn().append("BarrageStreamReader: skipping app_metadata that does not look like BarrageMessageWrapper").endl();
+                    } else if (wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
                         if (msg != null) {
                             throw new IllegalStateException("Previous message was not complete; pending " + numAddBatchesRemaining
                                     + " add batches and " + numModBatchesRemaining + " mod batches");

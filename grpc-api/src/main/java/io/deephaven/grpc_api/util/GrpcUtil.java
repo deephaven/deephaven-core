@@ -127,4 +127,11 @@ public class GrpcUtil {
             log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
     }
+
+    /**
+     * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
+     */
+     public static <T> void safelyError(final StreamObserver<T> observer, final Code statusCode, final String msg) {
+        safelyExecute(() -> observer.onError(GrpcUtil.statusRuntimeException(statusCode, msg)));
+    }
 }
