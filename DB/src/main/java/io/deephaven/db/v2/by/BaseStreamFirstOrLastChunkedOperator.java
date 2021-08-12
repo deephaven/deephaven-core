@@ -49,7 +49,8 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
      */
     protected LongArraySource redirections;
 
-    protected BaseStreamFirstOrLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
+    protected BaseStreamFirstOrLastChunkedOperator(@NotNull final MatchPair[] resultPairs,
+                                                   @NotNull final Table streamTable) {
         numResultColumns = resultPairs.length;
         inputColumns = new ColumnSource[numResultColumns];
         outputColumns = new WritableSource[numResultColumns];
@@ -75,11 +76,6 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
 
     @Override
     public final boolean requiresIndices() {
-        return true;
-    }
-
-    @Override
-    public final boolean unchunkedIndex() {
         return true;
     }
 

@@ -44,6 +44,11 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
+    public final boolean unchunkedIndex() {
+        return true;
+    }
+
+    @Override
     public final void startTrackingPrevValues() {
         // We never change the value at any key in outputColumns since there are no removes; consequently there's no
         // need to enable previous value tracking.
