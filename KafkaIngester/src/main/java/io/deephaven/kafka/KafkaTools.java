@@ -325,13 +325,7 @@ public class KafkaTools {
                 kafkaConsumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
-                    try {
-                        adapter.consumeRecords(records);
-                    } catch (IOException ex) {
-                        throw new UncheckedDeephavenException(ex);
-                    }
-                },
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
                 partitionToInitialOffset
         );
         ingester.start();
@@ -408,13 +402,7 @@ public class KafkaTools {
                 consumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
-                    try {
-                        adapter.consumeRecords(records);
-                    } catch (IOException ex) {
-                        throw new UncheckedDeephavenException(ex);
-                    }
-                },
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
                 partitionToInitialOffset
         );
         ingester.start();
@@ -624,5 +612,29 @@ public class KafkaTools {
             map.put(fieldNames[i], columnNames[i]);
         }
         return (final String fieldName) -> map.getOrDefault(fieldName, fieldName);
+    }
+
+    private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
+        private final ConsumerRecordToStreamPublisherAdapter adapter;
+        private final StreamToTableAdapter streamToTableAdapter;
+
+        public SimpleKafkaStreamConsumer(ConsumerRecordToStreamPublisherAdapter adapter, StreamToTableAdapter streamToTableAdapter) {
+            this.adapter = adapter;
+            this.streamToTableAdapter = streamToTableAdapter;
+        }
+
+        @Override
+        public void accept(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+            try {
+                adapter.consumeRecords(consumerRecords);
+            } catch (Exception e) {
+                acceptFailure(e);
+            }
+        }
+
+        @Override
+        public void acceptFailure(@NotNull Exception cause) {
+            streamToTableAdapter.acceptFailure(cause);
+        }
     }
 }

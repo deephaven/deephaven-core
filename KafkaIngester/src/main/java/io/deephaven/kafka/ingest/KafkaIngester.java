@@ -1,5 +1,6 @@
 package io.deephaven.kafka.ingest;
 
+import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -41,7 +42,9 @@ public class KafkaIngester {
     private final Logger log;
     private final String topic;
     private final String partitionDescription;
-    private final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer;
+    private final IntFunction<KafkaStreamConsumer> partitionToConsumer;
+    private final TIntObjectHashMap<KafkaStreamConsumer> consumers = new TIntObjectHashMap<>();
+    private final Set<KafkaStreamConsumer> uniqueConsumers = Collections.newSetFromMap(new IdentityHashMap<>());
     private final String logPrefix;
     private long messagesProcessed = 0;
     private long messagesWithErr = 0;
@@ -159,7 +162,7 @@ public class KafkaIngester {
     public KafkaIngester(final Logger log,
                          final Properties props,
                          final String topic,
-                         final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer,
+                         final IntFunction<KafkaStreamConsumer> partitionToConsumer,
                          final IntToLongFunction partitionToInitialSeekOffset) {
         this(log, props, topic, ALL_PARTITIONS, partitionToConsumer, partitionToInitialSeekOffset);
     }
@@ -184,7 +187,7 @@ public class KafkaIngester {
                          final Properties props,
                          final String topic,
                          final IntPredicate partitionFilter,
-                         final IntFunction<Consumer<List<? extends ConsumerRecord<?, ?>>>> partitionToConsumer,
+                         final IntFunction<KafkaStreamConsumer> partitionToConsumer,
                          final IntToLongFunction partitionToInitialSeekOffset) {
         this.log = log;
         this.topic = topic;
@@ -259,7 +262,7 @@ public class KafkaIngester {
             boolean noMore = pollOnce(Duration.ofNanos(remainingNanos));
             if (noMore) {
                 log.error().append(logPrefix)
-                        .append("Stopping due to errors.")
+                        .append("Stopping due to errors (").append(messagesWithErr).append(" messages with error out of ").append(messagesProcessed).append(" messages processed)")
                         .endl();
                 break;
             }
@@ -300,7 +303,15 @@ public class KafkaIngester {
 
         for (final TopicPartition topicPartition : records.partitions()) {
             final int partition = topicPartition.partition();
-            final Consumer<List<? extends ConsumerRecord<?, ?>>> consumer = partitionToConsumer.apply(partition);
+
+            KafkaStreamConsumer consumer;
+            consumer = consumers.get(partition);
+            if (consumer == null) {
+                consumer = partitionToConsumer.apply(partition);
+                uniqueConsumers.add(consumer);
+                consumers.put(partition, consumer);
+            }
+
 
             final List<? extends ConsumerRecord<?, ?>> partitionRecords = records.records(topicPartition);
 
@@ -310,6 +321,7 @@ public class KafkaIngester {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex);
                 if (messagesWithErr > MAX_ERRS) {
+                    consumer.acceptFailure(ex);
                     log.error().append(logPrefix).append("Max number of errors exceeded, aborting " + this + " consumer thread.");
                     return true;
                 }
