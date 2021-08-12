@@ -171,10 +171,14 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final Update upstream) {
+                    final Update upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
                     final Update downstream;
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet, operatorInputModifiedColumnSets,
-                            isStream ? adjustForStreaming(upstream) : upstream, outputPosition)) {
+                            upstreamToUse, outputPosition)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(withView.getIndex(), keyColumnsRaw, keyColumnsCopied,
                                 result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                     }
@@ -204,9 +208,11 @@ public class ChunkedOperatorAggregationHelper {
 
     private static Update adjustForStreaming(@NotNull final Update upstream) {
         // Streaming aggregations never have modifies or shifts from their parent:
-        Assert.assertion(upstream.modified.empty() && upstream.shifted.empty() && upstream.modifiedColumnSet.empty(),
-                "upstream.modified.empty() && upstream.shifted.empty() && upstream.modifiedColumnSet.empty()");
+        Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(), "upstream.modified.empty() && upstream.shifted.empty()");
         // Streaming aggregations ignore removes:
+        if (upstream.removed.empty()) {
+            return upstream;
+        }
         return new Update(upstream.added, Index.CURRENT_FACTORY.getEmptyIndex(), upstream.modified, upstream.shifted, upstream.modifiedColumnSet);
     }
 
@@ -1462,7 +1468,11 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final Update upstream) {
-                    processNoKeyUpdate(isStream ? adjustForStreaming(upstream) : upstream);
+                    final Update upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
+                    processNoKeyUpdate(upstreamToUse);
                 }
 
                 private void processNoKeyUpdate(@NotNull final Update upstream) {
