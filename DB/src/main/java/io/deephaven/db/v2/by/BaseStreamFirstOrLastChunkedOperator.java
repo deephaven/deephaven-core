@@ -14,9 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Base class with shared boilerplate for {@link StreamFirstByChunkedOperator} and {@link StreamLastByChunkedOperator}.
+ * Base class with shared boilerplate for {@link StreamFirstChunkedOperator} and {@link StreamLastChunkedOperator}.
  */
-public abstract class StreamFirstOrLastByChunkedOperator implements IterativeChunkedAggregationOperator {
+public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
 
     protected static final int COPY_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -49,7 +49,7 @@ public abstract class StreamFirstOrLastByChunkedOperator implements IterativeChu
      */
     protected LongArraySource redirections;
 
-    protected StreamFirstOrLastByChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
+    protected BaseStreamFirstOrLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
         numResultColumns = resultPairs.length;
         inputColumns = new ColumnSource[numResultColumns];
         outputColumns = new WritableSource[numResultColumns];

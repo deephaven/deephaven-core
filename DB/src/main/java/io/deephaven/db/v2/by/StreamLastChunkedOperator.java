@@ -29,14 +29,14 @@ import java.util.Arrays;
  *
  * @see Table#STREAM_TABLE_ATTRIBUTE
  */
-public class StreamLastByChunkedOperator extends StreamFirstOrLastByChunkedOperator {
+public class StreamLastChunkedOperator extends BaseStreamFirstOrLastChunkedOperator {
 
     /**
      * Permute kernels, parallel to {@link #outputColumns}.
      */
     private final PermuteKernel[] permuteKernels;
 
-    StreamLastByChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
+    StreamLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
         super(resultPairs, streamTable);
         permuteKernels = new PermuteKernel[numResultColumns];
         for (int ci = 0; ci < numResultColumns; ++ci) {
