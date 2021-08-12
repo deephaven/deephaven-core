@@ -1657,6 +1657,9 @@ public class TableTools {
             case "StringSet":
             case "stringset":
                 return io.deephaven.db.tables.libs.StringSet.class;
+            case "boolean":
+            case "Boolean":
+                return Boolean.class;
             default:
                 return null;
         }
