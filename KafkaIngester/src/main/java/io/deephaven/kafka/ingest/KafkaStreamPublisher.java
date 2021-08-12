@@ -13,12 +13,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * An adapter that maps keys and values, possibly each with multiple fields, to single Deephaven columns.  Each Kafka record produces one Deephaven row.
  */
-public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecordToStreamPublisherAdapter {
+public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdapter {
     private final StreamPublisherImpl publisher;
     private final int kafkaPartitionColumnIndex;
     private final int offsetColumnIndex;
@@ -31,14 +32,18 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
 
     final KeyOrValueProcessor keyProcessor;
     final KeyOrValueProcessor valueProcessor;
+    final Function<Object, Object> keyToChunkObjectMapper;
+    final Function<Object, Object> valueToChunkObjectMapper;
 
-    private ConsumerRecordToStreamPublisherAdapterImpl(
+    private KafkaStreamPublisher(
             final StreamPublisherImpl publisher,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
             final KeyOrValueProcessor keyProcessor,
             final KeyOrValueProcessor valueProcessor,
+            final Function<Object, Object> keyToChunkObjectMapper,
+            final Function<Object, Object> valueToChunkObjectMapper,
             final int simpleKeyColumnIndex,
             final int simpleValueColumnIndex) {
         this.publisher = publisher;
@@ -49,6 +54,8 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
         this.simpleValueColumnIndex = simpleValueColumnIndex;
         this.keyProcessor = keyProcessor;
         this.valueProcessor = valueProcessor;
+        this.keyToChunkObjectMapper = keyToChunkObjectMapper;
+        this.valueToChunkObjectMapper = valueToChunkObjectMapper;
 
         keyIsSimpleObject = this.simpleKeyColumnIndex >= 0;
         if (keyIsSimpleObject && keyProcessor != null) {
@@ -63,6 +70,8 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
 
     public static ConsumerRecordToStreamPublisherAdapter make(
             final StreamPublisherImpl publisher,
+            final Function<Object, Object> keyToChunkObjectMapper,
+            final Function<Object, Object> valueToChunkObjectMapper,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
@@ -78,8 +87,12 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
         final Pair<KeyOrValueProcessor, Integer> keyPair = getProcessorAndSimpleIndex(keyColumnIndex, keyChunkType);
         final Pair<KeyOrValueProcessor, Integer> valuePair = getProcessorAndSimpleIndex(valueColumnIndex, valueChunkType);
 
-        return new ConsumerRecordToStreamPublisherAdapterImpl(
-                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyPair.first, valuePair.first, keyPair.second, valuePair.second);
+        return new KafkaStreamPublisher(
+                publisher,
+                kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex,
+                keyPair.first, valuePair.first,
+                keyToChunkObjectMapper, valueToChunkObjectMapper,
+                keyPair.second, valuePair.second);
     }
 
     public static ConsumerRecordToStreamPublisherAdapter make(
@@ -89,6 +102,8 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
             final int timestampColumnIndex,
             final KeyOrValueProcessor keyProcessor,
             final KeyOrValueProcessor valueProcessor,
+            final Function<Object, Object> keyToChunkObjectMapper,
+            final Function<Object, Object> valueToChunkObjectMapper,
             final int simpleKeyColumnIndex,
             final int simpleValueColumnIndex
             ) {
@@ -96,8 +111,12 @@ public class ConsumerRecordToStreamPublisherAdapterImpl implements ConsumerRecor
             throw new IllegalArgumentException("Value processor is required!");
         }
 
-        return new ConsumerRecordToStreamPublisherAdapterImpl(
-                publisher, kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex, keyProcessor, valueProcessor, simpleKeyColumnIndex, simpleValueColumnIndex);
+        return new KafkaStreamPublisher(
+                publisher,
+                kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex,
+                keyProcessor, valueProcessor,
+                keyToChunkObjectMapper, valueToChunkObjectMapper,
+                simpleKeyColumnIndex, simpleValueColumnIndex);
     }
 
     @NotNull

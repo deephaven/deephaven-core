@@ -1,5 +1,6 @@
 package io.deephaven.kafka;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gnu.trove.map.hash.TIntLongHashMap;
 
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -314,11 +315,13 @@ public class KafkaTools {
             valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
         }
 
-        final ConsumerRecordToStreamPublisherAdapter adapter = ConsumerRecordToStreamPublisherAdapterImpl.make(streamPublisher,
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
                 commonColumnIndices[0],
                 commonColumnIndices[1],
                 commonColumnIndices[2],
                 keyProcessor, valueProcessor,
+                Function.identity(),
+                Function.identity(),
                 -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 );
@@ -388,11 +391,23 @@ public class KafkaTools {
         final KeyOrValueProcessor keyProcessor = null; // TODO: Support key as both json or generic.
         final KeyOrValueProcessor valueProcessor = JsonNodeChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
 
-        final ConsumerRecordToStreamPublisherAdapter adapter = ConsumerRecordToStreamPublisherAdapterImpl.make(streamPublisher,
+        final Function<Object, Object> toObjectChunkMapper = (final Object in) -> {
+            final String json;
+            try {
+                json = (String) in;
+            } catch (ClassCastException ex) {
+                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
+            }
+            return JsonNodeUtil.makeJsonNode(json);
+        };
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                streamPublisher,
                 commonColsIndices[0],
                 commonColsIndices[1],
                 commonColsIndices[2],
                 keyProcessor, valueProcessor,
+                toObjectChunkMapper,
+                toObjectChunkMapper,
                 -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
         );
@@ -415,13 +430,6 @@ public class KafkaTools {
 
         return streamToTableAdapter.table();
 
-    }
-
-    private static String columnNameOrNull(final ColumnDefinition<?> colDef) {
-        if (colDef == null) {
-            return null;
-        }
-        return colDef.getName();
     }
 
     /**
@@ -479,8 +487,10 @@ public class KafkaTools {
             }
             return colIdx.getAndIncrement();
         };
-        final ConsumerRecordToStreamPublisherAdapter adapter = ConsumerRecordToStreamPublisherAdapterImpl.make(
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
                 streamPublisher,
+                Function.identity(),
+                Function.identity(),
                 orNull.applyAsInt(columns[0]),
                 orNull.applyAsInt(columns[1]),
                 orNull.applyAsInt(columns[2]),

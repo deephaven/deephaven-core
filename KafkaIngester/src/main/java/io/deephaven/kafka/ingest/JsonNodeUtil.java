@@ -1,6 +1,11 @@
 package io.deephaven.kafka.ingest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -11,6 +16,18 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class JsonNodeUtil {
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
+            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+
+    public static JsonNode makeJsonNode(final String json) {
+        final JsonNode node;
+        try {
+            return objectMapper.readTree(json);
+        } catch (JsonProcessingException ex) {
+            throw new UncheckedDeephavenException("Failed to parse JSON string.", ex);
+        }
+    }
 
     private static JsonNode checkAllowMissingOrNull(
             final JsonNode node, @NotNull final String key,
