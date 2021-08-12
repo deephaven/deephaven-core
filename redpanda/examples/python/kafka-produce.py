@@ -45,7 +45,7 @@
 #
 # From web UI do:
 # > from deephaven.TableTools import *   # to get colDef
-# t = consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_json=[ colDef('Symbol', 'string'), colDef('Side', 'string'), colDef('Price', 'double'), colDef('Qty', 'int') ])
+# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_json=[ colDef('Symbol', 'string'), colDef('Side', 'string'), colDef('Price', 'double'), colDef('Qty', 'int') ])
 #
 # Run this script on the host (not on a docker image) to produce one row:
 # $ python3 kafka-produce.py orders 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'

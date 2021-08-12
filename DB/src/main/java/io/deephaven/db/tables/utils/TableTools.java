@@ -1646,10 +1646,6 @@ public class TableTools {
         return "(" + dataType.getName() + ")" + " null";
     }
 
-    public static TableDefinition tableDef(final ColumnDefinition<?>[] cols) {
-        return new TableDefinition(cols);
-    }
-
     private static Class<?> typeFromShortName(final String dataTypeStr) {
         switch (dataTypeStr) {
             case "String":
@@ -1678,15 +1674,5 @@ public class TableTools {
             throw new IllegalArgumentException("Type " + dataTypeStr + " not known", e);
         }
         return dataType;
-    }
-
-    public static ColumnDefinition<?> colDef(
-            final String columnName, final String dataTypeStr) {
-        return ColumnDefinition.fromGenericType(columnName, typeFromName(dataTypeStr));
-    }
-
-    public static ColumnDefinition<?> colDef(
-            final String columnName, final String dataTypeStr, final String componentTypeStr) {
-        return ColumnDefinition.fromGenericType(columnName, typeFromName(dataTypeStr), typeFromName(componentTypeStr));
     }
 }
