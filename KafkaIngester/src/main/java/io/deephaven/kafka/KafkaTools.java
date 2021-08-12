@@ -422,13 +422,7 @@ public class KafkaTools {
                 consumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
-                    try {
-                        adapter.consumeRecords(records);
-                    } catch (IOException ex) {
-                        throw new UncheckedDeephavenException(ex);
-                    }
-                },
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
                 partitionToInitialOffset
         );
         ingester.start();
