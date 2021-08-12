@@ -3,6 +3,7 @@ package io.deephaven.db.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.util.SortedBy;
 import io.deephaven.db.v2.ShiftAwareListener.Update;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.ReadOnlyRedirectedColumnSource;
@@ -64,6 +65,9 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
         final QueryTable normal = new QueryTable(Index.FACTORY.getEmptyIndex(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
+        final QueryTable addOnly = (QueryTable) normal.copy();
+        addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+
         final Index streamInternalIndex;
         final Map<String, ? extends ColumnSource> streamSources;
         if (windowed) {
@@ -88,9 +92,10 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
         TstUtils.assertTableEquals(normal, stream);
 
         final Table expected = operator.apply(normal);
-        final Table actual = operator.apply(stream);
-        TstUtils.assertTableEquals(expected, actual);
-        TestCase.assertFalse(((BaseTable) actual).isStream()); // Aggregation results are never stream tables
+        final Table addOnlyExpected = operator.apply(addOnly);
+        final Table streamExpected = operator.apply(stream);
+        TstUtils.assertTableEquals(expected, streamExpected);
+        TestCase.assertFalse(((BaseTable) streamExpected).isStream()); // Aggregation results are never stream tables
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
@@ -128,12 +133,12 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                TstUtils.assertTableEquals(expected, actual);
             } finally {
                 LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
             }
             try {
-                TstUtils.assertTableEquals(expected, actual);
+                TstUtils.assertTableEquals(expected, addOnlyExpected);
+                TstUtils.assertTableEquals(expected, streamExpected);
             } catch (ComparisonFailure e) {
                 System.err.printf("FAILURE: step %d, previousUsedSize %d, refreshSize %d%n", step, usedSize, refreshSize);
                 throw e;
@@ -246,13 +251,55 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
     }
 
     @Test
+    public void testSortedFirstBy() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price", "Sym"), false);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeys() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price"), false);
+    }
+
+    @Test
+    public void testSortedFirstByWindowed() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price", "Sym"), true);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeysWindowed() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price"), true);
+    }
+
+    @Test
+    public void testSortedLastBy() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price", "Sym"), false);
+    }
+
+    @Test
+    public void testSortedLastByNoKeys() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price"), false);
+    }
+
+    @Test
+    public void testSortedLastByWindowed() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price", "Sym"), true);
+    }
+
+    @Test
+    public void testSortedLastByNoKeysWindowed() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price"), true);
+    }
+
+    @Test
     public void testComboBy() {
         doOperatorTest(table -> table.by(AggCombo(
                 AggFirst("FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedPrice=Price", "MedSize=Size")
+                AggMed("MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "SortedFirstPrice=Price", "SortedFirstSize=Size"),
+                AggSortedLast("Price", "SortedLastPrice=Price", "SortedLastSize=Size")
         ), "Sym"), false);
     }
 
@@ -263,7 +310,9 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                 AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
                 AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxSym=Sym", "MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size")
+                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "SortedFirstPrice=Price", "SortedFirstSize=Size"),
+                AggSortedLast("Price", "SortedLastPrice=Price", "SortedLastSize=Size")
         )), false);
     }
 
@@ -274,7 +323,9 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedPrice=Price", "MedSize=Size")
+                AggMed("MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "SortedFirstPrice=Price", "SortedFirstSize=Size"),
+                AggSortedLast("Price", "SortedLastPrice=Price", "SortedLastSize=Size")
         ), "Sym"), true);
     }
 
@@ -285,7 +336,9 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                 AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
                 AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxSym=Sym", "MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size")
+                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "SortedFirstPrice=Price", "SortedFirstSize=Size"),
+                AggSortedLast("Price", "SortedLastPrice=Price", "SortedLastSize=Size")
         )), true);
     }
 }
