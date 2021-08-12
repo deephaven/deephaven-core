@@ -25,7 +25,7 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
             if (valueAsString == null) {
                 valueAsBoolean = null;
             } else {
-                switch(valueAsString) {
+                switch(valueAsString.trim()) {
                     case "TRUE":
                     case "True":
                     case "true":
@@ -40,6 +40,9 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
                     case "F":
                     case "f":
                         valueAsBoolean = Boolean.FALSE;
+                        break;
+                    case "":
+                        valueAsBoolean = null;
                         break;
                     default:
                         throw new UncheckedDeephavenException("value " + valueAsString + " not recognized as Boolean for field " + fieldName);
