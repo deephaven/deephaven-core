@@ -1,6 +1,5 @@
 package io.deephaven.kafka;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import gnu.trove.map.hash.TIntLongHashMap;
 
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -411,6 +410,14 @@ public class KafkaTools {
                 -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
                 -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
         );
+
+        if (!consumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        if (!consumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
