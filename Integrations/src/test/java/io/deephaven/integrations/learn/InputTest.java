@@ -1,6 +1,5 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.sources.ColumnSource;
 import org.junit.Assert;
@@ -73,7 +72,7 @@ public class InputTest {
         Input input = new Input(colNames, func);
     }
 
-    @Test(expected = NameValidator.InvalidNameException.class)
+    @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
     public void createInputTest5() {
         final InMemoryTable table = new InMemoryTable(
                 new String[]{"Column1", "Column2", "Column3"},

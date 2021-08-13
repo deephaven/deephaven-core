@@ -4,6 +4,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.NameValidator;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
@@ -38,6 +39,12 @@ public class Input {
         this(colNames, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
+    /**
+     * Creates a new Input.
+     *
+     * @param colNames      array of column names to be used as inputs.
+     * @param gatherFunc    function that gathers data into a Python object.
+     */
     public Input(String[] colNames, Function<Object[], Object> gatherFunc) {
 
         Require.neqNull(colNames, "colNames");
@@ -73,4 +80,12 @@ public class Input {
      * @return the gather function.
      */
     Function<Object[], Object> getGatherFunc() { return gatherFunc; }
+
+    /**
+     * Gets the column names.
+     *
+     * @return the column names.
+     */
+    @ScriptApi
+    public String[] getColNames() { return colNames; }
 }

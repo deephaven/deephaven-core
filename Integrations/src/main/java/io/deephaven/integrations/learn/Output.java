@@ -6,6 +6,8 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -28,12 +30,27 @@ public class Output {
         this(colName, new PythonFunctionCaller(Require.neqNull(scatterFunc, "scatterFunc")), type);
     }
 
-    private Output(String colName, Function<Object[], Object> scatterFunc, String type) {
+    /**
+     * Creates a new Output.
+     *
+     * @param colName       name of new column to store results.
+     * @param scatterFunc   function to scatter the results of a Python object into the table column.
+     * @param type          desired datatype of the new column.
+     */
+    public Output(String colName, Function<Object[], Object> scatterFunc, String type) {
 
         Require.neqNull(colName, "colName");
         Require.neqNull(scatterFunc, "scatterFunc");
 
         NameValidator.validateColumnName(colName);
+
+        List<String> validTypes = Arrays.asList("int", "long", "double", "float", "boolean", "char", "String");
+        if (type != null) {
+            if (validTypes.contains(type));
+            else {
+                throw new IllegalArgumentException("Output column datatype must be one of: int, long, double, float, boolean, char, String.");
+            }
+        }
 
         this.colName = colName;
         this.scatterFunc = scatterFunc;
