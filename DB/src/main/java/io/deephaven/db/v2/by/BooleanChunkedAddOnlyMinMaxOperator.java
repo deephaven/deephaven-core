@@ -19,12 +19,12 @@ import java.util.Objects;
 /**
  * Iterative average operator.
  */
-class BooleanChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
+class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final BooleanArraySource resultColumn = new BooleanArraySource();
     private final boolean minimum;
     private final String name;
 
-    BooleanChunkedAppendOnlyMinMaxOperator(boolean minimum, String name) {
+    BooleanChunkedAddOnlyMinMaxOperator(boolean minimum, String name) {
         this.minimum = minimum;
         this.name = name;
     }

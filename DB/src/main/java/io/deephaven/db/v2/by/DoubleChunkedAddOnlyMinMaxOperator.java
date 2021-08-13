@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAppendOnlyMinMaxOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAddOnlyMinMaxOperator and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
@@ -8,8 +8,8 @@
 package io.deephaven.db.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.DhFloatComparisons;
-import io.deephaven.db.v2.sources.FloatArraySource;
+import io.deephaven.db.util.DhDoubleComparisons;
+import io.deephaven.db.v2.sources.DoubleArraySource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.*;
@@ -21,31 +21,31 @@ import java.util.Map;
 /**
  * Iterative average operator.
  */
-class FloatChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
-    private final FloatArraySource resultColumn;
+class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
+    private final DoubleArraySource resultColumn;
     private final boolean minimum;
     private final String name;
 
-    FloatChunkedAppendOnlyMinMaxOperator(
+    DoubleChunkedAddOnlyMinMaxOperator(
             // region extra constructor params
             // endregion extra constructor params
             boolean minimum, String name) {
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        this.resultColumn = new FloatArraySource();
+        this.resultColumn = new DoubleArraySource();
         // endregion resultColumn initialization
     }
 
-    private float min(FloatChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private double min(DoubleChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull = 0;
-        float value = QueryConstants.NULL_FLOAT;
+        double value = QueryConstants.NULL_DOUBLE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
-            final float candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_FLOAT) {
+            final double candidate = values.get(ii);
+            if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhFloatComparisons.lt(candidate, value)) {
+                } else if (DhDoubleComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -54,15 +54,15 @@ class FloatChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         return value;
     }
 
-    private float max(FloatChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private double max(DoubleChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull =0;
-        float value = QueryConstants.NULL_FLOAT;
+        double value = QueryConstants.NULL_DOUBLE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
-            final float candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_FLOAT) {
+            final double candidate = values.get(ii);
+            if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhFloatComparisons.gt(candidate, value)) {
+                } else if (DhDoubleComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -71,21 +71,21 @@ class FloatChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         return value;
     }
 
-    private float min(float a, float b) {
-        return DhFloatComparisons.lt(a, b) ? a : b;
+    private double min(double a, double b) {
+        return DhDoubleComparisons.lt(a, b) ? a : b;
     }
 
-    private float max(float a, float b) {
-        return DhFloatComparisons.gt(a, b) ? a : b;
+    private double max(double a, double b) {
+        return DhDoubleComparisons.gt(a, b) ? a : b;
     }
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final FloatChunk<? extends Values> asFloatChunk = values.asFloatChunk();
+        final DoubleChunk<? extends Values> asDoubleChunk = values.asDoubleChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(asFloatChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii, addChunk(asDoubleChunk, destination, startPosition, length.get(ii)));
         }
     }
 
@@ -101,7 +101,7 @@ class FloatChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
-        return addChunk(values.asFloatChunk(), destination, 0, values.size());
+        return addChunk(values.asDoubleChunk(), destination, 0, values.size());
     }
 
     @Override
@@ -114,27 +114,27 @@ class FloatChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregatio
         throw new UnsupportedOperationException();
     }
 
-    private boolean addChunk(FloatChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean addChunk(DoubleChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         if (chunkSize == 0) {
             return false;
         }
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
-        final float chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd) : max(values, chunkNonNull, chunkStart, chunkEnd);
+        final double chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd) : max(values, chunkNonNull, chunkStart, chunkEnd);
         if (chunkNonNull.intValue() == 0) {
             return false;
         }
 
-        final float result;
-        final float oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == QueryConstants.NULL_FLOAT) {
+        final double result;
+        final double oldValue = resultColumn.getUnsafe(destination);
+        if (oldValue == QueryConstants.NULL_DOUBLE) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhFloatComparisons.eq(result, oldValue)) {
+        if (!DhDoubleComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

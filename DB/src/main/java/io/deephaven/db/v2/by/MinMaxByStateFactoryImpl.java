@@ -12,13 +12,12 @@ package io.deephaven.db.v2.by;
  * For refreshing tables, it requires maintaining a TreeMap of values to counts; so that if the min/max value is removed
  * we are able to identify the next lowest/highest value.
  *
- * You can use {@link AppendMinMaxByStateFactoryImpl} if you want to force append-only behavior.
+ * You can use {@link AddOnlyMinMaxByStateFactoryImpl} if you want to force add-only behavior.
  *
  */
 public class MinMaxByStateFactoryImpl extends ReaggregatableStatefactory {
     private final boolean minimum;
-    private boolean appendOnly = false;
-    private final boolean requireAppendOnly;
+    private final boolean requireAddOnly;
 
     /**
      * Create a minBy or maxBy factory.
@@ -33,13 +32,12 @@ public class MinMaxByStateFactoryImpl extends ReaggregatableStatefactory {
      * Create a minBy or maxBy factory.
      *
      * @param minimum true if selecting the minimum value, false if selecting the maximum value.
-     * @param appendOnly if true create a factory only suitable for append-only tables, if false the append-only factory
-     *                   will be created for non-refreshing tables and the general factory is created for refreshing
-     *                   tables
+     * @param addOnly if true create a factory only suitable for add-only tables, if false the add-only factory will be
+     *                created for non-refreshing tables and the general factory is created for refreshing tables
      */
-    MinMaxByStateFactoryImpl(boolean minimum, boolean appendOnly) {
+    MinMaxByStateFactoryImpl(boolean minimum, boolean addOnly) {
         this.minimum = minimum;
-        this.requireAppendOnly = appendOnly;
+        this.requireAddOnly = addOnly;
     }
 
     public boolean isMinimum() {
@@ -48,15 +46,15 @@ public class MinMaxByStateFactoryImpl extends ReaggregatableStatefactory {
 
     private static final AggregationMemoKey MIN_INSTANCE = new AggregationMemoKey() {};
     private static final AggregationMemoKey MAX_INSTANCE = new AggregationMemoKey() {};
-    private static final AggregationMemoKey APPEND_MIN_INSTANCE = new AggregationMemoKey() {};
-    private static final AggregationMemoKey APPEND_MAX_INSTANCE = new AggregationMemoKey() {};
+    private static final AggregationMemoKey ADD_ONLY_MIN_INSTANCE = new AggregationMemoKey() {};
+    private static final AggregationMemoKey ADD_ONLY_MAX_INSTANCE = new AggregationMemoKey() {};
 
     @Override
     public AggregationMemoKey getMemoKey() {
-        if (requireAppendOnly) {
+        if (requireAddOnly) {
             return minimum ? MIN_INSTANCE : MAX_INSTANCE;
         } else {
-            return minimum ? APPEND_MIN_INSTANCE : APPEND_MAX_INSTANCE;
+            return minimum ? ADD_ONLY_MIN_INSTANCE : ADD_ONLY_MAX_INSTANCE;
         }
     }
 
