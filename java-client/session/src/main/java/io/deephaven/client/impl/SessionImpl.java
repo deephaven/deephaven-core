@@ -88,22 +88,23 @@ public final class SessionImpl extends SessionBase {
 
     public static SessionImpl create(SessionServiceGrpc.SessionServiceBlockingStub stubBlocking,
         SessionServiceGrpc.SessionServiceStub stub, TableServiceStub tableServiceStub,
-        ConsoleServiceStub consoleServiceStub, ScheduledExecutorService executor) {
+        ConsoleServiceStub consoleServiceStub, ScheduledExecutorService executor,
+        boolean delegateToBatch) {
         HandshakeRequest request = initialHandshake();
         HandshakeResponse response = stubBlocking.newSession(request);
         AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
         SessionImpl session = new SessionImpl(executor, stub, tableServiceStub, consoleServiceStub,
-            new Retrying(REFRESH_RETRIES), initialAuth);
+            new Retrying(REFRESH_RETRIES), initialAuth, delegateToBatch);
         session.scheduleRefreshSessionToken(response);
         return session;
     }
 
     public static CompletableFuture<SessionImpl> create(SessionServiceGrpc.SessionServiceStub stub,
         TableServiceStub tableServiceStub, ConsoleServiceStub consoleServiceStub,
-        ScheduledExecutorService executor) {
+        ScheduledExecutorService executor, boolean delegateToBatch) {
         HandshakeRequest request = initialHandshake();
-        SessionObserver sessionObserver =
-            new SessionObserver(executor, stub, tableServiceStub, consoleServiceStub);
+        SessionObserver sessionObserver = new SessionObserver(executor, stub, tableServiceStub,
+            consoleServiceStub, delegateToBatch);
         stub.newSession(request, sessionObserver);
         return sessionObserver.future;
     }
@@ -119,15 +120,18 @@ public final class SessionImpl extends SessionBase {
         private final SessionServiceStub sessionService;
         private final TableServiceStub tableServiceStub;
         private final ConsoleServiceStub consoleServiceStub;
+        private final boolean delegateToBatch;
 
         private final CompletableFuture<SessionImpl> future = new CompletableFuture<>();
 
         SessionObserver(ScheduledExecutorService executor, SessionServiceStub sessionService,
-            TableServiceStub tableServiceStub, ConsoleServiceStub consoleServiceStub) {
+            TableServiceStub tableServiceStub, ConsoleServiceStub consoleServiceStub,
+            boolean delegateToBatch) {
             this.executor = Objects.requireNonNull(executor);
             this.sessionService = Objects.requireNonNull(sessionService);
             this.tableServiceStub = Objects.requireNonNull(tableServiceStub);
             this.consoleServiceStub = Objects.requireNonNull(consoleServiceStub);
+            this.delegateToBatch = delegateToBatch;
         }
 
         @Override
@@ -143,7 +147,7 @@ public final class SessionImpl extends SessionBase {
         public void onNext(HandshakeResponse response) {
             AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
             SessionImpl session = new SessionImpl(executor, sessionService, tableServiceStub,
-                consoleServiceStub, new Retrying(REFRESH_RETRIES), initialAuth);
+                consoleServiceStub, new Retrying(REFRESH_RETRIES), initialAuth, delegateToBatch);
             if (future.complete(session)) {
                 session.scheduleRefreshSessionToken(response);
             } else {
@@ -174,9 +178,13 @@ public final class SessionImpl extends SessionBase {
 
     private volatile AuthenticationInfo auth;
 
+    private final boolean delegateToBatch;
+    private final TableHandleManagerSerial serialManager;
+    private final TableHandleManagerBatch batchManager;
+
     private SessionImpl(ScheduledExecutorService executor, SessionServiceStub sessionService,
         TableServiceStub tableServiceStub, ConsoleServiceStub consoleService, Handler handler,
-        AuthenticationInfo auth) {
+        AuthenticationInfo auth, boolean delegateToBatch) {
 
         CallCredentials credentials = new SessionCallCredentials();
         sessionService = sessionService.withCallCredentials(credentials);
@@ -188,7 +196,10 @@ public final class SessionImpl extends SessionBase {
         this.consoleService = Objects.requireNonNull(consoleService);
         this.handler = Objects.requireNonNull(handler);
         this.auth = Objects.requireNonNull(auth);
-        this.states = new ExportStates(sessionService, tableServiceStub);
+        this.states = new ExportStates(this, sessionService, tableServiceStub);
+        this.delegateToBatch = delegateToBatch;
+        this.serialManager = TableHandleManagerSerial.of(this);
+        this.batchManager = TableHandleManagerBatch.of(this);
     }
 
     public AuthenticationInfo auth() {
@@ -225,6 +236,29 @@ public final class SessionImpl extends SessionBase {
         return handler.future;
     }
 
+    @Override
+    protected TableHandleManager delegate() {
+        return delegateToBatch ? batchManager : serialManager;
+    }
+
+    @Override
+    public TableHandleManager batch() {
+        return batchManager;
+    }
+
+    @Override
+    public TableHandleManager serial() {
+        return serialManager;
+    }
+
+    public long batchCount() {
+        return states.batchCount();
+    }
+
+    public long releaseCount() {
+        return states.releaseCount();
+    }
+
     private void scheduleRefreshSessionToken(HandshakeResponse response) {
         final long refreshDelayMs = Math.min(
             System.currentTimeMillis() + response.getTokenExpirationDelayMillis() / 3,
@@ -243,7 +277,6 @@ public final class SessionImpl extends SessionBase {
         HandshakeHandler handler = new HandshakeHandler();
         sessionService.refreshSessionToken(handshakeRequest, handler);
     }
-
 
     private static class PublishObserver
         implements ClientResponseObserver<BindTableToVariableRequest, BindTableToVariableResponse> {

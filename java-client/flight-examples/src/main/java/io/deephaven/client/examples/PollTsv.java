@@ -1,10 +1,13 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.Export;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -14,6 +17,17 @@ import java.time.Duration;
 @Command(name = "poll-tsv", mixinStandardHelpOptions = true,
     description = "Send a QST, poll the results, and convert to TSV", version = "0.1.0")
 class PollTsv extends FlightExampleBase {
+
+    static class Mode {
+        @Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")
+        boolean batch;
+
+        @Option(names = {"-s", "--serial"}, required = true, description = "Serial mode")
+        boolean serial;
+    }
+
+    @ArgGroup(exclusive = true)
+    Mode mode;
 
     @Option(names = {"-i", "--interval"}, description = "The interval.", defaultValue = "PT1s")
     Duration interval;
@@ -27,12 +41,16 @@ class PollTsv extends FlightExampleBase {
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
+
+        final TableHandleManager manager = mode == null ? flight.session()
+            : mode.batch ? flight.session().batch() : flight.session().serial();
+
         long times = count == null ? Long.MAX_VALUE : count;
 
-        try (final Export export = flight.session().export(table)) {
+        try (final TableHandle handle = manager.execute(table)) {
             for (long i = 0; i < times; ++i) {
                 long start = System.nanoTime();
-                try (final FlightStream stream = flight.getStream(export)) {
+                try (final FlightStream stream = flight.getStream(handle.export())) {
                     if (i == 0) {
                         System.out.println(stream.getSchema());
                         System.out.println();

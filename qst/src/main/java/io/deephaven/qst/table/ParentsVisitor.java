@@ -1,21 +1,26 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.TableSpec.Visitor;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
  * A visitor that returns the parent tables (if any) of the given table.
  */
-public class ParentsVisitor implements TableSpec.Visitor {
+public class ParentsVisitor implements Visitor {
 
     /**
      * A traversal of the table's parents. Does not perform de-duplication.
@@ -62,7 +67,145 @@ public class ParentsVisitor implements TableSpec.Visitor {
         return postOrder;
     }
 
+    /**
+     * Invoke the {@code consumer} for each table in the de-duplicated, post-order walk from
+     * {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the
+     * table itself. There may be multiple valid post-orderings; callers should not rely on a
+     * specific post-ordering.
+     *
+     * @param tables the tables
+     * @param consumer the consumer
+     */
+    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer) {
+        postOrderList(tables).forEach(consumer);
+    }
+
+    /**
+     * Walk the {@code visitor} for each table in the de-duplicated, post-order walk from
+     * {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the
+     * table itself. There may be multiple valid post-orderings; callers should not rely on a
+     * specific post-ordering.
+     *
+     * @param tables the tables
+     * @param visitor the visitor
+     */
+    public static void postOrderWalk(Iterable<TableSpec> tables, Visitor visitor) {
+        postOrderList(tables).forEach(t -> t.walk(visitor));
+    }
+
+    /**
+     * Create a reachable set from {@code tables}, including {@code tables}. May be in any order.
+     *
+     * @param tables the tables
+     * @return the reachable set
+     */
+    public static Set<TableSpec> reachable(Iterable<TableSpec> tables) {
+        return anyOrder(tables);
+    }
+
+    /**
+     * todo: document, it only excludes searching excludePaths - it does *not* mean that the subdag
+     * under excludePaths can't be in the output (for example, the initial inputs could point to the
+     * subdag directly)
+     */
+    public static Set<TableSpec> reachableExcludePaths(Iterable<TableSpec> initialInputs,
+        Set<TableSpec> excludePaths) {
+        return reachableExcludePathsImpl(initialInputs, excludePaths);
+    }
+
+    /**
+     * todo: document, it only excludes searching excludePaths - it does *not* mean that the subdag
+     * under excludePaths can't be in the output (for example, the initial inputs could point to the
+     * subdag directly)
+     */
+    public static Optional<TableSpec> reachableExcludePathsSearch(Iterable<TableSpec> initialInputs,
+        Set<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+        return reachableExcludePathsSearchImpl(initialInputs, excludePaths, searchPredicate);
+    }
+
+    public static Optional<TableSpec> reachableAnyMatches(Iterable<TableSpec> tables,
+        Predicate<TableSpec> predicate) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : tables) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (output.add(table)) {
+                    if (predicate.test(table)) {
+                        return Optional.of(table);
+                    }
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
+                }
+            } while (!toProcess.isEmpty());
+        }
+        return Optional.empty();
+    }
+
     private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs) {
+        return reachableExcludePathsImpl(initialInputs, Collections.emptySet());
+    }
+
+    private static Set<TableSpec> reachableExcludePathsImpl(Iterable<TableSpec> initialInputs,
+        Set<TableSpec> excludePaths) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : initialInputs) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (!excludePaths.contains(table) && output.add(table)) {
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
+                }
+            } while (!toProcess.isEmpty());
+        }
+        return output;
+    }
+
+    private static Optional<TableSpec> reachableExcludePathsSearchImpl(
+        Iterable<TableSpec> initialInputs, Set<TableSpec> excludePaths,
+        Predicate<TableSpec> searchPredicate) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : initialInputs) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (!excludePaths.contains(table) && output.add(table)) {
+                    if (searchPredicate.test(table)) {
+                        return Optional.of(table);
+                    }
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
+                }
+            } while (!toProcess.isEmpty());
+        }
+        return Optional.empty();
+    }
+
+    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs,
+        Set<TableSpec> excludePaths) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : initialInputs) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (!excludePaths.contains(table) && output.add(table)) {
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
+                }
+            } while (!toProcess.isEmpty());
+        }
+        return output;
+    }
+
+    private static boolean anyMatch(Iterable<TableSpec> initialInputs,
+        Predicate<TableSpec> predicate) {
         Set<TableSpec> output = new HashSet<>();
         Queue<TableSpec> toProcess = new ArrayDeque<>();
         for (TableSpec initialInput : initialInputs) {
@@ -70,11 +213,14 @@ public class ParentsVisitor implements TableSpec.Visitor {
             do {
                 final TableSpec table = toProcess.remove();
                 if (output.add(table)) {
+                    if (predicate.test(table)) {
+                        return true;
+                    }
                     ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
                 }
             } while (!toProcess.isEmpty());
         }
-        return output;
+        return false;
     }
 
     private Stream<TableSpec> out;

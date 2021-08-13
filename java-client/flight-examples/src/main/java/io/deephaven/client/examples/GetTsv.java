@@ -1,36 +1,22 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.Export;
-import io.deephaven.client.impl.FlightSession;
+import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.table.TableSpec;
-import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-import java.time.Duration;
-
 @Command(name = "get-tsv", mixinStandardHelpOptions = true,
     description = "Send a QST, get the results, and convert to a TSV", version = "0.1.0")
-class GetTsv extends FlightExampleBase {
+class GetTsv extends FlightCannedTableBase {
 
     @Parameters(arity = "1", paramLabel = "QST", description = "QST file to send and get.",
         converter = TableConverter.class)
     TableSpec table;
 
     @Override
-    protected void execute(FlightSession flight) throws Exception {
-        final long start = System.nanoTime();
-        final long end;
-        try (final Export export = flight.session().export(table);
-            final FlightStream stream = flight.getStream(export)) {
-            System.out.println(stream.getSchema());
-            while (stream.next()) {
-                System.out.println(stream.getRoot().contentToTSVString());
-            }
-            end = System.nanoTime();
-        }
-        System.out.printf("%s duration%n", Duration.ofNanos(end - start));
+    protected TableCreationLogic logic() {
+        return table.logic();
     }
 
     public static void main(String[] args) {

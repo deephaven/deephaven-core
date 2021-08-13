@@ -114,7 +114,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
@@ -124,53 +123,17 @@ class BatchTableRequestBuilder {
         Optional<Ticket> ticket(TableSpec spec);
     }
 
-    /**
-     * Creates an optimal batch table request for new exports, leveraging the existing exports to
-     * reduce duplication
-     */
-    static BatchTableRequest build(ExportLookup lookup, Set<TableSpec> newExports) {
-        if (newExports.isEmpty()) {
-            throw new IllegalStateException(
-                "Shouldn't be building a batch request if there aren't any new exports");
-        }
-
-        // this is a post-order without duplicates, ensuring we create the dependencies
-        // in the preferred/resolvable order
-        final List<TableSpec> dependents = ParentsVisitor.postOrderList(newExports);
-
-        final Map<TableSpec, Integer> indices = new HashMap<>(dependents.size());
+    static BatchTableRequest buildNoChecks(ExportLookup lookup, Collection<TableSpec> postOrder) {
+        final Map<TableSpec, Integer> indices = new HashMap<>(postOrder.size());
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
         int ix = 0;
-        for (TableSpec tableSpec : dependents) {
-            final Optional<Ticket> t = lookup.ticket(tableSpec);
-            final boolean isExport = t.isPresent();
-            final Ticket ticket;
-            if (isExport) {
-                ticket = t.get();
-                if (ticket.equals(Ticket.getDefaultInstance())) {
-                    throw new IllegalStateException(
-                        "Found an \"export\", but it is using the default empty ticket");
-                }
-                if (!newExports.contains(tableSpec)) {
-                    // we've already exported it, no need to include it in our batch request
-                    continue;
-                }
-                // it's a new export
-            } else {
-                if (newExports.contains(tableSpec)) {
-                    throw new IllegalStateException(
-                        "Found a \"new export\", but it was not present in ExportLookup");
-                }
-                // is not an export, so we need to provide an empty ticket
-                ticket = Ticket.getDefaultInstance();
-            }
-
+        for (TableSpec table : postOrder) {
+            final Ticket ticket = lookup.ticket(table).orElse(Ticket.getDefaultInstance());
             final Operation operation =
-                tableSpec.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
+                table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
             builder.addOps(operation);
-            indices.put(tableSpec, ix++);
+            indices.put(table, ix++);
         }
-
         return builder.build();
     }
 

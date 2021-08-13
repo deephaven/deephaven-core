@@ -8,6 +8,7 @@ import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -28,20 +29,59 @@ final class ExportStates {
 
     private static final Logger log = LoggerFactory.getLogger(ExportStates.class);
 
+    private final SessionImpl session;
     private final SessionServiceStub sessionStub;
     private final TableServiceStub tableStub;
 
     private final Map<TableSpec, State> exports;
     private int nextTicket;
+    private long batchCount;
+    private long releaseCount;
 
-    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub) {
+    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub) {
+        this.session = Objects.requireNonNull(session);
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exports = new HashMap<>();
         this.nextTicket = 1;
     }
 
+    long batchCount() {
+        return batchCount;
+    }
+
+    long releaseCount() {
+        return releaseCount;
+    }
+
+    /**
+     * An unreferencable table is a table that is reachable from the current set of exports, but
+     * isn't an export itself. An unreferencable table can no longer be referenced by the client.
+     */
+    private Set<TableSpec> unreferencableTables() {
+        // todo: potentially keep around Set<TableSpec> unreferencableTables as class member
+        final Set<TableSpec> unreferencableTables = ParentsVisitor.reachable(exports.keySet());
+        unreferencableTables.removeAll(exports.keySet());
+        return unreferencableTables;
+    }
+
+    private Optional<TableSpec> searchUnreferencableTable(ExportsRequest request) {
+        final Set<TableSpec> unreferencableTables = unreferencableTables();
+        // Note: this is *not* excluding everything that can be reached via exports.keySet(), it
+        // just excludes paths from the request roots that go through an export.keySet().
+        return ParentsVisitor.reachableExcludePathsSearch(request.tables(), exports.keySet(),
+            unreferencableTables::contains);
+    }
+
+    synchronized boolean hasUnreferencableTable(ExportsRequest request) {
+        return searchUnreferencableTable(request).isPresent();
+    }
+
     synchronized List<Export> export(ExportsRequest requests) {
+        ensureNoUnreferencableTables(requests);
+
+        final Set<TableSpec> oldExports = new HashSet<>(exports.keySet());
+
         final List<Export> results = new ArrayList<>(requests.size());
         final Set<TableSpec> newSpecs = new HashSet<>(requests.size());
         // linked so TableCreationHandler has a definitive order
@@ -69,10 +109,20 @@ final class ExportStates {
         }
 
         if (!newSpecs.isEmpty()) {
+            final List<TableSpec> postOrder = postOrderNewDependencies(oldExports, newSpecs);
+            if (postOrder.isEmpty()) {
+                throw new IllegalStateException();
+            }
             final BatchTableRequest request =
-                BatchTableRequestBuilder.build(this::lookupTicket, newSpecs);
-            log.debug("Sending batch: {}", request);
+                BatchTableRequestBuilder.buildNoChecks(this::lookupTicket, postOrder);
+            if (request.getOpsCount() == 0) {
+                throw new IllegalStateException();
+            }
+
+            // log.info("Sending batch: {}", request);
+
             tableStub.batch(request, new BatchHandler(newStates));
+            ++batchCount;
         }
 
         return results;
@@ -92,6 +142,30 @@ final class ExportStates {
         return lookup(table).map(State::ticket);
     }
 
+    private static List<TableSpec> postOrderNewDependencies(Set<TableSpec> oldExports,
+        Set<TableSpec> newExports) {
+        Set<TableSpec> reachableOld = ParentsVisitor.reachable(oldExports);
+        List<TableSpec> postOrderNew = ParentsVisitor.postOrderList(newExports);
+        List<TableSpec> postOrderNewExcludeOld = new ArrayList<>(postOrderNew.size());
+        for (TableSpec table : postOrderNew) {
+            if (!reachableOld.contains(table)) {
+                postOrderNewExcludeOld.add(table);
+            }
+        }
+        return postOrderNewExcludeOld;
+    }
+
+    private void ensureNoUnreferencableTables(ExportsRequest requests) {
+        Optional<TableSpec> tainted = searchUnreferencableTable(requests);
+        if (tainted.isPresent()) {
+            // todo: potentially extend engine Table api and Ticket resolver to be able to take an
+            // existing export and a list of parent indices to revive a "tainted" table?
+            // Alternatively, our impl could export everything.
+            throw new IllegalArgumentException(String.format(
+                "Unable to complete request, contains an unreferencable table: %s", tainted.get()));
+        }
+    }
+
     class State {
 
         private final TableSpec table;
@@ -108,6 +182,10 @@ final class ExportStates {
             this.table = Objects.requireNonNull(table);
             this.ticket = Objects.requireNonNull(ticket);
             this.children = new LinkedHashSet<>();
+        }
+
+        Session session() {
+            return session;
         }
 
         TableSpec table() {
@@ -136,6 +214,7 @@ final class ExportStates {
                 ExportStates.this.release(this);
                 released = true;
                 sessionStub.release(ticket, new TicketReleaseHandler(ticket));
+                ++releaseCount;
             }
         }
 

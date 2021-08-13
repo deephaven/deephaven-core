@@ -28,6 +28,15 @@ public final class Export implements AutoCloseable {
     }
 
     /**
+     * The session.
+     *
+     * @return the session
+     */
+    public Session session() {
+        return state.session();
+    }
+
+    /**
      * The ticket.
      *
      * @return the ticket
@@ -71,12 +80,13 @@ public final class Export implements AutoCloseable {
     /**
      * Releases {@code this} export. May be called multiple times without adverse effect.
      */
-    public synchronized void release() {
+    public synchronized boolean release() {
         if (released) {
-            return;
+            return false;
         }
         state.release(this);
         released = true;
+        return true;
     }
 
     Listener listener() {
@@ -93,6 +103,10 @@ public final class Export implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "Export{ticket=" + ExportTicketHelper.toReadableString(state.ticket()) + '}';
+        return "Export{ticket=" + toReadableString() + '}';
+    }
+
+    public String toReadableString() {
+        return ExportTicketHelper.toReadableString(state.ticket());
     }
 }

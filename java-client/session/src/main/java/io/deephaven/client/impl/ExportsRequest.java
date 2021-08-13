@@ -74,6 +74,10 @@ public abstract class ExportsRequest implements Iterable<ExportRequest> {
     // note: it's valid to use the same table multiple times in a single request
     abstract List<ExportRequest> requests();
 
+    public final Iterable<TableSpec> tables() {
+        return () -> requests().stream().map(ExportRequest::table).iterator();
+    }
+
     public final int size() {
         return requests().size();
     }

@@ -12,8 +12,7 @@ public enum TableCreatorImpl implements TableCreator<TableSpec> {
     INSTANCE;
 
     static TableSpec toTable(TableSpec table) {
-        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE,
-            OperationsToTableImpl.INSTANCE, table);
+        return table.logic().create(INSTANCE);
     }
 
     @Override

@@ -10,6 +10,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.qst.TableCreationLogic;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,6 +22,12 @@ public abstract class TableBase implements TableSpec {
     // Note: method implementations should use the static constructors, or builder patterns, for the
     // necessary TableSpec instead of delegating to other methods. The default values are the
     // responsibility of the TableSpec.
+
+
+    @Override
+    public final TableCreationLogic logic() {
+        return new TableCreationLogicImpl(this);
+    }
 
     @Override
     public final HeadTable head(long size) {

@@ -22,7 +22,7 @@ enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
 
     public static Table create(TableSpec table) {
-        return TableCreator.create(INSTANCE, TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE, table);
+        return table.logic().create(INSTANCE);
     }
 
     @Override

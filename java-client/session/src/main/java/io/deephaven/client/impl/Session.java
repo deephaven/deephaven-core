@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A session represents a client-side connection to a Deephaven server.
  */
-public interface Session extends AutoCloseable {
+public interface Session extends AutoCloseable, TableHandleManager {
 
     /**
      * Creates a new export with a {@link io.deephaven.client.impl.ExportRequest.Listener#logging()
@@ -55,4 +55,18 @@ public interface Session extends AutoCloseable {
      * @return the future
      */
     CompletableFuture<Void> closeFuture();
+
+    /**
+     * A batch table handle manager.
+     *
+     * @return a batch manager
+     */
+    TableHandleManager batch();
+
+    /**
+     * A serial table handle manager.
+     *
+     * @return a serial manager
+     */
+    TableHandleManager serial();
 }

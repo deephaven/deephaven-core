@@ -76,6 +76,8 @@ public abstract class ExportRequest {
         @Override
         public void onNext(ExportedTableCreationResponse response) {
             if (response.getSuccess()) {
+                String reference = ExportTicketHelper.toReadableString(response.getResultId());
+                log.debug("ExportedTableCreationResponse for '{}' was successful", reference);
                 return;
             }
             String reference = ExportTicketHelper.toReadableString(response.getResultId());
@@ -86,13 +88,13 @@ public abstract class ExportRequest {
         @Override
         public void onError(Throwable t) {
             if (onErrorNotified.compareAndSet(false, true)) {
-                log.error("ExportedTableCreationResponse onError", t);
+                log.error("LoggingListener onError", t);
             }
         }
 
         @Override
         public void onCompleted() {
-
+            log.debug("LoggingListener onCompleted");
         }
     }
 }

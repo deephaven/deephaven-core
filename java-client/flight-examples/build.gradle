@@ -77,10 +77,36 @@ task createListTablesScripts(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createExcessiveScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.ExampleExcessive'
+    applicationName = 'excessive'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
+task createTutorialsScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.ExecuteTutorials'
+    applicationName = 'tutorials'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
     from(createPollTsvScripts)
     from(createListTablesScripts)
+    from(createExcessiveScript)
+    from(createTutorialsScript)
     fileMode = 0755
 }
