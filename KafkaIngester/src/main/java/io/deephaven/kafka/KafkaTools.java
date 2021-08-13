@@ -273,6 +273,7 @@ public class KafkaTools {
         }
     }
 
+    // Spec to explicitly ask consumeToTabel to ignore either key or value.
     public KeyOrValueSpec ignoreSpec() {
         return KeyOrValueSpec.IGNORE;
     }
@@ -300,10 +301,12 @@ public class KafkaTools {
         return new KeyOrValueSpec.Simple(columnName, dataType);
     }
 
+    // Take dataType from consumer properties.
     public KeyOrValueSpec simpleSpec(final String columnName) {
         return new KeyOrValueSpec.Simple(columnName, null);
     }
 
+    // Take column name and dataType from consumer properties.
     public KeyOrValueSpec simpleSpec() {
         return new KeyOrValueSpec.Simple(null, null);
     }
