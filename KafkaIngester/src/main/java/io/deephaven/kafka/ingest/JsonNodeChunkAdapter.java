@@ -16,9 +16,9 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
     private JsonNodeChunkAdapter(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> columns,
+            final Map<String, String> fieldNamesToColumnNames,
             final boolean allowNulls) {
-        super(definition, chunkTypeForIndex, columns, allowNulls, JsonNodeChunkAdapter::makeFieldCopier);
+        super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, JsonNodeChunkAdapter::makeFieldCopier);
     }
     /**
      * Create a JsonRecordChunkAdapter.

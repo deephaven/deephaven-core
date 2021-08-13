@@ -96,7 +96,7 @@ public class KafkaTools {
     }
 
     private static void pushColumnTypesFromAvroField(
-        final List<ColumnDefinition<?>> columnsOut,
+        final List<ColumnDefinition> columnsOut,
         final Map<String, String> mappedOut,
         final String prefix,
         final Schema.Field field,
@@ -104,6 +104,10 @@ public class KafkaTools {
             final Schema fieldSchema = field.schema();
             final String fieldName = field.name();
             final String mappedName = fieldNameMapping.apply(prefix + fieldName);
+            if (mappedName == null) {
+                // allow the user to specify fields to skip by providing a mapping to null.
+                return;
+            }
             final Schema.Type fieldType = fieldSchema.getType();
             pushColumnTypesFromAvroField(
                     columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType, fieldNameMapping);
@@ -111,7 +115,7 @@ public class KafkaTools {
     }
 
     private static void pushColumnTypesFromAvroField(
-            final List<ColumnDefinition<?>> columnsOut,
+            final List<ColumnDefinition> columnsOut,
             final Map<String, String> mappedOut,
             final String prefix,
             final Schema.Field field,
@@ -185,8 +189,12 @@ public class KafkaTools {
         }
     }
 
-    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(
-            final Map<String, String> mappedOut, final Schema schema, final Function<String, String> fieldNameMapping) {
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition> columns,
+            final Map<String, String> mappedOut,
+            final Schema schema,
+            final Function<String, String> fieldNameMapping
+    ) {
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Union of records schemas are not supported");
         }
@@ -195,20 +203,25 @@ public class KafkaTools {
             throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
         final List<Schema.Field> fields = schema.getFields();
-        final ArrayList<ColumnDefinition<?>> columns = new ArrayList<>(fields.size());
         for (final Schema.Field field : fields) {
             pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameMapping);
 
         }
-        return columns.toArray(new ColumnDefinition<?>[columns.size()]);
     }
 
-    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema, final Function<String, String> fieldNameMapping) {
-        return avroSchemaToColumnDefinitions(null, schema, fieldNameMapping);
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition> columns,
+            final Schema schema,
+            final Function<String, String> fieldNameMapping
+    ) {
+        avroSchemaToColumnDefinitions(columns, null, schema, fieldNameMapping);
     }
 
-    public static ColumnDefinition<?>[] avroSchemaToColumnDefinitions(final Schema schema) {
-        return avroSchemaToColumnDefinitions(schema, DIRECT_MAPPING);
+    public static void avroSchemaToColumnDefinitions(
+            final List<ColumnDefinition> columns,
+            final Schema schema
+    ) {
+        avroSchemaToColumnDefinitions(columns, schema, DIRECT_MAPPING);
     }
 
     public enum KeyOrValue {
@@ -216,74 +229,85 @@ public class KafkaTools {
     }
 
     public enum DataFormat {
-        SIMPLE, AVRO, JSON
+        IGNORE, SIMPLE, AVRO, JSON
     }
 
     public static abstract class KeyOrValueSpec {
-        public final KeyOrValue keyOrValue;
-        public final DataFormat dataFormat;
-        protected KeyOrValueSpec(final KeyOrValue keyOrValue, final DataFormat dataFormat) {
-            this.keyOrValue = keyOrValue;
-            this.dataFormat = dataFormat;
+        public abstract DataFormat dataFormat();
+
+        public static final class Ignore extends KeyOrValueSpec {
+            @Override public DataFormat dataFormat() { return DataFormat.IGNORE; }
         }
+
+        private static final Ignore IGNORE = new Ignore();
 
         public static final class Avro extends KeyOrValueSpec {
             public final Schema schema;
             public final Function<String, String> fieldNameMapping;
-            private Avro(final KeyOrValue keyOrValue, final Schema schema, final Function<String, String> fieldNameMapping) {
-                super(keyOrValue, DataFormat.AVRO);
+            private Avro(final Schema schema, final Function<String, String> fieldNameMapping) {
                 this.schema = schema;
                 this.fieldNameMapping = fieldNameMapping;
             }
+            @Override public DataFormat dataFormat() { return DataFormat.AVRO; }
         }
 
         public static final class Simple extends KeyOrValueSpec {
             public final String columnName;
             public final Class<?> dataType;
-            private Simple(final KeyOrValue keyOrValue, final String columnName, final Class<?> dataType) {
-                super(keyOrValue, DataFormat.SIMPLE);
+            private Simple(final String columnName, final Class<?> dataType) {
                 this.columnName = columnName;
                 this.dataType = dataType;
             }
+            @Override public DataFormat dataFormat() { return DataFormat.SIMPLE; }
         }
 
         public static final class Json extends KeyOrValueSpec {
             public final ColumnDefinition<?>[] columnDefinitions;
             public final Map<String, String> columnNameToJsonFieldName;
             private Json(
-                    final KeyOrValue keyOrValue,
                     final ColumnDefinition<?>[] columnDefinitions,
                     final Map<String, String> columnNameToJsonFieldName
             ) {
-                super(keyOrValue, DataFormat.JSON);
                 this.columnDefinitions = columnDefinitions;
                 this.columnNameToJsonFieldName = columnNameToJsonFieldName;
             }
+            @Override public DataFormat dataFormat() { return DataFormat.JSON; }
         }
     }
 
+    public KeyOrValueSpec ignoreSpec() {
+        return KeyOrValueSpec.IGNORE;
+    }
+
     public KeyOrValueSpec jsonSpec(
-            final KeyOrValue keyOrValue,
             final ColumnDefinition<?>[] columnDefinitions,
             final Map<String, String> columnNameToJsonFieldName
     ) {
-        return new KeyOrValueSpec.Json(keyOrValue, columnDefinitions, columnNameToJsonFieldName);
+        return new KeyOrValueSpec.Json(columnDefinitions, columnNameToJsonFieldName);
     }
 
-    public KeyOrValueSpec jsonSpec(final KeyOrValue keyOrValue, final ColumnDefinition<?>[] columnDefinitions) {
-        return jsonSpec(keyOrValue, columnDefinitions, null);
+    public KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
+        return jsonSpec(columnDefinitions, null);
     }
 
-    public KeyOrValueSpec avroSpec(final KeyOrValue keyOrValue, final Schema schema, final Function<String, String> fieldNameMapping) {
-        return new KeyOrValueSpec.Avro(keyOrValue, schema, fieldNameMapping);
+    public KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameMapping) {
+        return new KeyOrValueSpec.Avro(schema, fieldNameMapping);
     }
 
-    public KeyOrValueSpec avroSpec(final KeyOrValue keyOrValue, final Schema schema) {
-        return new KeyOrValueSpec.Avro(keyOrValue, schema, Function.identity());
+    public KeyOrValueSpec avroSpec(final Schema schema) {
+        return new KeyOrValueSpec.Avro(schema, Function.identity());
     }
 
-    public KeyOrValueSpec spec(final KeyOrValue keyOrValue, final String columnName, final Class<?> dataType) {
-        return new KeyOrValueSpec.Simple(keyOrValue, columnName, dataType);
+    public KeyOrValueSpec spec(final String columnName, final Class<?> dataType) {
+        return new KeyOrValueSpec.Simple(columnName, dataType);
+    }
+
+    public KeyOrValueSpec spec(final String columnName) {
+        return new KeyOrValueSpec.Simple(columnName, null);
+    }
+
+    public KeyOrValueSpec spec() {
+        return new KeyOrValueSpec.Simple(null, null);
     }
 
     public static Table consumeToTable(
@@ -293,8 +317,160 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final KeyOrValueSpec keySpec,
             @NotNull final KeyOrValueSpec valueSpec) {
+        if (keySpec.dataFormat() == DataFormat.IGNORE && keySpec.dataFormat() == DataFormat.IGNORE) {
+            throw new IllegalArgumentException(
+                    "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
+        }
 
-        return null;
+        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
+        getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
+        final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
+        int[] commonColumnIndices = new int[3];
+        int nextColumnIndex = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (commonColumns[i] != null) {
+                commonColumnIndices[i] = nextColumnIndex++;
+                columnDefinitions.add(commonColumns[i]);
+            } else {
+                commonColumnIndices[i] = -1;
+            }
+        }
+
+        final MutableInt nextColumnIndexMut = new MutableInt(nextColumnIndex);
+        final KeyOrValueIngestData keyIngestData =
+                getIngestData(KeyOrValue.KEY, kafkaConsumerProperties, columnDefinitions, nextColumnIndexMut, keySpec);
+        final KeyOrValueIngestData valueIngestData =
+                getIngestData(KeyOrValue.VALUE, kafkaConsumerProperties, columnDefinitions, nextColumnIndexMut, valueSpec);
+
+        final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
+
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+
+        final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
+        final KeyOrValueProcessor valueProcessor = getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
+
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
+                commonColumnIndices[0],
+                commonColumnIndices[1],
+                commonColumnIndices[2],
+                keyProcessor, valueProcessor,
+                Function.identity(),
+                Function.identity(),
+                keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
+                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex
+        );
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                kafkaConsumerProperties,
+                topic,
+                partitionFilter,
+                (int partition) -> (List<? extends ConsumerRecord<?, ?>> records) -> {
+                    try {
+                        adapter.consumeRecords(records);
+                    } catch (IOException ex) {
+                        throw new UncheckedDeephavenException(ex);
+                    }
+                },
+                partitionToInitialOffset
+        );
+        ingester.start();
+
+        return streamToTableAdapter.table();
+    }
+
+    private static KeyOrValueProcessor getProcessor(
+            final KeyOrValueSpec spec,
+            final TableDefinition tableDef,
+            final StreamToTableAdapter streamToTableAdapter,
+            final KeyOrValueIngestData data
+    ) {
+        switch (spec.dataFormat()) {
+            case IGNORE:
+            case SIMPLE:
+                return null;
+            case AVRO:
+                return GenericRecordChunkAdapter.make(
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNamesToColumnNamesMap, true);
+            case JSON:
+                return JsonNodeChunkAdapter.make(
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNamesToColumnNamesMap, true);
+            default:
+                throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
+        }
+    }
+
+    private static class KeyOrValueIngestData {
+        public Map<String, String> fieldNamesToColumnNamesMap;
+        public int simpleColumnIndex = -1;
+    }
+
+    private static void setIfNotSet(final Properties prop, final String key, final String value) {
+        if (prop.containsKey(key)) {
+            return;
+        }
+        prop.setProperty(key, value);
+    }
+
+    private static void setDeserIfNotSet(final Properties prop, final KeyOrValue keyOrValue, final String value) {
+        final String propKey = (keyOrValue == KeyOrValue.KEY)
+                ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
+                : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG
+                ;
+        setIfNotSet(prop, propKey, value);
+    }
+
+    private static KeyOrValueIngestData getIngestData(
+            final KeyOrValue keyOrValue,
+            final Properties kafkaConsumerProperties,
+            final List<ColumnDefinition> columnDefinitions,
+            final MutableInt nextColumnIndexMut,
+            final KeyOrValueSpec keyOrValueSpec
+    ) {
+        if (keyOrValueSpec.dataFormat() == DataFormat.IGNORE) {
+            return null;
+        }
+        final KeyOrValueIngestData data = new KeyOrValueIngestData();
+        switch (keyOrValueSpec.dataFormat()) {
+            case AVRO:
+                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, KafkaAvroDeserializer.class.getName());
+                final KeyOrValueSpec.Avro avroSpec = (KeyOrValueSpec.Avro) keyOrValueSpec;
+                data.fieldNamesToColumnNamesMap = new HashMap<>();
+                avroSchemaToColumnDefinitions(
+                        columnDefinitions, data.fieldNamesToColumnNamesMap, avroSpec.schema, avroSpec.fieldNameMapping);
+                break;
+            case JSON:
+                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
+                final KeyOrValueSpec.Json jsonSpec = (KeyOrValueSpec.Json) keyOrValueSpec;
+                columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
+                data.fieldNamesToColumnNamesMap = new HashMap<>();
+                for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
+                    final String colName = colDef.getName();
+                    final String fieldName = (jsonSpec.columnNameToJsonFieldName == null)
+                            ? colName
+                            : jsonSpec.columnNameToJsonFieldName.getOrDefault(colName, colName);
+                    data.fieldNamesToColumnNamesMap.put(colName, fieldName);
+                }
+                break;
+            case SIMPLE:
+                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
+                data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
+                final KeyOrValueSpec.Simple simpleSpec = (KeyOrValueSpec.Simple) keyOrValueSpec;
+                final ColumnDefinition colDef;
+                if (simpleSpec.dataType == null) {
+                    colDef = getKeyOrValueCol(keyOrValue, kafkaConsumerProperties, simpleSpec.columnName, false);
+                } else {
+                    colDef = ColumnDefinition.fromGenericType(simpleSpec.columnName, simpleSpec.dataType);
+                }
+                columnDefinitions.add(colDef);
+                break;
+            default:
+                throw new IllegalStateException("Unhandled spec type:" + keyOrValueSpec.dataFormat());
+        }
+        return data;
     }
 
     /**
@@ -323,26 +499,6 @@ public class KafkaTools {
             throw new IllegalArgumentException("key and value schemas can't be both null");
         }
 
-        final ColumnDefinition<?>[] keyColumns;
-        final Map<String, String> keyColumnsMap;
-        if (keySchema != null) {
-            keyColumnsMap = new HashMap<>();
-            keyColumns = avroSchemaToColumnDefinitions(keyColumnsMap, keySchema, keyFieldNameMapping);
-        } else {
-            keyColumnsMap = Collections.emptyMap();
-            keyColumns = null;
-        }
-
-        final ColumnDefinition<?>[] valueColumns;
-        final Map<String, String> valueColumnsMap;
-        if (valueSchema != null) {
-            valueColumnsMap = new HashMap<>();
-            valueColumns = avroSchemaToColumnDefinitions(valueColumnsMap, valueSchema, valueFieldNameMapping);
-        } else {
-            valueColumnsMap = Collections.emptyMap();
-            valueColumns = null;
-        }
-
         final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
         getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
         final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
@@ -351,36 +507,46 @@ public class KafkaTools {
         for (int i = 0; i < 3; ++i) {
             if (commonColumns[i] != null) {
                 commonColumnIndices[i] = nextColumnIndex++;
-                columnDefinitions.add(commonColumns[0]);
+                columnDefinitions.add(commonColumns[i]);
             } else {
                 commonColumnIndices[i] = -1;
             }
+        }
+
+        final Map<String, String> keyColumnsMap;
+        if (keySchema != null) {
+            keyColumnsMap = new HashMap<>();
+            avroSchemaToColumnDefinitions(columnDefinitions, keyColumnsMap, keySchema, keyFieldNameMapping);
+        } else {
+            keyColumnsMap = Collections.emptyMap();
+        }
+
+        final Map<String, String> valueColumnsMap;
+        if (valueSchema != null) {
+            valueColumnsMap = new HashMap<>();
+            avroSchemaToColumnDefinitions(columnDefinitions, valueColumnsMap, valueSchema, valueFieldNameMapping);
+        } else {
+            valueColumnsMap = Collections.emptyMap();
         }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
             if (keySchema != null) {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
-                columnDefinitions.addAll(Arrays.asList(keyColumns));
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
             }
-        } else if (keySchema != null) {
-            columnDefinitions.addAll(Arrays.asList(keyColumns));
         }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
             if (valueSchema != null) {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
-                columnDefinitions.addAll(Arrays.asList(valueColumns));
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
             }
-        } else if (valueSchema != null) {
-            columnDefinitions.addAll(Arrays.asList(valueColumns));
         }
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
@@ -557,18 +723,14 @@ public class KafkaTools {
         int c = 0;
         c += getCommonCols(columns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
         columns[c++] = getKeyOrValueCol(
+                KeyOrValue.KEY,
                 consumerProperties,
-                KEY_COLUMN_TYPE_PROPERTY,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                KEY_COLUMN_NAME_PROPERTY,
-                KEY_COLUMN_NAME_DEFAULT,
+                null,
                 true);
         columns[c++] = getKeyOrValueCol(
+                KeyOrValue.VALUE,
                 consumerProperties,
-                VALUE_COLUMN_TYPE_PROPERTY,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                VALUE_COLUMN_NAME_PROPERTY,
-                VALUE_COLUMN_NAME_DEFAULT,
+                null,
                 false);
         Assert.eq(nCols, "nCols", c, "c");
         final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
@@ -690,14 +852,36 @@ public class KafkaTools {
     }
 
     private static ColumnDefinition<?> getKeyOrValueCol(
+            @NotNull final KeyOrValue keyOrValue,
             @NotNull final Properties properties,
-            @NotNull final String typeProperty,
-            @NotNull final String deserializerProperty,
-            @NotNull final String nameProperty,
-            @NotNull final String nameDefault,
-            final boolean allowEmpty) {
+            final String columnNameArg,
+            final boolean allowEmpty
+    ) {
+        final String typeProperty;
+        final String deserializerProperty;
+        final String nameProperty;
+        final String nameDefault;
+        switch(keyOrValue) {
+            case KEY:
+                typeProperty = KEY_COLUMN_TYPE_PROPERTY;
+                deserializerProperty = ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
+                nameProperty = KEY_COLUMN_NAME_PROPERTY;
+                nameDefault =KEY_COLUMN_NAME_DEFAULT;
+                break;
+            case VALUE:
+                typeProperty = VALUE_COLUMN_TYPE_PROPERTY;
+                deserializerProperty = ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
+                nameProperty = VALUE_COLUMN_NAME_PROPERTY;
+                nameDefault = VALUE_COLUMN_NAME_DEFAULT;
+                break;
+            default:
+                throw new IllegalStateException("Unrecognized KeyOrValue value " + keyOrValue);
+        }
+
         final String columnName;
-        if (properties.containsKey(nameProperty)) {
+        if (columnNameArg != null) {
+            columnName = columnNameArg;
+        } else if (properties.containsKey(nameProperty)) {
             columnName = properties.getProperty(nameProperty);
             if (columnName == null || columnName.equals("")) {
                 if (allowEmpty) {
