@@ -12,7 +12,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
-public class TableCreationImplTest {
+public class TableCreatorImplTest {
 
     // todo: this test will need to be replaced w/ a saner generator, or real examples, once we have
     // stricter query validation
@@ -23,22 +23,22 @@ public class TableCreationImplTest {
             TableSpec.empty(0), TableSpec.empty(1), TableSpec.empty(100), TableSpec.empty(0));
 
     private static final List<Function<TableSpec, TableSpec>> SINGLE_PARENT_OPS =
-        Arrays.asList(TableCreationImplTest::head1, TableCreationImplTest::headMax,
-            TableCreationImplTest::tail1, TableCreationImplTest::tailMax,
-            TableCreationImplTest::whereFooEq1, TableCreationImplTest::whereFooEqTest,
-            TableCreationImplTest::whereFooIsNull, TableCreationImplTest::viewFoo,
-            TableCreationImplTest::viewFooPlus1, TableCreationImplTest::viewFooEqBar,
-            TableCreationImplTest::updateViewFoo, TableCreationImplTest::updateViewFooPlus1,
-            TableCreationImplTest::updateViewFooEqBar, TableCreationImplTest::updateFoo,
-            TableCreationImplTest::updateFooPlus1, TableCreationImplTest::updateFooEqBar,
-            TableCreationImplTest::selectFoo, TableCreationImplTest::selectFooPlus1,
-            TableCreationImplTest::selectFooEqBar, TableCreationImplTest::selectAll);
+        Arrays.asList(TableCreatorImplTest::head1, TableCreatorImplTest::headMax,
+            TableCreatorImplTest::tail1, TableCreatorImplTest::tailMax,
+            TableCreatorImplTest::whereFooEq1, TableCreatorImplTest::whereFooEqTest,
+            TableCreatorImplTest::whereFooIsNull, TableCreatorImplTest::viewFoo,
+            TableCreatorImplTest::viewFooPlus1, TableCreatorImplTest::viewFooEqBar,
+            TableCreatorImplTest::updateViewFoo, TableCreatorImplTest::updateViewFooPlus1,
+            TableCreatorImplTest::updateViewFooEqBar, TableCreatorImplTest::updateFoo,
+            TableCreatorImplTest::updateFooPlus1, TableCreatorImplTest::updateFooEqBar,
+            TableCreatorImplTest::selectFoo, TableCreatorImplTest::selectFooPlus1,
+            TableCreatorImplTest::selectFooEqBar, TableCreatorImplTest::selectAll);
 
     private static final List<BiFunction<TableSpec, TableSpec, TableSpec>> DUAL_TABLE_OPS =
-        Arrays.asList(TableCreationImplTest::naturalJoin1, TableCreationImplTest::naturalJoin2,
-            TableCreationImplTest::naturalJoin3, TableCreationImplTest::naturalJoin4,
-            TableCreationImplTest::exactJoin1, TableCreationImplTest::exactJoin2,
-            TableCreationImplTest::exactJoin3, TableCreationImplTest::exactJoin4);
+        Arrays.asList(TableCreatorImplTest::naturalJoin1, TableCreatorImplTest::naturalJoin2,
+            TableCreatorImplTest::naturalJoin3, TableCreatorImplTest::naturalJoin4,
+            TableCreatorImplTest::exactJoin1, TableCreatorImplTest::exactJoin2,
+            TableCreatorImplTest::exactJoin3, TableCreatorImplTest::exactJoin4);
 
 
     static TableSpec head1(TableSpec table) {
@@ -178,7 +178,7 @@ public class TableCreationImplTest {
     void equivalence() {
         for (TableSpec table : createTables()) {
             // this is really a test of TableCreationAdapterImpl and QST TableOperations impl
-            assertThat(TableCreationImpl.toTable(table)).isEqualTo(table);
+            assertThat(TableCreatorImpl.toTable(table)).isEqualTo(table);
         }
     }
 }
