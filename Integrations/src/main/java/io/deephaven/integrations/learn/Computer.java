@@ -93,4 +93,11 @@ public class Computer {
 
         return new FutureOffset(current, offset);
     }
+
+    /**
+     * Gets the current future for testing purposes.
+     *
+     * @return the current future.
+     */
+    Future getFuture() { return current; }
 }

@@ -2,6 +2,10 @@
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 
+"""
+Deephaven's learn module enables developers and data scientists to use familiar
+"""
+
 import jpy
 import wrapt
 
