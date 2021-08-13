@@ -48,11 +48,12 @@ public class ByteAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
+        final ByteChunk<? extends Values> byteValues = values.asByteChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(values.asByteChunk(), inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(byteValues, inputIndices, startPosition, runLength, destination));
         }
     }
 

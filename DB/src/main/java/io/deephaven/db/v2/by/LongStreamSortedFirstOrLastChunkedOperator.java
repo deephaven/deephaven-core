@@ -71,11 +71,12 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
+        final LongChunk<? extends Values> longValues = values.asLongChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(values.asLongChunk(), inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(longValues, inputIndices, startPosition, runLength, destination));
         }
     }
 

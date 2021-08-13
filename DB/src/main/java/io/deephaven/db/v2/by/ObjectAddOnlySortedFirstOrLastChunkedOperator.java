@@ -48,11 +48,12 @@ public class ObjectAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
+        final ObjectChunk<Object, ? extends Values> ObjectValues = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(values.asObjectChunk(), inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(ObjectValues, inputIndices, startPosition, runLength, destination));
         }
     }
 
