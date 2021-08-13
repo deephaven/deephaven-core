@@ -31,7 +31,14 @@ public class Computer {
         this(table, new PythonFunctionCaller(Require.neqNull(modelFunc, "modelFunc")), inputs, batchSize);
     }
 
-    private Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
+    /**
+     * Creates a new Computer.
+     *
+     * @param modelFunc     python function to call on the given inputs from a table.
+     * @param inputs        inputs to the model function.
+     * @param batchSize     maximum number of rows for each deferred computation.
+     */
+    public Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
 
         Require.neqNull(table, "table");
         Require.neqNull(modelFunc, "modelFunc");
