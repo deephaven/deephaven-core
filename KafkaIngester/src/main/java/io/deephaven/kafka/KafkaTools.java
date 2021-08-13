@@ -33,8 +33,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -356,9 +354,10 @@ public class KafkaTools {
                 commonColumnIndices[0],
                 commonColumnIndices[1],
                 commonColumnIndices[2],
-                keyProcessor, valueProcessor,
-                Function.identity(),
-                Function.identity(),
+                keyProcessor,
+                valueProcessor,
+                keyIngestData.toObjectChunkMapper,
+                valueIngestData.toObjectChunkMapper,
                 keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
                 valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex
         );
@@ -400,6 +399,7 @@ public class KafkaTools {
     private static class KeyOrValueIngestData {
         public Map<String, String> fieldNamesToColumnNamesMap;
         public int simpleColumnIndex = -1;
+        public Function<Object, Object> toObjectChunkMapper = Function.identity();
     }
 
     private static void setIfNotSet(final Properties prop, final String key, final String value) {
@@ -438,6 +438,7 @@ public class KafkaTools {
                 break;
             case JSON:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
+                data.toObjectChunkMapper = jsonToObjectChunkMapper;
                 final KeyOrValueSpec.Json jsonSpec = (KeyOrValueSpec.Json) keyOrValueSpec;
                 columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
                 data.fieldNamesToColumnNamesMap = new HashMap<>();
@@ -466,6 +467,16 @@ public class KafkaTools {
         }
         return data;
     }
+
+    private static final Function<Object, Object> jsonToObjectChunkMapper = (final Object in) -> {
+        final String json;
+        try {
+            json = (String) in;
+        } catch (ClassCastException ex) {
+            throw new UncheckedDeephavenException("Could not convert input to json string", ex);
+        }
+        return JsonNodeUtil.makeJsonNode(json);
+    };
 
     /**
      * Consume from Kafka to a Deephaven live table using avro schemas.
@@ -563,6 +574,9 @@ public class KafkaTools {
         } else {
             valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
         }
+
+
+        final Function<Object, Object> valueToObjectChunkMapper;
 
         final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
                 commonColumnIndices[0],
