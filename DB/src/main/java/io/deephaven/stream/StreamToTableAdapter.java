@@ -231,6 +231,13 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     private void doRefresh() {
+        synchronized (this) {
+            // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush itself
+            if (enqueuedFailure != null) {
+                throw new UncheckedDeephavenException(MultiException.maybeWrapInMultiException("Multiple errors encountered while ingesting stream", enqueuedFailure.toArray(new Exception[0])));
+            }
+        }
+
         streamPublisher.flush();
         // Switch columns, update index, deliver notification
 
@@ -239,10 +246,6 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
         final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
-            if (enqueuedFailure != null) {
-                throw new UncheckedDeephavenException(MultiException.maybeWrapInMultiException("Multiple errors encountered while ingesting stream", enqueuedFailure.toArray(new Exception[0])));
-            }
-
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
