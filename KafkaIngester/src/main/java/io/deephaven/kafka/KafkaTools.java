@@ -265,7 +265,7 @@ public class KafkaTools {
         for (int i = 0; i < 3; ++i) {
             if (commonColumns[i] != null) {
                 commonColumnIndices[i] = nextColumnIndex++;
-                columnDefinitions.add(commonColumns[0]);
+                columnDefinitions.add(commonColumns[i]);
             } else {
                 commonColumnIndices[i] = -1;
             }
