@@ -298,15 +298,15 @@ public class KafkaTools {
         return new KeyOrValueSpec.Avro(schema, Function.identity());
     }
 
-    public KeyOrValueSpec spec(final String columnName, final Class<?> dataType) {
+    public KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
         return new KeyOrValueSpec.Simple(columnName, dataType);
     }
 
-    public KeyOrValueSpec spec(final String columnName) {
+    public KeyOrValueSpec simpleSpec(final String columnName) {
         return new KeyOrValueSpec.Simple(columnName, null);
     }
 
-    public KeyOrValueSpec spec() {
+    public KeyOrValueSpec simpleSpec() {
         return new KeyOrValueSpec.Simple(null, null);
     }
 
