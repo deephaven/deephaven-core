@@ -1,7 +1,10 @@
 package io.deephaven.stream;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.DeephavenException;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -19,10 +22,13 @@ import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,6 +53,9 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private ChunkColumnSource<?> [] bufferChunkSources;
     private ChunkColumnSource<?> [] currentChunkSources;
     private ChunkColumnSource<?> [] prevChunkSources;
+
+    // a list of failures that have occurred
+    private List<Exception> enqueuedFailure;
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
                                 @NotNull final StreamPublisher streamPublisher,
@@ -222,6 +231,16 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     private void doRefresh() {
+        synchronized (this) {
+            // if we have an enqueued failure we want to process it first, before we allow the streamPublisher to flush itself
+            if (enqueuedFailure != null) {
+                throw new UncheckedDeephavenException(
+                        MultiException.maybeWrapInMultiException(
+                                "Multiple errors encountered while ingesting stream",
+                                enqueuedFailure.toArray(new Exception[0])));
+            }
+        }
+
         streamPublisher.flush();
         // Switch columns, update index, deliver notification
 
@@ -281,6 +300,16 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
                 Assert.eq(data[0].size(), "data[0].size()", data[ii].size(), "data[ii].size()");
                 bufferChunkSources[ii].addChunk(data[ii]);
             }
+        }
+    }
+
+    @Override
+    public void acceptFailure(@NotNull Exception cause) {
+        synchronized (this) {
+            if (enqueuedFailure == null) {
+                enqueuedFailure = new ArrayList<>();
+            }
+            enqueuedFailure.add(cause);
         }
     }
 }

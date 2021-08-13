@@ -124,23 +124,23 @@ def consumeToTable(*args, **kwargs):
     key_avro_schema = kwargs.pop('key_avro_schema', None)
     value_avro_schema = kwargs.pop('value_avro_schema', None)
     value_json = kwargs.pop('value_json', None)
-    if (key_avro_schema == None and value_avro_schema == None and value_json == None):
+    if key_avro_schema is None and value_avro_schema is None and value_json is None:
         # simple key/value case.
         streaming_table = _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
-    elif (key_avro_schema != None or value_avro_schema != None):
+    elif key_avro_schema is not None or value_avro_schema is not None:
         if (value_json != None):
             raise Exception('mixing json and avro not supported.')
         mapping = getattr(_java_type_, 'DIRECT_MAPPING')
         streaming_table = _java_type_.consumeToTable(r[0], r[1], r[2], r[3], key_avro_schema, mapping, value_avro_schema, mapping)
-    elif (value_json != None):
+    elif value_json is not None:
         if not isinstance(value_json, list):
             raise Exception('value_json keyword argument should be a list.')
         col_def_list = _tuplesListToColDefsList(value_json)
         streaming_table = _java_type_.consumeJsonToTable(r[0], r[1], r[2], r[3], col_def_list)
     else:
-        raise Exception('Unknown keyword arguments: ' + kwargs)
+        raise Exception('Unknown keyword arguments: ' + str(kwargs))
     table_type = kwargs.pop('table_type', None)
-    if table_type == None or table_type == 'append':
+    if table_type is None or table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
     elif table_type == 'streaming':
         return streaming_table
@@ -157,19 +157,19 @@ except Exception as e:
 def avroSchemaToColumnDefinitions(*args):
     """
     *Overload 1*  
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
       :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
       :param schema: org.apache.avro.Schema
       :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
-      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
       
     *Overload 2*  
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
       :param schema: org.apache.avro.Schema
       :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
-      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
       
     *Overload 3*  
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
       :param schema: org.apache.avro.Schema
-      :return: io.deephaven.db.tables.ColumnDefinition<?>[]
     """
     
     return _java_type_.avroSchemaToColumnDefinitions(*args)
