@@ -211,6 +211,92 @@ public class KafkaTools {
         return avroSchemaToColumnDefinitions(schema, DIRECT_MAPPING);
     }
 
+    public enum KeyOrValue {
+        KEY, VALUE
+    }
+
+    public enum DataFormat {
+        SIMPLE, AVRO, JSON
+    }
+
+    public static abstract class KeyOrValueSpec {
+        public final KeyOrValue keyOrValue;
+        public final DataFormat dataFormat;
+        protected KeyOrValueSpec(final KeyOrValue keyOrValue, final DataFormat dataFormat) {
+            this.keyOrValue = keyOrValue;
+            this.dataFormat = dataFormat;
+        }
+
+        public static final class Avro extends KeyOrValueSpec {
+            public final Schema schema;
+            public final Function<String, String> fieldNameMapping;
+            private Avro(final KeyOrValue keyOrValue, final Schema schema, final Function<String, String> fieldNameMapping) {
+                super(keyOrValue, DataFormat.AVRO);
+                this.schema = schema;
+                this.fieldNameMapping = fieldNameMapping;
+            }
+        }
+
+        public static final class Simple extends KeyOrValueSpec {
+            public final String columnName;
+            public final Class<?> dataType;
+            private Simple(final KeyOrValue keyOrValue, final String columnName, final Class<?> dataType) {
+                super(keyOrValue, DataFormat.SIMPLE);
+                this.columnName = columnName;
+                this.dataType = dataType;
+            }
+        }
+
+        public static final class Json extends KeyOrValueSpec {
+            public final ColumnDefinition<?>[] columnDefinitions;
+            public final Map<String, String> columnNameToJsonFieldName;
+            private Json(
+                    final KeyOrValue keyOrValue,
+                    final ColumnDefinition<?>[] columnDefinitions,
+                    final Map<String, String> columnNameToJsonFieldName
+            ) {
+                super(keyOrValue, DataFormat.JSON);
+                this.columnDefinitions = columnDefinitions;
+                this.columnNameToJsonFieldName = columnNameToJsonFieldName;
+            }
+        }
+    }
+
+    public KeyOrValueSpec jsonSpec(
+            final KeyOrValue keyOrValue,
+            final ColumnDefinition<?>[] columnDefinitions,
+            final Map<String, String> columnNameToJsonFieldName
+    ) {
+        return new KeyOrValueSpec.Json(keyOrValue, columnDefinitions, columnNameToJsonFieldName);
+    }
+
+    public KeyOrValueSpec jsonSpec(final KeyOrValue keyOrValue, final ColumnDefinition<?>[] columnDefinitions) {
+        return jsonSpec(keyOrValue, columnDefinitions, null);
+    }
+
+    public KeyOrValueSpec avroSpec(final KeyOrValue keyOrValue, final Schema schema, final Function<String, String> fieldNameMapping) {
+        return new KeyOrValueSpec.Avro(keyOrValue, schema, fieldNameMapping);
+    }
+
+    public KeyOrValueSpec avroSpec(final KeyOrValue keyOrValue, final Schema schema) {
+        return new KeyOrValueSpec.Avro(keyOrValue, schema, Function.identity());
+    }
+
+    public KeyOrValueSpec spec(final KeyOrValue keyOrValue, final String columnName, final Class<?> dataType) {
+        return new KeyOrValueSpec.Simple(keyOrValue, columnName, dataType);
+    }
+
+    public static Table consumeToTable(
+            @NotNull final Properties kafkaConsumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final KeyOrValueSpec keySpec,
+            @NotNull final KeyOrValueSpec valueSpec) {
+
+        return null;
+    }
+
     /**
      * Consume from Kafka to a Deephaven live table using avro schemas.
      *
