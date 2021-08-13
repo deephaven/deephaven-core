@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @see Table#STREAM_TABLE_ATTRIBUTE
  */
-public class StreamFirstByChunkedOperator extends StreamFirstOrLastByChunkedOperator {
+public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOperator {
 
     /**
      * <p>The next destination slot that we expect to be used.
@@ -39,8 +39,13 @@ public class StreamFirstByChunkedOperator extends StreamFirstOrLastByChunkedOper
      */
     private long firstDestinationThisStep;
 
-    StreamFirstByChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
+    StreamFirstChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
         super(resultPairs, streamTable);
+    }
+
+    @Override
+    public final boolean unchunkedIndex() {
+        return true;
     }
 
     @Override

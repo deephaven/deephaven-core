@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAppendOnlyMinMaxOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedAddOnlyMinMaxOperator and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
@@ -20,12 +20,12 @@ import java.util.Map;
 /**
  * Iterative average operator.
  */
-class ObjectChunkedAppendOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
+class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final ObjectArraySource resultColumn;
     private final boolean minimum;
     private final String name;
 
-    ObjectChunkedAppendOnlyMinMaxOperator(
+    ObjectChunkedAddOnlyMinMaxOperator(
             // region extra constructor params
             Class<?> type,
             // endregion extra constructor params
