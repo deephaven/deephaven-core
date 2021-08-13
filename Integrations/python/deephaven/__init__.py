@@ -19,8 +19,6 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Plot imported as plt
 
-* QueryScope imported as qs
-
 * ParquetTools imported as pt
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
@@ -62,7 +60,7 @@ __all__ = [
     'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'LayoutHintBuilder',
     'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "qs", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
 
 

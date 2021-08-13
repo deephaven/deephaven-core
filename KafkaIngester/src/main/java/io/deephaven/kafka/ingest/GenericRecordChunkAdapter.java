@@ -49,6 +49,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldName);
             case Byte:
+                if (dataType == Boolean.class) {
+                    return new GenericRecordBooleanFieldCopier(fieldName);
+                }
                 return new GenericRecordByteFieldCopier(fieldName);
             case Short:
                 return new GenericRecordShortFieldCopier(fieldName);
