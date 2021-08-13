@@ -28,15 +28,15 @@ public class RAPriQueue<T> {
     private T[] queue;
 
     /** the queue adapter instance */
-    private final Adapter<T> adapter;
+    private final Adapter<? super T> adapter;
 
     /** the class of objects we are queueing */
-    private final Class<? extends T> elementClass;
+    private final Class<? super T> elementClass;
 
     /** the size of the queue (invariant: size < queue.length - 1) */
     private int size = 0;
 
-    public RAPriQueue(int initialSize, Adapter<T> adapter, Class<? extends T> elementClass) {
+    public RAPriQueue(int initialSize, Adapter<? super T> adapter, Class<? super T> elementClass) {
         this.queue = (T[]) java.lang.reflect.Array.newInstance(elementClass, initialSize+1);
         this.adapter = adapter;
         this.elementClass = elementClass;

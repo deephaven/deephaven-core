@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
@@ -378,7 +381,10 @@ class StaticChunkedNaturalJoinStateManager
         final boolean isLeftSide = resultSource != null;
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // the chunk of right indices that are parallel to the sourceChunks
             final WritableLongChunk<OrderedKeyIndices> rightSourceIndexKeys;
@@ -1056,7 +1062,7 @@ class StaticChunkedNaturalJoinStateManager
                             // I don't love this individual access approach; but we don't otherwise know if we are going
                             // to be writing to the thing twice.  We could alternatively sort these.
                             if (rightIndexSource.getLong(pc.tableLocationsChunk.get(ii)) != NO_RIGHT_ENTRY_VALUE) {
-                                throw new RuntimeException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                                throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                             }
 
                             // we know that there is no right hand side, so we should set it to our value!
@@ -1123,7 +1129,7 @@ class StaticChunkedNaturalJoinStateManager
                                 final long rightValue = rightKeyIndices.get(pc.chunkPositionsForFetches.get(ii));
                                 final long existingRightValue = overflowRightIndexSource.getLong(overflowLocation);
                                 if (existingRightValue != NO_RIGHT_ENTRY_VALUE) {
-                                    throw new RuntimeException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
+                                    throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
                                 }
                                 overflowRightIndexSource.set(overflowLocation, rightValue);
                             }
@@ -1146,7 +1152,7 @@ class StaticChunkedNaturalJoinStateManager
                     for (int ii = 0; ii < workingLeftRedirections.size(); ++ii) {
                         final long leftRedirection = workingLeftRedirections.get(ii);
                         if (leftRedirection == DUPLICATE_RIGHT_VALUE) {
-                            throw new RuntimeException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
+                            throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                         }
                         leftRedirections.set(hashSlotOffset + ii, leftRedirection);
                     }

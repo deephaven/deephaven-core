@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
+    // TODO (#997): use flight AuthConstants
     public static final String DEEPHAVEN_SESSION_ID = "DEEPHAVEN_SESSION_ID";
     public static final Metadata.Key<String> SESSION_HEADER_KEY = Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);

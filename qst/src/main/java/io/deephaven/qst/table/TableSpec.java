@@ -1,9 +1,9 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
-import io.deephaven.qst.TableCreation;
-import io.deephaven.qst.TableCreation.OperationsToTable;
-import io.deephaven.qst.TableCreation.TableToOperations;
+import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.TableCreator.OperationsToTable;
+import io.deephaven.qst.TableCreator.TableToOperations;
 import org.immutables.value.Value.Derived;
 
 import java.io.BufferedInputStream;
@@ -26,9 +26,9 @@ import java.util.Collection;
  *
  * <p>
  * A table specification can be "replayed" against the fluent interfaces, see
- * {@link io.deephaven.qst.TableCreation#create(TableCreation, TableToOperations, OperationsToTable, TableSpec)}.
+ * {@link TableCreator#create(TableCreator, TableToOperations, OperationsToTable, TableSpec)}.
  *
- * @see io.deephaven.qst.TableCreation
+ * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
 public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serializable {

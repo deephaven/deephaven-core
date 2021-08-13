@@ -46,7 +46,7 @@ public class FirstOrLastByAggregationFactory implements AggregationContextFactor
 
         if (table.isLive()) {
             if (((BaseTable) table).isStream()) {
-                operator[0] = isFirst ? new StreamFirstByChunkedOperator(matchPairs, table) : new StreamLastByChunkedOperator(matchPairs, table);
+                operator[0] = isFirst ? new StreamFirstChunkedOperator(matchPairs, table) : new StreamLastChunkedOperator(matchPairs, table);
             } else if (((BaseTable) table).isAddOnly()) {
                 operator[0] = new AddOnlyFirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
             } else {

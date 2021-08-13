@@ -15,6 +15,7 @@
   "sort": "*Overload 1*  \n  :param columnsToSortBy: java.lang.String...\n  :return: io.deephaven.qst.table.SortTable\n  \n*Overload 2*  \n  :param columnsToSortBy: java.util.Collection<io.deephaven.api.SortColumn>\n  :return: io.deephaven.qst.table.SortTable",
   "sortDescending": ":param columnsToSortBy: java.lang.String...\n:return: io.deephaven.qst.table.SortTable",
   "tail": ":param size: long\n:return: io.deephaven.qst.table.TailTable",
+  "toString": ":return: java.lang.String",
   "update": "*Overload 1*  \n  :param columns: java.lang.String...\n  :return: io.deephaven.qst.table.UpdateTable\n  \n*Overload 2*  \n  :param columns: java.util.Collection<? extendsio.deephaven.api.Selectable>\n  :return: io.deephaven.qst.table.UpdateTable",
   "updateView": "*Overload 1*  \n  :param columns: java.lang.String...\n  :return: io.deephaven.qst.table.UpdateViewTable\n  \n*Overload 2*  \n  :param columns: java.util.Collection<? extendsio.deephaven.api.Selectable>\n  :return: io.deephaven.qst.table.UpdateViewTable",
   "view": "*Overload 1*  \n  :param columns: java.lang.String...\n  :return: io.deephaven.qst.table.ViewTable\n  \n*Overload 2*  \n  :param columns: java.util.Collection<? extendsio.deephaven.api.Selectable>\n  :return: io.deephaven.qst.table.ViewTable",

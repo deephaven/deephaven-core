@@ -46,7 +46,7 @@ public class TicketRouter {
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).resolve(session, ticket);
+        return getResolver(ticket.get(ticket.position())).resolve(session, ticket);
     }
 
     /**
@@ -105,7 +105,7 @@ public class TicketRouter {
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
             final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).publish(session, ticket);
+        return getResolver(ticket.get(ticket.position())).publish(session, ticket);
     }
 
     /**
@@ -172,7 +172,7 @@ public class TicketRouter {
      * @return a string that is good for log/error messages
      */
     public String getLogNameFor(final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).getLogNameFor(ticket);
+        return getResolver(ticket.get(ticket.position())).getLogNameFor(ticket);
     }
 
     /**

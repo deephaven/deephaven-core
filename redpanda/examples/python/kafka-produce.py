@@ -22,24 +22,36 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do: > from deephaven import KafkaTools
 #
-# == Example (1)
+# == Example (1)  Simple String Key and simple double Value
 #
 # From web UI do:
-# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes')
+# > t = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
 # Run this script on the host (not on a docker image) to produce one row:
 # $ python ./kafka-produce.py quotes MSFT double:274.82
 # You should see one row show up on the web UI table, data matching above.
 #
-# == Example (2) 
+# == Example (2)  Simple String Key and simple long Value
 #
 # From web UI do:
-# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics')
+# > t2 = KafkaTools.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type='append')
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
 # Run this script on the host (not on a docker image) to produce one row:
 # $ python ./kafka-produce.py metrics us_west.latency.millis long:29
+#
+# == Example (3)  JSON.
+#
+# From web UI do:
+# > from deephaven.TableTools import *   # to get colDef
+# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_json=[ ('Symbol', 'string'), ('Side', 'string'), ('Price', 'double'), ('Qty', 'int') ], table_type='append')
+#
+# Run this script on the host (not on a docker image) to produce one row:
+# $ python3 kafka-produce.py orders 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
+#
+# You should see one row of data as per above showing up in the UI.
+#
 #
 
 from confluent_kafka import Producer

@@ -5,18 +5,11 @@
 package io.deephaven.grpc_api.example;
 
 import com.google.protobuf.ByteString;
-import io.deephaven.barrage.flatbuf.Field;
-import io.deephaven.barrage.flatbuf.KeyValue;
-import io.deephaven.barrage.flatbuf.Schema;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.ModifiedColumnSet;
-import io.deephaven.db.v2.ShiftAwareListener;
-import io.deephaven.db.v2.utils.BarrageMessage;
-import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.barrage.BarrageClientSubscription;
 import io.deephaven.grpc_api.barrage.BarrageStreamReader;
@@ -24,12 +17,11 @@ import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
-import io.deephaven.grpc_api_client.table.BarrageSourcedTable;
+import io.deephaven.grpc_api_client.table.BarrageTable;
 import io.deephaven.grpc_api_client.util.BarrageProtoUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.BarrageServiceGrpc;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
@@ -41,7 +33,6 @@ import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
-import io.deephaven.proto.backplane.grpc.SubscriptionRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -57,10 +48,12 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flatbuf.Field;
+import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
-import java.lang.ref.WeakReference;
 import java.util.BitSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -93,7 +86,6 @@ public class SimpleDeephavenClient {
 
     private final SessionServiceGrpc.SessionServiceStub sessionService;
     private final TableServiceGrpc.TableServiceStub tableService;
-    private final BarrageServiceGrpc.BarrageServiceStub barrageService;
     private final FlightServiceGrpc.FlightServiceStub flightService;
 
     private volatile UUID session;
@@ -105,7 +97,6 @@ public class SimpleDeephavenClient {
         this.serverChannel = ClientInterceptors.intercept(managedChannel, new AuthInterceptor());
         this.sessionService = SessionServiceGrpc.newStub(serverChannel);
         this.tableService = TableServiceGrpc.newStub(serverChannel);
-        this.barrageService = BarrageServiceGrpc.newStub(serverChannel);
         this.flightService = FlightServiceGrpc.newStub(serverChannel);
     }
 
@@ -137,9 +128,8 @@ public class SimpleDeephavenClient {
     final Ticket exportTable = ExportTicketHelper.exportIdToTicket(nextExportId());
     final Ticket putResultTicket = ExportTicketHelper.exportIdToTicket(nextExportId());
 
-    BarrageSourcedTable resultTable;
+    BarrageTable resultTable;
     BarrageClientSubscription resultSub;
-    final BarrageStreamReader reader = new BarrageStreamReader();
 
     private void runScript() {
         log.info().append("Script Running: ").endl();
@@ -205,7 +195,7 @@ public class SimpleDeephavenClient {
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
-        resultTable = BarrageSourcedTable.make(definition, false);
+        resultTable = BarrageTable.make(definition, false);
         final InstrumentedShiftAwareListener listener = new InstrumentedShiftAwareListener("test") {
             @Override
             protected void onFailureInternal(final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
@@ -221,51 +211,8 @@ public class SimpleDeephavenClient {
 
         resultSub = new BarrageClientSubscription(
                 ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, SubscriptionRequest.newBuilder()
-                .setTicket(exportTable)
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .setUseDeephavenNulls(true)
-                .build(), reader, resultTable);
-    }
-
-    private void onSchemaResultNoLocalLTM(final Flight.SchemaResult schemaResult) {
-        final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
-        final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
-
-        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive non-existing-bitset and an empty bitset.
-        final BitSet columns = new BitSet();
-        columns.set(0, definition.getColumns().length);
-
-        BarrageSourcedTable dummy = BarrageSourcedTable.make(definition, false);
-
-        resultSub = new BarrageClientSubscription(
-                ExportTicketHelper.toReadableString(exportTable),
-                serverChannel, SubscriptionRequest.newBuilder()
-                .setTicket(exportTable)
-                .setColumns(BarrageProtoUtil.toByteString(columns))
-                .setUseDeephavenNulls(true)
-                .build(), reader,
-                dummy.getWireChunkTypes(),
-                dummy.getWireTypes(),
-                dummy.getWireComponentTypes(),
-                new WeakReference<>(new BarrageMessage.Listener() {
-                    @Override
-                    public void handleBarrageMessage(final BarrageMessage update) {
-                        final Index mods = Index.CURRENT_FACTORY.getEmptyIndex();
-                        for (int ci = 0; ci < update.modColumnData.length; ++ci) {
-                            mods.insert(update.modColumnData[ci].rowsModified);
-                        }
-                        final ShiftAwareListener.Update up = new ShiftAwareListener.Update(
-                                update.rowsAdded, update.rowsRemoved, mods, update.shifted, ModifiedColumnSet.ALL);
-
-                        log.info().append("recv update: ").append(up).endl();
-                    }
-
-                    @Override
-                    public void handleBarrageError(Throwable t) {
-                        log.error().append("upstream client failed: " + t.getMessage());
-                    }
-                }));
+                serverChannel, BarrageClientSubscription.makeRequest(null, columns),
+                new BarrageStreamReader(), resultTable);
     }
 
     private void onScriptComplete() {

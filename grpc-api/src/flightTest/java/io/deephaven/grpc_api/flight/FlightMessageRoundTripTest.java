@@ -15,10 +15,10 @@ import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
-import io.deephaven.grpc_api.barrage.BarrageModule;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
+import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.session.SessionModule;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionServiceGrpcImpl;
@@ -84,7 +84,7 @@ public class FlightMessageRoundTripTest {
     @Singleton
     @Component(modules = {
             FlightTestModule.class,
-            BarrageModule.class,
+            ArrowModule.class,
             SessionModule.class,
             AuthContextModule.class
     })

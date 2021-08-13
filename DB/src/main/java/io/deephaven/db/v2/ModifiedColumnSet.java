@@ -460,6 +460,15 @@ public class ModifiedColumnSet {
     }
 
     /**
+     * Marks specifically a range of adjacent columns. Start is inclusive, end is exclusive; like the BitSet API.
+     * @param columnStart start column index to mark dirty
+     * @param columnEndExclusive end column index to mark dirty
+     */
+    public void setColumnsInIndexRange(int columnStart, int columnEndExclusive) {
+        dirtyColumns.set(columnStart, columnEndExclusive);
+    }
+
+    /**
      * Turns off all bits for these columns. Use this method to prepare pre-computed ModifiedColumnSets.
      * @param columnNames the columns which need to be marked clean
      */

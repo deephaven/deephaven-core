@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2.by;
 
 import io.deephaven.base.verify.Require;
@@ -486,7 +489,10 @@ class StaticChunkedOperatorAggregationStateManager
         bc.duplicatePositions.setSize(0);
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // endregion build initialization try
+        ) {
             // region build initialization
             // endregion build initialization
 
