@@ -42,6 +42,16 @@ public class Input {
     /**
      * Creates a new Input.
      *
+     * @param colName       column name to be used as inputs.
+     * @param gatherFunc    function that gathers data into a Python object.
+     */
+    public Input(String colName, Function<Object[], Object> gatherFunc) {
+        this(new String[]{colName}, gatherFunc);
+    }
+
+    /**
+     * Creates a new Input.
+     *
      * @param colNames      array of column names to be used as inputs.
      * @param gatherFunc    function that gathers data into a Python object.
      */
