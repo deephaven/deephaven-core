@@ -8,6 +8,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.qst.table.TableSpec",
- "text": "A table specification is a declarative description of a table query. Part of a \"query syntax\n tree\".\n\n \n A table specification may be built-up explicitly via the individual implementation class build\n patterns, or may be built-up in a fluent-manner via the TableOperations interface.\n\n \n A table specification can be \"replayed\" against the fluent interfaces, see\n TableCreation.create(TableCreation, TableToOperations, OperationsToTable, TableSpec).",
+ "text": "A table specification is a declarative description of a table query. Part of a \"query syntax\n tree\".\n\n \n A table specification may be built-up explicitly via the individual implementation class build\n patterns, or may be built-up in a fluent-manner via the TableOperations interface.\n\n \n A table specification can be \"replayed\" against the fluent interfaces, see\n TableCreator.create(TableCreator, TableToOperations, OperationsToTable, TableSpec).",
  "typeName": "interface"
 }
