@@ -70,53 +70,63 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
 
     public static ConsumerRecordToStreamPublisherAdapter make(
             final StreamPublisherImpl publisher,
-            final Function<Object, Object> keyToChunkObjectMapper,
-            final Function<Object, Object> valueToChunkObjectMapper,
             final int kafkaPartitionColumnIndex,
             final int offsetColumnIndex,
             final int timestampColumnIndex,
-            final int keyColumnIndex,
-            final int valueColumnIndex) {
-
-        if (valueColumnIndex < 0) {
-            throw new IllegalArgumentException("Value column index must be non-negative: " + valueColumnIndex);
-        }
-        final ChunkType keyChunkType = publisher.chunkType(keyColumnIndex);
-        final ChunkType valueChunkType = publisher.chunkType(valueColumnIndex);
-
-        final Pair<KeyOrValueProcessor, Integer> keyPair = getProcessorAndSimpleIndex(keyColumnIndex, keyChunkType);
-        final Pair<KeyOrValueProcessor, Integer> valuePair = getProcessorAndSimpleIndex(valueColumnIndex, valueChunkType);
-
-        return new KafkaStreamPublisher(
-                publisher,
-                kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex,
-                keyPair.first, valuePair.first,
-                keyToChunkObjectMapper, valueToChunkObjectMapper,
-                keyPair.second, valuePair.second);
-    }
-
-    public static ConsumerRecordToStreamPublisherAdapter make(
-            final StreamPublisherImpl publisher,
-            final int kafkaPartitionColumnIndex,
-            final int offsetColumnIndex,
-            final int timestampColumnIndex,
-            final KeyOrValueProcessor keyProcessor,
-            final KeyOrValueProcessor valueProcessor,
+            final KeyOrValueProcessor keyProcessorArg,
+            final KeyOrValueProcessor valueProcessorArg,
             final Function<Object, Object> keyToChunkObjectMapper,
             final Function<Object, Object> valueToChunkObjectMapper,
-            final int simpleKeyColumnIndex,
-            final int simpleValueColumnIndex
+            final int simpleKeyColumnIndexArg,
+            final int simpleValueColumnIndexArg
             ) {
-        if (valueProcessor == null) {
-            throw new IllegalArgumentException("Value processor is required!");
+        if ((keyProcessorArg == null) == (simpleKeyColumnIndexArg == -1)) {
+            throw new IllegalArgumentException("Either keyProcessor == null or simpleKeyColumnIndex == -1");
+        }
+
+        if ((valueProcessorArg == null) == (simpleValueColumnIndexArg == -1)) {
+            throw new IllegalArgumentException("Either valueProcessor == null or simpleValueColumnIndex == -1");
+        }
+
+        final KeyOrValueProcessor keyProcessor;
+        final int simpleKeyColumnIndex;
+        if (simpleKeyColumnIndexArg == -1) {
+            keyProcessor = keyProcessorArg;
+            simpleKeyColumnIndex = -1;
+        } else {
+            final Pair<KeyOrValueProcessor, Integer> keyPair =
+                    getProcessorAndSimpleIndex(
+                            simpleKeyColumnIndexArg,
+                            publisher.chunkType(simpleKeyColumnIndexArg));
+            keyProcessor = keyPair.first;
+            simpleKeyColumnIndex = keyPair.second;
+        }
+
+        final KeyOrValueProcessor valueProcessor;
+        final int simpleValueColumnIndex;
+        if (simpleValueColumnIndexArg == -1) {
+            valueProcessor = valueProcessorArg;
+            simpleValueColumnIndex = -1;
+        } else {
+            final Pair<KeyOrValueProcessor, Integer> valuePair =
+                    getProcessorAndSimpleIndex(
+                            simpleValueColumnIndexArg,
+                            publisher.chunkType(simpleValueColumnIndexArg));
+            valueProcessor = valuePair.first;
+            simpleValueColumnIndex = valuePair.second;
         }
 
         return new KafkaStreamPublisher(
                 publisher,
-                kafkaPartitionColumnIndex, offsetColumnIndex, timestampColumnIndex,
-                keyProcessor, valueProcessor,
-                keyToChunkObjectMapper, valueToChunkObjectMapper,
-                simpleKeyColumnIndex, simpleValueColumnIndex);
+                kafkaPartitionColumnIndex,
+                offsetColumnIndex,
+                timestampColumnIndex,
+                keyProcessor,
+                valueProcessor,
+                keyToChunkObjectMapper,
+                valueToChunkObjectMapper,
+                simpleKeyColumnIndex,
+                simpleValueColumnIndex);
     }
 
     @NotNull

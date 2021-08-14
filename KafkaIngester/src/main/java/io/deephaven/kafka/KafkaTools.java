@@ -8,7 +8,6 @@ import gnu.trove.map.hash.TIntLongHashMap;
 
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
@@ -62,6 +61,8 @@ public class KafkaTools {
     public static final String DOUBLE_DESERIALIZER = DoubleDeserializer.class.getName();
     public static final String BYTE_ARRAY_DESERIALIZER = ByteArrayDeserializer.class.getName();
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
+    public static final String BYTE_BUFFER_DESERIALIZER = ByteBufferDeserializer.class.getName();
+    public static final String DESERIALIZER_FOR_IGNORE = BYTE_BUFFER_DESERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
@@ -259,6 +260,14 @@ public class KafkaTools {
             @Override public DataFormat dataFormat() { return DataFormat.SIMPLE; }
         }
 
+        /**
+         * The names for the key or value columns can be provided in the properties as "key.column.name" or "value.column.name",
+         * and otherwise default to "key" or "value".
+         * The types for key or value are either specified in the properties as "key.type" or "value.type",
+         * or deduced from the serializer classes for key or value in the provided Properties object.
+         */
+        private static final Simple FROM_PROPERTIES = new Simple(null, null);
+
         public static final class Json extends KeyOrValueSpec {
             public final ColumnDefinition<?>[] columnDefinitions;
             public final Map<String, String> columnNameToJsonFieldName;
@@ -275,12 +284,12 @@ public class KafkaTools {
 
     // Spec to explicitly ask consumeToTabel to ignore either key or value.
     @SuppressWarnings("unused")
-    public KeyOrValueSpec ignoreSpec() {
+    public static KeyOrValueSpec ignoreSpec() {
         return KeyOrValueSpec.IGNORE;
     }
 
     @SuppressWarnings("unused")
-    public KeyOrValueSpec jsonSpec(
+    public static KeyOrValueSpec jsonSpec(
             final ColumnDefinition<?>[] columnDefinitions,
             final Map<String, String> columnNameToJsonFieldName
     ) {
@@ -288,22 +297,22 @@ public class KafkaTools {
     }
 
     @SuppressWarnings("unused")
-    public KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
+    public static KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
         return jsonSpec(columnDefinitions, null);
     }
 
     @SuppressWarnings("unused")
-    public KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameMapping) {
+    public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameMapping) {
         return new KeyOrValueSpec.Avro(schema, fieldNameMapping);
     }
 
     @SuppressWarnings("unused")
-    public KeyOrValueSpec avroSpec(final Schema schema) {
+    public static KeyOrValueSpec avroSpec(final Schema schema) {
         return new KeyOrValueSpec.Avro(schema, Function.identity());
     }
 
     @SuppressWarnings("unused")
-    public KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
+    public static KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
         return new KeyOrValueSpec.Simple(columnName, dataType);
     }
 
@@ -311,18 +320,9 @@ public class KafkaTools {
      * The types for key or value are either specified in the properties as "key.type" or "value.type",
      * or deduced from the serializer classes for key or value in the provided Properties object.
      */
-    public KeyOrValueSpec simpleSpec(final String columnName) {
+    @SuppressWarnings("unused")
+    public static KeyOrValueSpec simpleSpec(final String columnName) {
         return new KeyOrValueSpec.Simple(columnName, null);
-    }
-
-    /**
-     * The names for the key or value columns can be provided in the properties as "key.column.name" or "value.column.name",
-     * and otherwise default to "key" or "value".
-     * The types for key or value are either specified in the properties as "key.type" or "value.type",
-     * or deduced from the serializer classes for key or value in the provided Properties object.
-     */
-    public KeyOrValueSpec simpleSpec() {
-        return new KeyOrValueSpec.Simple(null, null);
     }
 
     /**
@@ -344,9 +344,17 @@ public class KafkaTools {
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final KeyOrValueSpec keySpec,
             @NotNull final KeyOrValueSpec valueSpec) {
-        if (keySpec.dataFormat() == DataFormat.IGNORE && keySpec.dataFormat() == DataFormat.IGNORE) {
+        final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
+        final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
+        if (ignoreKey && ignoreValue) {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
+        }
+        if (ignoreKey) {
+            setDeserIfNotSet(kafkaConsumerProperties, KeyOrValue.KEY, DESERIALIZER_FOR_IGNORE);
+        }
+        if (ignoreValue) {
+            setDeserIfNotSet(kafkaConsumerProperties, KeyOrValue.VALUE, DESERIALIZER_FOR_IGNORE);
         }
 
         final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
@@ -374,7 +382,6 @@ public class KafkaTools {
         final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
         final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
         streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
-
 
         final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
         final KeyOrValueProcessor valueProcessor = getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
@@ -668,6 +675,10 @@ public class KafkaTools {
     public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = KafkaIngester.ALL_PARTITIONS_DONT_SEEK;
     @SuppressWarnings("unused")
     public static final Function<String, String> DIRECT_MAPPING = Function.identity();
+    @SuppressWarnings("unused")
+    public static final KeyOrValueSpec FROM_PROPERTIES = KeyOrValueSpec.FROM_PROPERTIES;
+    @SuppressWarnings("unused")
+    public static final KeyOrValueSpec IGNORE = KeyOrValueSpec.IGNORE;
 
     //
     // For the benefit of our python integration
