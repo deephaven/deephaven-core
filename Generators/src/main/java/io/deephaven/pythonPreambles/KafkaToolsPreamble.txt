@@ -1,3 +1,4 @@
+# -*-Python-*-
 #
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
@@ -9,14 +10,18 @@
 ##############################################################################
 
 
+import collections
 import sys
 import jpy
 import wrapt
+
 from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList
 
 # None until the first _defineSymbols() call
 _java_type_ = None
 _stream_table_tools = None
+SEEK_TO_BEGINNING = None
+DONT_SEEK = None
 
 def _defineSymbols():
     """
@@ -32,6 +37,8 @@ def _defineSymbols():
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
+        SEEK_TO_BEGINNING = _java_type_.getattr('SEEK_TO_BEGINNING')
+        DONT_SEEK = _java_type_.getattr('DONT_SEEK')
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
 
 
@@ -78,72 +85,104 @@ def _custom_avroSchemaToColumnDefinitions(*args):
 
 
 @_passThrough
-def _commonKafkaArgs(args):
-    if len(args) < 2:
-        raise Exception('not enough arguments')
-    kafkaConsumerPropertiesDict = args[0]
-    topicName = args[1]
-    if len(args) >= 3:
-        partitionFilter = args[2]
-        if isinstance(partitionFilter, str):
-            partitionFilter = getattr(_java_type_, partitionFilter)
-        else:
-            partitionFilter = _java_type_.partitionFilterFromArray(jpy.array('int', partitionFilter))
-    else:
-        partitionFilter = getattr(_java_type_, 'ALL_PARTITIONS')
-
-    if len(args) == 4:
-        partitionToInitialOffset = args[3];
-        if isinstance(partitionToInitialOffset, str):
-            partitionToInitialOffset = getattr(_java_type_, partitionToInitialOffset)
-        elif isinstance(partitionToInitialOffset, dict):
-            dict = args[3];
-            partitionsArray = jpy.array('int', dict.keys())
-            offsetsArray = jpy.array('long', dict.values())
-            partitionToInitialOffset = _java_type_.partitionToOffsetFromParallelArrays(partitionsArray, offsetsArray)
-        else:
-            raise Exception('wrong type for 4th argument partitionToInitialOffset: str or dict allowed')
-    elif len(args) > 4:
-        raise Exception('too many arguments')
-    else:
-        partitionToInitialOffset = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
-
-    return [
-        dictToProperties(kafkaConsumerPropertiesDict),
-        topicName,
-        partitionFilter,
-        partitionToInitialOffset
-    ]
-
-
-@_passThrough
 def consumeToTable(*args, **kwargs):
-    r = _commonKafkaArgs(args)
-    key_avro_schema = kwargs.pop('key_avro_schema', None)
-    value_avro_schema = kwargs.pop('value_avro_schema', None)
-    value_json = kwargs.pop('value_json', None)
-    if key_avro_schema is None and value_avro_schema is None and value_json is None:
-        # simple key/value case.
-        streaming_table = _java_type_.consumeToTable(r[0], r[1], r[2], r[3])
-    elif key_avro_schema is not None or value_avro_schema is not None:
-        if (value_json != None):
-            raise Exception('mixing json and avro not supported.')
+    if len(args) != 2:
+        raise Exception('not enough positional arguments: expected 2, consumer properties and topic')
+    if not isinstance(args[0], dict):
+        raise Exception('argument 0 of type dict expected for kafka consumer properties')
+    consumer_props_dict = args[0]
+
+    if not _isStr(args[1]):
+        raise Exception('argument 1 of type str expected for topic name')
+    topic = args[1]
+
+    partitions = kwargs.pop('partitions', None)
+    if partitions is None:
+        partitions = getattr(_java_type_, 'ALL_PARTITIONS')
+    elif isinstance(partitions, str):
+        partitions = getattr(_java_type_, partitions)
+    elif isinstance(partitions, collections.Sequence):
+        try:
+            jarr = jpy.array('int', partitionFilter)
+        except Exception as e:
+            raise Exception(
+                "when not of type str, keyword argument 'partitions' has to " +
+                "represent a sequence of integer partition values >= 0"
+            ) from e
+        partitions = _java_type_.partitionFilterFromArray(jarr)
+    else
+        raise Exception("keyword argument 'partitions' has to be of type str or sequence, instead got partitions=" + str(partitions))
+
+    offsets = kwargs.pop('offsets', None)
+    if offsets is None:
+        offsets = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
+    elif isinstance(offsets, str):
+        allowed_str_offsets = { "ALL_PARTITIONS_SEEK_TO_BEGINNING", "ALL_PARTITIONS_DONT_SEEK" }
+        if offsets not in allowed_str_offsets:
+           raise Exception("when of type str, keyword argument 'offsets' has to be one of " + str(allowed_str_offsets))
+        offsets = getattr(_java_type_, offsets)
+    elif isinstance(offsets, dict):
+        try:
+            partitionsArray = jpy.array('int', offsets.keys())
+            offsetsArray = jpy.array('long', offsets.values())
+            partitionToInitialOffset = _java_type_.partitionToOffsetFromParallelArrays(partitionsArray, offsetsArray)
+        except Exception as e:
+            raise Exception(
+                "when of type dict, keyword argument 'offsets' has to map " +
+                "numeric partitions to either numeric offsets, or the constants DONT_SEEK and SEEK_TO_BEGINNING, " +
+                "instead got offsets=" + str(offsets)
+            ) from e
+    else:
+        raise Exception(
+            "type " + type(offsets).__name__ +
+            "  of keyword argument 'offsets' not recognized; only str or dict allowed")
+
+    key_avro = kwargs.pop('key_avro', None)
+    value_avro = kwargs.pop('value_avro', None)
+    key_json = kwargs.pop('key_json', None)
+    value_json = kwargs.pop('key_json', None)
+    key_simple = kwargs.pop('key', None)
+    value_simple = kwargs.pop('value', None)
+    key_args_count = reduce(lambda a,b: a+b, map(int, [ key_avro is None, key_json is None, key_simple is None ]))
+    value_args_count = reduce(lambda a,b: a+b, map(int, [ value_avro is None, value_json is None, value_simple is None ]))
+    if key_args_count == 0 and value_args_count == 0:
+        raise Exception('at least one keyword argument for specifying either a key or value is required, none found')
+    if key_args_count > 1:
+        raise Exception('only one keyword argument for specifying a key is expected, instead ' + key_args_count + 'found')
+    if value_args_count > 1:
+        raise Exception('only one keyword argument for specifying a value is expected, instead ' + value_args_count + 'found')
+
+    key_spec = None
+    if key_avro is not None:
+        #
         mapping = getattr(_java_type_, 'DIRECT_MAPPING')
-        streaming_table = _java_type_.consumeToTable(r[0], r[1], r[2], r[3], key_avro_schema, mapping, value_avro_schema, mapping)
+    elif key_json is not None:
+        #
+        if not isinstance(key_json, list):
+            raise Exception('key_json keyword argument should be a list.')
+        col_def_list = _tuplesListToColDefsList(key_json)
+    elif key_simple is not None:
+        #
+
+    value_spec = None
+    if value_avro is not None:
+        #
+        mapping = getattr(_java_type_, 'DIRECT_MAPPING')
     elif value_json is not None:
+        #
         if not isinstance(value_json, list):
             raise Exception('value_json keyword argument should be a list.')
         col_def_list = _tuplesListToColDefsList(value_json)
-        streaming_table = _java_type_.consumeJsonToTable(r[0], r[1], r[2], r[3], col_def_list)
-    else:
-        raise Exception('Unknown keyword arguments: ' + str(kwargs))
+    elif value_simple is not None:
+        #
+
     table_type = kwargs.pop('table_type', None)
     if table_type is None or table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
     elif table_type == 'streaming':
         return streaming_table
-    else:
-        raise Exception('unknown table_type=' + table_type)
+    raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+
 
 # Define all of our functionality, if currently possible
 try:

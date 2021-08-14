@@ -274,10 +274,12 @@ public class KafkaTools {
     }
 
     // Spec to explicitly ask consumeToTabel to ignore either key or value.
+    @SuppressWarnings("unused")
     public KeyOrValueSpec ignoreSpec() {
         return KeyOrValueSpec.IGNORE;
     }
 
+    @SuppressWarnings("unused")
     public KeyOrValueSpec jsonSpec(
             final ColumnDefinition<?>[] columnDefinitions,
             final Map<String, String> columnNameToJsonFieldName
@@ -285,32 +287,56 @@ public class KafkaTools {
         return new KeyOrValueSpec.Json(columnDefinitions, columnNameToJsonFieldName);
     }
 
+    @SuppressWarnings("unused")
     public KeyOrValueSpec jsonSpec(final ColumnDefinition<?>[] columnDefinitions) {
         return jsonSpec(columnDefinitions, null);
     }
 
+    @SuppressWarnings("unused")
     public KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameMapping) {
         return new KeyOrValueSpec.Avro(schema, fieldNameMapping);
     }
 
+    @SuppressWarnings("unused")
     public KeyOrValueSpec avroSpec(final Schema schema) {
         return new KeyOrValueSpec.Avro(schema, Function.identity());
     }
 
+    @SuppressWarnings("unused")
     public KeyOrValueSpec simpleSpec(final String columnName, final Class<?> dataType) {
         return new KeyOrValueSpec.Simple(columnName, dataType);
     }
 
-    // Take dataType from consumer properties.
+    /**
+     * The types for key or value are either specified in the properties as "key.type" or "value.type",
+     * or deduced from the serializer classes for key or value in the provided Properties object.
+     */
     public KeyOrValueSpec simpleSpec(final String columnName) {
         return new KeyOrValueSpec.Simple(columnName, null);
     }
 
-    // Take column name and dataType from consumer properties.
+    /**
+     * The names for the key or value columns can be provided in the properties as "key.column.name" or "value.column.name",
+     * and otherwise default to "key" or "value".
+     * The types for key or value are either specified in the properties as "key.type" or "value.type",
+     * or deduced from the serializer classes for key or value in the provided Properties object.
+     */
     public KeyOrValueSpec simpleSpec() {
         return new KeyOrValueSpec.Simple(null, null);
     }
 
+    /**
+     * Consume from Kafka to a Deephaven streaming table.
+     *
+     * @param kafkaConsumerProperties  Properties to configure this table and also to be passed to create the KafkaConsumer.
+     * @param topic                    Kafka topic name.
+     * @param partitionFilter          A predicate returning true for the partitions to consume.
+     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed.
+     * @param keySpec
+     * @param valueSpec
+     * @return The streaming table where kafka events are ingested.
+     */
+    @SuppressWarnings("unused")
     public static Table consumeToTable(
             @NotNull final Properties kafkaConsumerProperties,
             @NotNull final String topic,
@@ -359,8 +385,8 @@ public class KafkaTools {
                 commonColumnIndices[2],
                 keyProcessor,
                 valueProcessor,
-                keyIngestData.toObjectChunkMapper,
-                valueIngestData.toObjectChunkMapper,
+                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
+                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper,
                 keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
                 valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex
         );
@@ -481,314 +507,6 @@ public class KafkaTools {
         return JsonNodeUtil.makeJsonNode(json);
     };
 
-    /**
-     * Consume from Kafka to a Deephaven live table using avro schemas.
-     *
-     * @param kafkaConsumerProperties
-     * @param topic
-     * @param partitionFilter
-     * @param partitionToInitialOffset
-     * @param keySchema                Avro schema for the key, or null if no key expected
-     * @param keyFieldNameMapping      Mapping of key schema field names to deephaven table column names, or null if no key expected
-     * @param valueSchema              Avro schema for the value
-     * @param valueFieldNameMapping    Mapping of key schema field names to deephaven table column names
-     * @return                         The live table where kafka events are ingested
-     */
-    public static Table consumeToTable(
-            @NotNull final Properties kafkaConsumerProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
-            final Schema keySchema,
-            final Function<String, String> keyFieldNameMapping,
-            final Schema valueSchema,
-            final Function<String, String> valueFieldNameMapping) {
-        if (keySchema == null && valueSchema == null) {
-            throw new IllegalArgumentException("key and value schemas can't be both null");
-        }
-
-        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
-        getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
-        final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
-        int[] commonColumnIndices = new int[3];
-        int nextColumnIndex = 0;
-        for (int i = 0; i < 3; ++i) {
-            if (commonColumns[i] != null) {
-                commonColumnIndices[i] = nextColumnIndex++;
-                columnDefinitions.add(commonColumns[i]);
-            } else {
-                commonColumnIndices[i] = -1;
-            }
-        }
-
-        final Map<String, String> keyColumnsMap;
-        if (keySchema != null) {
-            keyColumnsMap = new HashMap<>();
-            avroSchemaToColumnDefinitions(columnDefinitions, keyColumnsMap, keySchema, keyFieldNameMapping);
-        } else {
-            keyColumnsMap = Collections.emptyMap();
-        }
-
-        final Map<String, String> valueColumnsMap;
-        if (valueSchema != null) {
-            valueColumnsMap = new HashMap<>();
-            avroSchemaToColumnDefinitions(columnDefinitions, valueColumnsMap, valueSchema, valueFieldNameMapping);
-        } else {
-            valueColumnsMap = Collections.emptyMap();
-        }
-
-        if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
-            if (keySchema != null) {
-                kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
-            } else {
-                kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-            }
-        }
-
-        if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
-            if (valueSchema != null) {
-                kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
-            } else {
-                kafkaConsumerProperties.setProperty(
-                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-            }
-        }
-
-        final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
-
-        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
-        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
-
-
-        final KeyOrValueProcessor keyProcessor;
-        if (keySchema == null) {
-            keyProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
-        } else {
-            keyProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, keyColumnsMap, true);
-        }
-
-        final KeyOrValueProcessor valueProcessor;
-        if (valueSchema == null) {
-            valueProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
-        } else {
-            valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
-        }
-
-
-        final Function<Object, Object> valueToObjectChunkMapper;
-
-        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
-                commonColumnIndices[0],
-                commonColumnIndices[1],
-                commonColumnIndices[2],
-                keyProcessor, valueProcessor,
-                Function.identity(),
-                Function.identity(),
-                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
-                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
-                );
-
-        final KafkaIngester ingester = new KafkaIngester(
-                log,
-                kafkaConsumerProperties,
-                topic,
-                partitionFilter,
-                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
-                partitionToInitialOffset
-        );
-        ingester.start();
-
-        return streamToTableAdapter.table();
-    }
-
-    public static Table consumeJsonToTable(
-            @NotNull final Properties consumerProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
-            final ColumnDefinition<?>[] valueColumns) {
-        return consumeJsonToTable(consumerProperties, topic, partitionFilter, partitionToInitialOffset, valueColumns, null);
-    }
-
-    public static Table consumeJsonToTable(
-            @NotNull final Properties consumerProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset,
-            final ColumnDefinition<?>[] valueColumns,
-            final Map<String, String> columnNameToJsonField) {
-        final int nCols = 3 + valueColumns.length;
-        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition[nCols];
-        int c = 0;
-        c += getCommonCols(commonColumns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
-        final int[] commonColsIndices = new int[3];
-        int nextColumnIndex = 0;
-        for (int i = 0; i < 3; ++i) {
-            if (commonColumns[i] != null) {
-                commonColsIndices[i] = nextColumnIndex++;
-            } else {
-                commonColsIndices[i] = -1;
-            }
-        }
-        System.arraycopy(valueColumns, 0, commonColumns, c, valueColumns.length);
-        final Map<String, String> valueColumnsMap = new HashMap<>(valueColumns.length);
-        for (final ColumnDefinition<?> colDef : valueColumns) {
-            final String colName = colDef.getName();
-            final String fieldName = (columnNameToJsonField == null) ? colName : columnNameToJsonField.getOrDefault(colName, colName);
-            valueColumnsMap.put(colName, fieldName);
-        }
-
-        final TableDefinition tableDefinition = new TableDefinition(commonColumns);
-
-        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
-        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
-
-        final KeyOrValueProcessor keyProcessor = null; // TODO: Support key as both json or generic.
-        final KeyOrValueProcessor valueProcessor = JsonNodeChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
-
-        final Function<Object, Object> toObjectChunkMapper = (final Object in) -> {
-            final String json;
-            try {
-                json = (String) in;
-            } catch (ClassCastException ex) {
-                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
-            }
-            return JsonNodeUtil.makeJsonNode(json);
-        };
-        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
-                streamPublisher,
-                commonColsIndices[0],
-                commonColsIndices[1],
-                commonColsIndices[2],
-                keyProcessor, valueProcessor,
-                toObjectChunkMapper,
-                toObjectChunkMapper,
-                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
-                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
-        );
-
-        if (!consumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
-            consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-        }
-
-        if (!consumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
-            consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
-        }
-
-        final KafkaIngester ingester = new KafkaIngester(
-                log,
-                consumerProperties,
-                topic,
-                partitionFilter,
-                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
-                partitionToInitialOffset
-        );
-        ingester.start();
-
-        return streamToTableAdapter.table();
-
-    }
-
-    /**
-     * Consume a number of partitions from a single, simple type key and single type value Kafka topic to a single table,
-     * with table partitions matching Kafka partitions.
-     *
-     * The types of key and value are either specified in the properties as "key.type" and "value.type",
-     * or deduced from the serializer classes for key and value in the provided Properties object.
-     * The names for the key and value columns can be provided in the properties as "key.column.name" and "value.column.name",
-     * and otherwise default to "key" and "value".
-     * object for the Kafka Consumer initialization; if the Properties object provided does not contain
-     * keys for key deserializer or value deserializer, they are assumed to be of String type and the corresponding
-     * property for the respective deserializer are added.
-     *
-     * @param consumerProperties       Properties to configure this table and also to be passed to create the KafkaConsumer.
-     * @param topic                    Kafka topic name.
-     * @param partitionFilter          A predicate returning true for the partitions to consume.
-     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed.
-     * @return                         The resulting live table.
-     */
-    public static Table consumeToTable(
-            @NotNull final Properties consumerProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter,
-            @NotNull final IntToLongFunction partitionToInitialOffset) {
-        final int nCols = 5;
-        final ColumnDefinition<?>[] columns = new ColumnDefinition[nCols];
-        int c = 0;
-        c += getCommonCols(columns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
-        columns[c++] = getKeyOrValueCol(
-                KeyOrValue.KEY,
-                consumerProperties,
-                null,
-                true);
-        columns[c++] = getKeyOrValueCol(
-                KeyOrValue.VALUE,
-                consumerProperties,
-                null,
-                false);
-        Assert.eq(nCols, "nCols", c, "c");
-        final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
-        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-
-        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
-        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
-
-        final MutableInt colIdx = new MutableInt();
-        final ToIntFunction<ColumnDefinition<?>> orNull = (final ColumnDefinition<?> colDef) -> {
-            if (colDef == null) {
-                return -1;
-            }
-            return colIdx.getAndIncrement();
-        };
-        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
-                streamPublisher,
-                Function.identity(),
-                Function.identity(),
-                orNull.applyAsInt(columns[0]),
-                orNull.applyAsInt(columns[1]),
-                orNull.applyAsInt(columns[2]),
-                orNull.applyAsInt(columns[3]),
-                orNull.applyAsInt(columns[4]));
-
-        final KafkaIngester ingester = new KafkaIngester(
-                log,
-                consumerProperties,
-                topic,
-                partitionFilter,
-                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
-                partitionToInitialOffset
-        );
-        ingester.start();
-
-        return streamToTableAdapter.table();
-    }
-
-    private static ColumnDefinition<?>[] withoutNulls(final ColumnDefinition<?>[] columns) {
-        int nNulls = 0;
-        for (final ColumnDefinition<?> col : columns) {
-            if (col == null) {
-                ++nNulls;
-            }
-        }
-        if (nNulls == 0) {
-            return columns;
-        }
-        final ColumnDefinition<?>[] result = new ColumnDefinition<?>[columns.length - nNulls];
-        int ir = 0;
-        for (final ColumnDefinition<?> col : columns) {
-            if (col == null) {
-                continue;
-            }
-            result[ir++] = col;
-        }
-        return result;
-    }
-
     private static void getCommonCol(
             @NotNull final ColumnDefinition[] columnsToSet,
             final int outOffset,
@@ -859,7 +577,7 @@ public class KafkaTools {
                 typeProperty = KEY_COLUMN_TYPE_PROPERTY;
                 deserializerProperty = ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
                 nameProperty = KEY_COLUMN_NAME_PROPERTY;
-                nameDefault =KEY_COLUMN_NAME_DEFAULT;
+                nameDefault = KEY_COLUMN_NAME_DEFAULT;
                 break;
             case VALUE:
                 typeProperty = VALUE_COLUMN_TYPE_PROPERTY;
@@ -938,28 +656,22 @@ public class KafkaTools {
                 "Deserializer type " + deserializer + " for " + deserializerProperty + " not supported.");
     }
 
-    public static Table consumeToTable(
-            @NotNull final Properties kafkaConsumerProperties,
-            @NotNull final String topic,
-            @NotNull final IntPredicate partitionFilter) {
-        return consumeToTable(kafkaConsumerProperties, topic, partitionFilter, ALL_PARTITIONS_DONT_SEEK);
-    }
-
-    public static Table consumeToTable(
-            @NotNull final Properties kafkaConsumerProperties,
-            @NotNull final String topic) {
-        return consumeToTable(kafkaConsumerProperties, topic, ALL_PARTITIONS);
-    }
-
+    @SuppressWarnings("unused")
+    public static final long SEEK_TO_BEGINNING = KafkaIngester.SEEK_TO_BEGINNING;
+    @SuppressWarnings("unused")
+    public static final long DONT_SEEK = KafkaIngester.DONT_SEEK;
+    @SuppressWarnings("unused")
     public static final IntPredicate ALL_PARTITIONS = KafkaIngester.ALL_PARTITIONS;
+    @SuppressWarnings("unused")
     public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = KafkaIngester.ALL_PARTITIONS_SEEK_TO_BEGINNING;
+    @SuppressWarnings("unused")
     public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = KafkaIngester.ALL_PARTITIONS_DONT_SEEK;
+    @SuppressWarnings("unused")
     public static final Function<String, String> DIRECT_MAPPING = Function.identity();
 
     //
     // For the benefit of our python integration
     //
-
     @SuppressWarnings("unused")
     public static IntPredicate partitionFilterFromArray(final int[] partitions) {
         Arrays.sort(partitions);
