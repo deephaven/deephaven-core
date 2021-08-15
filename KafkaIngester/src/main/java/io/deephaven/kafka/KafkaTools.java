@@ -519,7 +519,7 @@ public class KafkaTools {
                     } else {
                         throw new UncheckedDeephavenException(
                                 "Deserializer for " + keyOrValue + " not set in kafka consumer properties " +
-                                        "and can't automatically set it for type " + dataType);
+                                "and can't automatically set it for type " + dataType);
                     }
                 }
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);

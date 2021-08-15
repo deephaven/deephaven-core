@@ -1073,5 +1073,7 @@ def _tuplesListToColDefsList(ts):
 def _dictToProperties(dict):
     r = _jprops_()
     for key, value in dict.items():
+        if value is None:
+            value = ''
         r.setProperty(key, value)
     return r

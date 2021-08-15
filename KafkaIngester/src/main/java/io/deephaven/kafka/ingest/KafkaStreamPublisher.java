@@ -81,12 +81,12 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final Function<Object, Object> keyToChunkObjectMapper,
             final Function<Object, Object> valueToChunkObjectMapper
     ) {
-        if ((keyProcessorArg == null) == (simpleKeyColumnIndexArg == -1)) {
-            throw new IllegalArgumentException("Either keyProcessor == null or simpleKeyColumnIndex == -1");
+        if ((keyProcessorArg != null) && (simpleKeyColumnIndexArg != -1)) {
+            throw new IllegalArgumentException("Either keyProcessor != null or simpleKeyColumnIndex != -1");
         }
 
-        if ((valueProcessorArg == null) == (simpleValueColumnIndexArg == -1)) {
-            throw new IllegalArgumentException("Either valueProcessor == null or simpleValueColumnIndex == -1");
+        if ((valueProcessorArg != null) && (simpleValueColumnIndexArg != -1)) {
+            throw new IllegalArgumentException("Either valueProcessor != null or simpleValueColumnIndex != -1");
         }
 
         final KeyOrValueProcessor keyProcessor;
