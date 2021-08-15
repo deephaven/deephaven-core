@@ -56,8 +56,10 @@ public class KafkaTools {
     public static final String VALUE_COLUMN_NAME_DEFAULT = "KafkaValue";
     public static final String KEY_COLUMN_TYPE_PROPERTY = "deephaven.key.column.type";
     public static final String VALUE_COLUMN_TYPE_PROPERTY = "deephaven.value.column.type";
+    public static final String SHORT_DESERIALIZER = ShortDeserializer.class.getName();
     public static final String INT_DESERIALIZER = IntegerDeserializer.class.getName();
     public static final String LONG_DESERIALIZER = LongDeserializer.class.getName();
+    public static final String FLOAT_DESERIALIZER = FloatDeserializer.class.getName();
     public static final String DOUBLE_DESERIALIZER = DoubleDeserializer.class.getName();
     public static final String BYTE_ARRAY_DESERIALIZER = ByteArrayDeserializer.class.getName();
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
@@ -488,7 +490,6 @@ public class KafkaTools {
                 }
                 break;
             case SIMPLE:
-                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 data.simpleColumnIndex = nextColumnIndexMut.getAndAdd(1);
                 final KeyOrValueSpec.Simple simpleSpec = (KeyOrValueSpec.Simple) keyOrValueSpec;
                 final ColumnDefinition colDef;
@@ -497,6 +498,31 @@ public class KafkaTools {
                 } else {
                     colDef = ColumnDefinition.fromGenericType(simpleSpec.columnName, simpleSpec.dataType);
                 }
+                final String propKey = (keyOrValue == KeyOrValue.KEY)
+                        ? ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG
+                        : ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG
+                        ;
+                if (!kafkaConsumerProperties.containsKey(propKey)) {
+                    final Class<?> dataType = colDef.getDataType();
+                    if (dataType == short.class) {
+                        kafkaConsumerProperties.setProperty(propKey, SHORT_DESERIALIZER);
+                    } else if (dataType == int.class) {
+                        kafkaConsumerProperties.setProperty(propKey, INT_DESERIALIZER);
+                    } else if (dataType == long.class) {
+                        kafkaConsumerProperties.setProperty(propKey, LONG_DESERIALIZER);
+                    } else if (dataType == float.class) {
+                        kafkaConsumerProperties.setProperty(propKey, FLOAT_DESERIALIZER);
+                    } else if (dataType == double.class) {
+                        kafkaConsumerProperties.setProperty(propKey, DOUBLE_DESERIALIZER);
+                    } else if (dataType == String.class) {
+                      kafkaConsumerProperties.setProperty(propKey, STRING_DESERIALIZER);
+                    } else {
+                        throw new UncheckedDeephavenException(
+                                "Deserializer for " + keyOrValue + " not set in kafka consumer properties " +
+                                        "and can't automatically set it for type " + dataType);
+                    }
+                }
+                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 columnDefinitions.add(colDef);
                 break;
             default:
@@ -615,12 +641,18 @@ public class KafkaTools {
         if (properties.containsKey(typeProperty)) {
             final String typeAsString = properties.getProperty(typeProperty);
             switch (typeAsString) {
+                case "short":
+                    properties.setProperty(deserializerProperty, SHORT_DESERIALIZER);
+                    return ColumnDefinition.ofShort(columnName);
                 case "int":
                     properties.setProperty(deserializerProperty, INT_DESERIALIZER);
                     return ColumnDefinition.ofInt(columnName);
                 case "long":
                     properties.setProperty(deserializerProperty, LONG_DESERIALIZER);
                     return ColumnDefinition.ofLong(columnName);
+                case "float":
+                    properties.setProperty(deserializerProperty, FLOAT_DESERIALIZER);
+                    return ColumnDefinition.ofDouble(columnName);
                 case "double":
                     properties.setProperty(deserializerProperty, DOUBLE_DESERIALIZER);
                     return ColumnDefinition.ofDouble(columnName);
