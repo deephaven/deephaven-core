@@ -46,13 +46,13 @@ def _defineSymbols():
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
-        SEEK_TO_BEGINNING = _java_type_.getattr('SEEK_TO_BEGINNING')
-        DONT_SEEK = _java_type_.getattr('DONT_SEEK')
-        FROM_PROPERTIES = _java_type_.getattr('FROM_PROPERTIES')
-        IGNORE = _java_type_.getattr('IGNORE')
-        ALL_PARTITIONS = _java_type_.getattr('ALL_PARTITIONS')
-        ALL_PARTITIONS_SEEK_TO_BEGINNING = _java_type_.getattr('ALL_PARTITIONS_SEEK_TO_BEGINNING')
-        ALL_PARTITIONS_DONT_SEEK = _java_type_.getattr('ALL_PARTITIONS_DONT_SEEK')
+        SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
+        DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
+        FROM_PROPERTIES = getattr(_java_type_, 'FROM_PROPERTIES')
+        IGNORE = getattr(_java_type_, 'IGNORE')
+        ALL_PARTITIONS = getattr(_java_type_, 'ALL_PARTITIONS')
+        ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
+        ALL_PARTITIONS_DONT_SEEK = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
 
 
 # every module method should be decorated with @_passThrough
@@ -129,7 +129,7 @@ def consumeToTable(*args, **kwargs):
                 "numeric partitions to either numeric offsets, or the constants DONT_SEEK and SEEK_TO_BEGINNING, " +
                 "instead got offsets=" + str(offsets)
             ) from e
-    elif not instance(offsets, jpy.JType):
+    elif not isinstance(offsets, jpy.JType):
         raise Exception(
             "type " + type(offsets).__name__ +
             "  of keyword argument 'offsets' not recognized; only str or dict allowed")
@@ -173,10 +173,12 @@ def consumeToTable(*args, **kwargs):
     # elif value_simple is not None:
     #     #
 
-    key = kwargs.pop('key', None)
-    value = kwargs.pop('value', None)
-    if key is None and value is None:
-        raise Exception('at least one keyword argument for specifying either a key or value is required, none found')
+    key = kwargs.pop('key', IGNORE)
+    value = kwargs.pop('value', IGNORE)
+    if key is IGNORE and value is IGNORE:
+        raise Exception(
+            "at least one keyword argument for specifying either a key or value is required; " + 
+            "they can't be both omitted, and they can't be both the IGNORE constant")
 
     streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
 

@@ -386,16 +386,17 @@ public class KafkaTools {
         final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
         final KeyOrValueProcessor valueProcessor = getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
 
-        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                streamPublisher,
                 commonColumnIndices[0],
                 commonColumnIndices[1],
                 commonColumnIndices[2],
                 keyProcessor,
                 valueProcessor,
-                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper,
                 keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
-                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex
+                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
+                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
+                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper
         );
 
         final KafkaIngester ingester = new KafkaIngester(

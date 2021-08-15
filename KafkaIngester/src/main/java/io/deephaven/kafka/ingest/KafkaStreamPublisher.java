@@ -42,10 +42,11 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final int timestampColumnIndex,
             final KeyOrValueProcessor keyProcessor,
             final KeyOrValueProcessor valueProcessor,
-            final Function<Object, Object> keyToChunkObjectMapper,
-            final Function<Object, Object> valueToChunkObjectMapper,
             final int simpleKeyColumnIndex,
-            final int simpleValueColumnIndex) {
+            final int simpleValueColumnIndex,
+            final Function<Object, Object> keyToChunkObjectMapper,
+            final Function<Object, Object> valueToChunkObjectMapper
+    ) {
         this.publisher = publisher;
         this.kafkaPartitionColumnIndex = kafkaPartitionColumnIndex;
         this.offsetColumnIndex = offsetColumnIndex;
@@ -75,11 +76,11 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             final int timestampColumnIndex,
             final KeyOrValueProcessor keyProcessorArg,
             final KeyOrValueProcessor valueProcessorArg,
-            final Function<Object, Object> keyToChunkObjectMapper,
-            final Function<Object, Object> valueToChunkObjectMapper,
             final int simpleKeyColumnIndexArg,
-            final int simpleValueColumnIndexArg
-            ) {
+            final int simpleValueColumnIndexArg,
+            final Function<Object, Object> keyToChunkObjectMapper,
+            final Function<Object, Object> valueToChunkObjectMapper
+    ) {
         if ((keyProcessorArg == null) == (simpleKeyColumnIndexArg == -1)) {
             throw new IllegalArgumentException("Either keyProcessor == null or simpleKeyColumnIndex == -1");
         }
@@ -123,10 +124,11 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 timestampColumnIndex,
                 keyProcessor,
                 valueProcessor,
-                keyToChunkObjectMapper,
-                valueToChunkObjectMapper,
                 simpleKeyColumnIndex,
-                simpleValueColumnIndex);
+                simpleValueColumnIndex,
+                keyToChunkObjectMapper,
+                valueToChunkObjectMapper
+        );
     }
 
     @NotNull
