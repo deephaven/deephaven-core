@@ -64,6 +64,14 @@ public interface Session extends AutoCloseable, TableHandleManager {
     TableHandleManager batch();
 
     /**
+     * A batch table handle manager.
+     *
+     * @param mixinStacktraces if stacktraces should be mixin
+     * @return a batch manager
+     */
+    TableHandleManager batch(boolean mixinStacktraces);
+
+    /**
      * A serial table handle manager.
      *
      * @return a serial manager

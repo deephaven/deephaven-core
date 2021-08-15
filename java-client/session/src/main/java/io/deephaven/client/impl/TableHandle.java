@@ -318,6 +318,12 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         public TableHandle handle() {
             return TableHandle.this;
         }
+
+        public TableHandleException mixinStacktrace(StackTraceElement[] stackTrace) {
+            final TableHandleException decoratedException = new TableHandleException(this);
+            decoratedException.setStackTrace(stackTrace);
+            return decoratedException;
+        }
     }
 
     public final class UncheckedTableHandleException extends RuntimeException {

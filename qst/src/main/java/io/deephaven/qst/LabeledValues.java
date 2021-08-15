@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Immutable
 @BuildableStyle
@@ -61,6 +62,10 @@ public abstract class LabeledValues<T> implements Iterable<LabeledValue<T>> {
 
     public final Iterable<T> values() {
         return () -> map().values().stream().map(LabeledValue::value).iterator();
+    }
+
+    public final Stream<T> valuesStream() {
+        return map().values().stream().map(LabeledValue::value);
     }
 
     public final Set<T> valueSet() {

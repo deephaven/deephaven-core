@@ -1,15 +1,18 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
+import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.TableCreationLabeledLogic;
 import io.deephaven.qst.TableCreationLogic;
-import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.TableCreationLogic1Input;
 import io.deephaven.qst.TableCreationLogic2Inputs;
 import io.deephaven.qst.table.LabeledTables;
+import io.deephaven.qst.table.StackTraceMixIn;
+import io.deephaven.qst.table.StackTraceMixInCreator;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.StreamSupport;
 
 /**
@@ -24,12 +27,15 @@ import java.util.stream.StreamSupport;
  */
 class TableHandleManagerBatch extends TableHandleManagerBase {
 
-    public static TableHandleManagerBatch of(Session session) {
-        return new TableHandleManagerBatch(session);
+    public static TableHandleManagerBatch of(Session session, boolean mixinStacktraces) {
+        return new TableHandleManagerBatch(session, mixinStacktraces);
     }
 
-    private TableHandleManagerBatch(Session session) {
+    private final boolean mixinStacktraces;
+
+    private TableHandleManagerBatch(Session session, boolean mixinStacktraces) {
         super(session, null);
+        this.mixinStacktraces = mixinStacktraces;
     }
 
     @Override
@@ -46,12 +52,18 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     @Override
     public TableHandle executeLogic(TableCreationLogic logic)
         throws TableHandleException, InterruptedException {
+        if (mixinStacktraces) {
+            return new Mixin1(logic).run();
+        }
         return execute(TableSpec.of(logic));
     }
 
     @Override
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
         throws TableHandleException, InterruptedException {
+        if (mixinStacktraces) {
+            return new Mixin3(logics).run();
+        }
         return execute(
             () -> StreamSupport.stream(logics.spliterator(), false).map(TableSpec::of).iterator());
     }
@@ -59,23 +71,142 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     @Override
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
         throws TableHandleException, InterruptedException {
+        if (mixinStacktraces) {
+            return new Mixin2(logic).run();
+        }
         return execute(LabeledTables.of(logic));
     }
 
     @Override
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
         throws TableHandleException, InterruptedException {
-        final TableSpec t1Table = t1.table();
-        final TableSpec outTable = logic.create(t1Table);
-        return execute(outTable);
+        if (mixinStacktraces) {
+            return new Mixin4(logic, t1).run();
+        }
+        final TableSpec table1 = t1.table();
+        final TableSpec tableOut = logic.create(table1);
+        return execute(tableOut);
     }
 
     @Override
     public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1,
         TableHandle t2) throws TableHandleException, InterruptedException {
-        final TableSpec t1Table = t1.table();
-        final TableSpec t2Table = t2.table();
-        final TableSpec outTable = logic.create(t1Table, t2Table);
-        return execute(outTable);
+        if (mixinStacktraces) {
+            return new Mixin5(logic, t1, t2).run();
+        }
+        final TableSpec table1 = t1.table();
+        final TableSpec table2 = t2.table();
+        final TableSpec tableOut = logic.create(table1, table2);
+        return execute(tableOut);
+    }
+
+    private abstract class MixinBase<T> {
+        final StackTraceMixInCreator<TableSpec, TableSpec> creator = StackTraceMixInCreator.of();
+
+        abstract T runImpl() throws InterruptedException, TableHandleException;
+
+        T run() throws InterruptedException, TableHandleException {
+            try {
+                return runImpl();
+            } catch (TableHandleException e) {
+                throw mixinStacktrace(e);
+            }
+        }
+
+        private TableHandleException mixinStacktrace(TableHandleException t) {
+            // TODO: improve this once original error is exposed to subsequent creation responses
+            TableSpec tableThatErrored = t.handle().table();
+            return creator.elements(tableThatErrored).map(t::mixinStacktrace).orElse(t);
+        }
+    }
+
+    private class Mixin1 extends MixinBase<TableHandle> {
+        private final TableCreationLogic logic;
+
+        public Mixin1(TableCreationLogic logic) {
+            this.logic = Objects.requireNonNull(logic);
+        }
+
+        @Override
+        protected TableHandle runImpl() throws InterruptedException, TableHandleException {
+            final StackTraceMixIn<TableSpec, TableSpec> mixin = logic.create(creator);
+            final TableSpec table = mixin.ops();
+            return execute(table);
+        }
+    }
+
+    private class Mixin2 extends MixinBase<LabeledValues<TableHandle>> {
+        private final TableCreationLabeledLogic logic;
+
+        public Mixin2(TableCreationLabeledLogic logic) {
+            this.logic = Objects.requireNonNull(logic);
+        }
+
+        @Override
+        protected LabeledValues<TableHandle> runImpl()
+            throws InterruptedException, TableHandleException {
+            final LabeledValues<StackTraceMixIn<TableSpec, TableSpec>> mixins =
+                logic.create(creator);
+            final LabeledTables labeledTables = LabeledTables.of(mixins.labels(),
+                () -> mixins.valuesStream().map(StackTraceMixIn::ops).iterator());
+            return execute(labeledTables);
+        }
+    }
+
+    private class Mixin3 extends MixinBase<List<TableHandle>> {
+        private final Iterable<TableCreationLogic> logics;
+
+        public Mixin3(Iterable<TableCreationLogic> logics) {
+            this.logics = Objects.requireNonNull(logics);
+        }
+
+        @Override
+        protected List<TableHandle> runImpl() throws InterruptedException, TableHandleException {
+            final Iterable<TableSpec> tables =
+                () -> StreamSupport.stream(logics.spliterator(), false).map(this::create)
+                    .map(StackTraceMixIn::ops).iterator();
+            return execute(tables);
+        }
+
+        private StackTraceMixIn<TableSpec, TableSpec> create(TableCreationLogic logic) {
+            return logic.create(creator);
+        }
+    }
+
+    private class Mixin4 extends MixinBase<TableHandle> {
+        private final TableCreationLogic1Input logic;
+        private final TableHandle t1;
+
+        public Mixin4(TableCreationLogic1Input logic, TableHandle t1) {
+            this.logic = Objects.requireNonNull(logic);
+            this.t1 = Objects.requireNonNull(t1);
+        }
+
+        @Override
+        TableHandle runImpl() throws InterruptedException, TableHandleException {
+            final StackTraceMixIn<TableSpec, TableSpec> mixin1 = creator.adapt(t1.table());
+            final StackTraceMixIn<TableSpec, TableSpec> mixinOut = logic.create(mixin1);
+            return execute(mixinOut.ops());
+        }
+    }
+
+    private class Mixin5 extends MixinBase<TableHandle> {
+        private final TableCreationLogic2Inputs logic;
+        private final TableHandle t1;
+        private final TableHandle t2;
+
+        public Mixin5(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2) {
+            this.logic = Objects.requireNonNull(logic);
+            this.t1 = Objects.requireNonNull(t1);
+            this.t2 = Objects.requireNonNull(t2);
+        }
+
+        @Override
+        TableHandle runImpl() throws InterruptedException, TableHandleException {
+            final StackTraceMixIn<TableSpec, TableSpec> mixin1 = creator.adapt(t1.table());
+            final StackTraceMixIn<TableSpec, TableSpec> mixin2 = creator.adapt(t2.table());
+            final StackTraceMixIn<TableSpec, TableSpec> mixinOut = logic.create(mixin1, mixin2);
+            return execute(mixinOut.ops());
+        }
     }
 }

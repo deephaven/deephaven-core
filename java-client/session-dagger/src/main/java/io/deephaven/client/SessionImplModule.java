@@ -2,14 +2,13 @@ package io.deephaven.client;
 
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.SessionImpl;
+import io.deephaven.client.impl.SessionImplConfig;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
 
-import javax.inject.Named;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -17,25 +16,22 @@ import java.util.concurrent.ScheduledExecutorService;
 public interface SessionImplModule {
 
     @Provides
-    static SessionImpl providesSession(SessionServiceBlockingStub stubBlocking,
-        SessionServiceStub stub, TableServiceStub tableServiceStub,
-        ConsoleServiceStub consoleServiceStub, ScheduledExecutorService executor,
-        @Named("delegateToBatch") boolean delegateToBatch) {
-        return SessionImpl.create(stubBlocking, stub, tableServiceStub, consoleServiceStub,
-            executor, delegateToBatch);
+    static SessionImplConfig providesSessionImplConfig(ScheduledExecutorService executor,
+        SessionServiceStub sessionService, TableServiceStub tableService,
+        ConsoleServiceStub consoleService) {
+        return SessionImplConfig.builder().executor(executor).sessionService(sessionService)
+            .tableService(tableService).consoleService(consoleService).build();
     }
 
     @Provides
-    static CompletableFuture<? extends SessionImpl> providesSessionFuture(SessionServiceStub stub,
-        TableServiceStub tableServiceStub, ConsoleServiceStub consoleServiceStub,
-        ScheduledExecutorService executor, @Named("delegateToBatch") boolean delegateToBatch) {
-        return SessionImpl.create(stub, tableServiceStub, consoleServiceStub, executor,
-            delegateToBatch);
+    static CompletableFuture<? extends SessionImpl> providesSessionFuture(
+        SessionImplConfig config) {
+        return config.createSessionFuture();
     }
 
     @Provides
-    @Named("delegateToBatch")
-    static boolean providesDelegateToBatch() {
-        return Boolean.getBoolean("io.deephaven.client.impl.SessionImpl.delegateToBatch");
+    static SessionImpl providesSession(SessionImplConfig config,
+        SessionServiceBlockingStub stubBlocking) {
+        return config.createSession(stubBlocking);
     }
 }
