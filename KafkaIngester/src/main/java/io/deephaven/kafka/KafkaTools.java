@@ -101,17 +101,17 @@ public class KafkaTools {
         final Map<String, String> mappedOut,
         final String prefix,
         final Schema.Field field,
-        final Function<String, String> fieldNameMapping) {
+        final Function<String, String> fieldNameToColumnName) {
             final Schema fieldSchema = field.schema();
             final String fieldName = field.name();
-            final String mappedName = fieldNameMapping.apply(prefix + fieldName);
+            final String mappedName = fieldNameToColumnName.apply(prefix + fieldName);
             if (mappedName == null) {
                 // allow the user to specify fields to skip by providing a mapping to null.
                 return;
             }
             final Schema.Type fieldType = fieldSchema.getType();
             pushColumnTypesFromAvroField(
-                    columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType, fieldNameMapping);
+                    columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType, fieldNameToColumnName);
 
     }
 
@@ -124,7 +124,7 @@ public class KafkaTools {
             final Schema fieldSchema,
             final String mappedName,
             final Schema.Type fieldType,
-            final Function<String, String> fieldNameMapping) {
+            final Function<String, String> fieldNameToColumnName) {
         switch (fieldType) {
             case BOOLEAN:
                 columnsOut.add(ColumnDefinition.ofBoolean(mappedName));
@@ -157,12 +157,12 @@ public class KafkaTools {
                 final Schema.Type unionType1 = unionTypes.get(1).getType();
                 if (unionType1 == Schema.Type.NULL) {
                     pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType0, fieldNameMapping);
+                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType0, fieldNameToColumnName);
                     return;
                 }
                 else if (unionType0 == Schema.Type.NULL) {
                     pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType1, fieldNameMapping);
+                            columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, unionType1, fieldNameToColumnName);
                     return;
                 }
                 throw new UnsupportedOperationException("Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
@@ -173,7 +173,7 @@ public class KafkaTools {
                             columnsOut, mappedOut,
                             prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,
                             nestedField,
-                            fieldNameMapping);
+                            fieldNameToColumnName);
                 }
                 return;
             case MAP:
@@ -194,7 +194,7 @@ public class KafkaTools {
             final List<ColumnDefinition> columns,
             final Map<String, String> mappedOut,
             final Schema schema,
-            final Function<String, String> fieldNameMapping
+            final Function<String, String> fieldNameToColumnName
     ) {
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Union of records schemas are not supported");
@@ -205,7 +205,7 @@ public class KafkaTools {
         }
         final List<Schema.Field> fields = schema.getFields();
         for (final Schema.Field field : fields) {
-            pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameMapping);
+            pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameToColumnName);
 
         }
     }
@@ -213,9 +213,9 @@ public class KafkaTools {
     public static void avroSchemaToColumnDefinitions(
             final List<ColumnDefinition> columns,
             final Schema schema,
-            final Function<String, String> fieldNameMapping
+            final Function<String, String> fieldNameToColumnName
     ) {
-        avroSchemaToColumnDefinitions(columns, null, schema, fieldNameMapping);
+        avroSchemaToColumnDefinitions(columns, null, schema, fieldNameToColumnName);
     }
 
     public static void avroSchemaToColumnDefinitions(
@@ -244,10 +244,10 @@ public class KafkaTools {
 
         public static final class Avro extends KeyOrValueSpec {
             public final Schema schema;
-            public final Function<String, String> fieldNameMapping;
-            private Avro(final Schema schema, final Function<String, String> fieldNameMapping) {
+            public final Function<String, String> fieldNameToColumnName;
+            private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
                 this.schema = schema;
-                this.fieldNameMapping = fieldNameMapping;
+                this.fieldNameToColumnName = fieldNameToColumnName;
             }
             @Override public DataFormat dataFormat() { return DataFormat.AVRO; }
         }
@@ -272,13 +272,13 @@ public class KafkaTools {
 
         public static final class Json extends KeyOrValueSpec {
             public final ColumnDefinition<?>[] columnDefinitions;
-            public final Map<String, String> columnNameToJsonFieldName;
+            public final Map<String, String> fieldNameToColumnName;
             private Json(
                     final ColumnDefinition<?>[] columnDefinitions,
-                    final Map<String, String> columnNameToJsonFieldName
+                    final Map<String, String> fieldNameToColumnName
             ) {
                 this.columnDefinitions = columnDefinitions;
-                this.columnNameToJsonFieldName = columnNameToJsonFieldName;
+                this.fieldNameToColumnName = fieldNameToColumnName;
             }
             @Override public DataFormat dataFormat() { return DataFormat.JSON; }
         }
@@ -293,9 +293,9 @@ public class KafkaTools {
     @SuppressWarnings("unused")
     public static KeyOrValueSpec jsonSpec(
             final ColumnDefinition<?>[] columnDefinitions,
-            final Map<String, String> columnNameToJsonFieldName
+            final Map<String, String> fieldNameToColumnName
     ) {
-        return new KeyOrValueSpec.Json(columnDefinitions, columnNameToJsonFieldName);
+        return new KeyOrValueSpec.Json(columnDefinitions, fieldNameToColumnName);
     }
 
     @SuppressWarnings("unused")
@@ -304,8 +304,8 @@ public class KafkaTools {
     }
 
     @SuppressWarnings("unused")
-    public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameMapping) {
-        return new KeyOrValueSpec.Avro(schema, fieldNameMapping);
+    public static KeyOrValueSpec avroSpec(final Schema schema, final Function<String, String> fieldNameToColumnName) {
+        return new KeyOrValueSpec.Avro(schema, fieldNameToColumnName);
     }
 
     @SuppressWarnings("unused")
@@ -426,17 +426,17 @@ public class KafkaTools {
                 return null;
             case AVRO:
                 return GenericRecordChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNamesToColumnNamesMap, true);
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNamesToColumnNamesMap, true);
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
             default:
                 throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
         }
     }
 
     private static class KeyOrValueIngestData {
-        public Map<String, String> fieldNamesToColumnNamesMap;
+        public Map<String, String> fieldNameToColumnName;
         public int simpleColumnIndex = -1;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
     }
@@ -471,22 +471,30 @@ public class KafkaTools {
             case AVRO:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, KafkaAvroDeserializer.class.getName());
                 final KeyOrValueSpec.Avro avroSpec = (KeyOrValueSpec.Avro) keyOrValueSpec;
-                data.fieldNamesToColumnNamesMap = new HashMap<>();
+                data.fieldNameToColumnName = new HashMap<>();
                 avroSchemaToColumnDefinitions(
-                        columnDefinitions, data.fieldNamesToColumnNamesMap, avroSpec.schema, avroSpec.fieldNameMapping);
+                        columnDefinitions, data.fieldNameToColumnName, avroSpec.schema, avroSpec.fieldNameToColumnName);
                 break;
             case JSON:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
                 data.toObjectChunkMapper = jsonToObjectChunkMapper;
                 final KeyOrValueSpec.Json jsonSpec = (KeyOrValueSpec.Json) keyOrValueSpec;
                 columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
-                data.fieldNamesToColumnNamesMap = new HashMap<>();
+                // Populate out field to column name mapping from two potential sources.
+                data.fieldNameToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
+                final Set<String> coveredColumns = new HashSet<>(jsonSpec.columnDefinitions.length);
+                if (jsonSpec.fieldNameToColumnName != null) {
+                    for (final Map.Entry<String, String> entry : jsonSpec.fieldNameToColumnName.entrySet()) {
+                        final String colName = entry.getValue();
+                        data.fieldNameToColumnName.put(entry.getKey(), colName);
+                        coveredColumns.add(colName);
+                    }
+                }
                 for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
                     final String colName = colDef.getName();
-                    final String fieldName = (jsonSpec.columnNameToJsonFieldName == null)
-                            ? colName
-                            : jsonSpec.columnNameToJsonFieldName.getOrDefault(colName, colName);
-                    data.fieldNamesToColumnNamesMap.put(colName, fieldName);
+                    if (!coveredColumns.contains(colName)) {
+                        data.fieldNameToColumnName.put(colName, colName);
+                    }
                 }
                 break;
             case SIMPLE:
@@ -737,7 +745,7 @@ public class KafkaTools {
     }
 
     @SuppressWarnings("unused")
-    public static Function<String, String> fieldNameMappingFromParallelArrays(
+    public static Function<String, String> fieldNameToColumnNameFromParallelArrays(
             final String[] fieldNames,
             final String[] columnNames) {
         if (fieldNames.length != columnNames.length) {

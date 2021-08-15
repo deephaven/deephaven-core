@@ -17,7 +17,7 @@ import sys
 import jpy
 import wrapt
 
-from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList, _typeFromName, _dictToProperties
+from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList, _typeFromName, _dictToProperties, _dictToMap
 
 # None until the first _defineSymbols() call
 _java_type_ = None
@@ -214,6 +214,27 @@ def simple(*args):
         raise Exception("could not convert type name " + jTypeStr + " to type") from e
     return _java_type_.simpleSpec(colName, jType)
 
+@_passThrough
+def json(*args):
+    if len(args) < 1 or len(args) > 2:
+        raise Exception("one or two arguments expected, instead got " + len(args))
+    col_defs = args[0]
+    if not isinstance(col_defs, collections.Sequence) or _isStr(col_defs):
+        raise Exception("first argument for column definitions needs to be a sequence, instead got " + str(col_defs))
+    try:
+        col_defs = _tuplesListToColDefsList(col_defs)
+    except Exception as e:
+        raise Exception("could not create column definitions from " + str(col_defs)) from e
+    if len(args) == 1:
+        return _java_type_.jsonSpec(col_defs)
+    fields_to_cols = args[1]
+    if not isinstance(fields_to_cols, dict):
+        raise Exception(
+            "second argument for json field names to column names mapping needs to be " +
+            "of type dict, instead got " + str(fields_to_cols))
+    fields_to_cols = _dictToMap(fields_to_cols)
+    return _java_type_.jsonSpec(col_defs, fields_to_cols)
+
 # Define all of our functionality, if currently possible
 try:
     _defineSymbols()
@@ -227,12 +248,12 @@ def avroSchemaToColumnDefinitions(*args):
       :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
       :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
       :param schema: org.apache.avro.Schema
-      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 2*  
       :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
       :param schema: org.apache.avro.Schema
-      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 3*  
       :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
@@ -247,7 +268,7 @@ def avroSpec(*args):
     """
     *Overload 1*  
       :param schema: org.apache.avro.Schema
-      :param fieldNameMapping: java.util.function.Function<java.lang.String,java.lang.String>
+      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
       
     *Overload 2*  
@@ -259,14 +280,14 @@ def avroSpec(*args):
 
 
 @_passThrough
-def fieldNameMappingFromParallelArrays(fieldNames, columnNames):
+def fieldNameToColumnNameFromParallelArrays(fieldNames, columnNames):
     """
     :param fieldNames: java.lang.String[]
     :param columnNames: java.lang.String[]
     :return: java.util.function.Function<java.lang.String,java.lang.String>
     """
     
-    return _java_type_.fieldNameMappingFromParallelArrays(fieldNames, columnNames)
+    return _java_type_.fieldNameToColumnNameFromParallelArrays(fieldNames, columnNames)
 
 
 @_passThrough
@@ -295,7 +316,7 @@ def jsonSpec(*args):
     """
     *Overload 1*  
       :param columnDefinitions: io.deephaven.db.tables.ColumnDefinition<?>[]
-      :param columnNameToJsonFieldName: java.util.Map<java.lang.String,java.lang.String>
+      :param fieldNameToColumnName: java.util.Map<java.lang.String,java.lang.String>
       :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
       
     *Overload 2*  

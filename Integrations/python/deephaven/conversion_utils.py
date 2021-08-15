@@ -27,17 +27,19 @@ else:
 _table_tools_ = None
 _col_def_ = None
 _jprops_ = None
+_jmap_ = None
 
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _jprops_
+    global _table_tools_, _col_def_, _jprops_, _jmap_
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
         _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
         _jprops_ = jpy.get_type("java.util.Properties")
+        _jmap_ = jpy.get_type("java.util.HashMap")
 
 # every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
@@ -1076,4 +1078,13 @@ def _dictToProperties(dict):
         if value is None:
             value = ''
         r.setProperty(key, value)
+    return r
+
+@_passThrough
+def _dictToMap(dict):
+    r = _jmap_()
+    for key, value in dict.items():
+        if value is None:
+            value = ''
+        r.put(key, value)
     return r

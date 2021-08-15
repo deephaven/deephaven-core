@@ -15,7 +15,7 @@ import sys
 import jpy
 import wrapt
 
-from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList, _typeFromName, _dictToProperties
+from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList, _typeFromName, _dictToProperties, _dictToMap
 
 # None until the first _defineSymbols() call
 _java_type_ = None
@@ -211,6 +211,27 @@ def simple(*args):
     except Exception as e:
         raise Exception("could not convert type name " + jTypeStr + " to type") from e
     return _java_type_.simpleSpec(colName, jType)
+
+@_passThrough
+def json(*args):
+    if len(args) < 1 or len(args) > 2:
+        raise Exception("one or two arguments expected, instead got " + len(args))
+    col_defs = args[0]
+    if not isinstance(col_defs, collections.Sequence) or _isStr(col_defs):
+        raise Exception("first argument for column definitions needs to be a sequence, instead got " + str(col_defs))
+    try:
+        col_defs = _tuplesListToColDefsList(col_defs)
+    except Exception as e:
+        raise Exception("could not create column definitions from " + str(col_defs)) from e
+    if len(args) == 1:
+        return _java_type_.jsonSpec(col_defs)
+    fields_to_cols = args[1]
+    if not isinstance(fields_to_cols, dict):
+        raise Exception(
+            "second argument for json field names to column names mapping needs to be " +
+            "of type dict, instead got " + str(fields_to_cols))
+    fields_to_cols = _dictToMap(fields_to_cols)
+    return _java_type_.jsonSpec(col_defs, fields_to_cols)
 
 # Define all of our functionality, if currently possible
 try:

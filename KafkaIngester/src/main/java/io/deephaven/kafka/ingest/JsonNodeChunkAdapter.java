@@ -23,22 +23,23 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
     /**
      * Create a JsonRecordChunkAdapter.
      *
-     * @param definition        the definition of the output table
-     * @param chunkTypeForIndex a function from column index to chunk type
-     * @param columns           a map from Avro field names to Deephaven column names
-     * @param allowNulls        true if null records should be allowed, if false then an ISE is thrown
+     * @param definition               the definition of the output table
+     * @param chunkTypeForIndex        a function from column index to chunk type
+     * @param fieldNamesToColumnNames  a map from JSON field names to Deephaven column names
+     * @param allowNulls               true if null records should be allowed, if false then an ISE is thrown
      * @return a JsonRecordChunkAdapter for the given definition and column mapping
      */
     public static JsonNodeChunkAdapter make(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> columns,
+            final Map<String, String> fieldNamesToColumnNames,
             final boolean allowNulls) {
         return new JsonNodeChunkAdapter(
-                definition, chunkTypeForIndex, columns, allowNulls);
+                definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls);
     }
 
-    private static FieldCopier makeFieldCopier(String fieldName, ChunkType chunkType, Class<?> dataType) {
+    private static FieldCopier makeFieldCopier(
+            final String fieldName, final ChunkType chunkType, final Class<?> dataType) {
         switch (chunkType) {
             case Char:
                 return new JsonNodeCharFieldCopier(fieldName);
