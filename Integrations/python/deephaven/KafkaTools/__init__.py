@@ -136,8 +136,8 @@ def consumeToTable(*args, **kwargs):
             "type " + type(offsets).__name__ +
             "  of keyword argument 'offsets' not recognized; only str or dict allowed")
 
-    key = kwargs.pop('key', IGNORE)
-    value = kwargs.pop('value', IGNORE)
+    key = kwargs.pop('key', FROM_PROPERTIES)
+    value = kwargs.pop('value', FROM_PROPERTIES)
     if key is IGNORE and value is IGNORE:
         raise Exception(
             "at least one keyword argument for specifying either a key or value is required; " + 
