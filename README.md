@@ -87,7 +87,7 @@ docker run hello-world
 
   Instructions for installing and configuring `docker-compose` can be found at
   [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/).
-  Version 1.29 (or newer) is recommended, Version 1.27 (or newer) is required.
+  Version 1.29 (or newer) is recommended; Version 1.27 (or newer) is required.
 </details>
 
 <details>
