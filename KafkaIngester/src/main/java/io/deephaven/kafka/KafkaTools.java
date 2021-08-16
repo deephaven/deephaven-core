@@ -98,6 +98,10 @@ public class KafkaTools {
         }
     }
 
+    public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName) {
+        return getAvroSchema(schemaServerUrl, resourceName, "latest");
+    }
+
     private static void pushColumnTypesFromAvroField(
         final List<ColumnDefinition> columnsOut,
         final Map<String, String> mappedOut,

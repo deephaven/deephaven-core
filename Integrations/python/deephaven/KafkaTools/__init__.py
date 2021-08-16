@@ -22,6 +22,7 @@ from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListT
 # None until the first _defineSymbols() call
 _java_type_ = None
 _stream_table_tools_ = None
+_avro_schema_jtype_ = None
 SEEK_TO_BEGINNING = None
 DONT_SEEK = None
 FROM_PROPERTIES = None
@@ -40,12 +41,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, _stream_table_tools_, SEEK_TO_BEGINNING, DONT_SEEK, FROM_PROPERTIES, IGNORE
+    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, SEEK_TO_BEGINNING, DONT_SEEK, FROM_PROPERTIES, IGNORE
     global ALL_PARTITIONS, ALL_PARTITIONS_DONT_SEEK, ALL_PARTITIONS_SEEK_TO_BEGINNING
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
+        _avro_schema_type_ = jpy.get_type("org.apache.avro.Schema")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
         FROM_PROPERTIES = getattr(_java_type_, 'FROM_PROPERTIES')
@@ -144,38 +146,29 @@ def consumeToTable(*args, **kwargs):
     if len(kwargs) > 0:
         raise Exception("excess keyword arguments not understood given: " + str(kwargs))
 
-    streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
-
     table_type = kwargs.pop('table_type', None)
+    if table_type is not None:
+        if not _isStr(table_type):
+            raise Exception("keyword argument 'table_type' expected to be of type str, instead got " +
+                            str(table_type))
+        if table_type != 'append' and table_type != 'streaming':
+            raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+
+    streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
     if table_type is None or table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
-    elif table_type == 'streaming':
-        return streaming_table
-    raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+    # table_type == 'streaming'
+    return streaming_table
 
 
 @_passThrough
-def avro(*args, **kwargs):
-    if len(args) < 1 and len(args) > 2:
-        raise Exception("one or two positional arguments expected, instead got " + len(args))
-    if _isStr(args[0]):
-        have_actual_schema = False
-        schema_name = args[0]
-        if len(args) < 2 or not _isStr(args[1]):
-            raise Exception(
-                "if the first argument is of type str (schema name on schema registry), " +
-                "a second argument of type str expected (schema version string)")
-        schema_version = args[1]
-        maybe_dict_arg = 2
-    else:
-        have_actual_schema = True
-        schema = args[0]
-        maybe_dict_arg = 1
+def avro(schema, **kwargs):
+    schema_version = kwargs.pop('schema_version', "latest")  # default may never be used if schema is not of str type.
     mapping = kwargs.pop('mapping', None)
     mapping_only = kwargs.pop('mapping_only', None)
     if mapping is not None and mapping_only is not None:
         raise Exception(
-            "only one keyword argument betwee 'mapping' and " +
+            "only one keyword argument between 'mapping' and " +
             "'mapping_only' expected, instead got both")
     if len(kwargs) > 0:
         raise Exception("excess keyword arguments not understood given: " + str(kwargs))
@@ -195,16 +188,23 @@ def avro(*args, **kwargs):
         mapping = _dictToFun(dict_arg, default_value=None)
     else:
         have_mapping = False
+    if _isStr(schema):
+        have_actual_schema = False
+    elif instanceof(schema, _avro_schema_jtype_):
+        have_actual_schema = True
+    else:
+        raise Exception("first positional argument for schema expected to be of " +
+                        "type str or avro schema type, instead got " + str(schema))
     if have_mapping:
         if have_actual_schema:
             return _java_type_.avroSpec(schema, mapping)
         else:
-            return _java_type_.avroSpec(schema_name, schema_version, mapping)
+            return _java_type_.avroSpec(schema, schema_version, mapping)
     else:
         if have_actual_schema:
             return _java_type_.avroSpec(schema)
         else:
-            return _java_type_.avroSpec(schema_name, schema_version)
+            return _java_type_.avroSpec(schema, schema_version)
     
 
 @_passThrough
@@ -276,67 +276,21 @@ def avroSchemaToColumnDefinitions(*args):
 
 
 @_passThrough
-def avroSpec(*args):
+def getAvroSchema(*args):
     """
     *Overload 1*  
-      :param schema: org.apache.avro.Schema
-      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
+      :param schemaServerUrl: java.lang.String
+      :param resourceName: java.lang.String
+      :param version: java.lang.String
+      :return: org.apache.avro.Schema
       
     *Overload 2*  
-      :param schema: org.apache.avro.Schema
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-      
-    *Overload 3*  
-      :param schemaName: java.lang.String
-      :param schemaVersion: java.lang.String
-      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-      
-    *Overload 4*  
-      :param schemaName: java.lang.String
-      :param schemaVersion: java.lang.String
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
+      :param schemaServerUrl: java.lang.String
+      :param resourceName: java.lang.String
+      :return: org.apache.avro.Schema
     """
     
-    return _java_type_.avroSpec(*args)
-
-
-@_passThrough
-def getAvroSchema(schemaServerUrl, resourceName, version):
-    """
-    :param schemaServerUrl: java.lang.String
-    :param resourceName: java.lang.String
-    :param version: java.lang.String
-    :return: org.apache.avro.Schema
-    """
-    
-    return _java_type_.getAvroSchema(schemaServerUrl, resourceName, version)
-
-
-@_passThrough
-def ignoreSpec():
-    """
-    :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-    """
-    
-    return _java_type_.ignoreSpec()
-
-
-@_passThrough
-def jsonSpec(*args):
-    """
-    *Overload 1*  
-      :param columnDefinitions: io.deephaven.db.tables.ColumnDefinition<?>[]
-      :param fieldNameToColumnName: java.util.Map<java.lang.String,java.lang.String>
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-      
-    *Overload 2*  
-      :param columnDefinitions: io.deephaven.db.tables.ColumnDefinition<?>[]
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-    """
-    
-    return _java_type_.jsonSpec(*args)
+    return _java_type_.getAvroSchema(*args)
 
 
 @_passThrough
@@ -358,22 +312,3 @@ def partitionToOffsetFromParallelArrays(partitions, offsets):
     """
     
     return _java_type_.partitionToOffsetFromParallelArrays(partitions, offsets)
-
-
-@_passThrough
-def simpleSpec(*args):
-    """
-    The types for key or value are either specified in the properties as "key.type" or "value.type",
-     or deduced from the serializer classes for key or value in the provided Properties object.
-    
-    *Overload 1*  
-      :param columnName: java.lang.String
-      :param dataType: java.lang.Class<?>
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-      
-    *Overload 2*  
-      :param columnName: java.lang.String
-      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
-    """
-    
-    return _java_type_.simpleSpec(*args)

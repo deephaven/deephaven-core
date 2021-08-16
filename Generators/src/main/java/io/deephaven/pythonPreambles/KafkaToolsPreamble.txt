@@ -20,6 +20,7 @@ from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListT
 # None until the first _defineSymbols() call
 _java_type_ = None
 _stream_table_tools_ = None
+_avro_schema_jtype_ = None
 SEEK_TO_BEGINNING = None
 DONT_SEEK = None
 FROM_PROPERTIES = None
@@ -38,12 +39,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, _stream_table_tools_, SEEK_TO_BEGINNING, DONT_SEEK, FROM_PROPERTIES, IGNORE
+    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, SEEK_TO_BEGINNING, DONT_SEEK, FROM_PROPERTIES, IGNORE
     global ALL_PARTITIONS, ALL_PARTITIONS_DONT_SEEK, ALL_PARTITIONS_SEEK_TO_BEGINNING
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
+        _avro_schema_type_ = jpy.get_type("org.apache.avro.Schema")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
         FROM_PROPERTIES = getattr(_java_type_, 'FROM_PROPERTIES')
@@ -158,22 +160,8 @@ def consumeToTable(*args, **kwargs):
 
 
 @_passThrough
-def avro(*args, **kwargs):
-    if len(args) < 1 and len(args) > 2:
-        raise Exception("one or two positional arguments expected, instead got " + len(args))
-    if _isStr(args[0]):
-        have_actual_schema = False
-        schema_name = args[0]
-        if len(args) < 2 or not _isStr(args[1]):
-            raise Exception(
-                "if the first argument is of type str (schema name on schema registry), " +
-                "a second argument of type str expected (schema version string)")
-        schema_version = args[1]
-        maybe_dict_arg = 2
-    else:
-        have_actual_schema = True
-        schema = args[0]
-        maybe_dict_arg = 1
+def avro(schema, **kwargs):
+    schema_version = kwargs.pop('schema_version', "latest")  # default may never be used if schema is not of str type.
     mapping = kwargs.pop('mapping', None)
     mapping_only = kwargs.pop('mapping_only', None)
     if mapping is not None and mapping_only is not None:
@@ -198,16 +186,23 @@ def avro(*args, **kwargs):
         mapping = _dictToFun(dict_arg, default_value=None)
     else:
         have_mapping = False
+    if _isStr(schema):
+        have_actual_schema = False
+    elif instanceof(schema, _avro_schema_jtype_):
+        have_actual_schema = True
+    else:
+        raise Exception("first positional argument for schema expected to be of " +
+                        "type str or avro schema type, instead got " + str(schema))
     if have_mapping:
         if have_actual_schema:
             return _java_type_.avroSpec(schema, mapping)
         else:
-            return _java_type_.avroSpec(schema_name, schema_version, mapping)
+            return _java_type_.avroSpec(schema, schema_version, mapping)
     else:
         if have_actual_schema:
             return _java_type_.avroSpec(schema)
         else:
-            return _java_type_.avroSpec(schema_name, schema_version)
+            return _java_type_.avroSpec(schema, schema_version)
     
 
 @_passThrough
