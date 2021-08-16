@@ -41,7 +41,7 @@
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 #
 # Run this script on the host (not on a docker image) to generate one row:
-# $ python3 ./kafka-produce-avro.py share_price avro/share_price.json str:Symbol=MSFT double:Price=274.82
+# $ python3 ./kafka-produce-avro.py share_price avro/share_price.json str:Symbol=MSFT str:Side=BUY double:Price=274.82 int:Qty=200
 #
 # You should see a new row show up in the web IDE with data matching the data sent above.
 #

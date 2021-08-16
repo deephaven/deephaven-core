@@ -206,25 +206,24 @@ def avro(*args, **kwargs):
     
 
 @_passThrough
-def json(*args):
-    if len(args) < 1 or len(args) > 2:
-        raise Exception("one or two arguments expected, instead got " + len(args))
-    col_defs = args[0]
+def json(col_defs, **kwargs):
     if not isinstance(col_defs, collections.Sequence) or _isStr(col_defs):
         raise Exception("first argument for column definitions needs to be a sequence, instead got " + str(col_defs))
     try:
         col_defs = _tuplesListToColDefsList(col_defs)
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
-    if len(args) == 1:
+    mapping = kwargs.pop('mapping', None)
+    if len(kwargs) > 0:
+        raise Exception("excess keyword arguments not understood given: " + str(kwargs))    
+    if mapping is None:
         return _java_type_.jsonSpec(col_defs)
-    fields_to_cols = args[1]
-    if not isinstance(fields_to_cols, dict):
+    if not isinstance(mapping, dict):
         raise Exception(
-            "second argument for json field names to column names mapping needs to be " +
-            "of type dict, instead got " + str(fields_to_cols))
-    fields_to_cols = _dictToMap(fields_to_cols)
-    return _java_type_.jsonSpec(col_defs, fields_to_cols)
+            "keyword argument 'mapping' is expected to be of type dict, " +
+            "instead got " + str(mapping))
+    mapping = _dictToMap(mapping)
+    return _java_type_.jsonSpec(col_defs, mapping)
 
 
 @_passThrough
