@@ -14,6 +14,8 @@ import io.deephaven.db.v2.TableUpdateValidator;
 import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -140,7 +142,7 @@ public class TestKeyedArrayBackedMutableTable {
     }
 
     @Test
-    public void testAddRows() throws InterruptedException {
+    public void testAddRows() throws Throwable {
         final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
@@ -160,10 +162,11 @@ public class TestKeyedArrayBackedMutableTable {
         final TestStatusListener listener = new TestStatusListener();
         mutableInputTable.addRow(randyMap, true, listener);
         SleepUtil.sleep(100);
-        TestCase.assertFalse(listener.success);
+        listener.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        TestCase.assertTrue(listener.success);
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener.waitForCompletion();
+        listener.assertSuccess();
 
         // TODO: should we throw the exception from the initial palce, should we defer edit checking to the LTM which
         // would make it consistent, but also slower to produce errors and uglier for reporting?
@@ -171,14 +174,11 @@ public class TestKeyedArrayBackedMutableTable {
         final Map<String, Object> randyMap2 = CollectionUtil.mapFromArray(String.class, Object.class, "Name", "Randy", "Employer", "Tegridy");
         mutableInputTable.addRow(randyMap2, false, listener2);
         SleepUtil.sleep(100);
-        TestCase.assertFalse(listener2.success);
+        listener2.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        listener2.waitForCompletion();
-        TestCase.assertFalse(listener2.success);
-        TestCase.assertNotNull(listener2.error);
-        TestCase.assertEquals(IllegalArgumentException.class, listener2.error.getClass());
-        TestCase.assertEquals("Can not edit keys Randy", listener2.error.getMessage());
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener2.waitForCompletion();
+        listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
     }
 
     @Test
@@ -238,25 +238,26 @@ public class TestKeyedArrayBackedMutableTable {
         Throwable error = null;
 
         @Override
-        public void onError(Throwable t) {
-            synchronized (this) {
-                if (success || error != null) {
-                    throw new IllegalStateException("Can not complete listener twice!");
-                }
-                error = t;
-                notifyAll();
+        public synchronized void onError(Throwable t) {
+            if (success || error != null) {
+                throw new IllegalStateException("Can not complete listener twice!");
             }
+            error = t;
+            notifyAll();
         }
 
         @Override
-        public void onSuccess() {
-            synchronized (this) {
-                if (success || error != null) {
-                    throw new IllegalStateException("Can not complete listener twice!");
-                }
-                success = true;
-                notifyAll();
+        public synchronized void onSuccess() {
+            if (success || error != null) {
+                throw new IllegalStateException("Can not complete listener twice!");
             }
+            success = true;
+            notifyAll();
+        }
+
+        private synchronized void assertIncomplete() {
+            TestCase.assertFalse(success);
+            TestCase.assertNull(error);
         }
 
         private void waitForCompletion() throws InterruptedException {
@@ -264,6 +265,22 @@ public class TestKeyedArrayBackedMutableTable {
                 while (!success && error == null) {
                     wait();
                 }
+            }
+        }
+
+        private synchronized void assertSuccess() throws Throwable {
+            if (!success) {
+                throw error;
+            }
+        }
+
+        private synchronized void assertFailure(@NotNull final Class<? extends Throwable> errorClass,
+                                                @Nullable final String errorMessage) {
+            TestCase.assertFalse(success);
+            TestCase.assertNotNull(error);
+            TestCase.assertTrue(errorClass.isAssignableFrom(error.getClass()));
+            if (errorMessage != null) {
+                TestCase.assertEquals(errorMessage, error.getMessage());
             }
         }
     }
