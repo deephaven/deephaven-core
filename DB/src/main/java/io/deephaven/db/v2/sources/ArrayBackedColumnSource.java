@@ -437,6 +437,7 @@ public abstract class ArrayBackedColumnSource<T>
         return (ArrayBackedColumnSource<T>) result;
     }
 
+    @Override
     public abstract void ensureCapacity(long size, boolean nullFill);
 
     @Override

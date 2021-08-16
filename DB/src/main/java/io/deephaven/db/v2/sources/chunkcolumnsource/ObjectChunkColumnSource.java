@@ -96,7 +96,6 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
-                Assert.lt(chunkIndex, "chunkIndex", firstOffsetForData.size(), "firstOffsetForData.size()");
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final ObjectChunk<T, ? extends Attributes.Values> ObjectChunk = data.get(chunkIndex);
