@@ -11,7 +11,6 @@ services:
     environment:
       - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=python
 
-
   web:
     image: ghcr.io/deephaven/web:${VERSION:-latest}
     expose:
