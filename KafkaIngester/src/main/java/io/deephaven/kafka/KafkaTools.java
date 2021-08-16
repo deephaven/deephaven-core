@@ -211,12 +211,6 @@ public class KafkaTools {
         return avroSchemaToColumnDefinitions(schema, DIRECT_MAPPING);
     }
 
-    // TODO-RWC:
-    //     Consume-to-tables? Should we have a distinct wrapper for table map creation, or just take our cue from
-    //     having more than one partition filter? Keyed by partition filter toString, or something else? Key mapping
-    //     function? Return merged, for easiest utility and simplest interface? Return single table, or singleton map,
-    //     when there's only one partition? Generator function, or adding a table per partition?
-
     /**
      * Consume from Kafka to a Deephaven live table using avro schemas.
      *
