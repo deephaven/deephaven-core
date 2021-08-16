@@ -6,9 +6,9 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.util.chunkfillers.CharChunkFiller;
 import io.deephaven.db.v2.sources.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
-
 import io.deephaven.db.v2.utils.ChunkUtils;
-import io.deephaven.util.type.TypeUtils;import org.jetbrains.annotations.NotNull;
+import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 // region FillWithNullValueImports
@@ -39,7 +39,12 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     }
 
     public static WritableCharChunk makeWritableChunkForPool(int size) {
-        return writableChunkWrap(makeArray(size), 0, size);
+        return new WritableCharChunk(makeArray(size), 0, size) {
+            @Override
+            public void close() {
+                MultiChunkPool.forThisThread().getCharChunkPool().giveWritableCharChunk(this);
+            }
+        };
     }
 
     public static <ATTR extends Any> WritableCharChunk<ATTR> writableChunkWrap(char[] data) {
@@ -207,7 +212,6 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getCharChunkPool().giveWritableCharChunk(this);
     }
 
     // region downcast
