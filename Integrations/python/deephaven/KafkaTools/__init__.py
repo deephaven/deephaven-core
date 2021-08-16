@@ -134,51 +134,15 @@ def consumeToTable(*args, **kwargs):
             "type " + type(offsets).__name__ +
             "  of keyword argument 'offsets' not recognized; only str or dict allowed")
 
-    # key_avro = kwargs.pop('key_avro', None)
-    # value_avro = kwargs.pop('value_avro', None)
-    # key_json = kwargs.pop('key_json', None)
-    # value_json = kwargs.pop('key_json', None)
-    # key_simple = kwargs.pop('key', None)
-    # value_simple = kwargs.pop('value', None)
-    # key_args_count = reduce(lambda a,b: a+b, map(int, [ key_avro is None, key_json is None, key_simple is None ]))
-    # value_args_count = reduce(lambda a,b: a+b, map(int, [ value_avro is None, value_json is None, value_simple is None ]))
-    # if key_args_count == 0 and value_args_count == 0:
-    #     raise Exception('at least one keyword argument for specifying either a key or value is required, none found')
-    # if key_args_count > 1:
-    #     raise Exception('only one keyword argument for specifying a key is expected, instead ' + key_args_count + 'found')
-    # if value_args_count > 1:
-    #     raise Exception('only one keyword argument for specifying a value is expected, instead ' + value_args_count + 'found')
-
-    # key_spec = None
-    # if key_avro is not None:
-    #     #
-    #     mapping = getattr(_java_type_, 'DIRECT_MAPPING')
-    # elif key_json is not None:
-    #     #
-    #     if not isinstance(key_json, list):
-    #         raise Exception('key_json keyword argument should be a list.')
-    #     col_def_list = _tuplesListToColDefsList(key_json)
-    # elif key_simple is not None:
-    #     #
-
-    # value_spec = None
-    # if value_avro is not None:
-    #     #
-    #     mapping = getattr(_java_type_, 'DIRECT_MAPPING')
-    # elif value_json is not None:
-    #     #
-    #     if not isinstance(value_json, list):
-    #         raise Exception('value_json keyword argument should be a list.')
-    #     col_def_list = _tuplesListToColDefsList(value_json)
-    # elif value_simple is not None:
-    #     #
-
     key = kwargs.pop('key', IGNORE)
     value = kwargs.pop('value', IGNORE)
     if key is IGNORE and value is IGNORE:
         raise Exception(
             "at least one keyword argument for specifying either a key or value is required; " + 
             "they can't be both omitted, and they can't be both the IGNORE constant")
+
+    if len(kwargs) > 0:
+        raise Exception("excess keyword arguments not understood given: " + str(kwargs))
 
     streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
 
@@ -191,28 +155,57 @@ def consumeToTable(*args, **kwargs):
 
 
 @_passThrough
-def avro(schema, **kwargs):
-    if _isStr(schema):
-        do_one_thing
-      
-
-@_passThrough
-def simple(*args):
-    if len(args) < 1 or len(args) > 2:
-        raise Exception("one or two arguments expected, instead got " + len(args))
-    colName = args[0]
-    if not _isStr(colName):
-        raise Exception("column_name argument needs to be of str type, instead got " + colName)
-    if len(args) == 1:
-        return _java_type_.simpleSpec(colName)
-    jTypeStr = args[1]
-    if not _isStr(jTypeStr):
-        raise Exception("type_name argument needs to be of str type, instead got " + jTypeStr)
-    try:
-        jType = _typeFromName(jTypeStr)
-    except Exception as e:
-        raise Exception("could not convert type name " + jTypeStr + " to type") from e
-    return _java_type_.simpleSpec(colName, jType)
+def avro(*args, **kwargs):
+    if len(args) < 1 and len(args) > 2:
+        raise Exception("one or two positional arguments expected, instead got " + len(args))
+    if _isStr(args[0]):
+        have_actual_schema = False
+        schema_name = args[0]
+        if len(args) < 2 or not _isStr(args[1]):
+            raise Exception(
+                "if the first argument is of type str (schema name on schema registry), " +
+                "a second argument of type str expected (schema version string)")
+        schema_version = args[1]
+        maybe_dict_arg = 2
+    else:
+        have_actual_schema = True
+        schema = args[0]
+        maybe_dict_arg = 1
+    mapping = kwargs.pop('mapping', None)
+    mapping_only = kwargs.pop('mapping_only', None)
+    if mapping is not None and mapping_only is not None:
+        raise Exception(
+            "only one keyword argument betwee 'mapping' and " +
+            "'mapping_only' expected, instead got both")
+    if len(kwargs) > 0:
+        raise Exception("excess keyword arguments not understood given: " + str(kwargs))
+    if mapping is not None:
+        have_mapping = True
+        if not instanceof(mapping, dict):
+            raise Exception("mapping keyword argument is expected to be of dict type, " +
+                            "instead found " + str(dict_arg))
+        # when providing 'mapping_only', fields names not given are mapped as identity
+        mapping = _dictToFun(dict_arg)
+    elif mapping_only is not None:
+        have_mapping = True
+        if not instanceof(mapping, dict):
+            raise Exception("mapping_only keyword argument is expected to be of dict type, " +
+                            "instead found " + str(dict_arg))
+        # when providing 'mapping_only', fields not given are ignored.
+        mapping = _dictToFun(dict_arg, default_value=None)
+    else:
+        have_mapping = False
+    if have_mapping:
+        if have_actual_schema:
+            return _java_type_.avroSpec(schema, mapping)
+        else:
+            return _java_type_.avroSpec(schema_name, schema_version, mapping)
+    else:
+        if have_actual_schema:
+            return _java_type_.avroSpec(schema)
+        else:
+            return _java_type_.avroSpec(schema_name, schema_version)
+    
 
 @_passThrough
 def json(*args):
@@ -234,6 +227,26 @@ def json(*args):
             "of type dict, instead got " + str(fields_to_cols))
     fields_to_cols = _dictToMap(fields_to_cols)
     return _java_type_.jsonSpec(col_defs, fields_to_cols)
+
+
+@_passThrough
+def simple(*args):
+    if len(args) < 1 or len(args) > 2:
+        raise Exception("one or two arguments expected, instead got " + len(args))
+    colName = args[0]
+    if not _isStr(colName):
+        raise Exception("column_name argument needs to be of str type, instead got " + colName)
+    if len(args) == 1:
+        return _java_type_.simpleSpec(colName)
+    jTypeStr = args[1]
+    if not _isStr(jTypeStr):
+        raise Exception("type_name argument needs to be of str type, instead got " + jTypeStr)
+    try:
+        jType = _typeFromName(jTypeStr)
+    except Exception as e:
+        raise Exception("could not convert type name " + jTypeStr + " to type") from e
+    return _java_type_.simpleSpec(colName, jType)
+
 
 # Define all of our functionality, if currently possible
 try:
@@ -274,20 +287,20 @@ def avroSpec(*args):
     *Overload 2*  
       :param schema: org.apache.avro.Schema
       :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
+      
+    *Overload 3*  
+      :param schemaName: java.lang.String
+      :param schemaVersion: java.lang.String
+      :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
+      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
+      
+    *Overload 4*  
+      :param schemaName: java.lang.String
+      :param schemaVersion: java.lang.String
+      :return: io.deephaven.kafka.KafkaTools.KeyOrValueSpec
     """
     
     return _java_type_.avroSpec(*args)
-
-
-@_passThrough
-def fieldNameToColumnNameFromParallelArrays(fieldNames, columnNames):
-    """
-    :param fieldNames: java.lang.String[]
-    :param columnNames: java.lang.String[]
-    :return: java.util.function.Function<java.lang.String,java.lang.String>
-    """
-    
-    return _java_type_.fieldNameToColumnNameFromParallelArrays(fieldNames, columnNames)
 
 
 @_passThrough

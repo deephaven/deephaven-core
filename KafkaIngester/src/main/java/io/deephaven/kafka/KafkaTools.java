@@ -6,6 +6,7 @@ package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
 
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.db.tables.ColumnDefinition;
@@ -56,6 +57,7 @@ public class KafkaTools {
     public static final String VALUE_COLUMN_NAME_DEFAULT = "KafkaValue";
     public static final String KEY_COLUMN_TYPE_PROPERTY = "deephaven.key.column.type";
     public static final String VALUE_COLUMN_TYPE_PROPERTY = "deephaven.value.column.type";
+    public static final String SCHEMA_SERVER_PROPERTY = AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG;
     public static final String SHORT_DESERIALIZER = ShortDeserializer.class.getName();
     public static final String INT_DESERIALIZER = IntegerDeserializer.class.getName();
     public static final String LONG_DESERIALIZER = LongDeserializer.class.getName();
@@ -244,9 +246,21 @@ public class KafkaTools {
 
         public static final class Avro extends KeyOrValueSpec {
             public final Schema schema;
+            public final String schemaName;
+            public final String schemaVersion;
             public final Function<String, String> fieldNameToColumnName;
             private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
                 this.schema = schema;
+                this.schemaName = null;
+                this.schemaVersion = null;
+                this.fieldNameToColumnName = fieldNameToColumnName;
+            }
+            private Avro(final String schemaName,
+                         final String schemaVersion,
+                         final Function<String, String> fieldNameToColumnName) {
+                this.schema = null;
+                this.schemaName = schemaName;
+                this.schemaVersion = schemaVersion;
                 this.fieldNameToColumnName = fieldNameToColumnName;
             }
             @Override public DataFormat dataFormat() { return DataFormat.AVRO; }
@@ -311,6 +325,18 @@ public class KafkaTools {
     @SuppressWarnings("unused")
     public static KeyOrValueSpec avroSpec(final Schema schema) {
         return new KeyOrValueSpec.Avro(schema, Function.identity());
+    }
+
+    @SuppressWarnings("unused")
+    public static KeyOrValueSpec avroSpec(final String schemaName,
+                                          final String schemaVersion,
+                                          final Function<String, String> fieldNameToColumnName) {
+        return new KeyOrValueSpec.Avro(schemaName, schemaVersion, fieldNameToColumnName);
+    }
+
+    @SuppressWarnings("unused")
+    public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
+        return new KeyOrValueSpec.Avro(schemaName, schemaVersion, Function.identity());
     }
 
     @SuppressWarnings("unused")
@@ -472,8 +498,20 @@ public class KafkaTools {
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, KafkaAvroDeserializer.class.getName());
                 final KeyOrValueSpec.Avro avroSpec = (KeyOrValueSpec.Avro) keyOrValueSpec;
                 data.fieldNameToColumnName = new HashMap<>();
+                final Schema schema;
+                if (avroSpec.schema != null) {
+                    schema = avroSpec.schema;
+                } else {
+                    if (!kafkaConsumerProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
+                        throw new IllegalArgumentException(
+                                "Avro schema name specified and schema server url propeorty " +
+                                        SCHEMA_SERVER_PROPERTY + " not found.");
+                    }
+                    final String schemaServiceUrl = kafkaConsumerProperties.getProperty(SCHEMA_SERVER_PROPERTY);
+                    schema = getAvroSchema(schemaServiceUrl, avroSpec.schemaName, avroSpec.schemaVersion);
+                }
                 avroSchemaToColumnDefinitions(
-                        columnDefinitions, data.fieldNameToColumnName, avroSpec.schema, avroSpec.fieldNameToColumnName);
+                        columnDefinitions, data.fieldNameToColumnName, schema, avroSpec.fieldNameToColumnName);
                 break;
             case JSON:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);
@@ -742,20 +780,6 @@ public class KafkaTools {
             map.put(partitions[i], offsets[i]);
         }
         return map::get;
-    }
-
-    @SuppressWarnings("unused")
-    public static Function<String, String> fieldNameToColumnNameFromParallelArrays(
-            final String[] fieldNames,
-            final String[] columnNames) {
-        if (fieldNames.length != columnNames.length) {
-            throw new IllegalArgumentException("lengths of array arguments do not match");
-        }
-        final Map<String, String> map = new HashMap(fieldNames.length);
-        for (int i = 0; i < fieldNames.length; ++i) {
-            map.put(fieldNames[i], columnNames[i]);
-        }
-        return (final String fieldName) -> map.getOrDefault(fieldName, fieldName);
     }
 
     private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
