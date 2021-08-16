@@ -337,6 +337,7 @@ public class WorkerConnection {
                 if (fail != null) {
                     //TODO set a flag so others know not to try until we re-trigger initial auth
                     //TODO re-trigger auth
+                    checkStatus((ResponseStreamWrapper.Status) fail);
                     return;
                 }
                 // mark the new token, schedule a new check
@@ -1185,9 +1186,7 @@ public class WorkerConnection {
 
                 notifyLog(logItem);
             });
-            logStream.onEnd(status -> {
-                //TODO handle reconnect
-            });
+            logStream.onEnd(this::checkStatus);
         } else {
             pastLogs.forEach(callback::apply);
         }
