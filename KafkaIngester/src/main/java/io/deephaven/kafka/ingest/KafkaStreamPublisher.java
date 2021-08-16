@@ -160,11 +160,18 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         final int chunkSize = Math.min(records.size(), chunks[0].capacity());
 
         WritableObjectChunk<Object, Attributes.Values> keyChunk = null;
-        WritableObjectChunk<Object, Attributes.Values> valueChunk;
+        WritableObjectChunk<Object, Attributes.Values> valueChunk = null;
 
-        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = !keyIsSimpleObject && simpleKeyColumnIndex >= 0 ? WritableObjectChunk.makeWritableChunk(chunkSize) : null;
-             final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = !valueIsSimpleObject ? WritableObjectChunk.makeWritableChunk(chunkSize) : null) {
-
+        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable =
+                     (!keyIsSimpleObject && simpleKeyColumnIndex >= 0)
+                             ? WritableObjectChunk.makeWritableChunk(chunkSize)
+                             : null
+             ;
+             final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable =
+                     (!valueIsSimpleObject && simpleValueColumnIndex >= 0)
+                             ? WritableObjectChunk.makeWritableChunk(chunkSize)
+                             : null
+        ) {
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
@@ -174,7 +181,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
-            } else {
+            } else if (valueIsSimpleObject) {
                 valueChunk = chunks[simpleValueColumnIndex].asWritableObjectChunk();
             }
 
@@ -187,7 +194,9 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                     if (keyChunk != null) {
                         flushKeyChunk(keyChunk, chunks);
                     }
-                    flushValueChunk(valueChunk, chunks);
+                    if (valueChunk != null) {
+                        flushValueChunk(valueChunk, chunks);
+                    }
 
                     checkChunkSizes(chunks);
                     publisher.flush();

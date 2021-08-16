@@ -390,7 +390,7 @@ public class KafkaTools {
         }
 
         final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
-        getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
+        getCommonCols(commonColumns, 0, kafkaConsumerProperties);
         final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
         int[] commonColumnIndices = new int[3];
         int nextColumnIndex = 0;
@@ -614,8 +614,7 @@ public class KafkaTools {
     private static int getCommonCols(
             @NotNull final ColumnDefinition<?>[] columnsToSet,
             final int outOffset,
-            @NotNull final Properties consumerProperties,
-            final boolean withPartitions) {
+            @NotNull final Properties consumerProperties) {
         int c = outOffset;
 
         getCommonCol(
@@ -625,9 +624,6 @@ public class KafkaTools {
                 KAFKA_PARTITION_COLUMN_NAME_PROPERTY,
                 KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
                 ColumnDefinition::ofInt);
-        if (columnsToSet[c] != null && withPartitions) {
-            columnsToSet[c] = columnsToSet[c].withPartitioning();
-        }
         ++c;
         getCommonCol(
                 columnsToSet,
