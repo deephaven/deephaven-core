@@ -164,8 +164,9 @@ public class TestKeyedArrayBackedMutableTable {
         SleepUtil.sleep(100);
         listener.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        listener.assertSuccess();
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener.waitForCompletion();
+        listener.assertSuccess();
 
         // TODO: should we throw the exception from the initial palce, should we defer edit checking to the LTM which
         // would make it consistent, but also slower to produce errors and uglier for reporting?
@@ -175,8 +176,9 @@ public class TestKeyedArrayBackedMutableTable {
         SleepUtil.sleep(100);
         listener2.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener2.waitForCompletion();
+        listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
     }
 
     @Test
@@ -241,6 +243,7 @@ public class TestKeyedArrayBackedMutableTable {
                 throw new IllegalStateException("Can not complete listener twice!");
             }
             error = t;
+            notifyAll();
         }
 
         @Override
@@ -249,11 +252,20 @@ public class TestKeyedArrayBackedMutableTable {
                 throw new IllegalStateException("Can not complete listener twice!");
             }
             success = true;
+            notifyAll();
         }
 
         private synchronized void assertIncomplete() {
             TestCase.assertFalse(success);
             TestCase.assertNull(error);
+        }
+
+        private void waitForCompletion() throws InterruptedException {
+            synchronized (this) {
+                while (!success && error == null) {
+                    wait();
+                }
+            }
         }
 
         private synchronized void assertSuccess() throws Throwable {
