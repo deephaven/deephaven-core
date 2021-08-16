@@ -241,7 +241,6 @@ public class TestKeyedArrayBackedMutableTable {
                 throw new IllegalStateException("Can not complete listener twice!");
             }
             error = t;
-            notifyAll();
         }
 
         @Override
@@ -250,7 +249,6 @@ public class TestKeyedArrayBackedMutableTable {
                 throw new IllegalStateException("Can not complete listener twice!");
             }
             success = true;
-            notifyAll();
         }
 
         private synchronized void assertIncomplete() {
