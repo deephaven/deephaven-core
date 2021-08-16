@@ -121,31 +121,33 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     @NotNull
-    private QueryTable streamSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
+    private Result<QueryTable> streamSort(@NotNull final SortHelpers.SortMapping initialSortedKeys) {
         final LongChunkColumnSource initialInnerRedirectionSource = new LongChunkColumnSource();
-        initialInnerRedirectionSource.addChunk(WritableLongChunk.writableChunkWrap(initialSortedKeys.getArrayMapping()));
+        if (initialSortedKeys.size() > 0) {
+            initialInnerRedirectionSource.addChunk(WritableLongChunk.writableChunkWrap(initialSortedKeys.getArrayMapping()));
+        }
         final MutableObject<LongChunkColumnSource> recycledInnerRedirectionSource = new MutableObject<>();
         final SwitchColumnSource<Long> redirectionSource = new SwitchColumnSource<>(initialInnerRedirectionSource, (final ColumnSource<Long> previousInnerRedirectionSource) -> {
-                    final LongChunkColumnSource recycled = (LongChunkColumnSource) previousInnerRedirectionSource;
-                    recycled.clear();
-                    recycledInnerRedirectionSource.setValue(recycled);
-                });
+            final LongChunkColumnSource recycled = (LongChunkColumnSource) previousInnerRedirectionSource;
+            recycled.clear();
+            recycledInnerRedirectionSource.setValue(recycled);
+        });
 
-        final RedirectionIndex sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
+        sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
         final Index resultIndex = Index.FACTORY.getFlatIndex(initialSortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
+        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
             //noinspection unchecked
             resultMap.put(stringColumnSourceEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
 
         resultTable = new QueryTable(resultIndex, resultMap);
-        this.parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
+        parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
         resultTable.setFlat();
         setSorted(resultTable);
 
-        parent.listenForUpdates(new BaseTable.ShiftAwareListenerImpl("Stream sort listener", parent, resultTable) {
+        final ShiftAwareListener resultListener = new BaseTable.ShiftAwareListenerImpl("Stream sort listener", parent, resultTable) {
             @Override
             public void onUpdate(@NotNull final Update upstream) {
                 Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(), "upstream.modified.empty() && upstream.shifted.empty()");
@@ -158,7 +160,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                 recycledInnerRedirectionSource.setValue(null);
                 final LongChunkColumnSource updateInnerRedirectSource = recycled == null ? new LongChunkColumnSource() : recycled;
-                updateInnerRedirectSource.addChunk(WritableLongChunk.writableChunkWrap(updateSortedKeys.getArrayMapping()));
+                if (updateSortedKeys.size() > 0) {
+                    updateInnerRedirectSource.addChunk(WritableLongChunk.writableChunkWrap(updateSortedKeys.getArrayMapping()));
+                }
                 redirectionSource.setNewCurrent(updateInnerRedirectSource);
 
                 final Index removed = Index.CURRENT_FACTORY.getFlatIndex(upstream.removed.size());
@@ -166,9 +170,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 resultIndex.update(added, removed);
                 resultTable.notifyListeners(new Update(added, removed, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             }
-        });
+        };
 
-        return resultTable;
+        return new Result<>(resultTable, resultListener);
     }
 
     private void setSorted(QueryTable table) {
@@ -186,7 +190,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             try (final ReadOnlyIndex prevIndex = usePrev ? parent.getIndex().getPrevIndex() : null) {
                 final ReadOnlyIndex indexToUse = usePrev ? prevIndex : parent.getIndex();
                 final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
-                return new Result<>(streamSort(sortedKeys));
+                return streamSort(sortedKeys);
             }
         }
 

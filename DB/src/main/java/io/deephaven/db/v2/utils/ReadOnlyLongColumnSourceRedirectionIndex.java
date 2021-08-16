@@ -48,7 +48,6 @@ public class ReadOnlyLongColumnSourceRedirectionIndex<CST extends ColumnSource<L
 
     @Override
     public void startTrackingPrevValues() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
