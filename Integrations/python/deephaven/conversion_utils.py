@@ -1094,6 +1094,11 @@ def _dictToMap(d):
 @_passThrough
 def _dictToFun(d, *kwargs):
     m = _dictToMap(d)
-    if kwargs.has_key('default_value'):
-        return _python_tools_.functionStrStrFromMap(m, kwargs['default_value'])
-    return _python_tools_.functionStrStrFromMap(m)
+    defaul_value_kwarg = 'default_value'
+    if kwargs.has_key(defaul_value_kwarg):
+        default_value = kwargs[defaul_value_kwarg]
+        if not _isStr(default_value):
+            raise Exception(
+                "keyword argument '" + defaul_value_kwarg + "' needs to be of str type, instead got " + str(default_value))
+        return _python_tools_.functionfromMapWithDefault(m, default_value)
+    return _python_tools_.functionFromMapWithIdentityDefaults(m)

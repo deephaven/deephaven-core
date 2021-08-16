@@ -142,14 +142,19 @@ def consumeToTable(*args, **kwargs):
     if len(kwargs) > 0:
         raise Exception("excess keyword arguments not understood given: " + str(kwargs))
 
-    streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
-
     table_type = kwargs.pop('table_type', None)
+    if table_type is not None:
+        if not _isStr(table_type):
+            raise Exception("keyword argument 'table_type' expected to be of type str, instead got " +
+                            str(table_type))
+        if table_type != 'append' and table_type != 'streaming':
+            raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+
+    streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
     if table_type is None or table_type == 'append':
         return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
-    elif table_type == 'streaming':
-        return streaming_table
-    raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+    # table_type == 'streaming'
+    return streaming_table
 
 
 @_passThrough
@@ -173,7 +178,7 @@ def avro(*args, **kwargs):
     mapping_only = kwargs.pop('mapping_only', None)
     if mapping is not None and mapping_only is not None:
         raise Exception(
-            "only one keyword argument betwee 'mapping' and " +
+            "only one keyword argument between 'mapping' and " +
             "'mapping_only' expected, instead got both")
     if len(kwargs) > 0:
         raise Exception("excess keyword arguments not understood given: " + str(kwargs))

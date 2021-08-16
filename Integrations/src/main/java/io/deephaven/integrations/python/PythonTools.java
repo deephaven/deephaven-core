@@ -15,7 +15,7 @@ public class PythonTools {
      * @return              the resulting function
      */
     @SuppressWarnings("unused")
-    public static Function<String, String> functionStrStrFromMap(
+    public static Function<String, String> functionfromMapWithDefault(
             final Map<String, String> map,
             final String defaultValue
     ) {
@@ -29,7 +29,7 @@ public class PythonTools {
      * @return              the resulting function
      */
     @SuppressWarnings("unused")
-    public static Function<String, String> functionStrStrFromMap(final Map<String, String> map
+    public static Function<String, String> functionFromMapWithIdentityDefaults(final Map<String, String> map
     ) {
         return (final String key) -> map.getOrDefault(key, key);
     }
