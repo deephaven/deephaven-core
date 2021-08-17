@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Require;
  */
 public class FutureOffset {
 
-    private final Future future;
+    private Future future;
     private final int offset;
 
     /**
@@ -38,4 +38,14 @@ public class FutureOffset {
      * @return the deferred calculation.
      */
     public Future getFuture() { return future; }
+
+    /**
+     * Resets the future.
+     *
+     * @return always false, because functions used in query strings cannot return nothing.
+     */
+    public boolean clear() {
+        future = null;
+        return false;
+    }
 }

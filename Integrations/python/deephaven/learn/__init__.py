@@ -210,7 +210,8 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
     _QueryScope_.addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
 
     futureOffset = _createNonconflictingColumnName("__FutureOffset", table)
-    clean = _createNonconflictingColumnName("__Clean", table)
+    clean1 = _createNonconflictingColumnName("__CleanComputer", table)
+    clean2 = _createNonconflictingColumnName("__CleanFutureOffset", table)
 
     if not outputs == None:
         __scatterer = _Scatterer_([output.output for output in outputs])
@@ -219,8 +220,12 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
         # and remove from Globals at end of function
         _QueryScope_.addParam("__scatterer", __scatterer)
 
-        return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean} = __computer.clear()").update(__scatterer.generateQueryStrings(f"{futureOffset}")).dropColumns(f"{futureOffset}", f"{clean}")
+        return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean1} = __computer.clear()")\
+                .update(__scatterer.generateQueryStrings(f"{futureOffset}"))\
+                .update(f"{clean2} = {futureOffset}.clear()")\
+                .dropColumns(f"{futureOffset}", f"{clean1}", f"{clean2}")
 
     result = _createNonconflictingColumnName("__Result", table)
 
-    return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean} = __computer.clear()", f"{result} = {futureOffset}.getFuture().get()").dropColumns(f"{futureOffset}", f"{clean}", f"{result}")
+    return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean1} = __computer.clear()", f"{result} = {futureOffset}.getFuture().get()", f"{clean2} = {futureOffset}.clear()")\
+            .dropColumns(f"{futureOffset}", f"{clean1}", f"{result}", f"{clean2}")
