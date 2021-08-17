@@ -161,7 +161,6 @@ def consumeToTable(*args, **kwargs):
 
 @_passThrough
 def avro(schema, **kwargs):
-    schema_version = kwargs.pop('schema_version', "latest")  # default may never be used if schema is not of str type.
     mapping = kwargs.pop('mapping', None)
     mapping_only = kwargs.pop('mapping_only', None)
     if mapping is not None and mapping_only is not None:
@@ -190,9 +189,17 @@ def avro(schema, **kwargs):
         have_actual_schema = False
     elif instanceof(schema, _avro_schema_jtype_):
         have_actual_schema = True
+        if kwargs.has_key('schema_version'):
+            raise Exception("keyword argument 'schema_version' is only expected if schema is of str type.")
     else:
         raise Exception("first positional argument for schema expected to be of " +
                         "type str or avro schema type, instead got " + str(schema))
+
+    schema_version = kwargs.pop('schema_version', 'latest')  # default may never be used if schema is not of str type.
+
+    if len(kwargs) > 0:
+        raise Exception("excess keyword arguments not understood given: " + str(kwargs))
+
     if have_mapping:
         if have_actual_schema:
             return _java_type_.avroSpec(schema, mapping)
