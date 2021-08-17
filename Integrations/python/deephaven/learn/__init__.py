@@ -75,6 +75,12 @@ class Input:
         self.input = _Input_(colNames, gatherFunc)
 
     def __str__(self):
+        """
+        Returns the Input object as a string.
+
+        Returns:
+            Input as a string.
+        """
         return self.input.toString()
 
 
@@ -96,6 +102,12 @@ class Output:
         self.output = _Output_(colName, scatterFunc, type)
 
     def __str__(self):
+        """
+        Returns the Output object as a string.
+
+        Returns:
+            Output as a string.
+        """
         return self.output.toString()
 
 
