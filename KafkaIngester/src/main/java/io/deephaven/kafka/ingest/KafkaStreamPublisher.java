@@ -151,43 +151,61 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         publisher.doLocked(() -> doConsumeRecords(records));
     }
 
+    private boolean haveKey() {
+        return !keyIsSimpleObject && keyProcessor != null;
+    }
+
+    private boolean haveValue() {
+        return !valueIsSimpleObject && valueProcessor != null;
+    }
+
     @SuppressWarnings("unchecked")
     private void doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
-        WritableChunk [] chunks = publisher.getChunks();
+        WritableChunk[] chunks = publisher.getChunks();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
 
         final int chunkSize = Math.min(records.size(), chunks[0].capacity());
 
-        WritableObjectChunk<Object, Attributes.Values> keyChunk = null;
-        WritableObjectChunk<Object, Attributes.Values> valueChunk = null;
-
-        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable =
-                     (!keyIsSimpleObject && simpleKeyColumnIndex >= 0)
-                             ? WritableObjectChunk.makeWritableChunk(chunkSize)
-                             : null
-             ;
-             final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable =
-                     (!valueIsSimpleObject && simpleValueColumnIndex >= 0)
-                             ? WritableObjectChunk.makeWritableChunk(chunkSize)
-                             : null
+        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = haveKey()
+                     ? WritableObjectChunk.makeWritableChunk(chunkSize)
+                     : null
+                     ;
+             final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = haveValue()
+                     ? WritableObjectChunk.makeWritableChunk(chunkSize)
+                     : null
         ) {
+            WritableObjectChunk<Object, Attributes.Values> keyChunk;
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
             } else if (keyIsSimpleObject) {
                 keyChunk = chunks[simpleKeyColumnIndex].asWritableObjectChunk();
+            } else {
+                keyChunk = null;
             }
+            WritableObjectChunk<Object, Attributes.Values> valueChunk;
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
             } else if (valueIsSimpleObject) {
                 valueChunk = chunks[simpleValueColumnIndex].asWritableObjectChunk();
+            } else {
+                valueChunk = null;
             }
 
-            WritableIntChunk<Attributes.Values> partitionChunk = kafkaPartitionColumnIndex >= 0 ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk() : null;
-            WritableLongChunk<Attributes.Values> offsetChunk = offsetColumnIndex >= 0 ? chunks[offsetColumnIndex].asWritableLongChunk() : null;
-            WritableLongChunk<Attributes.Values> timestampChunk =  timestampColumnIndex >= 0 ? chunks[timestampColumnIndex].asWritableLongChunk() : null;
+            WritableIntChunk<Attributes.Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
+                    ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk()
+                    : null
+                    ;
+            WritableLongChunk<Attributes.Values> offsetChunk = offsetColumnIndex >= 0
+                    ? chunks[offsetColumnIndex].asWritableLongChunk()
+                    : null
+                    ;
+            WritableLongChunk<Attributes.Values> timestampChunk =  timestampColumnIndex >= 0
+                    ? chunks[timestampColumnIndex].asWritableLongChunk()
+                    : null
+                    ;
 
             for (ConsumerRecord<?, ?> record : records) {
                 if (--remaining == 0) {
@@ -249,12 +267,16 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 if (keyChunk != null) {
                     keyChunk.add(keyToChunkObjectMapper.apply(record.key()));
                 }
-                valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
+                if (valueChunk != null) {
+                    valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
+                }
             }
             if (keyChunk != null) {
                 flushKeyChunk(keyChunk, chunks);
             }
-            flushValueChunk(valueChunk, chunks);
+            if (valueChunk != null) {
+                flushValueChunk(valueChunk, chunks);
+            }
 
             checkChunkSizes(chunks);
         }
