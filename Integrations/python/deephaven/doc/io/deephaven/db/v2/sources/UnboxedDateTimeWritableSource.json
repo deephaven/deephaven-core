@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.sources.UnboxedDateTimeWritableSource",
  "methods": {
   "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<java.lang.Long>\n:param sourceKey: long\n:param destKey: long",
-  "ensureCapacity": ":param capacity: long",
+  "ensureCapacity": "Ensure that this WritableSource can accept index keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFill: (boolean) - Whether data should be \"null-filled\". If true, get operations at index keys that have not been\n                   set will return the appropriate null value; otherwise such gets produce undefined results.",
   "set": "*Overload 1*  \n  :param key: long\n  :param value: java.lang.Long\n  \n*Overload 2*  \n  :param key: long\n  :param value: long"
  },
  "path": "io.deephaven.db.v2.sources.UnboxedDateTimeWritableSource",
