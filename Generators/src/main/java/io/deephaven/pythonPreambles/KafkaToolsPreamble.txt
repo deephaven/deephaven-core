@@ -141,9 +141,6 @@ def consumeToTable(*args, **kwargs):
             "at least one keyword argument for specifying either a key or value is required; " + 
             "they can't be both omitted, and they can't be both the IGNORE constant")
 
-    if len(kwargs) > 0:
-        raise Exception("excess keyword arguments not understood given: " + str(kwargs))
-
     table_type = kwargs.pop('table_type', None)
     if table_type is not None:
         if not _isStr(table_type):
@@ -151,6 +148,9 @@ def consumeToTable(*args, **kwargs):
                             str(table_type))
         if table_type != 'append' and table_type != 'streaming':
             raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+
+    if len(kwargs) > 0:
+        raise Exception("excess keyword arguments not understood given: " + str(kwargs))
 
     streaming_table = _java_type_.consumeToTable(consumer_props, topic, partitions, offsets, key, value)
     if table_type is None or table_type == 'append':
