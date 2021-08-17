@@ -68,6 +68,7 @@ public class KafkaTools {
     public static final String BYTE_BUFFER_DESERIALIZER = ByteBufferDeserializer.class.getName();
     public static final String DESERIALIZER_FOR_IGNORE = BYTE_BUFFER_DESERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
+    public static final String AVRO_LATEST_VERSION = "latest";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
 
@@ -99,7 +100,7 @@ public class KafkaTools {
     }
 
     public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName) {
-        return getAvroSchema(schemaServerUrl, resourceName, "latest");
+        return getAvroSchema(schemaServerUrl, resourceName, AVRO_LATEST_VERSION);
     }
 
     private static void pushColumnTypesFromAvroField(
@@ -338,9 +339,18 @@ public class KafkaTools {
         return new KeyOrValueSpec.Avro(schemaName, schemaVersion, fieldNameToColumnName);
     }
 
+    public static KeyOrValueSpec avroSpec(final String schemaName,
+                                          final Function<String, String> fieldNameToColumnName) {
+        return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, fieldNameToColumnName);
+    }
+
     @SuppressWarnings("unused")
     public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
         return new KeyOrValueSpec.Avro(schemaName, schemaVersion, Function.identity());
+    }
+
+    public static KeyOrValueSpec avroSpec(final String schemaName) {
+        return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, Function.identity());
     }
 
     @SuppressWarnings("unused")
