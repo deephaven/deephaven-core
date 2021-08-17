@@ -52,7 +52,7 @@ public class FloatStreamSortedFirstOrLastChunkedOperator extends CopyingPermuted
     @Override
     public void ensureCapacity(final long tableSize) {
         super.ensureCapacity(tableSize);
-        sortColumnValues.ensureCapacity(tableSize);
+        sortColumnValues.ensureCapacity(tableSize, false);
     }
 
     @Override
@@ -71,12 +71,12 @@ public class FloatStreamSortedFirstOrLastChunkedOperator extends CopyingPermuted
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
-        final FloatChunk<? extends Values> floatValues = values.asFloatChunk();
+        final FloatChunk<? extends Values> typedValues = values.asFloatChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(floatValues, inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(typedValues, inputIndices, startPosition, runLength, destination));
         }
     }
 

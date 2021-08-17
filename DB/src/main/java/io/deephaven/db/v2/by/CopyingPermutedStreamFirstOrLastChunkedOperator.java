@@ -36,7 +36,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
 
     @Override
     public void ensureCapacity(final long tableSize) {
-        redirections.ensureCapacity(tableSize);
+        redirections.ensureCapacity(tableSize, false);
     }
 
     @Override
@@ -76,7 +76,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
                 final WritableSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
                 outputChunks[ci] = outputColumn.getChunkType().makeWritableChunk(COPY_CHUNK_SIZE);
-                outputColumn.ensureCapacity(destinations.lastKey() + 1);
+                outputColumn.ensureCapacity(destinations.lastKey() + 1, false);
             }
 
             while (destinationsIterator.hasMore()) {

@@ -125,8 +125,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        // Nothing to do here.
+    public void ensureCapacity(long capacity, boolean nullFill) {
+        // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
 
     @Override
@@ -844,8 +844,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void ensureCapacity(long capacity) {
-            wrapped.ensureCapacity(capacity);
+        public void ensureCapacity(long capacity, boolean nullFilled) {
+            wrapped.ensureCapacity(capacity, nullFilled);
         }
 
         @Override
