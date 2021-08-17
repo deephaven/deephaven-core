@@ -764,8 +764,10 @@ public class SessionState {
          * Performs the actual export on a scheduling thread.
          */
         private void doExport() {
+            final Callable<T> capturedExport;
             synchronized (this) {
-                if (state != ExportNotification.State.QUEUED || session.isExpired()) {
+                capturedExport = exportMain;
+                if (state != ExportNotification.State.QUEUED || session.isExpired() || capturedExport == null) {
                     return; // had a cancel race with client
                 }
             }
@@ -779,16 +781,18 @@ public class SessionState {
 
                 evaluationNumber = QueryPerformanceRecorder.getInstance().startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
                 try {
-                    setResult(exportMain.call());
+                    setResult(capturedExport.call());
                 } finally {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                 }
             } catch (final Exception err) {
                 exception = err;
                 synchronized (this) {
-                    errorId = UuidCreator.toString(UuidCreator.getRandomBased());
-                    log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
-                    setState(ExportNotification.State.FAILED);
+                    if (!isExportStateTerminal(state)) {
+                        errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        setState(ExportNotification.State.FAILED);
+                    }
                 }
             } finally {
                 if (exception != null && queryProcessingResults != null) {
@@ -1088,6 +1092,15 @@ public class SessionState {
             } else {
                 //noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                switch (this.export.getState()) {
+                    case UNKNOWN:
+                        return;
+                    case RELEASED:
+                    case CANCELLED:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "export already released/cancelled id: " + exportId);
+                    default:
+                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "cannot re-export to existing exportId: " + exportId);
+                }
             }
         }
 

@@ -502,11 +502,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @see #STREAM_TABLE_ATTRIBUTE
      */
     public boolean isStream() {
-        if (!isLive()) {
-            return false;
-        }
-        return Boolean.TRUE.equals(getAttribute(Table.STREAM_TABLE_ATTRIBUTE));
+        return StreamTableTools.isStream(this);
     }
+
 
     @Override
     public Table dropStream() {

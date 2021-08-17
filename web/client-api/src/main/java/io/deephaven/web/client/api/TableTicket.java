@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 
@@ -92,6 +93,14 @@ public class TableTicket {
         TableReference reference = new TableReference();
         reference.setTicket(makeTicket());
         return reference;
+    }
+
+    public FlightDescriptor makeFlightDescriptor() {
+        FlightDescriptor flightDescriptor = new FlightDescriptor();
+        flightDescriptor.setType(FlightDescriptor.DescriptorType.getPATH());
+        flightDescriptor.setPathList(new String[]{"export", exportId + ""});
+
+        return flightDescriptor;
     }
 
     @Override

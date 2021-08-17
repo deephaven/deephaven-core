@@ -14,7 +14,9 @@ dependencies {
             project(':proto:proto-backplane-grpc-util'),
             project(':log-factory'),
             "com.google.flatbuffers:flatbuffers-java:1.12.0",
-            "io.deephaven.barrage:barrage-format:0.1.1"
+            'org.apache.arrow:arrow-vector:5.0.0',
+            'org.apache.arrow:arrow-format:5.0.0',
+            "io.deephaven.barrage:barrage-format:0.2.0"
 
 
     testCompile TestTools.projectDependency(project, 'DB'),

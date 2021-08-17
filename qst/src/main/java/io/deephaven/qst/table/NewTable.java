@@ -90,6 +90,9 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
         return ImmutableNewTable.builder().addAllColumns(columns).size(size).build();
     }
 
+    // Note: if new "of(...)" static methods are added here, they should likely be added to
+    // TableCreator.
+
     abstract Map<String, Array<?>> columns();
 
     // note: size is necessary to handle an empty table

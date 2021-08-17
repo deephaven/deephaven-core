@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.annotations.BuildableStyle",
+ "methods": {},
+ "path": "io.deephaven.annotations.BuildableStyle",
+ "text": "A simple style is for objects that are simple to build. Not recommended for objects with more\n than two fields. Not applicable for objects with default fields.",
+ "typeName": "class"
+}

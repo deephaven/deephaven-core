@@ -166,7 +166,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (ticket == null) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
         }
-        if (ticket.remaining() < 3 || ticket.get(0) != TICKET_PREFIX || ticket.get(1) != '/') {
+        if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX || ticket.get(ticket.position() + 1) != '/') {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
         }
 

@@ -9,7 +9,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.KeyValue;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
@@ -21,12 +20,10 @@ import io.deephaven.db.util.ColumnFormattingValues;
 import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
-
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.GrpcUtil;
-import io.deephaven.web.shared.data.LocalDate;
-import io.deephaven.web.shared.data.LocalTime;
+import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -38,6 +35,8 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -172,9 +171,9 @@ public class BarrageSchemaUtil {
         metadata.put("deephaven:" + key, value);
     }
 
-    public static TableDefinition schemaToTableDefinition(final io.deephaven.barrage.flatbuf.Schema schema) {
+    public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
         return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
-            final io.deephaven.barrage.flatbuf.Field field = schema.fields(i);
+            final org.apache.arrow.flatbuf.Field field = schema.fields(i);
             for (int j = 0; j < field.customMetadataLength(); j++) {
                 final KeyValue keyValue = field.customMetadata(j);
                 visitor.accept(keyValue.key(), keyValue.value());

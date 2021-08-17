@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.db.v2.by.AddOnlyMinMaxByStateFactoryImpl",
+ "methods": {},
+ "path": "io.deephaven.db.v2.by.AddOnlyMinMaxByStateFactoryImpl",
+ "text": "If you've got a table that is grow only, this will do a min/max calculation without requiring any state.  The\n limitation is that if you modify or remove a row it will throw an UnsupportedOperationException.",
+ "typeName": "class"
+}

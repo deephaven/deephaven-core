@@ -19,8 +19,6 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Plot imported as plt
 
-* QueryScope imported as qs
-
 * ParquetTools imported as pt
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*

@@ -104,6 +104,8 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
     /**
      * Append a chunk of data to this column source.
      *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
      * @param chunk the chunk of data to add
      */
     void addChunk(@NotNull WritableChunk<? extends Attributes.Values> chunk);

@@ -149,6 +149,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     }
 
     private void addChunk(@NotNull final WritableLongChunk<? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);

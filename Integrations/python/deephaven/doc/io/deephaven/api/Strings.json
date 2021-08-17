@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.api.Strings",
+ "methods": {
+  "of": "*Overload 1*  \n  :param columnName: io.deephaven.api.ColumnName\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param rawString: io.deephaven.api.RawString\n  :return: java.lang.String\n  \n*Overload 3*  \n  :param condition: io.deephaven.api.filter.FilterCondition\n  :return: java.lang.String\n  \n*Overload 4*  \n  :param not: io.deephaven.api.filter.FilterNot\n  :return: java.lang.String\n  \n*Overload 5*  \n  :param isNull: io.deephaven.api.filter.FilterIsNull\n  :return: java.lang.String\n  \n*Overload 6*  \n  :param isNotNull: io.deephaven.api.filter.FilterIsNotNull\n  :return: java.lang.String\n  \n*Overload 7*  \n  :param filterOr: io.deephaven.api.filter.FilterOr\n  :return: java.lang.String\n  \n*Overload 8*  \n  :param filterAnd: io.deephaven.api.filter.FilterAnd\n  :return: java.lang.String\n  \n*Overload 9*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: java.lang.String\n  \n*Overload 10*  \n  :param match: io.deephaven.api.JoinMatch\n  :return: java.lang.String\n  \n*Overload 11*  \n  :param addition: io.deephaven.api.JoinAddition\n  :return: java.lang.String\n  \n*Overload 12*  \n  :param selectable: io.deephaven.api.Selectable\n  :return: java.lang.String\n  \n*Overload 13*  \n  :param expression: io.deephaven.api.expression.Expression\n  :return: java.lang.String\n  \n*Overload 14*  \n  :param filter: io.deephaven.api.filter.Filter\n  :return: java.lang.String\n  \n*Overload 15*  \n  :param value: io.deephaven.api.value.Value\n  :return: java.lang.String"
+ },
+ "path": "io.deephaven.api.Strings",
+ "text": "A set of static helpers to turn strongly-typed api arguments into their String\n counterparts.",
+ "typeName": "class"
+}

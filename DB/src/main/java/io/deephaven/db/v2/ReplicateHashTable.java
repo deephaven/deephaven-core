@@ -105,8 +105,8 @@ public class ReplicateHashTable {
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedOperatorAggregationStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
 
         // Incremental NJ -> Incremental By -> Static By
-        doReplicate(IncrementalChunkedByAggregationStateManager.class, StaticChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
         doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
+        doReplicate(IncrementalChunkedByAggregationStateManager.class, StaticChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
     }
 
     private static class RegionedFile {
@@ -244,8 +244,18 @@ public class ReplicateHashTable {
 
         final String sourcePackage = sourceClass.getPackage().getName();
         final String destinationPackage = destinationClass.getPackage().getName();
-        final String rewritePackage = rewrittenLines.get(0).replace(sourcePackage, destinationPackage);
-        rewrittenLines.set(0, rewritePackage);
+
+        int packageLine;
+        for (packageLine = 0; packageLine < 10; ++packageLine) {
+            if (rewrittenLines.get(packageLine).startsWith("package")) {
+                final String rewritePackage = rewrittenLines.get(packageLine).replace(sourcePackage, destinationPackage);
+                rewrittenLines.set(packageLine, rewritePackage);
+                break;
+            }
+        }
+        if (packageLine == 10) {
+            throw new RuntimeException("Could not find package line to rewrite for " + destinationClass);
+        }
 
         FileUtils.writeLines(destinationFile, rewrittenLines);
         System.out.println("Wrote: " + destinationPath);

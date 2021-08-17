@@ -36,7 +36,7 @@
 # From the web IDE, run:
 # > from deephaven import KafkaTools
 # > s = getAvroSchema('http://registry:8080/api/ccompat', 'share_price_record', '1')
-# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_avro_schema=s)
+# > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_avro_schema=s, table_type='append')
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 #
