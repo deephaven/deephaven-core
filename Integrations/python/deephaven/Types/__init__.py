@@ -3,7 +3,7 @@
 # 
 
 """
-A submodule to return java primitives from jpy for convenient use in Python
+Common Deephaven data types.
 """
 
 import jpy
@@ -11,7 +11,6 @@ import sys
 import wrapt
 
 # None until the first _defineSymbols() call
-_java_object_ = None
 Bool = None
 Byte = None
 Char = None
@@ -22,7 +21,7 @@ Long = None
 Short = None
 String = None
 
-DHDateTime = None
+DateTime = None
 
 def _defineSymbols():
     """
@@ -34,16 +33,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
    
-    global _java_object_
- 
     global Bool, Byte, Char, Double, Float, Int, Long, Short, String
 
-    global DHDateTime
+    global DateTime
 
-    if _java_object_ is not None:
+    if Bool is not None:
         return
 
-    _java_object_ = jpy.get_type("java.lang.Object")
     # Java primitives
     Bool = jpy.get_type("boolean")
     Byte = jpy.get_type("byte")
@@ -55,7 +51,8 @@ def _defineSymbols():
     Short = jpy.get_type("short")
     String = jpy.get_type("java.lang.String")
     
-    DHDateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
+    # Deephaven internal types
+    DateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
