@@ -18,6 +18,7 @@
   "setAll": "**Incompatible overloads text - text from the first overload:**\n\nMarks all columns in the provided column set in this set as dirty.\n\n*Overload 1*  \n  :param columnNames: (java.lang.String...) - the columns which need to be marked dirty\n  \n*Overload 2*  \n  :param columnSet: (io.deephaven.db.v2.ModifiedColumnSet) - the set of columns to mark dirty",
   "setAllDirty": "Sets all columns dirty.",
   "setColumnWithIndex": "Marks specifically the column with the given index as dirty.\n\n:param columnIndex: (int) - column index to mark dirty",
+  "setColumnsInIndexRange": "Marks specifically a range of adjacent columns. Start is inclusive, end is exclusive; like the BitSet API.\n\n:param columnStart: (int) - start column index to mark dirty\n:param columnEndExclusive: (int) - end column index to mark dirty",
   "size": ":return: (int) the number of dirty columns",
   "toDebugString": ":return: java.lang.String",
   "toString": "*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param maxColumns: int\n  :return: java.lang.String"

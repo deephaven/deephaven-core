@@ -1014,7 +1014,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             } else {
                                 updatedMatchPairs = comboMatchPairs;
                             }
-                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, updatedMatchPairs);
+                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, true, updatedMatchPairs);
                             Assert.eq(sflac.operators.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputColumns.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputNames.length, "sflac.operators.length", 1);
@@ -1244,7 +1244,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
                             if (table.isLive()) {
                                 if (isStream) {
-                                    operators.add(isFirst ? new StreamFirstByChunkedOperator(comboMatchPairs, table) : new StreamLastByChunkedOperator(comboMatchPairs, table));
+                                    operators.add(isFirst ? new StreamFirstChunkedOperator(comboMatchPairs, table) : new StreamLastChunkedOperator(comboMatchPairs, table));
                                 } else if (isAddOnly) {
                                     operators.add(new AddOnlyFirstOrLastChunkedOperator(isFirst, comboMatchPairs, table, exposeRedirectionAs));
                                 } else {

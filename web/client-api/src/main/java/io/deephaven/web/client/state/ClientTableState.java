@@ -4,13 +4,13 @@ import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.message_generated.io.deephaven.barrage.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.KeyValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.schema_generated.io.deephaven.barrage.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.batch.TableConfig;
@@ -1011,9 +1011,9 @@ public final class ClientTableState extends TableConfig {
             cols[i].setName(f.name().asString());
             cols[i].setColumnIndex(i);
             cols[i].setType(fieldMetadata.get("deephaven:type"));
-            cols[i].setStyleColumn(fieldMetadata.get("deephaven:isStyle").equals("true"));
-            cols[i].setFormatColumn(fieldMetadata.get("deephaven:isDateFormat").equals("true") || fieldMetadata.get("deephaven:isNumberFormat").equals("true"));
-            cols[i].setForRow(fieldMetadata.get("deephaven:isRowStyle").equals("true"));
+            cols[i].setStyleColumn("true".equals(fieldMetadata.get("deephaven:isStyle")));
+            cols[i].setFormatColumn("true".equals(fieldMetadata.get("deephaven:isDateFormat")) || "true".equals(fieldMetadata.get("deephaven:isNumberFormat")));
+            cols[i].setForRow("true".equals(fieldMetadata.get("deephaven:isRowStyle")));
 
             String formatColumnName = fieldMetadata.get("deephaven:dateFormatColumn");
             if (formatColumnName == null) {

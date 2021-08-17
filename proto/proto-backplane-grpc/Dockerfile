@@ -2,8 +2,7 @@ FROM deephaven/protoc:local-build
 
 COPY src/main/proto /includes
 
-# TODO restore as part of #412
-#COPY dependencies /dependencies
+COPY dependencies /dependencies
 
 RUN set -eux; \
   mkdir -p /generated/java; \
@@ -12,24 +11,32 @@ RUN set -eux; \
   mkdir -p /generated/python; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/protoc-gen-grpc-java \
-    --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
     --java_out=/generated/java \
-    --js_out=import_style=commonjs:/generated/js \
     --grpc_out=/generated/grpc \
-    --ts_out=service=grpc-web:/generated/js \
-    --python_out=/generated/python \
+    -I/dependencies \
     -I/includes \
+    /dependencies/BrowserFlight.proto \
     /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/barrage.proto \
+    /includes/deephaven/proto/console.proto \
+    /includes/deephaven/proto/session.proto \
+    /includes/deephaven/proto/table.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
+    --js_out=import_style=commonjs:/generated/js \
+    --ts_out=service=grpc-web:/generated/js \
+    -I/dependencies \
+    -I/includes \
+    /dependencies/BrowserFlight.proto \
+    /dependencies/Flight.proto \
+    /includes/deephaven/proto/ticket.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/session.proto \
     /includes/deephaven/proto/table.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
+    --python_out=/generated/python \
     -I/includes \
     /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/barrage.proto \
     /includes/deephaven/proto/console.proto \
     /includes/deephaven/proto/session.proto \
     /includes/deephaven/proto/table.proto;
-

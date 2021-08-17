@@ -3,11 +3,16 @@ package io.deephaven.db.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.util.SortedBy;
 import io.deephaven.db.v2.ShiftAwareListener.Update;
-import io.deephaven.db.v2.sources.AbstractColumnSource;
+import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.db.v2.utils.RedirectionIndex;
+import io.deephaven.db.v2.utils.WrappedIndexRedirectionIndexImpl;
 import io.deephaven.qst.table.EmptyTable;
+import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -38,18 +43,7 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
             .update("Price = ii / 100 - (ii % 100)")
             .update("Size = (long) (ii / 50 - (ii % 50))")
     );
-    private final Table sourceGroupedOnSym = source.by("Sym").ungroup().flatten();
 
-    {
-        //noinspection unchecked
-        final AbstractColumnSource<String> groupingSource = (AbstractColumnSource<String>) sourceGroupedOnSym.getColumnSource("Sym");
-        groupingSource.setGroupToRange(AbstractColumnSource.getValueToRangeMap(sourceGroupedOnSym.getIndex(), groupingSource).entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                (final Map.Entry<String, long[]> entry) -> Index.CURRENT_FACTORY.getIndexByRange(entry.getValue()[0], entry.getValue()[1] - 1),
-                Assert::neverInvoked,
-                LinkedHashMap::new
-        )));
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -61,133 +55,280 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
         super.tearDown();
     }
 
-    private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean grouped, final boolean expectStreamResult) {
-        final QueryTable normal = new QueryTable(Index.FACTORY.getEmptyIndex(), (grouped ? sourceGroupedOnSym : source).getColumnSourceMap());
+    /**
+     * Execute a table operator ending in an aggregation.
+     *
+     * @param operator The operator to apply
+     * @param windowed Whether the stream table index should be a sliding window (if {@code true}) or zero-based (if {@code false})
+     */
+    private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
+        final QueryTable normal = new QueryTable(Index.FACTORY.getEmptyIndex(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
-        final QueryTable stream = new QueryTable(Index.FACTORY.getEmptyIndex(), (grouped ? sourceGroupedOnSym : source).getColumnSourceMap());
+        final QueryTable addOnly = (QueryTable) normal.copy();
+        addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+
+        final Index streamInternalIndex;
+        final Map<String, ? extends ColumnSource> streamSources;
+        if (windowed) {
+            streamInternalIndex = null;
+            streamSources = source.getColumnSourceMap();
+        } else {
+            // Redirecting so we can present a zero-based Index from the stream table
+            streamInternalIndex = Index.FACTORY.getEmptyIndex();
+            final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalIndex);
+            //noinspection unchecked
+            streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    (entry -> new ReadOnlyRedirectedColumnSource(streamRedirections, entry.getValue())),
+                    Assert::neverInvoked,
+                    LinkedHashMap::new
+            ));
+        }
+        final QueryTable stream = new QueryTable(Index.FACTORY.getEmptyIndex(), streamSources);
         stream.setRefreshing(true);
         stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
         TstUtils.assertTableEquals(normal, stream);
 
         final Table expected = operator.apply(normal);
-        final Table actual = operator.apply(stream);
-        TstUtils.assertTableEquals(expected, actual);
-        TestCase.assertEquals(expectStreamResult, ((BaseTable) actual).isStream());
+        final Table addOnlyExpected = operator.apply(addOnly);
+        final Table streamExpected = operator.apply(stream);
+        TstUtils.assertTableEquals(expected, addOnlyExpected);
+        TstUtils.assertTableEquals(expected, streamExpected);
+        TestCase.assertFalse(((BaseTable) streamExpected).isStream()); // Aggregation results are never stream tables
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
                 new Random().longs(0, MAX_RANDOM_ITERATION_SIZE)
         ).iterator();
 
+        int step = 0;
         long usedSize = 0;
-        Index lastInserted = Index.CURRENT_FACTORY.getEmptyIndex();
+        Index streamLastInserted = Index.CURRENT_FACTORY.getEmptyIndex();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
-            final Index stepInserted = refreshSize == 0
+            final Index normalStepInserted = refreshSize == 0
                     ? Index.CURRENT_FACTORY.getEmptyIndex()
                     : Index.CURRENT_FACTORY.getIndexByRange(usedSize, usedSize + refreshSize - 1);
+            final Index streamStepInserted = streamInternalIndex == null ? normalStepInserted : refreshSize == 0
+                    ? Index.CURRENT_FACTORY.getEmptyIndex()
+                    : Index.CURRENT_FACTORY.getIndexByRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (stepInserted.nonempty()) {
-                        normal.getIndex().insert(stepInserted);
-                        normal.notifyListeners(new Update(stepInserted, Index.CURRENT_FACTORY.getEmptyIndex(), Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                    if (normalStepInserted.nonempty()) {
+                        normal.getIndex().insert(normalStepInserted);
+                        normal.notifyListeners(new Update(normalStepInserted, Index.CURRENT_FACTORY.getEmptyIndex(), Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                final Index finalLastInserted = lastInserted;
+                final Index finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
-                    if (stepInserted.nonempty() || finalLastInserted.nonempty()) {
-                        stream.getIndex().update(stepInserted, finalLastInserted);
-                        stream.notifyListeners(new Update(stepInserted, finalLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                    if (streamStepInserted.nonempty() || finalStreamLastInserted.nonempty()) {
+                        if (streamInternalIndex != null) {
+                            streamInternalIndex.clear();
+                            streamInternalIndex.insert(normalStepInserted);
+                        }
+                        stream.getIndex().update(streamStepInserted, finalStreamLastInserted);
+                        stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                TstUtils.assertTableEquals(expected, actual);
             } finally {
                 LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
             }
-            TstUtils.assertTableEquals(expected, actual);
+            try {
+                TstUtils.assertTableEquals(expected, addOnlyExpected);
+                TstUtils.assertTableEquals(expected, streamExpected);
+            } catch (ComparisonFailure e) {
+                System.err.printf("FAILURE: step %d, previousUsedSize %d, refreshSize %d%n", step, usedSize, refreshSize);
+                throw e;
+            }
 
+            ++step;
             usedSize += refreshSize;
-            lastInserted = stepInserted;
+            streamLastInserted = streamStepInserted;
         }
     }
 
     @Test
     public void testFirstBy() {
-        doOperatorTest(table -> table.firstBy("Sym"), false, false);
+        doOperatorTest(table -> table.firstBy("Sym"), false);
     }
 
     @Test
     public void testFirstByNoKeys() {
-        doOperatorTest(Table::firstBy, false, false);
+        doOperatorTest(Table::firstBy, false);
     }
 
     @Test
-    public void testFirstByGrouped() {
-        doOperatorTest(table -> table.firstBy("Sym"), true, false);
+    public void testFirstByWindowed() {
+        doOperatorTest(table -> table.firstBy("Sym"), true);
+    }
+
+    @Test
+    public void testFirstByNoKeysWindowed() {
+        doOperatorTest(Table::firstBy, true);
     }
 
     @Test
     public void testLastBy() {
-        doOperatorTest(table -> table.lastBy("Sym"), false, false);
+        doOperatorTest(table -> table.lastBy("Sym"), false);
     }
 
     @Test
     public void testLastByNoKeys() {
-        doOperatorTest(Table::lastBy, false, false);
+        doOperatorTest(Table::lastBy, false);
     }
 
     @Test
-    public void testLastByGrouped() {
-        doOperatorTest(table -> table.lastBy("Sym"), true, false);
+    public void testLastByWindowed() {
+        doOperatorTest(table -> table.lastBy("Sym"), true);
+    }
+
+    @Test
+    public void testLastByNoKeysWindowed() {
+        doOperatorTest(Table::lastBy, true);
     }
 
     @Test
     public void testMinBy() {
-        doOperatorTest(table -> table.minBy("Sym"), false, false);
+        doOperatorTest(table -> table.minBy("Sym"), false);
     }
 
     @Test
     public void testMinByNoKeys() {
-        doOperatorTest(Table::minBy, false, false);
+        doOperatorTest(Table::minBy, false);
     }
 
     @Test
-    public void testMinByGrouped() {
-        doOperatorTest(table -> table.minBy("Sym"), true, false);
+    public void testMinByWindowed() {
+        doOperatorTest(table -> table.minBy("Sym"), true);
+    }
+
+    @Test
+    public void testMinByNoKeysWindowed() {
+        doOperatorTest(Table::minBy, true);
     }
 
     @Test
     public void testMaxBy() {
-        doOperatorTest(table -> table.maxBy("Sym"), false, false);
+        doOperatorTest(table -> table.maxBy("Sym"), false);
     }
 
     @Test
     public void testMaxByNoKeys() {
-        doOperatorTest(Table::maxBy, false, false);
+        doOperatorTest(Table::maxBy, false);
     }
 
     @Test
-    public void testMaxByGrouped() {
-        doOperatorTest(table -> table.maxBy("Sym"), true, false);
+    public void testMaxByWindowed() {
+        doOperatorTest(table -> table.maxBy("Sym"), true);
+    }
+
+    @Test
+    public void testMaxByNoKeysWindowed() {
+        doOperatorTest(Table::maxBy, true);
     }
 
     @Test
     public void testMedianBy() {
-        doOperatorTest(table -> table.medianBy("Sym"), false, false);
+        doOperatorTest(table -> table.medianBy("Sym"), false);
     }
 
     @Test
     public void testMedianByNoKeys() {
-        doOperatorTest(Table::medianBy, false, false);
+        doOperatorTest(Table::medianBy, false);
     }
 
     @Test
-    public void testMedianByGrouped() {
-        doOperatorTest(table -> table.medianBy("Sym"), true, false);
+    public void testMedianByWindowed() {
+        doOperatorTest(table -> table.medianBy("Sym"), true);
+    }
+
+    @Test
+    public void testMedianByNoKeysWindowed() {
+        doOperatorTest(Table::medianBy, true);
+    }
+
+    @Test
+    public void testSortedFirstBy() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price", "Sym"), false);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeys() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price"), false);
+    }
+
+    @Test
+    public void testSortedFirstByWindowed() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price", "Sym"), true);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeysWindowed() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Price"), true);
+    }
+
+    @Test
+    public void testSortedLastBy() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price", "Sym"), false);
+    }
+
+    @Test
+    public void testSortedLastByNoKeys() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price"), false);
+    }
+
+    @Test
+    public void testSortedLastByWindowed() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price", "Sym"), true);
+    }
+
+    @Test
+    public void testSortedLastByNoKeysWindowed() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Price"), true);
+    }
+
+    @Test
+    public void testSortedFirstByObject() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Sym", "Price"), false);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeysObject() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Sym"), false);
+    }
+
+    @Test
+    public void testSortedFirstByWindowedObject() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Sym", "Price"), true);
+    }
+
+    @Test
+    public void testSortedFirstByNoKeysWindowedObject() {
+        doOperatorTest(table -> SortedBy.sortedFirstBy(table, "Sym"), true);
+    }
+
+    @Test
+    public void testSortedLastByObject() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Sym", "Price"), false);
+    }
+
+    @Test
+    public void testSortedLastByNoKeysObject() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Sym"), false);
+    }
+
+    @Test
+    public void testSortedLastByWindowedObject() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Sym", "Price"), true);
+    }
+
+    @Test
+    public void testSortedLastByNoKeysWindowedObject() {
+        doOperatorTest(table -> SortedBy.sortedLastBy(table, "Sym"), true);
     }
 
     @Test
@@ -197,8 +338,12 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedPrice=Price", "MedSize=Size")
-        ), "Sym"), false, false);
+                AggMed("MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "PriceSortedFirstSym=Sym", "PriceSortedFirstSize=Size"),
+                AggSortedLast("Price", "PriceSortedLastSym=Sym", "PriceSortedLastSize=Size"),
+                AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
+                AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size")
+        ), "Sym"), false);
     }
 
     @Test
@@ -208,18 +353,41 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
                 AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
                 AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxSym=Sym", "MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size")
-        )), false, false);
+                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "PriceSortedFirstSym=Sym", "PriceSortedFirstSize=Size"),
+                AggSortedLast("Price", "PriceSortedLastSym=Sym", "PriceSortedLastSize=Size"),
+                AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
+                AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size")
+        )), false);
     }
 
     @Test
-    public void testComboByGrouped() {
+    public void testComboByWindowed() {
         doOperatorTest(table -> table.by(AggCombo(
                 AggFirst("FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
                 AggMax("MaxPrice=Price", "MaxSize=Size"),
-                AggMed("MedPrice=Price", "MedSize=Size")
-        ), "Sym"), true, false);
+                AggMed("MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "PriceSortedFirstSym=Sym", "PriceSortedFirstSize=Size"),
+                AggSortedLast("Price", "PriceSortedLastSym=Sym", "PriceSortedLastSize=Size"),
+                AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
+                AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size")
+        ), "Sym"), true);
+    }
+
+    @Test
+    public void testComboByNoKeysWindowed() {
+        doOperatorTest(table -> table.by(AggCombo(
+                AggFirst("FirstSym=Sym", "FirstPrice=Price", "FirstSize=Size"),
+                AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
+                AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),
+                AggMax("MaxSym=Sym", "MaxPrice=Price", "MaxSize=Size"),
+                AggMed("MedSym=Sym", "MedPrice=Price", "MedSize=Size"),
+                AggSortedFirst("Price", "PriceSortedFirstSym=Sym", "PriceSortedFirstSize=Size"),
+                AggSortedLast("Price", "PriceSortedLastSym=Sym", "PriceSortedLastSize=Size"),
+                AggSortedFirst("Sym", "SymSortedFirstPrice=Price", "SymSortedFirstSize=Size"),
+                AggSortedLast("Sym", "SymSortedLastPrice=Price", "SymSortedLastSize=Size")
+        )), true);
     }
 }

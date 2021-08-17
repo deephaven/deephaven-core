@@ -2168,76 +2168,76 @@ public class QueryTableAggregationTest {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[]{
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AppendMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
+                        return queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.dropColumns("Sym").update("x = k").by(new AppendMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
+                        return queryTable.dropColumns("Sym").update("x = k").by(new AddOnlyMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateView("x = k").by(new AppendMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.updateView("x = k").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").dropColumns("Sym").by(new AppendMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
+                        return queryTable.update("x=intCol+1").dropColumns("Sym").by(new AddOnlyMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AppendMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
+                        return queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.dropColumns("Sym").update("x = k").by(new AppendMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
+                        return queryTable.dropColumns("Sym").update("x = k").by(new AddOnlyMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateView("x = k").by(new AppendMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.updateView("x = k").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").dropColumns("Sym").by(new AppendMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
+                        return queryTable.update("x=intCol+1").dropColumns("Sym").by(new AddOnlyMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AppendMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
                     }
                 },
-                new TableComparator(queryTable.by(new AppendMinMaxByStateFactoryImpl(false), "Sym").sort("Sym"), queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
-                new TableComparator(queryTable.by(new AppendMinMaxByStateFactoryImpl(true), "Sym").sort("Sym"), queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
+                new TableComparator(queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym"), queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
+                new TableComparator(queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym"), queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

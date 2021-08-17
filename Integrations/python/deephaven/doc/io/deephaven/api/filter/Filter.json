@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.filter.Filter",
+ "methods": {
+  "isNotNull": ":param column: io.deephaven.api.ColumnName\n:return: io.deephaven.api.filter.FilterIsNotNull",
+  "isNull": ":param column: io.deephaven.api.ColumnName\n:return: io.deephaven.api.filter.FilterIsNull",
+  "not": "*Overload 1*  \n  :param filter: io.deephaven.api.filter.Filter\n  :return: io.deephaven.api.filter.FilterNot\n  \n*Overload 2*  \n  :return: io.deephaven.api.filter.FilterNot",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.filter.Filter",
+ "text": "Represents an evaluate-able filter.",
+ "typeName": "interface"
+}

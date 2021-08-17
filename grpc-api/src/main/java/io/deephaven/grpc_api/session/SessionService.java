@@ -120,14 +120,13 @@ public class SessionService {
      * Lookup a session by token.
      *
      * @param token the session secret to look for
-     * @return the session
-     * @throws StatusRuntimeException if token is invalid or if session is expired/closed
+     * @return the session or null if the session is invalid
      */
     public SessionState getSessionForToken(final UUID token) {
         final TokenExpiration expiration = tokenToSession.get(token);
         if (expiration == null || expiration.session.isExpired()
                 || expiration.deadline.compareTo(scheduler.currentTime()) <= 0) {
-            throw new StatusRuntimeException(Status.UNAUTHENTICATED);
+            return null;
         }
         return expiration.session;
     }

@@ -10,7 +10,6 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;

@@ -36,27 +36,27 @@ import java.util.stream.Collectors;
 class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> implements Visitor {
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TABLE toTable(
-        TableCreation<TABLE> creation, TableCreation.TableToOperations<TOPS, TABLE> toOps,
-        TableCreation.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+        TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
+        TableCreator.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getTableOut();
     }
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TOPS toOperations(
-        TableCreation<TABLE> creation, TableCreation.TableToOperations<TOPS, TABLE> toOps,
-        TableCreation.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+        TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
+        TableCreator.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return table.walk(new TableAdapterImpl<>(creation, toOps, toTable)).getOperationsOut();
     }
 
-    private final TableCreation<TABLE> tableCreation;
-    private final TableCreation.TableToOperations<TOPS, TABLE> toOps;
-    private final TableCreation.OperationsToTable<TOPS, TABLE> toTable;
+    private final TableCreator<TABLE> tableCreation;
+    private final TableCreator.TableToOperations<TOPS, TABLE> toOps;
+    private final TableCreator.OperationsToTable<TOPS, TABLE> toTable;
 
     private TABLE tableOut;
     private TOPS topsOut;
 
-    private TableAdapterImpl(TableCreation<TABLE> tableCreation,
-        TableCreation.TableToOperations<TOPS, TABLE> toOps,
-        TableCreation.OperationsToTable<TOPS, TABLE> toTable) {
+    private TableAdapterImpl(TableCreator<TABLE> tableCreation,
+        TableCreator.TableToOperations<TOPS, TABLE> toOps,
+        TableCreator.OperationsToTable<TOPS, TABLE> toTable) {
         this.tableCreation = Objects.requireNonNull(tableCreation);
         this.toOps = Objects.requireNonNull(toOps);
         this.toTable = Objects.requireNonNull(toTable);

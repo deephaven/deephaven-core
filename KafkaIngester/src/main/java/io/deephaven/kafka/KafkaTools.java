@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.kafka;
 
 import gnu.trove.map.hash.TIntLongHashMap;
@@ -8,16 +12,16 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.v2.utils.DynamicTableWriter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter;
-import io.deephaven.kafka.ingest.GenericRecordConsumerRecordToTableWriterAdapter;
-import io.deephaven.kafka.ingest.KafkaIngester;
-import io.deephaven.kafka.ingest.SimpleConsumerRecordToTableWriterAdapter;
+import io.deephaven.kafka.ingest.*;
+import io.deephaven.stream.StreamToTableAdapter;
+
 import org.apache.avro.Schema;
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -35,12 +39,11 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.HttpClients;
 
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
-import java.util.function.IntToLongFunction;
+import java.util.function.*;
 
 public class KafkaTools {
 
@@ -64,6 +67,8 @@ public class KafkaTools {
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools .class);
+
+    private static final int CHUNK_SIZE = 2048;
 
     public static Schema getAvroSchema(final String schemaServerUrl, final String resourceName, final String version) {
         String action = "setup http client";
@@ -252,74 +257,178 @@ public class KafkaTools {
             valueColumns = null;
         }
 
-        final int nCols = 3 +
-                ((keySchema != null) ? keyColumns.length : 0) +
-                ((valueSchema != null) ? valueColumns.length : 0);
-        final ColumnDefinition<?>[] allColumns = new ColumnDefinition<?>[nCols];
-        int c = 0;
-        final ColumnDefinition<?> partitionColumn = ColumnDefinition.ofInt(KAFKA_PARTITION_COLUMN_NAME_DEFAULT);
-        allColumns[c++] = (partitionFilter == ALL_PARTITIONS)
-                ? partitionColumn
-                : partitionColumn.withPartitioning()
-                ;
-        allColumns[c++] = ColumnDefinition.ofLong(OFFSET_COLUMN_NAME_DEFAULT);
-        allColumns[c++] = ColumnDefinition.fromGenericType(TIMESTAMP_COLUMN_NAME_DEFAULT, DBDateTime.class);
-        if (keySchema != null) {
-            System.arraycopy(keyColumns, 0, allColumns, c, keyColumns.length);
-            c += keyColumns.length;
+        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition<?>[3];
+        getCommonCols(commonColumns, 0, kafkaConsumerProperties, partitionFilter == ALL_PARTITIONS);
+        final List<ColumnDefinition> columnDefinitions = new ArrayList<>();
+        int[] commonColumnIndices = new int[3];
+        int nextColumnIndex = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (commonColumns[i] != null) {
+                commonColumnIndices[i] = nextColumnIndex++;
+                columnDefinitions.add(commonColumns[i]);
+            } else {
+                commonColumnIndices[i] = -1;
+            }
         }
-        if (valueSchema != null) {
-            System.arraycopy(valueColumns, 0, allColumns, c, valueColumns.length);
-            c += valueColumns.length;
-        }
-        Assert.eq(nCols, "nCols", c, "c");
-        final TableDefinition tableDefinition = new TableDefinition(allColumns);
-        final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
-        final GenericRecordConsumerRecordToTableWriterAdapter adapter = GenericRecordConsumerRecordToTableWriterAdapter.make(
-                tableWriter,
-                KAFKA_PARTITION_COLUMN_NAME_DEFAULT,
-                OFFSET_COLUMN_NAME_DEFAULT,
-                TIMESTAMP_COLUMN_NAME_DEFAULT,
-                null,
-                keyColumnsMap,
-                valueColumnsMap);
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
             if (keySchema != null) {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
+                columnDefinitions.addAll(Arrays.asList(keyColumns));
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
             }
+        } else if (keySchema != null) {
+            columnDefinitions.addAll(Arrays.asList(keyColumns));
         }
 
         if (!kafkaConsumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
             if (valueSchema != null) {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class.getName());
+                columnDefinitions.addAll(Arrays.asList(valueColumns));
             } else {
                 kafkaConsumerProperties.setProperty(
                         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
             }
+        } else if (valueSchema != null) {
+            columnDefinitions.addAll(Arrays.asList(valueColumns));
         }
+
+        final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
+
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+
+        final KeyOrValueProcessor keyProcessor;
+        if (keySchema == null) {
+            keyProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
+        } else {
+            keyProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, keyColumnsMap, true);
+        }
+
+        final KeyOrValueProcessor valueProcessor;
+        if (valueSchema == null) {
+            valueProcessor = null; // TODO: if we have a primitive type, it goes here: https://github.com/deephaven/deephaven-core/issues/1025
+        } else {
+            valueProcessor = GenericRecordChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
+        }
+
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(streamPublisher,
+                commonColumnIndices[0],
+                commonColumnIndices[1],
+                commonColumnIndices[2],
+                keyProcessor, valueProcessor,
+                Function.identity(),
+                Function.identity(),
+                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+                );
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 kafkaConsumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (ConsumerRecord<?, ?> record) -> {
-                    try {
-                        adapter.consumeRecord(record);
-                    } catch (IOException ex) {
-                        throw new UncheckedDeephavenException(ex);
-                    }
-                },
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
                 partitionToInitialOffset
         );
         ingester.start();
-        return tableWriter.getTable();
+
+        return streamToTableAdapter.table();
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns) {
+        return consumeJsonToTable(consumerProperties, topic, partitionFilter, partitionToInitialOffset, valueColumns, null);
+    }
+
+    public static Table consumeJsonToTable(
+            @NotNull final Properties consumerProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            final ColumnDefinition<?>[] valueColumns,
+            final Map<String, String> columnNameToJsonField) {
+        final int nCols = 3 + valueColumns.length;
+        final ColumnDefinition<?>[] commonColumns = new ColumnDefinition[nCols];
+        int c = 0;
+        c += getCommonCols(commonColumns, 0, consumerProperties, partitionFilter == ALL_PARTITIONS);
+        final int[] commonColsIndices = new int[3];
+        int nextColumnIndex = 0;
+        for (int i = 0; i < 3; ++i) {
+            if (commonColumns[i] != null) {
+                commonColsIndices[i] = nextColumnIndex++;
+            } else {
+                commonColsIndices[i] = -1;
+            }
+        }
+        System.arraycopy(valueColumns, 0, commonColumns, c, valueColumns.length);
+        final Map<String, String> valueColumnsMap = new HashMap<>(valueColumns.length);
+        for (final ColumnDefinition<?> colDef : valueColumns) {
+            final String colName = colDef.getName();
+            final String fieldName = (columnNameToJsonField == null) ? colName : columnNameToJsonField.getOrDefault(colName, colName);
+            valueColumnsMap.put(colName, fieldName);
+        }
+
+        final TableDefinition tableDefinition = new TableDefinition(commonColumns);
+
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+        final KeyOrValueProcessor keyProcessor = null; // TODO: Support key as both json or generic.
+        final KeyOrValueProcessor valueProcessor = JsonNodeChunkAdapter.make(tableDefinition, streamToTableAdapter::chunkTypeForIndex, valueColumnsMap, true);
+
+        final Function<Object, Object> toObjectChunkMapper = (final Object in) -> {
+            final String json;
+            try {
+                json = (String) in;
+            } catch (ClassCastException ex) {
+                throw new UncheckedDeephavenException("Could not convert input to json string", ex);
+            }
+            return JsonNodeUtil.makeJsonNode(json);
+        };
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                streamPublisher,
+                commonColsIndices[0],
+                commonColsIndices[1],
+                commonColsIndices[2],
+                keyProcessor, valueProcessor,
+                toObjectChunkMapper,
+                toObjectChunkMapper,
+                -1, // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+                -1 // TODO A RAW STRING WOULD GO HERE: https://github.com/deephaven/deephaven-core/issues/1025
+        );
+
+        if (!consumerProperties.containsKey(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        if (!consumerProperties.containsKey(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)) {
+            consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, STRING_DESERIALIZER);
+        }
+
+        final KafkaIngester ingester = new KafkaIngester(
+                log,
+                consumerProperties,
+                topic,
+                partitionFilter,
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
+                partitionToInitialOffset
+        );
+        ingester.start();
+
+        return streamToTableAdapter.table();
+
     }
 
     /**
@@ -365,37 +474,39 @@ public class KafkaTools {
                 false);
         Assert.eq(nCols, "nCols", c, "c");
         final TableDefinition tableDefinition = new TableDefinition(withoutNulls(columns));
-        final DynamicTableWriter tableWriter = new DynamicTableWriter(tableDefinition);
-        final Function<ColumnDefinition<?>, String> orNull = (final ColumnDefinition<?> colDef) -> {
+        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+
+        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+
+        final MutableInt colIdx = new MutableInt();
+        final ToIntFunction<ColumnDefinition<?>> orNull = (final ColumnDefinition<?> colDef) -> {
             if (colDef == null) {
-                return null;
+                return -1;
             }
-            return colDef.getName();
+            return colIdx.getAndIncrement();
         };
-        final ConsumerRecordToTableWriterAdapter adapter = SimpleConsumerRecordToTableWriterAdapter.make(
-                tableWriter,
-                orNull.apply(columns[0]),
-                orNull.apply(columns[1]),
-                orNull.apply(columns[2]),
-                orNull.apply(columns[3]),
-                orNull.apply(columns[4]));
+        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
+                streamPublisher,
+                Function.identity(),
+                Function.identity(),
+                orNull.applyAsInt(columns[0]),
+                orNull.applyAsInt(columns[1]),
+                orNull.applyAsInt(columns[2]),
+                orNull.applyAsInt(columns[3]),
+                orNull.applyAsInt(columns[4]));
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 consumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> (ConsumerRecord<?, ?> record) -> {
-                    try {
-                        adapter.consumeRecord(record);
-                    } catch (IOException ex) {
-                        throw new UncheckedDeephavenException(ex);
-                    }
-                },
+                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
                 partitionToInitialOffset
         );
         ingester.start();
-        return tableWriter.getTable();
+
+        return streamToTableAdapter.table();
     }
 
     private static ColumnDefinition<?>[] withoutNulls(final ColumnDefinition<?>[] columns) {
@@ -521,6 +632,11 @@ public class KafkaTools {
             properties.setProperty(deserializerProperty, STRING_DESERIALIZER);
             return ColumnDefinition.ofString(columnName);
         }
+        return columnDefinitionFromDeserializer(properties, deserializerProperty, columnName);
+    }
+
+    @NotNull
+    private static ColumnDefinition<? extends Serializable> columnDefinitionFromDeserializer(@NotNull Properties properties, @NotNull String deserializerProperty, String columnName) {
         final String deserializer = properties.getProperty(deserializerProperty);
         if (INT_DESERIALIZER.equals(deserializer)) {
             return ColumnDefinition.ofInt(columnName);
@@ -595,5 +711,29 @@ public class KafkaTools {
             map.put(fieldNames[i], columnNames[i]);
         }
         return (final String fieldName) -> map.getOrDefault(fieldName, fieldName);
+    }
+
+    private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
+        private final ConsumerRecordToStreamPublisherAdapter adapter;
+        private final StreamToTableAdapter streamToTableAdapter;
+
+        public SimpleKafkaStreamConsumer(ConsumerRecordToStreamPublisherAdapter adapter, StreamToTableAdapter streamToTableAdapter) {
+            this.adapter = adapter;
+            this.streamToTableAdapter = streamToTableAdapter;
+        }
+
+        @Override
+        public void accept(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+            try {
+                adapter.consumeRecords(consumerRecords);
+            } catch (Exception e) {
+                acceptFailure(e);
+            }
+        }
+
+        @Override
+        public void acceptFailure(@NotNull Exception cause) {
+            streamToTableAdapter.acceptFailure(cause);
+        }
     }
 }

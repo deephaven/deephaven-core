@@ -14,8 +14,6 @@ public class TableSnapshot implements Serializable {
 
     private SnapshotType snapshotType;
 
-    private long deltaSequence;
-
     private ColumnData[] dataColumns;
     private RangeSet includedRows;
 
@@ -24,29 +22,17 @@ public class TableSnapshot implements Serializable {
     public TableSnapshot() {
     }
 
-    public TableSnapshot(RangeSet added, RangeSet includedAdditions, ColumnData[] dataColumns) {
+    public TableSnapshot(RangeSet includedAdditions, ColumnData[] dataColumns, long tableSize) {
         this.snapshotType = SnapshotType.INITIAL_SNAPSHOT;
 
         this.dataColumns = dataColumns;
         this.includedRows = includedAdditions;
 
-        this.tableSize = added.size();
+        this.tableSize = tableSize;
     }
 
     public SnapshotType getSnapshotType() {
         return snapshotType;
-    }
-
-    public void setSnapshotType(SnapshotType snapshotType) {
-        this.snapshotType = snapshotType;
-    }
-
-    public long getDeltaSequence() {
-        return deltaSequence;
-    }
-
-    public void setDeltaSequence(long deltaSequence) {
-        this.deltaSequence = deltaSequence;
     }
 
     public ColumnData[] getDataColumns() {
