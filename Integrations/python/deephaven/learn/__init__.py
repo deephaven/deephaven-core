@@ -182,7 +182,7 @@ def exec(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
         the table with added columns containing the results of evaluating model_func.
 
     Raises:
-        ValueError : if table is live and no batch size was provided.
+        ValueError : if no batch size was provided.
         ValueError : if at least one of the Input columns does not exist in the table.
         ValueError : if at least one of the Output columns already exists in the table.
     """
@@ -190,9 +190,7 @@ def exec(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     _validate(inputs, outputs, table)
 
     if batch_size == None:
-        if table.isLive():
-            raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
-        batch_size = table.size()
+        raise ValueError("Batch size cannot be inferred. Please specify a batch size.")
 
     #TODO: When ticket #1072 is resolved, the following code should be replaced with
     # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
