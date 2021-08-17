@@ -25,6 +25,8 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
+* Types as dht
+
 Additionally, the following methods have been imported into the main deephaven namespace:
 
 * from Plot import figure_wrapper as figw
@@ -37,7 +39,7 @@ Additionally, the following methods have been imported into the main deephaven n
        convertToJavaHashSet, convertToJavaHashMap
 
 * from TableManipulation import ColumnRenderersBuilder, DistinctFormatter,
-       DownsampledWhereFilter, LayoutHintBuilder,
+       DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,
        SmartKey, SortPair, TotalsTableBuilder, WindowCheck
 
 For ease of namespace population in a python console, consider::
@@ -49,7 +51,7 @@ For ease of namespace population in a python console, consider::
 """
 
 __all__ = [
-    "DynamicTableWriter", "PythonFunction", "PythonListenerAdapter", "PythonShiftAwareListenerAdapter",
+    "PythonFunction", "PythonListenerAdapter", "PythonShiftAwareListenerAdapter",
     "TableListenerHandle", "listen", "doLocked",  # from here
 
     "convertJavaArray", "tableToDataFrame", "columnToNumpyArray",  # from java_to_python
@@ -59,10 +61,10 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'LayoutHintBuilder',
-    'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
+    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
+    'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "qs", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers", "dht"  # subpackages with abbreviated names
 ]
 
 
@@ -90,7 +92,8 @@ from . import Calendars as cals, \
     Plot as plt, \
     ParquetTools as pt, \
     TableTools as ttools, \
-    TableLoggers as tloggers
+    TableLoggers as tloggers, \
+    Types as dht
 
 from .Plot import figure_wrapper as figw
 
@@ -111,15 +114,16 @@ def initialize():
     pt._defineSymbols()
     ttools._defineSymbols()
     tloggers._defineSymbols()
+    dht._defineSymbols()
     import deephaven.npy.table2numpy
     deephaven.npy.table2numpy._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, LayoutHintBuilder, \
-        SmartKey, SortPair, TotalsTableBuilder
+    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+        LayoutHintBuilder, SmartKey, SortPair, TotalsTableBuilder
     from deephaven.TableManipulation import ColumnRenderersBuilder, DistinctFormatter, \
-        DownsampledWhereFilter, LayoutHintBuilder, SmartKey, SortPair, \
+        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, SmartKey, SortPair, \
         TotalsTableBuilder
 
     WindowCheck._defineSymbols()
@@ -131,12 +135,8 @@ def initialize():
 from .jvm_init import jvm_init
 from .start_jvm import start_jvm
 
-
 Figure = None  # variable for initialization
 PlottingConvenience = None  # variable for initialization
-
-if jpy.has_jvm():
-    DynamicTableWriter = jpy.get_type("io.deephaven.db.v2.utils.DynamicTableWriter")
 
 def verifyPicklingCompatibility(otherPythonVersion):
     """
