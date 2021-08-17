@@ -49,7 +49,7 @@ public class Scatterer {
             // final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
 
             final String typeString = "";
-            queryStrings[i] = String.format("%s = %s (scatterer.scatter(%d, %s))", outputs[i].getColName(), typeString, i, futureOffsetColName);
+            queryStrings[i] = String.format("%s = %s (__scatterer.scatter(%d, %s))", outputs[i].getColName(), typeString, i, futureOffsetColName);
         }
 
         return queryStrings;

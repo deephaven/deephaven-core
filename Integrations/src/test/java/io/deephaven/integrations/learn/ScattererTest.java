@@ -46,7 +46,7 @@ public class ScattererTest {
 
         Scatterer scatterer = new Scatterer(outputs);
 
-        Assert.assertEquals("OutCol =  (scatterer.scatter(0, __FutureOffset))",
+        Assert.assertEquals("OutCol =  (__scatterer.scatter(0, __FutureOffset))",
                 scatterer.generateQueryStrings("__FutureOffset")[0]);
     }
 
