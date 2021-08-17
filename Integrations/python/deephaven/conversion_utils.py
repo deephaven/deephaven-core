@@ -26,16 +26,22 @@ else:
 # None until the first _defineSymbols() call
 _table_tools_ = None
 _col_def_ = None
+_jprops_ = None
+_jmap_ = None
+_python_tools_ = None
 
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_
+    global _table_tools_, _col_def_, _jprops_, _jmap_, _python_tools_
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
         _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
+        _jprops_ = jpy.get_type("java.util.Properties")
+        _jmap_ = jpy.get_type("java.util.HashMap")
+        _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 
 # every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
@@ -1066,3 +1072,33 @@ def _tuplesListToColDefsList(ts):
     for t in ts:
         r.append(_tupleToColDef(t))
     return r
+
+@_passThrough
+def _dictToProperties(d):
+    r = _jprops_()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.setProperty(key, value)
+    return r
+
+@_passThrough
+def _dictToMap(d):
+    r = _jmap_()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.put(key, value)
+    return r
+
+@_passThrough
+def _dictToFun(d, *kwargs):
+    m = _dictToMap(d)
+    defaul_value_kwarg = 'default_value'
+    if kwargs.has_key(defaul_value_kwarg):
+        default_value = kwargs[defaul_value_kwarg]
+        if not _isStr(default_value):
+            raise Exception(
+                "keyword argument '" + defaul_value_kwarg + "' needs to be of str type, instead got " + str(default_value))
+        return _python_tools_.functionfromMapWithDefault(m, default_value)
+    return _python_tools_.functionFromMapWithIdentityDefaults(m)

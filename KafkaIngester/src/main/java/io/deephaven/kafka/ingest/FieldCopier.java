@@ -17,7 +17,8 @@ public interface FieldCopier {
      * @param destOffset     the destination chunk offset
      * @param length
      */
-    void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length);
+    void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk,
+                   int sourceOffset, int destOffset, int length);
 
     interface Factory {
         FieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType);
