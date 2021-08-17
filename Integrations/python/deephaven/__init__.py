@@ -23,7 +23,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
-* Types as dht
+* Types imported as dht
 
 Additionally, the following methods have been imported into the main deephaven namespace:
 
@@ -36,7 +36,7 @@ Additionally, the following methods have been imported into the main deephaven n
 * from conversion_utils import convertToJavaArray, convertToJavaList, convertToJavaArrayList,
        convertToJavaHashSet, convertToJavaHashMap
 
-* from TableManipulation import ColumnRenderersBuilder, DBDateTime, DistinctFormatter,
+* from TableManipulation import ColumnRenderersBuilder, DistinctFormatter,
        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,
        SmartKey, SortPair, TotalsTableBuilder, WindowCheck
 
@@ -59,7 +59,7 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'ColumnRenderersBuilder', 'DBDateTime', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
+    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
     'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
     "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers", "dht"  # subpackages with abbreviated names
@@ -118,9 +118,9 @@ def initialize():
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global ColumnRenderersBuilder, DBDateTime, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, SmartKey, SortPair, TotalsTableBuilder
-    from deephaven.TableManipulation import ColumnRenderersBuilder, DBDateTime, DistinctFormatter, \
+    from deephaven.TableManipulation import ColumnRenderersBuilder, DistinctFormatter, \
         DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, SmartKey, SortPair, \
         TotalsTableBuilder
 

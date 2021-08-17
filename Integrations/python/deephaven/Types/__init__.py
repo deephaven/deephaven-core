@@ -3,7 +3,7 @@
 # 
 
 """
-A submodule to return types from jpy for convenience
+A submodule to return java primitives from jpy for convenient use in Python
 """
 
 import jpy
@@ -22,6 +22,8 @@ Long = None
 Short = None
 String = None
 
+DHDateTime = None
+
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
@@ -35,6 +37,8 @@ def _defineSymbols():
     global _java_object_
  
     global Bool, Byte, Char, Double, Float, Int, Long, Short, String
+
+    global DHDateTime
 
     if _java_object_ is not None:
         return
@@ -51,6 +55,8 @@ def _defineSymbols():
     Short = jpy.get_type("short")
     String = jpy.get_type("java.lang.String")
     
+    DHDateTime = jpy.get_type("io.deephaven.db.tables.utils.DBDateTime")
+
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
 def _passThrough(wrapped, instance, args, kwargs):

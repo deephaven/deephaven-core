@@ -8,13 +8,12 @@ Functionality to display and modify tables.
 
 import jpy
 
-__all__ = ['ColumnRenderersBuilder', 'DBDateTime', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
+__all__ = ['ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
            'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck']
 
 # None until the first successful _defineSymbols() call
 ColumnRenderersBuilder = None   #: Class to build and parse the directive for Table.COLUMN_RENDERERS_ATTRIBUTE (io.deephaven.db.v2.ColumnRenderersBuilder).
 DistinctFormatter = None        #: Class to create distinct and unique coloration for each unique input value (io.deephaven.db.util.DBColorUtil$DistinctFormatter).
-DBDateTime = None               #: Class to create a DBDateTime instance in Python (io.deephaven.db.tables.utils.DBDateTime).
 DownsampledWhereFilter = None   #: Class to downsample time series data by calculating the bin intervals for values, and then using upperBin and lastBy to select the last row for each bin (io.deephaven.db.v2.select.DownsampledWhereFilter).
 DynamicTableWriter = None       #: Class to create an in-memory table from constructor that specifies column types(io.deephaven.db.v2.utils.DynamicTableWriter).
 LayoutHintBuilder = None        #: Builder class for use in assembling layout hints suitable for use with {@link io.deephaven.db.tables.Table#layoutHints(LayoutHintBuilder)} or {@link io.deephaven.db.tables.Table#layoutHints(String)} (io.deephaven.db.tables.utils.LayoutHintBuilder).
@@ -33,13 +32,12 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global ColumnRenderersBuilder, DBDateTime, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, SmartKey, TotalsTableBuilder, SortPair
 
     if ColumnRenderersBuilder is None:
         # This will raise an exception if the desired object is not the classpath
-        ColumnRenderersBuilder = jpy.get_type('io.deephaven.db.v2.ColumnRenderersBuilder')
-        DBDateTime = jpy.get_type('io.deephaven.db.tables.utils.DBDateTime')
+        ColumnRenderersBuilder = jpy.get_type('io.deephaven.db.v2.ColumnRenderersBuilder') 
         DistinctFormatter = jpy.get_type('io.deephaven.db.util.DBColorUtil$DistinctFormatter')
         DownsampledWhereFilter = jpy.get_type('io.deephaven.db.v2.select.DownsampledWhereFilter')
         DynamicTableWriter = jpy.get_type('io.deephaven.db.v2.utils.DynamicTableWriter')
