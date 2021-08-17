@@ -36,7 +36,7 @@ Additionally, the following methods have been imported into the main deephaven n
 * from conversion_utils import convertToJavaArray, convertToJavaList, convertToJavaArrayList,
        convertToJavaHashSet, convertToJavaHashMap
 
-* from TableManipulation import ColumnRenderersBuilder, DistinctFormatter,
+* from TableManipulation import ColumnRenderersBuilder, DBDateTime, DistinctFormatter,
        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,
        SmartKey, SortPair, TotalsTableBuilder, WindowCheck
 
@@ -59,7 +59,7 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
+    'ColumnRenderersBuilder', 'DBDateTime', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
     'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
     "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers", "dht"  # subpackages with abbreviated names
@@ -118,9 +118,9 @@ def initialize():
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global ColumnRenderersBuilder, DBDateTime, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, SmartKey, SortPair, TotalsTableBuilder
-    from deephaven.TableManipulation import ColumnRenderersBuilder, DistinctFormatter, \
+    from deephaven.TableManipulation import ColumnRenderersBuilder, DBDateTime, DistinctFormatter, \
         DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, SmartKey, SortPair, \
         TotalsTableBuilder
 
