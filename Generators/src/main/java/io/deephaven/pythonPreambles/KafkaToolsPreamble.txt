@@ -151,8 +151,8 @@ def consumeToTable(
     table_type_enum = _java_type_.friendlyNameToTableType(table_type)
     if table_type_enum is None:
         raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
-    else
-        table_type_enum = _java_type_.friendlyNameToTableType('stream')
+    else:
+        table_type_enum = _java_type_.friendlyNameToTableType('streaming')
 
 
     kafka_config = _dictToProperties(kafka_config)
