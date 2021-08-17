@@ -44,14 +44,6 @@ public class Output {
 
         NameValidator.validateColumnName(colName);
 
-        List<String> validTypes = Arrays.asList("int", "long", "double", "float", "boolean", "char", "String");
-        if (type != null) {
-            if (validTypes.contains(type));
-            else {
-                throw new IllegalArgumentException("Output column datatype must be one of: int, long, double, float, boolean, char, String.");
-            }
-        }
-
         this.colName = colName;
         this.scatterFunc = scatterFunc;
         this.type = type;
@@ -77,4 +69,9 @@ public class Output {
      * @return the output column datatype.
      */
     public String getType() { return type; }
+
+    @Override
+    public String toString() {
+        return "Column: " + colName + "\nScatter Function: " + scatterFunc + "\nDatatype: " + type;
+    }
 }

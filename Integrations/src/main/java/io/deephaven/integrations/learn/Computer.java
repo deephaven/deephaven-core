@@ -87,15 +87,11 @@ public class Computer {
         current.getIndexSet().add(k);
         offset += 1;
 
-        if (offset == batchSize) {
-            offset = 0;
-        }
-
         return new FutureOffset(current, offset);
     }
 
     /**
-     * Gets the current future for testing purposes.
+     * Gets the current future.
      *
      * @return the current future.
      */

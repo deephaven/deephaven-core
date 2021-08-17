@@ -9,6 +9,7 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
 /**
@@ -98,4 +99,9 @@ public class Input {
      */
     @ScriptApi
     public String[] getColNames() { return colNames; }
+
+    @Override
+    public String toString() {
+        return "Columns: " + Arrays.toString(colNames) + "\nGather Function: " + gatherFunc;
+    }
 }

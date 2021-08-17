@@ -8,7 +8,7 @@ import java.util.function.Function;
 public class OutputTest {
 
     @Test
-    public void createOutputTest1() {
+    public void verifyCorrectFieldsTest() {
         final String colName = "Outcol";
         final Function<Object[], Object> func = args -> args;
         final String type = "int";
@@ -21,7 +21,7 @@ public class OutputTest {
     }
 
     @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
-    public void createOutputTest2() {
+    public void invalidColumnNameTest() {
         final String colName = " Outcol";
         final Function<Object[], Object> func = args -> args;
         final String type = "int";
@@ -30,7 +30,7 @@ public class OutputTest {
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
-    public void createOutputTest3() {
+    public void nullColumnNameTest() {
         final String colName = null;
         final Function<Object[], Object> func = args -> args;
         final String type = "int";
@@ -39,7 +39,7 @@ public class OutputTest {
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
-    public void createOutputTest4() {
+    public void nullFunctionTest() {
         final String colName = "Outcol";
         final Function<Object[], Object> func = null;
         final String type = "int";
@@ -48,7 +48,7 @@ public class OutputTest {
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
-    public void createOutputTest5() {
+    public void invalidDataTypeTest() {
         final String colName = "Outcol";
         final Function<Object[], Object> func = args -> args;
         final String type = "hello";

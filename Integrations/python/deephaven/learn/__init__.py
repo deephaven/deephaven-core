@@ -3,7 +3,8 @@
 #
 
 """
-Deephaven's learn module enables developers and data scientists to use familiar
+Deephaven's learn module enables developers and data scientists to use familiar Python frameworks in tandem
+with Deephaven's real-time data tech for a powerful, flexible, live AI/ML library.
 """
 
 import jpy
@@ -13,6 +14,7 @@ _Input_ = None
 _Output_ = None
 _Computer_ = None
 _Scatterer_ = None
+_QueryScope_ = None
 
 
 def _defineSymbols():
@@ -28,12 +30,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _Input_, _Output_, _Computer_, _Scatterer_
+    global _Input_, _Output_, _Computer_, _Scatterer_, _QueryScope_
     if _Input_ is None:
         _Input_ = jpy.get_type("io.deephaven.integrations.learn.Input")
         _Output_ = jpy.get_type("io.deephaven.integrations.learn.Output")
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
+        _QueryScope_ = jpy.get_type("io.deephaven.db.tables.select.QueryScope")
 
 
 # every module method that invokes Java classes should be decorated with @_passThrough
@@ -58,37 +61,42 @@ def _passThrough(wrapped, instance, args, kwargs):
 @_passThrough
 class Input:
     """
-    Input specifies how to gather data from a Deephaven table into a Python object.
+    Input specifies how to gather data from a Deephaven table into an object.
     """
+
     def __init__(self, colNames, gatherFunc):
         """
+        Initializes an Input object with the given arguments.
+
         Args:
             colNames   : column name or list of column names from which to gather input.
-            gatherFunc : python function that determines how input gets transformed into a python object.
+            gatherFunc : function that determines how input gets transformed into an object.
         """
         self.input = _Input_(colNames, gatherFunc)
 
     def __str__(self):
-        return "Columns: " + str([self.input.getColNames()[i] for i in range(len(self.input.getColNames()))])
+        return self.input.toString()
 
 
 @_passThrough
 class Output:
     """
-    Output specifies how to scatter data from a Python object into a table column.
+    Output specifies how to scatter data from an object into a table column.
     """
+
     def __init__(self, colName, scatterFunc, type=None):
         """
+        Initializes an Output object with the given arguments.
+
         Args:
             colName         : name of the new column that will store results.
-            scatterFunc     : python function that determines how data is taken from a python object into a Deephaven table.
-            type (optional) : desired data type of the new output column. Must be one of int, long, double, float, boolean, char, String.
+            scatterFunc     : function that determines how data is taken from a python object into a Deephaven table.
+            type (optional) : desired data type of the new output column.
         """
         self.output = _Output_(colName, scatterFunc, type)
 
     def __str__(self):
-        print("Column: " + self.output.getColName())
-        print("Type: " + self.output.getType())
+        return self.output.toString()
 
 
 @_passThrough
@@ -108,20 +116,27 @@ def _validate(inputs, outputs, table):
 
     inputColumns = [input.input.getColNames()[i] for input in inputs for i in range(len(input.input.getColNames()))]
 
-    if not all(inputColumn in list(table.getMeta().getColumn("Name").getDirect()) for inputColumn in inputColumns):
-        raise ValueError("All Input columns must exist in the given table.")
+    if table.hasColumns(inputColumns):
 
-    if not outputs == None:
-        columns = [*set(inputColumns), *[output.output.getColName() for output in outputs]]
+        if not outputs == None:
+            outputColumns = [output.output.getColName() for output in outputs]
 
-        if len(columns) != len(set(columns)):
-            raise ValueError("Cannot use existing column names for Output columns.")
+            if not table.hasColumns(outputColumns):
+                return
 
-    return
+            else:
+                overlap = set(outputColumns).intersection(table.getMeta().getColumn("Name").getDirect())
+                raise ValueError(f"The columns {overlap} already exist in the table. Please choose Output column names that are not already in the table.")
+
+        return
+
+    else:
+        difference = set(inputColumns).difference(table.getMeta().getColumn("Name").getDirect())
+        raise ValueError(f"Cannot find columns {difference} in the table. Please check your spelling and try again.")
 
 
 @_passThrough
-def _verifyColumn(column, table):
+def _createNonconflictingColumnName(column, table):
     """
     Ensures that the given column is not present in the table, and modifies it if necessary until it is not in the table.
 
@@ -133,39 +148,43 @@ def _verifyColumn(column, table):
         the column name, modified if necessary so that it is not present in the table.
     """
 
-    tableColumns = list(table.getMeta().getColumn("Name").getDirect())
-
-    if column not in tableColumns:
+    if not table.hasColumns(column):
         return column
 
     else:
         i = 0
-        while column in tableColumns:
+        while table.hasColumns(column):
             column = column + str(i)
 
-            if column not in tableColumns:
+            if not table.hasColumns(column):
                 return column
             i += 1
 
 
 @_passThrough
-def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
+def exec(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     """
-    Takes relevant data from Deephaven table using inputs, converts that data to the desired Python type, feeds
-    it to model_func, and stores that output in a Deephaven table using outputs.
+    This is the primary tool for linking Deephaven tables with Python deep learning libraries.
+
+    The inputs are used to collect data from the table; then, this data is passed through the model_func for computing,
+    and the results are scattered back into the table with the outputs.
+
+    Here, 
 
     Args:
-        table      : the Deephaven table to perform computations on
-        model_func : python function that performs computations on the table.
-        inputs     : list of Deephaven input objects
-        outputs    : list of Deephaven output objects
+        table      : the Deephaven table to perform computations on.
+        model_func : function that performs computations on the table.
+        inputs     : list of Input objects that determine how data gets extracted from the table.
+        outputs    : list of Output objects that determine how data gets collected back into the table.
         batch_size : number of rows for which model_func is evaluated at once. Note that this must be provided for a live table.
 
     Returns:
         the table with added columns containing the results of evaluating model_func.
 
     Raises:
-        ValueError : if table is live and no batch size was provided
+        ValueError : if table is live and no batch size was provided.
+        ValueError : if at least one of the Input columns does not exist in the table.
+        ValueError : if at least one of the Output columns already exists in the table.
     """
 
     _validate(inputs, outputs, table)
@@ -175,16 +194,23 @@ def eval(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
             raise ValueError("Batch size cannot be inferred on a live table. Please specify a batch size.")
         batch_size = table.size()
 
-    globals()["computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
+    #TODO: When ticket #1072 is resolved, the following code should be replaced with
+    # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
+    # and remove from globals at the end of function
+    _QueryScope_.addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
 
-    futureOffset = _verifyColumn("__FutureOffset", table)
-    clean = _verifyColumn("__Clean", table)
+    futureOffset = _createNonconflictingColumnName("__FutureOffset", table)
+    clean = _createNonconflictingColumnName("__Clean", table)
 
     if not outputs == None:
-        globals()["scatterer"] = _Scatterer_([output.output for output in outputs])
+        __scatterer = _Scatterer_([output.output for output in outputs])
+        #TODO: Similarly at resolution of #1072, replace the following code with
+        # Globals["__scatterer"] = __scatterer
+        # and remove from Globals at end of function
+        _QueryScope_.addParam("__scatterer", __scatterer)
 
-        return table.update(f"{futureOffset} = computer.compute(k)", f"{clean} = computer.clear()").update(scatterer.generateQueryStrings(f"{futureOffset}")).dropColumns(f"{futureOffset}",f"{clean}")
+        return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean} = __computer.clear()").update(__scatterer.generateQueryStrings(f"{futureOffset}")).dropColumns(f"{futureOffset}", f"{clean}")
 
-    result = _verifyColumn("__Result", table)
+    result = _createNonconflictingColumnName("__Result", table)
 
-    return table.update(f"{futureOffset} = computer.compute(k)", f"{clean} = computer.clear()", f"{result} = {futureOffset}.getFuture().get()").dropColumns(f"{futureOffset}",f"{clean}",f"{result}")
+    return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean} = __computer.clear()", f"{result} = {futureOffset}.getFuture().get()").dropColumns(f"{futureOffset}", f"{clean}", f"{result}")

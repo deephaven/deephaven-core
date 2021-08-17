@@ -37,6 +37,8 @@ public class Scatterer {
     /**
      * Generates query strings to create a new column for each Output.
      *
+     * @param futureOffsetColName   name of the column that will result from using this query string.
+     *
      * @return list of query strings to be used in .update() call.
      */
     public String[] generateQueryStrings(String futureOffsetColName) {
