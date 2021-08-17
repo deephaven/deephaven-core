@@ -174,7 +174,7 @@ def _createNonconflictingColumnName(column, table):
 
 
 @_passThrough
-def exec(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
+def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     """
     This is the primary tool for linking Deephaven tables with Python deep learning libraries.
 
