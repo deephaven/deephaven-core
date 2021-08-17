@@ -37,7 +37,7 @@ public class DoubleAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
     @Override
     public void ensureCapacity(final long tableSize) {
         super.ensureCapacity(tableSize);
-        sortColumnValues.ensureCapacity(tableSize);
+        sortColumnValues.ensureCapacity(tableSize, false);
     }
 
     @Override
