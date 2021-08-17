@@ -3,8 +3,8 @@
 #
 
 """
-Deephaven's learn module enables developers and data scientists to use familiar Python frameworks in tandem
-with Deephaven's real-time data tech for a powerful, flexible, live AI/ML library.
+Deephaven's learn module provides utilities for efficient data transfer between Deephaven tables and Python objects,
+as well as a framework for using popular machine learning/deep learning libraries with Deephaven tables.
 """
 
 import jpy
@@ -14,7 +14,6 @@ _Input_ = None
 _Output_ = None
 _Computer_ = None
 _Scatterer_ = None
-_QueryScope_ = None
 
 
 def _defineSymbols():
@@ -30,13 +29,12 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _Input_, _Output_, _Computer_, _Scatterer_, _QueryScope_
+    global _Input_, _Output_, _Computer_, _Scatterer_
     if _Input_ is None:
         _Input_ = jpy.get_type("io.deephaven.integrations.learn.Input")
         _Output_ = jpy.get_type("io.deephaven.integrations.learn.Output")
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
-        _QueryScope_ = jpy.get_type("io.deephaven.db.tables.select.QueryScope")
 
 
 # every module method that invokes Java classes should be decorated with @_passThrough
@@ -96,7 +94,7 @@ class Output:
 
         Args:
             colName         : name of the new column that will store results.
-            scatterFunc     : function that determines how data is taken from a python object into a Deephaven table.
+            scatterFunc     : function that determines how data is taken from an object and placed into a Deephaven table column.
             type (optional) : desired data type of the new output column.
         """
         self.output = _Output_(colName, scatterFunc, type)
@@ -124,71 +122,72 @@ def _validate(inputs, outputs, table):
     Raises:
         ValueError : if at least one of the Input columns does not exist in the table.
         ValueError : if at least one of the Output columns already exists in the table.
+        ValueError : if there are duplicates in the Output column names.
     """
 
     inputColumns = [input.input.getColNames()[i] for input in inputs for i in range(len(input.input.getColNames()))]
 
     if table.hasColumns(inputColumns):
 
-        if not outputs == None:
+        if outputs != None:
             outputColumns = [output.output.getColName() for output in outputs]
 
-            if not table.hasColumns(outputColumns):
-                return
+            if len(outputColumns) != len(set(outputColumns)):
+                raise ValueError("Cannot have multiple Output columns of the same name.")
 
-            else:
+            elif table.hasColumns(outputColumns):
                 overlap = set(outputColumns).intersection(table.getMeta().getColumn("Name").getDirect())
                 raise ValueError(f"The columns {overlap} already exist in the table. Please choose Output column names that are not already in the table.")
+
+            else:
+                return
 
         return
 
     else:
         difference = set(inputColumns).difference(table.getMeta().getColumn("Name").getDirect())
-        raise ValueError(f"Cannot find columns {difference} in the table. Please check your spelling and try again.")
+        raise ValueError(f"Cannot find columns {difference} in the table.")
 
 
 @_passThrough
-def _createNonconflictingColumnName(column, table):
+def _createNonconflictingColumnName(table, baseColumnName):
     """
-    Ensures that the given column is not present in the table, and modifies it if necessary until it is not in the table.
+    Creates a column name that is not present in the table.
 
     Args:
-        column : column name that should not exist in the table.
-        table  : table to check column against.
+        table          : table to check column name against.
+        baseColumnName : base name to create a column from.
 
     Returns:
-        the column name, modified if necessary so that it is not present in the table.
+        column name that is not present in the table.
     """
 
-    if not table.hasColumns(column):
-        return column
+    if not table.hasColumns(baseColumnName):
+        return baseColumnName
 
     else:
         i = 0
-        while table.hasColumns(column):
-            column = column + str(i)
+        while table.hasColumns(baseColumnName):
+            baseColumnName = baseColumnName + str(i)
 
-            if not table.hasColumns(column):
-                return column
+            if not table.hasColumns(baseColumnName):
+                return baseColumnName
             i += 1
 
 
 @_passThrough
 def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None):
     """
-    This is the primary tool for linking Deephaven tables with Python deep learning libraries.
-
-    The inputs are used to collect data from the table; then, this data is passed through the model_func for computing,
-    and the results are scattered back into the table with the outputs.
-
-    Here, 
+    Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
+    calculation into an output table. This is a common computing paradigm for artificial intelligence, machine learning,
+    and deep learning.
 
     Args:
         table      : the Deephaven table to perform computations on.
         model_func : function that performs computations on the table.
         inputs     : list of Input objects that determine how data gets extracted from the table.
-        outputs    : list of Output objects that determine how data gets collected back into the table.
-        batch_size : number of rows for which model_func is evaluated at once. Note that this must be provided for a live table.
+        outputs    : list of Output objects that determine how data gets scattered back into the results table.
+        batch_size : maximum number of rows for which model_func is evaluated at once.
 
     Returns:
         the table with added columns containing the results of evaluating model_func.
@@ -197,6 +196,7 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
         ValueError : if no batch size was provided.
         ValueError : if at least one of the Input columns does not exist in the table.
         ValueError : if at least one of the Output columns already exists in the table.
+        ValueError : if there are duplicates in the Output column names.
     """
 
     _validate(inputs, outputs, table)
@@ -207,25 +207,24 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
     #TODO: When ticket #1072 is resolved, the following code should be replaced with
     # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
     # and remove from globals at the end of function
-    _QueryScope_.addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
+    jpy.get_type("io.deephaven.db.tables.select.QueryScope").addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
 
-    futureOffset = _createNonconflictingColumnName("__FutureOffset", table)
-    clean1 = _createNonconflictingColumnName("__CleanComputer", table)
-    clean2 = _createNonconflictingColumnName("__CleanFutureOffset", table)
+    futureOffset = _createNonconflictingColumnName(table, "__FutureOffset")
+    clean = _createNonconflictingColumnName(table, "__CleanComputer")
 
     if not outputs == None:
         __scatterer = _Scatterer_([output.output for output in outputs])
         #TODO: Similarly at resolution of #1072, replace the following code with
         # Globals["__scatterer"] = __scatterer
         # and remove from Globals at end of function
-        _QueryScope_.addParam("__scatterer", __scatterer)
+        jpy.get_type("io.deephaven.db.tables.select.QueryScope").addParam("__scatterer", __scatterer)
 
-        return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean1} = __computer.clear()")\
+        return table.update(f"{futureOffset} = __computer.compute(k)")\
                 .update(__scatterer.generateQueryStrings(f"{futureOffset}"))\
-                .update(f"{clean2} = {futureOffset}.clear()")\
-                .dropColumns(f"{futureOffset}", f"{clean1}", f"{clean2}")
+                .update(f"{clean} = __computer.clear()")\
+                .dropColumns(f"{futureOffset}", f"{clean}")
 
-    result = _createNonconflictingColumnName("__Result", table)
+    result = _createNonconflictingColumnName(table, "__Result")
 
-    return table.update(f"{futureOffset} = __computer.compute(k)", f"{clean1} = __computer.clear()", f"{result} = {futureOffset}.getFuture().get()", f"{clean2} = {futureOffset}.clear()")\
-            .dropColumns(f"{futureOffset}", f"{clean1}", f"{result}", f"{clean2}")
+    return table.update(f"{futureOffset} = __computer.compute(k)", f"{result} = {futureOffset}.getFuture().get()", f"{clean} = __computer.clear()")\
+            .dropColumns(f"{futureOffset}", f"{clean}", f"{result}")

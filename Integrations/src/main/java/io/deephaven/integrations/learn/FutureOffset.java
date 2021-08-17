@@ -41,11 +41,8 @@ public class FutureOffset {
 
     /**
      * Resets the future.
-     *
-     * @return always false, because functions used in query strings cannot return nothing.
      */
-    public boolean clear() {
+    public void clear() {
         future = null;
-        return false;
     }
 }

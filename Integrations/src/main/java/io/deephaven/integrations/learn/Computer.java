@@ -6,6 +6,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 
+import java.util.ArrayList;
 import java.util.function.Function;
 
 /**
@@ -18,6 +19,7 @@ public class Computer {
     private final int batchSize;
     private final Input[] inputs;
     private Future current;
+    private final ArrayList<FutureOffset> foSet;
     private int offset;
 
     /**
@@ -57,6 +59,7 @@ public class Computer {
         }
 
         this.current = null;
+        this.foSet = new ArrayList<>();
         this.offset = -1;
     }
 
@@ -67,6 +70,10 @@ public class Computer {
      */
     public boolean clear() {
 
+        for (FutureOffset futureOffset : foSet) {
+            futureOffset.clear();
+        }
+        foSet.clear();
         current = null;
         return false;
     }
@@ -87,7 +94,9 @@ public class Computer {
         current.getIndexSet().add(k);
         offset += 1;
 
-        return new FutureOffset(current, offset);
+        foSet.add(new FutureOffset(current, offset));
+
+        return foSet.get(offset);
     }
 
     /**
