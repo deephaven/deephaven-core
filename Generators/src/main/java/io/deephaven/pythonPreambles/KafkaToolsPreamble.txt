@@ -148,14 +148,15 @@ def consumeToTable(
     if not _isStr(table_type):
         raise Exception("argument 'table_type' expected to be of type str, instead got " +
                         str(table_type) + " of type " + type(table_type).__name__)
-    if table_type != 'append' and table_type != 'streaming':
+    table_type_enum = _java_type_.friendlyNameToTableType(table_type)
+    if table_type_enum is None:
         raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+    else
+        table_type_enum = _java_type_.friendlyNameToTableType('stream')
 
 
     kafka_config = _dictToProperties(kafka_config)
-    streaming_table = _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value)
-    if table_type == 'append':
-        return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
+    streaming_table = _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value, table_type_enum)
     # table_type == 'streaming'
     return streaming_table
 
