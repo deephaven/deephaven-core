@@ -165,9 +165,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 }
                 redirectionSource.setNewCurrent(updateInnerRedirectSource);
 
-                final Index removed = Index.CURRENT_FACTORY.getFlatIndex(upstream.removed.size());
                 final Index added = Index.CURRENT_FACTORY.getFlatIndex(upstream.added.size());
-                resultIndex.update(added, removed);
+                final Index removed = Index.CURRENT_FACTORY.getFlatIndex(upstream.removed.size());
+                if (added.size() > removed.size()) {
+                    resultIndex.insertRange(removed.size(), added.size() - 1);
+                } else if (removed.size() > added.size()) {
+                    resultIndex.removeRange(added.size(), removed.size() - 1);
+                }
                 resultTable.notifyListeners(new Update(added, removed, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             }
         };

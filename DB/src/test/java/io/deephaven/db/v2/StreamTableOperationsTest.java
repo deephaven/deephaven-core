@@ -125,7 +125,8 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
                             streamInternalIndex.clear();
                             streamInternalIndex.insert(normalStepInserted);
                         }
-                        stream.getIndex().update(streamStepInserted, finalStreamLastInserted);
+                        stream.getIndex().clear();
+                        stream.getIndex().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted, Index.CURRENT_FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
