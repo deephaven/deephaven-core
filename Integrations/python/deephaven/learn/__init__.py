@@ -133,9 +133,8 @@ def _validate(inputs, outputs, table):
             outputColumns = [output.output.getColName() for output in outputs]
 
             if len(outputColumns) != len(set(outputColumns)):
-                repeats = set(outputColumns).difference(outputColummns)
-                print(repeats)
-                raise ValueError("Cannot have multiple Output columns of the same name.")
+                repeats = set([column for column in outputColumns if outputColumns.count(column) > 1])
+                raise ValueError(f"Cannot assign the same column name {repeats} to multiple columns.")
 
             elif table.hasColumns(outputColumns):
                 overlap = set(outputColumns).intersection(table.getMeta().getColumn("Name").getDirect())
