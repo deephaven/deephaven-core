@@ -90,8 +90,8 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ((WritableSource)innerSource).ensureCapacity(capacity);
+    public void ensureCapacity(long capacity, boolean nullFill) {
+        ((WritableSource)innerSource).ensureCapacity(capacity, nullFill);
     }
 
     private class RedirectionFillFrom implements FillFromContext {

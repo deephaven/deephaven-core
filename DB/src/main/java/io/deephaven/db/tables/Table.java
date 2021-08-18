@@ -48,7 +48,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
     static Table of(TableSpec table) {
-        return TableCreationImpl.create(table);
+        return TableCreatorImpl.create(table);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -123,15 +123,16 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
      * producing aggregate results that are valid over the entire observed stream from the time the operation is
      * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
      * <ol>
-     *     <li>{@code by} as an index-aggregation is unsupported. This means any of the overloads for
-     *     {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
+     *     <li>{@link #by(SelectColumn...) by()} as an index-aggregation is unsupported. This means any of the overloads
+     *     for {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
      *     {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
      *     {@link io.deephaven.db.v2.by.ComboAggregateFactory#AggArray(java.lang.String...)}, and
      *     {@link ComboAggregateFactory#AggFormula(java.lang.String, java.lang.String, java.lang.String...)} are also
      *     unsupported.
-     *     <li>{@link #rollup(ComboAggregateFactory, boolean, SelectColumn...)} is unsupported if
+     *     <li>{@link #byExternal(boolean, String...) byExternal()} is unsupported</li>
+     *     <li>{@link #rollup(ComboAggregateFactory, boolean, SelectColumn...) rollup()} is unsupported if
      *     {@code includeConstituents == true}</li>
-     *     <li>{@link #treeTable(String, String)} is unsupported</li>
+     *     <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
      * </ol>
      * <p>To disable these semantics, a {@link #dropStream()} method is offered.
      */

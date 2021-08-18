@@ -210,7 +210,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             int numAddedKeys = 0;
             int numPropagatedModdedKeys = 0;
             final Index addedAndModified = modifiedNeedsSorting ? closer.add(upstream.added.union(upstream.modified)) : upstream.added;
-            final long [] addedInputKeys = SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
+            final long[] addedInputKeys = SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified.intSize()] : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
 

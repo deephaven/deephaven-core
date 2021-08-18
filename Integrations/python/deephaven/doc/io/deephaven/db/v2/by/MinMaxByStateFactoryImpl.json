@@ -6,6 +6,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.by.MinMaxByStateFactoryImpl",
- "text": "Minimum and Maximum aggregation factory.\n\n Operates in two modes, for non-refreshing tables it requires very little state (just the current minimum or maximum).\n\n For refreshing tables, it requires maintaining a TreeMap of values to counts; so that if the min/max value is removed\n we are able to identify the next lowest/highest value.\n\n You can use AppendMinMaxByStateFactoryImpl if you want to force append-only behavior.",
+ "text": "Minimum and Maximum aggregation factory.\n\n Operates in two modes, for non-refreshing tables it requires very little state (just the current minimum or maximum).\n\n For refreshing tables, it requires maintaining a TreeMap of values to counts; so that if the min/max value is removed\n we are able to identify the next lowest/highest value.\n\n You can use AddOnlyMinMaxByStateFactoryImpl if you want to force add-only behavior.",
  "typeName": "class"
 }

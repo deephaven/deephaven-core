@@ -21,6 +21,7 @@ public class JsTotalsTableConfig {
                                 MIN = "Min",
                                 MAX = "Max",
                                 SUM = "Sum",
+                                ABS_SUM = "AbsSum",
                                 VAR = "Var",
                                 AVG = "Avg",
                                 STD = "Std",
@@ -33,6 +34,7 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.MIN,
             JsAggregationOperation.MAX,
             JsAggregationOperation.SUM,
+            JsAggregationOperation.ABS_SUM,
             JsAggregationOperation.VAR,
             JsAggregationOperation.AVG,
             JsAggregationOperation.STD,
@@ -43,7 +45,7 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.DISTINCT,
             JsAggregationOperation.UNIQUE
     );
-    
+
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
     public String defaultOperation = SUM;

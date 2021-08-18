@@ -96,7 +96,6 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         orderedKeys.forAllLongRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
-                Assert.lt(chunkIndex, "chunkIndex", firstOffsetForData.size(), "firstOffsetForData.size()");
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final ObjectChunk<T, ? extends Attributes.Values> ObjectChunk = data.get(chunkIndex);
@@ -149,7 +148,14 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         return index;
     }
 
-    private void addChunk(@NotNull final WritableObjectChunk<T, ? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableObjectChunk<T, ? extends Attributes.Values> chunk) {
         Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {

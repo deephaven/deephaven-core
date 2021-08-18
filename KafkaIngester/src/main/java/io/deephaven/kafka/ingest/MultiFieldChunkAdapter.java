@@ -24,7 +24,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
     protected MultiFieldChunkAdapter(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> columns,
+            final Map<String, String> fieldNamesToColumnNames,
             final boolean allowNulls,
             final FieldCopier.Factory fieldCopierFactory) {
         this.allowNulls = allowNulls;
@@ -37,11 +37,11 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
             deephavenColumnNameToIndex.put(columnNames[ii], ii);
         }
 
-        chunkOffsets = new int[columns.size()];
-        fieldCopiers = new FieldCopier[columns.size()];
+        chunkOffsets = new int[fieldNamesToColumnNames.size()];
+        fieldCopiers = new FieldCopier[fieldNamesToColumnNames.size()];
 
         int col = 0;
-        for (Map.Entry<String, String> fieldToColumn : columns.entrySet()) {
+        for (Map.Entry<String, String> fieldToColumn : fieldNamesToColumnNames.entrySet()) {
             final int deephavenColumnIndex = deephavenColumnNameToIndex.get(fieldToColumn.getValue());
             if (deephavenColumnIndex == deephavenColumnNameToIndex.getNoEntryValue()) {
                 throw new IllegalArgumentException("Column not found in Deephaven table: " + deephavenColumnIndex);

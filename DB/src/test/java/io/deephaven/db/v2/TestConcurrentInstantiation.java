@@ -1068,8 +1068,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new AppendMinMaxByStateFactoryImpl(true), "KeyColumn"), true, false, false, true);
-        testByConcurrent(t -> t.by(new AppendMinMaxByStateFactoryImpl(false), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(true), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(false), "KeyColumn"), true, false, false, true);
     }
 
     public void testFirstLastBy() throws Exception {

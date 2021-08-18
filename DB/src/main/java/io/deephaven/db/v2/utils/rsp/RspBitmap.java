@@ -1,13 +1,11 @@
 package io.deephaven.db.v2.utils.rsp;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.utils.*;
 import io.deephaven.db.v2.utils.singlerange.SingleRange;
 import io.deephaven.db.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import io.deephaven.db.v2.utils.rsp.container.*;

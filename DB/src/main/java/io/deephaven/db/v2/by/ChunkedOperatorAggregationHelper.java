@@ -1552,6 +1552,9 @@ public class ChunkedOperatorAggregationHelper {
                             downstream.modified = Index.FACTORY.getEmptyIndex();
                             result.getIndex().remove(0);
                         } else {
+                            if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
+                                return;
+                            }
                             downstream.added = Index.FACTORY.getEmptyIndex();
                             downstream.removed = Index.FACTORY.getEmptyIndex();
                             downstream.modified = Index.FACTORY.getIndexByValues(0);

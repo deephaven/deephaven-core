@@ -22,9 +22,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
     private GenericRecordChunkAdapter(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> columns,
+            final Map<String, String> fieldNamesToColumnNames,
             final boolean allowNulls) {
-        super(definition, chunkTypeForIndex, columns, allowNulls, GenericRecordChunkAdapter::makeFieldCopier);
+        super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, GenericRecordChunkAdapter::makeFieldCopier);
     }
     /**
      * Create a GenericRecordChunkAdapter.
@@ -49,6 +49,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldName);
             case Byte:
+                if (dataType == Boolean.class) {
+                    return new GenericRecordBooleanFieldCopier(fieldName);
+                }
                 return new GenericRecordByteFieldCopier(fieldName);
             case Short:
                 return new GenericRecordShortFieldCopier(fieldName);
