@@ -10,10 +10,14 @@ import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.live.LiveTable;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
+import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.LocalTableMap;
 import io.deephaven.db.v2.StreamTableTools;
@@ -46,6 +50,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
 
 public class KafkaTools {
@@ -496,9 +501,12 @@ public class KafkaTools {
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
 
+        final StreamTableMap streamTableMap = resultType.isMap ? new StreamTableMap(tableDefinition) : null;
+        final LiveTableRegistrar liveTableRegistrar = streamTableMap == null ? LiveTableMonitor.DEFAULT : streamTableMap.refreshCombiner;
+
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-            final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+            final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar);
             streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
 
             final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
@@ -525,11 +533,11 @@ public class KafkaTools {
         final Table result;
         final IntFunction<KafkaStreamConsumer> partitionToConsumer;
         if (resultType.isMap) {
-            final LocalTableMap tableMap = new LocalTableMap(null, tableDefinition);
-            result = tableMap.asTable(true, true, true);
+            result = streamTableMap.asTable(true, true, true);
             partitionToConsumer = (final int partition) -> {
                 final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair = adapterFactory.get();
-                tableMap.put(partition, tableConversion.apply(partitionAdapterPair.getFirst().table()));
+                final Table partitionTable = tableConversion.apply(partitionAdapterPair.getFirst().table());
+                streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable), "streamTableMap.put(partition, partitionTable)"));
                 return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
             };
         } else {
@@ -549,6 +557,30 @@ public class KafkaTools {
         ingester.start();
 
         return result;
+    }
+
+    private static class StreamTableMap extends LocalTableMap implements LiveTable {
+
+        private final LiveTableRefreshCombiner refreshCombiner = new LiveTableRefreshCombiner();
+        private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();
+
+        private StreamTableMap(@NotNull final TableDefinition constituentDefinition) {
+            super(null, constituentDefinition);
+            refreshCombiner.addTable(this); // Results in managing the refreshCombiner
+            LiveTableMonitor.DEFAULT.addTable(refreshCombiner);
+        }
+
+        @Override
+        public void refresh() {
+            Runnable deferredUpdate;
+            while ((deferredUpdate = deferredUpdates.poll()) != null) {
+                deferredUpdate.run();
+            }
+        }
+
+        private void enqueueUpdate(@NotNull final Runnable deferredUpdate) {
+            deferredUpdates.add(deferredUpdate);
+        }
     }
 
     private static KeyOrValueProcessor getProcessor(
