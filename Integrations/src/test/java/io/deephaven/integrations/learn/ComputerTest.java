@@ -12,7 +12,6 @@ import java.util.function.Function;
 public class ComputerTest {
 
     private static InMemoryTable table;
-    private static Input[] inputs;
 
     @BeforeClass
     public static void createTable() {
@@ -23,93 +22,99 @@ public class ComputerTest {
                         new long[]{2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
                         new double[]{5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
                 });
-        inputs = new Input[]{new Input(new String[]{"Column1","Column2"}, args -> args), new Input("Column3", args -> args)};
     }
 
-    static Input[] createInputs(Function<Object[], Object> gatherFunc) {
-        return new Input[]{new Input(new String[]{"Column1","Column2"}, gatherFunc), new Input("Column3", gatherFunc)};
+    private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
+        return new Input[]{new Input(new String[]{"Column1","Column2"}, gatherFuncs[0]), new Input("Column3", gatherFuncs[1])};
     }
 
-    @Test
-    public void computeMethodTest() {
-
-        final Function<Object[], Object> func = args -> args;
-        final int batchSize = 7;
-
-        Computer computer = new Computer(table, func, inputs, batchSize);
-
-        for (int i = 0 ; i < 9 ; i++) {
-            computer.compute(i);
-        }
-
-        computer.clear();
+    private static Input[] createInputs(Function<Object[], Object> gatherFunc) {
+        return createInputs(gatherFunc, gatherFunc);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullTableTest() {
 
-        final Function<Object[], Object> func = args -> args;
+        final Input[] inputs = createInputs(args -> args);
         final int batchSize = 7;
 
-        Computer computer = new Computer(null, func, inputs, batchSize);
+        Function<Object[], Object> modelFunc = (params) ->
+        {
+            return 1;
+        };
+
+        Computer computer = new Computer(null, modelFunc, inputs, batchSize);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullFunctionTest() {
 
-        final Function<Object[], Object> func = null;
+        final Input[] inputs = createInputs(args -> args);
         final int batchSize = 7;
 
-        Computer computer = new Computer(table, func, inputs, batchSize);
+        Function<Object[], Object> modelFunc = null;
+
+        Computer computer = new Computer(table, modelFunc, inputs, batchSize);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void invalidBatchSizeTest() {
 
-        final Function<Object[], Object> func = args -> args;
+        final Input[] inputs = createInputs(args -> args);
         final int batchSize = 0;
 
-        Computer computer = new Computer(table, func, inputs, batchSize);
+        Function<Object[], Object> modelFunc = (params) ->
+        {
+            return 1;
+        };
+
+        Computer computer = new Computer(table, modelFunc, inputs, batchSize);
     }
 
     @Test
     public void computeGatherGetTest() {
 
-        final int batchSize = 7;
 
+        final Input[] inputs = createInputs(args -> args);
+
+        // initialize necessary reference objects and batchSize parameter
+        final int batchSize = 7;
         final IndexSet[] indexSetTarget = new IndexSet[1];
-        ColumnSource<?>[][] colSourceTarget = new ColumnSource[inputs.length][];
+        final ColumnSource<?>[][] colSourceTarget = new ColumnSource[inputs.length][];
+
+        // create columnSources based off of given Input and tables
         for (int i = 0 ; i < inputs.length ; i++) {
             colSourceTarget[i] = inputs[i].createColumnSource(table);
         }
 
-        final int[] counter = {0};
-
-        Function<Object[], Object> myGather = (params) ->
+        // define gather functions
+        Function<Object[], Object> myGather1 = (params) ->
         {
-            // first we test equality on IndexSet
+            Assert.assertEquals(2, params.length);
             Assert.assertEquals(indexSetTarget[0], params[0]);
-
-            // now we test equality on ColumnSources, which depends on which input object we are comparing
-            if (counter[0] == 0) {
-
-                Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[0]}[0], params[1]));
-                counter[0]++;
-
-            } else {
-                Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[1]}[0], params[1]));
-            }
+            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[0]}[0], params[1]));
 
             return 4;
         };
 
-        Function<Object[], Object> myModel = (thisInput) ->
+        Function<Object[], Object> myGather2 = (params) ->
         {
-            Assert.assertArrayEquals(new Object[]{4,4}, thisInput); // I have 2 Input objects in inputs, so gather gets called twice
+            Assert.assertEquals(2, params.length);
+            Assert.assertEquals(indexSetTarget[0], params[0]);
+            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[1]}[0], params[1]));
+
             return 5;
         };
 
-        Input[] thisInput = createInputs(myGather);
+        // define model function
+        Function<Object[], Object> myModel = (params) ->
+        {
+            Assert.assertArrayEquals(new Object[]{4,5}, params);
+            return 6;
+        };
+
+
+        Input[] thisInput = createInputs(myGather1, myGather2);
 
         Computer computer = new Computer(table, myModel, thisInput, batchSize);
 
@@ -118,9 +123,9 @@ public class ComputerTest {
         }
         for (int i = 0 ; i < 9 ; i++) {
             indexSetTarget[0] = computer.getFuture().getIndexSet();
-            Assert.assertEquals(5, computer.getFuture().get());
+            Assert.assertEquals(6, computer.getFuture().get()); // computer.getFuture.get() triggers assertions in gather functions
         }
         computer.clear();
-        Assert.assertEquals(null, computer.getFuture());
+        Assert.assertNull(computer.getFuture());
     }
 }
