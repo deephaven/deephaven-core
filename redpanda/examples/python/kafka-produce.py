@@ -48,7 +48,7 @@
 # > t = consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_json=[ ('Symbol', 'string'), ('Side', 'string'), ('Price', 'double'), ('Qty', 'int') ], table_type='append')
 #
 # Run this script on the host (not on a docker image) to produce one row:
-# $ python3 kafka-produce.py orders 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
+# $ python3 kafka-produce.py orders 0 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
 #
 # You should see one row of data as per above showing up in the UI.
 #
@@ -61,13 +61,15 @@ import struct
 
 data_arg_form = "type:value"
 
-if len(sys.argv) < 3 or len(sys.argv) > 4 or (len(sys.argv) == 2 and sys.argv[1] == '-h'):
-    print("Usage: " + sys.argv[0] + " topic-name " +
+if len(sys.argv) < 4 or len(sys.argv) > 5 or (len(sys.argv) == 2 and sys.argv[1] == '-h'):
+    print("Usage: " + sys.argv[0] + " topic-name partition " +
           data_arg_form + " [" + data_arg_form + "]", file=sys.stderr)
     sys.exit(1)
 
 c = 1
 topic_name = sys.argv[c]
+c += 1
+partition = int(sys.argv[c])
 c += 1
 
 def delivery_report(err, msg):
@@ -122,5 +124,5 @@ else:
     value = data_arg_to_data(sys.argv[c])
     c += 1
 
-producer.produce(topic=topic_name, key=key, value=value)
+producer.produce(topic=topic_name, partition=partition, key=key, value=value)
 producer.flush()
