@@ -23,7 +23,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
-* Types imported as dht
+* types imported as dht
 
 Additionally, the following methods have been imported into the main deephaven namespace:
 
@@ -91,7 +91,7 @@ from . import Calendars as cals, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers, \
-    Types as dht
+    types as dht
 
 from .Plot import figure_wrapper as figw
 
