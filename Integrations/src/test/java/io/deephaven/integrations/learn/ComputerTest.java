@@ -38,10 +38,7 @@ public class ComputerTest {
         final Input[] inputs = createInputs(args -> args);
         final int batchSize = 7;
 
-        Function<Object[], Object> modelFunc = (params) ->
-        {
-            return 1;
-        };
+        Function<Object[], Object> modelFunc = (params) -> 1;
 
         Computer computer = new Computer(null, modelFunc, inputs, batchSize);
     }
@@ -63,10 +60,7 @@ public class ComputerTest {
         final Input[] inputs = createInputs(args -> args);
         final int batchSize = 0;
 
-        Function<Object[], Object> modelFunc = (params) ->
-        {
-            return 1;
-        };
+        Function<Object[], Object> modelFunc = (params) -> 1;
 
         Computer computer = new Computer(table, modelFunc, inputs, batchSize);
     }
@@ -77,17 +71,14 @@ public class ComputerTest {
 
         final Input[] inputs = createInputs(args -> args);
 
-        // initialize necessary reference objects and batchSize parameter
         final int batchSize = 7;
         final IndexSet[] indexSetTarget = new IndexSet[1];
         final ColumnSource<?>[][] colSourceTarget = new ColumnSource[inputs.length][];
 
-        // create columnSources based off of given Input and tables
         for (int i = 0 ; i < inputs.length ; i++) {
             colSourceTarget[i] = inputs[i].createColumnSource(table);
         }
 
-        // define gather functions
         Function<Object[], Object> myGather1 = (params) ->
         {
             Assert.assertEquals(2, params.length);
@@ -97,8 +88,7 @@ public class ComputerTest {
             return 4;
         };
 
-        Function<Object[], Object> myGather2 = (params) ->
-        {
+        Function<Object[], Object> myGather2 = (params) -> {
             Assert.assertEquals(2, params.length);
             Assert.assertEquals(indexSetTarget[0], params[0]);
             Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[1]}[0], params[1]));
@@ -106,9 +96,7 @@ public class ComputerTest {
             return 5;
         };
 
-        // define model function
-        Function<Object[], Object> myModel = (params) ->
-        {
+        Function<Object[], Object> myModel = (params) -> {
             Assert.assertArrayEquals(new Object[]{4,5}, params);
             return 6;
         };
@@ -123,9 +111,19 @@ public class ComputerTest {
         }
         for (int i = 0 ; i < 9 ; i++) {
             indexSetTarget[0] = computer.getFuture().getIndexSet();
-            Assert.assertEquals(6, computer.getFuture().get()); // computer.getFuture.get() triggers assertions in gather functions
+            // computer.getFuture.get() triggers assertions in gather functions
+            Assert.assertEquals(6, computer.getFuture().get());
         }
         computer.clear();
         Assert.assertNull(computer.getFuture());
+
+        // running again to ensure that computer.clear() does what it is supposed to do
+        for (int i = 0 ; i < 9 ; i++) {
+            computer.compute(i);
+        }
+        for (int i = 0 ; i < 9 ; i++) {
+            indexSetTarget[0] = computer.getFuture().getIndexSet();
+            Assert.assertEquals(6, computer.getFuture().get());
+        }
     }
 }
