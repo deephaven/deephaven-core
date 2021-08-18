@@ -6,8 +6,6 @@ import org.jpy.PyObject;
 
 import io.deephaven.base.verify.Require;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -72,6 +70,10 @@ public class Output {
 
     @Override
     public String toString() {
-        return "Column: " + colName + "\nScatter Function: " + scatterFunc + "\nDatatype: " + type;
+        return "Output{" +
+                "colName='" + colName + '\'' +
+                ", scatterFunc=" + scatterFunc +
+                ", type='" + type + '\'' +
+                '}';
     }
 }

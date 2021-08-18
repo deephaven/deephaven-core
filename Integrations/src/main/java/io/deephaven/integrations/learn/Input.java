@@ -102,6 +102,9 @@ public class Input {
 
     @Override
     public String toString() {
-        return "Columns: " + Arrays.toString(colNames) + "\nGather Function: " + gatherFunc;
+        return "Input{" +
+                "colNames=" + Arrays.toString(colNames) +
+                ", gatherFunc=" + gatherFunc +
+                '}';
     }
 }

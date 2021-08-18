@@ -37,7 +37,7 @@ public class Scatterer {
     /**
      * Generates query strings to create a new column for each Output.
      *
-     * @param futureOffsetColName   name of the column that will result from using this query string.
+     * @param futureOffsetColName   name of the FutureOffset column to get results from
      *
      * @return list of query strings to be used in .update() call.
      */

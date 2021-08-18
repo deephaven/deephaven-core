@@ -26,10 +26,21 @@ public class ScattererTest {
         Function<Object[], Object> func = args -> args;
         String[] colNames = new String[]{"Column1","Column2"};
         future = new Future(func, new Input[]{new Input(colNames, func)},
-                new ColumnSource[][]{table.select(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)},
+                new ColumnSource[][]{table.view(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)},
                 7);
 
-        outputs = new Output[]{new Output("OutCol", func, "int")};
+        outputs = new Output[]{new Output("OutCol1", func, "int"),
+                               new Output("OutCol2", func, null)};
+    }
+
+    @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
+    public void nullOutputArrayTest() {
+        Scatterer scatterer = new Scatterer(null);
+    }
+
+    @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
+    public void nullOutputElementTest() {
+        Scatterer scatterer = new Scatterer(new Output[]{outputs[0], null});
     }
 
     @Test
@@ -46,8 +57,10 @@ public class ScattererTest {
 
         Scatterer scatterer = new Scatterer(outputs);
 
-        Assert.assertEquals("OutCol =  (__scatterer.scatter(0, __FutureOffset))",
-                scatterer.generateQueryStrings("__FutureOffset")[0]);
+        Assert.assertArrayEquals(
+                new String[]{"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
+                             "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
+                scatterer.generateQueryStrings("__FutureOffset"));
     }
 
 }

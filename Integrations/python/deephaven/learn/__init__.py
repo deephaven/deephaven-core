@@ -4,7 +4,7 @@
 
 """
 Deephaven's learn module provides utilities for efficient data transfer between Deephaven tables and Python objects,
-as well as a framework for using popular machine learning/deep learning libraries with Deephaven tables.
+as well as a framework for using popular machine-learning / deep-learning libraries with Deephaven tables.
 """
 
 import jpy
@@ -133,6 +133,8 @@ def _validate(inputs, outputs, table):
             outputColumns = [output.output.getColName() for output in outputs]
 
             if len(outputColumns) != len(set(outputColumns)):
+                repeats = set(outputColumns).difference(outputColummns)
+                print(repeats)
                 raise ValueError("Cannot have multiple Output columns of the same name.")
 
             elif table.hasColumns(outputColumns):

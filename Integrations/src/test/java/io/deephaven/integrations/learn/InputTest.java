@@ -44,7 +44,7 @@ public class InputTest {
 
         Input input = new Input(colNames, func);
 
-        Assert.assertArrayEquals(table.select(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY), input.createColumnSource(table));
+        Assert.assertArrayEquals(table.view(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY), input.createColumnSource(table));
     }
 
     @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
@@ -104,6 +104,4 @@ public class InputTest {
 
         Assert.assertEquals("Columns: " + Arrays.toString(colNames) + "\nGather Function: " + func, input.toString());
     }
-
-
 }

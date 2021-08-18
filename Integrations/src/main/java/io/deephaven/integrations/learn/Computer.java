@@ -19,7 +19,7 @@ public class Computer {
     private final int batchSize;
     private final Input[] inputs;
     private Future current;
-    private final ArrayList<FutureOffset> foSet;
+    private final ArrayList<FutureOffset> futureOffsets;
     private int offset;
 
     /**
@@ -59,7 +59,7 @@ public class Computer {
         }
 
         this.current = null;
-        this.foSet = new ArrayList<>();
+        this.futureOffsets = new ArrayList<>(batchSize);
         this.offset = -1;
     }
 
@@ -70,10 +70,11 @@ public class Computer {
      */
     public boolean clear() {
 
-        for (FutureOffset futureOffset : foSet) {
+        for (FutureOffset futureOffset : futureOffsets) {
             futureOffset.clear();
         }
-        foSet.clear();
+
+        futureOffsets.clear();
         current = null;
         return false;
     }
@@ -94,9 +95,10 @@ public class Computer {
         current.getIndexSet().add(k);
         offset += 1;
 
-        foSet.add(new FutureOffset(current, offset));
+        final FutureOffset fo = new FutureOffset(current, offset);
+        futureOffsets.add(fo);
 
-        return foSet.get(offset);
+        return fo;
     }
 
     /**

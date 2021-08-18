@@ -67,21 +67,34 @@ public class ComputerTest {
         Computer computer = new Computer(table, func, inputs, batchSize);
     }
 
+    Object gather(int index) {
+        System.out.println(table.getColumnSource("Column1").get(index));
+        return 0;
+    }
+
     @Test
     public void futureOffsetMethodsFromComputerTest() {
 
-        final Function<Object[], Object> func = args -> args;
+        //final Function<Object[], Object> func = args -> args;
+
+        Function<Object[], Object> myGather = (index) ->
+        {
+            return index;
+        };
+
         final int batchSize = 7;
 
-        Computer computer = new Computer(table, func, inputs, batchSize);
-
-        FutureOffset fo = null;
+        Computer computer = new Computer(table, myGather, inputs, batchSize);
 
         for (int i = 0 ; i < 9 ; i++) {
-            fo = computer.compute(i);
-            Assert.assertEquals(i % batchSize, fo.getOffset());
-            Assert.assertEquals(computer.getFuture(), fo.getFuture());
-            Assert.assertEquals((i % batchSize)+1, fo.getFuture().getIndexSet().getSize());
+            System.out.println("i: " + i);
+            System.out.println(computer.compute(i));
+            System.out.println(computer.getFuture());
+            System.out.println("index set size: " + computer.getFuture().getIndexSet().getSize());
+            System.out.println(computer);
+        }
+        for (int i = 0 ; i < 9 ; i++) {
+            System.out.println(computer.getFuture().get());
         }
     }
 }

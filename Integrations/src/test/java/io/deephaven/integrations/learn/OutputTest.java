@@ -20,6 +20,19 @@ public class OutputTest {
         Assert.assertEquals(type, output.getType());
     }
 
+    @Test
+    public void verifyCorrectFieldsNullTypeTest() {
+        final String colName = "Outcol";
+        final Function<Object[], Object> func = args -> args;
+        final String type = null;
+
+        Output output = new Output(colName, func, type);
+
+        Assert.assertEquals(colName, output.getColName());
+        Assert.assertEquals(func, output.getScatterFunc());
+        Assert.assertEquals(type, output.getType());
+    }
+
     @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
     public void invalidColumnNameTest() {
         final String colName = " Outcol";
@@ -43,15 +56,6 @@ public class OutputTest {
         final String colName = "Outcol";
         final Function<Object[], Object> func = null;
         final String type = "int";
-
-        Output output = new Output(colName, func, type);
-    }
-
-    @Test(expected = java.lang.IllegalArgumentException.class)
-    public void invalidDataTypeTest() {
-        final String colName = "Outcol";
-        final Function<Object[], Object> func = args -> args;
-        final String type = "hello";
 
         Output output = new Output(colName, func, type);
     }
