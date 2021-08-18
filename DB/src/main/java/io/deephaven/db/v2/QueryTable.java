@@ -328,6 +328,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public LocalTableMap byExternal(final boolean dropKeys, final String... keyColumnNames) {
+        if (isStream()) {
+            throw streamUnsupported("byExternal");
+        }
         final SelectColumn[] groupByColumns = Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
 
         return memoizeResult(MemoizedOperationKey.byExternal(dropKeys, groupByColumns),
@@ -341,7 +344,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
         if (isStream() && includeConstituents) {
-            throw new UnsupportedOperationException("Stream tables do not support rollup with included constituents");
+            throw streamUnsupported("rollup with included constituents");
         }
         return memoizeResult(MemoizedOperationKey.rollup(comboAggregateFactory, columns, includeConstituents), () -> {
             final ComboAggregateFactory withRollup = comboAggregateFactory.forRollup(includeConstituents);
@@ -386,7 +389,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
         if (isStream()) {
-            throw new UnsupportedOperationException("Stream tables do not support treeTable");
+            throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
             final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false, (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal), Collections.singletonList(null), parentColumn);
@@ -552,7 +555,7 @@ public class QueryTable extends BaseTable {
 
             if (isBy) {
                 if (isStream()) {
-                    throw new UnsupportedOperationException("Stream tables do not support by");
+                    throw streamUnsupported("by");
                 }
                 if (USE_OLDER_CHUNKED_BY) {
                     return AggregationHelper.by(this, groupByColumns);
@@ -561,7 +564,7 @@ public class QueryTable extends BaseTable {
             }
             else if (isApplyToAllBy) {
                 if (isStream()) {
-                    throw new UnsupportedOperationException("Stream tables do not support applyToAllBy");
+                    throw streamUnsupported("applyToAllBy");
                 }
                 final String formula = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getFormula();
                 final String columnParamName = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
@@ -612,6 +615,11 @@ public class QueryTable extends BaseTable {
 
             throw new RuntimeException("Unknown aggregation factory: " + inputAggregationStateFactory);
         });
+    }
+
+    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Stream tables do not support " + operationName
+                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
     }
 
     @Override

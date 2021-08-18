@@ -91,7 +91,7 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public final void ensureCapacity(long capacity) {
+    public final void ensureCapacity(long capacity, boolean nullFilled) {
         // Do nothing
     }
 

@@ -203,8 +203,9 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
             DateTimeArraySource.super.set(destKey, sourceColumn.getLong(sourceKey));
         }
 
-        public void ensureCapacity(long capacity) {
-            DateTimeArraySource.this.ensureCapacity(capacity);
+        @Override
+        public void ensureCapacity(long capacity, boolean nullFill) {
+            DateTimeArraySource.this.ensureCapacity(capacity, nullFill);
         }
 
         @Override

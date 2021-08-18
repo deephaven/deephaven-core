@@ -116,8 +116,8 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        // Nothing to do here.
+    public void ensureCapacity(long capacity, boolean nullFill) {
+        // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
     }
 
     @Override

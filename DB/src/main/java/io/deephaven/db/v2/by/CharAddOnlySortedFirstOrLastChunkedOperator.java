@@ -34,7 +34,7 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
     @Override
     public void ensureCapacity(final long tableSize) {
         super.ensureCapacity(tableSize);
-        sortColumnValues.ensureCapacity(tableSize);
+        sortColumnValues.ensureCapacity(tableSize, false);
     }
 
     @Override

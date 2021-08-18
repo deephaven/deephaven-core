@@ -7,6 +7,7 @@ package io.deephaven.db.v2.sources;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
  public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<Attributes.Values> {
@@ -28,7 +29,22 @@ import org.jetbrains.annotations.NotNull;
 
     void copy(ColumnSource<T> sourceColumn, long sourceKey, long destKey);
 
-    void ensureCapacity(long capacity);
+     /**
+      * Equivalent to {@code ensureCapacity(capacity, true)}.
+      */
+     @FinalDefault
+    default void ensureCapacity(long capacity) {
+        ensureCapacity(capacity, true);
+    }
+
+     /**
+      * Ensure that this WritableSource can accept index keys in range {@code [0, capacity)}.
+      *
+      * @param capacity   The new minimum capacity
+      * @param nullFilled Whether data should be "null-filled". If true, get operations at index keys that have not been
+      *                   set will return the appropriate null value; otherwise such gets produce undefined results.
+      */
+    void ensureCapacity(long capacity, boolean nullFilled);
 
     // WritableSource provides a slow, default implementation of fillFromChunk. Inheritors who care should provide
     // something more efficient.
