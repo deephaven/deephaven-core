@@ -5,6 +5,8 @@ import org.apache.avro.Schema;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
@@ -29,12 +31,13 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSchemaWithNulls() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
-        final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema);
-        assertEquals(2, colDefs.length);
-        assertEquals("Symbol", colDefs[0].getName());
-        assertEquals(String.class, colDefs[0].getDataType());
-        assertEquals("Price", colDefs[1].getName());
-        assertEquals(double.class, colDefs[1].getDataType());
+        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
+        assertEquals(2, colDefs.size());
+        assertEquals("Symbol", colDefs.get(0).getName());
+        assertEquals(String.class, colDefs.get(0).getDataType());
+        assertEquals("Price", colDefs.get(1).getName());
+        assertEquals(double.class, colDefs.get(1).getDataType());
     }
 
     private static final String schemaWithNesting =
@@ -61,12 +64,13 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSchemaWithNesting() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNesting);
-        final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema);
-        assertEquals(2, colDefs.length);
-        assertEquals("NestedField.Symbol", colDefs[0].getName());
-        assertEquals(String.class, colDefs[0].getDataType());
-        assertEquals("NestedField.Price", colDefs[1].getName());
-        assertEquals(double.class, colDefs[1].getDataType());
+        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
+        assertEquals(2, colDefs.size());
+        assertEquals("NestedField.Symbol", colDefs.get(0).getName());
+        assertEquals(String.class, colDefs.get(0).getDataType());
+        assertEquals("NestedField.Price", colDefs.get(1).getName());
+        assertEquals(double.class, colDefs.get(1).getDataType());
     }
 
     private static final String schemaWithBasicTypes =
@@ -88,22 +92,23 @@ public class KafkaToolsTest {
     @Test
     public void testAvroSChemaWithBasicTypesCoverage() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithBasicTypes);
-        final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema);
+        final List<ColumnDefinition> colDefs = new ArrayList<>();
+        KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         final int nCols = 6;
-        assertEquals(nCols, colDefs.length);
+        assertEquals(nCols, colDefs.size());
         int c = 0;
-        assertEquals("BooleanField", colDefs[c].getName());
-        assertEquals(Boolean.class, colDefs[c++].getDataType());
-        assertEquals("IntField", colDefs[c].getName());
-        assertEquals(int.class, colDefs[c++].getDataType());
-        assertEquals("LongField", colDefs[c].getName());
-        assertEquals(long.class, colDefs[c++].getDataType());
-        assertEquals("FloatField", colDefs[c].getName());
-        assertEquals(float.class, colDefs[c++].getDataType());
-        assertEquals("DoubleField", colDefs[c].getName());
-        assertEquals(double.class, colDefs[c++].getDataType());
-        assertEquals("StringField", colDefs[c].getName());
-        assertEquals(String.class, colDefs[c++].getDataType());
+        assertEquals("BooleanField", colDefs.get(c).getName());
+        assertEquals(Boolean.class, colDefs.get(c++).getDataType());
+        assertEquals("IntField", colDefs.get(c).getName());
+        assertEquals(int.class, colDefs.get(c++).getDataType());
+        assertEquals("LongField", colDefs.get(c).getName());
+        assertEquals(long.class, colDefs.get(c++).getDataType());
+        assertEquals("FloatField", colDefs.get(c).getName());
+        assertEquals(float.class, colDefs.get(c++).getDataType());
+        assertEquals("DoubleField", colDefs.get(c).getName());
+        assertEquals(double.class, colDefs.get(c++).getDataType());
+        assertEquals("StringField", colDefs.get(c).getName());
+        assertEquals(String.class, colDefs.get(c++).getDataType());
         assertEquals(nCols, c);
     }
 
@@ -157,18 +162,19 @@ public class KafkaToolsTest {
             }
             return fieldName;
         };
-        final ColumnDefinition<?>[] colDefs = KafkaTools.avroSchemaToColumnDefinitions(avroSchema, mapping);
+        final List<ColumnDefinition> colDefs = new ArrayList();
+        KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema, mapping);
         final int nCols = 4;
-        assertEquals(nCols, colDefs.length);
+        assertEquals(nCols, colDefs.size());
         int c = 0;
-        assertEquals("NestedFields1.field1", colDefs[c].getName());
-        assertEquals(int.class, colDefs[c++].getDataType());
-        assertEquals("NestedFields1.field2", colDefs[c].getName());
-        assertEquals(float.class, colDefs[c++].getDataType());
-        assertEquals("NestedFields2.NestedFields3.field3", colDefs[c].getName());
-        assertEquals(long.class, colDefs[c++].getDataType());
-        assertEquals("field4", colDefs[c].getName());
-        assertEquals(double.class, colDefs[c++].getDataType());
+        assertEquals("NestedFields1.field1", colDefs.get(c).getName());
+        assertEquals(int.class, colDefs.get(c++).getDataType());
+        assertEquals("NestedFields1.field2", colDefs.get(c).getName());
+        assertEquals(float.class, colDefs.get(c++).getDataType());
+        assertEquals("NestedFields2.NestedFields3.field3", colDefs.get(c).getName());
+        assertEquals(long.class, colDefs.get(c++).getDataType());
+        assertEquals("field4", colDefs.get(c).getName());
+        assertEquals(double.class, colDefs.get(c++).getDataType());
         assertEquals(nCols, c);
     }
 }

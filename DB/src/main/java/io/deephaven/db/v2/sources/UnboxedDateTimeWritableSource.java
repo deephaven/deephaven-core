@@ -17,8 +17,8 @@ public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource i
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        alternateWritableSource.ensureCapacity(capacity);
+    public void ensureCapacity(long capacity, boolean nullFill) {
+        alternateWritableSource.ensureCapacity(capacity, nullFill);
     }
 
     @Override

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.grpc_api.arrow.ArrowFlightUtil$DoExchangeMarshaller",
+ "methods": {
+  "onError": ":param t: java.lang.Throwable",
+  "onMessageReceived": ":param message: io.deephaven.grpc_api.arrow.ArrowFlightUtil.MessageInfo",
+  "onNext": ":param request: java.io.InputStream"
+ },
+ "path": "io.deephaven.grpc_api.arrow.ArrowFlightUtil.DoExchangeMarshaller",
+ "text": "Helper class that maintains a subscription whether it was created by a bi-directional stream request or the\n no-client-streaming request. If the SubscriptionRequest sets the sequence, then it treats sequence as a watermark\n and will not send out-of-order requests (due to out-of-band requests). The client should already anticipate\n subscription changes may be coalesced by the BarrageMessageProducer.",
+ "typeName": "class"
+}

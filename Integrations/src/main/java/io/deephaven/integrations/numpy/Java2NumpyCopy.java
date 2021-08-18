@@ -230,23 +230,23 @@ public class Java2NumpyCopy {
         copySlice(t, rowStart, nRow, nCol, long.class, "(long)", (cs, k, idx) -> data[idx] = cs.getLong(k));
     }
 
-    //this is commented out so the byte[] method will be called. Both are 8 bit data structures, the boolean cast will
-    //throw an error
-//    /**
-//     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
-//     * This is useful for copying table data directly into numpy arrays.
-//     *
-//     * @param t        table to copy data from
-//     * @param rowStart first row of data to copy
-//     * @param data     array to copy data into
-//     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
-//     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
-//     */
-//    public static void copySlice(final Table t, final long rowStart, final boolean[] data, final int nRow, final int nCol) {
-//        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
-//        assert data != null;
-//        copySlice(t, rowStart, nRow, nCol, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
-//    }
+    /**
+     * Casts data to the desired type and copies a slice of rows into a flattened 2D array.
+     * This is useful for copying table data directly into numpy arrays.
+     *
+     * @param t        table to copy data from
+     * @param rowStart first row of data to copy
+     * @param data     array to copy data into
+     * @param nRow     number of rows to copy; also the number of rows in <code>data</code>.
+     * @param nCol     number of table columns; also the number of columns in <code>data</code>.
+     */
+    public static void copySlice(final Table t, final long rowStart, final boolean[] data, final int nRow, final int nCol) {
+        assertCopySliceArgs(t, rowStart, data == null ? -1 : data.length, nRow, nCol);
+        assert data != null;
+        copySlice(t, rowStart, nRow, nCol, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
+    }
+    
+    
 
     private static class Slice {
         final long[] data;
@@ -497,23 +497,21 @@ public class Java2NumpyCopy {
         copyRand(t, nRow, nCol, rows, long.class, "(long)", (cs, k, idx) -> data[idx] = cs.getLong(k));
     }
 
-    //this is commented out so the byte[] method will be called. Both are 8 bit data structures the boolean cast will
-    //throw an error
-//    /**
-//     * Casts data to the desired type and copies a random selection of rows into a flattened 2D array.
-//     * This is useful for copying table data directly into numpy arrays.
-//     *
-//     * @param t    table to copy data from
-//     * @param data array to copy data into
-//     * @param nRow number of rows to copy; also the number of rows in <code>data</code>.
-//     * @param nCol number of table columns; also the number of columns in <code>data</code>.
-//     * @param rows indices of rows to copy.  Null causes rows to be randomly generated.
-//     */
-//    public static void copyRand(final Table t, final boolean[] data, final int nRow, final int nCol, final long[] rows) {
-//        assertCopyRandArgs(t, data == null ? -1 : data.length, nRow, nCol, rows);
-//        assert data != null;
-//        copyRand(t, nRow, nCol, rows, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
-//    }
+    /**
+     * Casts data to the desired type and copies a random selection of rows into a flattened 2D array.
+     * This is useful for copying table data directly into numpy arrays.
+     *
+     * @param t    table to copy data from
+     * @param data array to copy data into
+     * @param nRow number of rows to copy; also the number of rows in <code>data</code>.
+     * @param nCol number of table columns; also the number of columns in <code>data</code>.
+     * @param rows indices of rows to copy.  Null causes rows to be randomly generated.
+     */
+    public static void copyRand(final Table t, final boolean[] data, final int nRow, final int nCol, final long[] rows) {
+        assertCopyRandArgs(t, data == null ? -1 : data.length, nRow, nCol, rows);
+        assert data != null;
+        copyRand(t, nRow, nCol, rows, boolean.class, "(boolean)", (cs, k, idx) -> data[idx] = cs.getBoolean(k));
+    }
 
     private static void assertCopyImageSliceArgs(final Table t, final long rowStart, final int dataLength, final int nRow, final int width, final int height, final boolean color) {
         if (t == null) {

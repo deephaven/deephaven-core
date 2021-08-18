@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.kafka.KafkaTools$KeyOrValueSpec$Ignore",
+ "methods": {
+  "dataFormat": ":return: io.deephaven.kafka.KafkaTools.DataFormat"
+ },
+ "path": "io.deephaven.kafka.KafkaTools.KeyOrValueSpec.Ignore",
+ "typeName": "class"
+}
