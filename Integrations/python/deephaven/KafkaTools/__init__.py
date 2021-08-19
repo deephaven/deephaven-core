@@ -97,7 +97,7 @@ def consumeToTable(
         offsets = None,
         key = None,
         value = None,
-        table_type = 'streaming'
+        table_type = 'stream'
 ):
     if not isinstance(kafka_config, dict):
         raise Exception("argument 'kafka_config' has to be of type dict, instead got " + str(kafka_config))
@@ -150,16 +150,12 @@ def consumeToTable(
     if not _isStr(table_type):
         raise Exception("argument 'table_type' expected to be of type str, instead got " +
                         str(table_type) + " of type " + type(table_type).__name__)
-    if table_type != 'append' and table_type != 'streaming':
+    table_type_enum = _java_type_.friendlyNameToTableType(table_type)
+    if table_type_enum is None:
         raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
 
-
     kafka_config = _dictToProperties(kafka_config)
-    streaming_table = _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value)
-    if table_type == 'append':
-        return _stream_table_tools_.streamToAppendOnlyTable(streaming_table)
-    # table_type == 'streaming'
-    return streaming_table
+    return _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value, table_type_enum)
 
 
 @_passThrough
@@ -271,6 +267,18 @@ def avroSchemaToColumnDefinitions(*args):
     """
     
     return _java_type_.avroSchemaToColumnDefinitions(*args)
+
+
+@_passThrough
+def friendlyNameToTableType(typeName):
+    """
+    Map "Python-friendly" table type name to a KafkaTools.TableType.
+    
+    :param typeName: (java.lang.String) - The friendly name
+    :return: (io.deephaven.kafka.KafkaTools.TableType) The mapped KafkaTools.TableType
+    """
+    
+    return _java_type_.friendlyNameToTableType(typeName)
 
 
 @_passThrough

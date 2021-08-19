@@ -368,10 +368,10 @@ public class KafkaTools {
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         // @formatter:off
         switch (typeName) {
-            case "streaming"    : return TableType.Stream;
-            case    "append"    : return TableType.Append;
-            case "streaming-map": return TableType.StreamMap;
-            case    "append-map": return TableType.AppendMap;
+            case "stream"    : return TableType.Stream;
+            case "append"    : return TableType.Append;
+            case "stream_map": return TableType.StreamMap;
+            case "append_map": return TableType.AppendMap;
             default             : return null;
         }
         // @formatter:on
