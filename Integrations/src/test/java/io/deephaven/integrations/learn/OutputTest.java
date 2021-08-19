@@ -59,4 +59,20 @@ public class OutputTest {
 
         Output output = new Output(colName, func, type);
     }
+
+    @Test
+    public void toStringTest() {
+
+        final String colName = "Outcol";
+        final Function<Object[], Object> func = args -> args;
+        final String type = "int";
+
+        Output output = new Output(colName, func, type);
+
+        Assert.assertEquals("Output{" +
+                "colName='" + colName + '\'' +
+                ", scatterFunc=" + func +
+                ", type='" + type + '\'' +
+                '}', output.toString());
+    }
 }

@@ -71,7 +71,8 @@ class IndexSet implements Iterable<Long> {
         };
     }
 
-    /** Gets the number of elements in the index set.
+    /**
+     * Gets the number of elements in the index set.
      *
      * @return number of elements in the index set.
      */

@@ -59,7 +59,7 @@ class PythonUtilities {
             return pyObject;
         } else {
             throw new IllegalArgumentException("The Python object specified should either be callable, or a " +
-                    "class instance with an apply method");
+                    "class instance with a \"" + pyAttribute + "\" method");
         }
     }
 }

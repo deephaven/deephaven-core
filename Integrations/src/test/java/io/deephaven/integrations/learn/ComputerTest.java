@@ -109,11 +109,13 @@ public class ComputerTest {
         for (int i = 0 ; i < 9 ; i++) {
             computer.compute(i);
         }
+
         for (int i = 0 ; i < 9 ; i++) {
             indexSetTarget[0] = computer.getFuture().getIndexSet();
             // computer.getFuture.get() triggers assertions in gather functions
             Assert.assertEquals(6, computer.getFuture().get());
         }
+
         computer.clear();
         Assert.assertNull(computer.getFuture());
 
@@ -121,6 +123,7 @@ public class ComputerTest {
         for (int i = 0 ; i < 9 ; i++) {
             computer.compute(i);
         }
+
         for (int i = 0 ; i < 9 ; i++) {
             indexSetTarget[0] = computer.getFuture().getIndexSet();
             Assert.assertEquals(6, computer.getFuture().get());
