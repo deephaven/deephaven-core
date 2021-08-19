@@ -152,7 +152,7 @@ def consumeToTable(
                         str(table_type) + " of type " + type(table_type).__name__)
     table_type_enum = _java_type_.friendlyNameToTableType(table_type)
     if table_type_enum is None:
-        raise Exception("unknown value " + table_type + " for keyword argument 'table_type'")
+        raise Exception("unknown value " + table_type + " for argument 'table_type'")
 
     kafka_config = _dictToProperties(kafka_config)
     return _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value, table_type_enum)
