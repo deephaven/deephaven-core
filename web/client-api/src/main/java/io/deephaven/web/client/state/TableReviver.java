@@ -5,7 +5,6 @@ import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -138,7 +137,7 @@ public class TableReviver implements HasTableBinding {
             }
         });
         stream.onEnd(status -> {
-            if (status.getCode() != Code.OK) {
+            if (status.isOk()) {
                 for (ClientTableState failed : all.values()) {
                     failed.forActiveLifecycles(t -> t.die(status.getDetails()));
                 }

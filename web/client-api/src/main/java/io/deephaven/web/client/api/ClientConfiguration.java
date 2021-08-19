@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 
 /**
  * A place to assemble various "services" we want to make
@@ -18,7 +19,17 @@ public class ClientConfiguration {
     public ClientConfiguration() {
     }
 
-    public Uint8Array newTicket() {
+    public Ticket newTicket() {
+        Ticket ticket = new Ticket();
+        ticket.setTicket(newTicketRaw());
+        return ticket;
+    }
+
+    public int newTicketInt() {
+        return next++;
+    }
+
+    public Uint8Array newTicketRaw() {
         if (next == Integer.MAX_VALUE) {
             throw new IllegalStateException("Ran out of tickets!");
         }

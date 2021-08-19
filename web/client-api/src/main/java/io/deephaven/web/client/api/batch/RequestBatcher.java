@@ -1,11 +1,9 @@
 package io.deephaven.web.client.api.batch;
 
 import elemental2.dom.CustomEventInit;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -292,7 +290,7 @@ public class RequestBatcher {
 
             batchStream.onEnd(status -> {
                 // request is complete
-                if (status.getCode() == Code.OK) {
+                if (status.isOk()) {
                     resolve.onInvoke((Void) null);
                 } else {
                     failed(reject, status.getDetails());

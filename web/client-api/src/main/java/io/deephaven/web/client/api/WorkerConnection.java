@@ -1,8 +1,6 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsSet;
-import elemental2.core.JsWeakMap;
-import elemental2.core.Uint8Array;
+import elemental2.core.*;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
@@ -12,7 +10,6 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_gen
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.*;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.PutResult;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
@@ -25,8 +22,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Fe
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
@@ -34,6 +29,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
@@ -142,7 +138,7 @@ public class WorkerConnection {
     private final Set<ClientTableState> flushable = new HashSet<>();
     private final JsSet<JsConsumer<LogItem>> logCallbacks = new JsSet<>();
 
-    private final Map<ClientTableState, ResponseStreamWrapper<FlightData>> subscriptionStreams = new HashMap<>();
+    private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
     private Map<TableMapHandle, TableMap> tableMaps = new HashMap<>();
@@ -291,7 +287,7 @@ public class WorkerConnection {
 
     public void checkStatus(ResponseStreamWrapper.Status status) {
         //TODO provide simpler hooks to retry auth, restart the stream
-        if (status.getCode() == Code.OK) {
+        if (status.isOk()) {
             // success, ignore
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once?
@@ -734,16 +730,27 @@ public class WorkerConnection {
             Uint8Array schemaMessagePayload = createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
             schemaMessage.setDataHeader(schemaMessagePayload);
 
-            Uint8Array rpcTicket = config.newTicket();
+            Uint8Array rpcTicket = config.newTicketRaw();
             schemaMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 0, false));
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
             // table's creation, which can race this
-            ResponseStreamWrapper<PutResult> doPutResponseStream = ResponseStreamWrapper.of(browserFlightServiceClient.openDoPut(schemaMessage, metadata()));
+            BiDiStream<FlightData, FlightData> stream = BiDiStream.of(
+                    headers -> flightServiceClient.doPut(headers),
+                    (firstPayload, headers) -> browserFlightServiceClient.openDoPut(firstPayload, headers),
+                    (nextPayload, headers) -> browserFlightServiceClient.nextDoPut(nextPayload, headers),
+                    this::metadata,
+                    () -> {
+                        Uint8Array t = config.newTicketRaw();
+                        return new DataView(t.buffer, 1).getInt32(0);
+                    },
+                    true
+            );
+            stream.send(schemaMessage);
 
-            doPutResponseStream.onEnd(status -> {
-                if (status.getCode() == Code.OK) {
+            stream.onEnd(status -> {
+                if (status.isOk()) {
                     ExportedTableCreationResponse syntheticResponse = new ExportedTableCreationResponse();
                     Uint8Array schemaPlusHeader = new Uint8Array(schemaMessagePayload.length + 8);
                     schemaPlusHeader.set(schemaMessagePayload, 8);
@@ -803,12 +810,8 @@ public class WorkerConnection {
             bodyMessage.setDataHeader(createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0));
             bodyMessage.setDataBody(padAndConcat(buffers, length));
 
-            browserFlightServiceClient.nextDoPut(bodyMessage, metadata(), (fail, success) -> {
-                // handle conn failure, and listen to doPutResponseStream for actual success
-                if (fail != null) {
-                    c.apply(fail, null);
-                }
-            });
+            stream.send(bodyMessage);
+            stream.end();
         }, "creating new table").then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
@@ -888,7 +891,7 @@ public class WorkerConnection {
     }
 
     private TableTicket newHandle() {
-        return new TableTicket(config.newTicket());
+        return new TableTicket(config.newTicketRaw());
     }
 
     public RequestBatcher getBatcher(JsTable table) {
@@ -1022,8 +1025,9 @@ public class WorkerConnection {
                     if (state.isSubscribed()) {
                         state.setSubscribed(false);
                         if (state.getHandle().isConnected()) {
-                            ResponseStreamWrapper<FlightData> stream = subscriptionStreams.remove(state);
+                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
                             if (stream != null) {
+                                stream.end();
                                 stream.cancel();
                             }
                         }
@@ -1069,15 +1073,23 @@ public class WorkerConnection {
                 BarrageSubscriptionRequest.addTicket(subscriptionReq, tableTicketOffset);
                 subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
-                Uint8Array rpcTicket = config.newTicket();
-
                 FlightData request = new FlightData();
                 //TODO make sure we can set true on halfClose before commit
-                request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest, rpcTicket, 0, false));
+                request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest, new Uint8Array(0), 0, false));
 
-//                new BidirectionStreamEmul(flightServiceClient::openDoExchange, flightServiceClient::nextDoExchange, subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest, reqOffset);
+                BiDiStream<FlightData, FlightData> stream = BiDiStream.of(
+                        headers -> flightServiceClient.doExchange(headers),
+                        (firstPayload, headers) -> browserFlightServiceClient.openDoExchange(firstPayload, headers),
+                        (nextPayload, headers) -> browserFlightServiceClient.nextDoExchange(nextPayload, headers),
+                        this::metadata,
+                        () -> {
+                            Uint8Array t = config.newTicketRaw();
+                            return new DataView(t.buffer, 1).getInt32(0);
+                        },
+                        true
+                );
 
-                ResponseStreamWrapper<FlightData> stream = ResponseStreamWrapper.of(browserFlightServiceClient.openDoExchange(request, metadata));
+                stream.send(request);
                 stream.onData(new JsConsumer<FlightData>() {
                     @Override
                     public void apply(FlightData data) {
@@ -1122,14 +1134,12 @@ public class WorkerConnection {
                     }
                 });
                 stream.onStatus(err -> {
-                    if (err.getCode() != Code.OK) {
-                        //TODO propagate this to tables that just lost connection?
-                        //     attempt retry, unless auth related?
-                    }
+                    checkStatus(err);
                 });
-                ResponseStreamWrapper<FlightData> oldStream = subscriptionStreams.put(state, stream);
+                BiDiStream<FlightData, FlightData> oldStream = subscriptionStreams.put(state, stream);
                 if (oldStream != null) {
                     // cancel any old stream, we presently expect a fresh instance
+                    oldStream.end();
                     oldStream.cancel();
                 }
             }
