@@ -1,7 +1,6 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.qst.column.Column;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.Type;
 import org.immutables.value.Value.Immutable;
