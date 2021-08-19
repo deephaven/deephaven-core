@@ -9,7 +9,7 @@ services:
       - ./docker/core/data:/data
       - api-cache:/cache
     environment:
-      - IO_DEEPHAVEN_CONSOLE_TYPE=python
+      - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=python
 
   web:
     image: ghcr.io/deephaven/web:${VERSION:-latest}
