@@ -8,6 +8,7 @@ import io.deephaven.util.auth.AuthContext;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -138,6 +139,7 @@ public class SessionService {
      * @return the session attached to this gRPC request
      * @throws StatusRuntimeException if thread is not attached to a session or if the session is expired/closed
      */
+    @NotNull
     public SessionState getCurrentSession() {
         final SessionState session = getOptionalSession();
         if (session == null) {

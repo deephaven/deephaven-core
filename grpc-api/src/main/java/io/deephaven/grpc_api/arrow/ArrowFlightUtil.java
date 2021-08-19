@@ -32,7 +32,7 @@ import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.BrowserStream;
+import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
@@ -73,7 +73,7 @@ public class ArrowFlightUtil {
 
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
-    public static final class MessageInfo extends BrowserStream.MessageBase {
+    public static final class MessageInfo {
         /** outer-most Arrow Flight Message that indicates the msg type (i.e. schema, record batch, etc) */
         Message header = null;
         /** the embedded flatbuffer metadata indicating information about this batch */
@@ -106,8 +106,8 @@ public class ArrowFlightUtil {
                     if (mi.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC) {
                         log.error().append("received invalid magic").endl();
                         mi.app_metadata = null;
-                    } else {
-                        mi.setSequenceInfo(mi.app_metadata.sequence(), mi.app_metadata.halfCloseAfterMessage());
+//                    } else {
+//                        mi.setSequenceInfo(mi.app_metadata.sequence(), mi.app_metadata.halfCloseAfterMessage());
                     }
                     break;
                 case FLIGHT_DESCRIPTOR_TAG:
@@ -518,7 +518,7 @@ public class ArrowFlightUtil {
 
         @Override
         public void onCompleted() {
-            log.error().append(myPrefix).append("client stream closed subscription").endl();
+            log.debug().append(myPrefix).append("client stream closed subscription").endl();
             tryClose();
         }
 

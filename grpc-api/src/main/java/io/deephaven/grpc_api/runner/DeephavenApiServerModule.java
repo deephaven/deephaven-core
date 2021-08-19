@@ -7,6 +7,7 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;
+import io.deephaven.grpc_api.browserstreaming.BrowserStreamModule;
 import io.deephaven.grpc_api.console.ConsoleModule;
 import io.deephaven.grpc_api.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.grpc_api.console.python.PythonConsoleSessionModule;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
         AuthContextModule.class,
         LogModule.class,
         SessionModule.class,
+        BrowserStreamModule.class,
         TableModule.class,
         ConsoleModule.class,
         GroovyConsoleSessionModule.class,

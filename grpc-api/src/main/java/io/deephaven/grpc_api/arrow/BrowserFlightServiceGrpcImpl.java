@@ -3,11 +3,12 @@ package io.deephaven.grpc_api.arrow;
 import com.google.rpc.Code;
 import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
+import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
+import io.deephaven.grpc_api.browserstreaming.StreamData;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.BrowserStream;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -17,7 +18,6 @@ import org.apache.arrow.flight.impl.Flight;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import static io.deephaven.grpc_api.arrow.ArrowFlightUtil.parseProtoMessage;
@@ -71,24 +71,22 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
 
     private <T> void internalOnOpen(final InputStream request, final StreamObserver<T> responseObserver,
                                     final Function<SessionState, BrowserStream<ArrowFlightUtil.MessageInfo>> browserStreamSupplier) {
+        StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
             final ArrowFlightUtil.MessageInfo mi = parseProtoMessage(request);
-            if (mi.app_metadata == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "app_metadata not provided or was not a BarrageMessageWrapper");
-            }
 
-            final ByteBuffer ticketBuffer = mi.app_metadata.rpcTicketAsByteBuffer();
-            if (ticketBuffer == null && !mi.app_metadata.halfCloseAfterMessage()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no rpc_ticket provided; cannot export this browser stream but message does not half close");
+            if (streamData == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
             }
 
             final BrowserStream<ArrowFlightUtil.MessageInfo> browserStream = browserStreamSupplier.apply(session);
-            browserStream.onMessageReceived(mi);
+            browserStream.onMessageReceived(mi, streamData);
 
-            if (ticketBuffer != null) {
-                session.newExport(ExportTicketHelper.exportIdToTicket(ticketBuffer))
+            if (!streamData.isHalfClose()) {
+                // if this isn't a half-close, we should export it for later calls - if it is, the client won't send more messages
+                session.newExport(streamData.getRpcTicket())
                         .onError(responseObserver::onError)
                         .submit(() -> browserStream);
             }
@@ -96,27 +94,24 @@ public class BrowserFlightServiceGrpcImpl<Options, View> extends BrowserFlightSe
     }
 
     private void internalOnNext(final InputStream request, final StreamObserver<BrowserFlight.BrowserNextResponse> responseObserver) {
+        StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
             final ArrowFlightUtil.MessageInfo mi = parseProtoMessage(request);
-            if (mi.app_metadata == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "app_metadata not provided or was not a BarrageMessageWrapper");
-            }
 
-            final ByteBuffer ticketBuffer = mi.app_metadata.rpcTicketAsByteBuffer();
-            if (ticketBuffer == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No rpc_ticket provided; cannot append to existing browser stream");
+            if (streamData == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
             }
 
             final SessionState.ExportObject<BrowserStream<ArrowFlightUtil.MessageInfo>> browserStream =
-                    session.getExport(ExportTicketHelper.ticketToExportId(ticketBuffer));
+                    session.getExport(streamData.getRpcTicket());
 
             session.nonExport()
                     .require(browserStream)
                     .onError(responseObserver::onError)
                     .submit(() -> {
-                        browserStream.get().onMessageReceived(mi);
+                        browserStream.get().onMessageReceived(mi, streamData);
                         responseObserver.onNext(BrowserFlight.BrowserNextResponse.getDefaultInstance());
                         responseObserver.onCompleted();
                     });
