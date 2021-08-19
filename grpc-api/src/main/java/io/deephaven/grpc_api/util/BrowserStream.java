@@ -73,7 +73,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     public void onMessageReceived(T message) {
         synchronized (this) {
             if (halfClosedSeq != -1 && message.sequence > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
+                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
             }
 
             if (message.isHalfClosed) {
@@ -85,7 +85,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
 
             if (mode == Mode.IN_ORDER) {
                 if (message.sequence < nextSeq) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
+                    throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE, "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
                 }
                 boolean queueMsg = false;
                 if (processingMessage) {

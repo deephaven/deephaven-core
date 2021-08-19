@@ -300,7 +300,7 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecute(observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyError(observer, Code.INTERNAL, "Do put could not be sealed"));
+                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
             });
         }
 
@@ -496,7 +496,7 @@ public class ArrowFlightUtil {
             }
 
             if (!subscriptionFound) {
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL, "Subscription was not found.");
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
             }
         }
 

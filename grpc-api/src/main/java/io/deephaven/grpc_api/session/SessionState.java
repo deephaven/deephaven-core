@@ -1165,7 +1165,7 @@ public class SessionState {
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
                 errorHandler.onError(StatusProto.toStatusRuntimeException(Status.newBuilder()
-                        .setCode(Code.INTERNAL.getNumber())
+                        .setCode(Code.FAILED_PRECONDITION.getNumber())
                         .setMessage("Details Logged w/ID '" + errorContext + "'" + dependentStr)
                         .build()));
             }));

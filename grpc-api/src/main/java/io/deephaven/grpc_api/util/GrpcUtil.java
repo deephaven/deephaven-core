@@ -49,7 +49,7 @@ public class GrpcUtil {
     }
 
     public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err) {
-        return securelyWrapError(log, err, Code.INTERNAL);
+        return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
     }
 
     public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err, final Code statusCode) {
