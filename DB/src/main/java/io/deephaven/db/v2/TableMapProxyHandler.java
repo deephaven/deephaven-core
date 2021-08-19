@@ -8,6 +8,7 @@ import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
+import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.sources.ColumnSource;
@@ -25,6 +26,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
     private static final Map<Method, InvocationHandler> HIJACKED_DELEGATIONS = new HashMap<>();
     private static final Set<Method> COALESCING_METHODS = new HashSet<>();
+    private static final Set<Method> LIVENESS_METHODS = new HashSet<>();
     private static final Set<String> JOIN_METHOD_NAMES = new HashSet<>();
     private static final Set<String> AJ_METHOD_NAMES = new HashSet<>();
     static {
@@ -68,6 +70,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
             COALESCING_METHODS.add(Table.class.getMethod("getColumn", int.class));
             COALESCING_METHODS.add(Table.class.getMethod("getColumn", String.class));
             COALESCING_METHODS.add(Table.class.getMethod("setAttribute", String.class, Object.class));
+
+            LIVENESS_METHODS.addAll(Arrays.asList(LivenessNode.class.getMethods()));
 
             JOIN_METHOD_NAMES.add("join");
             JOIN_METHOD_NAMES.add("naturalJoin");
@@ -115,6 +119,10 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
         if (COALESCING_METHODS.contains(method)) {
             return method.invoke(coalesce(), args);
+        }
+
+        if (LIVENESS_METHODS.contains(method)) {
+            return method.invoke(underlyingTableMap, args);
         }
 
         if (method.getReturnType() != Table.class) {
