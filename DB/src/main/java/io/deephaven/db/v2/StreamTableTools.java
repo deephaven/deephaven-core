@@ -26,7 +26,7 @@ public class StreamTableTools {
      * @param streamTable the input stream table
      * @return an append-only in-memory table representing all data encountered in the stream
      */
-    public static Table streamToAppendOnlyTable(Table streamTable) {
+    public static Table streamTableToAppendTable(Table streamTable) {
         return QueryPerformanceRecorder.withNugget("streamToAppendOnlyTable", () -> {
             if (!isStream(streamTable)) {
                 throw new IllegalArgumentException("Input is not a stream table!");

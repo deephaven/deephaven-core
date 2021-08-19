@@ -529,7 +529,7 @@ public class KafkaTools {
             );
         };
 
-        final UnaryOperator<Table> tableConversion = resultType.isAppend ? StreamTableTools::streamToAppendOnlyTable : UnaryOperator.identity();
+        final UnaryOperator<Table> tableConversion = resultType.isAppend ? StreamTableTools::streamTableToAppendTable : UnaryOperator.identity();
         final Table result;
         final IntFunction<KafkaStreamConsumer> partitionToConsumer;
         if (resultType.isMap) {
