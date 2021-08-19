@@ -9,11 +9,20 @@ import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
+import io.deephaven.db.tables.live.LiveTable;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
+import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.v2.LocalTableMap;
+import io.deephaven.db.v2.StreamTableTools;
+import io.deephaven.db.v2.TableMap;
+import io.deephaven.db.v2.TransformableTableMap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
@@ -41,6 +50,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
 
 public class KafkaTools {
@@ -303,7 +313,75 @@ public class KafkaTools {
         }
     }
 
-    // Spec to explicitly ask consumeToTabel to ignore either key or value.
+    /**
+     * Type enumeration for the result {@link Table} returned by stream consumers.
+     */
+    public enum TableType {
+        /**
+         * <p>Consume all partitions into a single interleaved stream table, which will present only newly-available
+         * rows to downstream operations and visualizations.
+         * <p>See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
+         * {@link io.deephaven.db.v2.StreamTableTools} for related tooling.
+         */
+        Stream(false, false),
+        /**
+         * Consume all partitions into a single interleaved in-memory append-only table.
+         */
+        Append(true, false),
+        /**
+         * <p>As in {@link #Stream}, but each partition is mapped to a distinct stream table.
+         * <p>The resulting per-partition tables are aggregated into a single {@link TableMap} keyed by
+         * {@link Integer} partition, which is then presented as a {@link Table} proxy via
+         * {@link TransformableTableMap#asTable(boolean, boolean, boolean) asTable} with {@code strictKeys=true},
+         * {@code allowCoalesce=true}, and {@code sanityCheckJoins=true}.
+         * <p>See {@link TransformableTableMap#asTableMap()} to explicitly work with the underlying {@link TableMap}
+         * and {@link TransformableTableMap#asTable(boolean, boolean, boolean)} for alternative proxy options.
+         */
+        StreamMap(false, true),
+        /**
+         * <p>As in {@link #Append}, but each partition is mapped to a distinct in-memory append-only table.
+         * <p>The resulting per-partition tables are aggregated into a single {@link TableMap} keyed by
+         * {@link Integer} partition, which is then presented as a {@link Table} proxy via
+         * {@link TransformableTableMap#asTable(boolean, boolean, boolean) asTable} with {@code strictKeys=true},
+         * {@code allowCoalesce=true}, and {@code sanityCheckJoins=true}.
+         * <p>See {@link TransformableTableMap#asTableMap()} to explicitly work with the underlying {@link TableMap}
+         * and {@link TransformableTableMap#asTable(boolean, boolean, boolean)} for alternative proxy options.
+         */
+        AppendMap(true, true);
+
+        private final boolean isAppend;
+        private final boolean isMap;
+
+        TableType(final boolean isAppend, final boolean isMap) {
+            this.isAppend = isAppend;
+            this.isMap = isMap;
+        }
+
+    }
+
+    /**
+     * Map "Python-friendly" table type name to a {@link TableType}.
+     *
+     * @param typeName The friendly name
+     * @return The mapped {@link TableType}
+     */
+    public static TableType friendlyNameToTableType(@NotNull final String typeName) {
+        // @formatter:off
+        switch (typeName) {
+            case "stream"    : return TableType.Stream;
+            case "append"    : return TableType.Append;
+            case "stream_map": return TableType.StreamMap;
+            case "append_map": return TableType.AppendMap;
+            default             : return null;
+        }
+        // @formatter:on
+    }
+
+    /**
+     * Spec to explicitly ask
+     * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, KeyOrValueSpec, KeyOrValueSpec, TableType) consumeToTable}
+     * to ignore either key or value.
+     */
     @SuppressWarnings("unused")
     public static KeyOrValueSpec ignoreSpec() {
         return KeyOrValueSpec.IGNORE;
@@ -368,15 +446,16 @@ public class KafkaTools {
     }
 
     /**
-     * Consume from Kafka to a Deephaven streaming table.
+     * Consume from Kafka to a Deephaven table.
      *
-     * @param kafkaConsumerProperties  Properties to configure this table and also to be passed to create the KafkaConsumer.
-     * @param topic                    Kafka topic name.
-     * @param partitionFilter          A predicate returning true for the partitions to consume.
-     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed.
-     * @param keySpec
-     * @param valueSpec
-     * @return The streaming table where kafka events are ingested.
+     * @param kafkaConsumerProperties  Properties to configure this table and also to be passed to create the KafkaConsumer
+     * @param topic                    Kafka topic name
+     * @param partitionFilter          A predicate returning true for the partitions to consume
+     * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
+     * @param keySpec                  Conversion specification for Kafka record keys
+     * @param valueSpec                Conversion specification for Kafka record values
+     * @param resultType               {@link TableType} specifying the type of the expected result
+     * @return The result table containing Kafka stream data formatted according to {@code resultType}
      */
     @SuppressWarnings("unused")
     public static Table consumeToTable(
@@ -385,7 +464,8 @@ public class KafkaTools {
             @NotNull final IntPredicate partitionFilter,
             @NotNull final IntToLongFunction partitionToInitialOffset,
             @NotNull final KeyOrValueSpec keySpec,
-            @NotNull final KeyOrValueSpec valueSpec) {
+            @NotNull final KeyOrValueSpec valueSpec,
+            @NotNull final TableType resultType) {
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
         final boolean ignoreValue = valueSpec.dataFormat() == DataFormat.IGNORE;
         if (ignoreKey && ignoreValue) {
@@ -421,37 +501,86 @@ public class KafkaTools {
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
 
-        final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-        final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
-        streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
+        final StreamTableMap streamTableMap = resultType.isMap ? new StreamTableMap(tableDefinition) : null;
+        final LiveTableRegistrar liveTableRegistrar = streamTableMap == null ? LiveTableMonitor.DEFAULT : streamTableMap.refreshCombiner;
 
-        final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
-        final KeyOrValueProcessor valueProcessor = getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
+        final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
+            final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
+            final StreamToTableAdapter streamToTableAdapter = new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar);
+            streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE), streamToTableAdapter::chunkTypeForIndex);
 
-        final ConsumerRecordToStreamPublisherAdapter adapter = KafkaStreamPublisher.make(
-                streamPublisher,
-                commonColumnIndices[0],
-                commonColumnIndices[1],
-                commonColumnIndices[2],
-                keyProcessor,
-                valueProcessor,
-                keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
-                valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
-                keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
-                valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper
-        );
+            final KeyOrValueProcessor keyProcessor = getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
+            final KeyOrValueProcessor valueProcessor = getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
+
+            return new Pair<>(
+                    streamToTableAdapter,
+                    KafkaStreamPublisher.make(
+                            streamPublisher,
+                            commonColumnIndices[0],
+                            commonColumnIndices[1],
+                            commonColumnIndices[2],
+                            keyProcessor,
+                            valueProcessor,
+                            keyIngestData == null ? -1 : keyIngestData.simpleColumnIndex,
+                            valueIngestData == null ? -1 : valueIngestData.simpleColumnIndex,
+                            keyIngestData == null ? Function.identity() : keyIngestData.toObjectChunkMapper,
+                            valueIngestData == null ? Function.identity() : valueIngestData.toObjectChunkMapper
+                    )
+            );
+        };
+
+        final UnaryOperator<Table> tableConversion = resultType.isAppend ? StreamTableTools::streamToAppendOnlyTable : UnaryOperator.identity();
+        final Table result;
+        final IntFunction<KafkaStreamConsumer> partitionToConsumer;
+        if (resultType.isMap) {
+            result = streamTableMap.asTable(true, true, true);
+            partitionToConsumer = (final int partition) -> {
+                final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair = adapterFactory.get();
+                final Table partitionTable = tableConversion.apply(partitionAdapterPair.getFirst().table());
+                streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable), "streamTableMap.put(partition, partitionTable)"));
+                return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
+            };
+        } else {
+            final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair = adapterFactory.get();
+            result = tableConversion.apply(singleAdapterPair.getFirst().table());
+            partitionToConsumer = (final int partition) -> new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
+        }
 
         final KafkaIngester ingester = new KafkaIngester(
                 log,
                 kafkaConsumerProperties,
                 topic,
                 partitionFilter,
-                (int partition) -> new SimpleKafkaStreamConsumer(adapter, streamToTableAdapter),
+                partitionToConsumer,
                 partitionToInitialOffset
         );
         ingester.start();
 
-        return streamToTableAdapter.table();
+        return result;
+    }
+
+    private static class StreamTableMap extends LocalTableMap implements LiveTable {
+
+        private final LiveTableRefreshCombiner refreshCombiner = new LiveTableRefreshCombiner();
+        private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();
+
+        private StreamTableMap(@NotNull final TableDefinition constituentDefinition) {
+            super(null, constituentDefinition);
+            refreshCombiner.addTable(this); // Results in managing the refreshCombiner
+            LiveTableMonitor.DEFAULT.addTable(refreshCombiner);
+        }
+
+        @Override
+        public void refresh() {
+            Runnable deferredUpdate;
+            while ((deferredUpdate = deferredUpdates.poll()) != null) {
+                deferredUpdate.run();
+            }
+        }
+
+        private void enqueueUpdate(@NotNull final Runnable deferredUpdate) {
+            deferredUpdates.add(deferredUpdate);
+        }
     }
 
     private static KeyOrValueProcessor getProcessor(
