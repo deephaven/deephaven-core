@@ -25,6 +25,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Fe
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
@@ -141,6 +143,7 @@ public class WorkerConnection {
     private final JsSet<JsConsumer<LogItem>> logCallbacks = new JsSet<>();
 
     private final Map<ClientTableState, ResponseStreamWrapper<FlightData>> subscriptionStreams = new HashMap<>();
+    private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
     private Map<TableMapHandle, TableMap> tableMaps = new HashMap<>();
 
@@ -258,6 +261,7 @@ public class WorkerConnection {
 
 //                // start a heartbeat to check if connection is properly alive
 //                ping(success.getAuthSessionToken());
+            startExportNotificationsStream();
 
             return Promise.resolve(handshakeResponse);
         }, fail -> {
@@ -285,6 +289,39 @@ public class WorkerConnection {
         });
     }
 
+    public void checkStatus(ResponseStreamWrapper.Status status) {
+        //TODO provide simpler hooks to retry auth, restart the stream
+        if (status.getCode() == Code.OK) {
+            // success, ignore
+        } else if (status.getCode() == Code.Unauthenticated) {
+            // TODO re-create session once?
+            // for now treating this as fatal, UI should encourage refresh to try again
+            info.notifyConnectionError(status);
+        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown) {
+            // for now treating these as fatal also
+            info.notifyConnectionError(status);
+        } else if (status.getCode() == Code.Unavailable) {
+            // TODO skip re-authing for now, just backoff and try again
+        } // others probably are meaningful to the caller
+    }
+
+    private void startExportNotificationsStream() {
+        if (exportNotifications != null) {
+            exportNotifications.cancel();
+        }
+        exportNotifications = ResponseStreamWrapper.of(tableServiceClient.exportedTableUpdates(new ExportedTableUpdatesRequest(), metadata()));
+        exportNotifications.onData(update -> {
+            if (update.getUpdateFailureMessage() != null && !update.getUpdateFailureMessage().isEmpty()) {
+                exportedTableUpdateMessageError(new TableTicket(update.getExportId().getTicket_asU8()), update.getUpdateFailureMessage());
+            } else {
+                exportedTableUpdateMessage(new TableTicket(update.getExportId().getTicket_asU8()), java.lang.Long.parseLong(update.getSize()));
+            }
+        });
+
+        // any export notification error is bad news
+        exportNotifications.onStatus(this::checkStatus);
+    }
+
     private void authUpdate(HandshakeResponse handshakeResponse) {
         // store the token and schedule refresh calls to keep it alive
         sessionToken = new String(Js.uncheckedCast(handshakeResponse.getSessionToken_asU8()), Charset.forName("UTF-8"));
@@ -300,6 +337,7 @@ public class WorkerConnection {
                 if (fail != null) {
                     //TODO set a flag so others know not to try until we re-trigger initial auth
                     //TODO re-trigger auth
+                    checkStatus((ResponseStreamWrapper.Status) fail);
                     return;
                 }
                 // mark the new token, schedule a new check
@@ -1148,9 +1186,7 @@ public class WorkerConnection {
 
                 notifyLog(logItem);
             });
-            logStream.onEnd(status -> {
-                //TODO handle reconnect
-            });
+            logStream.onEnd(this::checkStatus);
         } else {
             pastLogs.forEach(callback::apply);
         }

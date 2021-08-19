@@ -231,13 +231,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         ScriptSession scriptSession = exportedConsole.get();
                         String tableName = request.getTableName();
                         if (!scriptSession.hasVariableName(tableName)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No value exists with name " + tableName);
+                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "No value exists with name " + tableName);
                         }
 
                         // Explicit typecheck to catch any wrong-type-ness right away
                         Object result = scriptSession.unwrapObject(scriptSession.getVariable(tableName));
                         if (!(result instanceof Table)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Value bound to name " + tableName + " is not a Table");
+                            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Value bound to name " + tableName + " is not a Table");
                         }
 
                         // Apply preview columns TODO core#107 move to table service
@@ -371,12 +371,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
                         String figureName = request.getFigureName();
                         if (!scriptSession.hasVariableName(figureName)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No value exists with name " + figureName);
+                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "No value exists with name " + figureName);
                         }
 
                         Object result = scriptSession.unwrapObject(scriptSession.getVariable(figureName));
                         if (!(result instanceof FigureWidget)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Value bound to name " + figureName + " is not a FigureWidget");
+                            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Value bound to name " + figureName + " is not a FigureWidget");
                         }
                         FigureWidget widget = (FigureWidget) result;
 

@@ -236,7 +236,6 @@ public class RequestBatcher {
 
             ResponseStreamWrapper<ExportedTableCreationResponse> batchStream = ResponseStreamWrapper.of(connection.tableServiceClient().batch(request, connection.metadata()));
             batchStream.onData(response -> {
-                DomGlobal.console.log("onData", this, request.toObject(), response.toObject());
                 TableReference resultid = response.getResultId();
                 if (!resultid.hasTicket()) {
                     // thanks for telling us, but we don't at this time have a nice way to indicate this
@@ -292,7 +291,6 @@ public class RequestBatcher {
             });
 
             batchStream.onEnd(status -> {
-                DomGlobal.console.log("onEnd", this, request.toObject(), status);
                 // request is complete
                 if (status.getCode() == Code.OK) {
                     resolve.onInvoke((Void) null);
