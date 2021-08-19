@@ -243,7 +243,7 @@ def simple(column_name:str, data_type_str:str = 'string'):
 
 @_passThrough
 def streamTableToAppendTable(t):
-    return _stream_table_tools_.streamTableToAppendTable(t)
+    return _stream_table_tools_.streamTableToAppendOnly(t)
     
 # Define all of our functionality, if currently possible
 try:
