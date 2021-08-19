@@ -241,12 +241,15 @@ def simple(column_name:str, data_type_str:str = 'string'):
     return _java_type_.simpleSpec(column_name, data_type)
 
 
+@_passThrough
+def streamTableToAppendTable(t):
+    return _stream_table_tools_.streamToAppendOnlyTable(t)
+    
 # Define all of our functionality, if currently possible
 try:
     _defineSymbols()
 except Exception as e:
     pass
-
 @_passThrough
 def avroSchemaToColumnDefinitions(*args):
     """
