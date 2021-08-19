@@ -10,27 +10,38 @@ import java.util.function.Function;
 
 public class ScattererTest {
 
-    private static Future future;
-    private static Output[] outputs;
+    private static InMemoryTable table;
 
 
     @BeforeClass
     public static void setup() {
-        InMemoryTable table = new InMemoryTable(
+        table = new InMemoryTable(
                 new String[]{"Column1", "Column2", "Column3"},
                 new Object[]{
                         new int[]{1, 2, 1, 2, 3, 1, 2, 3, 4},
                         new long[]{2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
                         new double[]{5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
                 });
-        Function<Object[], Object> func = args -> args;
-        String[] colNames = new String[]{"Column1","Column2"};
-        future = new Future(func, new Input[]{new Input(colNames, func)},
-                new ColumnSource[][]{table.view(colNames).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)},
-                7);
+    }
 
-        outputs = new Output[]{new Output("OutCol1", func, "int"),
-                               new Output("OutCol2", func, null)};
+    private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
+        return new Input[]{new Input(new String[]{"Column1","Column2"}, gatherFuncs[0]), new Input("Column3", gatherFuncs[1])};
+    }
+
+    private static Input[] createInputs(Function<Object[], Object> gatherFunc) {
+        return createInputs(gatherFunc, gatherFunc);
+    }
+
+    private static Output[] createOutputs(Function<Object[], Object>... scatterFuncs) {
+        return new Output[]{new Output("OutCol1", scatterFuncs[0], "int"), new Output("OutCol2", scatterFuncs[1], null)};
+    }
+
+    private static Output[] createOutputs(Function<Object[], Object> scatterFunc) {
+        return createOutputs(scatterFunc, scatterFunc);
+    }
+
+    private static Future createFuture(Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
+        return new Future(modelFunc, inputs, new ColumnSource[][]{table.view(new String[]{"Column1","Column2"}).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)}, batchSize);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
@@ -40,20 +51,66 @@ public class ScattererTest {
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputElementTest() {
+        Output[] outputs = createOutputs(args -> args);
         Scatterer scatterer = new Scatterer(new Output[]{outputs[0], null});
     }
 
     @Test
     public void scatterMethodTest() {
 
+        int batchSize = 7;
+
+        Function<Object[], Object> gatherFunc = (params) -> 1;
+
+        Function<Object[], Object> modelFunc = (params) -> 2;
+
+        Function<Object[], Object> scatterFunc1 = (params) -> {
+
+            // first parameter of scatterFunc is the result of modelFunc, so
+            Assert.assertEquals(2, params[0]);
+            // second parameter is the index of this particular output
+            Assert.assertEquals(0, params[1]);
+
+            return 3;
+        };
+
+        Function<Object[], Object> scatterFunc2 = (params) -> {
+
+            // first parameter of scatterFunc is the result of modelFunc, so
+            Assert.assertEquals(2, params[0]);
+            // second parameter is the index of this particular output
+            Assert.assertEquals(1, params[1]);
+
+            return 4;
+        };
+
+        Input[] inputs = createInputs(gatherFunc);
+        Output[] outputs = createOutputs(scatterFunc1, scatterFunc2);
+
+        Computer computer = new Computer(table, modelFunc, inputs, batchSize);
+        Future future = createFuture(modelFunc, inputs, batchSize);
         Scatterer scatterer = new Scatterer(outputs);
 
-        System.out.println(scatterer.scatter(0, new FutureOffset(future, 0)));
+        FutureOffset[] futureOffsetColumn = new FutureOffset[9];
 
+
+        for (int i = 0 ; i < 9 ; i++) {
+            futureOffsetColumn[i] = computer.compute(i);
+        }
+
+        for (int i = 0 ; i < outputs.length ; i++) {
+            Assert.assertEquals((i==0) ? 3 : 4, scatterer.scatter(i, futureOffsetColumn[i]));
+        }
     }
 
     @Test
     public void generateQueryStringsTest() {
+
+        Function<Object[], Object> scatterFunc1 = (params) -> 3;
+
+        Function<Object[], Object> scatterFunc2 = (params) -> 4;
+
+        Output[] outputs = createOutputs(scatterFunc1, scatterFunc2);
 
         Scatterer scatterer = new Scatterer(outputs);
 
@@ -62,5 +119,4 @@ public class ScattererTest {
                              "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
                 scatterer.generateQueryStrings("__FutureOffset"));
     }
-
 }
