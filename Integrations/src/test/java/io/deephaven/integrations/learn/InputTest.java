@@ -93,15 +93,4 @@ public class InputTest {
 
         Assert.assertEquals(colNames, input.getColNames());
     }
-
-    @Test
-    public void toStringTest() {
-
-        final String[] colNames = new String[]{"Column1", "Column2"};
-        final Function<Object[], Object> func = args -> args;
-
-        Input input = new Input(colNames, func);
-
-        Assert.assertEquals("Columns: " + Arrays.toString(colNames) + "\nGather Function: " + func, input.toString());
-    }
 }

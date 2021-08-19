@@ -40,10 +40,6 @@ public class ScattererTest {
         return createOutputs(scatterFunc, scatterFunc);
     }
 
-    private static Future createFuture(Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
-        return new Future(modelFunc, inputs, new ColumnSource[][]{table.view(new String[]{"Column1","Column2"}).getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY)}, batchSize);
-    }
-
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputArrayTest() {
         Scatterer scatterer = new Scatterer(null);
@@ -88,7 +84,6 @@ public class ScattererTest {
         Output[] outputs = createOutputs(scatterFunc1, scatterFunc2);
 
         Computer computer = new Computer(table, modelFunc, inputs, batchSize);
-        Future future = createFuture(modelFunc, inputs, batchSize);
         Scatterer scatterer = new Scatterer(outputs);
 
         FutureOffset[] futureOffsetColumn = new FutureOffset[9];

@@ -61,7 +61,7 @@ public class Future {
      * @param colSet    set of column sources from which to extract data.
      * @return gathered data
      */
-    private Object gather(Input input, ColumnSource<?>[] colSet) {
+    Object gather(Input input, ColumnSource<?>[] colSet) {
         return input.getGatherFunc().apply(new Object[]{this.indexSet, colSet});
     }
 
