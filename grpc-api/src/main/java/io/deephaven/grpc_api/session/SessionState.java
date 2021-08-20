@@ -451,8 +451,6 @@ public class SessionState {
      * @apiNote Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
-        private final Exception creationTag = log.isDebugEnabled() ? new Exception("creationTag") : null;
-
         private final int exportId;
         private final String logIdentity;
         private final SessionState session;
@@ -539,10 +537,10 @@ public class SessionState {
 
             if (log.isDebugEnabled()) {
                 final Exception e = new RuntimeException();
-                final LogEntry entry = log.debug().append(e).append("\n").append(session.logPrefix).append("export '").append(logIdentity)
+                final LogEntry entry = log.debug().append(e).nl().append(session.logPrefix).append("export '").append(logIdentity)
                         .append("' has ").append(dependentCount).append(" dependencies remaining: ");
                 for (ExportObject<?> parent : parents) {
-                    entry.append("\n\t").append(parent.logIdentity).append(" is ").append(parent.getState().name());
+                    entry.nl().append('\t').append(parent.logIdentity).append(" is ").append(parent.getState().name());
                 }
                 entry.endl();
             }
@@ -803,11 +801,11 @@ public class SessionState {
                     setResult(capturedExport.call());
                 } finally {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
-                }
 
-                if (isNonExport()) {
-                    // we force non-exports to remain live until they are resolved
-                    dropReference();
+                    if (isNonExport()) {
+                        // we force non-exports to remain live until they are resolved
+                        dropReference();
+                    }
                 }
             } catch (final Exception err) {
                 exception = err;

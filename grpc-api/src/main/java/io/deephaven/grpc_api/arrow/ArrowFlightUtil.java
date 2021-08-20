@@ -448,7 +448,7 @@ public class ArrowFlightUtil {
                     updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
                 }
                 bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
-                if (DynamicNode.notDynamicOrIsRefreshing(bmp)) {
+                if (bmp.isRefreshing()) {
                     manage(bmp);
                 }
             } else {
