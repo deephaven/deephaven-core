@@ -125,11 +125,18 @@ def _validate(inputs, outputs, table):
         ValueError : if there are duplicates in the Output column names.
     """
 
+    if type(inputs) != list:
+        inputs = [inputs]
+
     inputColumns = [input.input.getColNames()[i] for input in inputs for i in range(len(input.input.getColNames()))]
 
     if table.hasColumns(inputColumns):
 
         if outputs != None:
+
+            if type(outputs) != list:
+                outputs = [outputs]
+
             outputColumns = [output.output.getColName() for output in outputs]
 
             if len(outputColumns) != len(set(outputColumns)):
