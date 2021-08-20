@@ -153,6 +153,10 @@ public class DbFloatArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbFloatArray.type().clazz(), DbFloatArray.class);
+    }
+
     private void checkSubArray(DbFloatArray dbArray, int start, int end, float result[]){
         DbFloatArray subArray = dbArray.subArray(start, end);
         float array[] = subArray.toArray();

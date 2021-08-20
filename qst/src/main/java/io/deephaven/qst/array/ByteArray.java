@@ -63,7 +63,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     @Override
-    public final ByteType type() {
+    public final ByteType componentType() {
         return ByteType.instance();
     }
 

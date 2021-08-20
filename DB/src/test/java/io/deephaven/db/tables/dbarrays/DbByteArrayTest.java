@@ -153,6 +153,10 @@ public class DbByteArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbByteArray.type().clazz(), DbByteArray.class);
+    }
+
     private void checkSubArray(DbByteArray dbArray, int start, int end, byte result[]){
         DbByteArray subArray = dbArray.subArray(start, end);
         byte array[] = subArray.toArray();

@@ -55,7 +55,7 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
             others = others().start(initialCapacity);
             builders = new ArrayList<>();
             for (ColumnHeader<?> header : headers()) {
-                builders.add(Array.builder(header.type()));
+                builders.add(Array.builder(header.componentType()));
             }
         }
 

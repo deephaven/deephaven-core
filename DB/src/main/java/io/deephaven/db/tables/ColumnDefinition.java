@@ -21,16 +21,20 @@ import io.deephaven.db.tables.dbarrays.DbLongArray;
 import io.deephaven.db.tables.dbarrays.DbShortArray;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DbGenericArrayType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.LongType;
+import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
@@ -97,6 +101,28 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
     public static ColumnDefinition<DBDateTime> ofTime(@NotNull final String name) {
         return new ColumnDefinition<>(name, DBDateTime.class);
+    }
+
+    public static ColumnDefinition<?> of(String name, Type<?> type) {
+        return type.walk(new Adapter(name)).out();
+    }
+
+    public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
+        final Adapter adapter = new Adapter(name);
+        type.walk((PrimitiveType.Visitor) adapter);
+        return adapter.out();
+    }
+
+    public static ColumnDefinition<?> of(String name, GenericType<?> type) {
+        final Adapter adapter = new Adapter(name);
+        type.walk((GenericType.Visitor) adapter);
+        return adapter.out();
+    }
+
+    public static <T extends DbArrayBase> ColumnDefinition<T> ofDbArray(@NotNull final String name, @NotNull final Class<T> dbArrayType) {
+        ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
+        columnDefinition.setComponentType(baseComponentTypeForDbArray(dbArrayType));
+        return columnDefinition;
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name, @NotNull final Class<T> dataType) {
@@ -215,19 +241,20 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public static ColumnDefinition<?> from(ColumnHeader<?> header) {
-        return header.type().walk(new ColumnHeaderTranslation(header)).getOut();
+        return header.componentType().walk(new Adapter(header.name())).out();
     }
 
-    private static class ColumnHeaderTranslation implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
+    private static class Adapter implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
 
-        private final ColumnHeader<?> in;
+        private final String name;
+
         private ColumnDefinition<?> out;
 
-        public ColumnHeaderTranslation(ColumnHeader<?> in) {
-            this.in = Objects.requireNonNull(in);
+        public Adapter(String name) {
+            this.name = Objects.requireNonNull(name);
         }
 
-        public ColumnDefinition<?> getOut() {
+        public ColumnDefinition<?> out() {
             return Objects.requireNonNull(out);
         }
 
@@ -243,57 +270,82 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
 
         @Override
         public void visit(BooleanType booleanType) {
-            out = ofBoolean(in.name());
+            out = ofBoolean(name);
         }
 
         @Override
         public void visit(ByteType byteType) {
-            out = ofByte(in.name());
+            out = ofByte(name);
         }
 
         @Override
         public void visit(CharType charType) {
-            out = ofChar(in.name());
+            out = ofChar(name);
         }
 
         @Override
         public void visit(ShortType shortType) {
-            out = ofShort(in.name());
+            out = ofShort(name);
         }
 
         @Override
         public void visit(IntType intType) {
-            out = ofInt(in.name());
+            out = ofInt(name);
         }
 
         @Override
         public void visit(LongType longType) {
-            out = ofLong(in.name());
+            out = ofLong(name);
         }
 
         @Override
         public void visit(FloatType floatType) {
-            out = ofFloat(in.name());
+            out = ofFloat(name);
         }
 
         @Override
         public void visit(DoubleType doubleType) {
-            out = ofDouble(in.name());
+            out = ofDouble(name);
         }
 
         @Override
         public void visit(StringType stringType) {
-            out = ofString(in.name());
+            out = ofString(name);
         }
 
         @Override
         public void visit(InstantType instantType) {
-            out = ofTime(in.name());
+            out = ofTime(name);
+        }
+
+        @Override
+        public void visit(ArrayType<?, ?> arrayType) {
+            arrayType.walk(new ArrayType.Visitor() {
+                @Override
+                public void visit(NativeArrayType<?, ?> nativeArrayType) {
+                    ColumnDefinition<?> cd = new ColumnDefinition<>(name, nativeArrayType.clazz());
+                    cd.setComponentType(nativeArrayType.componentType().clazz());
+                    out = cd;
+                }
+
+                @Override
+                public void visit(DbPrimitiveArrayType<?, ?> dbArrayPrimitiveType) {
+                    //noinspection unchecked,rawtypes
+                    out = ofDbArray(name, (Class)dbArrayPrimitiveType.clazz());
+                }
+
+                @Override
+                public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
+                    ColumnDefinition<DbArray> cd = new ColumnDefinition<>(name, DbArray.class);
+                    cd.setComponentType(dbGenericArrayType.componentType().clazz());
+                    out = cd;
+                }
+            });
         }
 
         @Override
         public void visit(CustomType<?> customType) {
-            out = fromGenericType(in.name(), customType.clazz()); // todo, array types
+            out = fromGenericType(name, customType.clazz());
         }
     }
 

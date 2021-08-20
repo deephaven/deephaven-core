@@ -45,6 +45,7 @@ import io.deephaven.qst.array.IntArray;
 import io.deephaven.qst.array.LongArray;
 import io.deephaven.qst.array.PrimitiveArray;
 import io.deephaven.qst.array.ShortArray;
+import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.InstantType;
@@ -740,7 +741,7 @@ public abstract class ArrayBackedColumnSource<T>
 
         @Override
         public void visit(GenericArray<?> generic) {
-            generic.type().walk(new Visitor() {
+            generic.componentType().walk(new Visitor() {
                 @Override
                 public void visit(StringType stringType) {
                     out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(stringType).values(), String.class, null);
@@ -760,6 +761,13 @@ public abstract class ArrayBackedColumnSource<T>
                         }
                     }
                     out = source;
+                }
+
+                @Override
+                public void visit(ArrayType<?, ?> arrayType) {
+                    //noinspection unchecked
+                    ArrayType<T, ?> tType = (ArrayType<T, ?>)arrayType;
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(), arrayType.componentType().clazz());
                 }
 
                 @Override
