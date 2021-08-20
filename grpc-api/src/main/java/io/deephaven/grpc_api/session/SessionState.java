@@ -18,9 +18,11 @@ import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
@@ -29,6 +31,7 @@ import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -448,6 +451,8 @@ public class SessionState {
      * @apiNote Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
+        private final Exception creationTag = log.isDebugEnabled() ? new Exception("creationTag") : null;
+
         private final int exportId;
         private final String logIdentity;
         private final SessionState session;
@@ -488,6 +493,11 @@ public class SessionState {
             this.exportId = exportId;
             this.logIdentity = isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
+
+            // non-exports stay alive until they have been exported
+            if (isNonExport()) {
+                retainReference();
+            }
         }
 
         /**
@@ -526,8 +536,17 @@ public class SessionState {
             this.parents = parents;
             dependentCount = parents.size();
             parents.stream().filter(Objects::nonNull).forEach(this::manage);
-        }
 
+            if (log.isDebugEnabled()) {
+                final Exception e = new RuntimeException();
+                final LogEntry entry = log.debug().append(e).append("\n").append(session.logPrefix).append("export '").append(logIdentity)
+                        .append("' has ").append(dependentCount).append(" dependencies remaining: ");
+                for (ExportObject<?> parent : parents) {
+                    entry.append("\n\t").append(parent.logIdentity).append(" is ").append(parent.getState().name());
+                }
+                entry.endl();
+            }
+        }
 
         /**
          * Sets the dependencies and initializes the relevant data structures to include this export as a child for each.
@@ -785,6 +804,11 @@ public class SessionState {
                 } finally {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                 }
+
+                if (isNonExport()) {
+                    // we force non-exports to remain live until they are resolved
+                    dropReference();
+                }
             } catch (final Exception err) {
                 exception = err;
                 synchronized (this) {
@@ -849,11 +873,9 @@ public class SessionState {
                     // client may race a cancel with setResult
                     if (!isExportStateTerminal(state)) {
                         this.result = result;
-
-                        if (this.result instanceof LivenessReferent) {
-                            tryManage((LivenessReferent) result);
+                        if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
+                            manage((LivenessReferent) result);
                         }
-
                         setState(ExportNotification.State.EXPORTED);
                     }
                 }

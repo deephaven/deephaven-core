@@ -18,7 +18,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.LongSizedDataStructure;
+import io.deephaven.db.util.liveness.Liveness;
+import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -445,7 +448,9 @@ public class ArrowFlightUtil {
                     updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
                 }
                 bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
-                manage(bmp);
+                if (DynamicNode.notDynamicOrIsRefreshing(bmp)) {
+                    manage(bmp);
+                }
             } else {
                 GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                         + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
