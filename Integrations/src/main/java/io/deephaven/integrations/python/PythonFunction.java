@@ -9,6 +9,8 @@ import org.jpy.PyObject;
 import java.util.function.Function;
 import io.deephaven.util.QueryConstants;
 
+import static io.deephaven.integrations.python.PythonUtilities.pyApplyFunc;
+
 /**
  * A {@link Function} implementation which calls a Python callable.
  * @param <T> input argument class
@@ -29,18 +31,8 @@ public class PythonFunction<T> implements Function<T, Object> {
      *                 usable inside Java.
      */
     public PythonFunction(final PyObject pyObjectIn, final Class classOut){
-        if(pyObjectIn.hasAttribute("apply")){
-            pyCallable = pyObjectIn.getAttribute("apply");
-            if (!pyCallable.hasAttribute("__call__")){
-                throw new IllegalArgumentException("The Python object provided has an apply attribute " +
-                        "which is not callable");
-            }
-        }else if (pyObjectIn.hasAttribute("__call__")){
-            pyCallable = pyObjectIn;
-        }else{
-            throw new IllegalArgumentException("The Python object specified should either be callable, or a " +
-                    "class instance with an apply method");
-        }
+        
+        pyCallable = pyApplyFunc(pyObjectIn);
 
         // Note: Potentially important types omitted -simply because handling from python is not super clear:
         //       Character/char, BigInteger, BigDecimal
