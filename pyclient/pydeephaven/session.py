@@ -12,12 +12,12 @@ from bitstring import BitArray
 
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
-from pydeephaven.dherror import DHError
-from pydeephaven.proto import barrage_pb2_grpc, ticket_pb2
-from pydeephaven.query import Query
 from pydeephaven._session_service import SessionService
-from pydeephaven.table import Table, TimeTable, EmptyTable
 from pydeephaven._table_service import TableService
+from pydeephaven.dherror import DHError
+from pydeephaven.proto import ticket_pb2
+from pydeephaven.query import Query
+from pydeephaven.table import Table, TimeTable, EmptyTable
 
 
 class Session:
@@ -85,13 +85,6 @@ class Session:
         if not self._console_service:
             self._console_service = ConsoleService(self)
         return self._console_service
-
-    @property
-    def barrage_service(self):
-        if not self._grpc_barrage_stub:
-            self._grpc_barrage_stub = barrage_pb2_grpc.BarrageServiceStub(self.grpc_channel)
-
-        return self._grpc_barrage_stub
 
     @property
     def flight_service(self):

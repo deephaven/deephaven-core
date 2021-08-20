@@ -41,7 +41,6 @@ workspaces/
 devopsLocal/
 pyclient/venv
 pyclient/dist
-pyclient/build
 pyclient/*.egg-info
 
 jenkins/failures
