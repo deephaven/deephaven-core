@@ -20,6 +20,11 @@ public abstract class DoubleType extends PrimitiveTypeBase<Double> {
     }
 
     @Override
+    public final NativeArrayType<double[], Double> arrayType() {
+        return NativeArrayType.of(double[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

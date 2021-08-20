@@ -56,4 +56,14 @@ public class CustomTypeTest {
             // expected
         }
     }
+
+    @Test
+    public void noArrayTypes() {
+        try {
+            CustomType.of(int[].class);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+    }
 }

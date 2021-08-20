@@ -20,6 +20,11 @@ public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
     }
 
     @Override
+    public final NativeArrayType<boolean[], Boolean> arrayType() {
+        return NativeArrayType.of(boolean[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

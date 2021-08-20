@@ -1,5 +1,6 @@
 package io.deephaven.qst.type;
 
+import java.lang.reflect.InvocationTargetException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -19,6 +20,7 @@ import static io.deephaven.qst.type.Type.ofCustom;
 import static io.deephaven.qst.type.Type.shortType;
 import static io.deephaven.qst.type.Type.stringType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class TypeTest {
 
@@ -94,42 +96,42 @@ public class TypeTest {
 
     @Test
     void booleanArrayType() {
-        assertThat(find(boolean[].class)).isEqualTo(NativeArrayType.booleanArrayType());
+        assertThat(find(boolean[].class)).isEqualTo(booleanType().arrayType());
     }
 
     @Test
     void byteArrayType() {
-        assertThat(find(byte[].class)).isEqualTo(NativeArrayType.byteArrayType());
+        assertThat(find(byte[].class)).isEqualTo(byteType().arrayType());
     }
 
     @Test
     void charArrayType() {
-        assertThat(find(char[].class)).isEqualTo(NativeArrayType.charArrayType());
+        assertThat(find(char[].class)).isEqualTo(charType().arrayType());
     }
 
     @Test
     void shortArrayType() {
-        assertThat(find(short[].class)).isEqualTo(NativeArrayType.shortArrayType());
+        assertThat(find(short[].class)).isEqualTo(shortType().arrayType());
     }
 
     @Test
     void intArrayType() {
-        assertThat(find(int[].class)).isEqualTo(NativeArrayType.intArrayType());
+        assertThat(find(int[].class)).isEqualTo(intType().arrayType());
     }
 
     @Test
     void longArrayType() {
-        assertThat(find(long[].class)).isEqualTo(NativeArrayType.longArrayType());
+        assertThat(find(long[].class)).isEqualTo(longType().arrayType());
     }
 
     @Test
     void floatArrayType() {
-        assertThat(find(float[].class)).isEqualTo(NativeArrayType.floatArrayType());
+        assertThat(find(float[].class)).isEqualTo(floatType().arrayType());
     }
 
     @Test
     void doubleArrayType() {
-        assertThat(find(double[].class)).isEqualTo(NativeArrayType.doubleArrayType());
+        assertThat(find(double[].class)).isEqualTo(doubleType().arrayType());
     }
 
     @Test
@@ -180,6 +182,19 @@ public class TypeTest {
                 assertThat(staticTypes.get(i)).isNotEqualTo(staticTypes.get(j));
                 assertThat(staticTypes.get(j)).isNotEqualTo(staticTypes.get(i));
             }
+        }
+    }
+
+    @Test
+    void dbPrimitiveTypesAreEmpty()
+        throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        // Db primitive array types are not on the classpath as QST dependency, make sure
+        // they are not found.
+        try {
+            DbPrimitiveArrayType.types();
+            failBecauseExceptionWasNotThrown(ClassNotFoundException.class);
+        } catch (ClassNotFoundException e) {
+            // expected
         }
     }
 

@@ -153,6 +153,10 @@ public class DbShortArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbShortArray.type().clazz(), DbShortArray.class);
+    }
+
     private void checkSubArray(DbShortArray dbArray, int start, int end, short result[]){
         DbShortArray subArray = dbArray.subArray(start, end);
         short array[] = subArray.toArray();

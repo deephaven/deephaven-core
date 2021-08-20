@@ -28,14 +28,13 @@ public interface Type<T> {
         if (clazz.isArray()) {
             return NativeArrayType.of(clazz, find(clazz.getComponentType()));
         }
-        return found.orElseGet(() -> CustomType.of(clazz));
+        return CustomType.of(clazz);
     }
 
     /**
      * The list of known types. Includes the universe of {@link PrimitiveType primitive types} and
      * {@link GenericType generic types} minus {@link CustomType custom types} and {@link ArrayType
-     * array types}. and non {@linkplain ArrayType array-type} / non-{@linkplain CustomType}
-     * {@link GenericType generic types}, except for {@link CustomType custom types}.
+     * array types}.
      *
      * @return the list of known types
      */

@@ -20,6 +20,11 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
+    public final NativeArrayType<char[], Character> arrayType() {
+        return NativeArrayType.of(char[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

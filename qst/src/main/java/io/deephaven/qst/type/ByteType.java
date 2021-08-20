@@ -20,6 +20,11 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
+    public final NativeArrayType<byte[], Byte> arrayType() {
+        return NativeArrayType.of(byte[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

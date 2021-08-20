@@ -34,7 +34,7 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
     }
 
     @Check
-    final void checkClazz() {
+    final void checkNotStatic() {
         final Optional<Type<T>> staticType = TypeHelper.findStatic(clazz());
         if (staticType.isPresent()) {
             throw new IllegalArgumentException(
@@ -43,10 +43,17 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
     }
 
     @Check
-    final void checkType() {
+    final void checkNotArray() {
         if (clazz().isArray()) {
             throw new IllegalArgumentException(String.format(
                 "Can't create an array type here, use '%s' instead", NativeArrayType.class));
+        }
+    }
+
+    @Check
+    final void checkNotDbArray() {
+        if (clazz().getName().startsWith("io.deephaven.db.tables.dbarrays.Db")) {
+            throw new IllegalArgumentException("Can't create DB array types as custom types");
         }
     }
 }

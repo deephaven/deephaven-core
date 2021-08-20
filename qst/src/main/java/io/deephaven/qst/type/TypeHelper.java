@@ -39,10 +39,7 @@ class TypeHelper {
 
     static Stream<DbPrimitiveArrayType<?, ?>> dbPrimitiveArrayTypes() {
         try {
-            return Stream.of(DbPrimitiveArrayType.booleanType(), DbPrimitiveArrayType.byteType(),
-                DbPrimitiveArrayType.charType(), DbPrimitiveArrayType.shortType(),
-                DbPrimitiveArrayType.intType(), DbPrimitiveArrayType.longType(),
-                DbPrimitiveArrayType.floatType(), DbPrimitiveArrayType.doubleType());
+            return DbPrimitiveArrayType.types().stream();
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
             | IllegalAccessException e) {
             return Stream.empty();

@@ -20,6 +20,11 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
+    public final NativeArrayType<int[], Integer> arrayType() {
+        return NativeArrayType.of(int[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

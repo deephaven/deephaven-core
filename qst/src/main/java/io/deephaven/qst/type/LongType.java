@@ -20,6 +20,11 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
+    public final NativeArrayType<long[], Long> arrayType() {
+        return NativeArrayType.of(long[].class, this);
+    }
+
+    @Override
     public final <V extends PrimitiveType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
