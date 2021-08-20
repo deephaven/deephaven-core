@@ -1,7 +1,5 @@
 pandas~=1.2.5
 pyarrow~=4.0.1
-flatbuffers~=2.0
-numpy~=1.21.0
 grpcio
 setuptools~=47.1.0
 protobuf

@@ -6,17 +6,15 @@ from setuptools import setup
 
 setup(
     name='pydeephaven',
-    version='0.1.0',
-    packages=['barrage', 'barrage.flatbuf', 'pydeephaven', 'pydeephaven.proto'],
+    version='0.0.1',
+    packages=['pydeephaven'],
     url='https://deephaven.io/',
-    license='',
-    author='jianfengmao',
+    license='Deephaven Community License Agreement Version 1.0',
+    author='Deephaven Data Labs',
     author_email='jianfengmao@deephaven.io',
-    description='',
+    description='The Deephaven Python Client',
 
-    install_requires=['pandas',
-                      'pyarrow',
-                      'numpy',
+    install_requires=['pyarrow',
                       'bitstring',
                       'grpcio',
                       'protobuf']
