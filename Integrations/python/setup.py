@@ -56,6 +56,5 @@ setup(name='deephaven',
       packages=find_packages(exclude=['docs', 'test']),
       install_requires=['deephaven-jpy=={}'.format(__normalized_version__),
                         'numpy', 'dill>=0.2.8', 'wrapt', 'pandas', 'numba;python_version>"3.0"',
-                        'enum34;python_version<"3.4"',
-                        'torch', 'torchsummary', 'torchvision', 'scikit-learn', 'tensorflow', 'statsmodels'],
+                        'enum34;python_version<"3.4"'],
       )
