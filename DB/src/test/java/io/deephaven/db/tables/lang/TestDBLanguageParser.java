@@ -5,6 +5,7 @@
 package io.deephaven.db.tables.lang;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.db.tables.Table;
@@ -40,7 +41,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void setUp() throws Exception {
         packageImports = new HashSet<>();
         packageImports.add(Package.getPackage("java.lang"));
-        packageImports.add(Package.getPackage("io.deephaven.db.tables"));
+
+        // Package.getPackage returns null if the class loader has yet to see a class from that package; force a load
+        Package tablePackage = Table.class.getPackage();
+        Assert.equals(tablePackage.getName(), "tablePackage.getName()", "io.deephaven.db.tables");
+        packageImports.add(tablePackage);
 
         classImports = new HashSet<>();
         classImports.add(Color.class);
