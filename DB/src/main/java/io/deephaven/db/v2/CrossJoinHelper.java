@@ -379,8 +379,8 @@ public class CrossJoinHelper {
                         }
 
                         // Generate shift data; build up result index changes for all but added left
-                        final long prevCardinality = 1 << prevRightBits;
-                        final long currCardinality = 1 << currRightBits;
+                        final long prevCardinality = 1L << prevRightBits;
+                        final long currCardinality = 1L << currRightBits;
                         final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
                         final Index.SequentialBuilder toRemoveFromResultIndex = Index.FACTORY.getSequentialBuilder();
                         final Index.SequentialBuilder toInsertIntoResultIndex = Index.FACTORY.getSequentialBuilder();
