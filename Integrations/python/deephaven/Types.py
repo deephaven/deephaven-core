@@ -9,6 +9,7 @@ import jpy
 import wrapt
 import sys
 import collections
+from typing import NewType
 
 # None until the first _defineSymbols() call
 _table_tools_ = None
@@ -56,43 +57,46 @@ try:
 except Exception as e:
     pass
 
+
+# Represents a Deephaven column data type.
+DataType = NewType('DataType', type)
+
 #
 # Basic Deephaven column data types.
 # Column data types in python are represented as the jpy wrapper for the
 # corresponding Java class object for the column's Java type.
-# They have type jpy.JType.
 #
-bool_ = jpy.get_type('java.lang.Boolean')
-byte = jpy.get_type('byte')
-short = jpy.get_type('short')
+bool_ = DataType(jpy.get_type('java.lang.Boolean'))
+byte = DataType(jpy.get_type('byte'))
+short = DataType(jpy.get_type('short'))
 int16 = short  # make life simple for people who are used to pyarrow
-int_ = jpy.get_type('int')
+int_ = DataType(jpy.get_type('int'))
 int32 = int_  # make life simple for people who are used to pyarrow
-long_ = jpy.get_type('long')
+long_ = DataType(jpy.get_type('long'))
 int64 = long_   # make life simple for people who are used to pyarrow
-float_ = jpy.get_type('float')
+float_ = DataType(jpy.get_type('float'))
 single = float_   # make life simple for people who are used to NumPy
 float32 = float_  # make life simple for people who are used to pyarrow
-double = jpy.get_type('double')
+double = DataType(jpy.get_type('double'))
 float64 = double  # make life simple for people who are used to pyarrow
-string = jpy.get_type('java.lang.String')
-bigdecimal = jpy.get_type('java.math.BigDecimal')
-stringset = jpy.get_type('io.deephaven.db.tables.libs.StringSet')
-datetime = jpy.get_type('io.deephaven.db.tables.utils.DBDateTime')
+string = DataType(jpy.get_type('java.lang.String'))
+bigdecimal = DataType(jpy.get_type('java.math.BigDecimal'))
+stringset = DataType(jpy.get_type('io.deephaven.db.tables.libs.StringSet'))
+datetime = DataType(jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'))
 
-byte_array = jpy.get_type('[B')
-short_array = jpy.get_type('[S')
+byte_array = DataType(jpy.get_type('[B'))
+short_array = DataType(jpy.get_type('[S'))
 int16_array = short_array
-int_array = jpy.get_type('[I')
+int_array = DataType(jpy.get_type('[I'))
 int32_array = int_array
-long_array = jpy.get_type('[J')
+long_array = DataType(jpy.get_type('[J'))
 int64_array = long_array
-float_array = jpy.get_type('[F')
+float_array = DataType(jpy.get_type('[F'))
 single_array = float_array
 float32_array = float_array
-double_array = jpy.get_type('[D')
+double_array = DataType(jpy.get_type('[D'))
 float64_array = double_array
-string_array = jpy.get_type('[Ljava.lang.String;')
+string_array = DataType(jpy.get_type('[Ljava.lang.String;'))
 
 # For more involved types, you can always use the string representation
 # of the Java class (Class.getName()) to get a python type for it.
@@ -103,11 +107,11 @@ def typeFromName(name : str):
     The string provided should match the output in Java for Class.getName()
     for a class visible to the main ClassLoader in the Deephaven engine in use.
     """
-    return jpy_get_type(name)
+    return DataType(jpy.get_type(name))
 
 
 @_passThrough
-def _jclazzFromType(data_type : jpy.JType):
+def _jclassFromType(data_type : DataType):
     if data_type is None:
         return None
     type2name = {
@@ -141,12 +145,12 @@ def _jclazzFromType(data_type : jpy.JType):
 
 
 @_passThrough
-def _isPrimitive(data_type : jpy.JType):
+def _isPrimitive(data_type : DataType):
     primitives = { bool_, byte, short, int_, long_, float_, double }
     return data_type in primitives
 
 @_passThrough
-def col(col_name : str, data_type : jpy.JType, component_type : jpy.JType = None):
+def col(col_name : str, data_type : DataType, component_type : DataType = None):
     """
     Create a ColumnDefinition object.
     :param col_name: The column's new.
@@ -154,8 +158,8 @@ def col(col_name : str, data_type : jpy.JType, component_type : jpy.JType = None
     :param component_type: The column's component type, or None if none.
     :return: the column definition object.
     """
-    data_type = _jclazzFromType(data_type)
-    component_type = _jclazzFromType(component_type)
+    data_type = _jclassFromType(data_type)
+    component_type = _jclassFromType(component_type)
 
     return _col_def_.fromGenericType(col_name, data_type, component_type)
 

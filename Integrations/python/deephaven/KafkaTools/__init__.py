@@ -22,6 +22,8 @@ import deephaven.Types as dh
 from ..conversion_utils import _isJavaType, _isStr, \
     _typeFromName, _dictToProperties, _dictToMap, IDENTITY
 
+from ..Types import _jclassFromType
+
 # None until the first _defineSymbols() call
 _java_type_ = None
 _stream_table_tools_ = None
@@ -229,15 +231,15 @@ def json(col_defs, mapping:dict = None):
 
 
 @_passThrough
-def simple(column_name:str, data_type = dh.string):
+def simple(column_name:str, data_type:dh.DataType):
     if not _isStr(column_name):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
-    if len(args) == 1:
+    if data_type is None:
         return _java_type_.simpleSpec(column_name)
-    if not isinstance(data_type, jpy.JType):
-        raise Exception("'data_type' argument needs to be one of the column types " +
-                        "defined in the Types import, instead got " + str(data_type_str))
-    return _java_type_.simpleSpec(column_name, data_type)
+    if not isinstance(data_type, type):
+        raise Exception("'data_type' argument needs to be one of the DataType constants " +
+                        "for column types defined in the Types import, instead got " + str(data_type))
+    return _java_type_.simpleSpec(column_name, _jclassFromType(data_type))
 
 
 # Define all of our functionality, if currently possible
