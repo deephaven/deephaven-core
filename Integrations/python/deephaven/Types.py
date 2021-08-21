@@ -14,8 +14,8 @@ import collections
 _table_tools_ = None
 _col_def_ = None
 _python_tools_ = None
-_jclazz_type_ = None
 _qst_col_header_ = None
+_qst_col_header_of_ = None
 _qst_column_ = None
 _qst_newtable_ = None
 _table_ = None
@@ -24,13 +24,12 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _python_tools_, _jclazz_type_, _qst_col_header_, _qst_column_, _qst_newtable_, _table_
+    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, _qst_column_, _qst_newtable_, _table_
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
         _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
-        _jclazz_type_ = jpy.get_type("java.lang.Class")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
         _qst_column_ =  jpy.get_type("io.deephaven.qst.column.Column")
         _qst_newtable_ =  jpy.get_type("io.deephaven.qst.table.NewTable")
@@ -57,93 +56,107 @@ try:
 except Exception as e:
     pass
 
-@_passThrough
-def asType(type_str):
-    return _table_tools_.typeFromName(type_str)
-
-bool_ = asType('java.lang.Boolean')
-byte = asType('byte')
-short = asType('short')
+#
+# Basic Deephaven column data types.
+# Column data types in python are represented as the jpy wrapper for the
+# corresponding Java class object for the column's Java type.
+# They have type jpy.JType.
+#
+bool_ = jpy.get_type('java.lang.Boolean')
+byte = jpy.get_type('byte')
+short = jpy.get_type('short')
 int16 = short  # make life simple for people who are used to pyarrow
-int_ = asType('int')
+int_ = jpy.get_type('int')
 int32 = int_  # make life simple for people who are used to pyarrow
-long_ = asType('long')
+long_ = jpy.get_type('long')
 int64 = long_   # make life simple for people who are used to pyarrow
-float_ = asType('float')
+float_ = jpy.get_type('float')
 single = float_   # make life simple for people who are used to NumPy
 float32 = float_  # make life simple for people who are used to pyarrow
-double = asType('double')
+double = jpy.get_type('double')
 float64 = double  # make life simple for people who are used to pyarrow
-string = asType('java.lang.String')
-bigdecimal = asType('java.math.BigDecimal')
-stringset = asType('io.deephaven.db.tables.libs.StringSet')
+string = jpy.get_type('java.lang.String')
+bigdecimal = jpy.get_type('java.math.BigDecimal')
+stringset = jpy.get_type('io.deephaven.db.tables.libs.StringSet')
+datetime = jpy.get_type('io.deephaven.db.tables.utils.DBDateTime')
 
-byte_array = asType('byte')
-short_array = asType('short[]')
+byte_array = jpy.get_type('[B')
+short_array = jpy.get_type('[S')
 int16_array = short_array
-int_array = asType('int[]')
+int_array = jpy.get_type('[I')
 int32_array = int_array
-long_array = asType('long[]')
+long_array = jpy.get_type('[J')
 int64_array = long_array
-float_array = asType('float[]')
+float_array = jpy.get_type('[F')
 single_array = float_array
 float32_array = float_array
-double_array = asType('double[]')
+double_array = jpy.get_type('[D')
 float64_array = double_array
-string_array = asType('java.lang.String[]')
+string_array = jpy.get_type('[Ljava.lang.String;')
 
-datetime = asType('io.deephaven.db.tables.utils.DBDateTime')
-
+# For more involved types, you can always use the string representation
+# of the Java class (Class.getName()) to get a python type for it.
 @_passThrough
-def _jpyTypeFromDh(t):
-    mapping = {
-        bool_      : 'java.lang.Boolean',
-        byte       : 'byte',
-        short      : 'short',
-        int16      : 'short',
-        int_       : 'int',
-        int32      : 'int',
-        long_      : 'long',
-        int64      : 'long',
-        float_     : 'float',
-        single     : 'float',
-        float32    : 'float',
-        double     : 'double',
-        float64    : 'double',
-        string     : 'java.lang.String',
-        bigdecimal : 'java.math.BigDecimal',
-        stringset  : 'io.deephaven.db.tables.libs.StringSet' }
-    return mapping[t]
-
-@_passThrough
-def col(t):
+def typeFromName(name : str):
     """
-    Convert a tuple of strings of the form ('Price', double_type)
-    or ('Prices', double_array_type, double_type)
-    to a ColumnDefinition object.
+    Get the column data type for the corresponding Java type string reprensentation
+    The string provided should match the output in Java for Class.getName()
+    for a class visible to the main ClassLoader in the Deephaven engine in use.
+    """
+    return jpy_get_type(name)
 
-    :param t: a 2 or 3 element tuple of string and type(s) specifying a column definition object
+
+@_passThrough
+def _jclazzFromType(data_type : jpy.JType):
+    if data_type is None:
+        return None
+    type2name = {
+        bool_ : 'java.lang.Boolean',
+        byte : 'byte',
+        short : 'short',
+        int_ : 'int',
+        long_ : 'long',
+        float_ : 'float',
+        double : 'double',
+        string : 'java.lang.String',
+        bigdecimal : 'java.math.BigDecimal',
+        stringset : 'io.deephaven.db.tables.libs.StringSet',
+        datetime : 'io.deephaven.db.tables.utils.DBDateTime',
+        byte_array : 'byte[]',
+        short_array : 'short[]',
+        int_array : 'int[]',
+        long_array : 'long[]',
+        float_array : 'float[]',
+        double_array : 'double[]',
+        string_array : 'java.lang.String[]',
+    }
+    name = type2name.get(data_type, None)
+    if name is None:
+        type2str = str(data_type)
+        q0 = type2str.index("'")
+        q1 = type2str.index("'", q0 + 1)
+        name = type2str[q0 : q1 + 1]
+
+    return _table_tools_.typeFromName(name)
+
+
+@_passThrough
+def _isPrimitive(data_type : jpy.JType):
+    primitives = { bool_, byte, short, int_, long_, float_, double }
+    return data_type in primitives
+
+@_passThrough
+def col(col_name : str, data_type : jpy.JType, component_type : jpy.JType = None):
+    """
+    Create a ColumnDefinition object.
+    :param col_name: The column's new.
+    :param data_type: The column's data type.
+    :param component_type: The column's component type, or None if none.
     :return: the column definition object.
     """
+    data_type = _jclazzFromType(data_type)
+    component_type = _jclazzFromType(component_type)
 
-    if not isinstance(t, tuple):
-        raise Exception('argument ' + t + ' is not a tuple')
-    if len(t) < 2 or len(t) > 3:
-        raise Exception('Only 2 or 3 element tuples expected, got ' + len(t))
-    col_name = t[0]
-    if not isinstance(col_name, str):
-        raise Exception('Element at index 0 (' + str(col_name) + ') for column name is not of str type, but '
-                        + type(col_name).__name__)
-    data_type = t[1]
-    if not isinstance(data_type, _jclazz_type_):
-        raise Exception('Element at index 1 (' + str(data_type) + ') has the wrong type ' +
-                        type(data_type).__name__)
-    if len(t) == 2:
-        return _col_def_.fromGenericType(col_name, data_type)
-    component_type = t[2]
-    if not isinstance(component_type, _jclazz_type_):
-        raise Exception('Element at index 2 (' + str(component_type) + ') for component type has the wrong type ' +
-                        type(component_type).__name__)
     return _col_def_.fromGenericType(col_name, data_type, component_type)
 
 @_passThrough
@@ -158,7 +171,7 @@ def cols(ts):
     """
     r = []
     for t in ts:
-        r.append(col(t))
+        r.append(col(*t))
     return r
 
 
@@ -199,7 +212,7 @@ def table_of(data, columns):
                 raise Exception("only two element type tuples are supported, instead got " + str(t))
             try:
                 if col_header is None:
-                    col_header = _qst_col_header_.of(t[0], t[1])
+                    col_header = _qst_col_header_of_(t[0], t[1])
                 else:
                     col_header = col_header.header(t[0], t[1])
             except Exception as e:
@@ -220,10 +233,12 @@ def table_of(data, columns):
             if len(row) < c + 1:
                 raise Exception("not enough columns provided in row " + r)
             col_data.append(row[c])
-        jvalues = jpy.array(_jpyTypeFromDh(col_type), col_data)
-        qst_col = _qst_column_.of(col_name, jvalues)
+        jvalues = jpy.array(col_type, col_data)
+        if _isPrimitive(col_type):
+            qst_col = _qst_column_.ofUnsafe(col_name, jvalues)
+        else:
+            qst_col = _qst_column_.of(col_name, jvalues)
         qst_cols.append(qst_col)
 
     qst_newtable = _qst_newtable_.of(qst_cols)
     return _table_.of(qst_newtable)
-

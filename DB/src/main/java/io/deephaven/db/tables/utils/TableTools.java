@@ -1646,30 +1646,7 @@ public class TableTools {
         return "(" + dataType.getName() + ")" + " null";
     }
 
-    private static Class<?> typeFromShortName(final String dataTypeStr) {
-        switch (dataTypeStr) {
-            case "String":
-            case "string":
-                return String.class;
-            case "BigDecimal":
-            case "bigdecimal":
-                return java.math.BigDecimal.class;
-            case "StringSet":
-            case "stringset":
-                return io.deephaven.db.tables.libs.StringSet.class;
-            case "boolean":
-            case "Boolean":
-                return Boolean.class;
-            default:
-                return null;
-        }
-    }
-
     public static Class<?> typeFromName(final String dataTypeStr) {
-        final Class<?> shortNameType = typeFromShortName(dataTypeStr);
-        if (shortNameType != null) {
-            return shortNameType;
-        }
         final Class<?> dataType;
         try {
             dataType = ClassUtil.lookupClass(dataTypeStr);

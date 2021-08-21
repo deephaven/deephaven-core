@@ -15,7 +15,9 @@ import sys
 import jpy
 import wrapt
 
-from ..conversion_utils import _isJavaType, _isStr, _tupleToColDef, _tuplesListToColDefsList, \
+import deephaven.Types as dh
+
+from ..conversion_utils import _isJavaType, _isStr, \
     _typeFromName, _dictToProperties, _dictToMap, IDENTITY
 
 # None until the first _defineSymbols() call
@@ -211,7 +213,7 @@ def json(col_defs, mapping:dict = None):
         raise Exception("'col_defs' argument needs to be a sequence of tuples, instead got " +
                         str(col_defs) + " of type " + type(col_defs).__name__)
     try:
-        col_defs = _tuplesListToColDefsList(col_defs)
+        col_defs = dh.cols(col_defs)
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
@@ -225,17 +227,14 @@ def json(col_defs, mapping:dict = None):
 
 
 @_passThrough
-def simple(column_name:str, data_type_str:str = 'string'):
+def simple(column_name:str, data_type = dh.string):
     if not _isStr(column_name):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
     if len(args) == 1:
         return _java_type_.simpleSpec(column_name)
-    if not _isStr(data_type_str):
-        raise Exception("'data_type_str' argument needs to be of str type, instead got " + str(data_type_str))
-    try:
-        data_type = _typeFromName(data_type_str)
-    except Exception as e:
-        raise Exception("could not convert 'data_type_str' argument value " + data_type_str + " to type") from e
+    if not isinstance(data_type, jpy.JType):
+        raise Exception("'data_type' argument needs to be one of the column types " +
+                        "defined in the Types import, instead got " + str(data_type_str))
     return _java_type_.simpleSpec(column_name, data_type)
 
 
