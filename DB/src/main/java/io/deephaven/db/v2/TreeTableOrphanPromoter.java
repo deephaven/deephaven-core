@@ -50,8 +50,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     }
 
     private class State {
-        private final ColumnSource parentSource;
-        private final ColumnSource idSource;
+        private final ColumnSource<?> parentSource;
+        private final ColumnSource<?> idSource;
         private final ReverseLookup reverseLookupListener;
         private final DynamicTable source;
 
@@ -63,10 +63,10 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         }
 
         public Table invoke() {
-            final Map<String, ColumnSource> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
+            final Map<String, ColumnSource<?>> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
 
             //noinspection unchecked
-            final ColumnSource parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
+            final ColumnSource<?> parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
                 @Override
                 public Object get(long index) {
                     if (hasParent(index)) {

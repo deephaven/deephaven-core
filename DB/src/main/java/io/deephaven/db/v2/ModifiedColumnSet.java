@@ -206,7 +206,7 @@ public class ModifiedColumnSet {
 
     // TODO: combine TableDefinition, ColumnSourceMap, ColumnNames, and IdMap into reusable shared object state.
     // We'll use this to fail-fast when two incompatible MCSs interact.
-    private final Map<String, ColumnSource> columns;
+    private final Map<String, ColumnSource<?>> columns;
     private final String[] columnNames;
     private final TObjectIntHashMap<String> idMap;
 
@@ -260,7 +260,7 @@ public class ModifiedColumnSet {
      * on future objects that share this CSM to minimize duplicating state.
      * @param columns The column source map this ModifiedColumnSet will use.
      */
-    public ModifiedColumnSet(final Map<String, ColumnSource> columns) {
+    public ModifiedColumnSet(final Map<String, ColumnSource<?>> columns) {
         this.columns = columns;
         columnNames = columns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         idMap = new TObjectIntHashMap<>(columnNames.length, Constants.DEFAULT_LOAD_FACTOR, -1);
@@ -320,7 +320,7 @@ public class ModifiedColumnSet {
      * @param newColumns the column source map for result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */
-    public Transformer newIdentityTransformer(final Map<String, ColumnSource> newColumns) {
+    public Transformer newIdentityTransformer(final Map<String, ColumnSource<?>> newColumns) {
         if (columns == newColumns) {
             throw new IllegalArgumentException("Do not use a transformer when it is correct to pass-through the ModifiedColumnSet.");
         } else if (!Iterators.elementsEqual(columns.keySet().iterator(), newColumns.keySet().iterator())) {

@@ -15,12 +15,12 @@ public class SnapshotUtils {
     /**
      * Creates a new columnSourceMap based on 'columns'.
      */
-    public static <T> Map<String, T> createColumnSourceMap(Map<String, ? extends ColumnSource> columns,
-            BiFunction<Class, Class, T> factory) {
+    public static <T> Map<String, T> createColumnSourceMap(Map<String, ? extends ColumnSource<?>> columns,
+            BiFunction<Class<?>, Class<?>, T> factory) {
         final Map<String, T> result = new LinkedHashMap<>();
-        for (final Map.Entry<String, ? extends ColumnSource> entry : columns.entrySet()) {
+        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
             final String key = entry.getKey();
-            final ColumnSource cs = entry.getValue();
+            final ColumnSource<?> cs = entry.getValue();
             final T newColumn = factory.apply(cs.getType(), cs.getComponentType());
             result.put(key, newColumn);
         }

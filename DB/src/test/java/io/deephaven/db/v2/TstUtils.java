@@ -483,7 +483,7 @@ public class TstUtils {
     }
 
     public static QueryTable testTable(Index index, ColumnHolder... columnHolders) {
-        final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
         }
@@ -506,7 +506,7 @@ public class TstUtils {
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
         final Index index = columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex() : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
-        final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
         }

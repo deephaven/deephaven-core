@@ -294,7 +294,7 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return rawColumnSource.cast(clazz);
     }
 
-    Map<String, ? extends ColumnSource> getColumnSourceMap();
+    Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
     Collection<? extends ColumnSource> getColumnSources();
 

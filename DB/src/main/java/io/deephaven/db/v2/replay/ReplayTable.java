@@ -23,10 +23,11 @@ public class ReplayTable extends QueryTable implements LiveTable {
     private boolean done;
     private final Replayer replayer;
 
-    public ReplayTable(Index index, Map<String, ? extends ColumnSource> result,String timeColumn,Replayer replayer) {
+    public ReplayTable(Index index, Map<String, ? extends ColumnSource<?>> result,String timeColumn,Replayer replayer) {
         super(Index.FACTORY.getIndexByValues(), result);
         Require.requirement(replayer != null, "replayer != null");
-        replayer.registerTimeSource(index, result.get(timeColumn));
+        //noinspection unchecked
+        replayer.registerTimeSource(index, (ColumnSource<DBDateTime>) result.get(timeColumn));
         setRefreshing(true);
         indexIterator = index.iterator();
         if (indexIterator.hasNext()) {

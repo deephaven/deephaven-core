@@ -561,7 +561,7 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     private QueryTable generateSortTesterTable(int ncols, int size, DataGenerator dataGenerator) {
-        Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (int ii = 0; ii < ncols; ++ii) {
             columns.put("Column" + ii, dataGenerator.generateColumnSource(size));
         }

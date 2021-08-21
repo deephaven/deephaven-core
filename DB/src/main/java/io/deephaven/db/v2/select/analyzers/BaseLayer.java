@@ -10,10 +10,10 @@ import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import java.util.*;
 
 public class BaseLayer extends SelectAndViewAnalyzer {
-    private final Map<String, ColumnSource> sources;
+    private final Map<String, ColumnSource<?>> sources;
     private final boolean publishTheseSources;
 
-    BaseLayer(Map<String, ColumnSource> sources, boolean publishTheseSources) {
+    BaseLayer(Map<String, ColumnSource<?>> sources, boolean publishTheseSources) {
         this.sources = sources;
         this.publishTheseSources = publishTheseSources;
     }
@@ -24,9 +24,9 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    final Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode) {
+    final Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
         // We specifically return a LinkedHashMap so the columns get populated in order
-        final Map<String, ColumnSource> result = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         if (mode == GetMode.All || (mode == GetMode.Published && publishTheseSources)) {
             result.putAll(sources);
         }
@@ -35,11 +35,10 @@ public class BaseLayer extends SelectAndViewAnalyzer {
 
     @Override
     public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition> columnDefinitions) {
-        for (Map.Entry<String, ColumnSource> entry : sources.entrySet()) {
+        for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
             final String name = entry.getKey();
-            final ColumnSource cs = entry.getValue();
-            // noinspection unchecked
-            final ColumnDefinition cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
+            final ColumnSource<?> cs = entry.getValue();
+            final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
             columnDefinitions.put(name, cd);
         }
     }

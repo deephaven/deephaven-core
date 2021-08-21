@@ -197,7 +197,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      * @param newColumns the column source map for result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Map<String, ColumnSource> newColumns) {
+    default ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Map<String, ColumnSource<?>> newColumns) {
         throw new UnsupportedOperationException();
     }
 

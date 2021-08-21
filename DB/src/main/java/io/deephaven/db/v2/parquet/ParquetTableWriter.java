@@ -329,13 +329,13 @@ public class ParquetTableWriter {
             final Index tableIndex,
             final RowGroupWriter rowGroupWriter,
             final String name,
-            final ColumnSource columnSourceIn,
+            final ColumnSource<?> columnSourceIn,
             final ColumnDefinition columnDefinition,
             final ParquetInstructions writeInstructions
     ) throws IllegalAccessException, IOException {
         Index index = tableIndex;
-        ColumnSource columnSource = columnSourceIn;
-        ColumnSource lengthSource = null;
+        ColumnSource<?> columnSource = columnSourceIn;
+        ColumnSource<?> lengthSource = null;
         Index lengthIndex = null;
         int targetSize = getTargetSize(columnSource.getType());
         Supplier<Integer> rowStepGetter;
@@ -345,7 +345,7 @@ public class ParquetTableWriter {
                 && !CodecLookup.explicitCodecPresent(writeInstructions.getCodecName(columnDefinition.getName()))
                 && !CodecLookup.codecRequired(columnDefinition)) {
             targetSize = getTargetSize(columnSource.getComponentType());
-            HashMap<String, ColumnSource> columns = new HashMap<>();
+            HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
             Table t = new QueryTable(index, columns);
             lengthSource = t.view("len= ((Object)array) == null?null:(int)array." + (DbArrayBase.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length")).getColumnSource("len");

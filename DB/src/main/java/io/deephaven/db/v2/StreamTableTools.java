@@ -41,20 +41,20 @@ public class StreamTableTools {
             final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
             ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(), (boolean usePrev, long beforeClockValue) -> {
-                final Map<String, ArrayBackedColumnSource> columns = new LinkedHashMap<>();
-                final Map<String, ? extends ColumnSource> columnSourceMap = streamTable.getColumnSourceMap();
+                final Map<String, ArrayBackedColumnSource<?>> columns = new LinkedHashMap<>();
+                final Map<String, ? extends ColumnSource<?>> columnSourceMap = streamTable.getColumnSourceMap();
                 final int columnCount = columnSourceMap.size();
-                final ColumnSource[] sourceColumns = new ColumnSource[columnCount];
-                final WritableSource[] destColumns = new WritableSource[columnCount];
+                final ColumnSource<?>[] sourceColumns = new ColumnSource[columnCount];
+                final WritableSource<?>[] destColumns = new WritableSource[columnCount];
                 int colIdx = 0;
-                for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap.entrySet()) {
+                for (Map.Entry<String, ? extends ColumnSource<?>> nameColumnSourceEntry : columnSourceMap.entrySet()) {
                     final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
                     final ArrayBackedColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, existingColumn.getType(), existingColumn.getComponentType());
                     columns.put(nameColumnSourceEntry.getKey(), newColumn);
                     // for the source columns, we would like to read primitives instead of objects in cases where it is possible
                     sourceColumns[colIdx] = ReinterpretUtilities.maybeConvertToPrimitive(existingColumn);
                     // for the destination sources, we know they are array backed sources that will actually store primitives and we can fill efficiently
-                    destColumns[colIdx++] = (WritableSource) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
+                    destColumns[colIdx++] = (WritableSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
                 }
 
 

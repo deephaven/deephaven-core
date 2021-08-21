@@ -123,32 +123,32 @@ public class SparseSelect {
                 LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
             }
 
-            final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>();
+            final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
 
             // we copy the preserve columns to the map without changes
             for (final String preserveColumn : preserveColumns) {
                 resultColumns.put(preserveColumn, source.getColumnSource(preserveColumn));
             }
 
-            final List<ColumnSource> inputSourcesList = new ArrayList<>(columnNames.length);
-            final List<SparseArrayColumnSource> outputSourcesList = new ArrayList<>(columnNames.length);
+            final List<ColumnSource<?>> inputSourcesList = new ArrayList<>(columnNames.length);
+            final List<SparseArrayColumnSource<?>> outputSourcesList = new ArrayList<>(columnNames.length);
             final List<ModifiedColumnSet> modifiedColumnSets = new ArrayList<>(columnNames.length);
 
             for (final String columnName : columnNames) {
-                final ColumnSource inputSource = source.getColumnSource(columnName);
+                final ColumnSource<?> inputSource = source.getColumnSource(columnName);
                 if (inputSource instanceof SparseArrayColumnSource || inputSource instanceof ArrayBackedColumnSource) {
                     resultColumns.put(columnName, inputSource);
                 } else {
                     inputSourcesList.add(inputSource);
-                    final SparseArrayColumnSource outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(inputSource.getType(), inputSource.getComponentType());
+                    final SparseArrayColumnSource<?> outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(inputSource.getType(), inputSource.getComponentType());
                     outputSourcesList.add(outputSource);
                     resultColumns.put(columnName, outputSource);
                     modifiedColumnSets.add(((DynamicTable)source).newModifiedColumnSet(columnName));
                 }
             }
 
-            final ColumnSource [] inputSources = inputSourcesList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-            final SparseArrayColumnSource [] outputSources = outputSourcesList.toArray(SparseArrayColumnSource.ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY);
+            final ColumnSource<?>[] inputSources = inputSourcesList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+            final SparseArrayColumnSource<?>[] outputSources = outputSourcesList.toArray(SparseArrayColumnSource.ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY);
 
             doCopy(source.getIndex(), inputSources, outputSources, null);
 
@@ -156,7 +156,7 @@ public class SparseSelect {
 
             if (source.isLive()) {
                 outputSourcesList.forEach(ColumnSource::startTrackingPrevValues);
-                final ObjectSparseArraySource [] sparseObjectSources = outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource).map(x -> (ObjectSparseArraySource)x).toArray(ObjectSparseArraySource[]::new);
+                final ObjectSparseArraySource<?>[] sparseObjectSources = outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource).map(x -> (ObjectSparseArraySource<?>)x).toArray(ObjectSparseArraySource[]::new);
                 ((DynamicTable) source).listenForUpdates(new BaseTable.ShiftAwareListenerImpl("sparseSelect(" + Arrays.toString(columnNames) + ")", (DynamicTable) source, resultTable) {
                     private final ModifiedColumnSet modifiedColumnSetForUpdates = resultTable.getModifiedColumnSetForUpdates();
                     private final ModifiedColumnSet.Transformer transformer = ((BaseTable)source).newModifiedColumnSetTransformer(resultTable, resultTable.getDefinition().getColumnNamesArray());
@@ -167,7 +167,7 @@ public class SparseSelect {
                         downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
                         if (sparseObjectSources.length > 0) {
                             try (final Index removedOnly = upstream.removed.minus(upstream.added)) {
-                                for (final ObjectSparseArraySource objectSparseArraySource : sparseObjectSources) {
+                                for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
                                     objectSparseArraySource.remove(removedOnly);
                                 }
                             }
@@ -228,7 +228,7 @@ public class SparseSelect {
         });
     }
 
-    private static void doShift(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource[] outputSources, boolean [] toShift) {
+    private static void doShift(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?>[] outputSources, boolean [] toShift) {
         if (executor == null) {
             doShiftSingle(shifts, outputSources, toShift);
         } else {
@@ -236,7 +236,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopy(Index addedAndModified, ColumnSource[] inputSources, WritableSource[] outputSources, boolean [] toCopy) {
+    private static void doCopy(Index addedAndModified, ColumnSource<?>[] inputSources, WritableSource<?>[] outputSources, boolean [] toCopy) {
         if (executor == null) {
             doCopySingle(addedAndModified, inputSources, outputSources, toCopy);
         } else {
@@ -244,7 +244,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySingle(Index addedAndModified, ColumnSource[] inputSources, WritableSource[] outputSources, boolean [] toCopy) {
+    private static void doCopySingle(Index addedAndModified, ColumnSource<?>[] inputSources, WritableSource<?>[] outputSources, boolean [] toCopy) {
         final ChunkSource.GetContext [] gcs = new ChunkSource.GetContext[inputSources.length];
         final WritableChunkSink.FillFromContext [] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
@@ -262,8 +262,7 @@ public class SparseSelect {
                 final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
                 for (int cc = 0; cc < inputSources.length; cc++) {
                     if (toCopy == null || toCopy[cc]) {
-                        //noinspection unchecked
-                        final Chunk<Values> values = inputSources[cc].getChunk(gcs[cc], chunkOk);
+                        final Chunk<? extends Values> values = inputSources[cc].getChunk(gcs[cc], chunkOk);
                         outputSources[cc].fillFromChunk(ffcs[cc], values, chunkOk);
                     }
                 }
@@ -271,8 +270,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopyThreads(Index addedAndModified, ColumnSource[] inputSources, WritableSource[] outputSources, boolean [] toCopy) {
-        final Future[] futures = new Future[inputSources.length];
+    private static void doCopyThreads(Index addedAndModified, ColumnSource<?>[] inputSources, WritableSource<?>[] outputSources, boolean [] toCopy) {
+        final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
             if (toCopy == null || toCopy[columnIndex]) {
                 final int cc = columnIndex;
@@ -292,20 +291,20 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySource(Index addedAndModified, WritableSource outputSource, ColumnSource inputSource) {
+    private static void doCopySource(Index addedAndModified, WritableSource<?> outputSource, ColumnSource<?> inputSource) {
         try (final OrderedKeys.Iterator okit = addedAndModified.getOrderedKeysIterator();
              final WritableChunkSink.FillFromContext ffc = outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
              final ChunkSource.GetContext gc = inputSource.makeGetContext(SPARSE_SELECT_CHUNK_SIZE)
              ) {
             while (okit.hasMore()) {
                 final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(SPARSE_SELECT_CHUNK_SIZE);
-                final Chunk<Values> values = inputSource.getChunk(gc, chunkOk);
+                final Chunk<? extends Values> values = inputSource.getChunk(gc, chunkOk);
                 outputSource.fillFromChunk(ffc, values, chunkOk);
             }
         }
     }
-    
-    private static void doShiftSingle(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource[] outputSources, boolean [] toShift) {
+
+    private static void doShiftSingle(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?>[] outputSources, boolean [] toShift) {
         //noinspection unchecked
         final WritableChunk<Values> [] values = new WritableChunk[outputSources.length];
         final ChunkSource.FillContext [] fcs = new ChunkSource.FillContext[outputSources.length];
@@ -339,8 +338,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftThreads(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource[] outputSources, boolean [] toShift) {
-        final Future[] futures = new Future[outputSources.length];
+    private static void doShiftThreads(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?>[] outputSources, boolean [] toShift) {
+        final Future<?>[] futures = new Future[outputSources.length];
         for (int columnIndex = 0; columnIndex < outputSources.length; columnIndex++) {
             if (toShift == null || toShift[columnIndex]) {
                 final int cc = columnIndex;
@@ -360,7 +359,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSource(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource outputSource) {
+    private static void doShiftSource(SafeCloseablePair<Index, Index> shifts, SparseArrayColumnSource<?> outputSource) {
         try (final OrderedKeys.Iterator preIt = shifts.first.getOrderedKeysIterator();
              final OrderedKeys.Iterator postIt = shifts.second.getOrderedKeysIterator();
              final WritableChunkSink.FillFromContext ffc = outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);

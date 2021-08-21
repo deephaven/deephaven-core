@@ -72,7 +72,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final ColumnHolder symHolder = TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
             final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
-            final Map<String, ColumnSource> columns = new LinkedHashMap<>();
+            final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             final Index index = Index.FACTORY.getFlatIndex(6);
             columns.put("Sym", TstUtils.getTreeMapColumnSource(index, symHolder));
             columns.put("Sentinel", TstUtils.getTreeMapColumnSource(index, sentinelHolder));

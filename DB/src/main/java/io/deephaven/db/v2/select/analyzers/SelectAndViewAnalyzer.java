@@ -9,7 +9,6 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.select.SourceColumn;
 import io.deephaven.db.v2.select.SwitchColumn;
 import io.deephaven.db.v2.sources.*;
-import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.db.v2.utils.RedirectionIndex;
@@ -22,7 +21,7 @@ import java.util.stream.Stream;
 public abstract class SelectAndViewAnalyzer {
     public enum Mode { VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING}
 
-    public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource> columnSources,
+    public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             Index index, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition> columnDefinitions = new LinkedHashMap<>();
@@ -35,7 +34,7 @@ public abstract class SelectAndViewAnalyzer {
         }
 
         for (final SelectColumn sc : selectColumns) {
-            final Map<String, ColumnSource> columnsOfInterest = analyzer.getAllColumnSources();
+            final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
             sc.initInputs(index, columnsOfInterest);
@@ -44,7 +43,7 @@ public abstract class SelectAndViewAnalyzer {
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
             if (sc instanceof SourceColumn || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
-                final ColumnSource sccs = sc.getDataView();
+                final ColumnSource<?> sccs = sc.getDataView();
                 if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource) && !DbArrayBase.class.isAssignableFrom(sc.getReturnedType())) {
                     analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
                     continue;
@@ -54,19 +53,19 @@ public abstract class SelectAndViewAnalyzer {
             final long targetSize = index.empty() ? 0 : index.lastKey() + 1;
             switch (mode) {
                 case VIEW_LAZY: {
-                    final ColumnSource viewCs = sc.getLazyView();
+                    final ColumnSource<?> viewCs = sc.getLazyView();
                     analyzer = analyzer.createLayerForView(sc.getName(), sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
                 case VIEW_EAGER: {
-                    final ColumnSource viewCs = sc.getDataView();
+                    final ColumnSource<?> viewCs = sc.getDataView();
                     analyzer = analyzer.createLayerForView(sc.getName(), sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of DbArrays).
-                    final WritableSource scs = sc.newDestInstance(targetSize);
+                    final WritableSource<?> scs = sc.newDestInstance(targetSize);
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
                     break;
                 }
@@ -75,11 +74,11 @@ public abstract class SelectAndViewAnalyzer {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of DbArrays).
                     // TODO(kosak): use DeltaAwareColumnSource
-                    WritableSource scs = sc.newDestInstance(targetSize);
-                    WritableSource underlyingSource = null;
+                    WritableSource<?> scs = sc.newDestInstance(targetSize);
+                    WritableSource<?> underlyingSource = null;
                     if (redirectionIndex != null) {
                         underlyingSource = scs;
-                        scs = new RedirectedColumnSource(redirectionIndex, underlyingSource, index.intSize());
+                        scs = new RedirectedColumnSource<>(redirectionIndex, underlyingSource, index.intSize());
                     }
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps, mcsBuilder, redirectionIndex != null);
                     break;
@@ -91,7 +90,7 @@ public abstract class SelectAndViewAnalyzer {
         return analyzer;
     }
 
-    private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource> sources, boolean publishTheseSources) {
+    private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource<?>> sources, boolean publishTheseSources) {
         return new BaseLayer(sources, publishTheseSources);
     }
 
@@ -100,17 +99,17 @@ public abstract class SelectAndViewAnalyzer {
     }
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
-            WritableSource<Attributes.Values> cs, WritableSource<Attributes.Values> underlyingSource,
+            WritableSource<?> cs, WritableSource<?> underlyingSource,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
         return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder, isRedirected);
     }
 
-    private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource cs,
+    private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
         return new ViewColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
     }
 
-    private SelectAndViewAnalyzer createLayerForPreserve(String name, SelectColumn sc, ColumnSource cs,
+    private SelectAndViewAnalyzer createLayerForPreserve(String name, SelectColumn sc, ColumnSource<?> cs,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder) {
         return new PreserveColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder);
     }
@@ -119,16 +118,16 @@ public abstract class SelectAndViewAnalyzer {
 
     enum GetMode { All, New, Published }
 
-    public final Map<String, ColumnSource> getAllColumnSources() {
+    public final Map<String, ColumnSource<?>> getAllColumnSources() {
         return getColumnSourcesRecurse(GetMode.All);
     }
-    public final Map<String, ColumnSource> getNewColumnSources() {
+    public final Map<String, ColumnSource<?>> getNewColumnSources() {
         return getColumnSourcesRecurse(GetMode.New);
     }
-    public final Map<String, ColumnSource> getPublishedColumnSources() {
+    public final Map<String, ColumnSource<?>> getPublishedColumnSources() {
         return getColumnSourcesRecurse(GetMode.Published);
     }
-    abstract Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode);
+    abstract Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode);
 
     public static class UpdateHelper implements SafeCloseable {
         private Index existingRows;

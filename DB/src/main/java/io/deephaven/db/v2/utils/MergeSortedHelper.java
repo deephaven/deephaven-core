@@ -87,7 +87,7 @@ public class MergeSortedHelper {
     public static Table mergeSortedHelper(String keyColumn, Collection<Table> tables) {
         PriorityQueue<TableCursor> priorityQueue = new PriorityQueue<>();
 
-        LinkedHashMap<String, SortedMergeColumnSource> columnSources = new LinkedHashMap<>();
+        LinkedHashMap<String, SortedMergeColumnSource<?>> columnSources = new LinkedHashMap<>();
         TIntArrayList tableList = new TIntArrayList();
         TLongArrayList indexList = new TLongArrayList();
 
@@ -101,17 +101,16 @@ public class MergeSortedHelper {
             }
 
             if (tableIndex == 0) {
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
-                    //noinspection unchecked
-                    columnSources.put(entry.getKey(), new SortedMergeColumnSource(tableList, indexList, entry.getValue()));
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : table.getColumnSourceMap().entrySet()) {
+                    columnSources.put(entry.getKey(), new SortedMergeColumnSource<>(tableList, indexList, entry.getValue()));
                 }
             } else {
                 if(!table.getColumnSourceMap().keySet().equals(columnSources.keySet())) {
                     throw new RuntimeException("Incompatible column sources: " + Arrays.toString(columnSources.keySet().toArray()) + " and " + Arrays.toString(table.getColumnSourceMap().keySet().toArray()));
                 }
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
-                    //noinspection unchecked
-                    columnSources.get(entry.getKey()).addSource(entry.getValue());
+                for (Map.Entry<String, ? extends ColumnSource<?>> entry : table.getColumnSourceMap().entrySet()) {
+                    //noinspection unchecked,rawtypes
+                    columnSources.get(entry.getKey()).addSource((ColumnSource) entry.getValue());
                 }
             }
 

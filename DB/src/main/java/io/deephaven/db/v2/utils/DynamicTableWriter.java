@@ -53,13 +53,13 @@ public class DynamicTableWriter implements TableWriter {
      */
     @SuppressWarnings("WeakerAccess")
     public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes, final Map<String, Object> constantValues) {
-        final Map<String, ColumnSource> sources = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         arrayColumnSources = new ArrayBackedColumnSource[columnTypes.length];
         allocatedSize = 256;
         for (int i = 0; i < columnTypes.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
-                final SingleValueColumnSource singleValueColumnSource = SingleValueColumnSource.getSingleValueColumnSource(columnTypes[i]);
                 //noinspection unchecked
+                final SingleValueColumnSource<Object> singleValueColumnSource = SingleValueColumnSource.getSingleValueColumnSource(columnTypes[i]);
                 singleValueColumnSource.set(constantValues.get(columnNames[i]));
                 sources.put(columnNames[i], singleValueColumnSource);
             } else {

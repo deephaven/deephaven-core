@@ -93,14 +93,14 @@ public class TableToolsMergeHelper {
      */
     private static Collection<? extends Table> getComponentTables(Table table) {
 
-        Map<String, ColumnSource> columnSourceMap = ((QueryTable)table).getColumnSourceMap();
+        Map<String, ColumnSource<?>> columnSourceMap = ((QueryTable)table).getColumnSourceMap();
         Assert.assertion(columnSourceMap.size() > 0, "columnSourceMap.size() > 0");
 
         UnionSourceManager unionSourceManager = null;
 
-        for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet())
+        for (Map.Entry<String, ColumnSource<?>> entry : columnSourceMap.entrySet())
         {
-            UnionColumnSource unionColumnSource = (UnionColumnSource)entry.getValue();
+            UnionColumnSource<?> unionColumnSource = (UnionColumnSource<?>) entry.getValue();
             UnionSourceManager thisUnionSourceManager = unionColumnSource.getUnionSourceManager();
 
             if (unionSourceManager == null)
@@ -128,9 +128,9 @@ public class TableToolsMergeHelper {
             for (Table componentAsTable : componentTables) {
                 QueryTable component = (QueryTable)componentAsTable;
                 // copy the sub sources over
-                Map<String, ColumnSource> componentSources = new LinkedHashMap<>();
-                for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet()) {
-                    final UnionColumnSource unionSource = (UnionColumnSource) entry.getValue();
+                Map<String, ColumnSource<?>> componentSources = new LinkedHashMap<>();
+                for (Map.Entry<String, ColumnSource<?>> entry : columnSourceMap.entrySet()) {
+                    final UnionColumnSource<?> unionSource = (UnionColumnSource<?>) entry.getValue();
                     componentSources.put(entry.getKey(), unionSource.getSubSource(componentIndex));
                 }
                 componentIndex++;
@@ -185,7 +185,7 @@ public class TableToolsMergeHelper {
         if (!table.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE)) {
             return false;
         }
-        Map<String, ColumnSource> columnSourceMap = queryTable.getColumnSourceMap();
+        Map<String, ColumnSource<?>> columnSourceMap = queryTable.getColumnSourceMap();
         if (columnSourceMap.isEmpty()) {
             return false;
         }
@@ -193,7 +193,7 @@ public class TableToolsMergeHelper {
             return false;
         }
 
-        final UnionColumnSource columnSource = (UnionColumnSource) columnSourceMap.values().iterator().next();
+        final UnionColumnSource<?> columnSource = (UnionColumnSource<?>) columnSourceMap.values().iterator().next();
         return columnSource.getUnionSourceManager().isUsingComponentsSafe();
     }
 }

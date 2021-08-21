@@ -65,7 +65,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     private final TLongSet modifiedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
     public UpdatableTable(@NotNull final Index index,
-                          @NotNull final Map<String, ? extends ColumnSource> nameToColumnSource,
+                          @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
                           @NotNull final Updater updater) {
         super(index, nameToColumnSource);
         this.updater = updater;

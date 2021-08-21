@@ -1308,10 +1308,9 @@ public class AsOfJoinHelper {
 
 
     private static QueryTable makeResult(QueryTable leftTable, Table rightTable, RedirectionIndex redirectionIndex, MatchPair[] columnsToAdd, boolean refreshing) {
-        final Map<String, ColumnSource> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
+        final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
-            //noinspection unchecked
-            final ReadOnlyRedirectedColumnSource rightSource = new ReadOnlyRedirectedColumnSource<>(redirectionIndex, rightTable.getColumnSource(mp.right()));
+            final ReadOnlyRedirectedColumnSource<?> rightSource = new ReadOnlyRedirectedColumnSource<>(redirectionIndex, (ColumnSource<?>) rightTable.getColumnSource(mp.right()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }

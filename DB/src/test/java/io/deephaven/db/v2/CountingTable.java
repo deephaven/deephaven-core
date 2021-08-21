@@ -22,8 +22,8 @@ import java.util.Map;
 class CountingTable {
     @NotNull
     static QueryTable getCountingTable(QueryTable nonCountingTable) {
-        Map<String, ColumnSource> countingSources = new LinkedHashMap<>();
-        nonCountingTable.getColumnSourceMap().entrySet().stream().forEach(x -> countingSources.put(x.getKey(), getCountingColumnSource(x.getValue())));
+        Map<String, ColumnSource<?>> countingSources = new LinkedHashMap<>();
+        nonCountingTable.getColumnSourceMap().entrySet().forEach(x -> countingSources.put(x.getKey(), getCountingColumnSource(x.getValue())));
         return new QueryTable(nonCountingTable.getIndex(), countingSources);
     }
 

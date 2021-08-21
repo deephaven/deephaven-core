@@ -143,7 +143,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Map<String, ? extends ColumnSource> getColumnSourceMap() {
+    public Map<String, ? extends ColumnSource<?>> getColumnSourceMap() {
         return coalesce().getColumnSourceMap();
     }
 

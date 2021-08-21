@@ -48,7 +48,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         sortColumns = new ColumnSource[sortColumnNames.length];
 
         for (int ii = 0; ii < sortColumnNames.length; ++ii) {
-            //noinspection unchecked
             sortColumns[ii] = QueryTable.maybeTransformToPrimitive(parent.getColumnSource(sortColumnNames[ii]));
 
             Require.requirement(Comparable.class.isAssignableFrom(sortColumns[ii].getType()) || sortColumns[ii].getType().isPrimitive(),
@@ -108,8 +107,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         final Index resultIndex = Index.FACTORY.getFlatIndex(sortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
-            //noinspection unchecked
+        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
 
@@ -137,8 +135,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         final Index resultIndex = Index.FACTORY.getFlatIndex(initialSortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-            //noinspection unchecked
+        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
 
@@ -227,8 +224,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             WritableChunkSink.FillFromContext fillFromContext = closer.add(sortMapping.makeFillFromContext(sortedKeys.length));
             sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys), closer.add(resultIndex.clone()));
 
-            for (Map.Entry<String, ColumnSource> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-                //noinspection unchecked
+            for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
                 resultMap.put(stringColumnSourceEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
             }
 
@@ -236,7 +232,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy = Arrays.stream(sortColumnNames).map(resultMap::get).toArray(ColumnSource[]::new);
             // we also reinterpret our sortedColumnsToSortBy, which are guaranteed to be redirected sources of the inner source
             for (int ii = 0; ii < sortedColumnsToSortBy.length; ++ii) {
-                //noinspection unchecked
                 sortedColumnsToSortBy[ii] = QueryTable.maybeTransformToPrimitive(sortedColumnsToSortBy[ii]);
             }
 

@@ -18,8 +18,8 @@ public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
     }
 
     @Override
-    final Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode) {
-        final Map<String, ColumnSource> result = inner.getColumnSourcesRecurse(mode);
+    final Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
+        final Map<String, ColumnSource<?>> result = inner.getColumnSourcesRecurse(mode);
         result.put(name, columnSource);
         return result;
     }

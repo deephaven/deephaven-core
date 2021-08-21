@@ -67,7 +67,7 @@ public class TableTools {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
     }
 
-    private static final Collector<ColumnHolder, ?, Map<String, ColumnSource>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR
+    private static final Collector<ColumnHolder<?>, ?, Map<String, ColumnSource<?>>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR
       = toLinkedMap(ColumnHolder::getName, ColumnHolder::getColumnSource);
 
     ///////////  Utilities To Display Tables /////////////////
@@ -947,7 +947,8 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder stringCol(String name, String... data) {
-        return new ColumnHolder(name, String.class, null, false, data);
+        // note: intellij says that we do not need to cast the varargs, but gradle warns that we are not
+        return new ColumnHolder(name, String.class, null, false, (Object[]) data);
     }
 
     /**
@@ -958,7 +959,8 @@ public class TableTools {
      * @return a Deephaven ColumnHolder object
      */
     public static ColumnHolder dateTimeCol(String name, DBDateTime... data) {
-        return new ColumnHolder(name, DBDateTime.class, null, false, data);
+        // note: intellij says that we do not need to cast the varargs, but gradle warns that we are not
+        return new ColumnHolder(name, DBDateTime.class, null, false, (Object[]) data);
     }
 
     /**
@@ -1084,7 +1086,7 @@ public class TableTools {
      * @param columns a Map of column names and ColumnSources
      * @return a Deephaven DynamicTable
      */
-    public static DynamicTable newTable(long size, Map<String, ColumnSource> columns) {
+    public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
         return new QueryTable(Index.FACTORY.getFlatIndex(size), columns);
     }
 
@@ -1095,7 +1097,7 @@ public class TableTools {
      * @return an empty Deephaven DynamicTable object
      */
     public static DynamicTable newTable(TableDefinition definition) {
-        Map<String, ColumnSource> columns = new LinkedHashMap<>();
+        Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition columnDefinition : definition.getColumnList()) {
             //noinspection unchecked
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType(), columnDefinition.getComponentType()));
@@ -1109,21 +1111,21 @@ public class TableTools {
      * @param columnHolders a list of ColumnHolders from which to create the table
      * @return a Deephaven DynamicTable
      */
-    public static DynamicTable newTable(ColumnHolder... columnHolders) {
+    public static DynamicTable newTable(ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         Index index = getIndex(columnHolders);
-        Map<String, ColumnSource> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(index, columns);
     }
 
-    public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
+    public static DynamicTable newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         Index index = getIndex(columnHolders);
-        Map<String, ColumnSource> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, index, columns);
     }
 
-    private static void checkSizes(ColumnHolder[] columnHolders) {
+    private static void checkSizes(ColumnHolder<?>[] columnHolders) {
         int[] sizes = Arrays.stream(columnHolders)
           .mapToInt(x -> x.data == null ? 0 : Array.getLength(x.data))
           .toArray();
@@ -1132,7 +1134,7 @@ public class TableTools {
         }
     }
 
-    private static Index getIndex(ColumnHolder[] columnHolders) {
+    private static Index getIndex(ColumnHolder<?>[] columnHolders) {
         return columnHolders.length == 0 ?
             Index.FACTORY.getEmptyIndex() :
             Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));

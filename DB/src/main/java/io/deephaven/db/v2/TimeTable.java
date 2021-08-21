@@ -33,10 +33,10 @@ public class TimeTable extends QueryTable implements LiveTable {
     private static final String TIMESTAMP = "Timestamp";
     private long lastIndex = -1;
     private final DateTimeArraySource dateTimeArraySource;
-    private TimeProvider timeProvider;
+    private final TimeProvider timeProvider;
     private DBDateTime lastTime;
-    private long dbPeriod;
-    private long binOffset;
+    private final long dbPeriod;
+    private final long binOffset;
     private final UpdatePerformanceTracker.Entry entry;
 
     public TimeTable(TimeProvider timeProvider, long dbPeriod) {
@@ -60,7 +60,7 @@ public class TimeTable extends QueryTable implements LiveTable {
         }
     }
 
-    private static Map<String, ColumnSource> initColumn() {
+    private static Map<String, ColumnSource<?>> initColumn() {
         return Collections.singletonMap(TIMESTAMP, new DateTimeArraySource());
     }
     @Override

@@ -59,7 +59,7 @@ public class WindowCheck {
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table, String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
         if (timeProvider == null) {

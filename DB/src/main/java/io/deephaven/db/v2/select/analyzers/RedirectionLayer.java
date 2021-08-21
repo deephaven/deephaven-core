@@ -37,7 +37,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode) {
+    public Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
         return inner.getColumnSourcesRecurse(mode);
     }
 

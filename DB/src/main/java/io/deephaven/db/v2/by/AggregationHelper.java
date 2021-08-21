@@ -4,6 +4,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.v2.*;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.sources.*;
@@ -52,7 +53,7 @@ public class AggregationHelper {
         }
 
         // Compute our key column sources
-        final Map<String, ColumnSource> existingColumnSourceMap = inputTable.getColumnSourceMap();
+        final Map<String, ColumnSource<?>> existingColumnSourceMap = inputTable.getColumnSourceMap();
         final Set<String> keyColumnUpstreamInputColumnNames = new HashSet<>(keyColumns.length);
         final String[] keyColumnNames;
         final String[] aggregatedColumnNames;
@@ -105,9 +106,8 @@ public class AggregationHelper {
                     Index.FACTORY.getFlatIndex(empty ? 0 : 1),
                     inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                             Map.Entry::getKey,
-                            (final Map.Entry<String, ColumnSource> columnNameToSourceEntry) -> {
-                                //noinspection unchecked
-                                final AggregateColumnSource aggregateColumnSource = AggregateColumnSource.make(columnNameToSourceEntry.getValue(), resultIndexColumnSource);
+                            (final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> {
+                                final AggregateColumnSource<DbArrayBase, ?> aggregateColumnSource = AggregateColumnSource.make(columnNameToSourceEntry.getValue(), resultIndexColumnSource);
                                 aggregateColumnSource.startTrackingPrevValues();
                                 return aggregateColumnSource;
                             },
@@ -173,7 +173,7 @@ public class AggregationHelper {
     }
 
     @NotNull
-    private static QueryTable staticGroupedBy(@NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+    private static QueryTable staticGroupedBy(@NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
                                               @NotNull final String keyColumnName,
                                               @NotNull final ColumnSource keyColumnSource,
                                               @NotNull final Map<?, Index> groupToIndex) {
@@ -185,10 +185,9 @@ public class AggregationHelper {
         final Index resultIndex = Index.FACTORY.getFlatIndex(groupToIndex.size());
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
         resultColumnSourceMap.put(keyColumnName, resultKeyColumnSource);
-        //noinspection unchecked
         existingColumnSourceMap.entrySet().stream()
-                .filter((final Map.Entry<String, ColumnSource> columnNameToSourceEntry) -> !columnNameToSourceEntry.getKey().equals(keyColumnName))
-                .forEachOrdered((final Map.Entry<String, ColumnSource> columnNameToSourceEntry) ->
+                .filter((final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> !columnNameToSourceEntry.getKey().equals(keyColumnName))
+                .forEachOrdered((final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) ->
                         resultColumnSourceMap.put(columnNameToSourceEntry.getKey(), AggregateColumnSource.make(columnNameToSourceEntry.getValue(), resultIndexColumnSource)));
 
         return new QueryTable(resultIndex, resultColumnSourceMap);
@@ -197,10 +196,10 @@ public class AggregationHelper {
     @NotNull
     private static QueryTable staticHashedBy(@NotNull final AggregationControl aggregationControl,
                                              @NotNull final QueryTable inputTable,
-                                             @NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+                                             @NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
                                              @NotNull final String[] keyColumnNames,
                                              @NotNull final String[] aggregatedColumnNames,
-                                             @NotNull final ColumnSource[] keyColumnSources) {
+                                             @NotNull final ColumnSource<?>[] keyColumnSources) {
         // Reinterpret key column sources as primitives where possible
         final ColumnSource[] maybeReinterpretedKeyColumnSources = maybeReinterpretKeyColumnSources(keyColumnSources);
 
@@ -234,7 +233,6 @@ public class AggregationHelper {
 
         // Gather the result aggregate columns
         final ColumnSource<Index> resultIndexColumnSource = new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
-        //noinspection unchecked
         Arrays.stream(aggregatedColumnNames)
                 .forEachOrdered((final String aggregatedColumnName) ->
                         resultColumnSourceMap.put(aggregatedColumnName, AggregateColumnSource.make(existingColumnSourceMap.get(aggregatedColumnName), resultIndexColumnSource)));
@@ -246,10 +244,10 @@ public class AggregationHelper {
     @NotNull
     private static QueryTable incrementalHashedBy(@NotNull final AggregationControl aggregationControl,
                                                   @NotNull final QueryTable inputTable,
-                                                  @NotNull final Map<String, ColumnSource> existingColumnSourceMap,
+                                                  @NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
                                                   @NotNull final String[] keyColumnNames,
                                                   @NotNull final String[] aggregatedColumnNames,
-                                                  @NotNull final ColumnSource[] keyColumnSources,
+                                                  @NotNull final ColumnSource<?>[] keyColumnSources,
                                                   @NotNull final Set<String> keyColumnUpstreamInputColumnNames) {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
         final ShiftAwareSwapListener swapListener = inputTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
@@ -288,7 +286,6 @@ public class AggregationHelper {
             final ColumnSource<Index> resultIndexColumnSource = new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
             Arrays.stream(aggregatedColumnNames)
                     .forEachOrdered((final String aggregatedColumnName) -> {
-                        //noinspection unchecked
                         final AggregateColumnSource aggregatedColumnSource = AggregateColumnSource.make(existingColumnSourceMap.get(aggregatedColumnName), resultIndexColumnSource);
                         aggregatedColumnSource.startTrackingPrevValues();
                         resultColumnSourceMap.put(aggregatedColumnName, aggregatedColumnSource);

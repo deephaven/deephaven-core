@@ -57,6 +57,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
             }
             // We can't reflectively check if R is Table or is some unexpected subclass that doesn't match what wrapTable
             // returns, so we just have to "cast to R" and let the calling code potentially fail with a ClassCastException.
+            //noinspection unchecked
             return (R) wrapTable.apply((Table) result);
         }
         return result;
@@ -68,7 +69,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Map<String, ? extends ColumnSource> getColumnSourceMap() {
+    public Map<String, ? extends ColumnSource<?>> getColumnSourceMap() {
         return parent.getColumnSourceMap();
     }
 

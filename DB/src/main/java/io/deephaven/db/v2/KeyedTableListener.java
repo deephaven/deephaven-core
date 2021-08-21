@@ -5,6 +5,7 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
@@ -18,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class KeyedTableListener {
 
-    public enum KeyEvent { ADDED, REMOVED, MODIFIED };
+    public enum KeyEvent { ADDED, REMOVED, MODIFIED }
 
     public interface KeyUpdateListener {
         void update(KeyedTableListener keyedTableListener, SmartKey key, long index, KeyEvent event);
@@ -30,7 +31,7 @@ public class KeyedTableListener {
     private final HashMap<SmartKey, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
     private final String[] keyColumnNames;
     private final String[] allColumnNames;
-    private final Map<String, ColumnSource> parentColumnSourceMap;
+    private final Map<String, ColumnSource<?>> parentColumnSourceMap;
     private final InstrumentedListenerAdapter tableListener;
 
     private static final long NO_ENTRY = -1;
@@ -54,7 +55,7 @@ public class KeyedTableListener {
         };
 
         List<String> allColumnNames = table.getDefinition().getColumnNames();
-        this.allColumnNames = allColumnNames.toArray(new String[allColumnNames.size()]);
+        this.allColumnNames = allColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         this.parentColumnSourceMap = table.getColumnSourceMap();
     }
 

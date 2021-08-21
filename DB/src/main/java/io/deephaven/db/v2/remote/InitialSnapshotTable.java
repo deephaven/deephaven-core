@@ -27,12 +27,12 @@ public class InitialSnapshotTable extends QueryTable {
     protected Index freeset = Index.FACTORY.getEmptyIndex();
     protected final Index populatedRows;
     protected final Index [] populatedCells;
-    protected WritableSource [] writableSources;
+    protected WritableSource<?> [] writableSources;
     protected RedirectionIndex redirectionIndex;
 
     private final BitSet subscribedColumns;
 
-    protected InitialSnapshotTable(Map<String, ? extends ColumnSource> result, WritableSource[] writableSources, RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources, RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
         super(Index.FACTORY.getEmptyIndex(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
@@ -182,12 +182,12 @@ public class InitialSnapshotTable extends QueryTable {
 
     public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot, BitSet subscribedColumns) {
         final ColumnDefinition[] columns = definition.getColumns();
-        WritableSource writableSources[] = new WritableSource[columns.length];
+        WritableSource<?>[] writableSources = new WritableSource[columns.length];
         RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        LinkedHashMap<String, ColumnSource> finalColumns = new LinkedHashMap<>();
+        LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int i = 0; i < columns.length; i++) {
-            writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(), columns[i].getComponentType());
             //noinspection unchecked
+            writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(), columns[i].getComponentType());
             finalColumns.put(columns[i].getName(), new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
         }
         // This table does not refresh, so we don't need to tell our redirection index or column source to start tracking

@@ -69,7 +69,7 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
         addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
 
         final Index streamInternalIndex;
-        final Map<String, ? extends ColumnSource> streamSources;
+        final Map<String, ? extends ColumnSource<?>> streamSources;
         if (windowed) {
             streamInternalIndex = null;
             streamSources = source.getColumnSourceMap();
@@ -77,10 +77,9 @@ public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
             // Redirecting so we can present a zero-based Index from the stream table
             streamInternalIndex = Index.FACTORY.getEmptyIndex();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalIndex);
-            //noinspection unchecked
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new ReadOnlyRedirectedColumnSource(streamRedirections, entry.getValue())),
+                    (entry -> new ReadOnlyRedirectedColumnSource<>(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new
             ));

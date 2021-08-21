@@ -66,15 +66,14 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final Index indexToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
         prevPivot = pivotPoint = computePivot(indexToReverse.lastKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
-        final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            // noinspection unchecked
-            resultMap.put(entry.getKey(), new ReversedColumnSource(entry.getValue(), this));
+        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
+            resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
         final Index index = transform(indexToReverse);
@@ -86,7 +85,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Reverse);
 
         if (!parent.isRefreshing()) {
-            return new Result(resultTable);
+            return new Result<>(resultTable);
         }
 
         final ShiftAwareListener listener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
@@ -96,7 +95,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
         };
 
-        return new Result(resultTable, listener);
+        return new Result<>(resultTable, listener);
     }
 
     private void onUpdate(final ShiftAwareListener.Update upstream) {

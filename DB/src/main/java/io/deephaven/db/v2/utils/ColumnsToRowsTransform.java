@@ -110,7 +110,7 @@ public class ColumnsToRowsTransform {
         final int fanout = labels.length;
         final int fanoutPow2 = fanout == 1 ? fanout : Integer.highestOneBit(fanout - 1) << 1;
 
-        final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
+        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
 
         final Set<String> allTransposeSet = new HashSet<>();
         final List<Set<String>> transposeSet = new ArrayList<>(transposeColumns.length);
@@ -125,7 +125,7 @@ public class ColumnsToRowsTransform {
         final CrossJoinShiftState crossJoinShiftState = bits > 0 ? new CrossJoinShiftState(bits) : null;
         final Class<?> [] valueTypes = new Class[transposeColumns.length];
         final String [] typeSourceName = new String[transposeColumns.length];
-        final ColumnSource [][] sourcesToTranspose = new ColumnSource[transposeColumns.length][labels.length];
+        final ColumnSource<?> [][] sourcesToTranspose = new ColumnSource[transposeColumns.length][labels.length];
         for (int cc = 0; cc < transposeColumns.length; ++cc) {
             for (int dd = 0; dd < transposeColumns[cc].length; ++dd) {
                 sourcesToTranspose[cc][dd] = source.getColumnSource(transposeColumns[cc][dd]);
@@ -151,8 +151,7 @@ public class ColumnsToRowsTransform {
             }
             expandSet.add(name);
             if (crossJoinShiftState != null) {
-                //noinspection unchecked
-                resultMap.put(name, new BitShiftingColumnSource(crossJoinShiftState, cs));
+                resultMap.put(name, new BitShiftingColumnSource<>(crossJoinShiftState, cs));
             } else {
                 resultMap.put(name, cs);
             }
@@ -164,8 +163,7 @@ public class ColumnsToRowsTransform {
             }
         } else {
             for (int cc = 0; cc < valueColumns.length; cc++) {
-                //noinspection unchecked
-                resultMap.put(valueColumns[cc], new TransposedColumnSource(valueTypes[cc], bits, sourcesToTranspose[cc]));
+                resultMap.put(valueColumns[cc], new TransposedColumnSource<>(valueTypes[cc], bits, sourcesToTranspose[cc]));
             }
         }
 
@@ -339,9 +337,9 @@ public class ColumnsToRowsTransform {
         private final int bits;
         private final long mask;
         private final boolean isImmutable;
-        private final ColumnSource[] transposeColumns;
+        private final ColumnSource<?>[] transposeColumns;
 
-        private TransposedColumnSource(final Class<T> valueType, final int bits, final ColumnSource[] transposeColumns) {
+        private TransposedColumnSource(final Class<T> valueType, final int bits, final ColumnSource<?>[] transposeColumns) {
             super(valueType);
             this.bits = bits;
             this.mask = (1L << bits) - 1;
@@ -483,7 +481,7 @@ public class ColumnsToRowsTransform {
         }
 
         private class TransposeFillContext implements FillContext {
-            final WritableChunk<? extends Attributes.Values> tempValues;
+            final WritableChunk<? super Attributes.Values> tempValues;
             final FillContext [] innerContexts;
             final WritableLongChunk<Attributes.OrderedKeyIndices> [] innerKeys;
             final WritableIntChunk<Attributes.ChunkPositions> [] outputPositions;
@@ -546,21 +544,18 @@ public class ColumnsToRowsTransform {
                     continue;
                 }
                 final boolean isComplete = transposeFillContext.innerKeys[ii].size() == originalSize;
-                // noinspection unchecked
-                final WritableChunk<? extends Attributes.Values> tempDest = isComplete ? (WritableChunk)destination : transposeFillContext.tempValues;
+                final WritableChunk<? super Attributes.Values> tempDest = isComplete ? destination : transposeFillContext.tempValues;
                 try (final OrderedKeys innerOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(transposeFillContext.innerKeys[ii])) {
                     if (usePrev) {
-                        //noinspection unchecked
                         transposeColumns[ii].fillPrevChunk(transposeFillContext.innerContexts[ii], tempDest, innerOk);
                     } else {
-                        //noinspection unchecked
                         transposeColumns[ii].fillChunk(transposeFillContext.innerContexts[ii], tempDest, innerOk);
                     }
                 }
                 if (isComplete) {
                     return;
                 }
-                //noinspection unchecked
+                //noinspection unchecked,rawtypes
                 transposeFillContext.permuteKernel.permute((WritableChunk)transposeFillContext.tempValues, transposeFillContext.outputPositions[ii], destination);
             }
         }

@@ -35,8 +35,8 @@ public class FunctionGeneratedTableFactory {
     private final Function.Nullary<Table> tableGenerator;
     private final int refreshIntervalMs;
     private long nextRefresh;
-    private Map<String, WritableSource> writableSources = new LinkedHashMap<>();
-    private Map<String, ColumnSource> columns = new LinkedHashMap<>();
+    private final Map<String, WritableSource<?>> writableSources = new LinkedHashMap<>();
+    private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
 
     Index index;
 
@@ -79,9 +79,9 @@ public class FunctionGeneratedTableFactory {
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
         Table initialTable = tableGenerator.call();
-        for (Map.Entry<String, ? extends ColumnSource> entry : initialTable.getColumnSourceMap().entrySet()) {
-            ColumnSource columnSource = entry.getValue();
-            final ArrayBackedColumnSource memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType(), columnSource.getComponentType());
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap().entrySet()) {
+            ColumnSource<?> columnSource = entry.getValue();
+            final ArrayBackedColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType(), columnSource.getComponentType());
             columns.put(entry.getKey(), memoryColumnSource);
             writableSources.put(entry.getKey(), memoryColumnSource);
         }
@@ -107,19 +107,19 @@ public class FunctionGeneratedTableFactory {
     }
 
     private void copyTable(Table source) {
-        Map<String, ? extends ColumnSource> sourceColumns = source.getColumnSourceMap();
+        Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
 
         Index sourceIndex = source.getIndex();
 
-        for (Map.Entry<String, ? extends ColumnSource> entry : sourceColumns.entrySet()) {
-            WritableSource destColumn = writableSources.get(entry.getKey());
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
+            WritableSource<?> destColumn = writableSources.get(entry.getKey());
             destColumn.ensureCapacity(sourceIndex.size());
 
             long position = 0;
             for (Index.Iterator sourceIt = sourceIndex.iterator(); sourceIt.hasNext(); ) {
                 long current = sourceIt.nextLong();
-                //noinspection unchecked
-                destColumn.copy(entry.getValue(), current, position++);
+                //noinspection unchecked,rawtypes
+                destColumn.copy((ColumnSource) entry.getValue(), current, position++);
             }
 
         }
@@ -127,7 +127,7 @@ public class FunctionGeneratedTableFactory {
 
     private class FunctionBackedTable extends QueryTable implements LiveTable
     {
-        FunctionBackedTable(Index index, Map < String, ColumnSource > columns) {
+        FunctionBackedTable(Index index, Map<String, ColumnSource<?>> columns) {
             super(index, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
