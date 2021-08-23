@@ -106,8 +106,6 @@ public class ArrowFlightUtil {
                     if (mi.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC) {
                         log.error().append("received invalid magic").endl();
                         mi.app_metadata = null;
-//                    } else {
-//                        mi.setSequenceInfo(mi.app_metadata.sequence(), mi.app_metadata.halfCloseAfterMessage());
                     }
                     break;
                 case FLIGHT_DESCRIPTOR_TAG:

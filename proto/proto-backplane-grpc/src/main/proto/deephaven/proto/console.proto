@@ -137,7 +137,6 @@ message AutoCompleteResponse {
 }
 
 message BrowserNextResponse {
-    //    bytes app_metadata = 1;?
 }
 
 message OpenDocumentRequest {
