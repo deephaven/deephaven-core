@@ -18,7 +18,7 @@ dependencies {
     // add configs, and some runtime dependencies to test classpaths
     testRuntime project(':configs'), project(':test-configs'),
             // need these projects so session default imports / generated type wrappers resolve correctly
-            project(':Numerics'), project(':Plot'), project(':KafkaIngester'), project(':DbTypesImpl')
+            project(':Numerics'), project(':Plot'), project(':Kafka'), project(':DbTypesImpl')
 }
 
 sourceSets {
