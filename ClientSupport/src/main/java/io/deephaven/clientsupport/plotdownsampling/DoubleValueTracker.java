@@ -9,8 +9,7 @@ import io.deephaven.db.v2.sources.DoubleArraySource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.utils.Index;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 

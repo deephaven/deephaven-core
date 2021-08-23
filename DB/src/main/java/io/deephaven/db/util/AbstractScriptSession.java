@@ -11,8 +11,6 @@ import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.lang.parse.api.CompletionParseService;
-import io.deephaven.lang.parse.api.CompletionParseServiceNoOp;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +43,6 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     protected final QueryScope queryScope;
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
-    private final CompletionParseService<?, ?, ?> parser;
 
     protected AbstractScriptSession(boolean isDefaultScriptSession) {
         final UUID scriptCacheId = UuidCreator.getRandomBased();
@@ -73,16 +70,6 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             CompilerTools.setDefaultContext(compilerContext);
             QueryScope.setDefaultScope(queryScope);
             QueryLibrary.setDefaultLibrary(queryLibrary);
-        }
-        @SuppressWarnings("rawtypes")
-        ServiceLoader<CompletionParseService> loader = ServiceLoader.load(CompletionParseService.class);
-        @SuppressWarnings("rawtypes")
-        final Iterator<CompletionParseService> itr = loader.iterator();
-        if (itr.hasNext()) {
-            parser = itr.next();
-        } else {
-            // hm, should maybe log to the user that we are using a do-nothing completer...
-            parser = new CompletionParseServiceNoOp();
         }
     }
 
@@ -170,13 +157,6 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
      * @return a query scope for this session; only invoked during construction
      */
     protected abstract QueryScope newQueryScope();
-
-    @Override
-    @SuppressWarnings("rawtypes")
-    public CompletionParseService getParser() {
-        return parser;
-    }
-
 
     @Override
     public Class getVariableType(final String var) {

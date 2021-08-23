@@ -9,7 +9,6 @@ import io.deephaven.db.util.liveness.LivenessNode;
 import io.deephaven.db.util.liveness.ReleasableLivenessManager;
 import io.deephaven.db.util.scripts.ScriptPathLoader;
 import io.deephaven.db.util.scripts.ScriptPathLoaderState;
-import io.deephaven.lang.parse.api.CompletionParseService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -48,8 +47,6 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      * @return a VariableProvider instance backed by the global/binding context of this script session.
      */
     VariableProvider getVariableProvider();
-
-    CompletionParseService getParser();
 
     class Changes {
         public Map<String, ExportedObjectType> created = new HashMap<>();

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
  * We will delete it after merging, to have it in git history,
  * in case we decide to revive it later.
  */
-public class DelegatingCompletionHandler implements CompletionHandler<ParsedDocument> {
+public class DelegatingCompletionHandler implements CompletionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DelegatingCompletionHandler.class);
     private final CompletionHandler[] handlers;

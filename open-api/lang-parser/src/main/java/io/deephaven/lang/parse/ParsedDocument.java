@@ -4,7 +4,6 @@ import io.deephaven.base.Lazy;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.*;
-import io.deephaven.lang.parse.api.ParsedResult;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 import io.deephaven.proto.backplane.script.grpc.Position;
@@ -21,7 +20,7 @@ import java.util.regex.Pattern;
  * For now, we will be re-parsing the entire string document every time,
  * but in the future, we would like to be able to update only ranges of changed code.
  */
-public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssign, Node> {
+public class ParsedDocument {
 
     private static class AnchorNode extends SimpleNode {
 
@@ -380,7 +379,6 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         }
     }
 
-    @Override
     public Map<String, List<ChunkerAssign>> getAssignments() {
         return assignments;
     }

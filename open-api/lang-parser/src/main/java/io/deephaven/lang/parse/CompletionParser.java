@@ -5,7 +5,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.Chunker;
 import io.deephaven.lang.generated.ChunkerDocument;
 import io.deephaven.lang.generated.ParseException;
-import io.deephaven.lang.parse.api.CompletionParseService;
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
@@ -18,10 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * A specialized parser for autocompletion;
  * maybe better to call it a chunker than a parser...
  */
-public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException>, Closeable {
+public class CompletionParser implements Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
-    private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
+    private final Map<String, PendingParse> docs = new ConcurrentHashMap<>();
 
     public ParsedDocument parse(String document) throws ParseException {
         Chunker chunker = new Chunker(document);
@@ -29,7 +28,6 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         return new ParsedDocument(doc, document);
     }
 
-    @Override
     public void open(final String text, final String uri, final String version) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
@@ -49,7 +47,6 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         return docs.computeIfAbsent(uri, k -> new PendingParse(uri));
     }
 
-    @Override
     public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
@@ -111,7 +108,6 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         }
     }
 
-    @Override
     public void remove(String uri) {
         final PendingParse was = docs.remove(uri);
         if (was != null) {
@@ -119,7 +115,6 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         }
     }
 
-    @Override
     public ParsedDocument finish(String uri) {
         final PendingParse doc = docs.get(uri);
         if (doc == null) {
