@@ -67,11 +67,6 @@ DataType = NewType('DataType', _qst_type_)
 # of the Java class (Class.getName()) to get a python type for it.
 @_passThrough
 def _typeFromJavaClassName(name : str):
-    """
-    Get the column data type for the corresponding Java type string reprensentation
-    The string provided should match the input expected for java.lang.Class.forName 
-    for a class visible to the main ClassLoader in the Deephaven engine in use.
-    """
     jclass = _table_tools_.typeFromName(name)
     return DataType(_qst_type_.find(jclass))
 
