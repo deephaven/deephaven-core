@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.type.DbPrimitiveArrayType",
+ "methods": {
+  "clazz": "The class representing this type.\n\n:return: (java.lang.Class<DbPrimitiveArrayType.T>) the class",
+  "componentType": "The component type.\n\n:return: (io.deephaven.qst.type.PrimitiveType<DbPrimitiveArrayType.ComponentType>) the component type",
+  "of": "Note: Java generics information - <T,\nComponentType>\n\n:param clazz: java.lang.Class<T>\n:param primitiveType: io.deephaven.qst.type.PrimitiveType<ComponentType>\n:return: io.deephaven.qst.type.DbPrimitiveArrayType<T,ComponentType>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.ArrayType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.DbPrimitiveArrayType",
+ "text": "The primitive array types under the package io.deephaven.db.tables.dbarrays.",
+ "typeName": "class"
+}
