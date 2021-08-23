@@ -60,7 +60,7 @@ def _defineSymbols():
         ALL_PARTITIONS = getattr(_java_type_, 'ALL_PARTITIONS')
         ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
         ALL_PARTITIONS_DONT_SEEK = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
-        ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_END')
+        ALL_PARTITIONS_SEEK_TO_END = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_END')
 
 
 # every module method should be decorated with @_passThrough
