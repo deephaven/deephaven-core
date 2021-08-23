@@ -242,7 +242,7 @@ class Session:
     def import_table(self, data: pyarrow.Table) -> Table:
         """ Import the pyarrow table as a new Deephaven table on the server.
 
-        Deephaven supports most of the Arrow data types, however, if the pyarrow table contains any field with a data
+        Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
         type not supported by Deephaven, the import operation will fail.
 
         Args:
