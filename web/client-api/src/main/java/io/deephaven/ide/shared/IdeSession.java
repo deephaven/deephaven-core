@@ -77,16 +77,13 @@ public class IdeSession extends HasEventHandling {
         this.connection = connection;
         this.closer = closer;
 
+        BiDiStream.Factory<AutoCompleteRequest, AutoCompleteResponse> factory = connection.streamFactory();
         streamFactory = () -> {
-            BiDiStream<AutoCompleteRequest, AutoCompleteResponse> stream = BiDiStream.of(
+            return factory.create(
                     connection.consoleServiceClient()::autoCompleteStream,
                     (firstPayload, headers) -> connection.consoleServiceClient().openAutoCompleteStream(firstPayload, headers),
-                    (nextPayload, headers) -> connection.consoleServiceClient().nextAutoCompleteStream(nextPayload, headers),
-                    connection::metadata,
-                    connection.getConfig()::newTicketInt,
-                    false
+                    (nextPayload, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(nextPayload, headers, c::apply)
             );
-            return stream;
         };
     }
 

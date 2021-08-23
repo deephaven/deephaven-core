@@ -5,6 +5,7 @@ import elemental2.core.JsArray;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.ResponseStreamWrapper;
+import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsPackage;
@@ -28,7 +29,38 @@ public abstract class BiDiStream<Req, Resp> {
         Object openStream(Req firstPayload, BrowserHeaders headers);
     }
     public interface NextStreamMessageFactory<Req> {
-        void nextStreamMessage(Req nextPayload, BrowserHeaders headers);
+        /**
+         * Should return a unary stream, handle the callback
+         */
+        void nextStreamMessage(Req nextPayload, BrowserHeaders headers, JsBiConsumer<Object, Object> callback);
+    }
+    public static class Factory<ReqT, RespT> {
+        private final Supplier<BrowserHeaders> headers;
+        private final IntSupplier nextIntTicket;
+        private final boolean useWebsocket;
+
+        public Factory(Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket, boolean useWebsocket) {
+            this.headers = headers;
+            this.nextIntTicket = nextIntTicket;
+            this.useWebsocket = useWebsocket;
+        }
+
+        public BiDiStream<ReqT, RespT> create(
+                BiDiStreamFactory bidirectionalStream,
+                OpenStreamFactory<ReqT> openEmulatedStream,
+                NextStreamMessageFactory<ReqT> nextEmulatedStream
+        ) {
+            if (useWebsocket) {
+                return websocket(bidirectionalStream.openBiDiStream(headers.get()));
+            } else {
+                return new EmulatedBiDiStream<>(
+                        openEmulatedStream,
+                        nextEmulatedStream,
+                        nextIntTicket.getAsInt(),
+                        headers
+                );
+            }
+        }
     }
 
     public static <Req, Resp> BiDiStream<Req, Resp> of(
@@ -137,7 +169,7 @@ public abstract class BiDiStream<Req, Resp> {
                 pending.length = 0;
             } else {
                 //TODO handle failure of this call
-                nextWrapper.nextStreamMessage(payload, makeHeaders());
+                nextWrapper.nextStreamMessage(payload, makeHeaders(), (failure, success) -> {});
             }
         }
 
@@ -164,7 +196,8 @@ public abstract class BiDiStream<Req, Resp> {
 
             BrowserHeaders nextHeaders = makeHeaders();
             nextHeaders.set("x-deephaven-stream-halfclose", "1");
-            nextWrapper.nextStreamMessage(Js.uncheckedCast(new Ticket()), nextHeaders);
+            //TODO handle failure of this call
+            nextWrapper.nextStreamMessage(Js.uncheckedCast(new Ticket()), nextHeaders, (failure, success) -> {});
         }
 
         private void waitForStream(JsConsumer<ResponseStreamWrapper<U>> action) {

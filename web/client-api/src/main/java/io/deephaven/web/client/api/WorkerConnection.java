@@ -80,13 +80,18 @@ import static io.deephaven.web.client.api.barrage.BarrageUtils.*;
  * table is left un-closed.
  */
 public class WorkerConnection {
+    private static final boolean useWebsockets;
 
     static {
         //TODO configurable, let us support this even when ssl?
         if (DomGlobal.window.location.getProtocol().equals("http:")) {
+            useWebsockets = true;
             Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
+        } else {
+            useWebsockets = false;
         }
     }
+
     private String sessionToken;
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
@@ -678,6 +683,10 @@ public class WorkerConnection {
         return metadata;
     }
 
+    public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
+        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt, useWebsockets);
+    }
+
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone, HasEventHandling failHandler) {
         // Store the ref to the data using an array we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
@@ -736,16 +745,10 @@ public class WorkerConnection {
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
             // table's creation, which can race this
-            BiDiStream<FlightData, FlightData> stream = BiDiStream.of(
+            BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                     headers -> flightServiceClient.doPut(headers),
                     (firstPayload, headers) -> browserFlightServiceClient.openDoPut(firstPayload, headers),
-                    (nextPayload, headers) -> browserFlightServiceClient.nextDoPut(nextPayload, headers),
-                    this::metadata,
-                    () -> {
-                        Uint8Array t = config.newTicketRaw();
-                        return new DataView(t.buffer, 1).getInt32(0);
-                    },
-                    false
+                    (nextPayload, headers, callback) -> browserFlightServiceClient.nextDoPut(nextPayload, headers, callback::apply)
             );
             stream.send(schemaMessage);
 
@@ -1077,16 +1080,10 @@ public class WorkerConnection {
                 //TODO make sure we can set true on halfClose before commit
                 request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest, new Uint8Array(0), 0, false));
 
-                BiDiStream<FlightData, FlightData> stream = BiDiStream.of(
+                BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),
                         (firstPayload, headers) -> browserFlightServiceClient.openDoExchange(firstPayload, headers),
-                        (nextPayload, headers) -> browserFlightServiceClient.nextDoExchange(nextPayload, headers),
-                        this::metadata,
-                        () -> {
-                            Uint8Array t = config.newTicketRaw();
-                            return new DataView(t.buffer, 1).getInt32(0);
-                        },
-                        false
+                        (nextPayload, headers, c) -> browserFlightServiceClient.nextDoExchange(nextPayload, headers, c::apply)
                 );
 
                 stream.send(request);
