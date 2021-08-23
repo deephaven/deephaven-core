@@ -5,7 +5,6 @@
 package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
-import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.grpc_api.browserstreaming.StreamData;
@@ -13,7 +12,6 @@ import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.io.logger.Logger;
 import io.grpc.*;
-import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
@@ -41,70 +39,41 @@ public class GrpcServiceOverrideBuilder {
 
     private final ServerServiceDefinition baseDefinition;
     private final List<GrpcOverrride<?, ?>> overrides = new ArrayList<>();
-    private final String serviceName;
 
-    private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition, String serviceName) {
+    private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition) {
         this.baseDefinition = baseDefinition;
-        this.serviceName = serviceName;
     }
 
     public static GrpcServiceOverrideBuilder newBuilder(ServerServiceDefinition baseDefinition, String serviceName) {
-        return new GrpcServiceOverrideBuilder(baseDefinition, serviceName);
+        return new GrpcServiceOverrideBuilder(baseDefinition);
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.BIDI_STREAMING);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.SERVER_STREAMING);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ClientStreamingMethod<ReqT, RespT> handler) {
-        validateMethodType(method.getType(), MethodDescriptor.MethodType.CLIENT_STREAMING);
-        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncClientStreamingCall(handler)));
-        return this;
-    }
-
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.UNARY);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncUnaryCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCallHandler<ReqT, RespT> callHandler, ServerInterceptor interceptor) {
-        overrides.add(new GrpcOverrride<>(method, InternalServerInterceptors.interceptCallHandler(interceptor, callHandler)));
-        return this;
-    }
-
-    public <ReqT> GrpcServiceOverrideBuilder onNextOverride(
-            final Delegate<ReqT, BrowserFlight.BrowserNextResponse> delegate,
-            final String methodName,
-            final MethodDescriptor<?, ?> descriptor,
-            final MethodDescriptor.Marshaller<ReqT> requestMarshaller) {
-        return override(MethodDescriptor.<ReqT, BrowserFlight.BrowserNextResponse>newBuilder()
-                .setType(MethodDescriptor.MethodType.UNARY)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
-                .setSampledToLocalTracing(false)
-                .setRequestMarshaller(requestMarshaller)
-                .setResponseMarshaller(ProtoUtils.marshaller(BrowserFlight.BrowserNextResponse.getDefaultInstance()))
-                .setSchemaDescriptor(descriptor.getSchemaDescriptor())
-                .build(), new NextBrowserStreamMethod<>(delegate));
-    }
-
-    public <ReqT, RespT> GrpcServiceOverrideBuilder onOpenOverride(
+    public <ReqT, RespT> GrpcServiceOverrideBuilder onServerStreamingOverride(
             final Delegate<ReqT, RespT> delegate,
-            final String methodName,
             final MethodDescriptor<?, ?> descriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
         return override(MethodDescriptor.<ReqT, RespT>newBuilder()
                 .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
+                .setFullMethodName(descriptor.getFullMethodName())
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(responseMarshaller)
@@ -114,13 +83,12 @@ public class GrpcServiceOverrideBuilder {
 
     public <ReqT, RespT> GrpcServiceOverrideBuilder onBidiOverride(
             final BidiDelegate<ReqT, RespT> delegate,
-            final String methodName,
             final MethodDescriptor<?, ?> descriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller) {
         return override(MethodDescriptor.<ReqT, RespT>newBuilder()
                 .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
-                .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, methodName))
+                .setFullMethodName(descriptor.getFullMethodName())
                 .setSampledToLocalTracing(false)
                 .setRequestMarshaller(requestMarshaller)
                 .setResponseMarshaller(responseMarshaller)
@@ -130,16 +98,14 @@ public class GrpcServiceOverrideBuilder {
 
     public <ReqT, RespT, NextRespT> GrpcServiceOverrideBuilder onBidiOverrideWithBrowserSupport(
             final BidiDelegate<ReqT, RespT> delegate,
-            final String methodName,
-            final MethodDescriptor<ReqT, RespT> bidiDescriptor,
-            final MethodDescriptor<ReqT, RespT> openDescriptor,
-            final MethodDescriptor<ReqT, NextRespT> nextDescriptor,
+            final MethodDescriptor<?, ?> bidiDescriptor,
+            final MethodDescriptor<?, ?> openDescriptor,
+            final MethodDescriptor<?, ?> nextDescriptor,
             final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
             final MethodDescriptor.Marshaller<RespT> responseMarshaller,
             final MethodDescriptor.Marshaller<NextRespT> nextResponseMarshaller,
             BrowserStream.Mode mode,
             Logger log, SessionService sessionService) {
-        BrowserStreamMethod<ReqT, RespT, NextRespT> method = new BrowserStreamMethod<>(log, mode, delegate, sessionService);
         return this
                 .override(MethodDescriptor.<ReqT, RespT>newBuilder()
                         .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
@@ -150,9 +116,32 @@ public class GrpcServiceOverrideBuilder {
                         .setSchemaDescriptor(bidiDescriptor.getSchemaDescriptor())
                         .build(), new BidiStreamMethod<>(delegate)
                 )
+                .onBidiBrowserSupport(delegate,
+                        openDescriptor,
+                        nextDescriptor,
+                        requestMarshaller,
+                        responseMarshaller,
+                        nextResponseMarshaller,
+                        mode,
+                        log,
+                        sessionService
+                );
+    }
+
+    public <ReqT, RespT, NextRespT> GrpcServiceOverrideBuilder onBidiBrowserSupport(
+            final BidiDelegate<ReqT, RespT> delegate,
+            final MethodDescriptor<?, ?> openDescriptor,
+            final MethodDescriptor<?, ?> nextDescriptor,
+            final MethodDescriptor.Marshaller<ReqT> requestMarshaller,
+            final MethodDescriptor.Marshaller<RespT> responseMarshaller,
+            final MethodDescriptor.Marshaller<NextRespT> nextResponseMarshaller,
+            BrowserStream.Mode mode,
+            Logger log, SessionService sessionService) {
+        BrowserStreamMethod<ReqT, RespT, NextRespT> method = new BrowserStreamMethod<>(log, mode, delegate, sessionService);
+        return this
                 .override(MethodDescriptor.<ReqT, RespT>newBuilder()
                         .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
-                        .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, "Open" + methodName))
+                        .setFullMethodName(openDescriptor.getFullMethodName())
                         .setSampledToLocalTracing(false)
                         .setRequestMarshaller(requestMarshaller)
                         .setResponseMarshaller(responseMarshaller)
@@ -160,7 +149,7 @@ public class GrpcServiceOverrideBuilder {
                         .build(), method.open())
                 .override(MethodDescriptor.<ReqT, NextRespT>newBuilder()
                         .setType(MethodDescriptor.MethodType.UNARY)
-                        .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, "Next" + methodName))
+                        .setFullMethodName(nextDescriptor.getFullMethodName())
                         .setSampledToLocalTracing(false)
                         .setRequestMarshaller(requestMarshaller)
                         .setResponseMarshaller(nextResponseMarshaller)
@@ -295,31 +284,9 @@ public class GrpcServiceOverrideBuilder {
 
         @Override
         public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
-            // pass our response stream to the real bidi method and call the resulting
-            // request observer with our first payload.
-
-            // if halfclose, complete right away
-
-            // otherwise, stash the request observer for the subsequent "next" call
-
             final ServerCallStreamObserver<RespT> serverCall = (ServerCallStreamObserver<RespT>) responseObserver;
             serverCall.disableAutoInboundFlowControl();
             serverCall.request(Integer.MAX_VALUE);
-            delegate.doInvoke(request, responseObserver);
-        }
-    }
-
-    public static class NextBrowserStreamMethod<ReqT, RespT> implements ServerCalls.UnaryMethod<ReqT, RespT> {
-
-        private final Delegate<ReqT, RespT> delegate;
-
-        public NextBrowserStreamMethod(final Delegate<ReqT, RespT> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
-            //
             delegate.doInvoke(request, responseObserver);
         }
     }

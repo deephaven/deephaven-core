@@ -745,7 +745,7 @@ public class WorkerConnection {
                         Uint8Array t = config.newTicketRaw();
                         return new DataView(t.buffer, 1).getInt32(0);
                     },
-                    true
+                    false
             );
             stream.send(schemaMessage);
 
@@ -1086,7 +1086,7 @@ public class WorkerConnection {
                             Uint8Array t = config.newTicketRaw();
                             return new DataView(t.buffer, 1).getInt32(0);
                         },
-                        true
+                        false
                 );
 
                 stream.send(request);

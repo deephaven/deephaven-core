@@ -29,7 +29,7 @@ public class ConsoleServiceGrpcBinding implements BindableService {
     @Override
     public ServerServiceDefinition bindService() {
         return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), ConsoleServiceGrpc.SERVICE_NAME)
-                .onBidiOverrideWithBrowserSupport(delegate::autoCompleteStream, "AutoCompleteStream",
+                .onBidiOverrideWithBrowserSupport(delegate::autoCompleteStream,
                         ConsoleServiceGrpc.getAutoCompleteStreamMethod(),
                         ConsoleServiceGrpc.getOpenAutoCompleteStreamMethod(),
                         ConsoleServiceGrpc.getNextAutoCompleteStreamMethod(),
@@ -40,7 +40,6 @@ public class ConsoleServiceGrpcBinding implements BindableService {
                         log,
                         sessionService
                 )
-
                 .build();
     }
 }
