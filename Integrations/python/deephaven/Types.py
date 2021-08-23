@@ -66,10 +66,10 @@ DataType = NewType('DataType', _qst_type_)
 # For more involved types, you can always use the string representation
 # of the Java class (Class.getName()) to get a python type for it.
 @_passThrough
-def typeFromJavaClassName(name : str):
+def _typeFromJavaClassName(name : str):
     """
     Get the column data type for the corresponding Java type string reprensentation
-    The string provided should match the output in Java for Class.getName()
+    The string provided should match the input expected for java.lang.Class.forName 
     for a class visible to the main ClassLoader in the Deephaven engine in use.
     """
     jclass = _table_tools_.typeFromName(name)
@@ -94,24 +94,24 @@ single = float_   # make life simple for people who are used to NumPy
 float32 = float_  # make life simple for people who are used to pyarrow
 double = DataType(_qst_type_.doubleType())
 float64 = double  # make life simple for people who are used to pyarrow
-string = typeFromJavaClassName('java.lang.String')
-bigdecimal = typeFromJavaClassName('java.math.BigDecimal')
-stringset =  typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
+string = DataType(_qst_type_.stringType())
+bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
+stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
 datetime = DataType(_qst_type_.instantType())
 
-byte_array = typeFromJavaClassName('byte[]')
-short_array = typeFromJavaClassName('short[]')
+byte_array = DataType(byte.arrayType())
+short_array = DataType(short.arrayType())
 int16_array = short_array
-int_array = typeFromJavaClassName('int[]')
+int_array = DataType(int_.arrayType())
 int32_array = int_array
-long_array = typeFromJavaClassName('long[]')
+long_array = DataType(long_.arrayType())
 int64_array = long_array
-float_array = typeFromJavaClassName('float[]')
+float_array = DataType(float_.arrayType())
 single_array = float_array
 float32_array = float_array
-double_array = typeFromJavaClassName('double[]')
+double_array = DataType(double.arrayType())
 float64_array = double_array
-string_array = typeFromJavaClassName('java.lang.String[]')
+string_array = DataType(string.arrayType())
 
 @_passThrough
 def _jclassFromType(data_type : DataType):
@@ -157,7 +157,7 @@ def _jpyTypeFromType(data_type : DataType):
 
 @_passThrough
 def _isPrimitive(data_type : DataType):
-    primitives = { bool_, byte, short, int_, long_, float_, double }
+    primitives = { byte, short, int_, long_, float_, double }
     return data_type in primitives
 
 @_passThrough
