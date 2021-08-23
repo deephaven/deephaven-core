@@ -13,7 +13,7 @@ import org.apache.avro.generic.GenericRecord;
 public class GenericRecordByteFieldCopier implements FieldCopier {
     private final String fieldName;
 
-    public GenericRecordByteFieldCopier(String fieldName) {
+    public GenericRecordByteFieldCopier(final String fieldName) {
         this.fieldName = fieldName;
     }
 

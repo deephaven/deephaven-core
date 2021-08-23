@@ -13,7 +13,7 @@ import org.apache.avro.generic.GenericRecord;
 public class GenericRecordIntFieldCopier implements FieldCopier {
     private final String fieldName;
 
-    public GenericRecordIntFieldCopier(String fieldName) {
+    public GenericRecordIntFieldCopier(final String fieldName) {
         this.fieldName = fieldName;
     }
 

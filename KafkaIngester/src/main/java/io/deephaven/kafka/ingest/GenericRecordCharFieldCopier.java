@@ -10,7 +10,7 @@ import org.apache.avro.generic.GenericRecord;
 public class GenericRecordCharFieldCopier implements FieldCopier {
     private final String fieldName;
 
-    public GenericRecordCharFieldCopier(String fieldName) {
+    public GenericRecordCharFieldCopier(final String fieldName) {
         this.fieldName = fieldName;
     }
 

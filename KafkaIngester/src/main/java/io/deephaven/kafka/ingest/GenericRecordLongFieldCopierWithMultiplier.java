@@ -12,7 +12,7 @@ public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
     private final String fieldName;
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(String fieldName, long multiplier) {
+    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final long multiplier) {
         this.fieldName = fieldName;
         this.multiplier = multiplier;
     }
