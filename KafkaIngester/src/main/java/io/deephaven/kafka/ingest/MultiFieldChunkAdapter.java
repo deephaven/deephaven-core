@@ -32,7 +32,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         final String[] columnNames = definition.getColumnNamesArray();
         final Class<?>[] columnTypes = definition.getColumnTypesArray();
 
-        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>();
+        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>(columnNames.length, 0.5f, -1);
         for (int ii = 0; ii < columnNames.length; ++ii) {
             deephavenColumnNameToIndex.put(columnNames[ii], ii);
         }

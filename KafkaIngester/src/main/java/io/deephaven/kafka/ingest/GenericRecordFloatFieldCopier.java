@@ -13,7 +13,7 @@ import org.apache.avro.generic.GenericRecord;
 public class GenericRecordFloatFieldCopier implements FieldCopier {
     private final String fieldName;
 
-    public GenericRecordFloatFieldCopier(String fieldName) {
+    public GenericRecordFloatFieldCopier(final String fieldName) {
         this.fieldName = fieldName;
     }
 

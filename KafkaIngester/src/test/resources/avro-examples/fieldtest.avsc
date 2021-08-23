@@ -2,6 +2,7 @@
   "fields": [
    {"name": "number", "type": "int", "doc": "The number of the player"},
    {"name": "last_name", "type": "string"},
+   {"name": "truthiness", "type": "boolean"},
    {"name": "timestamp", "type": { "type": "long", "logicalType": "timestamp-millis"}},
    {"name": "timestampMicros", "type": { "type": "long", "logicalType": "timestamp-micros"}},
    {"name": "timeMillis", "type": { "type": "int", "logicalType": "time-millis"}},

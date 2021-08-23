@@ -13,7 +13,7 @@ import org.apache.avro.generic.GenericRecord;
 public class GenericRecordDoubleFieldCopier implements FieldCopier {
     private final String fieldName;
 
-    public GenericRecordDoubleFieldCopier(String fieldName) {
+    public GenericRecordDoubleFieldCopier(final String fieldName) {
         this.fieldName = fieldName;
     }
 
