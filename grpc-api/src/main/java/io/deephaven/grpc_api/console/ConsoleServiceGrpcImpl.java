@@ -13,22 +13,24 @@ import io.deephaven.db.tables.remote.preview.ColumnPreviewManager;
 import io.deephaven.db.util.ExportedObjectType;
 import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.ScriptSession;
+import io.deephaven.db.util.VariableProvider;
 import io.deephaven.figures.FigureWidgetTranslator;
-import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
-import io.deephaven.grpc_api.browserstreaming.StreamData;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
-import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
 import io.deephaven.io.logger.LogBufferRecordListener;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.completion.ChunkerCompleter;
+import io.deephaven.lang.completion.CompletionLookups;
 import io.deephaven.lang.parse.CompletionParser;
+import io.deephaven.lang.parse.LspTools;
+import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.*;
@@ -39,8 +41,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.Closeable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
 import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
@@ -262,56 +266,80 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(StreamObserver<AutoCompleteResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            return new AutocompleteMessageMarshaller(responseObserver, session, ensureParserForSession(session));
+            CompletionParser parser = ensureParserForSession(session);
+            return new StreamObserver<AutoCompleteRequest>() {
+
+                @Override
+                public void onNext(AutoCompleteRequest value) {
+                    switch (value.getRequestCase()) {
+                        case OPEN_DOCUMENT: {
+                            final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
+
+                            parser.open(doc.getText(), doc.getUri(), Integer.toString(doc.getVersion()));
+                            break;
+                        }
+                        case CHANGE_DOCUMENT: {
+                            ChangeDocumentRequest request = value.getChangeDocument();
+                            final VersionedTextDocumentIdentifier text = request.getTextDocument();
+                            parser.update(text.getUri(), Integer.toString(text.getVersion()), request.getContentChangesList());
+                            break;
+                        }
+                        case GET_COMPLETION_ITEMS: {
+                            GetCompletionItemsRequest request = value.getGetCompletionItems();
+                            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
+                            session.nonExport()
+                                    .require(exportedConsole)
+                                    .onError(responseObserver::onError)
+                                    .submit(() -> {
+                                        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+                                        ScriptSession scriptSession = exportedConsole.get();
+                                        final VariableProvider vars = scriptSession.getVariableProvider();
+                                        final CompletionLookups h = CompletionLookups.preload(scriptSession);
+                                        // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached
+                                        // so, we'll just create a new completer for each request. No need to hand onto these guys.
+                                        final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
+                                        final ParsedDocument parsed = parser.finish(doc.getUri());
+                                        int offset = LspTools.getOffsetFromPosition(parsed.getSource(), request.getPosition());
+                                        final Collection<CompletionItem.Builder> results = completer.runCompletion(parsed, request.getPosition(), offset);
+                                        final GetCompletionItemsResponse mangledResults = GetCompletionItemsResponse.newBuilder()
+                                                .addAllItems(results.stream().map(
+                                                        // insertTextFormat is a default we used to set in constructor;
+                                                        // for now, we'll just process the objects before sending back to client
+                                                        item -> item.setInsertTextFormat(2).build()
+                                                ).collect(Collectors.toSet())).build();
+
+                                        safelyExecute(() -> {
+                                            responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                                    .setCompletionItems(mangledResults)
+                                                    .build());
+                                        });
+                                    });
+                            break;
+                        }
+                        case CLOSE_DOCUMENT: {
+                            CloseDocumentRequest request = value.getCloseDocument();
+                            parser.remove(request.getTextDocument().getUri());
+                            break;
+                        }
+                        case REQUEST_NOT_SET: {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Autocomplete command missing request");
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    // ignore, client doesn't need us, will be cleaned up later
+                }
+
+                @Override
+                public void onCompleted() {
+                    // just hang up too, browser will reconnect if interested
+                    responseObserver.onCompleted();
+                }
+            };
         });
     }
-
-//    @Override
-//    public void openAutoCompleteStream(AutoCompleteRequest request, StreamObserver<AutoCompleteResponse> responseObserver) {
-//        StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
-//        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-//            final SessionState session = sessionService.getCurrentSession();
-//
-//            if (streamData == null) {
-//                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
-//            }
-//
-//            AutocompleteMessageMarshaller autocomplete = new AutocompleteMessageMarshaller(responseObserver, session, ensureParserForSession(session));
-//            BrowserStream<AutoCompleteRequest> browserStream = new BrowserStream<>(BrowserStream.Mode.IN_ORDER, session, autocomplete);
-//            browserStream.onMessageReceived(request, streamData);
-//
-//            if (!streamData.isHalfClose()) {
-//                // if this isn't a half-close, we should export it for later calls - if it is, the client won't send more messages
-//                session.newExport(streamData.getRpcTicket())
-//                        .onError(responseObserver::onError)
-//                        .submit(() -> browserStream);
-//            }
-//        });
-//    }
-//
-//    @Override
-//    public void nextAutoCompleteStream(AutoCompleteRequest request, StreamObserver<BrowserNextResponse> responseObserver) {
-//        StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
-//        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-//            final SessionState session = sessionService.getCurrentSession();
-//
-//            if (streamData == null) {
-//                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
-//            }
-//
-//            final SessionState.ExportObject<BrowserStream<AutoCompleteRequest>> browserStream =
-//                    session.getExport(streamData.getRpcTicket());
-//
-//            session.nonExport()
-//                    .require(browserStream)
-//                    .onError(responseObserver::onError)
-//                    .submit(() -> {
-//                        browserStream.get().onMessageReceived(request, streamData);
-//                        responseObserver.onNext(BrowserNextResponse.getDefaultInstance());
-//                        responseObserver.onCompleted();
-//                    });
-//        });
-//    }
 
     @Override
     public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {

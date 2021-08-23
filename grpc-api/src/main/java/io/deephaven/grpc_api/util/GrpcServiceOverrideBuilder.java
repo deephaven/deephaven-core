@@ -12,8 +12,6 @@ import io.deephaven.grpc_api.browserstreaming.StreamData;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
-import io.deephaven.proto.backplane.script.grpc.BrowserNextResponse;
 import io.grpc.*;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -297,7 +295,7 @@ public class GrpcServiceOverrideBuilder {
 
         @Override
         public void invoke(final ReqT request, final StreamObserver<RespT> responseObserver) {
-            // pass our resposne stream to the real bidi method and call the resulting
+            // pass our response stream to the real bidi method and call the resulting
             // request observer with our first payload.
 
             // if halfclose, complete right away
