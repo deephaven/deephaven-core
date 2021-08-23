@@ -49,7 +49,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldName);
             case Byte:
-                if (dataType == Boolean.class) {
+                if (dataType == Boolean.class || dataType == boolean.class) {
                     return new GenericRecordBooleanFieldCopier(fieldName);
                 }
                 return new GenericRecordByteFieldCopier(fieldName);
@@ -59,6 +59,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 return new GenericRecordIntFieldCopier(fieldName);
             case Long:
                 if (dataType == DBDateTime.class) {
+                    // TODO: we must get the multiplier from the Avro schema
                     throw new UnsupportedOperationException();
                 }
                 return new GenericRecordLongFieldCopier(fieldName);
