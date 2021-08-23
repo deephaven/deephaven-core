@@ -21,12 +21,66 @@ _qst_newtable_ = None
 _qst_type_ = None
 _table_ = None
 
+# Represents a Deephaven column data type.
+# None until the first _defineSymbols() call
+DataType = None
+
+#
+# Define basic Deephaven column data types.
+# Column data types in python are represented as the jpy wrapper for the
+# corresponding Java class object for the column's Java type.
+#
+# None until the first _defineSymbols() call
+bool_ = None
+byte = None
+short = None
+int16 = None
+int_ = None
+int32 = None
+long_ = None
+int64 = None
+float_ = None
+single = None
+float32 = None
+double = None
+float64 = None
+string = None
+bigdecimal = None
+stringset = None
+datetime = None
+byte_array = None
+short_array = None
+int16_array = None
+int_array = None
+int32_array = None
+long_array = None
+int64_array = None
+float_array = None
+single_array = None
+float32_array = None
+double_array = None
+float64_array = None
+string_array = None
+_type2jtype = None
+
+
+def _typeFromJavaClassName(name : str):
+    jclass = _table_tools_.typeFromName(name)
+    return DataType(_qst_type_.find(jclass))
+
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, _qst_column_, \
-        _qst_newtable_, _qst_type_, _table_
+    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, \
+        _qst_column_, _qst_newtable_, _qst_type_, _table_, \
+        DataType, bool_, byte, short, int16, int_, int32, long_, int64, \
+        float_, single, float32, double, float64, \
+        string, bigdecimal, stringset, datetime, \
+        byte_array, short_array, int16_array, int_array, int32_array, long_array, int64_array, \
+        float_array, single_array, float32_array, double_array, float64_array, string_array, \
+        _type2jtype
+
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
@@ -37,6 +91,63 @@ def _defineSymbols():
         _qst_newtable_ = jpy.get_type("io.deephaven.qst.table.NewTable")
         _qst_type_ = jpy.get_type("io.deephaven.qst.type.Type")
         _table_ = jpy.get_type("io.deephaven.db.tables.Table")
+
+    if DataType is None:
+        DataType = NewType('DataType', _qst_type_)
+        bool_ = DataType(_qst_type_.booleanType())
+        byte = DataType(_qst_type_.byteType())
+        short = DataType(_qst_type_.shortType())
+        int16 = short  # make life simple for people who are used to pyarrow
+        int_ = DataType(_qst_type_.intType())
+        int32 = int_  # make life simple for people who are used to pyarrow
+        long_ = DataType(_qst_type_.longType())
+        int64 = long_   # make life simple for people who are used to pyarrow
+        float_ = DataType(_qst_type_.floatType())
+        single = float_   # make life simple for people who are used to NumPy
+        float32 = float_  # make life simple for people who are used to pyarrow
+        double = DataType(_qst_type_.doubleType())
+        float64 = double  # make life simple for people who are used to pyarrow
+        string = DataType(_qst_type_.stringType())
+        bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
+        stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
+        datetime = DataType(_qst_type_.instantType())
+
+        # Array types.
+        byte_array = DataType(byte.arrayType())
+        short_array = DataType(short.arrayType())
+        int16_array = short_array
+        int_array = DataType(int_.arrayType())
+        int32_array = int_array
+        long_array = DataType(long_.arrayType())
+        int64_array = long_array
+        float_array = DataType(float_.arrayType())
+        single_array = float_array
+        float32_array = float_array
+        double_array = DataType(double.arrayType())
+        float64_array = double_array
+        string_array = DataType(string.arrayType())
+
+        _type2jtype = {
+            bool_ : jpy.get_type('java.lang.Boolean'),
+            byte : jpy.get_type('byte'),
+            short : jpy.get_type('short'),
+            int_ : jpy.get_type('int'),
+            long_ : jpy.get_type('long'),
+            float_ : jpy.get_type('float'),
+            double : jpy.get_type('double'),
+            string : jpy.get_type('java.lang.String'),
+            bigdecimal : jpy.get_type('java.math.BigDecimal'),
+            stringset : jpy.get_type('io.deephaven.db.tables.libs.StringSet'),
+            datetime : jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'),
+            byte_array : jpy.get_type('[B'),
+            short_array : jpy.get_type('[S'),
+            int_array : jpy.get_type('[I'),
+            long_array : jpy.get_type('[J'),
+            float_array : jpy.get_type('[S'),
+            double_array : jpy.get_type('[D'),
+            string_array : jpy.get_type('[Ljava.lang.String;')
+        }
+
 
 # every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
@@ -54,59 +165,12 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+
 try:
     _defineSymbols()
 except Exception as e:
     pass
 
-
-# Represents a Deephaven column data type.
-DataType = NewType('DataType', _qst_type_)
-
-# For more involved types, you can always use the string representation
-# of the Java class (Class.getName()) to get a python type for it.
-@_passThrough
-def _typeFromJavaClassName(name : str):
-    jclass = _table_tools_.typeFromName(name)
-    return DataType(_qst_type_.find(jclass))
-
-
-#
-# Basic Deephaven column data types.
-# Column data types in python are represented as the jpy wrapper for the
-# corresponding Java class object for the column's Java type.
-#
-bool_ = DataType(_qst_type_.booleanType())
-byte = DataType(_qst_type_.byteType())
-short = DataType(_qst_type_.shortType())
-int16 = short  # make life simple for people who are used to pyarrow
-int_ = DataType(_qst_type_.intType())
-int32 = int_  # make life simple for people who are used to pyarrow
-long_ = DataType(_qst_type_.longType())
-int64 = long_   # make life simple for people who are used to pyarrow
-float_ = DataType(_qst_type_.floatType())
-single = float_   # make life simple for people who are used to NumPy
-float32 = float_  # make life simple for people who are used to pyarrow
-double = DataType(_qst_type_.doubleType())
-float64 = double  # make life simple for people who are used to pyarrow
-string = DataType(_qst_type_.stringType())
-bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
-stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
-datetime = DataType(_qst_type_.instantType())
-
-byte_array = DataType(byte.arrayType())
-short_array = DataType(short.arrayType())
-int16_array = short_array
-int_array = DataType(int_.arrayType())
-int32_array = int_array
-long_array = DataType(long_.arrayType())
-int64_array = long_array
-float_array = DataType(float_.arrayType())
-single_array = float_array
-float32_array = float_array
-double_array = DataType(double.arrayType())
-float64_array = double_array
-string_array = DataType(string.arrayType())
 
 @_passThrough
 def _jclassFromType(data_type : DataType):
@@ -123,27 +187,7 @@ def _jclassFromType(data_type : DataType):
 def _jpyTypeFromType(data_type : DataType):
     if data_type is None:
         return None
-    type2jtype = {
-        bool_ : jpy.get_type('java.lang.Boolean'),
-        byte : jpy.get_type('byte'),
-        short : jpy.get_type('short'),
-        int_ : jpy.get_type('int'),
-        long_ : jpy.get_type('long'),
-        float_ : jpy.get_type('float'),
-        double : jpy.get_type('double'),
-        string : jpy.get_type('java.lang.String'),
-        bigdecimal : jpy.get_type('java.math.BigDecimal'),
-        stringset : jpy.get_type('io.deephaven.db.tables.libs.StringSet'),
-        datetime : jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'),
-        byte_array : jpy.get_type('[B'),
-        short_array : jpy.get_type('[S'),
-        int_array : jpy.get_type('[I'),
-        long_array : jpy.get_type('[J'),
-        float_array : jpy.get_type('[S'),
-        double_array : jpy.get_type('[D'),
-        string_array : jpy.get_type('[Ljava.lang.String;')
-    }
-    jpy_type = type2jtype.get(data_type, None)
+    jpy_type = _type2jtype.get(data_type, None)
     if jpy_type is not None:
         return jpy_type
     jclass = _jclassFromType(data_type)
