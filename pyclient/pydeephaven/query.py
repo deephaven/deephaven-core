@@ -26,7 +26,7 @@ class Query:
         self._ops = self._last_op = NoneOp(table=table)
 
     def exec(self) -> Table:
-        """ Execute the query on the server and returns the result table.
+        """ Execute the query on the server and return the result table.
 
         Args:
 
