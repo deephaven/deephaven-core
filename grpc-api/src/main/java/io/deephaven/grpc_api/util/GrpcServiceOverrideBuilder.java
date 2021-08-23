@@ -107,14 +107,11 @@ public class GrpcServiceOverrideBuilder {
             BrowserStream.Mode mode,
             Logger log, SessionService sessionService) {
         return this
-                .override(MethodDescriptor.<ReqT, RespT>newBuilder()
-                        .setType(MethodDescriptor.MethodType.BIDI_STREAMING)
-                        .setFullMethodName(bidiDescriptor.getFullMethodName())
-                        .setSampledToLocalTracing(false)
-                        .setRequestMarshaller(requestMarshaller)
-                        .setResponseMarshaller(responseMarshaller)
-                        .setSchemaDescriptor(bidiDescriptor.getSchemaDescriptor())
-                        .build(), new BidiStreamMethod<>(delegate)
+                .onBidiOverride(
+                        delegate,
+                        bidiDescriptor,
+                        requestMarshaller,
+                        responseMarshaller
                 )
                 .onBidiBrowserSupport(delegate,
                         openDescriptor,

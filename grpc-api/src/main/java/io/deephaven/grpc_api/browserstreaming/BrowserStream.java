@@ -9,17 +9,21 @@ import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import java.io.Closeable;
 
 public class BrowserStream<T> implements Closeable {
     public enum Mode {
+        /** Messages must be processed in order, if a gap is observed in sequences wait until the missing message arrives. */
         IN_ORDER,
+        /** Always process the current message if it has the highest sequence, if an old message arrives, ignore it. */
         MOST_RECENT
     }
 
+    /**
+     * Creates a BrowserStream based on the current session and the observed passed in to the open stream call.
+     */
     public interface Factory<ReqT, RespT> {
         BrowserStream<ReqT> create(SessionState sessionState, StreamObserver<RespT> responseObserver);
     }
@@ -52,36 +56,38 @@ public class BrowserStream<T> implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(BrowserStream.class);
 
+    /**
+     * Builds a BrowserStream factory based on the given mode and bidirectional stream method.
+     */
     public static <ReqT, RespT> Factory<ReqT, RespT> factory(Mode mode, GrpcServiceOverrideBuilder.BidiDelegate<ReqT, RespT> bidiDelegate) {
         return (session, responseObserver) -> new BrowserStream<>(mode, session, new Marshaller<ReqT>() {
-            private final StreamObserver<ReqT> observer = bidiDelegate.doInvoke(responseObserver);
+            private final StreamObserver<ReqT> requestObserver = bidiDelegate.doInvoke(responseObserver);
             @Override
             public void onMessageReceived(ReqT message) {
-                observer.onNext(message);
+                requestObserver.onNext(message);
             }
 
             @Override
             public void onCancel() {
-                //TODO or should this be CANCELED?
-                StatusRuntimeException canceled = GrpcUtil.statusRuntimeException(Code.ABORTED, "Stream canceled on the server");
+                StatusRuntimeException canceled = GrpcUtil.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
                 GrpcUtil.safelyExecute(() -> {
                     responseObserver.onError(canceled);
                 });
 
-                //TODO necessary?
+                //TODO is this necessary or does the above result in this being called automatically?
                 GrpcUtil.safelyExecute(() -> {
-                    observer.onError(canceled);
+                    requestObserver.onError(canceled);
                 });
             }
 
             @Override
             public void onError(Throwable err) {
-                observer.onError(err);
+                requestObserver.onError(err);
             }
 
             @Override
             public void onCompleted() {
-                observer.onCompleted();
+                requestObserver.onCompleted();
             }
         });
     }

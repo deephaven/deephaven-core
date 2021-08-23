@@ -1,8 +1,8 @@
 package io.deephaven.grpc_api.browserstreaming;
 
-import io.deephaven.grpc_api.session.SessionService;
-import io.deephaven.grpc_api.session.SessionState;
+import com.google.rpc.Code;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.*;
 
@@ -10,12 +10,28 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Objects;
 
+/**
+ * Interceptor to notice x-deephaven-stream headers in a request and provide them to
+ * later parts of BrowserStream tooling so that unary and server-streaming calls can
+ * be combined into an emulated bidirectional stream.
+ */
 @Singleton
 public class BrowserStreamInterceptor implements ServerInterceptor {
+    // Browsers evidently cannot interact with binary h2 headers, so all of these are ascii
+    /** Export ticket int value. */
     private static final Metadata.Key<String> RPC_TICKET = Metadata.Key.of("x-deephaven-stream-ticket", Metadata.ASCII_STRING_MARSHALLER);
+    /** Payload sequence in the stream, starting with zero. */
     private static final Metadata.Key<String> SEQ_HEADER = Metadata.Key.of("x-deephaven-stream-sequence", Metadata.ASCII_STRING_MARSHALLER);
+    /**
+     * Present to indicate that this is a half-close operation. If this is the first payload,
+     * ticket and sequence are not required, and the payload will be considered. Otherwise,
+     * payload and sequence are required, and payload will be ignored.
+     */
     private static final Metadata.Key<String> HALF_CLOSE_HEADER = Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
 
+    /**
+     * Provided access to the emulated stream metadata, if any.
+     */
     public static final Context.Key<StreamData> STREAM_DATA_KEY = Context.key("stream-data");
 
     @Inject
@@ -28,37 +44,24 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
         String ticketInt = headers.get(RPC_TICKET);
         boolean hasHalfClose = headers.containsKey(HALF_CLOSE_HEADER);
         if (ticketInt != null) {
+            // ticket was provided, sequence is assumed to be provided as well, otherwise that is an error
             final Ticket rpcTicket = ExportTicketHelper.exportIdToTicket(Integer.parseInt(ticketInt));
-            // this is an emulated stream, could be open or next
             String sequenceString = headers.get(SEQ_HEADER);
-            if (sequenceString != null) {
-                // this is a next call or a close call
-                assert isOpenOrNext(call);
-                StreamData data = new StreamData(rpcTicket, Integer.parseInt(sequenceString), hasHalfClose);
-                Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
-                return Contexts.interceptCall(ctx, call, headers, next);
+            if (sequenceString == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot set x-deephaven-stream-ticket without also setting x-deephaven-stream-sequence");
             }
-
-            // this is an open call, forward it with the ticket
-            //TODO assert halfclose
-            StreamData data = new StreamData(rpcTicket, 0, hasHalfClose);
+            StreamData data = new StreamData(rpcTicket, Integer.parseInt(sequenceString), hasHalfClose);
             Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
         } else if (hasHalfClose) {
-            assert Objects.requireNonNull(call.getMethodDescriptor().getBareMethodName(), "method descriptor bareMethodName").startsWith("Open");
-            // this is an open call with halfclose set, no ticket
-            // seq is irrelevant
+            // This is an open call with halfclose set, and no ticket, and without a ticket, the sequence
+            // is irrelevant.
             StreamData data = new StreamData(null, 0, hasHalfClose);
             Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
         }
 
-        // ignore it, no header set
+        // No headers were set, ignore the call and handle it normally.
         return next.startCall(call, headers);
-    }
-
-    private boolean isOpenOrNext(ServerCall<?, ?> call) {
-        String bareMethodName = Objects.requireNonNull(call.getMethodDescriptor().getBareMethodName(), "method descriptor bareMethodName is missing: " + call.getMethodDescriptor().getFullMethodName());
-        return bareMethodName.startsWith("Open") || bareMethodName.startsWith("Next");
     }
 }
