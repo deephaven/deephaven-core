@@ -54,7 +54,7 @@ public abstract class ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> implements Tabl
 
         Rows(int initialCapacity) {
             others = others().start(initialCapacity);
-            builder = Array.builder(header7().type(), initialCapacity);
+            builder = Array.builder(header7().componentType(), initialCapacity);
         }
 
         public final Rows row(T1 a, T2 b, T3 c, T4 d, T5 e, T6 f, T7 g) {

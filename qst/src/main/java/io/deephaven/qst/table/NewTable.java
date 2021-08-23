@@ -74,7 +74,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     public static NewTable empty(TableHeader header) {
         Builder builder = builder().size(0);
         for (ColumnHeader<?> columnHeader : header) {
-            builder.putColumns(columnHeader.name(), Array.empty(columnHeader.type()));
+            builder.putColumns(columnHeader.name(), Array.empty(columnHeader.componentType()));
         }
         return builder.build();
     }
@@ -110,7 +110,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     public final TableHeader header() {
         TableHeader.Builder builder = TableHeader.builder();
         for (Entry<String, Array<?>> e : columns().entrySet()) {
-            builder.putHeaders(e.getKey(), e.getValue().type());
+            builder.putHeaders(e.getKey(), e.getValue().componentType());
         }
         return builder.build();
     }

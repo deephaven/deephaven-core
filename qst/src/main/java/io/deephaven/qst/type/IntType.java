@@ -15,8 +15,13 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
-    public final Class<Integer> primitiveClass() {
+    public final Class<Integer> clazz() {
         return int.class;
+    }
+
+    @Override
+    public final NativeArrayType<int[], Integer> arrayType() {
+        return NativeArrayType.of(int[].class, this);
     }
 
     @Override

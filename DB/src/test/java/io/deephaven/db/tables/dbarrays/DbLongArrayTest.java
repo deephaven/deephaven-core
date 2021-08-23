@@ -153,6 +153,10 @@ public class DbLongArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbLongArray.type().clazz(), DbLongArray.class);
+    }
+
     private void checkSubArray(DbLongArray dbArray, int start, int end, long result[]){
         DbLongArray subArray = dbArray.subArray(start, end);
         long array[] = subArray.toArray();

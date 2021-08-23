@@ -1,12 +1,15 @@
 package io.deephaven.qst.type;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class TypeHelper {
     private static final Map<Class<?>, Type<?>> MAPPINGS;
@@ -20,9 +23,27 @@ class TypeHelper {
     }
 
     static List<Type<?>> knownTypes() {
-        return Arrays.asList(BooleanType.instance(), ByteType.instance(), CharType.instance(),
+        return Stream.concat(primitiveTypes(), genericTypes()).collect(Collectors.toList());
+    }
+
+    static Stream<PrimitiveType<?>> primitiveTypes() {
+        return Stream.of(BooleanType.instance(), ByteType.instance(), CharType.instance(),
             ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
-            DoubleType.instance(), StringType.instance(), InstantType.instance());
+            DoubleType.instance());
+    }
+
+    static Stream<GenericType<?>> genericTypes() {
+        return Stream.concat(Stream.of(StringType.instance(), InstantType.instance()),
+            dbPrimitiveArrayTypes());
+    }
+
+    static Stream<DbPrimitiveArrayType<?, ?>> dbPrimitiveArrayTypes() {
+        try {
+            return DbPrimitiveArrayType.types().stream();
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
+            | IllegalAccessException e) {
+            return Stream.empty();
+        }
     }
 
     static <T> Optional<Type<T>> findStatic(Class<T> clazz) {
@@ -36,7 +57,13 @@ class TypeHelper {
 
         private <T> void add(Class<T> clazz, Type<T> type) {
             if (mappings.put(clazz, type) != null) {
-                throw new IllegalStateException();
+                throw new IllegalStateException(String.format("Already added '%s'", clazz));
+            }
+        }
+
+        private void addUnchecked(Class<?> clazz, Type<?> type) {
+            if (mappings.put(clazz, type) != null) {
+                throw new IllegalStateException(String.format("Already added '%s'", clazz));
             }
         }
 
@@ -106,6 +133,29 @@ class TypeHelper {
         @Override
         public void visit(InstantType instantType) {
             add(Instant.class, instantType);
+        }
+
+        @Override
+        public void visit(ArrayType<?, ?> arrayType) {
+            arrayType.walk(new ArrayType.Visitor() {
+                @Override
+                public void visit(NativeArrayType<?, ?> nativeArrayType) {
+                    throw new IllegalArgumentException(
+                        "Native array types should not be created statically, they will be found dynamically");
+                }
+
+                @Override
+                public void visit(DbPrimitiveArrayType<?, ?> dbArrayPrimitiveType) {
+                    addUnchecked(dbArrayPrimitiveType.clazz(), dbArrayPrimitiveType);
+                }
+
+                @Override
+                public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
+                    // The db array type by itself is not specific enough
+                    throw new IllegalStateException(
+                        "Should not be adding DbGenericArrayType as static mapping");
+                }
+            });
         }
 
         // NOTE: when adding new visitor methods, be sure to add the appropriate type to

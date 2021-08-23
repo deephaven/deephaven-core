@@ -34,15 +34,15 @@ public abstract class Column<T> {
     }
 
     public static <T> Column<T> empty(ColumnHeader<T> header) {
-        return of(header.name(), Array.empty(header.type()));
+        return of(header.name(), Array.empty(header.componentType()));
     }
 
     public static <T> Column<T> of(ColumnHeader<T> header, T... data) {
-        return of(header.name(), Array.of(header.type(), data));
+        return of(header.name(), Array.of(header.componentType(), data));
     }
 
     public static <T> Column<T> of(ColumnHeader<T> header, Collection<T> data) {
-        return of(header.name(), Array.of(header.type(), data));
+        return of(header.name(), Array.of(header.componentType(), data));
     }
 
     public static <T> Column<T> of(String name, Class<T> clazz, T... values) {
@@ -173,7 +173,7 @@ public abstract class Column<T> {
     }
 
     public final Type<T> type() {
-        return array().type();
+        return array().componentType();
     }
 
     public final int size() {

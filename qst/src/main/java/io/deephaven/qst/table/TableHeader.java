@@ -25,7 +25,7 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
         Builder putHeaders(String key, Type<?> value);
 
         default Builder addHeaders(ColumnHeader<?> header) {
-            return putHeaders(header.name(), header.type());
+            return putHeaders(header.name(), header.componentType());
         }
 
         default Builder addHeaders(ColumnHeader<?>... headers) {
