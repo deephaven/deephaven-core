@@ -13,8 +13,10 @@ setup(
     author='Deephaven Data Labs',
     author_email='jianfengmao@deephaven.io',
     description='The Deephaven Python Client',
+    python_requires='>3.7',
 
     install_requires=['pyarrow',
+                      'pandas',
                       'bitstring',
                       'grpcio',
                       'protobuf']
