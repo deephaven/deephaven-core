@@ -173,8 +173,10 @@ public class KafkaIngester {
 
     public static long SEEK_TO_BEGINNING = -1;
     public static long DONT_SEEK = -2;
+    public static long SEEK_TO_END = -3;
     public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = (int p) -> SEEK_TO_BEGINNING;
     public static IntToLongFunction ALL_PARTITIONS_DONT_SEEK = (int p) -> DONT_SEEK;
+    public static IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = (int p) -> SEEK_TO_END;
 
     /**
      * Creates a Kafka ingester for the given topic.
@@ -220,6 +222,9 @@ public class KafkaIngester {
             if (seekOffset == SEEK_TO_BEGINNING) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to beginning.").append(seekOffset).endl();
                 consumer.seekToBeginning(Collections.singletonList(topicPartition));
+            } else if (seekOffset == SEEK_TO_END) {
+                log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to end.").append(seekOffset).endl();
+                consumer.seekToEnd(Collections.singletonList(topicPartition));
             } else if (seekOffset != DONT_SEEK) {
                 log.info().append(logPrefix).append(topicPartition.toString()).append(" seeking to offset ").append(seekOffset).append(".").endl();
                 consumer.seek(topicPartition, seekOffset);

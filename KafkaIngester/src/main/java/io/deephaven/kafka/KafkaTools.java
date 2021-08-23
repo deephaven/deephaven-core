@@ -886,11 +886,15 @@ public class KafkaTools {
     @SuppressWarnings("unused")
     public static final long DONT_SEEK = KafkaIngester.DONT_SEEK;
     @SuppressWarnings("unused")
+    public static final long SEEK_TO_END = KafkaIngester.SEEK_TO_END;
+    @SuppressWarnings("unused")
     public static final IntPredicate ALL_PARTITIONS = KafkaIngester.ALL_PARTITIONS;
     @SuppressWarnings("unused")
     public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_BEGINNING = KafkaIngester.ALL_PARTITIONS_SEEK_TO_BEGINNING;
     @SuppressWarnings("unused")
     public static final IntToLongFunction ALL_PARTITIONS_DONT_SEEK = KafkaIngester.ALL_PARTITIONS_DONT_SEEK;
+    @SuppressWarnings("unused")
+    public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = KafkaIngester.ALL_PARTITIONS_SEEK_TO_END;
     @SuppressWarnings("unused")
     public static final Function<String, String> DIRECT_MAPPING = Function.identity();
     @SuppressWarnings("unused")
