@@ -30,7 +30,7 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = 'localhost', port: int = 10000):
+    def __init__(self, host: str = None, port: int = None):
         """ Initialize a Session object that connects to the Deephaven server
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
@@ -46,8 +46,15 @@ class Session:
         self._r_lock = threading.RLock()
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
-        self.host = os.environ.get("DHCE_HOST", host)
-        self.port = os.environ.get("DHCE_PORT", port)
+
+        self.host = host
+        if not host:
+            self.host = os.environ.get("DHCE_HOST", "localhost")
+
+        self.port = port
+        if not port:
+            self.port = os.environ.get("DHCE_PORT", 10000)
+
         self.is_connected = False
         self.session_token = None
         self.grpc_channel = None

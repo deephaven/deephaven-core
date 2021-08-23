@@ -14,7 +14,7 @@ from pydeephaven.dherror import DHError
 
 
 class Table:
-    """ A Table object represents a reference to a in-memory table on the server. It is the core data structure of
+    """ A Table object represents a reference to a table on the server. It is the core data structure of
     Deephaven and supports a rich set of operations such as filtering, sorting, aggregating, joining, snapshotting etc.
 
     Note, an application should never instantiate a Table object directly. Table objects are always provided through
@@ -25,7 +25,7 @@ class Table:
         is_closed (bool): check if the table has been closed on the server
     """
 
-    def __init__(self, session=None, ticket=None, schema_header=b'', size=0, is_static=True, schema=None):
+    def __init__(self, session=None, ticket=None, schema_header=b'', size=None, is_static=None, schema=None):
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
@@ -201,6 +201,7 @@ class Table:
 
         Raises:
             DHError
+
 
         """
         return self.session.table_service.sort(self, column_names=column_names, directions=directions)
