@@ -18,13 +18,15 @@ _python_tools_ = None
 _qst_col_header_ = None
 _qst_column_ = None
 _qst_newtable_ = None
+_qst_type_ = None
 _table_ = None
 
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, _qst_column_, _qst_newtable_, _table_
+    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, _qst_column_, \
+        _qst_newtable_, _qst_type_, _table_
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
@@ -32,7 +34,8 @@ def _defineSymbols():
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
         _qst_column_ =  jpy.get_type("io.deephaven.qst.column.Column")
-        _qst_newtable_ =  jpy.get_type("io.deephaven.qst.table.NewTable")
+        _qst_newtable_ = jpy.get_type("io.deephaven.qst.table.NewTable")
+        _qst_type_ = jpy.get_type("io.deephaven.qst.type.Type")
         _table_ = jpy.get_type("io.deephaven.db.tables.Table")
 
 # every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
@@ -58,56 +61,57 @@ except Exception as e:
 
 
 # Represents a Deephaven column data type.
-DataType = NewType('DataType', type)
+DataType = NewType('DataType', _qst_type_)
+
+# For more involved types, you can always use the string representation
+# of the Java class (Class.getName()) to get a python type for it.
+@_passThrough
+def typeFromJavaClassName(name : str):
+    """
+    Get the column data type for the corresponding Java type string reprensentation
+    The string provided should match the output in Java for Class.getName()
+    for a class visible to the main ClassLoader in the Deephaven engine in use.
+    """
+    jclass = _table_tools_.typeFromName('java.lang.String')
+    return DataType(_qst_type_.find(jclass))
+
 
 #
 # Basic Deephaven column data types.
 # Column data types in python are represented as the jpy wrapper for the
 # corresponding Java class object for the column's Java type.
 #
-bool_ = DataType(jpy.get_type('java.lang.Boolean'))
-byte = DataType(jpy.get_type('byte'))
-short = DataType(jpy.get_type('short'))
+bool_ = DataType(_qst_type_.booleanType())
+byte = DataType(_qst_type_.byteType())
+short = DataType(_qst_type_.shortType())
 int16 = short  # make life simple for people who are used to pyarrow
-int_ = DataType(jpy.get_type('int'))
+int_ = DataType(_qst_type_.intType())
 int32 = int_  # make life simple for people who are used to pyarrow
-long_ = DataType(jpy.get_type('long'))
+long_ = DataType(_qst_type_.longType())
 int64 = long_   # make life simple for people who are used to pyarrow
-float_ = DataType(jpy.get_type('float'))
+float_ = DataType(_qst_type_.floatType())
 single = float_   # make life simple for people who are used to NumPy
 float32 = float_  # make life simple for people who are used to pyarrow
-double = DataType(jpy.get_type('double'))
+double = DataType(_qst_type_.doubleType())
 float64 = double  # make life simple for people who are used to pyarrow
-string = DataType(jpy.get_type('java.lang.String'))
-bigdecimal = DataType(jpy.get_type('java.math.BigDecimal'))
-stringset = DataType(jpy.get_type('io.deephaven.db.tables.libs.StringSet'))
-datetime = DataType(jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'))
+string = typeFromJavaClassName('java.lang.String')
+bigdecimal = typeFromJavaClassName('java.math.BigDecimal')
+stringset =  typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
+datetime = DataType(_qst_type_.instantType())
 
-byte_array = DataType(jpy.get_type('[B'))
-short_array = DataType(jpy.get_type('[S'))
+byte_array = typeFromJavaClassName('byte[]')
+short_array = typeFromJavaClassName('short[]')
 int16_array = short_array
-int_array = DataType(jpy.get_type('[I'))
+int_array = typeFromJavaClassName('int[]')
 int32_array = int_array
-long_array = DataType(jpy.get_type('[J'))
+long_array = typeFromJavaClassName('long[]')
 int64_array = long_array
-float_array = DataType(jpy.get_type('[F'))
+float_array = typeFromJavaClassName('float[]')
 single_array = float_array
 float32_array = float_array
-double_array = DataType(jpy.get_type('[D'))
+double_array = typeFromJavaClassName('double[]')
 float64_array = double_array
-string_array = DataType(jpy.get_type('[Ljava.lang.String;'))
-
-# For more involved types, you can always use the string representation
-# of the Java class (Class.getName()) to get a python type for it.
-@_passThrough
-def typeFromName(name : str):
-    """
-    Get the column data type for the corresponding Java type string reprensentation
-    The string provided should match the output in Java for Class.getName()
-    for a class visible to the main ClassLoader in the Deephaven engine in use.
-    """
-    return DataType(jpy.get_type(name))
-
+string_array = typeFromJavaClassName('java.Lang.String[]')
 
 @_passThrough
 def _jclassFromType(data_type : DataType):
@@ -135,12 +139,35 @@ def _jclassFromType(data_type : DataType):
     }
     name = type2name.get(data_type, None)
     if name is None:
-        type2str = str(data_type)
-        q0 = type2str.index("'")
-        q1 = type2str.index("'", q0 + 1)
-        name = type2str[q0 : q1 + 1]
+        return None
 
     return _table_tools_.typeFromName(name)
+
+@_passThrough
+def _jpyTypeFromType(data_type : DataType):
+    if data_type is None:
+        return None
+    type2jtype = {
+        bool_ : jpy.get_type('java.lang.Boolean'),
+        byte : jpy.get_type('byte'),
+        short : jpy.get_type('short'),
+        int_ : jpy.get_type('int'),
+        long_ : jpy.get_type('long'),
+        float_ : jpy.get_type('float'),
+        double : jpy.get_type('double'),
+        string : jpy.get_type('java.lang.String'),
+        bigdecimal : jpy.get_type('java.math.BigDecimal'),
+        stringset : jpy.get_type('io.deephaven.db.tables.libs.StringSet'),
+        datetime : jpy.get_type('io.deephaven.db.tables.utils.DBDateTime'),
+        byte_array : jpy.get_type('[B'),
+        short_array : jpy.get_type('[S'),
+        int_array : jpy.get_type('[I'),
+        long_array : jpy.get_type('[J'),
+        float_array : jpy.get_type('[S'),
+        double_array : jpy.get_type('[D'),
+        string_array : jpy.get_type('[Ljava.lang.String;')
+    }
+    return type2jtype.get(data_type, None)
 
 
 @_passThrough
@@ -149,7 +176,7 @@ def _isPrimitive(data_type : DataType):
     return data_type in primitives
 
 @_passThrough
-def col(col_name : str, data_type : DataType, component_type : DataType = None):
+def _col(col_name : str, data_type : DataType, component_type : DataType = None):
     """
     Create a ColumnDefinition object.
     :param col_name: The column's new.
@@ -163,7 +190,7 @@ def col(col_name : str, data_type : DataType, component_type : DataType = None):
     return _col_def_.fromGenericType(col_name, data_type, component_type)
 
 @_passThrough
-def cols(ts):
+def _cols(ts):
     """
     Convert a sequence of tuples of the form ('Price', double_type)
     or ('Prices', double_array_type, double_type)
@@ -179,16 +206,19 @@ def cols(ts):
 
 
 @_passThrough
-def _getQstCol(col_name, col_type, col_data=None):
+def _getQstCol(col_name:str, col_type:DataType, col_data=None):
     if col_data is None or len(col_data) < 1:
-        jclass = _jclassFromType(col_type)
-        col_header = _qst_col_header_.of(col_name, jclass)
+        col_header = _qst_col_header_.of(col_name, col_type)
         return _qst_column_.empty(col_header)
-    jvalues = jpy.array(col_type, col_data)
+    jtype = _jpyTypeFromType(col_type)
+    if jtype is None:
+        raise Exception("value for argument 'col_type' " +
+                        str(col_type) + " is not a known data type.")
+    jvalues = jpy.array(jtype, col_data)
     if _isPrimitive(col_type):
         return _qst_column_.ofUnsafe(col_name, jvalues)
     else:
-        return _qst_column_.of(col_name, jvalues)
+        return _qst_column_.of(col_name, col_type, jvalues)
     
 
 @_passThrough

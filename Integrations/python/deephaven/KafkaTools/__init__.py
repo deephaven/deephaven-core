@@ -217,7 +217,7 @@ def json(col_defs, mapping:dict = None):
         raise Exception("'col_defs' argument needs to be a sequence of tuples, instead got " +
                         str(col_defs) + " of type " + type(col_defs).__name__)
     try:
-        col_defs = dh.cols(col_defs)
+        col_defs = dh._cols(col_defs)
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:

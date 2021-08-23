@@ -49,6 +49,10 @@ public abstract class Column<T> {
         return of(name, Array.of(Type.find(clazz), values));
     }
 
+    public static <T> Column<T> of(String name, Type<T> type, T... values) {
+        return of(name, Array.of(type, values));
+    }
+
     public static <T> Column<T> of(String name, Class<T> clazz, Collection<T> values) {
         return of(name, Array.of(Type.find(clazz), values));
     }
