@@ -595,7 +595,7 @@ public class KafkaTools {
                 return null;
             case AVRO:
                 return GenericRecordChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, (Schema)data.extra, true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
                         tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
@@ -608,6 +608,7 @@ public class KafkaTools {
         public Map<String, String> fieldNameToColumnName;
         public int simpleColumnIndex = -1;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
+        public Object extra;
     }
 
     private static void setIfNotSet(final Properties prop, final String key, final String value) {
@@ -655,6 +656,7 @@ public class KafkaTools {
                 }
                 avroSchemaToColumnDefinitions(
                         columnDefinitions, data.fieldNameToColumnName, schema, avroSpec.fieldNameToColumnName);
+                data.extra = schema;
                 break;
             case JSON:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, STRING_DESERIALIZER);

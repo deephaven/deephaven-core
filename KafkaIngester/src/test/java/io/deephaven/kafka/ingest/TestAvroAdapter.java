@@ -62,7 +62,7 @@ public class TestAvroAdapter {
                     wc.setSize(0);
                 }
 
-                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition, (idx) -> output[idx].getChunkType(), colMap, true);
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition, (idx) -> output[idx].getChunkType(), colMap, avroSchema, true);
                 adapter.handleChunk(inputValues, output);
 
                 TestCase.assertEquals(1, output[0].size());
@@ -81,8 +81,7 @@ public class TestAvroAdapter {
         final Schema avroSchema = new Schema.Parser().parse(getSchemaFile("fieldtest.avsc"));
 
         final String [] names = new String[]{"last_name", "number", "truthiness", "timestamp", "timestampMicros", "timeMillis", "timeMicros"};
-        // TODO: DBDateTimes
-        final Class [] types = new Class[]{String.class, int.class, boolean.class, long.class, long.class, int.class, long.class};
+        final Class [] types = new Class[]{String.class, int.class, boolean.class, DBDateTime.class, DBDateTime.class, int.class, long.class};
 
         final TableDefinition definition = new TableDefinition(Arrays.asList(types), Arrays.asList(names));
 
@@ -141,7 +140,7 @@ public class TestAvroAdapter {
                     wc.setSize(0);
                 }
 
-                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition, (idx) -> output[idx].getChunkType(), colMap, true);
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition, (idx) -> output[idx].getChunkType(), colMap, avroSchema, true);
                 adapter.handleChunk(inputValues, output);
 
                 for (int ii = 0; ii < 7; ++ii) {
@@ -151,16 +150,16 @@ public class TestAvroAdapter {
                 TestCase.assertEquals("LN1", output[0].asObjectChunk().get(0));
                 TestCase.assertEquals(32, output[1].asIntChunk().get(0));
                 TestCase.assertEquals(BooleanUtils.FALSE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(0));
-                TestCase.assertEquals(dt1.getMillis(), output[3].asLongChunk().get(0));
-                TestCase.assertEquals(dt1.getMicros(), output[4].asLongChunk().get(0));
+                TestCase.assertEquals(DBTimeUtils.millisToNanos(dt1.getMillis()), output[3].asLongChunk().get(0));
+                TestCase.assertEquals(DBTimeUtils.microsToNanos(dt1.getMicros()), output[4].asLongChunk().get(0));
                 TestCase.assertEquals(10000, output[5].asIntChunk().get(0));
                 TestCase.assertEquals(100000, output[6].asLongChunk().get(0));
 
                 TestCase.assertNull(output[0].asObjectChunk().get(1));
                 TestCase.assertEquals(64, output[1].asIntChunk().get(1));
                 TestCase.assertEquals(BooleanUtils.TRUE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(1));
-                TestCase.assertEquals(dt2.getMillis(), output[3].asLongChunk().get(1));
-                TestCase.assertEquals(dt2.getMicros(), output[4].asLongChunk().get(1));
+                TestCase.assertEquals(DBTimeUtils.millisToNanos(dt2.getMillis()), output[3].asLongChunk().get(1));
+                TestCase.assertEquals(DBTimeUtils.microsToNanos(dt2.getMicros()), output[4].asLongChunk().get(1));
                 TestCase.assertEquals(20000, output[5].asIntChunk().get(1));
                 TestCase.assertEquals(200000, output[6].asLongChunk().get(1));
 
