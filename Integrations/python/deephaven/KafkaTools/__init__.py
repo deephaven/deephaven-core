@@ -30,11 +30,13 @@ _stream_table_tools_ = None
 _avro_schema_jtype_ = None
 SEEK_TO_BEGINNING = None
 DONT_SEEK = None
+SEEK_TO_END = None
 FROM_PROPERTIES = None
 IGNORE = None
 ALL_PARTITIONS = None
 ALL_PARTITIONS_SEEK_TO_BEGINNING = None
 ALL_PARTITIONS_DONT_SEEK = None
+ALL_PARTITIONS_SEEK_TO_END = None
 
 def _defineSymbols():
     """
@@ -46,8 +48,9 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, SEEK_TO_BEGINNING, DONT_SEEK, FROM_PROPERTIES, IGNORE
-    global ALL_PARTITIONS, ALL_PARTITIONS_DONT_SEEK, ALL_PARTITIONS_SEEK_TO_BEGINNING
+    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, \
+        SEEK_TO_BEGINNING, DONT_SEEK, SEEK_TO_END, FROM_PROPERTIES, IGNORE, \
+        ALL_PARTITIONS, ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_DONT_SEEK, ALL_PARTITIONS_SEEK_TO_END
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
@@ -55,11 +58,13 @@ def _defineSymbols():
         _avro_schema_type_ = jpy.get_type("org.apache.avro.Schema")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
+        SEEK_TO_END = getattr(_java_type_, 'SEEK_TO_END')
         FROM_PROPERTIES = getattr(_java_type_, 'FROM_PROPERTIES')
         IGNORE = getattr(_java_type_, 'IGNORE')
         ALL_PARTITIONS = getattr(_java_type_, 'ALL_PARTITIONS')
         ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
         ALL_PARTITIONS_DONT_SEEK = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
+        ALL_PARTITIONS_SEEK_TO_END = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_END')
 
 
 # every module method should be decorated with @_passThrough
@@ -135,7 +140,8 @@ def consumeToTable(
         except Exception as e:
             raise Exception(
                 "when of type dict, keyword argument 'offsets' has to map " +
-                "numeric partitions to either numeric offsets, or the constants DONT_SEEK and SEEK_TO_BEGINNING, " +
+                "numeric partitions to either numeric offsets, or one of the constants { " +
+                "SEEK_TO_BEGINNING, DONT_SEEK, SEEK_TO_END }," +
                 "instead got offsets=" + str(offsets)
             ) from e
     elif not isinstance(offsets, jpy.JType):
@@ -231,7 +237,7 @@ def json(col_defs, mapping:dict = None):
 
 
 @_passThrough
-def simple(column_name:str, data_type:dh.DataType):
+def simple(column_name:str, data_type:dh.DataType = None):
     if not _isStr(column_name):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
