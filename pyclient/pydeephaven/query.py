@@ -69,7 +69,7 @@ class Query:
         self._last_op = UpdateOp(parent=self._last_op, column_specs=column_specs)
         return self
 
-    def lazy_update(self, column_specs):
+    def lazy_update(self, column_specs: List[str]):
         """ Chain a lazy update operation into the query.
 
         Args:
@@ -84,7 +84,7 @@ class Query:
         self._last_op = LazyUpdateOp(parent=self._last_op, column_specs=column_specs)
         return self
 
-    def view(self, column_specs):
+    def view(self, column_specs: List[str]):
         """ Chain a view operation into the query.
 
         Args:
@@ -99,7 +99,7 @@ class Query:
         self._last_op = ViewOp(parent=self._last_op, column_specs=column_specs)
         return self
 
-    def update_view(self, column_specs):
+    def update_view(self, column_specs: List[str]):
         """ Chain a update-view operation into the query.
 
         Args:
@@ -114,7 +114,7 @@ class Query:
         self._last_op = UpdateViewOp(parent=self._last_op, column_specs=column_specs)
         return self
 
-    def select(self, column_specs):
+    def select(self, column_specs: List[str]):
         """ Chain a select operation into the query.
 
         Args:
@@ -127,6 +127,21 @@ class Query:
 
         """
         self._last_op = SelectOp(parent=self._last_op, column_specs=column_specs)
+        return self
+
+    def select_distinct(self, column_names: List[str]):
+        """ Chain a select-distinct operation into the query.
+
+        Args:
+            column_names (List[str]: a list of column names
+
+        Returns:
+            self
+
+        Raises:
+
+        """
+        self._last_op = SelectDistinctOp(parent=self._last_op, column_names=column_names)
         return self
 
     def tail(self, num_rows: int):
@@ -144,7 +159,7 @@ class Query:
         self._last_op = TailOp(parent=self._last_op, num_rows=num_rows)
         return self
 
-    def head(self, num_rows):
+    def head(self, num_rows: int):
         """ Chain a head operation into the query
 
         Args:
@@ -159,6 +174,19 @@ class Query:
         self._last_op = HeadOp(parent=self._last_op, num_rows=num_rows)
         return self
 
-    # def sort(self, columns: List[str], directions: List[SortDirection] = []):
+    def sort(self, column_names: List[str], directions: List[SortDirection]):
+        """ Chain a sort operation into the query.
+
+        Args:
+            column_names (List[str]): the names of the columns to be sorted on
+            directions (List[SortDirection]): the corresponding sort directions for each sort column
+
+        Returns:
+            self
+
+        Raises:
+            DHError
+
+        """
     #     self._last_op = SortOp(parent=self._last_op, columns=columns, directions=directions)
     #     return self

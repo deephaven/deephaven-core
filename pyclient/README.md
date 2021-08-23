@@ -11,12 +11,12 @@ $ cd pyclient
 ```
 ## Dev environment setup
 ``` shell
-$ pip3 install -r pyclient/requirements.txt
+$ pip3 install -r requirements.txt
 ```
 
 ## Build
 ``` shell
-$ python3 setup.py
+$ python3 setup.py bdist_wheel
 ```
 ## Run tests
 ``` shell
@@ -32,7 +32,7 @@ $ pip3 install dist/pydeephaven-0.0.1-py3-none-any.whl
     >>> from pydeephaven import Session
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
     >>> table1 = session.time_table(period=1000000).update(column_specs=["Col1 = i % 2"])
-    >>> daf = table1.snapshot().to_pandas()
+    >>> df = table1.snapshot().to_pandas()
     >>> print(df)
                         Timestamp  Col1
     0     1629681525690000000     0
@@ -47,15 +47,13 @@ $ pip3 install dist/pydeephaven-0.0.1-py3-none-any.whl
     1501  1629681540700000000     1
     1502  1629681540710000000     0
 
-    >>> session.close())
+    >>> session.close()
 
 ```
 
-## Resources
+## Related documentation
 * https://deephaven.io/
 * https://arrow.apache.org/docs/python/index.html
 
 ## API Reference
-[start here] file://docs/build/html/index.html
-
-
+[start here] https://deephaven.io/core/docs/clientapis/python

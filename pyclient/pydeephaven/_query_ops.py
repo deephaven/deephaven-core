@@ -72,9 +72,9 @@ class SelectOp(TableOp):
 
 
 class SelectDistinctOp(TableOp):
-    def __init__(self, parent, columns):
+    def __init__(self, parent, column_names):
         super().__init__(self, parent=parent)
-        self.columns = columns
+        self.column_names = column_names
 
 
 class UnStructuredFilterOp(TableOp):
@@ -82,9 +82,9 @@ class UnStructuredFilterOp(TableOp):
 
 
 class SortOp(TableOp):
-    def __init__(self, parent, columns, directions):
+    def __init__(self, parent, column_names, directions):
         super().__init__(parent=parent)
-        self.columns = columns
+        self.columns = column_names
         self.directions = directions
 
 
