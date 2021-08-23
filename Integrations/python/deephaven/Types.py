@@ -72,7 +72,7 @@ def typeFromJavaClassName(name : str):
     The string provided should match the output in Java for Class.getName()
     for a class visible to the main ClassLoader in the Deephaven engine in use.
     """
-    jclass = _table_tools_.typeFromName('java.lang.String')
+    jclass = _table_tools_.typeFromName(name)
     return DataType(_qst_type_.find(jclass))
 
 
@@ -111,7 +111,7 @@ single_array = float_array
 float32_array = float_array
 double_array = typeFromJavaClassName('double[]')
 float64_array = double_array
-string_array = typeFromJavaClassName('java.Lang.String[]')
+string_array = typeFromJavaClassName('java.lang.String[]')
 
 @_passThrough
 def _jclassFromType(data_type : DataType):
@@ -169,10 +169,10 @@ def _colDef(col_name : str, data_type : DataType, component_type : DataType = No
     :param component_type: The column's component type, or None if none.
     :return: the column definition object.
     """
-    data_type = _jclassFromType(data_type)
-    component_type = _jclassFromType(component_type)
+    jdata_type = _jclassFromType(data_type)
+    jcomponent_type = _jclassFromType(component_type)
 
-    return _col_def_.fromGenericType(col_name, data_type, component_type)
+    return _col_def_.fromGenericType(col_name, jdata_type, jcomponent_type)
 
 @_passThrough
 def _colDefs(ts):
