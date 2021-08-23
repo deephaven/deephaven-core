@@ -4,7 +4,8 @@
 Deephaven Python Client is a Python package by Deephaven Data Labs. It is a client API that allows Python applications to remotely access Deephaven data servers.
 
 ## Source Directory
-### from the deephaven-core repository root
+
+### From the deephaven-core repository root
 ``` shell
 $ cd pyclient
 ```
