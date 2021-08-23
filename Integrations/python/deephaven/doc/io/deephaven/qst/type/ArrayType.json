@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.type.ArrayType",
+ "methods": {
+  "componentType": "The component type.\n\n:return: (io.deephaven.qst.type.Type<ArrayType.ComponentType>) the component type",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.ArrayType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.ArrayType",
+ "text": "An array-like type.",
+ "typeName": "interface"
+}
