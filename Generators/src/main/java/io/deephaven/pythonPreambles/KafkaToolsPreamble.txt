@@ -234,9 +234,6 @@ def simple(column_name:str, data_type:dh.DataType):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
         return _java_type_.simpleSpec(column_name)
-    if not isinstance(data_type, type):
-        raise Exception("'data_type' argument needs to be one of the DataType constants " +
-                        "for column types defined in the Types import, instead got " + str(data_type))
     return _java_type_.simpleSpec(column_name, _jclassFromType(data_type))
 
 

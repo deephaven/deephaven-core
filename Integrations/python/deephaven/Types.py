@@ -117,31 +117,12 @@ string_array = typeFromJavaClassName('java.Lang.String[]')
 def _jclassFromType(data_type : DataType):
     if data_type is None:
         return None
-    type2name = {
-        bool_ : 'java.lang.Boolean',
-        byte : 'byte',
-        short : 'short',
-        int_ : 'int',
-        long_ : 'long',
-        float_ : 'float',
-        double : 'double',
-        string : 'java.lang.String',
-        bigdecimal : 'java.math.BigDecimal',
-        stringset : 'io.deephaven.db.tables.libs.StringSet',
-        datetime : 'io.deephaven.db.tables.utils.DBDateTime',
-        byte_array : 'byte[]',
-        short_array : 'short[]',
-        int_array : 'int[]',
-        long_array : 'long[]',
-        float_array : 'float[]',
-        double_array : 'double[]',
-        string_array : 'java.lang.String[]',
-    }
-    name = type2name.get(data_type, None)
-    if name is None:
-        return None
+    try:
+        jclass = data_type.clazz()
+    except Exception as e:
+        raise Exception("Could not get java class type from " + str(data_type)) from e
+    return jclass
 
-    return _table_tools_.typeFromName(name)
 
 @_passThrough
 def _jpyTypeFromType(data_type : DataType):
@@ -167,7 +148,11 @@ def _jpyTypeFromType(data_type : DataType):
         double_array : jpy.get_type('[D'),
         string_array : jpy.get_type('[Ljava.lang.String;')
     }
-    return type2jtype.get(data_type, None)
+    jpy_type = type2jtype.get(data_type, None)
+    if jpy_type is not None:
+        return jpy_type
+    jclass = _jclassFromType(data_type)
+    return jpy_get_type(jclass.getName())
 
 
 @_passThrough
@@ -176,7 +161,7 @@ def _isPrimitive(data_type : DataType):
     return data_type in primitives
 
 @_passThrough
-def _col(col_name : str, data_type : DataType, component_type : DataType = None):
+def _colDef(col_name : str, data_type : DataType, component_type : DataType = None):
     """
     Create a ColumnDefinition object.
     :param col_name: The column's new.
@@ -190,7 +175,7 @@ def _col(col_name : str, data_type : DataType, component_type : DataType = None)
     return _col_def_.fromGenericType(col_name, data_type, component_type)
 
 @_passThrough
-def _cols(ts):
+def _colDefs(ts):
     """
     Convert a sequence of tuples of the form ('Price', double_type)
     or ('Prices', double_array_type, double_type)
@@ -201,7 +186,7 @@ def _cols(ts):
     """
     r = []
     for t in ts:
-        r.append(col(*t))
+        r.append(_colDef(*t))
     return r
 
 

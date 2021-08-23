@@ -217,7 +217,7 @@ def json(col_defs, mapping:dict = None):
         raise Exception("'col_defs' argument needs to be a sequence of tuples, instead got " +
                         str(col_defs) + " of type " + type(col_defs).__name__)
     try:
-        col_defs = dh._cols(col_defs)
+        col_defs = dh._colDefs(col_defs)
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
@@ -236,9 +236,6 @@ def simple(column_name:str, data_type:dh.DataType):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
         return _java_type_.simpleSpec(column_name)
-    if not isinstance(data_type, type):
-        raise Exception("'data_type' argument needs to be one of the DataType constants " +
-                        "for column types defined in the Types import, instead got " + str(data_type))
     return _java_type_.simpleSpec(column_name, _jclassFromType(data_type))
 
 
