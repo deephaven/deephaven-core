@@ -259,7 +259,7 @@ public class TableViewportSubscription extends HasEventHandling {
                     c.onSuccess(snapshot);
                 });
                 stream.onStatus(status -> {
-                    if (status.getCode() != Code.OK) {
+                    if (status.isOk()) {
                         c.onFailure(status.getDetails());
                     }
                 });

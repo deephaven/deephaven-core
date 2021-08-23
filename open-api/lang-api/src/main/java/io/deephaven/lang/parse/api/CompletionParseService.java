@@ -23,7 +23,4 @@ public interface CompletionParseService<ResultType extends ParsedResult, ChangeT
     void remove(String uri);
 
     ResultType finish(String uri);
-
-    void close(final String uri);
-
 }

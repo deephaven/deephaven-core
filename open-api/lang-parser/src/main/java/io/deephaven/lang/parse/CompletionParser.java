@@ -9,6 +9,7 @@ import io.deephaven.lang.parse.api.CompletionParseService;
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A specialized parser for autocompletion;
  * maybe better to call it a chunker than a parser...
  */
-public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> {
+public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException>, Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
@@ -128,10 +129,7 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     }
 
     @Override
-    public void close(final String uri) {
-        final PendingParse removed = docs.remove(uri);
-        if (removed != null) {
-            removed.cancel();
-        }
+    public void close() {
+        docs.keySet().forEach(this::remove);
     }
 }

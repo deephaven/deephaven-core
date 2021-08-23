@@ -13,6 +13,50 @@ import jsinterop.base.JsPropertyMap;
     namespace = JsPackage.GLOBAL)
 public class ConsoleService {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface AutoCompleteStreamType {
+    @JsOverlay
+    static ConsoleService.AutoCompleteStreamType create() {
+      return Js.uncheckedCast(JsPropertyMap.of());
+    }
+
+    @JsProperty
+    String getMethodName();
+
+    @JsProperty
+    Object getRequestType();
+
+    @JsProperty
+    Object getResponseType();
+
+    @JsProperty
+    Object getService();
+
+    @JsProperty
+    boolean isRequestStream();
+
+    @JsProperty
+    boolean isResponseStream();
+
+    @JsProperty
+    void setMethodName(String methodName);
+
+    @JsProperty
+    void setRequestStream(boolean requestStream);
+
+    @JsProperty
+    void setRequestType(Object requestType);
+
+    @JsProperty
+    void setResponseStream(boolean responseStream);
+
+    @JsProperty
+    void setResponseType(Object responseType);
+
+    @JsProperty
+    void setService(Object service);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface BindTableToVariableType {
     @JsOverlay
     static ConsoleService.BindTableToVariableType create() {
@@ -497,6 +541,94 @@ public class ConsoleService {
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface NextAutoCompleteStreamType {
+    @JsOverlay
+    static ConsoleService.NextAutoCompleteStreamType create() {
+      return Js.uncheckedCast(JsPropertyMap.of());
+    }
+
+    @JsProperty
+    String getMethodName();
+
+    @JsProperty
+    Object getRequestType();
+
+    @JsProperty
+    Object getResponseType();
+
+    @JsProperty
+    Object getService();
+
+    @JsProperty
+    boolean isRequestStream();
+
+    @JsProperty
+    boolean isResponseStream();
+
+    @JsProperty
+    void setMethodName(String methodName);
+
+    @JsProperty
+    void setRequestStream(boolean requestStream);
+
+    @JsProperty
+    void setRequestType(Object requestType);
+
+    @JsProperty
+    void setResponseStream(boolean responseStream);
+
+    @JsProperty
+    void setResponseType(Object responseType);
+
+    @JsProperty
+    void setService(Object service);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface OpenAutoCompleteStreamType {
+    @JsOverlay
+    static ConsoleService.OpenAutoCompleteStreamType create() {
+      return Js.uncheckedCast(JsPropertyMap.of());
+    }
+
+    @JsProperty
+    String getMethodName();
+
+    @JsProperty
+    Object getRequestType();
+
+    @JsProperty
+    Object getResponseType();
+
+    @JsProperty
+    Object getService();
+
+    @JsProperty
+    boolean isRequestStream();
+
+    @JsProperty
+    boolean isResponseStream();
+
+    @JsProperty
+    void setMethodName(String methodName);
+
+    @JsProperty
+    void setRequestStream(boolean requestStream);
+
+    @JsProperty
+    void setRequestType(Object requestType);
+
+    @JsProperty
+    void setResponseStream(boolean responseStream);
+
+    @JsProperty
+    void setResponseType(Object responseType);
+
+    @JsProperty
+    void setService(Object service);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
   public interface OpenDocumentType {
     @JsOverlay
     static ConsoleService.OpenDocumentType create() {
@@ -628,6 +760,7 @@ public class ConsoleService {
     void setService(Object service);
   }
 
+  public static ConsoleService.AutoCompleteStreamType AutoCompleteStream;
   public static ConsoleService.BindTableToVariableType BindTableToVariable;
   public static ConsoleService.CancelCommandType CancelCommand;
   public static ConsoleService.ChangeDocumentType ChangeDocument;
@@ -639,6 +772,8 @@ public class ConsoleService {
   public static ConsoleService.FetchTableMapType FetchTableMap;
   public static ConsoleService.GetCompletionItemsType GetCompletionItems;
   public static ConsoleService.GetConsoleTypesType GetConsoleTypes;
+  public static ConsoleService.NextAutoCompleteStreamType NextAutoCompleteStream;
+  public static ConsoleService.OpenAutoCompleteStreamType OpenAutoCompleteStream;
   public static ConsoleService.OpenDocumentType OpenDocument;
   public static ConsoleService.StartConsoleType StartConsole;
   public static ConsoleService.SubscribeToLogsType SubscribeToLogs;

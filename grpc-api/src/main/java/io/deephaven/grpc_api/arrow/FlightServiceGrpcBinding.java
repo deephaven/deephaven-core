@@ -10,7 +10,7 @@ import io.deephaven.grpc_api.barrage.BarrageMessageConsumer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.util.GrpcServiceOverrideBuilder;
+import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.grpc.BindableService;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;

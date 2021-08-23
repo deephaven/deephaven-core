@@ -58,9 +58,4 @@ public class CompletionParseServiceNoOp implements CompletionParseService<Parsed
         return parse("");
     }
 
-    @Override
-    public void close(final String uri) {
-
-    }
-
 }

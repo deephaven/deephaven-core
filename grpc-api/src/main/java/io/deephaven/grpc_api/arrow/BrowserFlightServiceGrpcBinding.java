@@ -4,15 +4,13 @@
 
 package io.deephaven.grpc_api.arrow;
 
-import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.util.UnaryInputStreamMarshaller;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.grpc_api_client.util.GrpcServiceOverrideBuilder;
+import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.PassthroughInputStreamMarshaller;
 import io.grpc.BindableService;
-import io.grpc.MethodDescriptor;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.protobuf.ProtoUtils;
 import org.apache.arrow.flight.impl.Flight;

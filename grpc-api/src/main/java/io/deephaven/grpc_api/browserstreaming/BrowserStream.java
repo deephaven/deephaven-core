@@ -4,9 +4,13 @@ import com.google.rpc.Code;
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.util.GrpcServiceOverrideBuilder;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 
 import java.io.Closeable;
 
@@ -14,6 +18,10 @@ public class BrowserStream<T> implements Closeable {
     public enum Mode {
         IN_ORDER,
         MOST_RECENT
+    }
+
+    public interface Factory<ReqT, RespT> {
+        BrowserStream<ReqT> create(SessionState sessionState, StreamObserver<RespT> responseObserver);
     }
 
     public static class Message<T> {
@@ -43,6 +51,40 @@ public class BrowserStream<T> implements Closeable {
     }
 
     private static final Logger log = LoggerFactory.getLogger(BrowserStream.class);
+
+    public static <ReqT, RespT> Factory<ReqT, RespT> factory(Mode mode, GrpcServiceOverrideBuilder.BidiDelegate<ReqT, RespT> bidiDelegate) {
+        return (session, responseObserver) -> new BrowserStream<>(mode, session, new Marshaller<ReqT>() {
+            private final StreamObserver<ReqT> observer = bidiDelegate.doInvoke(responseObserver);
+            @Override
+            public void onMessageReceived(ReqT message) {
+                observer.onNext(message);
+            }
+
+            @Override
+            public void onCancel() {
+                //TODO or should this be CANCELED?
+                StatusRuntimeException canceled = GrpcUtil.statusRuntimeException(Code.ABORTED, "Stream canceled on the server");
+                GrpcUtil.safelyExecute(() -> {
+                    responseObserver.onError(canceled);
+                });
+
+                //TODO necessary?
+                GrpcUtil.safelyExecute(() -> {
+                    observer.onError(canceled);
+                });
+            }
+
+            @Override
+            public void onError(Throwable err) {
+                observer.onError(err);
+            }
+
+            @Override
+            public void onCompleted() {
+                observer.onCompleted();
+            }
+        });
+    }
 
     /** represents the sequence that the listener will process next */
     private long nextSeq = 0;

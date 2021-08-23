@@ -1,8 +1,11 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.AutoCompleteRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.AutoCompleteResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BindTableToVariableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BindTableToVariableResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BrowserNextResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ChangeDocumentRequest;
@@ -1074,6 +1077,101 @@ public class ConsoleServiceClient {
   }
 
   @JsFunction
+  public interface NextAutoCompleteStreamCallbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static ConsoleServiceClient.NextAutoCompleteStreamCallbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        ConsoleServiceClient.NextAutoCompleteStreamCallbackFn.P0Type p0, BrowserNextResponse p1);
+  }
+
+  @JsFunction
+  public interface NextAutoCompleteStreamMetadata_or_callbackFn {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface P0Type {
+      @JsOverlay
+      static ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn.P0Type create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+      }
+
+      @JsProperty
+      double getCode();
+
+      @JsProperty
+      String getMessage();
+
+      @JsProperty
+      BrowserHeaders getMetadata();
+
+      @JsProperty
+      void setCode(double code);
+
+      @JsProperty
+      void setMessage(String message);
+
+      @JsProperty
+      void setMetadata(BrowserHeaders metadata);
+    }
+
+    void onInvoke(
+        ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn.P0Type p0,
+        BrowserNextResponse p1);
+  }
+
+  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+  public interface NextAutoCompleteStreamMetadata_or_callbackUnionType {
+    @JsOverlay
+    static ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType of(Object o) {
+      return Js.cast(o);
+    }
+
+    @JsOverlay
+    default BrowserHeaders asBrowserHeaders() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn
+        asNextAutoCompleteStreamMetadata_or_callbackFn() {
+      return Js.cast(this);
+    }
+
+    @JsOverlay
+    default boolean isBrowserHeaders() {
+      return (Object) this instanceof BrowserHeaders;
+    }
+
+    @JsOverlay
+    default boolean isNextAutoCompleteStreamMetadata_or_callbackFn() {
+      return (Object) this
+          instanceof ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn;
+    }
+  }
+
+  @JsFunction
   public interface OpenDocumentCallbackFn {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface P0Type {
@@ -1262,6 +1360,11 @@ public class ConsoleServiceClient {
   public ConsoleServiceClient(String serviceHost, Object options) {}
 
   public ConsoleServiceClient(String serviceHost) {}
+
+  public native BidirectionalStream<AutoCompleteRequest, AutoCompleteResponse> autoCompleteStream();
+
+  public native BidirectionalStream<AutoCompleteRequest, AutoCompleteResponse> autoCompleteStream(
+      BrowserHeaders metadata);
 
   @JsOverlay
   public final UnaryResponse bindTableToVariable(
@@ -1834,6 +1937,65 @@ public class ConsoleServiceClient {
   public native UnaryResponse getConsoleTypes(
       GetConsoleTypesRequest requestMessage,
       ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback);
+
+  @JsOverlay
+  public final UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage,
+      BrowserHeaders metadata_or_callback,
+      ConsoleServiceClient.NextAutoCompleteStreamCallbackFn callback) {
+    return nextAutoCompleteStream(
+        requestMessage,
+        Js.<ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage, BrowserHeaders metadata_or_callback) {
+    return nextAutoCompleteStream(
+        requestMessage,
+        Js.<ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  @JsOverlay
+  public final UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage,
+      ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn metadata_or_callback,
+      ConsoleServiceClient.NextAutoCompleteStreamCallbackFn callback) {
+    return nextAutoCompleteStream(
+        requestMessage,
+        Js.<ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback),
+        callback);
+  }
+
+  @JsOverlay
+  public final UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage,
+      ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackFn metadata_or_callback) {
+    return nextAutoCompleteStream(
+        requestMessage,
+        Js.<ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType>uncheckedCast(
+            metadata_or_callback));
+  }
+
+  public native UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage,
+      ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType metadata_or_callback,
+      ConsoleServiceClient.NextAutoCompleteStreamCallbackFn callback);
+
+  public native UnaryResponse nextAutoCompleteStream(
+      AutoCompleteRequest requestMessage,
+      ConsoleServiceClient.NextAutoCompleteStreamMetadata_or_callbackUnionType
+          metadata_or_callback);
+
+  public native ResponseStream<AutoCompleteResponse> openAutoCompleteStream(
+      AutoCompleteRequest requestMessage, BrowserHeaders metadata);
+
+  public native ResponseStream<AutoCompleteResponse> openAutoCompleteStream(
+      AutoCompleteRequest requestMessage);
 
   @JsOverlay
   public final UnaryResponse openDocument(

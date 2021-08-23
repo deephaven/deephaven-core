@@ -1,6 +1,7 @@
 package io.deephaven.grpc_api.browserstreaming;
 
-import com.google.protobuf.ByteString;
+import io.deephaven.grpc_api.session.SessionService;
+import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.*;
@@ -39,6 +40,7 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
             }
 
             // this is an open call, forward it with the ticket
+            //TODO assert halfclose
             StreamData data = new StreamData(rpcTicket, 0, hasHalfClose);
             Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
@@ -50,6 +52,8 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
             Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
         }
+
+        // ignore it, no header set
         return next.startCall(call, headers);
     }
 
