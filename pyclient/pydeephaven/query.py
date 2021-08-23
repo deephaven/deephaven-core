@@ -12,7 +12,7 @@ class Query:
     """ A Query object is used to define and exec a sequence of Deephaven table operations on the server.
 
     When the query is executed, the table operations specified for the Query object are batched together and sent to the
-    server in a single request,  thus avoiding multiple round trips between the client and the server. The result of
+    server in a single request, thus avoiding multiple round trips between the client and the server. The result of
     executing the query is a new Deephaven table.
 
     Note, an application should always use the factory method on the Session object to create a Query instance as the
