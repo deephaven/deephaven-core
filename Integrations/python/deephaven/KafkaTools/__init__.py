@@ -233,10 +233,10 @@ def json(col_defs, mapping:dict = None):
 
 
 @_passThrough
-def simple(column_name:str, data_type_str:str = 'string'):
+def simple(column_name:str, data_type_str:str = None):
     if not _isStr(column_name):
         raise Exception("'column_name' argument needs to be of str type, instead got " + str(column_name))
-    if len(args) == 1:
+    if data_type_str is None:
         return _java_type_.simpleSpec(column_name)
     if not _isStr(data_type_str):
         raise Exception("'data_type_str' argument needs to be of str type, instead got " + str(data_type_str))
