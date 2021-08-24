@@ -25,7 +25,7 @@ import java.util.Map;
 public class TestAvroAdapter {
     @NotNull
     private File getSchemaFile(String name) {
-        final String avscPath = Configuration.getInstance().getDevRootPath() + "/KafkaIngester/src/test/resources/avro-examples/";
+        final String avscPath = Configuration.getInstance().getDevRootPath() + "/Kafka/src/test/resources/avro-examples/";
         return new File(avscPath + name);
     }
 

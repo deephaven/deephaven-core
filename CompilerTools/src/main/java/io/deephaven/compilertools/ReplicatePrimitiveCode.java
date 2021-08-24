@@ -427,7 +427,7 @@ public class ReplicatePrimitiveCode {
                     return file.getPath();
                 }
             } else if(sourceClass.getName().startsWith("io.deephaven.kafka.ingest")) {
-                if (file.isDirectory() && file.getName().equals("KafkaIngester")) {
+                if (file.isDirectory() && file.getName().equals("Kafka")) {
                     return file.getPath();
                 }
             } else {

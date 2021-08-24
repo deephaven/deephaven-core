@@ -20,7 +20,7 @@ sourceSets {
 }
 
 configurations {
-    compile.extendsFrom dhKafkaIngester
+    compile.extendsFrom dhKafka
 }
 
 dependencies {

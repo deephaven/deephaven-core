@@ -49,7 +49,7 @@ configurations {
     dhDbTypesImpl.extendsFrom fishBase, commonsIo
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
-    dhKafkaIngester.extendsFrom dhDb
+    dhKafka.extendsFrom dhDb
 }
 
 // exported properties
@@ -127,6 +127,6 @@ dependencies {
             // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
             'com.fasterxml.jackson.core:jackson-core:2.9.8'
 
-    dhKafkaIngester 'org.apache.kafka:kafka-clients:2.4.0',
+    dhKafka 'org.apache.kafka:kafka-clients:2.4.0',
             'org.apache.avro:avro:1.9.2'
 }
