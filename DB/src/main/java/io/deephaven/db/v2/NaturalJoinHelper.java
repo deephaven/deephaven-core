@@ -28,6 +28,7 @@ class NaturalJoinHelper {
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
         final Table result = naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+        leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         return result;
     }
 

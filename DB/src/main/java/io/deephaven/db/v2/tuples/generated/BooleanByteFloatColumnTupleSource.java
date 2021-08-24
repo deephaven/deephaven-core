@@ -136,11 +136,6 @@ public class BooleanByteFloatColumnTupleSource extends AbstractTupleSource<ByteB
     }
 
     @Override
-    public Class<ByteByteFloatTuple> getNativeType() {
-        return ByteByteFloatTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteByteFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<Boolean, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

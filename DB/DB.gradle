@@ -76,6 +76,9 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+
+    annotationProcessor 'org.immutables:value:2.8.1'
+    compileOnly 'org.immutables:value-annotations:2.8.1'
 }
 
 task jmhRun(type: JavaExec)  {
@@ -212,6 +215,7 @@ createMainExecTask('replicateToPage', 'io.deephaven.db.v2.locations.parquet.topa
 createMainExecTask('replicateDbArrays', 'io.deephaven.db.tables.dbarrays.ReplicateDbArrays')
 createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.db.v2.dbarrays.ReplicateDbArrayColumnWrappers')
 createMainExecTask('replicateCopyKernel', 'io.deephaven.db.v2.utils.copy.ReplicateCopyKernel')
+createMainExecTask('replicateUnboxerKernel', 'io.deephaven.db.v2.utils.unboxer.ReplicateUnboxerKernel')
 createMainExecTask('replicateOperators', 'io.deephaven.db.v2.by.ReplicateOperators')
 createMainExecTask('replicateFreezeBy', 'io.deephaven.db.v2.utils.freezeby.ReplicateFreezeBy')
 
@@ -238,6 +242,7 @@ task replicate {
     dependsOn 'replicateDbArrays'
     dependsOn 'replicateDbArrayColumnWrappers'
     dependsOn 'replicateCopyKernel'
+    dependsOn 'replicateUnboxerKernel'
     dependsOn 'replicateOperators'
     dependsOn 'replicateFreezeBy'
 }

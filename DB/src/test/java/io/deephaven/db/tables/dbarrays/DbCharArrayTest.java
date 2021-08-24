@@ -150,6 +150,10 @@ public class DbCharArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbCharArray.type().clazz(), DbCharArray.class);
+    }
+
     private void checkSubArray(DbCharArray dbArray, int start, int end, char result[]){
         DbCharArray subArray = dbArray.subArray(start, end);
         char array[] = subArray.toArray();

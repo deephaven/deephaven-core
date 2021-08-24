@@ -1,9 +1,8 @@
 package io.deephaven.db.v2.locations;
 
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.DataInput;
-import java.io.IOException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tool for generic multi-field "atomic" get/set of state values for a table location.
@@ -11,16 +10,16 @@ import java.io.IOException;
  */
 public class TableLocationStateHolder implements TableLocationState {
 
-    private volatile long size = NULL_SIZE;
-    private volatile long lastModifiedTimeMillis = NULL_TIME;
+    private ReadOnlyIndex index;
+    private volatile long lastModifiedTimeMillis;
 
-    private TableLocationStateHolder(final long size, final long lastModifiedTimeMillis) {
-        this.size = size;
+    private TableLocationStateHolder(@Nullable final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+        this.index = index;
         this.lastModifiedTimeMillis = lastModifiedTimeMillis;
     }
 
     public TableLocationStateHolder() {
-        this(NULL_SIZE, NULL_TIME);
+        this(null, NULL_TIME);
     }
 
 //------------------------------------------------------------------------------------------------------------------
@@ -28,13 +27,19 @@ public class TableLocationStateHolder implements TableLocationState {
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public @NotNull final Object getStateLock() {
+    @NotNull
+    public final Object getStateLock() {
         return this;
     }
 
     @Override
-    public final long getSize() {
-        return size;
+    public final synchronized ReadOnlyIndex getIndex() {
+        return index.clone();
+    }
+
+    @Override
+    public final synchronized long getSize() {
+        return index == null ? NULL_SIZE : index.size();
     }
 
     @Override
@@ -50,37 +55,32 @@ public class TableLocationStateHolder implements TableLocationState {
      * Clear this holder, by reinitializing all fields to their "null" equivalents.
      */
     protected final void clearValues() {
-        setValues(NULL_SIZE, NULL_TIME);
+        setValues(null, NULL_TIME);
     }
 
     /**
      * Set all state values.
      *
-     * @param size The new size
+     * @param index                 The new index. Ownership passes to this holder; callers should
+     *                              {@link ReadOnlyIndex#clone() clone} it if necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed
      */
-    public final synchronized boolean setValues(final long size, final long lastModifiedTimeMillis) {
+    public final synchronized boolean setValues(@Nullable final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
         boolean changed = false;
-        if (size != this.size) {
-            changed = true;
-            this.size = size;
+
+        if (index != this.index) {
+            // Currently, locations *must* be add-only. Consequently, we assume that a size check is sufficient.
+            changed = (index == null || this.index == null || index.size() != this.index.size());
+            if (this.index != null) {
+                this.index.close();
+            }
+            this.index = index;
         }
         if (lastModifiedTimeMillis != this.lastModifiedTimeMillis) {
             changed = true;
             this.lastModifiedTimeMillis = lastModifiedTimeMillis;
         }
         return changed;
-    }
-
-    /**
-     * Read all values from the supplied input into this state holder.
-     *
-     * @param input A input to read from
-     * @return Whether any of the values changed
-     */
-    @SuppressWarnings("UnusedReturnValue")
-    public final boolean readValuesFrom(@NotNull final DataInput input) throws IOException {
-        return setValues(input.readLong(), input.readLong());
     }
 }

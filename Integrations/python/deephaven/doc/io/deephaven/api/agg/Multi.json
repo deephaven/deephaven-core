@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.Multi",
+ "methods": {
+  "aggregations": ":return: java.util.List<Multi.AGG>",
+  "builder": "Note: Java generics information - <AGG extends io.deephaven.api.agg.Aggregation>\n\n:return: io.deephaven.api.agg.Multi.Builder<AGG>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.Multi",
+ "text": "An aggregation that is a list of other aggregations. Useful as a helper when returning an\n aggregation constructed via a varargs parameter.",
+ "typeName": "class"
+}

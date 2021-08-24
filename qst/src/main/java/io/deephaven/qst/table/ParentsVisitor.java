@@ -1,11 +1,15 @@
 package io.deephaven.qst.table;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -24,78 +28,53 @@ public class ParentsVisitor implements TableSpec.Visitor {
     }
 
     /**
-     * Create a post-order ordered set.
+     * Create a post-order set from {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the
+     * table itself. There may be multiple valid post-orderings; callers should not rely on a
+     * specific post-ordering.
      *
      * @param tables the tables
-     * @return a post-order set
-     *
-     * @see #postOrderWalk(Iterable, Consumer)
+     * @return the post-order set
      */
     public static Set<TableSpec> postOrder(Iterable<TableSpec> tables) {
-        Set<TableSpec> set = new LinkedHashSet<>();
-        postOrderWalk(tables, set::add);
-        return set;
-    }
-
-
-    /**
-     * Create a post-order ordered set, up to a depth of {@code maxDepth}.
-     *
-     * @param tables the tables
-     * @param maxDepth the maximum depth
-     * @return a post-order ordered set
-     *
-     * @see #postOrderWalk(Iterable, Consumer, int)
-     */
-    public static Set<TableSpec> postOrder(Iterable<TableSpec> tables, int maxDepth) {
-        Set<TableSpec> set = new LinkedHashSet<>();
-        postOrderWalk(tables, set::add, maxDepth);
-        return set;
+        // Note: we *can't* use TreeSet and anyOrder here because the comparator is an an auxiliary
+        // attribute of TableSpec, and doesn't mesh with equals(). And even if we could, we might
+        // not want to since it's an iterative approach to sorting instead of an upfront approach.
+        return new LinkedHashSet<>(postOrderList(tables));
     }
 
     /**
-     * Walk the {@link TableSpec tables} in post-order with de-duplication.
+     * Create a de-duplicated, post-order list from {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the
+     * table itself. There may be multiple valid post-orderings; callers should not rely on a
+     * specific post-ordering.
      *
      * @param tables the tables
-     * @param consumer the consumer
+     * @return the de-duplicated, post-order list
      */
-    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer) {
-        postOrderWalk(tables, consumer, Integer.MAX_VALUE);
+    public static List<TableSpec> postOrderList(Iterable<TableSpec> tables) {
+        List<TableSpec> postOrder = new ArrayList<>(anyOrder(tables));
+        postOrder.sort(Comparator.comparingInt(TableSpec::depth));
+        return postOrder;
     }
 
-    /**
-     * Walk the {@link TableSpec tables} post-order with de-duplication, up to a depth of
-     * {@code maxDepth}.
-     *
-     * @param tables the tables
-     * @param consumer the consumer
-     * @param maxDepth the maximum depth
-     */
-    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer,
-        int maxDepth) {
-        Set<TableSpec> visited = new HashSet<>();
-        for (TableSpec table : tables) {
-            postOrderTraversal(visited, table, consumer, maxDepth);
-        }
-    }
-
-    private static void postOrderTraversal(Set<TableSpec> visited, TableSpec table,
-        Consumer<TableSpec> consumer, int maxDepth) {
-        // This method is much more efficient than trying to accomplish the same with
-        // Stream#distinct, since we
-        // can cut off the duplication at the highest-level table.
-        if (maxDepth < 0 || !visited.add(table)) {
-            return;
-        }
-        if (maxDepth > 0) {
-            try (Stream<TableSpec> stream = getParents(table)) {
-                Iterator<TableSpec> it = stream.iterator();
-                while (it.hasNext()) {
-                    postOrderTraversal(visited, it.next(), consumer, maxDepth - 1);
+    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs) {
+        Set<TableSpec> output = new HashSet<>();
+        Queue<TableSpec> toProcess = new ArrayDeque<>();
+        for (TableSpec initialInput : initialInputs) {
+            toProcess.add(initialInput);
+            do {
+                final TableSpec table = toProcess.remove();
+                if (output.add(table)) {
+                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
                 }
-            }
+            } while (!toProcess.isEmpty());
         }
-        consumer.accept(table);
+        return output;
     }
 
     private Stream<TableSpec> out;

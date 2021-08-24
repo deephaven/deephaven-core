@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.TableHeader$Buildable",
+ "methods": {
+  "tableHeader": ":return: io.deephaven.qst.table.TableHeader"
+ },
+ "path": "io.deephaven.qst.table.TableHeader.Buildable",
+ "typeName": "interface"
+}

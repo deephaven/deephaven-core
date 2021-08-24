@@ -29,12 +29,12 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
     private long totalSize = 0;
 
     // region constructor
-    protected ObjectChunkColumnSource(Class<T> type) {
-        this(type, new TLongArrayList());
+    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {
+        this(type, componentType, new TLongArrayList());
     }
 
-    protected ObjectChunkColumnSource(Class<T> type, final TLongArrayList firstOffsetForData) {
-        super(type);
+    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {
+        super(type, componentType);
         this.firstOffsetForData = firstOffsetForData;
     }
     // endregion constructor
@@ -148,7 +148,15 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         return index;
     }
 
-    private void addChunk(@NotNull final WritableObjectChunk<T, ? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableObjectChunk<T, ? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);
@@ -167,5 +175,10 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
         data.forEach(SafeCloseable::close);
         data.clear();
         firstOffsetForData.resetQuick();
+    }
+
+    @Override
+    public long getSize() {
+        return totalSize;
     }
 }

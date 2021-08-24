@@ -116,9 +116,6 @@ public class CharacterFloatColumnTupleSource extends AbstractTupleSource<CharFlo
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    @Override
-    public Class<CharFloatTuple> getNativeType() { return CharFloatTuple.class; }
-
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<CharFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         CharChunk<Attributes.Values> chunk1 = chunks[0].asCharChunk();

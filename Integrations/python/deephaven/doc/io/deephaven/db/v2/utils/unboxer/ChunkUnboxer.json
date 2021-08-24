@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.v2.utils.unboxer.ChunkUnboxer",
+ "methods": {
+  "getEmptyUnboxer": ":param type: io.deephaven.db.v2.sources.chunk.ChunkType\n:return: io.deephaven.db.v2.utils.unboxer.ChunkUnboxer.UnboxerKernel",
+  "getUnboxer": ":param type: io.deephaven.db.v2.sources.chunk.ChunkType\n:param capacity: int\n:return: io.deephaven.db.v2.utils.unboxer.ChunkUnboxer.UnboxerKernel"
+ },
+ "path": "io.deephaven.db.v2.utils.unboxer.ChunkUnboxer",
+ "text": "Convert an Object chunk to a chunk of primitives.",
+ "typeName": "class"
+}

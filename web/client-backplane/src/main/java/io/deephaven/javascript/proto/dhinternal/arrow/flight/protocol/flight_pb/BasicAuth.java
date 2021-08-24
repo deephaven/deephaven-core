@@ -10,7 +10,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.BasicAuth",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.BasicAuth",
     namespace = JsPackage.GLOBAL)
 public class BasicAuth {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

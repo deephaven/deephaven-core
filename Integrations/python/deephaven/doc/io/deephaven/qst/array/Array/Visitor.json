@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.array.Array$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param primitive: io.deephaven.qst.array.PrimitiveArray<?>\n  \n*Overload 2*  \n  :param generic: io.deephaven.qst.array.GenericArray<?>"
+ },
+ "path": "io.deephaven.qst.array.Array.Visitor",
+ "typeName": "interface"
+}

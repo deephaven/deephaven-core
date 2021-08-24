@@ -16,8 +16,8 @@ public class DeferredColumnRegionFloat<ATTR extends Attributes.Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionFloat<ATTR>>
         implements ColumnRegionFloat<ATTR> {
 
-    DeferredColumnRegionFloat(@NotNull Supplier<ColumnRegionFloat<ATTR>> resultRegionFactory) {
-        super(resultRegionFactory);
+    DeferredColumnRegionFloat(final long pageMask, @NotNull Supplier<ColumnRegionFloat<ATTR>> resultRegionFactory) {
+        super(pageMask, resultRegionFactory);
     }
 
     @Override

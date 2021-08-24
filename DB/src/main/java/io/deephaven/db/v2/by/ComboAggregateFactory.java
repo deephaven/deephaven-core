@@ -962,6 +962,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
 
             for (final ComboBy comboBy : underlyingAggregations) {
+                final boolean isStream = ((BaseTable) table).isStream();
+                final boolean isAddOnly = ((BaseTable) table).isAddOnly();
+
                 if (comboBy instanceof CountComboBy) {
                     operators.add(new CountAggregationOperator(((CountComboBy) comboBy).resultColumn));
                     inputColumns.add(null);
@@ -969,7 +972,6 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                 }
                 else if (comboBy instanceof ComboByImpl) {
                     final AggregationStateFactory inputAggregationStateFactory = comboBy.getUnderlyingStateFactory();
-                    final boolean isAddOnly = ((BaseTable) table).isAddOnly();
 
                     final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
                             inputAggregationStateFactory.getClass() == AbsSumStateFactory.class ||
@@ -998,7 +1000,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
                     //noinspection StatementWithEmptyBody
                     if (isSelectDistinct) {
-                        // don't care;
+                        // Select-distinct is accomplished as a side effect of aggregating on the group-by columns.
                     } else {
                         final MatchPair[] comboMatchPairs = ((ComboByImpl) comboBy).matchPairs;
                         if (isSortedFirstOrLastBy) {
@@ -1013,7 +1015,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             } else {
                                 updatedMatchPairs = comboMatchPairs;
                             }
-                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, updatedMatchPairs);
+                            final AggregationContext sflac = SortedFirstOrLastByAggregationFactory.getAggregationContext(table, sortedFirstOrLastByFactory.getSortColumnNames(), isSortedFirstBy, true, updatedMatchPairs);
                             Assert.eq(sflac.operators.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputColumns.length, "sflac.operators.length", 1);
                             Assert.eq(sflac.inputNames.length, "sflac.operators.length", 1);
@@ -1208,7 +1210,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                         operators.add(ssmChunkedMinMaxOperator.makeSecondaryOperator(isMinimum, resultName));
                                         hasSource = false;
                                     } else {
-                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum, isAddOnly, resultName));
+                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum, isStream || isAddOnly, resultName));
                                         hasSource = true;
                                     }
                                 } else if (isPercentile) {
@@ -1242,7 +1244,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             }
 
                             if (table.isLive()) {
-                                if (isAddOnly) {
+                                if (isStream) {
+                                    operators.add(isFirst ? new StreamFirstChunkedOperator(comboMatchPairs, table) : new StreamLastChunkedOperator(comboMatchPairs, table));
+                                } else if (isAddOnly) {
                                     operators.add(new AddOnlyFirstOrLastChunkedOperator(isFirst, comboMatchPairs, table, exposeRedirectionAs));
                                 } else {
                                     if (trackedFirstOrLastIndex >= 0) {
@@ -1259,10 +1263,16 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             }
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isAggArray) {
+                            if (isStream) {
+                                throw streamUnsupported("AggArray");
+                            }
                             inputColumns.add(null);
                             operators.add(new ByChunkedOperator((QueryTable)table, true, comboMatchPairs));
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isFormula) {
+                            if (isStream) {
+                                throw streamUnsupported("AggFormula");
+                            }
                             final AggregationFormulaStateFactory formulaStateFactory = (AggregationFormulaStateFactory)inputAggregationStateFactory;
                             final ByChunkedOperator byChunkedOperator = new ByChunkedOperator((QueryTable) table, false, Arrays.stream(comboMatchPairs).map(MatchPair::right).map(MatchPairFactory::getExpression).toArray(MatchPair[]::new));
                             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(byChunkedOperator, true, formulaStateFactory.getFormula(), formulaStateFactory.getColumnParamName(), comboMatchPairs);
@@ -1311,6 +1321,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                     final boolean includeConstituents = ((ExternalComboBy)comboBy).leafLevel;
                     if (includeConstituents) {
+                        if (isStream) {
+                            throw streamUnsupported("rollup with included constituents");
+                        }
                         Assert.eqFalse(secondLevel, "secondLevel");
                     }
 
@@ -1366,6 +1379,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
             return new AggregationContext(operatorsArray, inputNamesArray, inputColumnsArray, transformersArray, true);
         };
+    }
+
+    private static UnsupportedOperationException streamUnsupported(@NotNull final String operatorTypeName) {
+        return new UnsupportedOperationException("Stream tables do not support " + operatorTypeName
+                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
     }
 
     @NotNull

@@ -49,7 +49,7 @@ configurations {
     dhDbTypesImpl.extendsFrom fishBase, commonsIo
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
-    dhKafkaIngester.extendsFrom dhDb
+    dhKafka.extendsFrom dhDb
 }
 
 // exported properties
@@ -109,23 +109,24 @@ dependencies {
     dhUtil 'ant:ant:1.6.5'
 
     dhDb 'joda-time:joda-time:2.10',
-           "org.codehaus.groovy:groovy:$GROOVY_VERSION",
-           "org.codehaus.groovy:groovy-json:$GROOVY_VERSION",
-           'com.jcraft:jsch:0.1.51',
-           "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
-           "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$Classpaths.JGIT_VERSION",
-           'org.scala-lang:scala-library-all:2.12.2',
-           'org.scala-lang:scala-compiler:2.12.2',
-           'org.yaml:snakeyaml:1.22',
-           'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.8',
-           'com.github.javaparser:javaparser-core:2.0.0',
-           'com.tdunning:t-digest:3.2'
+            "org.codehaus.groovy:groovy:$GROOVY_VERSION",
+            "org.codehaus.groovy:groovy-json:$GROOVY_VERSION",
+            'com.jcraft:jsch:0.1.51',
+            "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
+            "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$Classpaths.JGIT_VERSION",
+            'org.scala-lang:scala-library-all:2.12.2',
+            'org.scala-lang:scala-compiler:2.12.2',
+            'org.yaml:snakeyaml:1.22',
+            'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.8',
+            'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.8',
+            'com.github.javaparser:javaparser-core:2.0.0',
+            'com.tdunning:t-digest:3.2'
 
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
     dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0',
             // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
             'com.fasterxml.jackson.core:jackson-core:2.9.8'
 
-    dhKafkaIngester 'org.apache.kafka:kafka-clients:2.4.0',
+    dhKafka 'org.apache.kafka:kafka-clients:2.4.0',
             'org.apache.avro:avro:1.9.2'
 }

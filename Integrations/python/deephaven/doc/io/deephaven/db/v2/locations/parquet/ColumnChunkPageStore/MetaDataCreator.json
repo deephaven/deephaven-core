@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore$MetaDataCreator",
- "methods": {
-  "get": ":param columnDefinition: io.deephaven.db.tables.ColumnDefinition\n:return: java.util.function.Supplier<?>"
- },
- "path": "io.deephaven.db.v2.locations.parquet.ColumnChunkPageStore.MetaDataCreator",
- "typeName": "interface"
-}

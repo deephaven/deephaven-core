@@ -15,10 +15,10 @@ import io.deephaven.db.util.NoLanguageDeephavenSession;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
-import io.deephaven.grpc_api.barrage.BarrageModule;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
+import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.session.SessionModule;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionServiceGrpcImpl;
@@ -84,7 +84,7 @@ public class FlightMessageRoundTripTest {
     @Singleton
     @Component(modules = {
             FlightTestModule.class,
-            BarrageModule.class,
+            ArrowModule.class,
             SessionModule.class,
             AuthContextModule.class
     })
@@ -202,7 +202,7 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testSimpleEmptyTableDoGet() {
-        Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToTicket(1);
+        Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToArrowTicket(1);
         currentSession.newExport(simpleTableTicket)
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
@@ -327,7 +327,7 @@ public class FlightMessageRoundTripTest {
         // we have decided that if an api client creates export tickets, that they probably gain no value from
         // seeing them via Flight's listFlights but we do want them to work with getFlightInfo (or anywhere else a
         // flight ticket can be resolved).
-        final Flight.Ticket ticket = ExportTicketHelper.exportIdToTicket(1);
+        final Flight.Ticket ticket = ExportTicketHelper.exportIdToArrowTicket(1);
         final Table table = TableTools.emptyTable(10).update("I = i");
         currentSession.newExport(ticket).submit(() -> table);
 
@@ -362,7 +362,7 @@ public class FlightMessageRoundTripTest {
     private static int nextTicket = 1;
     private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
-        Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToTicket(nextTicket++);
+        Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToArrowTicket(nextTicket++);
         currentSession.newExport(dhTableTicket).submit(() -> deephavenTable);
 
         // fetch with DoGet

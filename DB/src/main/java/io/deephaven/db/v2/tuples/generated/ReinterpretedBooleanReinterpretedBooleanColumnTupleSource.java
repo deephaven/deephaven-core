@@ -116,9 +116,6 @@ public class ReinterpretedBooleanReinterpretedBooleanColumnTupleSource extends A
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    @Override
-    public Class<ByteByteTuple> getNativeType() { return ByteByteTuple.class; }
-
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ByteByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();

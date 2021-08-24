@@ -10,7 +10,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.Criteria",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.Criteria",
     namespace = JsPackage.GLOBAL)
 public class Criteria {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

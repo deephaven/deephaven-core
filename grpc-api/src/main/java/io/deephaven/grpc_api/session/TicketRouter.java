@@ -12,6 +12,7 @@ import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +46,7 @@ public class TicketRouter {
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).resolve(session, ticket);
+        return getResolver(ticket.get(ticket.position())).resolve(session, ticket);
     }
 
     /**
@@ -63,6 +64,20 @@ public class TicketRouter {
     }
 
     /**
+     * Resolve a flight ticket to an export object future.
+     *
+     * @param session the user session context
+     * @param ticket the ticket to resolve
+     * @param <T> the expected return type of the ticket; this is not validated
+     * @return an export object; see {@link SessionState} for lifecycle propagation details
+     */
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session,
+            final Ticket ticket) {
+        return resolve(session, ticket.getTicket().asReadOnlyByteBuffer());
+    }
+
+    /**
      * Resolve a flight descriptor to an export object future.
      *
      * @param session the user session context
@@ -70,6 +85,7 @@ public class TicketRouter {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
+    //TODO #412 use this or remove it?
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor) {
@@ -89,7 +105,7 @@ public class TicketRouter {
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
             final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).publish(session, ticket);
+        return getResolver(ticket.get(ticket.position())).publish(session, ticket);
     }
 
     /**
@@ -102,6 +118,7 @@ public class TicketRouter {
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
+    //TODO #412 use this or remove it
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
             final Flight.Ticket ticket) {
@@ -143,6 +160,7 @@ public class TicketRouter {
      * @param ticket the ticket to parse
      * @return a string that is good for log/error messages
      */
+    //TODO #412 use this or remove it
     public String getLogNameFor(final Flight.Ticket ticket) {
         return getLogNameFor(ticket.getTicket().asReadOnlyByteBuffer());
     }
@@ -154,7 +172,7 @@ public class TicketRouter {
      * @return a string that is good for log/error messages
      */
     public String getLogNameFor(final ByteBuffer ticket) {
-        return getResolver(ticket.get(0)).getLogNameFor(ticket);
+        return getResolver(ticket.get(ticket.position())).getLogNameFor(ticket);
     }
 
     /**

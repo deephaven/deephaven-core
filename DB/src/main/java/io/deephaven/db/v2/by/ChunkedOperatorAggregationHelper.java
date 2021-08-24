@@ -10,6 +10,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.v2.*;
+import io.deephaven.db.v2.ShiftAwareListener.Update;
 import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.sort.findruns.IntFindRunsKernel;
 import io.deephaven.db.v2.sort.permute.LongPermuteKernel;
@@ -159,6 +160,7 @@ public class ChunkedOperatorAggregationHelper {
             ac.startTrackingPrevValues();
             incrementalStateManager.startTrackingPrevValues();
 
+            final boolean isStream = withView.isStream();
             final ShiftAwareListener listener = new BaseTable.ShiftAwareListenerImpl("by(" + aggregationContextFactory + ")", withView, result) {
                 @ReferentialIntegrity
                 final ShiftAwareSwapListener swapListenerHardReference = swapListener;
@@ -169,9 +171,14 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final Update upstream) {
+                    final Update upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
                     final Update downstream;
-                    try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager, reinterpretedKeySources, permuteKernels,
-                            keysUpstreamModifiedColumnSet, operatorInputModifiedColumnSets, upstream, outputPosition)) {
+                    try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
+                            reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet, operatorInputModifiedColumnSets,
+                            upstreamToUse, outputPosition)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(withView.getIndex(), keyColumnsRaw, keyColumnsCopied,
                                 result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                     }
@@ -199,36 +206,43 @@ public class ChunkedOperatorAggregationHelper {
         return ac.transformResult(result);
     }
 
+    private static Update adjustForStreaming(@NotNull final Update upstream) {
+        // Streaming aggregations never have modifies or shifts from their parent:
+        Assert.assertion(upstream.modified.empty() && upstream.shifted.empty(), "upstream.modified.empty() && upstream.shifted.empty()");
+        // Streaming aggregations ignore removes:
+        if (upstream.removed.empty()) {
+            return upstream;
+        }
+        return new Update(upstream.added, Index.CURRENT_FACTORY.getEmptyIndex(), upstream.modified, upstream.shifted, upstream.modifiedColumnSet);
+    }
+
     private static void setReverseLookupFunction(ColumnSource<?>[] keySources, AggregationContext ac, ChunkedOperatorAggregationStateManager stateManager) {
         if (keySources.length == 1) {
             if (keySources[0].getType() == DBDateTime.class) {
-                ac.setReverseLookupFunction(key -> stateManager.findPositionForKey(key == null ? null : DBTimeUtils.nanos((DBDateTime)key)));
-            }
-            else if (keySources[0].getType() == Boolean.class) {
-                ac.setReverseLookupFunction(key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean)key)));
-            }
-            else {
+                ac.setReverseLookupFunction(key -> stateManager.findPositionForKey(key == null ? null : DBTimeUtils.nanos((DBDateTime) key)));
+            } else if (keySources[0].getType() == Boolean.class) {
+                ac.setReverseLookupFunction(key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
+            } else {
                 ac.setReverseLookupFunction(stateManager::findPositionForKey);
             }
         } else {
-            final List<Consumer<Object []>> transformers = new ArrayList<>();
+            final List<Consumer<Object[]>> transformers = new ArrayList<>();
             for (int ii = 0; ii < keySources.length; ++ii) {
                 if (keySources[ii].getType() == DBDateTime.class) {
                     final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] = reinterpreted[fii] == null ? null : DBTimeUtils.nanos((DBDateTime)reinterpreted[fii]));
-                }
-                else if (keySources[ii].getType() == Boolean.class) {
+                    transformers.add(reinterpreted -> reinterpreted[fii] = reinterpreted[fii] == null ? null : DBTimeUtils.nanos((DBDateTime) reinterpreted[fii]));
+                } else if (keySources[ii].getType() == Boolean.class) {
                     final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] = BooleanUtils.booleanAsByte((Boolean)reinterpreted[fii]));
+                    transformers.add(reinterpreted -> reinterpreted[fii] = BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
                 }
             }
             if (transformers.isEmpty()) {
-                ac.setReverseLookupFunction(sk -> stateManager.findPositionForKey(((SmartKey)sk).values_));
+                ac.setReverseLookupFunction(sk -> stateManager.findPositionForKey(((SmartKey) sk).values_));
             } else {
                 ac.setReverseLookupFunction(key -> {
-                    final SmartKey smartKey = (SmartKey)key;
-                    final Object [] reinterpreted = Arrays.copyOf(smartKey.values_, smartKey.values_.length);
-                    for (final Consumer<Object []> transform : transformers) {
+                    final SmartKey smartKey = (SmartKey) key;
+                    final Object[] reinterpreted = Arrays.copyOf(smartKey.values_, smartKey.values_.length);
+                    for (final Consumer<Object[]> transform : transformers) {
                         transform.accept(reinterpreted);
                     }
                     return stateManager.findPositionForKey(reinterpreted);
@@ -243,7 +257,7 @@ public class ChunkedOperatorAggregationHelper {
         private final IncrementalChunkedOperatorAggregationStateManager incrementalStateManager;
         private final ColumnSource[] reinterpretedKeySources;
         private final PermuteKernel[] permuteKernels;
-        private final ShiftAwareListener.Update upstream; // Not to be mutated
+        private final Update upstream; // Not to be mutated
         private final MutableInt outputPosition;
 
         private final ModifiedColumnSet updateUpstreamModifiedColumnSet; // Not to be mutated
@@ -293,7 +307,7 @@ public class ChunkedOperatorAggregationHelper {
                                    @NotNull final PermuteKernel[] permuteKernels,
                                    @NotNull final ModifiedColumnSet keysUpstreamModifiedColumnSet,
                                    @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets,
-                                   @NotNull final ShiftAwareListener.Update upstream,
+                                   @NotNull final Update upstream,
                                    @NotNull final MutableInt outputPosition) {
             this.ac = ac;
             this.incrementalStateManager = incrementalStateManager;
@@ -315,7 +329,7 @@ public class ChunkedOperatorAggregationHelper {
             final int buildChunkSize = chunkSize(buildSize);
             final int probeChunkSize = chunkSize(probeSize);
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
-            
+
             emptiedStatesBuilder = Index.FACTORY.getRandomBuilder();
             modifiedStatesBuilder = Index.FACTORY.getRandomBuilder();
             reincarnatedStatesBuilder = Index.FACTORY.getRandomBuilder();
@@ -383,7 +397,7 @@ public class ChunkedOperatorAggregationHelper {
             toClose.close();
         }
 
-        private ShiftAwareListener.Update computeDownstreamIndicesAndCopyKeys(
+        private Update computeDownstreamIndicesAndCopyKeys(
                 @NotNull final ReadOnlyIndex upstreamIndex,
                 @NotNull final ColumnSource<?>[] keyColumnsRaw,
                 @NotNull final WritableSource<?>[] keyColumnsCopied,
@@ -408,13 +422,13 @@ public class ChunkedOperatorAggregationHelper {
                             // Do unshifted modifies for everyone
                             assert !keysModified || split.unshiftedSameSlotIndices != null;
                             final ReadOnlyIndex unshiftedSameSlotModifies = keysModified ? split.unshiftedSameSlotIndices : keysSameUnshiftedModifies;
-                            doSameSlotModifies(unshiftedSameSlotModifies, unshiftedSameSlotModifies,  true /* We don't process shifts unless some operator requires indices */,
+                            doSameSlotModifies(unshiftedSameSlotModifies, unshiftedSameSlotModifies, true /* We don't process shifts unless some operator requires indices */,
                                     od.operatorsWithModifiedInputColumns, od.operatorsWithoutModifiedInputColumnsThatRequireIndices);
 
                             if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
                                 // Do shifted same-key modifies for index-only and modified-input operators that don't require indices
                                 try (final ReadOnlyIndex removeIndex = keysModified ? unshiftedSameSlotModifies.union(split.keyChangeIndicesPostShift) : null;
-                                    final ReadOnlyIndex shiftedSameSlotModifiesPost = upstream.modified.minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
+                                     final ReadOnlyIndex shiftedSameSlotModifiesPost = upstream.modified.minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
                                      final Index shiftedSameSlotModifiesPre = shiftedSameSlotModifiesPost.clone()) {
                                     upstream.shifted.unapply(shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
@@ -458,7 +472,7 @@ public class ChunkedOperatorAggregationHelper {
                 doInserts(upstream.added, true);
             }
 
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
+            final Update downstream = new Update();
             downstream.shifted = IndexShiftData.EMPTY;
 
             try (final ReadOnlyIndex newStates = makeNewStatesIndex(previousLastState, outputPosition.intValue() - 1)) {
@@ -614,7 +628,7 @@ public class ChunkedOperatorAggregationHelper {
         private void doProcessShiftBucketed(@NotNull final WritableLongChunk<OrderedKeyIndices> preKeyIndices,
                                             @NotNull final WritableLongChunk<OrderedKeyIndices> postKeyIndices) {
 
-            final boolean [] chunkInitialized = new boolean[ac.size()];
+            final boolean[] chunkInitialized = new boolean[ac.size()];
 
             try (final OrderedKeys preShiftChunkKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(preKeyIndices));
                  final OrderedKeys postShiftChunkKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(WritableLongChunk.downcast(postKeyIndices))) {
@@ -664,7 +678,7 @@ public class ChunkedOperatorAggregationHelper {
             final boolean shifted = preShiftKeyIndicesToModify != postShiftKeyIndicesToModify;
             try (final OrderedKeys.Iterator preShiftIterator = preShiftKeyIndicesToModify.getOrderedKeysIterator();
                  final OrderedKeys.Iterator postShiftIterator = shifted ? postShiftKeyIndicesToModify.getOrderedKeysIterator() : null) {
-                final boolean [] chunkInitialized = new boolean[ac.size()];
+                final boolean[] chunkInitialized = new boolean[ac.size()];
                 while (preShiftIterator.hasMore()) {
                     final OrderedKeys preShiftKeyIndicesChunk = preShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE);
                     final OrderedKeys postShiftKeyIndicesChunk = shifted ? postShiftIterator.getNextOrderedKeysWithLength(CHUNK_SIZE) : preShiftKeyIndicesChunk;
@@ -901,7 +915,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static ReadOnlyIndex extractUnshiftedModifiesFromUpstream(@NotNull final ShiftAwareListener.Update upstream) {
+    private static ReadOnlyIndex extractUnshiftedModifiesFromUpstream(@NotNull final Update upstream) {
         final Index.SequentialBuilder unshiftedModifiesBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
 
         try (final OrderedKeys.Iterator modifiedPreShiftIterator = upstream.getModifiedPreShift().getOrderedKeysIterator();
@@ -928,7 +942,7 @@ public class ChunkedOperatorAggregationHelper {
         return unshiftedModifiesBuilder.getIndex();
     }
 
-    private static void extractDownstreamModifiedColumnSet(@NotNull final ShiftAwareListener.Update downstream,
+    private static void extractDownstreamModifiedColumnSet(@NotNull final Update downstream,
                                                            @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                                                            @NotNull final boolean[] modifiedOperators,
                                                            @NotNull final ModifiedColumnSet updateUpstreamModifiedColumnSet,
@@ -984,7 +998,7 @@ public class ChunkedOperatorAggregationHelper {
                     if (updateUpstreamModifiedColumnSet.containsAny(operatorInputUpstreamModifiedColumnSets[oi])) {
                         operatorsWithModifiedInputColumns[oi] = true;
                         anyOperatorHasModifiedInputColumnsTemp = true;
-                        if (!ac.operators[oi].requiresIndices())  {
+                        if (!ac.operators[oi].requiresIndices()) {
                             operatorsWithModifiedInputColumnsThatIgnoreIndices[oi] = true;
                             anyOperatorWithModifiedInputColumnsIgnoresIndicesTemp = true;
                         }
@@ -1001,7 +1015,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void processUpstreamShifts(ShiftAwareListener.Update upstream, ReadOnlyIndex useIndex, WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices, Runnable applyChunkedShift) {
+    private static void processUpstreamShifts(Update upstream, ReadOnlyIndex useIndex, WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices, Runnable applyChunkedShift) {
         Index.SearchIterator postOkForward = null;
         Index.SearchIterator postOkReverse = null;
 
@@ -1212,7 +1226,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.propagateInitialStateToOperators(result);
 
         final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
-        ac.setReverseLookupFunction(k -> (int)rll.get(k));
+        ac.setReverseLookupFunction(k -> (int) rll.get(k));
 
         return ac.transformResult(result);
     }
@@ -1244,7 +1258,7 @@ public class ChunkedOperatorAggregationHelper {
                     //noinspection ConstantConditions
                     try (final OrderedKeys.Iterator okit = index.getOrderedKeysIterator()) {
                         //noinspection unchecked
-                        final Chunk<? extends Values> [] workingChunks = new Chunk[ac.size()];
+                        final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
 
                         while (okit.hasMore()) {
                             final OrderedKeys chunkOk = okit.getNextOrderedKeysWithLength(CHUNK_SIZE);
@@ -1443,6 +1457,7 @@ public class ChunkedOperatorAggregationHelper {
         if (table.isRefreshing()) {
             ac.startTrackingPrevValues();
 
+            final boolean isStream = table.isStream();
             final ShiftAwareListener listener = new BaseTable.ShiftAwareListenerImpl("by(" + aggregationContextFactory + ")", table, result) {
 
                 final ModifiedColumnSet[] inputModifiedColumnSet = ac.getInputModifiedColumnSets(table);
@@ -1453,6 +1468,14 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final Update upstream) {
+                    final Update upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                    if (upstreamToUse.empty()) {
+                        return;
+                    }
+                    processNoKeyUpdate(upstreamToUse);
+                }
+
+                private void processNoKeyUpdate(@NotNull final Update upstream) {
                     ac.resetOperatorsForStep(upstream);
 
                     final ModifiedColumnSet upstreamModifiedColumnSet = upstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet;
@@ -1515,7 +1538,7 @@ public class ChunkedOperatorAggregationHelper {
                             doNoKeyAddition(upstream.added, ac, opContexts, allColumns, false, modifiedOperators);
                         }
 
-                        final int newResultSize = table.size() == 0 ? 0 : 1;
+                        final int newResultSize = (!isStream || lastSize == 0) && table.size() == 0 ? 0 : 1;
                         final Update downstream = new Update();
                         downstream.shifted = IndexShiftData.EMPTY;
                         if ((lastSize == 0 && newResultSize == 1)) {
@@ -1529,6 +1552,9 @@ public class ChunkedOperatorAggregationHelper {
                             downstream.modified = Index.FACTORY.getEmptyIndex();
                             result.getIndex().remove(0);
                         } else {
+                            if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
+                                return;
+                            }
                             downstream.added = Index.FACTORY.getEmptyIndex();
                             downstream.removed = Index.FACTORY.getEmptyIndex();
                             downstream.modified = Index.FACTORY.getIndexByValues(0);
@@ -1582,11 +1608,11 @@ public class ChunkedOperatorAggregationHelper {
              final SharedContext postSharedContext = SharedContext.makeSharedContext();
              final OrderedKeys.Iterator preIt = preIndex.getOrderedKeysIterator();
              final OrderedKeys.Iterator postIt = postIndex.getOrderedKeysIterator()) {
-            ac.initializeGetContexts(preSharedContext, preGetContexts, preIndex.size(),  operatorsToProcess);
+            ac.initializeGetContexts(preSharedContext, preGetContexts, preIndex.size(), operatorsToProcess);
             ac.initializeGetContexts(postSharedContext, postGetContexts, postIndex.size(), operatorsToProcess);
 
-            final Chunk<? extends Values> [] workingPreChunks = new Chunk[ac.size()];
-            final Chunk<? extends Values> [] workingPostChunks = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] workingPreChunks = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
             while (postIt.hasMore()) {
                 final OrderedKeys postChunkOk = postIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
@@ -1655,7 +1681,7 @@ public class ChunkedOperatorAggregationHelper {
             ac.initializeGetContexts(sharedContext, getContexts, index.size(), operatorsToProcess);
 
             //noinspection unchecked
-            final Chunk<? extends Values> [] workingChunks = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] workingChunks = new Chunk[ac.size()];
 
             // on an empty initial pass we want to go through the operator anyway, so that we initialize things correctly for the aggregation of zero keys
             do {
@@ -1683,7 +1709,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void doNoKeyShifts(QueryTable source, ShiftAwareListener.Update upstream, AggregationContext ac,
+    private static void doNoKeyShifts(QueryTable source, Update upstream, AggregationContext ac,
                                       final IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
                                       boolean[] operatorsToShift, boolean[] modifiedOperators) {
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
@@ -1716,9 +1742,9 @@ public class ChunkedOperatorAggregationHelper {
                                             WritableLongChunk<OrderedKeyIndices> preKeyIndices, WritableLongChunk<OrderedKeyIndices> postKeyIndices,
                                             boolean[] modifiedOperators) {
         //noinspection unchecked
-        final Chunk<? extends Values> [] workingPreChunks = new Chunk[ac.size()];
+        final Chunk<? extends Values>[] workingPreChunks = new Chunk[ac.size()];
         //noinspection unchecked
-        final Chunk<? extends Values> [] workingPostChunks = new Chunk[ac.size()];
+        final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
         try (final OrderedKeys preChunkOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(preKeyIndices);
              final OrderedKeys postChunkOk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(postKeyIndices)) {
@@ -1735,8 +1761,7 @@ public class ChunkedOperatorAggregationHelper {
                     final int inputSlot = ac.inputSlot(ii);
                     if (ac.inputColumns[ii] == null) {
                         previousValues = newValues = null;
-                    }
-                    else {
+                    } else {
                         if (workingPreChunks[inputSlot] == null) {
                             workingPreChunks[inputSlot] = ac.inputColumns[ii].getPrevChunk(getContexts[ii], preChunkOk);
                             workingPostChunks[inputSlot] = ac.inputColumns[ii].getChunk(postGetContexts[ii], postChunkOk);
@@ -1778,10 +1803,9 @@ public class ChunkedOperatorAggregationHelper {
      * Return the minimum of our chunk size and the size of an input.
      *
      * @param size the input size
-     *
      * @return an appropriate chunk size to use
      */
     public static int chunkSize(long size) {
-        return (int)Math.min(size, CHUNK_SIZE);
+        return (int) Math.min(size, CHUNK_SIZE);
     }
 }

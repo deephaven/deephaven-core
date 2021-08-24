@@ -15,8 +15,13 @@ public abstract class ShortType extends PrimitiveTypeBase<Short> {
     }
 
     @Override
-    public final Class<Short> primitiveClass() {
+    public final Class<Short> clazz() {
         return short.class;
+    }
+
+    @Override
+    public final NativeArrayType<short[], Short> arrayType() {
+        return NativeArrayType.of(short[].class, this);
     }
 
     @Override

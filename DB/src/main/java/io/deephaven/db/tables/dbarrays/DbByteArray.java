@@ -12,6 +12,8 @@ import io.deephaven.db.v2.sources.chunk.ByteChunk;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.libs.primitives.BytePrimitives;
+import io.deephaven.qst.type.ByteType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +23,10 @@ import java.util.Arrays;
 public interface DbByteArray extends DbArrayBase<DbByteArray> {
 
     long serialVersionUID = 8519130615638683196L;
+
+    static DbPrimitiveArrayType<DbByteArray, Byte> type() {
+        return DbPrimitiveArrayType.of(DbByteArray.class, ByteType.instance());
+    }
 
     byte get(long i);
 

@@ -4,7 +4,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
 import io.deephaven.web.client.api.*;
@@ -64,6 +64,8 @@ public class IdeSession extends HasEventHandling {
         return table;
     }
 
+    // TODO: #37: Need SmartKey support for this functionality
+    @JsIgnore
     public Promise<JsTreeTable> getTreeTable(String name) {
         return connection.getTreeTable(name, result);
     }
@@ -99,7 +101,7 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
         BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
-        bindRequest.setConsoleId(table.getHandle().makeTicket());
+        bindRequest.setTableId(table.getHandle().makeTicket());
         bindRequest.setVariableName(name);
         return Callbacks.grpcUnaryPromise(c ->
                 connection.consoleServiceClient().bindTableToVariable(bindRequest, connection.metadata(), c::apply))

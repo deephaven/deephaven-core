@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.BooleanArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.BooleanArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.BooleanType",
+  "empty": ":return: io.deephaven.qst.array.BooleanArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: byte...\n  :return: io.deephaven.qst.array.BooleanArray\n  \n*Overload 2*  \n  :param values: java.lang.Boolean...\n  :return: io.deephaven.qst.array.BooleanArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Boolean>\n  :return: io.deephaven.qst.array.BooleanArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Boolean>\n  :return: io.deephaven.qst.array.BooleanArray",
+  "ofUnsafe": ":param values: byte...\n:return: io.deephaven.qst.array.BooleanArray",
+  "size": ":return: int",
+  "values": "The raw booleans, as bytes. Must not be modified.\n\n:return: (byte[]) the booleans, as bytes. do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.BooleanArray",
+ "text": "A BooleanType array.",
+ "typeName": "class"
+}

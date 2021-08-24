@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Require;
@@ -747,10 +750,13 @@ class IncrementalChunkedNaturalJoinStateManager
         final boolean isLeftSide = leftRedirections != null;
         // endregion build start
 
-        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator()) {
+        try (final OrderedKeys.Iterator okIt = buildIndex.getOrderedKeysIterator();
+             // region build initialization try
+             // the chunk of source indices that are parallel to the sourceChunks
+             final WritableLongChunk<KeyIndices> workingLeftRedirections = isLeftSide ? WritableLongChunk.makeWritableChunk(bc.chunkSize) : null
+             // endregion build initialization try
+        ) {
             // region build initialization
-            // the chunk of source indices that are parallel to the sourceChunks
-            final WritableLongChunk<KeyIndices> workingLeftRedirections = isLeftSide ? WritableLongChunk.makeWritableChunk(bc.chunkSize) : null;
             // endregion build initialization
 
             // chunks to write through to the table key sources
@@ -1094,9 +1100,6 @@ class IncrementalChunkedNaturalJoinStateManager
                 hashSlotOffset += chunkOk.size();
             }
             // region post build loop
-            if (isLeftSide) {
-                workingLeftRedirections.close();
-            }
             // endregion post build loop
         }
     }
@@ -2040,29 +2043,34 @@ class IncrementalChunkedNaturalJoinStateManager
     @Override
     public String keyString(long slot) {
         final WritableChunk<Values>[] keyChunk = getWritableKeyChunks(1);
-        final WritableLongChunk<KeyIndices> slotChunk = WritableLongChunk.makeWritableChunk(1);
-        if (isOverflowLocation(slot)) {
-            slotChunk.set(0, hashLocationToOverflowLocation(slot));
-            final ColumnSource.FillContext[] contexts = makeFillContexts(overflowKeySources, null, 1);
-            try {
-                fillOverflowKeys(contexts, keyChunk, slotChunk);
-            } finally {
-                for (Context c : contexts) {
-                    c.close();
+        try (final WritableLongChunk<KeyIndices> slotChunk = WritableLongChunk.makeWritableChunk(1)) {
+            if (isOverflowLocation(slot)) {
+                slotChunk.set(0, hashLocationToOverflowLocation(slot));
+                final ColumnSource.FillContext[] contexts = makeFillContexts(overflowKeySources, null, 1);
+                try {
+                    fillOverflowKeys(contexts, keyChunk, slotChunk);
+                } finally {
+                    for (Context c : contexts) {
+                        c.close();
+                    }
+                }
+            } else {
+                slotChunk.set(0, slot);
+                final ColumnSource.FillContext[] contexts = makeFillContexts(keySources, null, 1);
+                try {
+                    fillKeys(contexts, keyChunk, slotChunk);
+                } finally {
+                    for (Context c : contexts) {
+                        c.close();
+                    }
                 }
             }
-        } else {
-            slotChunk.set(0, slot);
-            final ColumnSource.FillContext[] contexts = makeFillContexts(keySources, null, 1);
-            try {
-                fillKeys(contexts, keyChunk, slotChunk);
-            } finally {
-                for (Context c : contexts) {
-                    c.close();
-                }
+            return ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, keyChunk, 0);
+        } finally {
+            for (WritableChunk<Values> chunk : keyChunk) {
+                chunk.close();
             }
         }
-        return ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, keyChunk, 0);
     }
 
     // endregion extraction functions

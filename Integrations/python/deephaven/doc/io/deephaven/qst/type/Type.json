@@ -1,0 +1,24 @@
+{
+ "className": "io.deephaven.qst.type.Type",
+ "methods": {
+  "arrayType": "Create a native array type with this as the component type.\n\n:return: (io.deephaven.qst.type.NativeArrayType<?,Type.T>) the native array type",
+  "booleanType": "Creates the boolean type.\n\n:return: (io.deephaven.qst.type.BooleanType) the boolean type",
+  "byteType": "Creates the byte type.\n\n:return: (io.deephaven.qst.type.ByteType) the byte type",
+  "charType": "Creates the char type.\n\n:return: (io.deephaven.qst.type.CharType) the char type",
+  "clazz": "The class representing this type.\n\n:return: (java.lang.Class<Type.T>) the class",
+  "doubleType": "Creates the double type.\n\n:return: (io.deephaven.qst.type.DoubleType) the double type",
+  "find": "Finds the known type, or else creates the relevant\n native array type or custom type.\n\nNote: Java generics information - <T>\n\n:param clazz: (java.lang.Class<T>) - the class\n:return: (io.deephaven.qst.type.Type<T>) the type",
+  "floatType": "Creates the float type.\n\n:return: (io.deephaven.qst.type.FloatType) the float type",
+  "instantType": "Creates the instant type.\n\n:return: (io.deephaven.qst.type.InstantType) the instant type",
+  "intType": "Creates the int type.\n\n:return: (io.deephaven.qst.type.IntType) the int type",
+  "knownTypes": "The list of known types. Includes the universe of primitive types and\n generic types minus custom types and array types.\n\n:return: (java.util.List<io.deephaven.qst.type.Type<?>>) the list of known types",
+  "longType": "Creates the long type.\n\n:return: (io.deephaven.qst.type.LongType) the long type",
+  "ofCustom": "Creates a custom type. Equivalent to CustomType.of(clazz).\n\nNote: Java generics information - <T>\n\n:param clazz: (java.lang.Class<T>) - the class\n:return: (io.deephaven.qst.type.CustomType<T>) the custom type",
+  "shortType": "Creates the short type.\n\n:return: (io.deephaven.qst.type.ShortType) the short type",
+  "stringType": "Creates the string type.\n\n:return: (io.deephaven.qst.type.StringType) the string type",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.Type.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.Type",
+ "text": "A type.",
+ "typeName": "interface"
+}

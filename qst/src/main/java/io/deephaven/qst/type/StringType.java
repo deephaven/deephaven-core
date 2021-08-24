@@ -15,6 +15,11 @@ public abstract class StringType extends GenericTypeBase<String> {
     }
 
     @Override
+    public final Class<String> clazz() {
+        return String.class;
+    }
+
+    @Override
     public final <V extends GenericType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

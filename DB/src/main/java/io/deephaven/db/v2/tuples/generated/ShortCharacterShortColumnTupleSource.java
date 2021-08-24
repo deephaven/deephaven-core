@@ -135,11 +135,6 @@ public class ShortCharacterShortColumnTupleSource extends AbstractTupleSource<Sh
     }
 
     @Override
-    public Class<ShortCharShortTuple> getNativeType() {
-        return ShortCharShortTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<ShortCharShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();

@@ -4,28 +4,18 @@
 
 package io.deephaven.grpc_api.session;
 
-import io.deephaven.io.logger.Logger;
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.auth.AuthContextProvider;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.backplane.grpc.ExportNotificationRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.util.auth.AuthContext;
-import io.grpc.Context;
-import io.grpc.Contexts;
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
+import io.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.flight.impl.Flight;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
+    // TODO (#997): use flight AuthConstants
     public static final String DEEPHAVEN_SESSION_ID = "DEEPHAVEN_SESSION_ID";
     public static final Metadata.Key<String> SESSION_HEADER_KEY = Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);
@@ -123,7 +114,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void release(final Flight.Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
+    public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExportIfExists(request);
             final ExportNotification.State currState = export != null ? export.getState() : ExportNotification.State.UNKNOWN;
@@ -160,10 +151,13 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> serverCall,
                                                                      final Metadata metadata,
                                                                      final ServerCallHandler<ReqT, RespT> serverCallHandler) {
+            SessionState session = null;
             final Optional<String> tokenBytes = Optional.ofNullable(metadata.get(SESSION_HEADER_KEY));
-            final Optional<UUID> token = tokenBytes.map(UUID::fromString);
-            final Context newContext = Context.current()
-                    .withValue(SESSION_CONTEXT_KEY, token.map(service::getSessionForToken).orElse(null));
+            if (tokenBytes.isPresent()) {
+                UUID token = UuidCreator.fromString(tokenBytes.get());
+                session = service.getSessionForToken(token);
+            }
+            final Context newContext = Context.current().withValue(SESSION_CONTEXT_KEY, session);
             return Contexts.interceptCall(newContext, serverCall, metadata, serverCallHandler);
         }
     }

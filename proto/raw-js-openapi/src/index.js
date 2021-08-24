@@ -1,13 +1,14 @@
-require("io/deephaven/proto/barrage_pb");
-require("io/deephaven/proto/session_pb");
-require("io/deephaven/proto/table_pb");
-require("io/deephaven/proto/console_pb");
-require("arrow/flight/protocol/flight_pb");
-var barrageService = require("io/deephaven/proto/barrage_pb_service");
-var sessionService = require("io/deephaven/proto/session_pb_service");
-var tableService = require("io/deephaven/proto/table_pb_service");
-var consoleService = require("io/deephaven/proto/console_pb_service");
-var flightService = require("arrow/flight/protocol/flight_pb_service");
+require("deephaven/proto/session_pb");
+require("deephaven/proto/table_pb");
+require("deephaven/proto/console_pb");
+require("deephaven/proto/ticket_pb");
+require("Flight_pb")
+require("BrowserFlight_pb")
+var sessionService = require("deephaven/proto/session_pb_service");
+var tableService = require("deephaven/proto/table_pb_service");
+var consoleService = require("deephaven/proto/console_pb_service");
+var browserFlightService = require("BrowserFlight_pb_service");
+var flightService = require("Flight_pb_service");
 
 var browserHeaders = require("browser-headers");
 
@@ -16,33 +17,37 @@ var jspb = require("google-protobuf");
 var flatbuffers = require("flatbuffers").flatbuffers;
 var barrage = require("@deephaven/barrage");
 
+var message = require('./arrow/flight/flatbuf/Message_generated');
+var schema = require('./arrow/flight/flatbuf/Schema_generated');
+
 var io = { deephaven: {
     proto: {
-            barrage_pb: proto.io.deephaven.proto.backplane.grpc,
-            barrage_pb_service: barrageService,
             session_pb: proto.io.deephaven.proto.backplane.grpc,
             session_pb_service: sessionService,
             table_pb: proto.io.deephaven.proto.backplane.grpc,
             table_pb_service: tableService,
             console_pb: proto.io.deephaven.proto.backplane.script.grpc,
             console_pb_service: consoleService,
+            ticket_pb: proto.io.deephaven.proto.backplane.grpc,
         },
         barrage: {
             "flatbuf": {
                 "Barrage_generated": barrage,
-                "Schema_generated": barrage,
-                "Message_generated": barrage
             }
         }
 }};
-var arrow = {
-    flight: {
-        protocol: {
-            flight_pb: proto.arrow.flight.protocol,
-            flight_pb_service: flightService
-        }
+var arrow = { flight: {
+    flatbuf: {
+        Message_generated: message,
+        Schema_generated: schema,
+    },
+    protocol: {
+            Flight_pb: proto.arrow.flight.protocol,
+            Flight_pb_service: flightService,
+            BrowserFlight_pb: proto.arrow.flight.protocol,
+            BrowserFlight_pb_service: browserFlightService
     }
-};
+}};
 var dhinternal = {
     browserHeaders,
     jspb,

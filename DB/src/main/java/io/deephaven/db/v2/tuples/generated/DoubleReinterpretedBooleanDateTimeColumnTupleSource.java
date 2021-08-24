@@ -138,11 +138,6 @@ public class DoubleReinterpretedBooleanDateTimeColumnTupleSource extends Abstrac
     }
 
     @Override
-    public Class<DoubleByteLongTuple> getNativeType() {
-        return DoubleByteLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<DoubleByteLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();

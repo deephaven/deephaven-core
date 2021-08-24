@@ -28,11 +28,6 @@ public class ByteChunkPage<ATTR extends Attributes.Any> extends ByteChunk<ATTR> 
     }
 
     @Override
-    public Class<Byte> getNativeType() {
-        return byte.class;
-    }
-
-    @Override
     public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         WritableByteChunk<? super ATTR> to = destination.asWritableByteChunk();
 

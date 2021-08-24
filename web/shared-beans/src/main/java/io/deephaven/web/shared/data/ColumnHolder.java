@@ -8,16 +8,14 @@ public class ColumnHolder implements Serializable {
     private String name;
     private String type;
     private ColumnData columnData;
-    private boolean grouped;
 
     public ColumnHolder() {
     }
 
-    public ColumnHolder(String name, String type, ColumnData columnData, boolean grouped) {
+    public ColumnHolder(String name, String type, ColumnData columnData) {
         this.name = name;
         this.type = type;
         this.columnData = columnData;
-        this.grouped = grouped;
     }
 
     public String getName() {
@@ -44,21 +42,12 @@ public class ColumnHolder implements Serializable {
         this.columnData = columnData;
     }
 
-    public boolean isGrouped() {
-        return grouped;
-    }
-
-    public void setGrouped(boolean grouped) {
-        this.grouped = grouped;
-    }
-
     @Override
     public String toString() {
         return "ColumnHolder{" +
                 "name='" + name + '\'' +
                 ", type='" + type + '\'' +
                 ", columnData=" + columnData +
-                ", grouped=" + grouped +
                 '}';
     }
 }

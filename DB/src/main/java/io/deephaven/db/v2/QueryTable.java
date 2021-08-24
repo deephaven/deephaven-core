@@ -328,6 +328,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public LocalTableMap byExternal(final boolean dropKeys, final String... keyColumnNames) {
+        if (isStream()) {
+            throw streamUnsupported("byExternal");
+        }
         final SelectColumn[] groupByColumns = Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
 
         return memoizeResult(MemoizedOperationKey.byExternal(dropKeys, groupByColumns),
@@ -340,6 +343,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
+        if (isStream() && includeConstituents) {
+            throw streamUnsupported("rollup with included constituents");
+        }
         return memoizeResult(MemoizedOperationKey.rollup(comboAggregateFactory, columns, includeConstituents), () -> {
             final ComboAggregateFactory withRollup = comboAggregateFactory.forRollup(includeConstituents);
             ComboAggregateFactory aggregationStateFactory = withRollup;
@@ -382,6 +388,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
+        if (isStream()) {
+            throw streamUnsupported("treeTable");
+        }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
             final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false, (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal), Collections.singletonList(null), parentColumn);
             final QueryTable rootTable = (QueryTable)byExternalResult.get(null);
@@ -485,7 +494,7 @@ public class QueryTable extends BaseTable {
             if (isRefreshing()) {
                 return by(new MinMaxByStateFactoryImpl(true), selectColumns);
             } else {
-                return by(new AppendMinMaxByStateFactoryImpl(true), selectColumns);
+                return by(new AddOnlyMinMaxByStateFactoryImpl(true), selectColumns);
             }
         });
     }
@@ -496,7 +505,7 @@ public class QueryTable extends BaseTable {
             if (isRefreshing()) {
                 return by(new MinMaxByStateFactoryImpl(false), selectColumns);
             } else {
-                return by(new AppendMinMaxByStateFactoryImpl(false), selectColumns);
+                return by(new AddOnlyMinMaxByStateFactoryImpl(false), selectColumns);
             }
         });
     }
@@ -545,12 +554,18 @@ public class QueryTable extends BaseTable {
             final boolean isCombo = inputAggregationStateFactory instanceof ComboAggregateFactory;
 
             if (isBy) {
+                if (isStream()) {
+                    throw streamUnsupported("by");
+                }
                 if (USE_OLDER_CHUNKED_BY) {
                     return AggregationHelper.by(this, groupByColumns);
                 }
                 return ByAggregationFactory.by(this, groupByColumns);
             }
             else if (isApplyToAllBy) {
+                if (isStream()) {
+                    throw streamUnsupported("applyToAllBy");
+                }
                 final String formula = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getFormula();
                 final String columnParamName = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
                 return FormulaAggregationFactory.applyToAllBy(this, formula, columnParamName, groupByColumns);
@@ -560,14 +575,15 @@ public class QueryTable extends BaseTable {
             }
             else if (isSortedFirstOrLast) {
                 final boolean isSortedFirst = ((SortedFirstOrLastByFactoryImpl)inputAggregationStateFactory).isSortedFirst();
-                return ChunkedOperatorAggregationHelper.aggregation(new SortedFirstOrLastByAggregationFactory(isSortedFirst, ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new SortedFirstOrLastByAggregationFactory(isSortedFirst, false,
+                        ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()), this, groupByColumns);
             }
             else if (isFirst || isLast) {
                 return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this, groupByColumns);
             }
             else if (isMinMax) {
                 final boolean isMin = ((MinMaxByStateFactoryImpl)inputAggregationStateFactory).isMinimum();
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isAddOnly())), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())), this, groupByColumns);
             }
             else if (isPercentile) {
                 final double percentile = ((PercentileByStateFactoryImpl)inputAggregationStateFactory).getPercentile();
@@ -599,6 +615,11 @@ public class QueryTable extends BaseTable {
 
             throw new RuntimeException("Unknown aggregation factory: " + inputAggregationStateFactory);
         });
+    }
+
+    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Stream tables do not support " + operationName
+                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
     }
 
     @Override

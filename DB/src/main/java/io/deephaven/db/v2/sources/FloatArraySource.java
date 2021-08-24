@@ -55,11 +55,6 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }

@@ -9,10 +9,7 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.select.QueryScope;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.ParquetTools;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.tables.utils.*;
 import io.deephaven.db.util.BooleanUtils;
 import io.deephaven.db.util.file.TrackedFileHandleFactory;
 import io.deephaven.db.v2.QueryTable;
@@ -22,10 +19,8 @@ import io.deephaven.db.v2.parquet.ParquetInstructions;
 import io.deephaven.db.v2.select.ReinterpretedColumn;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
@@ -158,7 +153,7 @@ public class TestChunkedRegionedOperations {
             ColumnDefinition.ofDouble("D"),
             ColumnDefinition.ofBoolean("Bl"),
             ColumnDefinition.ofString("Sym"),
-            ColumnDefinition.ofString("Str").withSymbolTable(),
+            ColumnDefinition.ofString("Str"),
             ColumnDefinition.ofTime("DT"),
             ColumnDefinition.fromGenericType("SymS", StringSet.class),
             ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
@@ -169,6 +164,8 @@ public class TestChunkedRegionedOperations {
         final ParquetInstructions parquetInstructions = new ParquetInstructions.Builder()
                 .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
                 .addColumnCodec("Var", BigIntegerCodec.class.getName())
+                .useDictionary("Sym", true)
+                .setMaximumDictionaryKeys(100) // Force "Str" to use non-dictionary encoding
                 .build();
 
         final Table inputData = ((QueryTable)TableTools.emptyTable(TABLE_SIZE)
@@ -232,7 +229,7 @@ public class TestChunkedRegionedOperations {
         final TableMap partitionedInputData = inputData.byExternal("PC");
         ParquetTools.writeParquetTables(
                 partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-                partitionedDataDefinition,
+                partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
                         .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
@@ -243,7 +240,7 @@ public class TestChunkedRegionedOperations {
         final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").byExternal("PC");
         ParquetTools.writeParquetTables(
                 partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-                partitionedMissingDataDefinition,
+                partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())
                         .map(pcv -> new File(dataDirectory, "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator + PARQUET_FILE_NAME))
@@ -260,7 +257,7 @@ public class TestChunkedRegionedOperations {
                         "DT_R = nanos(DT)"
                 );
 
-        actual = ParquetTools.readMultiFileTable(
+        actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition
@@ -440,5 +437,24 @@ public class TestChunkedRegionedOperations {
     @Test
     public void testSparseTableSmallChunks() {
         assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), 8);
+    }
+
+    @Test
+    public void testEqualSymbols() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/949): Uncomment this once we write encoding stats
+//        //noinspection unchecked
+//        final SymbolTableSource<String> symbolTableSource = (SymbolTableSource<String>) actual.getColumnSource("Sym");
+//
+//        assertTrue(symbolTableSource.hasSymbolTable(actual.getIndex()));
+//        final Table symbolTable = symbolTableSource.getStaticSymbolTable(actual.getIndex(), false);
+//
+//        assertTableEquals(expected.view("PC", "Sym").where("Sym != null").firstBy("PC", "Sym").dropColumns("PC"), symbolTable.view("Sym = Symbol").where("Sym != null"));
+//
+//        final Table joined = actual
+//                .updateView(new ReinterpretedColumn<>("Sym", String.class, "SymId", long.class))
+//                .where("SymId != NULL_LONG") // Symbol tables don't explicitly map the null ID
+//                .exactJoin(symbolTable, "SymId=" + SymbolTableSource.ID_COLUMN_NAME, "DictionarySym=" + SymbolTableSource.SYMBOL_COLUMN_NAME);
+//        final Table joinedBad = joined.where("Sym != DictionarySym");
+//        TestCase.assertTrue(joinedBad.isEmpty());
     }
 }

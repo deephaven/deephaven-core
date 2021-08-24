@@ -1,17 +1,16 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.RegionedPageStore",
  "methods": {
-  "getElementIndex": "Get the element index.\n\n:param regionIndex: int\n:param regionOffset: long\n:return: (long) the element index for a particular region offset of a region index.",
-  "getFirstElementIndex": "Get the first element index.\n\n:param regionIndex: int\n:return: (long) the first element index for a region index.",
-  "getLastElementIndex": "Get the last element index.\n\n:param regionIndex: int\n:return: (long) the last element index for a region index.",
   "getPageContaining": ":param fillContext: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:param row: long\n:return: (RegionedPageStore.REGION_TYPE) The page containing row, after applying PagingChunkSource.mask().",
   "getRegion": "Map from a region index to its corresponding region.\n\n:param regionIndex: (int) - The region index\n:return: (RegionedPageStore.REGION_TYPE) The region for the supplied region index",
   "getRegionCount": "Get the number of regions.\n\n:return: (int) The number of regions that have been added",
   "getRegionIndex": "Get the region index.\n\n:param elementIndex: long\n:return: (int) The region index for an element index.",
   "lookupRegion": "Perform region lookup for an element index.\n\n:param elementIndex: (long) - The element index to get the region for\n:return: (RegionedPageStore.REGION_TYPE) The appropriate region",
   "makeFillContext": "Allocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker,\n typically a ChunkSource.\n\n:param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n:param sharedContext: (io.deephaven.db.v2.sources.chunk.SharedContext) - Shared store of intermediate results.\n:return: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) A context for use with fill operations",
-  "mask": "This mask is applied to OrderedKeys which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, OrderedKeys) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys). This allows the\n PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n long.",
-  "size": "The size of this data structure.\n\n:return: (long) The total number of rows across all regions."
+  "mask": "This mask is applied to OrderedKeys which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, OrderedKeys) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, OrderedKeys). This allows the\n PagingChunkSources to be cached, and reused even if they are properly relocated in key\n space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n long.",
+  "parameters": ":return: (io.deephaven.db.v2.sources.regioned.RegionedPageStore.Parameters) The parameters object that describes this regioned page store",
+  "regionMask": ":return: (long) The mask that should be applied to OrderedKeys indices when\n calculating their address within a region",
+  "regionMaskNumBits": ":return: (int) The number of bits masked by regionMask()"
  },
  "path": "io.deephaven.db.v2.sources.regioned.RegionedPageStore",
  "typeName": "interface"

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.type.GenericType$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param stringType: io.deephaven.qst.type.StringType\n  \n*Overload 2*  \n  :param instantType: io.deephaven.qst.type.InstantType\n  \n*Overload 3*  \n  :param arrayType: io.deephaven.qst.type.ArrayType<?,?>\n  \n*Overload 4*  \n  :param customType: io.deephaven.qst.type.CustomType<?>"
+ },
+ "path": "io.deephaven.qst.type.GenericType.Visitor",
+ "typeName": "interface"
+}

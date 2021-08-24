@@ -10,7 +10,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.HandshakeRequest",
     namespace = JsPackage.GLOBAL)
 public class HandshakeRequest {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

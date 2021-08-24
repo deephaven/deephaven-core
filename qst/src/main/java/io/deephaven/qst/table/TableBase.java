@@ -18,6 +18,10 @@ import java.util.stream.Collectors;
 
 public abstract class TableBase implements TableSpec {
 
+    // Note: method implementations should use the static constructors, or builder patterns, for the
+    // necessary TableSpec instead of delegating to other methods. The default values are the
+    // responsibility of the TableSpec.
+
     @Override
     public final HeadTable head(long size) {
         return HeadTable.of(this, size);
@@ -35,7 +39,11 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final SnapshotTable snapshot(TableSpec baseTable, String... stampColumns) {
-        return snapshot(baseTable, false, stampColumns);
+        SnapshotTable.Builder builder = SnapshotTable.builder().trigger(this).base(baseTable);
+        for (String stampColumn : stampColumns) {
+            builder.addStampColumns(ColumnName.of(stampColumn));
+        }
+        return builder.build();
     }
 
     @Override
@@ -135,15 +143,24 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final NaturalJoinTable naturalJoin(TableSpec rightTable, String columnsToMatch) {
-        return naturalJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
-            Collections.emptyList());
+        NaturalJoinTable.Builder builder = NaturalJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final NaturalJoinTable naturalJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
-        return naturalJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)));
+        NaturalJoinTable.Builder builder = NaturalJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
@@ -156,15 +173,24 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final ExactJoinTable exactJoin(TableSpec rightTable, String columnsToMatch) {
-        return exactJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
-            Collections.emptyList());
+        ExactJoinTable.Builder builder = ExactJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final ExactJoinTable exactJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
-        return exactJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)));
+        ExactJoinTable.Builder builder = ExactJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
@@ -184,26 +210,45 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final JoinTable join(TableSpec rightTable, String columnsToMatch) {
-        return join(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList(),
-            JoinTable.DEFAULT_RESERVE_BITS);
+        JoinTable.Builder builder = JoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final JoinTable join(TableSpec rightTable, String columnsToMatch, String columnsToAdd) {
-        return join(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)), JoinTable.DEFAULT_RESERVE_BITS);
+        JoinTable.Builder builder = JoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
     public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch) {
-        return leftJoin(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
+        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
-        return leftJoin(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)));
+        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
@@ -216,14 +261,24 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch) {
-        return aj(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
+        AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
-        return aj(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)));
+        AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
@@ -244,14 +299,26 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final ReverseAsOfJoinTable raj(TableSpec rightTable, String columnsToMatch) {
-        return raj(rightTable, JoinMatch.from(split(columnsToMatch)), Collections.emptyList());
+        ReverseAsOfJoinTable.Builder builder =
+            ReverseAsOfJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        return builder.build();
     }
 
     @Override
     public final ReverseAsOfJoinTable raj(TableSpec rightTable, String columnsToMatch,
         String columnsToAdd) {
-        return raj(rightTable, JoinMatch.from(split(columnsToMatch)),
-            JoinAddition.from(split(columnsToAdd)));
+        ReverseAsOfJoinTable.Builder builder =
+            ReverseAsOfJoinTable.builder().left(this).right(rightTable);
+        for (String match : split(columnsToMatch)) {
+            builder.addMatches(JoinMatch.parse(match));
+        }
+        for (String addition : split(columnsToAdd)) {
+            builder.addAdditions(JoinAddition.parse(addition));
+        }
+        return builder.build();
     }
 
     @Override
@@ -351,6 +418,13 @@ public abstract class TableBase implements TableSpec {
         Collection<? extends Aggregation> aggregations) {
         return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
             .addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final String toString() {
+        // the auto-generated toString methods aren't very useful; and being recursive, they can
+        // cause stack overflow exceptions that hide other errors in unit tests
+        return super.toString();
     }
 
     private static Collection<String> split(String string) {

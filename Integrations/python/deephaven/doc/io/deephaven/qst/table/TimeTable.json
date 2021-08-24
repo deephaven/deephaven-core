@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.qst.table.TimeTable",
+ "methods": {
+  "builder": ":return: io.deephaven.qst.table.TimeTable.Builder",
+  "interval": ":return: java.time.Duration",
+  "of": "**Incompatible overloads text - text from the first overload:**\n\nThe time table.\n\n*Overload 1*  \n  :param interval: (java.time.Duration) - the interval\n  :return: (io.deephaven.qst.table.TimeTable) the time table\n  \n*Overload 2*  \n  :param interval: (java.time.Duration) - the interval\n  :param startTime: (java.time.Instant) - the start time\n  :return: (io.deephaven.qst.table.TimeTable) the time table",
+  "startTime": ":return: java.util.Optional<java.time.Instant>",
+  "timeProvider": ":return: io.deephaven.qst.table.TimeProvider",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.TimeTable",
+ "text": "A time table adds rows at a fixed interval with a\n Timestamp column.",
+ "typeName": "class"
+}

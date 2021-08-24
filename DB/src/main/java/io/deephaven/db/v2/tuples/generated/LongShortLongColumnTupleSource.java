@@ -135,11 +135,6 @@ public class LongShortLongColumnTupleSource extends AbstractTupleSource<LongShor
     }
 
     @Override
-    public Class<LongShortLongTuple> getNativeType() {
-        return LongShortLongTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongShortLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

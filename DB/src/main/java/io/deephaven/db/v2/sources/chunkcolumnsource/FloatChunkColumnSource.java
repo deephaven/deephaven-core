@@ -29,7 +29,7 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
     private long totalSize = 0;
 
     // region constructor
-    protected FloatChunkColumnSource() {
+    public FloatChunkColumnSource() {
         this(new TLongArrayList());
     }
 
@@ -148,7 +148,15 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
         return index;
     }
 
-    private void addChunk(@NotNull final WritableFloatChunk<? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableFloatChunk<? extends Attributes.Values> chunk) {
+        Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
             firstOffsetForData.add(totalSize);
@@ -167,5 +175,10 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
         data.forEach(SafeCloseable::close);
         data.clear();
         firstOffsetForData.resetQuick();
+    }
+
+    @Override
+    public long getSize() {
+        return totalSize;
     }
 }

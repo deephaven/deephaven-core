@@ -48,11 +48,6 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, blocks, prevBlocks, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }

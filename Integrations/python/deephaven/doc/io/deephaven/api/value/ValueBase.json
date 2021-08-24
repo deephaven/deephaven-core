@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.value.ValueBase",
+ "methods": {
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.expression.Expression.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.value.ValueBase",
+ "typeName": "class"
+}

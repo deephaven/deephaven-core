@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.regioned.DeferredColumnRegionShort",
  "methods": {
-  "getShort": "Get a single short from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A ColumnRegionFillContext to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index"
+  "getShort": "Get a single short from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index\n  \n*Overload 2*  \n  :param context: (io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element (short) index in the table's address space\n  :return: (short) The short value at the specified element (short) index"
  },
  "path": "io.deephaven.db.v2.sources.regioned.DeferredColumnRegionShort",
  "text": "ColumnRegionShort implementation for deferred regions, i.e. regions that will be properly constructed on\n first access.",

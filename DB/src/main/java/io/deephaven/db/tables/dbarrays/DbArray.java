@@ -8,6 +8,8 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.qst.type.DbGenericArrayType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +21,10 @@ import java.util.function.Function;
 public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
 
     long serialVersionUID = 2691131699080413017L;
+
+    static <T> DbGenericArrayType<DbArray, T> type(GenericType<T> genericType) {
+        return DbGenericArrayType.of(DbArray.class, genericType);
+    }
 
     T get(long i);
     DbArray<T> subArray(long fromIndexInclusive, long toIndexExclusive);

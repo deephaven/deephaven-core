@@ -116,9 +116,6 @@ public class FloatByteColumnTupleSource extends AbstractTupleSource<FloatByteTup
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    @Override
-    public Class<FloatByteTuple> getNativeType() { return FloatByteTuple.class; }
-
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<FloatByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         FloatChunk<Attributes.Values> chunk1 = chunks[0].asFloatChunk();

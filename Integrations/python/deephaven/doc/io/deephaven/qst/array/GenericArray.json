@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.qst.array.GenericArray",
+ "methods": {
+  "builder": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :return: io.deephaven.qst.array.GenericArray.Builder<T>\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.GenericType<T>\n  :return: io.deephaven.qst.array.GenericArray.Builder<T>",
+  "cast": "Note: Java generics information - <O>\n\n:param type: io.deephaven.qst.type.GenericType<O>\n:return: io.deephaven.qst.array.GenericArray<O>",
+  "componentType": ":return: io.deephaven.qst.type.GenericType<GenericArray.T>",
+  "empty": "Note: Java generics information - <T>\n\n:param type: io.deephaven.qst.type.GenericType<T>\n:return: io.deephaven.qst.array.GenericArray<T>",
+  "forEach": ":param action: java.util.function.Consumer<? superGenericArray.T>",
+  "get": ":param index: int\n:return: GenericArray.T",
+  "iterator": ":return: java.util.Iterator<GenericArray.T>",
+  "of": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.GenericType<T>\n  :param data: T...\n  :return: io.deephaven.qst.array.GenericArray<T>\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.GenericType<T>\n  :param data: java.lang.Iterable<T>\n  :return: io.deephaven.qst.array.GenericArray<T>",
+  "size": ":return: int",
+  "spliterator": ":return: java.util.Spliterator<GenericArray.T>",
+  "values": ":return: java.util.List<GenericArray.T>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.Array.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.GenericArray",
+ "text": "An array-like object for non-primitive types.",
+ "typeName": "class"
+}

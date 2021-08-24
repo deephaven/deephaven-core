@@ -7,6 +7,7 @@ package io.deephaven.db.v2.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.db.util.string.StringUtils;
 import io.deephaven.db.v2.locations.*;
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,6 +54,11 @@ public abstract class AbstractTableLocation
     }
 
     @Override
+    public final ReadOnlyIndex getIndex() {
+        return state.getIndex();
+    }
+
+    @Override
     public final long getSize() {
         return state.getSize();
     }
@@ -86,17 +92,18 @@ public abstract class AbstractTableLocation
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param size                   The new size
+     * @param index                 The new index. Ownership passes to this location; callers should
+     *                              {@link ReadOnlyIndex#clone() clone} it if necessary.
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
-    public final void handleUpdate(final long size, final long lastModifiedTimeMillis) {
-        if (state.setValues(size, lastModifiedTimeMillis) && supportsSubscriptions()) {
+    public final void handleUpdate(final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+        if (state.setValues(index, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
     }
 
     /**
-     * Update all state fields from source's values, as in {@link #handleUpdate(long, long)}.
+     * Update all state fields from source's values, as in {@link #handleUpdate(ReadOnlyIndex, long)}.
      * See {@link TableLocationState} for documentation of values.
      *
      * @param source The source to copy state values from
@@ -116,13 +123,13 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public @NotNull
-    ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
+    @NotNull
+    public final ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 
-    protected abstract @NotNull
-    ColumnLocation makeColumnLocation(@NotNull final String name);
+    @NotNull
+    protected abstract ColumnLocation makeColumnLocation(@NotNull final String name);
 
     /**
      * Clear all column locations (usually because a truncated location was observed).

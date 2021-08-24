@@ -15,6 +15,7 @@ import io.deephaven.db.v2.select.SelectFilter;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.regioned.*;
+import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class TestPartitioningColumns {
                         recordingLocationKeyFinder,
                         (tk, tlk, rs) -> {
                             final DummyTableLocation tl = new DummyTableLocation(tk, tlk);
-                            tl.handleUpdate(1, 1L);
+                            tl.handleUpdate(Index.CURRENT_FACTORY.getFlatIndex(1), 1L);
                             return tl;
                         },
                         null),
@@ -160,15 +161,6 @@ public class TestPartitioningColumns {
                     throw new UnsupportedOperationException();
                 }
 
-                @Override
-                public ColumnRegionInt<Attributes.DictionaryKeys> makeDictionaryKeysRegion(@NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public <TYPE> ColumnRegionObject<TYPE, Attributes.Values> makeDictionaryRegion(@NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
             };
         }
     }

@@ -10,7 +10,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.ActionType",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.ActionType",
     namespace = JsPackage.GLOBAL)
 public class ActionType {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

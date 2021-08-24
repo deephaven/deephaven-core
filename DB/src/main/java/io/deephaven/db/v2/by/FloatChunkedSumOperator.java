@@ -295,8 +295,8 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter implements
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return resultColumn.getNativeType();
+    public ChunkType getChunkType() {
+        return resultColumn.getChunkType();
     }
 
     @Override

@@ -2,9 +2,9 @@ package io.deephaven.db.v2.locations.parquet;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.db.v2.locations.parquet.topage.ToPage;
-import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;
@@ -14,19 +14,19 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-class VariablePageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends ColumnChunkPageStore<ATTR> {
+class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
     // We will set numPages after changing all of these arrays in place and/or setting additional elements to the
-    // end of the array.  Thus, for i < numPages, array[i] will always have the same value, and be valid to use, as
-    // long as we fetch numPages before accessing the arrays.   This is the multithreaded pattern used throughout.
+    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be valid to use, as
+    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used throughout.
 
     private volatile int numPages = 0;
-    private volatile long [] pageRowOffsets;
-    private volatile ColumnPageReader [] columnPageReaders;
-    private volatile WeakReference<IntrusivePage<ATTR>> [] pages;
+    private volatile long[] pageRowOffsets;
+    private volatile ColumnPageReader[] columnPageReaders;
+    private volatile WeakReference<IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(ColumnChunkReader columnChunkReader, ToPage<ATTR, ?> toPage, long mask) throws IOException {
-        super(columnChunkReader, toPage, mask);
+    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+        super(columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
         pageRowOffsets = new long[INIT_ARRAY_SIZE +1];
@@ -98,7 +98,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends 
         return minPageNum;
     }
 
-    private ChunkPage<ATTR> getPage(int pageNum) {
+    private ChunkPage<ATTR> getPage(final int pageNum) {
         IntrusivePage<ATTR> page = pages[pageNum].get();
 
         if (page == null) {
@@ -126,9 +126,9 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Attributes.Any> extends 
 
     @NotNull
     @Override
-    public ChunkPage<ATTR> getPageContaining(FillContext fillContext, long row) {
+    public ChunkPage<ATTR> getPageContaining(@NotNull final FillContext fillContext, long row) {
         row &= mask();
-        Require.inRange(row - pageRowOffsets[0], "row", length(), "numRows");
+        Require.inRange(row - pageRowOffsets[0], "row", size(), "numRows");
 
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);

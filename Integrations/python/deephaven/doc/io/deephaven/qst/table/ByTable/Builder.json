@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.ByTable$Builder",
+ "methods": {
+  "addAllColumns": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.qst.table.ByTable.Builder",
+  "addColumns": "*Overload 1*  \n  :param element: io.deephaven.api.Selectable\n  :return: io.deephaven.qst.table.ByTable.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.Selectable...\n  :return: io.deephaven.qst.table.ByTable.Builder",
+  "build": ":return: io.deephaven.qst.table.ByTable",
+  "parent": ":param parent: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.ByTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.ByTable.Builder",
+ "typeName": "interface"
+}

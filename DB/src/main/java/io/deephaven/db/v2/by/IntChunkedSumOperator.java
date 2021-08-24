@@ -171,8 +171,8 @@ public class IntChunkedSumOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public Class<?> getNativeType() {
-        return resultColumn.getNativeType();
+    public ChunkType getChunkType() {
+        return resultColumn.getChunkType();
     }
 
     @Override

@@ -11,7 +11,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.FlightEndpoint",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightEndpoint",
     namespace = JsPackage.GLOBAL)
 public class FlightEndpoint {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

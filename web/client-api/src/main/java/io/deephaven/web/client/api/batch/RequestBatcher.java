@@ -4,7 +4,7 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
@@ -236,7 +236,6 @@ public class RequestBatcher {
 
             ResponseStreamWrapper<ExportedTableCreationResponse> batchStream = ResponseStreamWrapper.of(connection.tableServiceClient().batch(request, connection.metadata()));
             batchStream.onData(response -> {
-                DomGlobal.console.log("onData", this, request.toObject(), response.toObject());
                 TableReference resultid = response.getResultId();
                 if (!resultid.hasTicket()) {
                     // thanks for telling us, but we don't at this time have a nice way to indicate this
@@ -292,7 +291,6 @@ public class RequestBatcher {
             });
 
             batchStream.onEnd(status -> {
-                DomGlobal.console.log("onEnd", this, request.toObject(), status);
                 // request is complete
                 if (status.getCode() == Code.OK) {
                     resolve.onInvoke((Void) null);

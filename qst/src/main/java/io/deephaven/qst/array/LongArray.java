@@ -63,7 +63,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
     }
 
     @Override
-    public final LongType type() {
+    public final LongType componentType() {
         return LongType.instance();
     }
 

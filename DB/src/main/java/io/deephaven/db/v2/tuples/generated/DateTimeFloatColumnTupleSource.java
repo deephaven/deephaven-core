@@ -117,9 +117,6 @@ public class DateTimeFloatColumnTupleSource extends AbstractTupleSource<LongFloa
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    @Override
-    public Class<LongFloatTuple> getNativeType() { return LongFloatTuple.class; }
-
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         ObjectChunk<DBDateTime, Attributes.Values> chunk1 = chunks[0].asObjectChunk();

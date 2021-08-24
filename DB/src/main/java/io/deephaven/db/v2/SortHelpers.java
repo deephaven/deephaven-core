@@ -204,14 +204,14 @@ public class SortHelpers {
     /**
      * Note that if usePrev is true, then indexToSort is the previous index; not the current index, and we should not need to call getPrevIndex.
      */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy, Index indexToSort, boolean usePrev) {
+    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy, ReadOnlyIndex indexToSort, boolean usePrev) {
         return getSortedKeys(order, columnsToSortBy, indexToSort, usePrev, sortBySymbolTable);
     }
 
     /**
      * Note that if usePrev is true, then indexToSort is the previous index; not the current index, and we should not need to call getPrevIndex.
      */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy, Index indexToSort, boolean usePrev, boolean allowSymbolTable) {
+    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy, ReadOnlyIndex indexToSort, boolean usePrev, boolean allowSymbolTable) {
         if (indexToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
@@ -224,7 +224,7 @@ public class SortHelpers {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 }
             } else {
-                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource) {
+                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(indexToSort)) {
                     return doSymbolTableMapping(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);
@@ -318,7 +318,7 @@ public class SortHelpers {
     private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
     private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
-    private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource, Index index, boolean usePrev) {
+    private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource, ReadOnlyIndex index, boolean usePrev) {
         final int sortSize = index.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
@@ -408,7 +408,7 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource, Index index, boolean usePrev) {
+    private static SortMapping getSortMappingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource, ReadOnlyIndex index, boolean usePrev) {
         final long sortSize = index.size();
 
         if (sortSize >= megaSortSize) {
@@ -419,7 +419,7 @@ public class SortHelpers {
     }
 
     @NotNull
-    private static SortMapping doMegaSortOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource, Index index, boolean usePrev, long sortSize) {
+    private static SortMapping doMegaSortOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource, ReadOnlyIndex index, boolean usePrev, long sortSize) {
         final LongArraySource resultIndices = new LongArraySource();
         resultIndices.ensureCapacity(sortSize, false);
         final ArrayBackedColumnSource<?> valuesToMerge = ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType());
@@ -464,7 +464,7 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource, Index index) {
+    private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource, ReadOnlyIndex index) {
         final Map<Object, Index> groupToRange = index.getGrouping(columnSource);
         final Object [] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
 
@@ -503,7 +503,7 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingMulti(SortingOrder [] order, ColumnSource<Comparable<?>> [] columnSources, Index index, boolean usePrev) {
+    private static SortMapping getSortMappingMulti(SortingOrder [] order, ColumnSource<Comparable<?>> [] columnSources, ReadOnlyIndex index, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = index.intSize();
 

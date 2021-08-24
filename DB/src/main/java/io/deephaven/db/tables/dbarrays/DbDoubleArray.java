@@ -12,6 +12,8 @@ import io.deephaven.db.v2.sources.chunk.DoubleChunk;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.libs.primitives.DoublePrimitives;
+import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +23,10 @@ import java.util.Arrays;
 public interface DbDoubleArray extends DbArrayBase<DbDoubleArray> {
 
     long serialVersionUID = 7218901311693729986L;
+
+    static DbPrimitiveArrayType<DbDoubleArray, Double> type() {
+        return DbPrimitiveArrayType.of(DbDoubleArray.class, DoubleType.instance());
+    }
 
     double get(long i);
 

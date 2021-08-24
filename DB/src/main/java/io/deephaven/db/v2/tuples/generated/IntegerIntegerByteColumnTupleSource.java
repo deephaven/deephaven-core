@@ -135,11 +135,6 @@ public class IntegerIntegerByteColumnTupleSource extends AbstractTupleSource<Int
     }
 
     @Override
-    public Class<IntIntByteTuple> getNativeType() {
-        return IntIntByteTuple.class;
-    }
-
-    @Override
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<IntIntByteTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         IntChunk<Attributes.Values> chunk1 = chunks[0].asIntChunk();

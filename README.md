@@ -80,12 +80,14 @@ docker run hello-world
   <summary>Installing Docker...</summary>
 
   Instructions for installing and configuring Docker can be found at
-  [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/).  Windows users should follow the WSL2
-  instructions.
+  [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/).  Windows users should follow the WSL2 instructions.
+  Docker Engine Version 18.03 (or newer) is needed to build.
+  Docker Engine Version 19.03 (or newer) is needed to build and run.
+ 
 
   Instructions for installing and configuring `docker-compose` can be found at
   [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/).
-  Version 1.29 (or newer) is required.
+  Version 1.29 (or newer) is recommended; Version 1.27 (or newer) is required.
 </details>
 
 <details>
@@ -195,6 +197,8 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 
 ## Resources
+* [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
+* [Discussions](https://docs.github.com/en/discussions)
 * [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
 * [Java API docs](https://deephaven.io/core/javadoc/)

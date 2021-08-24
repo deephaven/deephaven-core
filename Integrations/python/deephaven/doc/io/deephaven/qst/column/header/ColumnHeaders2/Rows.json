@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.column.header.ColumnHeaders2$Rows",
+ "methods": {
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.Column<?>>",
+  "row": ":param a: ColumnHeaders2.T1\n:param b: ColumnHeaders2.T2\n:return: io.deephaven.qst.column.header.ColumnHeaders2.Rows"
+ },
+ "path": "io.deephaven.qst.column.header.ColumnHeaders2.Rows",
+ "typeName": "class"
+}

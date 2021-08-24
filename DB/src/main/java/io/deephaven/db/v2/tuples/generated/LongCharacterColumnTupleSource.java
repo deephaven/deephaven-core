@@ -116,9 +116,6 @@ public class LongCharacterColumnTupleSource extends AbstractTupleSource<LongChar
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    @Override
-    public Class<LongCharTuple> getNativeType() { return LongCharTuple.class; }
-
     protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
         WritableObjectChunk<LongCharTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
         LongChunk<Attributes.Values> chunk1 = chunks[0].asLongChunk();

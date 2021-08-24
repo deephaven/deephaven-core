@@ -1,5 +1,7 @@
 package io.deephaven.parquet;
 
+import org.apache.parquet.format.RowGroup;
+
 import java.util.List;
 
 /**
@@ -14,4 +16,6 @@ public interface RowGroupReader {
     ColumnChunkReader getColumnChunk(List<String> path);
 
     long numRows();
+
+    RowGroup getRowGroup();
 }

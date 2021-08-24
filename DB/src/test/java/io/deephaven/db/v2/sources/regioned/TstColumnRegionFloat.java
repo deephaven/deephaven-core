@@ -28,13 +28,13 @@ public class TstColumnRegionFloat {
     static class Identity implements ColumnRegionFloat<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
 
         @Override
-        public float getFloat(long elementIndex) {
-            return (float) elementIndex;
+        public long mask() {
+            return Long.MAX_VALUE;
         }
 
         @Override
-        public long length() {
-            throw new UnsupportedOperationException();
+        public float getFloat(long elementIndex) {
+            return (float) elementIndex;
         }
 
         @Override
@@ -59,7 +59,7 @@ public class TstColumnRegionFloat {
         @Override
         public void setUp() throws Exception {
             super.setUp();
-            SUT = ColumnRegionFloat.createNull();
+            SUT = ColumnRegionFloat.createNull(Long.MAX_VALUE);
         }
 
         @Override
@@ -83,7 +83,7 @@ public class TstColumnRegionFloat {
                 oneOf(regionSupplier).get();
                 will(returnValue(new Identity()));
             }});
-            SUT = new DeferredColumnRegionFloat<>(regionSupplier);
+            SUT = new DeferredColumnRegionFloat<>(Long.MAX_VALUE, regionSupplier);
         }
 
         @Override

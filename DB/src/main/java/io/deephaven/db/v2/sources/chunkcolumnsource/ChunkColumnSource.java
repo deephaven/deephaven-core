@@ -23,6 +23,18 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * @return an empty ChunkColumnSource
      */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType) {
+        return make(chunkType, dataType, (Class<?>)null);
+    }
+
+    /**
+     * Create a new ChunkColumnSource for the given chunk type and data type.
+     *
+     * @param chunkType     the type of chunk
+     * @param dataType      the datatype for the newly created column source
+     * @param componentType the component type for the newly created column source (only applies to Objects)
+     * @return an empty ChunkColumnSource
+     */
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource();
@@ -39,7 +51,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
             case Double:
                 return new DoubleChunkColumnSource();
             case Object:
-                return new ObjectChunkColumnSource<>(dataType);
+                return new ObjectChunkColumnSource<>(dataType, componentType);
             default:
                 throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
@@ -54,6 +66,19 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * @return an empty ChunkColumnSource
      */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, TLongArrayList sharedOffsetForData) {
+        return make(chunkType, dataType, null, sharedOffsetForData);
+    }
+
+    /**
+     * Create a new ChunkColumnSource for the given chunk type and data type.
+     *
+     * @param chunkType           the type of chunk
+     * @param dataType            the datatype for the newly created column source
+     * @param componentType       the component type for the newly created column source (only applies to Objects)
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several ChunkColumnSources
+     * @return an empty ChunkColumnSource
+     */
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType, TLongArrayList sharedOffsetForData) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource(sharedOffsetForData);
@@ -70,7 +95,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
             case Double:
                 return new DoubleChunkColumnSource(sharedOffsetForData);
             case Object:
-                return new ObjectChunkColumnSource<>(dataType, sharedOffsetForData);
+                return new ObjectChunkColumnSource<>(dataType, componentType, sharedOffsetForData);
             default:
                 throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
@@ -78,6 +103,8 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
 
     /**
      * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
      *
      * @param chunk the chunk of data to add
      */
@@ -90,4 +117,11 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * the column source; as it violates the immutability contract.
      */
     void clear();
+
+    /**
+     * Get the size of this column source (one more than the last valid index).
+     *
+     * @return the size of this column source
+     */
+    long getSize();
 }

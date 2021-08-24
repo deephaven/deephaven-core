@@ -11,7 +11,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb_service.RequestStream",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb_service.RequestStream",
     namespace = JsPackage.GLOBAL)
 public interface RequestStream<T> {
   @JsFunction

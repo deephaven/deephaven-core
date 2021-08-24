@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.agg.AggregationOutputs",
+ "methods": {
+  "of": "*Overload 1*  \n  :param aggregation: io.deephaven.api.agg.Aggregation\n  :return: java.util.stream.Stream<io.deephaven.api.ColumnName>\n  \n*Overload 2*  \n  :param aggregations: java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>\n  :return: java.util.stream.Stream<io.deephaven.api.ColumnName>",
+  "visit": "*Overload 1*  \n  :param absSum: io.deephaven.api.agg.AbsSum\n  \n*Overload 2*  \n  :param array: io.deephaven.api.agg.Array\n  \n*Overload 3*  \n  :param avg: io.deephaven.api.agg.Avg\n  \n*Overload 4*  \n  :param count: io.deephaven.api.agg.Count\n  \n*Overload 5*  \n  :param countDistinct: io.deephaven.api.agg.CountDistinct\n  \n*Overload 6*  \n  :param distinct: io.deephaven.api.agg.Distinct\n  \n*Overload 7*  \n  :param first: io.deephaven.api.agg.First\n  \n*Overload 8*  \n  :param last: io.deephaven.api.agg.Last\n  \n*Overload 9*  \n  :param max: io.deephaven.api.agg.Max\n  \n*Overload 10*  \n  :param med: io.deephaven.api.agg.Med\n  \n*Overload 11*  \n  :param min: io.deephaven.api.agg.Min\n  \n*Overload 12*  \n  :param multi: io.deephaven.api.agg.Multi<?>\n  \n*Overload 13*  \n  :param pct: io.deephaven.api.agg.Pct\n  \n*Overload 14*  \n  :param sortedFirst: io.deephaven.api.agg.SortedFirst\n  \n*Overload 15*  \n  :param sortedLast: io.deephaven.api.agg.SortedLast\n  \n*Overload 16*  \n  :param std: io.deephaven.api.agg.Std\n  \n*Overload 17*  \n  :param sum: io.deephaven.api.agg.Sum\n  \n*Overload 18*  \n  :param unique: io.deephaven.api.agg.Unique\n  \n*Overload 19*  \n  :param var: io.deephaven.api.agg.Var\n  \n*Overload 20*  \n  :param wAvg: io.deephaven.api.agg.WAvg\n  \n*Overload 21*  \n  :param wSum: io.deephaven.api.agg.WSum"
+ },
+ "path": "io.deephaven.api.agg.AggregationOutputs",
+ "text": "A visitor to get the ordered output column names for aggregations.",
+ "typeName": "class"
+}

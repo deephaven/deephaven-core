@@ -153,6 +153,10 @@ public class DbDoubleArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbDoubleArray.type().clazz(), DbDoubleArray.class);
+    }
+
     private void checkSubArray(DbDoubleArray dbArray, int start, int end, double result[]){
         DbDoubleArray subArray = dbArray.subArray(start, end);
         double array[] = subArray.toArray();

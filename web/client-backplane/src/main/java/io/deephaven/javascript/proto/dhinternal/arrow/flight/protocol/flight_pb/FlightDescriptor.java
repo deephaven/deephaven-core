@@ -12,7 +12,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor",
     namespace = JsPackage.GLOBAL)
 public class FlightDescriptor {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

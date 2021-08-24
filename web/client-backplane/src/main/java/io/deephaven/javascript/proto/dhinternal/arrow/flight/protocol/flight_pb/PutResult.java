@@ -10,7 +10,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name = "dhinternal.arrow.flight.protocol.flight_pb.PutResult",
+    name = "dhinternal.arrow.flight.protocol.Flight_pb.PutResult",
     namespace = JsPackage.GLOBAL)
 public class PutResult {
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

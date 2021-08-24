@@ -219,11 +219,16 @@ public class ParquetTableReadWriteTest {
     }
 
     private void compressionCodecTestHelper(final String codec) {
-        ParquetInstructions.setDefaultCompressionCodecName(codec);
-        String path = rootFile + File.separator + "Table1.parquet";
-        final Table table1 = getTableFlat(10000, false);
-        ParquetTools.writeTable(table1, path);
-        assertTrue(new File(path).length() > 0);
+        final String currentCodec = ParquetInstructions.getDefaultCompressionCodecName();
+        try {
+            ParquetInstructions.setDefaultCompressionCodecName(codec);
+            String path = rootFile + File.separator + "Table1.parquet";
+            final Table table1 = getTableFlat(10000, false);
+            ParquetTools.writeTable(table1, path);
+            assertTrue(new File(path).length() > 0);
+        } finally {
+            ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
+        }
     }
 
     @Test

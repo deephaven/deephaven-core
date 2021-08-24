@@ -166,7 +166,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (ticket == null) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
         }
-        if (ticket.remaining() < 3 || ticket.get(0) != TICKET_PREFIX || ticket.get(1) != '/') {
+        if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX || ticket.get(ticket.position() + 1) != '/') {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
         }
 
@@ -218,6 +218,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @param descriptor the descriptor to convert
      * @return a flight ticket that represents the descriptor
      */
+    //TODO #412 use this or remove it (above is unused too?)
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
         return ticketForName(nameForDescriptor(descriptor));
     }

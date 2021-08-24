@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.kafka.ingest.GenericRecordFieldCopier",
+ "methods": {
+  "make": "Create a field copier from a GenericRecord to the given chunk and data type\n\n:param fieldName: (java.lang.String) - the name of the field in the generic record\n:param chunkType: (io.deephaven.db.v2.sources.chunk.ChunkType) - the type of chunk in the publisher\n:param dataType: (java.lang.Class<?>) - the dataType in the output definition\n:return: (io.deephaven.kafka.ingest.GenericRecordFieldCopier) a GenericRecordField copier for the given field and destination type"
+ },
+ "path": "io.deephaven.kafka.ingest.GenericRecordFieldCopier",
+ "text": "A field copier that handles generic records.",
+ "typeName": "interface"
+}

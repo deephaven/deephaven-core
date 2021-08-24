@@ -1,0 +1,23 @@
+{
+ "className": "io.deephaven.api.ColumnName",
+ "methods": {
+  "asc": "Equivalent to SortColumn.asc(this).\n\n:return: (io.deephaven.api.SortColumn) the ascending sort column",
+  "desc": "Equivalent to SortColumn.desc(this).\n\n:return: (io.deephaven.api.SortColumn) the descending sort column",
+  "existingColumn": "The existing column name, from the right table of a join operation.\n\n:return: (io.deephaven.api.ColumnName) the existing column name",
+  "expression": "The expression.\n\n:return: (io.deephaven.api.expression.Expression) the expression",
+  "input": "The input column.\n\n:return: (io.deephaven.api.ColumnName) the input column",
+  "isValidColumnName": ":param name: java.lang.String\n:return: boolean",
+  "isValidParsedColumnName": ":param value: java.lang.String\n:return: boolean",
+  "left": "The column from the left table.\n\n:return: (io.deephaven.api.ColumnName) the left column name",
+  "name": "The column name.\n\n:return: (java.lang.String) the column name",
+  "newColumn": "The new column name, to be added to the new table.\n\n:return: (io.deephaven.api.ColumnName) the new column name",
+  "of": ":param name: java.lang.String\n:return: io.deephaven.api.ColumnName",
+  "output": "The output column.\n\n:return: (io.deephaven.api.ColumnName) the output column",
+  "parse": ":param value: java.lang.String\n:return: io.deephaven.api.ColumnName",
+  "right": "The column name from the right table.\n\n:return: (io.deephaven.api.ColumnName) the right column name",
+  "walk": "*Overload 1*  \n  Note: Java generics information - <V extends io.deephaven.api.expression.Expression.Visitor>\n  \n  :param visitor: V\n  :return: V\n  \n*Overload 2*  \n  Note: Java generics information - <V extends io.deephaven.api.value.Value.Visitor>\n  \n  :param visitor: V\n  :return: V"
+ },
+ "path": "io.deephaven.api.ColumnName",
+ "text": "Represents a column name.",
+ "typeName": "class"
+}

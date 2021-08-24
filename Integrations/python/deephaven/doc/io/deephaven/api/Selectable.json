@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.api.Selectable",
+ "methods": {
+  "expression": "The expression.\n\n:return: (io.deephaven.api.expression.Expression) the expression",
+  "from": "*Overload 1*  \n  :param values: java.lang.String...\n  :return: java.util.List<io.deephaven.api.Selectable>\n  \n*Overload 2*  \n  :param values: java.util.Collection<java.lang.String>\n  :return: java.util.List<io.deephaven.api.Selectable>",
+  "newColumn": "The new column name, to be added to the new table.\n\n:return: (io.deephaven.api.ColumnName) the new column name",
+  "of": ":param newColumn: io.deephaven.api.ColumnName\n:param expression: io.deephaven.api.expression.Expression\n:return: io.deephaven.api.Selectable",
+  "parse": ":param x: java.lang.String\n:return: io.deephaven.api.Selectable"
+ },
+ "path": "io.deephaven.api.Selectable",
+ "text": "Represents a selectable assignment for an Expression.",
+ "typeName": "interface"
+}

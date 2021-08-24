@@ -8,8 +8,9 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.column.Column;
+import io.deephaven.qst.table.NewTable;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashMap;

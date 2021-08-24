@@ -47,7 +47,7 @@ public interface PrimitiveArray<T> extends Array<T> {
         return builder(type, data.size()).add(data).build();
     }
 
-    PrimitiveType<T> type();
+    PrimitiveType<T> componentType();
 
     <V extends Visitor> V walk(V visitor);
 

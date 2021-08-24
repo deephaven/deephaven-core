@@ -15,8 +15,13 @@ public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
     }
 
     @Override
-    public final Class<Boolean> primitiveClass() {
+    public final Class<Boolean> clazz() {
         return boolean.class;
+    }
+
+    @Override
+    public final NativeArrayType<boolean[], Boolean> arrayType() {
+        return NativeArrayType.of(boolean[].class, this);
     }
 
     @Override

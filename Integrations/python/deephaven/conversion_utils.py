@@ -7,6 +7,7 @@ Utilities for converting java objects to python object, or vice versa.
 
 import re
 import jpy
+import wrapt
 import sys
 import numpy
 import pandas
@@ -22,6 +23,49 @@ else:
     def _isStr(input):
         return isinstance(input, basestring)
 
+# None until the first _defineSymbols() call
+_table_tools_ = None
+_col_def_ = None
+_jprops_ = None
+_jmap_ = None
+_python_tools_ = None
+IDENTITY = None
+
+def _defineSymbols():
+    if not jpy.has_jvm():
+        raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
+
+    global _table_tools_, _col_def_, _jprops_, _jmap_, _python_tools_, IDENTITY
+    if _table_tools_ is None:
+        # This will raise an exception if the desired object is not the classpath
+        _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
+        _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
+        _jprops_ = jpy.get_type("java.util.Properties")
+        _jmap_ = jpy.get_type("java.util.HashMap")
+        _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
+        IDENTITY = object()  # Ensure IDENTITY is unique.
+
+
+# every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
+@wrapt.decorator
+def _passThrough(wrapped, instance, args, kwargs):
+    """
+    For decoration of module methods, to define necessary symbols at runtime
+
+    :param wrapped: the method to be decorated
+    :param instance: the object to which the wrapped function was bound when it was called
+    :param args: the argument list for `wrapped`
+    :param kwargs: the keyword argument dictionary for `wrapped`
+    :return: the decorated version of the method
+    """
+
+    _defineSymbols()
+    return wrapped(*args, **kwargs)
+
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
 
 __ObjectColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableObjectArraySource'
 __DatetimeColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource'
@@ -980,3 +1024,80 @@ def _ensureBoxedArray(javaArray):
         return jpy.array(_boxedArrayTypes[basicType], javaArray)
     return javaArray
 
+@_passThrough
+def _typeFromName(type_str):
+    return _table_tools_.typeFromName(type_str)
+
+@_passThrough
+def _tupleToColDef(t):
+    """
+    Convert a tuple of strings of the form ('Price', 'double')
+    or ('Prices', 'double[]', 'double')
+    to a ColumnDefinition object.
+
+    :param t: a 2 or 3 element tuple of strings specifying a column definition object
+    :return: the column definition object.
+    """
+
+    if not isinstance(t, tuple):
+        raise Exception('argument ' + t + ' is not a tuple')
+    if len(t) < 2 or len(t) > 3:
+        raise Exception('Only 2 or 3 element tuples expected, got ' + len(t))
+    col_name = t[0]
+    if not _isStr(col_name):
+        raise Exception('Element at index 0 (' + col_name + ') for column name is not of string type')
+    type_name = t[1]
+    if not _isStr(type_name):
+        raise Exception('Element at index 1 (' + type_name + ') for type name is not of string type')
+    type_class = _typeFromName(type_name)
+    if len(t) == 2:
+        return _col_def_.fromGenericType(col_name, type_class)
+    component_type_name = t[2]
+    if not _isStr(component_type_name):
+        raise Exception('Element at index 2 (' + component_type_name + ') for component type name is not of string type')
+    component_type_class = _typeFromName(component_type_name)
+    return _col_def_.fromGenericType(col_name, type_class, component_type_class)
+
+@_passThrough
+def _tuplesListToColDefsList(ts):
+    """
+    Convert a list of tuples of strings of the form ('Price', 'double')
+    or ('Prices', 'double[]', 'double')
+    to a list of ColumnDefinition objects.
+
+    :param ts: a list of 2 or 3 element tuples of strings specifying a column definition object.
+    :return: a list of column definition objects.
+    """
+    if not isinstance(ts, list):
+        raise Exception('argument ' + ts + ' is not a list')
+
+    r = []
+    for t in ts:
+        r.append(_tupleToColDef(t))
+    return r
+
+@_passThrough
+def _dictToProperties(d):
+    r = _jprops_()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.setProperty(key, value)
+    return r
+
+@_passThrough
+def _dictToMap(d):
+    r = _jmap_()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.put(key, value)
+    return r
+
+@_passThrough
+def _dictToFun(mapping, default_value):
+    mapping = _dictToMap(d)
+    if default_value is IDENTITY:
+        return _python_tools_.functionFromMapWithIdentityDefaults(m)
+    else:
+        return _python_tools_.functionfromMapWithDefault(m, default_value)

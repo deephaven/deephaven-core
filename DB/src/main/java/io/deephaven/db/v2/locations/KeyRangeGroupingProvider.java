@@ -1,5 +1,6 @@
 package io.deephaven.db.v2.locations;
 
+import io.deephaven.db.v2.utils.ReadOnlyIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -10,9 +11,8 @@ public interface KeyRangeGroupingProvider<DATA_TYPE> extends GroupingProvider<DA
 
     /**
      * Add a column location for consideration when constructing groupings.
-     * @param columnLocation   The column location to add
-     * @param firstKey         The first key in the range for this column location
-     * @param lastKey          The last key in the range for this column location (inclusive)
+     * @param columnLocation    The column location to add
+     * @param addedIndexInTable The location's index in the table
      */
-    void addSource(@NotNull ColumnLocation columnLocation, long firstKey, long lastKey);
+    void addSource(@NotNull ColumnLocation columnLocation, @NotNull ReadOnlyIndex locationIndexInTable);
 }

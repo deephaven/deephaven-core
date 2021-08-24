@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.IntArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.IntArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.IntType",
+  "empty": ":return: io.deephaven.qst.array.IntArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: int...\n  :return: io.deephaven.qst.array.IntArray\n  \n*Overload 2*  \n  :param values: java.lang.Integer...\n  :return: io.deephaven.qst.array.IntArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Integer>\n  :return: io.deephaven.qst.array.IntArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Integer>\n  :return: io.deephaven.qst.array.IntArray",
+  "ofUnsafe": ":param values: int...\n:return: io.deephaven.qst.array.IntArray",
+  "size": ":return: int",
+  "values": "The raw ints. Must not be modified.\n\n:return: (int[]) the ints, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.IntArray",
+ "text": "An IntType array.",
+ "typeName": "class"
+}
